@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  db:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_USER: ops
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ops_password}
+      POSTGRES_DB: opsdesk
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ops -d opsdesk"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ops:${DB_PASSWORD:-ops_password}@db:5432/opsdesk
+      OPS_LLM_PROVIDER: ${OPS_LLM_PROVIDER:-siliconflow}
+      SILICONFLOW_API_KEY: ${SILICONFLOW_API_KEY}
+      OPS_LLM_MODEL: ${OPS_LLM_MODEL:-Qwen/Qwen2.5-72B-Instruct}
+      BAILIAN_API_KEY: ${BAILIAN_API_KEY}
+      BAILIAN_BASE_URL: ${BAILIAN_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      BAILIAN_MODEL: ${BAILIAN_MODEL:-qwen-plus}
+      OPS_DESK_SECRET: ${OPS_DESK_SECRET:-change-me}
+      OPS_DESK_AUTH_MODE: ${OPS_DESK_AUTH_MODE:-db}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+volumes:
+  pgdata:

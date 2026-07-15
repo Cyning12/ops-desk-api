@@ -1,0 +1,63 @@
+[project]
+name = "ops-desk-api"
+version = "0.1.0"
+description = "Ops Desk Kimi Code backend API"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Cyning"},
+]
+dependencies = [
+    "fastapi>=0.111,<1",
+    "uvicorn[standard]>=0.30,<1",
+    "pydantic>=2.7,<3",
+    "pydantic-settings>=2.3,<3",
+    "sqlalchemy[asyncio]>=2.0,<3",
+    "alembic>=1.13,<2",
+    "asyncpg>=0.29,<1",
+    "pgvector>=0.2.5,<1",
+    "langgraph>=0.2,<0.3",
+    "langchain-core>=0.2,<0.3",
+    "httpx>=0.27,<1",
+    "python-multipart>=0.0.9",
+    "python-jose[cryptography]>=3.3,<4",
+    "passlib[bcrypt]>=1.7,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2,<9",
+    "pytest-asyncio>=0.23,<1",
+    "httpx>=0.27,<1",
+    "ruff>=0.5,<1",
+    "mypy>=1.10,<2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+ignore = ["E501", "B008"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

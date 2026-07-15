@@ -1,0 +1,1 @@
+"""Admin sync endpoint package."""
