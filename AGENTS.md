@@ -4,6 +4,11 @@
 > **范围**：REST API、SSE Chat、数据库模型、LLM Provider、sync 接入。  
 > **边界**：不实现前端页面、不实现 iOS UI。
 
+## Open Folder 说明
+
+在 Claude Code / Cursor 中，**应将本目录 `ops-desk-api/` 作为 Open Folder 根目录**。  
+跨仓文档与统筹见 `../ops-desk-workspace/docs/`。
+
 ---
 
 ## 必读（按顺序）
