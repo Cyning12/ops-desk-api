@@ -4,6 +4,7 @@ from __future__ import annotations
 import httpx
 import pytest
 
+from app.llm.providers.bailian import BailianProvider
 from app.llm.providers.siliconflow import SiliconFlowProvider
 from app.llm.schema import LlmChunk, LlmMessage, LlmProviderError
 
@@ -187,3 +188,138 @@ class TestSiliconFlowProvider:
             pass
 
         assert captured["body"]["model"] == "deepseek-ai/DeepSeek-V4-Pro"
+
+
+class TestBailianProvider:
+    @pytest.fixture
+    def mock_bailian_stream(self, monkeypatch):
+        """Replace _stream_openai_compatible to control fallback chain behavior."""
+
+        def _make(responses_by_model: dict[str, list[LlmChunk] | Exception]) -> None:
+            call_log: list[str] = []
+
+            async def fake_stream(*, base_url: str, api_key: str, model: str, messages):
+                call_log.append(model)
+                result = responses_by_model.get(model)
+                if isinstance(result, Exception):
+                    raise result
+                if result is None:
+                    raise LlmProviderError(f"unexpected model: {model}", retryable=False)
+                for chunk in result:
+                    yield chunk
+
+            monkeypatch.setattr(
+                BailianProvider,
+                "_stream_openai_compatible",
+                staticmethod(fake_stream),
+            )
+            return call_log
+
+        return _make
+
+    async def test_complete_stream_ok(self, mock_bailian_stream):
+        mock_bailian_stream({"deepseek-v4-pro": [LlmChunk(content="ok")]})
+        provider = BailianProvider(api_key="test-key")
+
+        chunks = [
+            chunk
+            async for chunk in provider.complete_stream([LlmMessage(role="user", content="hi")])
+        ]
+
+        assert [c.content for c in chunks] == ["ok"]
+
+    async def test_fallback_emits_event(self, mock_bailian_stream):
+        mock_bailian_stream({
+            "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
+            "deepseek-v4-flash": [LlmChunk(content="fallback ok")],
+        })
+        provider = BailianProvider(api_key="test-key")
+
+        chunks = [
+            chunk
+            async for chunk in provider.complete_stream([LlmMessage(role="user", content="hi")])
+        ]
+
+        assert len(chunks) == 2
+        assert chunks[0].meta is not None
+        assert chunks[0].meta["event_type"] == "model.fallback"
+        assert chunks[0].meta["from_model"] == "deepseek-v4-pro"
+        assert chunks[0].meta["to_model"] == "deepseek-v4-flash"
+        assert chunks[1].content == "fallback ok"
+
+    async def test_fallback_chain_exhausted(self, mock_bailian_stream):
+        mock_bailian_stream({
+            "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
+            "deepseek-v4-flash": LlmProviderError("503", retryable=True, status_code=503),
+            "qwen3.7-plus": LlmProviderError("503", retryable=True, status_code=503),
+        })
+        provider = BailianProvider(api_key="test-key")
+
+        with pytest.raises(LlmProviderError) as exc_info:
+            async for _ in provider.complete_stream([LlmMessage(role="user", content="hi")]):
+                pass
+
+        assert exc_info.value.retryable is False
+        assert "exhausted" in str(exc_info.value)
+
+    async def test_non_retryable_stops_fallback(self, mock_bailian_stream):
+        mock_bailian_stream({
+            "deepseek-v4-pro": LlmProviderError("401", retryable=False, status_code=401),
+            "deepseek-v4-flash": [LlmChunk(content="should not reach")],
+        })
+        provider = BailianProvider(api_key="test-key")
+
+        with pytest.raises(LlmProviderError) as exc_info:
+            async for _ in provider.complete_stream([LlmMessage(role="user", content="hi")]):
+                pass
+
+        assert exc_info.value.retryable is False
+        assert exc_info.value.status_code == 401
+
+    async def test_test_only_models_filtered(self, mock_bailian_stream):
+        call_log = mock_bailian_stream({
+            "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
+            "deepseek-v4-flash": [LlmChunk(content="ok")],
+        })
+        provider = BailianProvider(api_key="test-key")
+
+        async for _ in provider.complete_stream([LlmMessage(role="user", content="hi")]):
+            pass
+
+        # test_only models (kimi-k2.7-code, GLM-5.2) must not be attempted
+        assert "kimi/kimi-k2.7-code" not in call_log
+        assert "ZHIPU/GLM-5.2" not in call_log
+
+    async def test_explicit_model_skips_fallback(self, mock_bailian_stream):
+        call_log = mock_bailian_stream({
+            "qwen-plus": [LlmChunk(content="explicit")],
+        })
+        provider = BailianProvider(api_key="test-key")
+
+        chunks = [
+            chunk
+            async for chunk in provider.complete_stream(
+                [LlmMessage(role="user", content="hi")],
+                model="qwen-plus",
+            )
+        ]
+
+        assert [c.content for c in chunks] == ["explicit"]
+        assert call_log == ["qwen-plus"]
+
+    async def test_missing_api_key(self, monkeypatch):
+        monkeypatch.setattr("app.llm.providers.bailian.settings.bailian_api_key", None)
+        provider = BailianProvider(api_key=None)
+        with pytest.raises(ValueError, match="Bailian API key is not configured"):
+            async for _ in provider.complete_stream([LlmMessage(role="user", content="hi")]):
+                pass
+
+    async def test_complete_aggregates_stream(self, mock_bailian_stream):
+        mock_bailian_stream({
+            "deepseek-v4-pro": [LlmChunk(content="One"), LlmChunk(content="Two")],
+        })
+        provider = BailianProvider(api_key="test-key")
+
+        answer = await provider.complete([LlmMessage(role="user", content="hi")])
+
+        assert answer == "OneTwo"
