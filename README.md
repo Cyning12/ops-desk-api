@@ -33,6 +33,9 @@ Ops Desk Kimi Code 的后端 API 服务。
 
 ### 首次启动
 
+1. 准备 PostgreSQL 数据库（详见 [`ops-desk-workspace/docs/04-infrastructure/00-local-postgresql-setup.md`](../ops-desk-workspace/docs/04-infrastructure/00-local-postgresql-setup.md)）
+2. 安装依赖并启动：
+
 ```bash
 uv sync
 make dev
