@@ -13,11 +13,45 @@
 
 ## 必读（按顺序）
 
-1. **`README.md`** — 本仓说明
-2. **`../ops-desk-workspace/docs/01-scope/00-project-brief.md`** — 项目范围与决策
-3. **`../ops-desk-workspace/docs/02-backend-analysis/00-current-state.md`** — 后端现状与改造方向
-4. **`../ops-desk-workspace/docs/02-backend-analysis/01-sse-chat-design.md`** — SSE Chat 详细设计
-5. **`../ops-desk-workspace/docs/05-plan/00-migration-roadmap.md`** — 阶段计划
+1. **本文件 `AGENTS.md`** — Agent 导航与约束
+2. **`docs/tasks/active/task_*.md`** — 当前进行中任务与人工闸表（**每次新会话必须先读**）
+3. **`docs/standards/CODING_BACKEND_L2_v1_zh.md`** — 后端编码规范
+4. **`README.md`** — 本仓说明
+5. **`../ops-desk-workspace/docs/01-scope/00-project-brief.md`** — 项目范围与决策
+6. **`../ops-desk-workspace/docs/02-backend-analysis/00-current-state.md`** — 后端现状与改造方向
+7. **`../ops-desk-workspace/docs/02-backend-analysis/01-sse-chat-design.md`** — SSE Chat 详细设计
+8. **`../ops-desk-workspace/docs/05-plan/00-migration-roadmap.md`** — 阶段计划
+
+---
+
+## 新会话启动纪律（自动加载 harness 流程）
+
+每次新窗口/新会话启动时，**必须先完成以下步骤，再改业务代码**：
+
+1. **扫描 active task**
+   ```bash
+   ls docs/tasks/active/
+   ```
+   - 有 `task_*.md`：读取其范围、验收标准、`failure_paths`、人工闸表。
+   - 无 active task：停止改码，先走 `10-task` 创建 task。
+
+2. **核验人工闸**
+   | 闸 | 阻塞 | 真值位置 |
+   |---|---|---|
+   | `HG-GRAPH-MODULES` | 30 改码 | `docs/_tech_graph/01_struct.md` |
+   | `HG-AUDIT-R1` | 30 开工 | `docs/tasks/active/task_*.md` 人工闸表 |
+
+3. **确认分支正确**
+   - 当前分支应为 `task/<short-description>` 或 `fix/<description>`。
+   - 若在 `main`/`master`，禁止直接改码；先切任务分支。
+
+4. **首输出闸扫描**
+   - 30 改码前必须输出 GATE_VERIFY 表（见 `docs/harness/prompts/FRAGMENT_30_gate_verify_v1_zh.md`）。
+   - 任一 blocks 30 的闸为 `pending` → **拒开工**。
+
+5. **无 task 不改码**
+   - 文档/图谱维护类改动也须先有 task 或变更请求。
+   - 紧急修复走 `fix/` 分支，但仍需补 task 与 invoke。
 
 ---
 
