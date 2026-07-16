@@ -67,6 +67,12 @@ alembic upgrade head
 - LLM：默认 SiliconFlow，百炼 fallback
 - 鉴权：DB session，表 `ops_users` / `ops_sessions` / `ops_invite_tokens`
 - 每次新增路由/表/事件类型必须同步更新 `docs/_tech_graph/`
+- **分支与提交流程：禁止直接在 `main`/`master` 改码，必须通过任务分支 + PR 合并**
+  - 新任务：`git checkout -b task/<short-description>`
+  - 所有代码改动在任务分支完成并提交
+  - 完成后通过 GitHub Pull Request 合并到 `main`
+  - PR 合并前必须 `./scripts/graph-compile.sh` 通过且 CI 绿
+  - 紧急修复也使用 `fix/<description>` 分支，不走 `main` 直推
 
 <!-- cyning-harness:begin -->
 # Harness Starter（业务仓 · 通用 Agent）
