@@ -6,6 +6,7 @@ import json
 import pytest
 
 from app.db.models import OpsUser
+from app.db.session import engine
 from app.llm.providers.base import BaseProviderImpl
 from app.llm.schema import LlmChunk
 from app.main import app as fastapi_app
@@ -15,19 +16,26 @@ def _db_available() -> bool:
     """Check whether PostgreSQL is reachable for integration tests."""
     import asyncio
 
-    from app.db.session import engine
-
     async def _ping() -> bool:
         try:
             async with engine.connect():
                 return True
         except Exception:
             return False
+        finally:
+            await engine.dispose()
 
     return asyncio.run(_ping())
 
 
 DB_AVAILABLE = _db_available()
+
+
+@pytest.fixture(autouse=True)
+async def _reset_engine():
+    """Dispose the async engine before each test to avoid cross-event-loop connection reuse."""
+    await engine.dispose()
+    yield
 
 
 def _parse_sse(response_text: str) -> list[dict]:
@@ -89,13 +97,24 @@ def no_persist(monkeypatch):
     async def fake_resolve(*args, **kwargs):
         return "00000000-0000-0000-0000-000000000002"
 
+    async def _noop(*args, **kwargs):
+        return None
+
     monkeypatch.setattr(
         "app.ops.chat.router._resolve_chat_session",
         fake_resolve,
     )
     monkeypatch.setattr(
+        "app.ops.chat.router._create_run_record",
+        _noop,
+    )
+    monkeypatch.setattr(
+        "app.ops.chat.router._flush_run_events",
+        _noop,
+    )
+    monkeypatch.setattr(
         "app.ops.chat.router._persist_run_events",
-        lambda *args, **kwargs: None,
+        _noop,
     )
 
 
@@ -115,9 +134,9 @@ class TestChatStream:
 
         events = _parse_sse(response.text)
         event_types = [e["event_type"] for e in events]
-        assert event_types == ["run.start", "thinking", "answer", "answer", "done"]
+        assert event_types == ["run.start", "thinking", "thinking", "answer", "answer", "done"]
 
-        answer_event = events[2]
+        answer_event = events[3]
         assert answer_event["agent_role"] == "answer"
         assert answer_event["payload"]["content"] == "Hello"
 
@@ -133,7 +152,7 @@ class TestChatStream:
         assert response.status_code == 401
 
     @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
-    async def test_stream_invalid_session(self, client, override_auth, fake_provider, no_persist):
+    async def test_stream_invalid_session(self, client, override_auth, fake_provider):
         fake_provider([LlmChunk(content="ok")])
         response = await client.post(
             "/api/ops/chat/stream",

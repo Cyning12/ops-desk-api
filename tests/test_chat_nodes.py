@@ -1,7 +1,7 @@
 """Tests for chat LangGraph nodes."""
 from __future__ import annotations
 
-from app.llm.schema import LlmChunk
+from app.llm.schema import LlmChunk, LlmMessage
 from app.ops.chat.nodes import (
     _build_messages,
     answer_node,
@@ -90,9 +90,9 @@ class TestBuildMessages:
         state = _make_state(query="hello")
         messages = _build_messages(state)
 
-        assert messages[0]["role"] == "system"
-        assert "Ops Desk" in messages[0]["content"]
-        assert messages[-1] == {"role": "user", "content": "hello"}
+        assert messages[0].role == "system"
+        assert "Ops Desk" in messages[0].content
+        assert messages[-1] == LlmMessage(role="user", content="hello")
 
     def test_includes_issue_context(self):
         state = _make_state(
@@ -101,9 +101,9 @@ class TestBuildMessages:
         )
         messages = _build_messages(state)
 
-        assert messages[1]["role"] == "user"
-        assert "Bug" in messages[1]["content"]
-        assert messages[2] == {"role": "user", "content": "summarize"}
+        assert messages[1].role == "user"
+        assert "Bug" in messages[1].content
+        assert messages[2] == LlmMessage(role="user", content="summarize")
 
     def test_truncates_long_body(self):
         state = _make_state(
@@ -112,7 +112,7 @@ class TestBuildMessages:
         )
         messages = _build_messages(state)
 
-        assert len(messages[1]["content"]) < 2500
+        assert len(messages[1].content) < 2500
 
 
 class TestAnswerNode:

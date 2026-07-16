@@ -7,7 +7,7 @@ from app.config import settings
 from app.db.models import OpsIssue
 from app.db.session import AsyncSessionLocal
 from app.llm.factory import get_llm_provider
-from app.llm.schema import LlmProviderError
+from app.llm.schema import LlmMessage, LlmProviderError
 from app.ops.chat.state import ChatState
 
 _SYSTEM_PROMPT = (
@@ -91,18 +91,18 @@ async def load_issue_context_node(state: ChatState) -> dict:
     }
 
 
-def _build_messages(state: ChatState) -> list[dict]:
+def _build_messages(state: ChatState) -> list[LlmMessage]:
     """Build OpenAI-compatible messages from state."""
-    messages = [{"role": "system", "content": _SYSTEM_PROMPT}]
+    messages: list[LlmMessage] = [LlmMessage(role="system", content=_SYSTEM_PROMPT)]
 
     issue_context = state.get("issue_context") or []
     if issue_context:
         issue = issue_context[0]
         body = (issue.get("body") or "")[:2000]
         context_text = f"相关 issue #{issue.get('number')}：\n标题：{issue.get('title')}\n{body}"
-        messages.append({"role": "user", "content": context_text})
+        messages.append(LlmMessage(role="user", content=context_text))
 
-    messages.append({"role": "user", "content": state["query"]})
+    messages.append(LlmMessage(role="user", content=state["query"]))
     return messages
 
 

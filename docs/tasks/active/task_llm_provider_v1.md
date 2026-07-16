@@ -128,3 +128,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-07-16 | 创建 task，匹配分支 `task/llm-provider-and-chat-answer` |
+| 2026-07-16 | 修复 chat stream：setup_session 未 commit 导致 FK 失败；`_persist_run_events` 重复插入事件导致唯一约束冲突；`_build_messages` 返回 dict 导致 provider 报 `'dict' object has no attribute 'role'` |

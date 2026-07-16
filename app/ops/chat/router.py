@@ -57,8 +57,64 @@ async def _resolve_chat_session(
     return str(chat_session.id)
 
 
+async def _create_run_record(
+    run_id: str,
+    session_id: str,
+    query: str,
+    model: str,
+) -> None:
+    """Create the initial ops_runs record for a chat stream."""
+    async with AsyncSessionLocal() as db:
+        try:
+            run = OpsRun(
+                id=run_id,
+                session_id=session_id,
+                query=query,
+                status="running",
+                model=model,
+            )
+            db.add(run)
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            logger.exception("Failed to create chat run record", extra={"run_id": run_id})
+            raise
+
+
+async def _flush_run_events(run_id: str, events: list[dict]) -> None:
+    """Persist a batch of run events without updating the parent run record."""
+    if not events:
+        return
+
+    async with AsyncSessionLocal() as db:
+        try:
+            db_events = [
+                OpsRunEvent(
+                    run_id=run_id,
+                    seq=e["seq"],
+                    ts_ms=e["ts_ms"],
+                    agent_role=e["agent_role"],
+                    event_type=e["event_type"],
+                    payload=e.get("payload", {}),
+                )
+                for e in events
+            ]
+            db.add_all(db_events)
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            logger.exception(
+                "Failed to flush chat run events",
+                extra={"run_id": run_id, "count": len(events)},
+            )
+
+
 async def _persist_run_events(run_id: str, events: list[dict]) -> None:
-    """Persist archived events and update the parent run record."""
+    """Update the parent run record from archived events.
+
+    Events themselves are persisted incrementally by `_flush_run_events`; this
+    helper only finalizes the run summary so we don't duplicate seq numbers.
+    """
     if not events:
         return
 
@@ -78,23 +134,10 @@ async def _persist_run_events(run_id: str, events: list[dict]) -> None:
                 run.status = "error" if has_error else "completed"
                 run.latency_ms = last_ts_ms
                 run.answer = answer
-
-            db_events = [
-                OpsRunEvent(
-                    run_id=run_id,
-                    seq=e["seq"],
-                    ts_ms=e["ts_ms"],
-                    agent_role=e["agent_role"],
-                    event_type=e["event_type"],
-                    payload=e.get("payload", {}),
-                )
-                for e in events
-            ]
-            db.add_all(db_events)
-            await db.commit()
+                await db.commit()
         except Exception:
             await db.rollback()
-            logger.exception("Failed to persist chat run events", extra={"run_id": run_id})
+            logger.exception("Failed to persist chat run summary", extra={"run_id": run_id})
 
 
 @router.post("/stream")
@@ -107,6 +150,8 @@ async def chat_stream(
     req = ChatStreamRequest(**body)
     run_id = str(uuid.uuid4())
 
+    run_model = req.model or settings.ops_llm_model
+
     # Setup chat session and run record outside the SSE generator.
     async with AsyncSessionLocal() as setup_session:
         chat_session_id = await _resolve_chat_session(
@@ -115,16 +160,14 @@ async def chat_stream(
             user.id,
             req.message,
         )
-
-        run = OpsRun(
-            id=run_id,
-            session_id=chat_session_id,
-            query=req.message,
-            status="running",
-            model=req.model or settings.ops_llm_model,
-        )
-        setup_session.add(run)
         await setup_session.commit()
+
+    await _create_run_record(
+        run_id,
+        chat_session_id,
+        req.message,
+        run_model,
+    )
 
     state = ChatState(
         query=req.message,
@@ -164,29 +207,7 @@ async def chat_stream(
         async def flush() -> None:
             to_persist = buffer[:]
             buffer.clear()
-            if not to_persist:
-                return
-            async with AsyncSessionLocal() as db:
-                try:
-                    db_events = [
-                        OpsRunEvent(
-                            run_id=run_id,
-                            seq=e["seq"],
-                            ts_ms=e["ts_ms"],
-                            agent_role=e["agent_role"],
-                            event_type=e["event_type"],
-                            payload=e.get("payload", {}),
-                        )
-                        for e in to_persist
-                    ]
-                    db.add_all(db_events)
-                    await db.commit()
-                except Exception:
-                    await db.rollback()
-                    logger.exception(
-                        "Failed to flush chat run events",
-                        extra={"run_id": run_id, "count": len(to_persist)},
-                    )
+            await _flush_run_events(run_id, to_persist)
 
         def schedule_flush() -> None:
             nonlocal flush_task
@@ -206,7 +227,7 @@ async def chat_stream(
                 "system",
                 {
                     "latency_ms": int((time.perf_counter() - started_at) * 1000),
-                    "model": run.model,
+                    "model": run_model,
                 },
             )
         except Exception as e:

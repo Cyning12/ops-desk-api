@@ -37,7 +37,7 @@ Ops Desk Kimi Code 的后端 API 服务。
 2. 安装依赖并启动：
 
 ```bash
-uv sync
+uv sync --extra dev
 make dev
 ```
 
@@ -75,7 +75,7 @@ opsd
 ### 一键启动（首次 setup + 运行）
 
 ```bash
-uv sync && uv run uvicorn app.main:app --reload --port 8000
+uv sync --extra dev && uv run uvicorn app.main:app --reload --port 8000
 ```
 
 ### 为什么不需要 `source .venv/bin/activate`？
