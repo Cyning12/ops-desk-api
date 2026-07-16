@@ -3,9 +3,17 @@ import re
 
 from sqlalchemy import select
 
+from app.config import settings
 from app.db.models import OpsIssue
 from app.db.session import AsyncSessionLocal
+from app.llm.factory import get_llm_provider
+from app.llm.schema import LlmProviderError
 from app.ops.chat.state import ChatState
+
+_SYSTEM_PROMPT = (
+    "你是 Ops Desk 助手，帮助用户理解 GitHub 仓库中的 issue、PR 和代码图谱。"
+    "回答要简洁、准确，优先基于提供的上下文。"
+)
 
 
 async def intent_node(state: ChatState) -> dict:
@@ -83,16 +91,63 @@ async def load_issue_context_node(state: ChatState) -> dict:
     }
 
 
+def _build_messages(state: ChatState) -> list[dict]:
+    """Build OpenAI-compatible messages from state."""
+    messages = [{"role": "system", "content": _SYSTEM_PROMPT}]
+
+    issue_context = state.get("issue_context") or []
+    if issue_context:
+        issue = issue_context[0]
+        body = (issue.get("body") or "")[:2000]
+        context_text = f"相关 issue #{issue.get('number')}：\n标题：{issue.get('title')}\n{body}"
+        messages.append({"role": "user", "content": context_text})
+
+    messages.append({"role": "user", "content": state["query"]})
+    return messages
+
+
 async def answer_node(state: ChatState) -> dict:
     """Generate final answer via LLM."""
-    # TODO: integrate provider.complete_stream()
-    return {
-        "answer": "",
-        "events": [
+    provider = get_llm_provider()
+    model = state.get("model") or settings.ops_llm_model
+    messages = _build_messages(state)
+
+    events: list[dict] = [
+        {
+            "event_type": "thinking",
+            "agent_role": "answer",
+            "payload": {"content": "准备生成回答...", "step": "answer"},
+        }
+    ]
+    answer_parts: list[str] = []
+
+    try:
+        async for chunk in provider.complete_stream(messages, model=model):
+            if chunk.meta and chunk.meta.get("event_type") == "model.fallback":
+                events.append(
+                    {
+                        "event_type": "model.fallback",
+                        "agent_role": "answer",
+                        "payload": chunk.meta,
+                    }
+                )
+            else:
+                answer_parts.append(chunk.content)
+                events.append(
+                    {
+                        "event_type": "answer",
+                        "agent_role": "answer",
+                        "payload": {"content": chunk.content},
+                    }
+                )
+    except Exception as exc:
+        retryable = isinstance(exc, LlmProviderError) and exc.retryable
+        events.append(
             {
-                "event_type": "thinking",
+                "event_type": "error",
                 "agent_role": "answer",
-                "payload": {"content": "准备生成回答...", "step": "answer"},
+                "payload": {"stage": "llm", "message": str(exc), "retryable": retryable},
             }
-        ],
-    }
+        )
+
+    return {"answer": "".join(answer_parts), "events": events}

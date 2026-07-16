@@ -9,6 +9,7 @@ class ChatState(TypedDict):
     query: str
     session_id: str | None
     run_id: str
+    model: str | None
     issue_context: list[dict]
     pr_context: list[dict]
     graph_context: dict | None
