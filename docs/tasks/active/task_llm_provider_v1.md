@@ -38,7 +38,7 @@
 
 **完成态**：
 
-- [ ] `app/llm/provider.py` 工厂
+- [ ] `app/llm/factory.py` 工厂
 - [ ] `app/llm/siliconflow.py` 实现
 - [ ] `app/llm/bailian.py` 实现
 - [ ] `answer_node` 接入 Provider
@@ -107,12 +107,13 @@
 
 | 项 | 状态 | 备注 |
 |---|---|---|
-| Provider 工厂 | ⏳ | |
-| SiliconFlow 实现 | ⏳ | |
-| 百炼 fallback | ⏳ | |
-| answer_node 接入 | ⏳ | |
-| SSE 事件映射 | ⏳ | |
-| 持久化 | ⏳ | |
+| SiliconFlow 实现 | ⏳ | 任务 6.1；可并行 6.2 |
+| 百炼 fallback | ⏳ | 任务 6.2；可并行 6.1 |
+| Provider 工厂 | ⏳ | 任务 6.3；依赖 6.1、6.2 |
+| load_context_node | ⏳ | 任务 6.4；可并行 6.5 |
+| answer_node 接入 | ⏳ | 任务 6.5；依赖 6.3、6.4 |
+| SSE 事件映射 | ⏳ | 任务 6.6；依赖 6.5；建议用 `stream_mode="updates"` |
+| 持久化 | ⏳ | 任务 6.7；依赖 6.6；session 生命周期与 generator 解耦 |
 
 ---
 

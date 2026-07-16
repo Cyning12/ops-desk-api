@@ -30,7 +30,7 @@
 
 | human_gate_id | status | 签核人 | 日期 | 说明 |
 |---|---|---|---|---|
-| HG-GRAPH-MODULES | pending | | | 模块表覆盖 ops-desk-api 一级模块 |
+| HG-GRAPH-MODULES | approved | 见 `task_graph_bootstrap` | 2026-07-16 | 模块表覆盖 ops-desk-api 一级模块；图谱 bootstrap 已完成 |
 
 ## 关联
 
