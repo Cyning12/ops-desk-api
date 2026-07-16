@@ -2,17 +2,17 @@
 
 # Default target
 dev:
-	uv sync
+	uv sync --extra dev
 	uv run uvicorn app.main:app --reload --port 8000
 
 # First-time setup
 install:
 	uv venv
-	uv sync
+	uv sync --extra dev
 
 # Sync dependencies (auto-update when pyproject.toml changes)
 sync:
-	uv sync
+	uv sync --extra dev
 
 # Code quality
 lint:

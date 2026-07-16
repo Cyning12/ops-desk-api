@@ -21,7 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # Extensions
     op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-    op.execute('CREATE EXTENSION IF NOT EXISTS "pgvector"')
+    op.execute('CREATE EXTENSION IF NOT EXISTS "vector"')
 
     # ops_users
     op.create_table(
@@ -222,5 +222,5 @@ def downgrade() -> None:
     for table in tables:
         op.drop_table(table)
 
-    op.execute('DROP EXTENSION IF EXISTS "pgvector"')
+    op.execute('DROP EXTENSION IF EXISTS "vector"')
     op.execute('DROP EXTENSION IF EXISTS "uuid-ossp"')

@@ -33,8 +33,11 @@ Ops Desk Kimi Code 的后端 API 服务。
 
 ### 首次启动
 
+1. 准备 PostgreSQL 数据库（详见 [`ops-desk-workspace/docs/04-infrastructure/00-local-postgresql-setup.md`](../ops-desk-workspace/docs/04-infrastructure/00-local-postgresql-setup.md)）
+2. 安装依赖并启动：
+
 ```bash
-uv sync
+uv sync --extra dev
 make dev
 ```
 
@@ -72,7 +75,7 @@ opsd
 ### 一键启动（首次 setup + 运行）
 
 ```bash
-uv sync && uv run uvicorn app.main:app --reload --port 8000
+uv sync --extra dev && uv run uvicorn app.main:app --reload --port 8000
 ```
 
 ### 为什么不需要 `source .venv/bin/activate`？

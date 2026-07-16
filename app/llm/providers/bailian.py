@@ -1,21 +1,78 @@
 """Bailian (DashScope) provider."""
+from __future__ import annotations
+
 from collections.abc import AsyncIterator, Iterable
 
+from app.config import settings
+from app.llm.model_catalog import ModelInfo, get_default_model, get_fallback_chain
 from app.llm.providers.base import BaseProviderImpl
-from app.llm.schema import LlmChunk, LlmMessage
+from app.llm.schema import LlmChunk, LlmMessage, LlmProviderError
 
 
 class BailianProvider(BaseProviderImpl):
-    """Alibaba Bailian / DashScope provider."""
+    """Alibaba Bailian / DashScope provider (OpenAI-compatible)."""
+
+    def __init__(self, base_url: str | None = None, api_key: str | None = None) -> None:
+        self.base_url = base_url or settings.bailian_base_url
+        self.api_key = api_key or settings.bailian_api_key
 
     async def complete(self, messages: Iterable[LlmMessage], model: str | None = None) -> str:
-        """Non-streaming completion."""
-        # TODO: implement with httpx / openai client
-        return ""
+        """Non-streaming completion by aggregating the stream."""
+        parts: list[str] = []
+        async for chunk in self.complete_stream(messages, model=model):
+            parts.append(chunk.content)
+        return "".join(parts)
 
     async def complete_stream(
-        self, messages: Iterable[LlmMessage], model: str | None = None
+        self,
+        messages: Iterable[LlmMessage],
+        model: str | None = None,
     ) -> AsyncIterator[LlmChunk]:
-        """Streaming completion with fallback chain."""
-        # TODO: implement streaming + fallback
-        yield LlmChunk(content="")
+        """Streaming completion with internal model fallback chain."""
+        api_key = self._require_api_key(self.api_key, "Bailian")
+        chain = self._fallback_chain(model)
+        last_error: LlmProviderError | None = None
+
+        for idx, candidate in enumerate(chain):
+            if idx > 0:
+                reason = str(last_error) if last_error else "fallback"
+                yield LlmChunk(
+                    content="",
+                    meta={
+                        "event_type": "model.fallback",
+                        "from_model": chain[idx - 1].id,
+                        "to_model": candidate.id,
+                        "reason": reason,
+                        "step": "answer",
+                    },
+                )
+            try:
+                async for chunk in self._stream_openai_compatible(
+                    base_url=self.base_url,
+                    api_key=api_key,
+                    model=candidate.id,
+                    messages=messages,
+                ):
+                    yield chunk
+                return
+            except LlmProviderError as exc:
+                if not exc.retryable:
+                    raise
+                last_error = exc
+
+        raise LlmProviderError(
+            "Bailian fallback chain exhausted",
+            retryable=False,
+        )
+
+    def _fallback_chain(self, model: str | None) -> list[ModelInfo]:
+        """Return fallback chain, filtering test-only models by default."""
+        if model:
+            return [ModelInfo(id=model, name=model)]
+
+        chain = [info for info in get_fallback_chain("bailian") if not info.test_only]
+        if chain:
+            return chain
+
+        default = get_default_model("bailian")
+        return [ModelInfo(id=default, name=default)]
