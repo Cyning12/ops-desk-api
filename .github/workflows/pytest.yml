@@ -12,7 +12,7 @@ on:
   pull_request:
   push:
     branches:
-      - main
+      - master
       # - production   # 按需启用
 
 jobs:
@@ -23,27 +23,25 @@ jobs:
       # CI dummy 环境变量 — 替换为你的 .env.example 文档化变量名
       # 禁止在 workflow 中写入真实密钥
       EXAMPLE_API_KEY: "dummy-ci-key"
-      DATABASE_URL: "postgresql://u:p@localhost:5432/test"
+      DATABASE_URL: "postgresql+asyncpg://u:p@localhost:5432/test"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
         with:
-          python-version: "3.11"      # 改为你的版本
-          cache: "pip"
-          cache-dependency-path: requirements.txt
+          version: "0.11.7"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: uv sync --extra dev
 
       - name: Run pytest
-        run: pytest tests -q --tb=short
+        run: uv run pytest tests -q --tb=short
         # 有 slow/intent marker 时示例：
-        # run: pytest tests -m "not intent_eval and not intent_benchmark" -q --tb=short
+        # run: uv run pytest tests -m "not intent_eval and not intent_benchmark" -q --tb=short
 
       # --- 可选：Ruff / mypy（L2 落地后启用）---
       # - name: Ruff
-      #   run: ruff check .
+      #   run: uv run ruff check .
