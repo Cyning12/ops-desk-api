@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     ops_llm_provider: str = Field(default="siliconflow")
     ops_llm_model: str = Field(default="Qwen/Qwen2.5-72B-Instruct")
 
+    siliconflow_base_url: str = Field(default="https://api.siliconflow.cn/v1")
     siliconflow_api_key: str | None = None
     bailian_api_key: str | None = None
     bailian_base_url: str = Field(default="https://dashscope.aliyuncs.com/compatible-mode/v1")
