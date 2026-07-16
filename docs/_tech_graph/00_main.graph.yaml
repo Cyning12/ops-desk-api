@@ -1,0 +1,186 @@
+schema_version: "inform_graph.v3"
+graph_id: "00_main"
+title: "ops-desk-api 顶层流程总图"
+description: "Ops Desk 后端 API 的架构总图：FastAPI 入口、各业务路由、LangGraph Chat 流程、数据库表与外部依赖的关系。"
+version: "2026-07-16"
+direction: "TB"
+
+nodes:
+  - id: "client"
+    label: "用户 / 前端"
+    kind: external
+
+  - id: "health"
+    label: "GET /health"
+    kind: flow
+
+  - id: "app"
+    label: "FastAPI App"
+    kind: struct
+
+  - id: "ops_router"
+    label: "/api/ops Router"
+    kind: struct
+
+  - id: "auth"
+    label: "Auth 路由"
+    kind: flow
+
+  - id: "overview"
+    label: "Overview 路由"
+    kind: flow
+
+  - id: "issues"
+    label: "Issues 路由"
+    kind: flow
+
+  - id: "pulls"
+    label: "Pulls 路由"
+    kind: flow
+
+  - id: "graph"
+    label: "Graph 快照路由"
+    kind: flow
+
+  - id: "admin_sync"
+    label: "Admin Sync 路由"
+    kind: flow
+
+  - id: "chat_router"
+    label: "Chat 路由"
+    kind: flow
+
+  - id: "chat_flow"
+    label: ">10_flow_chat.md"
+    kind: external
+
+  - id: "llm"
+    label: "LLM Provider"
+    kind: external
+
+  - id: "db"
+    label: "PostgreSQL"
+    kind: external
+
+  - id: "struct_doc"
+    label: ">01_struct.md"
+    kind: external
+
+edges:
+  - from: "client"
+    to: "health"
+    label: "GET"
+
+  - from: "client"
+    to: "app"
+    label: "HTTP / SSE"
+
+  - from: "health"
+    to: "app"
+    label: "mounted_on"
+
+  - from: "app"
+    to: "ops_router"
+    label: "include_router"
+    anchors:
+      - path: "app/main.py"
+        line: 31
+      - path: "app/ops/router.py"
+        line: 12
+
+  - from: "ops_router"
+    to: "auth"
+    label: "routes"
+    anchors:
+      - path: "app/ops/router.py"
+        line: 14
+
+  - from: "ops_router"
+    to: "overview"
+    label: "routes"
+    anchors:
+      - path: "app/ops/router.py"
+        line: 15
+
+  - from: "ops_router"
+    to: "issues"
+    label: "routes"
+    anchors:
+      - path: "app/ops/router.py"
+        line: 16
+
+  - from: "ops_router"
+    to: "pulls"
+    label: "routes"
+    anchors:
+      - path: "app/ops/router.py"
+        line: 17
+
+  - from: "ops_router"
+    to: "graph"
+    label: "routes"
+    anchors:
+      - path: "app/ops/router.py"
+        line: 18
+
+  - from: "ops_router"
+    to: "admin_sync"
+    label: "routes"
+    anchors:
+      - path: "app/ops/router.py"
+        line: 19
+
+  - from: "ops_router"
+    to: "chat_router"
+    label: "routes"
+    anchors:
+      - path: "app/ops/router.py"
+        line: 20
+
+  - from: "chat_router"
+    to: "chat_flow"
+    mark: "::triggers"
+    type: "triggers"
+    anchors:
+      - path: "app/ops/chat/router.py"
+        line: 48
+
+  - from: "chat_flow"
+    to: "llm"
+    label: "calls"
+
+  - from: "chat_flow"
+    to: "db"
+    label: "persists"
+
+  - from: "auth"
+    to: "db"
+    label: "validates / creates"
+
+  - from: "overview"
+    to: "db"
+    label: "queries"
+
+  - from: "issues"
+    to: "db"
+    label: "queries"
+
+  - from: "pulls"
+    to: "db"
+    label: "queries"
+
+  - from: "graph"
+    to: "db"
+    label: "queries"
+
+  - from: "admin_sync"
+    to: "db"
+    label: "upserts"
+
+  - from: "app"
+    to: "struct_doc"
+    label: "加载"
+
+  - from: "app"
+    to: "db"
+    label: "depends_on"

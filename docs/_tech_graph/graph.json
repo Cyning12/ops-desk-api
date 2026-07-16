@@ -1,0 +1,619 @@
+{
+  "schema_version": "graph_v2",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260716_V1",
+  "generated_at": "2026-07-16T02:42:20Z",
+  "graphs": [
+    {
+      "id": "00_main",
+      "title": "ops-desk-api 顶层流程总图",
+      "source_yaml_path": "00_main.graph.yaml"
+    },
+    {
+      "id": "10_flow_chat",
+      "title": "Chat 流式对话流程",
+      "source_yaml_path": "10_flow_chat.graph.yaml"
+    }
+  ],
+  "nodes": [
+    {
+      "graph_id": "00_main",
+      "id": "client",
+      "label": "用户 / 前端"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "health",
+      "label": "GET /health"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "app",
+      "label": "FastAPI App"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "ops_router",
+      "label": "/api/ops Router"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "auth",
+      "label": "Auth 路由"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "overview",
+      "label": "Overview 路由"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "issues",
+      "label": "Issues 路由"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "pulls",
+      "label": "Pulls 路由"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "graph",
+      "label": "Graph 快照路由"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "admin_sync",
+      "label": "Admin Sync 路由"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "chat_router",
+      "label": "Chat 路由"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "chat_flow",
+      "label": ">10_flow_chat.md"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "llm",
+      "label": "LLM Provider"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "db",
+      "label": "PostgreSQL"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "struct_doc",
+      "label": ">01_struct.md"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "client",
+      "label": "用户 / 前端"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "chat_stream",
+      "label": "POST /api/ops/chat/stream"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "event_gen",
+      "label": "SSE Event Generator"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "chat_service",
+      "label": "run_chat_stream"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "stategraph",
+      "label": "Chat StateGraph"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "intent",
+      "label": "detect_intent"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "context",
+      "label": "load_context"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "answer",
+      "label": "generate_answer"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "llm",
+      "label": "LLM Provider"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "db",
+      "label": "PostgreSQL"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "main_doc",
+      "label": ">00_main.md"
+    }
+  ],
+  "edges": [
+    {
+      "graph_id": "00_main",
+      "from": "client",
+      "to": "health",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "GET",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "client",
+      "to": "app",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "HTTP / SSE",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "health",
+      "to": "app",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "mounted_on",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "app",
+      "to": "ops_router",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "include_router",
+      "anchors": [
+        {
+          "path": "app/main.py",
+          "line": 31
+        },
+        {
+          "path": "app/ops/router.py",
+          "line": 12
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "ops_router",
+      "to": "auth",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "routes",
+      "anchors": [
+        {
+          "path": "app/ops/router.py",
+          "line": 14
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "ops_router",
+      "to": "overview",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "routes",
+      "anchors": [
+        {
+          "path": "app/ops/router.py",
+          "line": 15
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "ops_router",
+      "to": "issues",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "routes",
+      "anchors": [
+        {
+          "path": "app/ops/router.py",
+          "line": 16
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "ops_router",
+      "to": "pulls",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "routes",
+      "anchors": [
+        {
+          "path": "app/ops/router.py",
+          "line": 17
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "ops_router",
+      "to": "graph",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "routes",
+      "anchors": [
+        {
+          "path": "app/ops/router.py",
+          "line": 18
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "ops_router",
+      "to": "admin_sync",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "routes",
+      "anchors": [
+        {
+          "path": "app/ops/router.py",
+          "line": 19
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "ops_router",
+      "to": "chat_router",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "routes",
+      "anchors": [
+        {
+          "path": "app/ops/router.py",
+          "line": 20
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "chat_router",
+      "to": "chat_flow",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "",
+      "anchors": [
+        {
+          "path": "app/ops/chat/router.py",
+          "line": 48
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "chat_flow",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "calls",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "chat_flow",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "persists",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "auth",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "validates / creates",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "overview",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "queries",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "issues",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "queries",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "pulls",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "queries",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "graph",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "queries",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "admin_sync",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "upserts",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "app",
+      "to": "struct_doc",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "加载",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "app",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "depends_on",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "client",
+      "to": "chat_stream",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "POST",
+      "anchors": [
+        {
+          "path": "app/ops/chat/router.py",
+          "line": 17
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "chat_stream",
+      "to": "event_gen",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "creates",
+      "anchors": [
+        {
+          "path": "app/ops/chat/router.py",
+          "line": 36
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "chat_stream",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "inserts ops_runs",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "event_gen",
+      "to": "client",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "SSE stream",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "event_gen",
+      "to": "chat_service",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "invokes",
+      "anchors": [
+        {
+          "path": "app/ops/chat/router.py",
+          "line": 48
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "chat_service",
+      "to": "stategraph",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "astream_events",
+      "anchors": [
+        {
+          "path": "app/ops/chat/service.py",
+          "line": 9
+        },
+        {
+          "path": "app/ops/chat/graph.py",
+          "line": 26
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "stategraph",
+      "to": "intent",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "first_node",
+      "anchors": [
+        {
+          "path": "app/ops/chat/graph.py",
+          "line": 17
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "intent",
+      "to": "context",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "[issue_qa]",
+      "anchors": [
+        {
+          "path": "app/ops/chat/graph.py",
+          "line": 21
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "intent",
+      "to": "answer",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "[overview|general]",
+      "anchors": [
+        {
+          "path": "app/ops/chat/graph.py",
+          "line": 21
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "context",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "query ops_issues",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "context",
+      "to": "answer",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "->",
+      "anchors": [
+        {
+          "path": "app/ops/chat/graph.py",
+          "line": 23
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "answer",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "complete_stream",
+      "anchors": [
+        {
+          "path": "app/ops/chat/nodes.py",
+          "line": 60
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "chat_service",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "inserts ops_run_events",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "event_gen",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "updates ops_runs",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "answer",
+      "to": "main_doc",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "加载",
+      "anchors": [],
+      "sync": true
+    }
+  ]
+}

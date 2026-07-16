@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "preset": "fullstack-node-py",
+  "description": "全栈 Ink 类：五轨 + quality + pytest",
+  "paths": {
+    "ide_cursor": ".cursor/rules/05-harness-starter.mdc"
+  },
+  "tracks": {
+    "graph": true,
+    "wiki": true,
+    "standards_l1": true,
+    "standards_l2": true,
+    "harness_prompts": true,
+    "harness_invoke_template": true,
+    "harness_task_bootstrap": true,
+    "ide_cursor": true,
+    "ide_claude": true,
+    "ide_agents": true,
+    "ci": "both"
+  }
+}

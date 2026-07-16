@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx @cyning/harness *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_response.filePath // .tool_input.file_path' | { read -r f; if [[ \"$f\" == *.graph.yaml ]] || [[ \"$f\" == docs/_tech_graph/* ]] || [[ \"$f\" == scripts/graph* ]]; then ./scripts/graph-compile.sh; fi; } 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "Checking tech graph integrity..."
+          }
+        ]
+      }
+    ]
+  }
+}

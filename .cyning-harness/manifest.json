@@ -1,0 +1,14 @@
+{
+  "name": "ops-desk-api",
+  "version": "2.1.1",
+  "harness_version": "2",
+  "preset": "fullstack-node-py",
+  "ide": ["cursor","claude","agents"],
+  "from_version": null,
+  "upgraded_at": "2026-07-16T02:29:55Z",
+  "tech_graph_dir": "docs/_tech_graph",
+  "tasks_dir": "docs/tasks",
+  "hooks": {
+    "graph_compile": "scripts/graph-compile.sh"
+  }
+}
