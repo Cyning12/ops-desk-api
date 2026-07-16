@@ -25,6 +25,18 @@ BAILIAN_FALLBACK_CHAIN = [
 ]
 
 
+def get_models_for_provider(provider: str) -> list[dict]:
+    """Return available models for a provider, including fallback chain metadata."""
+    if provider == "siliconflow":
+        return [{"id": m.id, "name": m.name} for m in SILICONFLOW_MODELS]
+    if provider == "bailian":
+        return [
+            {"id": m.id, "name": m.name, "test_only": m.test_only}
+            for m in BAILIAN_FALLBACK_CHAIN
+        ]
+    raise ValueError(f"Unknown provider: {provider}")
+
+
 def get_default_model(provider: str) -> str:
     """Return default model for provider."""
     if provider == "siliconflow":

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
 from app.config import settings
+from app.llm.model_catalog import get_default_model, get_models_for_provider
 from app.ops.chat.schema import ChatModelsResponse, ChatStreamRequest
 from app.ops.chat.service import run_chat_stream
 from app.ops.chat.sse import make_sse_event
@@ -74,9 +75,9 @@ async def chat_stream(request: Request) -> StreamingResponse:
 @router.get("/models", response_model=ChatModelsResponse)
 async def list_models() -> ChatModelsResponse:
     """Return available chat models."""
-    # TODO: read from model_catalog
+    provider = settings.ops_llm_provider
     return ChatModelsResponse(
-        provider=settings.ops_llm_provider,
-        default_model=settings.ops_llm_model,
-        models=[],
+        provider=provider,
+        default_model=get_default_model(provider),
+        models=get_models_for_provider(provider),
     )

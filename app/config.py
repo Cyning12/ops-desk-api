@@ -1,6 +1,6 @@
 """Application configuration."""
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,13 +32,22 @@ class Settings(BaseSettings):
 
     # LLM
     ops_llm_provider: str = Field(default="siliconflow")
-    ops_llm_model: str = Field(default="Qwen/Qwen2.5-72B-Instruct")
+    ops_llm_model: str | None = Field(default=None)
 
     siliconflow_base_url: str = Field(default="https://api.siliconflow.cn/v1")
     siliconflow_api_key: str | None = None
     bailian_api_key: str | None = None
     bailian_base_url: str = Field(default="https://dashscope.aliyuncs.com/compatible-mode/v1")
     bailian_model: str = Field(default="qwen-plus")
+
+    @model_validator(mode="after")
+    def _set_default_llm_model(self) -> "Settings":
+        """Use model_catalog default when ops_llm_model is not explicitly set."""
+        if self.ops_llm_model is None:
+            from app.llm.model_catalog import get_default_model
+
+            self.ops_llm_model = get_default_model(self.ops_llm_provider)
+        return self
 
     def get_cors_origins(self) -> list[str]:
         """Parse comma-separated CORS origins."""
