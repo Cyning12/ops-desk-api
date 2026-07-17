@@ -1,0 +1,142 @@
+schema_version: "inform_graph.v3"
+graph_id: "10_flow_auth"
+title: "Authentication Flow"
+description: "Login, logout, session validation, and iOS latest chat session flow"
+version: "2026-07-17"
+direction: "TB"
+
+nodes:
+  - id: "client"
+    label: "用户 / iOS"
+    kind: external
+
+  - id: "login"
+    label: "POST /api/ops/auth/login"
+    kind: flow
+
+  - id: "logout"
+    label: "POST /api/ops/auth/logout"
+    kind: flow
+
+  - id: "me"
+    label: "GET /api/ops/auth/me"
+    kind: flow
+
+  - id: "latest_session"
+    label: "GET /api/ops/chat/sessions/latest"
+    kind: flow
+
+  - id: "session_check"
+    label: "get_current_user"
+    kind: flow
+
+  - id: "maintainer_check"
+    label: "require_maintainer"
+    kind: flow
+
+  - id: "admin_sync"
+    label: "POST /api/ops/admin/sync"
+    kind: flow
+
+  - id: "db"
+    label: "PostgreSQL"
+    kind: external
+
+edges:
+  - from: "client"
+    to: "login"
+    label: "POST username + invite_token"
+    anchors:
+      - path: "app/ops/auth.py"
+        line: 45
+
+  - from: "login"
+    to: "db"
+    label: "validate invite token; create ops_sessions"
+    anchors:
+      - path: "app/ops/auth.py"
+        line: 50
+
+  - from: "login"
+    to: "client"
+    label: "Set-Cookie: ops_session"
+    anchors:
+      - path: "app/ops/auth.py"
+        line: 92
+
+  - from: "client"
+    to: "logout"
+    label: "POST with cookie"
+    anchors:
+      - path: "app/ops/auth.py"
+        line: 99
+
+  - from: "logout"
+    to: "db"
+    label: "delete ops_sessions"
+    anchors:
+      - path: "app/ops/auth.py"
+        line: 108
+
+  - from: "client"
+    to: "me"
+    label: "GET with cookie"
+    anchors:
+      - path: "app/ops/auth.py"
+        line: 119
+
+  - from: "me"
+    to: "session_check"
+    label: "Depends"
+    anchors:
+      - path: "app/ops/deps.py"
+        line: 13
+
+  - from: "client"
+    to: "latest_session"
+    label: "GET with cookie"
+    anchors:
+      - path: "app/ops/chat/router.py"
+        line: 277
+
+  - from: "latest_session"
+    to: "session_check"
+    label: "Depends"
+    anchors:
+      - path: "app/ops/deps.py"
+        line: 13
+
+  - from: "latest_session"
+    to: "db"
+    label: "query / create ops_sessions_chat"
+    anchors:
+      - path: "app/ops/chat/router.py"
+        line: 285
+
+  - from: "client"
+    to: "admin_sync"
+    label: "POST with cookie"
+    anchors:
+      - path: "app/ops/admin/sync.py"
+        line: 20
+
+  - from: "admin_sync"
+    to: "maintainer_check"
+    label: "Depends"
+    anchors:
+      - path: "app/ops/deps.py"
+        line: 41
+
+  - from: "maintainer_check"
+    to: "session_check"
+    label: "Depends"
+    anchors:
+      - path: "app/ops/deps.py"
+        line: 33
+
+  - from: "session_check"
+    to: "db"
+    label: "query ops_sessions by token_hash"
+    anchors:
+      - path: "app/ops/deps.py"
+        line: 27

@@ -1,10 +1,16 @@
 """Ops Desk auth dependencies."""
+from __future__ import annotations
+
+from datetime import datetime
+
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.db.models import OpsSession, OpsUser
 from app.db.session import get_db
+from app.ops.security import hash_token
 
 
 async def get_current_user(
@@ -12,20 +18,33 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
 ) -> OpsUser:
     """Resolve current user from session cookie."""
-    session_cookie = request.cookies.get("ops_session")
+    session_cookie = request.cookies.get(settings.session_cookie_name)
     if not session_cookie:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+        )
 
-    # TODO: hash cookie and compare token_hash
-    result = await db.execute(select(OpsSession).where(OpsSession.token_hash == session_cookie))
+    token_hash = hash_token(session_cookie)
+    now = datetime.utcnow()
+
+    result = await db.execute(
+        select(OpsSession).where(
+            OpsSession.token_hash == token_hash,
+            OpsSession.expires_at > now,
+        )
+    )
     session = result.scalar_one_or_none()
     if session is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session"
+        )
 
     result = await db.execute(select(OpsUser).where(OpsUser.id == session.user_id))
     user = result.scalar_one_or_none()
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        )
 
     return user
 

@@ -1,4 +1,6 @@
 """Chat Pydantic schemas."""
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -16,3 +18,13 @@ class ChatModelsResponse(BaseModel):
     provider: str
     default_model: str
     models: list[dict]
+
+
+class ChatSessionOut(BaseModel):
+    """Chat session response for iOS and clients."""
+
+    id: str
+    user_id: str
+    title: str | None
+    created_at: datetime
+    updated_at: datetime

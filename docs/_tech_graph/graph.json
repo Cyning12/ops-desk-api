@@ -1,12 +1,17 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260716_V1",
-  "generated_at": "2026-07-16T09:04:33Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260717_V1",
+  "generated_at": "2026-07-17T02:51:38Z",
   "graphs": [
     {
       "id": "00_main",
       "title": "ops-desk-api 顶层流程总图",
       "source_yaml_path": "00_main.graph.yaml"
+    },
+    {
+      "id": "10_flow_auth",
+      "title": "Authentication Flow",
+      "source_yaml_path": "10_flow_auth.graph.yaml"
     },
     {
       "id": "10_flow_chat",
@@ -89,6 +94,51 @@
       "graph_id": "00_main",
       "id": "struct_doc",
       "label": ">01_struct.md"
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "id": "client",
+      "label": "用户 / iOS"
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "id": "login",
+      "label": "POST /api/ops/auth/login"
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "id": "logout",
+      "label": "POST /api/ops/auth/logout"
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "id": "me",
+      "label": "GET /api/ops/auth/me"
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "id": "latest_session",
+      "label": "GET /api/ops/chat/sessions/latest"
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "id": "session_check",
+      "label": "get_current_user"
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "id": "maintainer_check",
+      "label": "require_maintainer"
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "id": "admin_sync",
+      "label": "POST /api/ops/admin/sync"
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "id": "db",
+      "label": "PostgreSQL"
     },
     {
       "graph_id": "10_flow_chat",
@@ -414,6 +464,216 @@
       "type": "depends_on",
       "label": "depends_on",
       "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "client",
+      "to": "login",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "POST username + invite_token",
+      "anchors": [
+        {
+          "path": "app/ops/auth.py",
+          "line": 45
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "login",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "validate invite token; create ops_sessions",
+      "anchors": [
+        {
+          "path": "app/ops/auth.py",
+          "line": 50
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "login",
+      "to": "client",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "Set-Cookie: ops_session",
+      "anchors": [
+        {
+          "path": "app/ops/auth.py",
+          "line": 92
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "client",
+      "to": "logout",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "POST with cookie",
+      "anchors": [
+        {
+          "path": "app/ops/auth.py",
+          "line": 99
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "logout",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "delete ops_sessions",
+      "anchors": [
+        {
+          "path": "app/ops/auth.py",
+          "line": 108
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "client",
+      "to": "me",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "GET with cookie",
+      "anchors": [
+        {
+          "path": "app/ops/auth.py",
+          "line": 119
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "me",
+      "to": "session_check",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "Depends",
+      "anchors": [
+        {
+          "path": "app/ops/deps.py",
+          "line": 13
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "client",
+      "to": "latest_session",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "GET with cookie",
+      "anchors": [
+        {
+          "path": "app/ops/chat/router.py",
+          "line": 277
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "latest_session",
+      "to": "session_check",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "Depends",
+      "anchors": [
+        {
+          "path": "app/ops/deps.py",
+          "line": 13
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "latest_session",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "query / create ops_sessions_chat",
+      "anchors": [
+        {
+          "path": "app/ops/chat/router.py",
+          "line": 285
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "client",
+      "to": "admin_sync",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "POST with cookie",
+      "anchors": [
+        {
+          "path": "app/ops/admin/sync.py",
+          "line": 20
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "admin_sync",
+      "to": "maintainer_check",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "Depends",
+      "anchors": [
+        {
+          "path": "app/ops/deps.py",
+          "line": 41
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "maintainer_check",
+      "to": "session_check",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "Depends",
+      "anchors": [
+        {
+          "path": "app/ops/deps.py",
+          "line": 33
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_auth",
+      "from": "session_check",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "query ops_sessions by token_hash",
+      "anchors": [
+        {
+          "path": "app/ops/deps.py",
+          "line": 27
+        }
+      ],
       "sync": true
     },
     {
