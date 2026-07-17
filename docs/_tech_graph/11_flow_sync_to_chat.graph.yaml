@@ -1,0 +1,94 @@
+schema_version: "inform_graph.v3"
+graph_id: "11_flow_sync_to_chat"
+title: "Sync 数据到 Chat 上下文流程"
+description: "Admin sync 导入的 repo/issue/PR/graph 数据如何被只读接口和 Chat 上下文加载消费"
+version: "2026-07-17"
+direction: "LR"
+
+nodes:
+  - id: "client"
+    label: "用户 / iOS"
+    kind: external
+
+  - id: "admin_sync"
+    label: "POST /api/ops/admin/sync"
+    kind: flow
+
+  - id: "issues_endpoint"
+    label: "GET /api/ops/issues"
+    kind: flow
+
+  - id: "pulls_endpoint"
+    label: "GET /api/ops/pulls"
+    kind: flow
+
+  - id: "graph_endpoint"
+    label: "GET /api/ops/graph"
+    kind: flow
+
+  - id: "chat_stream"
+    label: "POST /api/ops/chat/stream"
+    kind: flow
+
+  - id: "db"
+    label: "PostgreSQL"
+    kind: external
+
+edges:
+  - from: "client"
+    to: "admin_sync"
+    label: "POST sync payload"
+    anchors:
+      - path: "app/ops/admin/sync.py"
+        line: 45
+
+  - from: "admin_sync"
+    to: "db"
+    label: "upserts ops_repos / ops_issues / ops_pull_requests / snapshots"
+    anchors:
+      - path: "app/ops/admin/service.py"
+        line: 20
+
+  - from: "db"
+    to: "issues_endpoint"
+    label: "query"
+    anchors:
+      - path: "app/ops/issues.py"
+        line: 25
+
+  - from: "db"
+    to: "pulls_endpoint"
+    label: "query"
+    anchors:
+      - path: "app/ops/pulls.py"
+        line: 25
+
+  - from: "db"
+    to: "graph_endpoint"
+    label: "query latest"
+    anchors:
+      - path: "app/ops/graph.py"
+        line: 16
+
+  - from: "db"
+    to: "chat_stream"
+    label: "load_issue_context"
+    anchors:
+      - path: "app/ops/chat/nodes.py"
+        line: 63
+
+  - from: "issues_endpoint"
+    to: "client"
+    label: "JSON list"
+
+  - from: "pulls_endpoint"
+    to: "client"
+    label: "JSON list"
+
+  - from: "graph_endpoint"
+    to: "client"
+    label: "JSON snapshot"
+
+  - from: "chat_stream"
+    to: "client"
+    label: "SSE"

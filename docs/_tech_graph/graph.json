@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260717_V1",
-  "generated_at": "2026-07-17T02:51:38Z",
+  "generated_at": "2026-07-17T15:03:08Z",
   "graphs": [
     {
       "id": "00_main",
@@ -17,6 +17,11 @@
       "id": "10_flow_chat",
       "title": "Chat 流式对话流程",
       "source_yaml_path": "10_flow_chat.graph.yaml"
+    },
+    {
+      "id": "11_flow_sync_to_chat",
+      "title": "Sync 数据到 Chat 上下文流程",
+      "source_yaml_path": "11_flow_sync_to_chat.graph.yaml"
     }
   ],
   "nodes": [
@@ -194,6 +199,46 @@
       "graph_id": "10_flow_chat",
       "id": "main_doc",
       "label": ">00_main.md"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "admin_sync",
+      "label": "POST /api/ops/admin/sync"
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "id": "client",
+      "label": "用户 / iOS"
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "id": "admin_sync",
+      "label": "POST /api/ops/admin/sync"
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "id": "issues_endpoint",
+      "label": "GET /api/ops/issues"
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "id": "pulls_endpoint",
+      "label": "GET /api/ops/pulls"
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "id": "graph_endpoint",
+      "label": "GET /api/ops/graph"
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "id": "chat_stream",
+      "label": "POST /api/ops/chat/stream"
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "id": "db",
+      "label": "PostgreSQL"
     }
   ],
   "edges": [
@@ -679,14 +724,29 @@
     {
       "graph_id": "10_flow_chat",
       "from": "client",
-      "to": "chat_stream",
+      "to": "admin_sync",
       "mark": "->",
       "type": "depends_on",
-      "label": "POST",
+      "label": "POST sync payload",
       "anchors": [
         {
-          "path": "app/ops/chat/router.py",
-          "line": 17
+          "path": "app/ops/admin/sync.py",
+          "line": 45
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "admin_sync",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "upserts repo/issues/PRs/snapshots",
+      "anchors": [
+        {
+          "path": "app/ops/admin/sync.py",
+          "line": 45
         }
       ],
       "sync": true
@@ -872,6 +932,136 @@
       "mark": "->",
       "type": "depends_on",
       "label": "加载",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "from": "client",
+      "to": "admin_sync",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "POST sync payload",
+      "anchors": [
+        {
+          "path": "app/ops/admin/sync.py",
+          "line": 45
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "from": "admin_sync",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "upserts ops_repos / ops_issues / ops_pull_requests / snapshots",
+      "anchors": [
+        {
+          "path": "app/ops/admin/service.py",
+          "line": 20
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "from": "db",
+      "to": "issues_endpoint",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "query",
+      "anchors": [
+        {
+          "path": "app/ops/issues.py",
+          "line": 25
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "from": "db",
+      "to": "pulls_endpoint",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "query",
+      "anchors": [
+        {
+          "path": "app/ops/pulls.py",
+          "line": 25
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "from": "db",
+      "to": "graph_endpoint",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "query latest",
+      "anchors": [
+        {
+          "path": "app/ops/graph.py",
+          "line": 16
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "from": "db",
+      "to": "chat_stream",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "load_issue_context",
+      "anchors": [
+        {
+          "path": "app/ops/chat/nodes.py",
+          "line": 63
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "from": "issues_endpoint",
+      "to": "client",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "JSON list",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "from": "pulls_endpoint",
+      "to": "client",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "JSON list",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "from": "graph_endpoint",
+      "to": "client",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "JSON snapshot",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "from": "chat_stream",
+      "to": "client",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "SSE",
       "anchors": [],
       "sync": true
     }

@@ -50,13 +50,24 @@ nodes:
     label: ">00_main.md"
     kind: external
 
+  - id: "admin_sync"
+    label: "POST /api/ops/admin/sync"
+    kind: flow
+
 edges:
   - from: "client"
-    to: "chat_stream"
-    label: "POST"
+    to: "admin_sync"
+    label: "POST sync payload"
     anchors:
-      - path: "app/ops/chat/router.py"
-        line: 17
+      - path: "app/ops/admin/sync.py"
+        line: 45
+
+  - from: "admin_sync"
+    to: "db"
+    label: "upserts repo/issues/PRs/snapshots"
+    anchors:
+      - path: "app/ops/admin/sync.py"
+        line: 45
 
   - from: "chat_stream"
     to: "event_gen"
