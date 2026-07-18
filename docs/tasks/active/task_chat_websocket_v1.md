@@ -1,6 +1,6 @@
 # Task：Chat WebSocket 端点（面试演示向）
 
-> **状态**：draft  
+> **状态**：in_progress  
 > **类型**：功能实现  
 > **关联**：`docs/_tech_graph/01_struct.md` · `app/ops/chat/router.py` · `app/ops/chat/service.py` · `app/ops/deps.py`
 
@@ -22,8 +22,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| **HG-GRAPH-MODULES** | pending | **30** | 待用户确认：chat 模块新增 WS 传输层纳入 graph |
-| **HG-AUDIT-R1** | pending | **30** | 待用户确认：范围与面试演示目标 |
+| **HG-GRAPH-MODULES** | approved | **30** | 用户确认：chat 模块新增 WS 传输层纳入 graph |
+| **HG-AUDIT-R1** | approved | **30** | 用户确认：WS 暂不鉴权（iOS 未接入），首个 maintainer 作演示用户 |
 
 ---
 
