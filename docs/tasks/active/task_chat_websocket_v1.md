@@ -34,7 +34,7 @@
 目标：
 
 1. 新增 `WS /api/ops/chat/ws`，复用现有 `run_chat_stream` 事件管线，事件 JSON 结构与 SSE 事件一致。
-2. WS 握手鉴权：优先 cookie（与 HTTP 一致的 `ops_session`），兜底 `?token=` 查询参数（方便 iOS/网页调试）。
+2. **暂不鉴权**（iOS 端未接入 WS，面试演示临时方案）：WS 端点不做 cookie/token 校验，直接使用 DB 中首个 maintainer 作为演示用户；不存在时推送 `error` 事件。鉴权补齐留待后续 task。
 3. 支持客户端主动消息：
    - `{"type":"message","message":"...","session_id":null,"model":null}` → 启动一次 chat run，流式推回事件。
    - `{"type":"cancel","run_id":"..."}` → 取消当前进行中的 run（SSE 做不到的核心卖点）。
@@ -46,7 +46,7 @@
 
 - [ ] 共享流式持久化 helper 抽取（`app/ops/chat/streaming.py` 或同级）
 - [ ] `WS /api/ops/chat/ws` 端点实现
-- [ ] WS 握手鉴权（cookie 优先，`?token=` 兜底）
+- [ ] 演示用户解析（首个 maintainer；不鉴权，临时方案）
 - [ ] message → run 流式推送（事件结构与 SSE 一致）
 - [ ] cancel → `run.cancelled` 事件 + run 状态落库
 - [ ] 单连接串行保护
@@ -58,6 +58,7 @@
 
 **不做**：
 
+- **WS 鉴权**（cookie / token 校验）—— iOS 未接入，留待后续 task
 - 多连接广播 / 房间模型
 - 断线重连与事件重放（WS 连接断开即终止 run 推送，事件已持久化可后续查询）
 - 心跳保活基础设施（依赖 uvicorn 默认 ping 即可）
@@ -70,7 +71,6 @@
 - [ ] `app/ops/chat/ws.py`（新增）
 - [ ] `app/ops/chat/streaming.py`（新增，共享 helper）
 - [ ] `app/ops/chat/router.py`（重构复用 helper，外部契约不变）
-- [ ] `app/ops/deps.py`（新增 WS 用鉴权 helper，HTTP 路径不动）
 - [ ] `app/ops/router.py`（挂载 ws 路由）
 - [ ] `tests/test_chat_ws.py`（新增）
 - [ ] `docs/ios/api-auth-chat.md`
@@ -88,7 +88,7 @@
 
 | 触发条件 | 系统行为 | 可重试 | 用户可见 |
 |---|---|---|---|
-| WS 握手无有效凭证 | 拒绝升级，关闭连接（WS close code 4401） | 是（重新登录） | 连接被拒 |
+| DB 中无 maintainer 演示用户 | 推送 `error` 事件（`stage: "ws.user"`）后关闭连接 | 是（先初始化用户） | error 事件 |
 | 收到非法 JSON / 未知 type | 推送 `error` 事件（`stage: "ws.protocol"`），连接保持 | 是 | error 事件 |
 | run 执行中 LLM 异常 | 推送 `error` 事件，run 落库 status=error，连接保持 | 是 | error 事件 |
 | 活跃 run 期间收到新 message | 推送 `error` 事件（`message: "run already active"`） | 是（先 cancel 或等 done） | error 事件 |
@@ -102,7 +102,7 @@
 - [ ] `pytest tests` 通过
 - [ ] `ruff check app tests` 通过
 - [ ] `./scripts/graph-compile.sh` 通过
-- [ ] 无凭证 WS 握手被拒；cookie 或 `?token=` 有效凭证可建立连接
+- [ ] 无凭证即可建立 WS 连接（临时演示方案），用户解析为首个 maintainer
 - [ ] 发送 message 后按序收到 `run.start` → （`thinking`/`tool_result`/`answer`）→ `done`，字段与 SSE 事件一致
 - [ ] run 进行中发送 cancel，收到 `run.cancelled` 且 DB 中 run.status == `cancelled`
 - [ ] 事件持久化与 SSE 路径一致（`ops_run_events` 完整）
@@ -128,7 +128,7 @@
 |---|---|---|
 | 共享 streaming helper | ⏳ | 从 router.py 抽取，SSE/WS 复用 |
 | WS 端点 | ⏳ | `app/ops/chat/ws.py` |
-| WS 鉴权 | ⏳ | cookie 优先，`?token=` 兜底 |
+| 演示用户解析 | ⏳ | 首个 maintainer；不鉴权（iOS 未接入，临时方案） |
 | cancel 语义 | ⏳ | asyncio.Task cancel + `run.cancelled` 事件 + 状态落库 |
 | 测试 | ⏳ | httpx ASGI WS 或 starlette TestClient |
 | 文档 | ⏳ | iOS 文档 + tech graph |
@@ -146,3 +146,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-07-18 | 创建 task，匹配分支 `task/chat-websocket-v1`（基于 `task/admin-github-sync`） |
+| 2026-07-18 | 按用户意见调整：WS 暂不鉴权（iOS 未接入），使用首个 maintainer 作为演示用户 |
