@@ -109,11 +109,11 @@ def no_persist(monkeypatch):
         _noop,
     )
     monkeypatch.setattr(
-        "app.ops.chat.router._flush_run_events",
+        "app.ops.chat.streaming.flush_run_events",
         _noop,
     )
     monkeypatch.setattr(
-        "app.ops.chat.router._persist_run_events",
+        "app.ops.chat.streaming.persist_run_events",
         _noop,
     )
 

@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_chat
 version: 2026-07-16
-generated_at: 2026-07-17T15:03:08Z
+generated_at: 2026-07-18T02:50:02Z
 source: 10_flow_chat.graph.yaml
 ---
 
@@ -15,7 +15,8 @@ source: 10_flow_chat.graph.yaml
 flowchart TB
     client[用户 / 前端]
     chat_stream[POST /api/ops/chat/stream]
-    event_gen[SSE Event Generator]
+    chat_ws[WS /api/ops/chat/ws]
+    event_gen[ChatEventStreamer (SSE/WS 共享)]
     chat_service[run_chat_stream]
     stategraph[Chat StateGraph]
     intent[detect_intent]
@@ -32,10 +33,16 @@ flowchart TB
     // → app/ops/admin/sync.py#L45
     chat_stream --"creates"--> event_gen
     // → app/ops/chat/router.py#L36
+    client --"message / cancel"--> chat_ws
+    // → app/ops/chat/ws.py#L80
+    chat_ws --"creates"--> event_gen
+    // → app/ops/chat/ws.py#L120
+    chat_ws --"JSON frames"--> client
+    chat_ws --"request_cancel"--> event_gen
     chat_stream --"inserts ops_runs"--> db
-    event_gen --"SSE stream"--> client
+    event_gen --"SSE / WS 事件流"--> client
     event_gen --"invokes"--> chat_service
-    // → app/ops/chat/router.py#L48
+    // → app/ops/chat/streaming.py#L170
     chat_service --"astream_events"--> stategraph
     // → app/ops/chat/service.py#L9
     // → app/ops/chat/graph.py#L26
@@ -67,7 +74,8 @@ flowchart TB
 |----|-------|------|
 | client | 用户 / 前端 | external |
 | chat_stream | POST /api/ops/chat/stream | flow |
-| event_gen | SSE Event Generator | flow |
+| chat_ws | WS /api/ops/chat/ws | flow |
+| event_gen | ChatEventStreamer (SSE/WS 共享) | flow |
 | chat_service | run_chat_stream | flow |
 | stategraph | Chat StateGraph | struct |
 | intent | detect_intent | flow |
@@ -85,8 +93,12 @@ flowchart TB
 | client | admin_sync | -> | depends_on | POST sync payload | 1 anchor(s) |
 | admin_sync | db | -> | depends_on | upserts repo/issues/PRs/snapshots | 1 anchor(s) |
 | chat_stream | event_gen | -> | depends_on | creates | 1 anchor(s) |
+| client | chat_ws | -> | depends_on | message / cancel | 1 anchor(s) |
+| chat_ws | event_gen | -> | depends_on | creates | 1 anchor(s) |
+| chat_ws | client | -> | depends_on | JSON frames |  |
+| chat_ws | event_gen | -> | depends_on | request_cancel |  |
 | chat_stream | db | -> | depends_on | inserts ops_runs |  |
-| event_gen | client | -> | depends_on | SSE stream |  |
+| event_gen | client | -> | depends_on | SSE / WS 事件流 |  |
 | event_gen | chat_service | -> | depends_on | invokes | 1 anchor(s) |
 | chat_service | stategraph | -> | depends_on | astream_events | 2 anchor(s) |
 | stategraph | intent | -> | depends_on | first_node | 1 anchor(s) |

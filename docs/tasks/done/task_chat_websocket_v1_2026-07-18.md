@@ -1,6 +1,6 @@
 # Task：Chat WebSocket 端点（面试演示向）
 
-> **状态**：in_progress  
+> **状态**：completed  
 > **类型**：功能实现  
 > **关联**：`docs/_tech_graph/01_struct.md` · `app/ops/chat/router.py` · `app/ops/chat/service.py` · `app/ops/deps.py`
 
@@ -44,17 +44,17 @@
 
 **完成态**：
 
-- [ ] 共享流式持久化 helper 抽取（`app/ops/chat/streaming.py` 或同级）
-- [ ] `WS /api/ops/chat/ws` 端点实现
-- [ ] 演示用户解析（首个 maintainer；不鉴权，临时方案）
-- [ ] message → run 流式推送（事件结构与 SSE 一致）
-- [ ] cancel → `run.cancelled` 事件 + run 状态落库
-- [ ] 单连接串行保护
-- [ ] 单元/集成测试
-- [ ] iOS/调试接口文档更新（`docs/ios/api-auth-chat.md` 或新增 ws 章节）
-- [ ] `docs/_tech_graph/01_struct.md` / graph yaml 更新
-- [ ] `./scripts/graph-compile.sh` 通过
-- [ ] `### 自检结论` 回填
+- [x] 共享流式持久化 helper 抽取（`app/ops/chat/streaming.py` 或同级）
+- [x] `WS /api/ops/chat/ws` 端点实现
+- [x] 演示用户解析（首个 maintainer；不鉴权，临时方案）
+- [x] message → run 流式推送（事件结构与 SSE 一致）
+- [x] cancel → `run.cancelled` 事件 + run 状态落库
+- [x] 单连接串行保护
+- [x] 单元/集成测试
+- [x] iOS/调试接口文档更新（`docs/ios/api-auth-chat.md` 或新增 ws 章节）
+- [x] `docs/_tech_graph/01_struct.md` / graph yaml 更新
+- [x] `./scripts/graph-compile.sh` 通过
+- [x] `### 自检结论` 回填
 
 **不做**：
 
@@ -99,15 +99,15 @@
 
 ## 验收标准
 
-- [ ] `pytest tests` 通过
-- [ ] `ruff check app tests` 通过
-- [ ] `./scripts/graph-compile.sh` 通过
-- [ ] 无凭证即可建立 WS 连接（临时演示方案），用户解析为首个 maintainer
-- [ ] 发送 message 后按序收到 `run.start` → （`thinking`/`tool_result`/`answer`）→ `done`，字段与 SSE 事件一致
-- [ ] run 进行中发送 cancel，收到 `run.cancelled` 且 DB 中 run.status == `cancelled`
-- [ ] 事件持久化与 SSE 路径一致（`ops_run_events` 完整）
-- [ ] 现有 SSE 测试不回归（外部契约不变）
-- [ ] 本地可用 websocat/脚本完成「连接 → 提问 → 取消 → 再提问」演示链路
+- [x] `pytest tests` 通过
+- [x] `ruff check app tests` 通过
+- [x] `./scripts/graph-compile.sh` 通过
+- [x] 无凭证即可建立 WS 连接（临时演示方案），用户解析为首个 maintainer
+- [x] 发送 message 后按序收到 `run.start` → （`thinking`/`tool_result`/`answer`）→ `done`，字段与 SSE 事件一致
+- [x] run 进行中发送 cancel，收到 `run.cancelled` 且 DB 中 run.status == `cancelled`
+- [x] 事件持久化与 SSE 路径一致（`ops_run_events` 完整）
+- [x] 现有 SSE 测试不回归（外部契约不变）
+- [x] 本地可用 websocat/脚本完成「连接 → 提问 → 取消 → 再提问」演示链路
 
 ---
 
@@ -126,18 +126,27 @@
 
 | 项 | 状态 | 备注 |
 |---|---|---|
-| 共享 streaming helper | ⏳ | 从 router.py 抽取，SSE/WS 复用 |
-| WS 端点 | ⏳ | `app/ops/chat/ws.py` |
-| 演示用户解析 | ⏳ | 首个 maintainer；不鉴权（iOS 未接入，临时方案） |
-| cancel 语义 | ⏳ | asyncio.Task cancel + `run.cancelled` 事件 + 状态落库 |
-| 测试 | ⏳ | httpx ASGI WS 或 starlette TestClient |
-| 文档 | ⏳ | iOS 文档 + tech graph |
+| 共享 streaming helper | ✅ | `app/ops/chat/streaming.py`：ChatEventStreamer + 持久化函数，SSE/WS 复用 |
+| WS 端点 | ✅ | `app/ops/chat/ws.py`，挂载于 `/api/ops/chat/ws` |
+| 演示用户解析 | ✅ | 首个 maintainer；不鉴权（iOS 未接入，临时方案） |
+| cancel 语义 | ✅ | 竞态取消（event vs graph anext 竞速），可中断 LLM 生成中节点；`run.cancelled` + 状态落库 |
+| 测试 | ✅ | `tests/test_chat_ws.py` 5 个用例（TestClient portal + to_thread） |
+| 文档 | ✅ | `docs/ios/api-auth-chat.md` WS 章节 + tech graph 10_flow_chat |
 
 ---
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+- `pytest tests` 全绿（71 passed），`ruff check app tests` 通过，`./scripts/graph-compile.sh` 通过。
+- 冒烟验证（真实 LLM）：连接 → 提问 → run.start 后立即取消 → `run.cancelled`（ts_ms=1ms，真实中断 LLM 请求，DB status=cancelled）→ 同连接再提问 → 正常回答 → `done`。
+- 实现要点：
+  - `ChatEventStreamer` 从 SSE 路由抽取，事件 dict 为唯一中间表示，SSE 加 `make_sse_event` 外壳、WS 直接 `send_json`。
+  - cancel 采用「graph `__anext__` task vs cancel Event」竞速：LangGraph 节点缓冲事件到完成才返回，逐事件轮询无法中断生成中的节点；竞态取消可直接中止 in-flight LLM 请求。
+  - 串行保护带 1s 宽限期（`asyncio.wait`，非 `wait_for`——后者超时**会 cancel 任务**，曾导致客户端永远等不到终态事件的挂起 bug）。
+  - 持久化在 shielded cleanup task 中完成，抗外层任务取消。
+- 已知限制（非本任务范围）：
+  - 节点内事件缓冲：`answer_node` 收完 LLM 全部 chunk 才一次性吐出，answer 事件是「批量到达」而非逐 token；逐 token 推送需改 Epic 6 管线（如自定义事件通道）。
+  - WS 不鉴权，仅限本地演示；公网部署前必须补鉴权 task。
 
 ---
 

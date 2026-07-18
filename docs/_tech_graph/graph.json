@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260717_V1",
-  "generated_at": "2026-07-17T15:03:08Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260718_V1",
+  "generated_at": "2026-07-18T02:50:02Z",
   "graphs": [
     {
       "id": "00_main",
@@ -157,8 +157,13 @@
     },
     {
       "graph_id": "10_flow_chat",
+      "id": "chat_ws",
+      "label": "WS /api/ops/chat/ws"
+    },
+    {
+      "graph_id": "10_flow_chat",
       "id": "event_gen",
-      "label": "SSE Event Generator"
+      "label": "ChatEventStreamer (SSE/WS 共享)"
     },
     {
       "graph_id": "10_flow_chat",
@@ -768,6 +773,56 @@
     },
     {
       "graph_id": "10_flow_chat",
+      "from": "client",
+      "to": "chat_ws",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "message / cancel",
+      "anchors": [
+        {
+          "path": "app/ops/chat/ws.py",
+          "line": 80
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "chat_ws",
+      "to": "event_gen",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "creates",
+      "anchors": [
+        {
+          "path": "app/ops/chat/ws.py",
+          "line": 120
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "chat_ws",
+      "to": "client",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "JSON frames",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "chat_ws",
+      "to": "event_gen",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "request_cancel",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
       "from": "chat_stream",
       "to": "db",
       "mark": "->",
@@ -782,7 +837,7 @@
       "to": "client",
       "mark": "->",
       "type": "depends_on",
-      "label": "SSE stream",
+      "label": "SSE / WS 事件流",
       "anchors": [],
       "sync": true
     },
@@ -795,8 +850,8 @@
       "label": "invokes",
       "anchors": [
         {
-          "path": "app/ops/chat/router.py",
-          "line": 48
+          "path": "app/ops/chat/streaming.py",
+          "line": 170
         }
       ],
       "sync": true
