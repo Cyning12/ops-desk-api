@@ -1,6 +1,6 @@
 # Task：LLM Provider 与 Chat 回答生成
 
-> **状态**：in_progress  
+> **状态**：completed  
 > **类型**：功能实现  
 > **关联**：`docs/_tech_graph/10_flow_chat.md` · `app/llm/` · `app/ops/chat/nodes.py`
 
@@ -10,7 +10,7 @@
 
 | 字段 | 值 |
 |---|---|
-| **task_slug** | `llm-provider-and-chat-answer` |
+| **task_slug** | `llm-provider` |
 | **test_strategy** | `required` |
 | **test_strategy_note** | 新增 provider 工厂与节点单元测试；SSE 集成测试可选 |
 | **code_quality_bar** | `L2_backend` |
@@ -38,16 +38,16 @@
 
 **完成态**：
 
-- [ ] `app/llm/factory.py` 工厂
-- [ ] `app/llm/siliconflow.py` 实现
-- [ ] `app/llm/bailian.py` 实现
-- [ ] `answer_node` 接入 Provider
-- [ ] SSE 事件映射（`thinking` / `answer` / `done` / `error`）
-- [ ] `ops_runs` / `ops_run_events` 持久化
-- [ ] 单元测试
-- [ ] `docs/_tech_graph/10_flow_chat.graph.yaml` 更新锚点
-- [ ] `./scripts/graph-compile.sh` 通过
-- [ ] `### 自检结论` 回填
+- [x] `app/llm/factory.py` 工厂
+- [x] `app/llm/siliconflow.py` 实现
+- [x] `app/llm/bailian.py` 实现
+- [x] `answer_node` 接入 Provider
+- [x] SSE 事件映射（`thinking` / `answer` / `done` / `error`）
+- [x] `ops_runs` / `ops_run_events` 持久化
+- [x] 单元测试
+- [x] `docs/_tech_graph/10_flow_chat.graph.yaml` 更新锚点
+- [x] `./scripts/graph-compile.sh` 通过
+- [x] `### 自检结论` 回填
 
 **不做**：
 
@@ -85,11 +85,11 @@
 
 ## 验收标准
 
-- [ ] `pytest tests` 通过
-- [ ] `ruff check app tests` 通过
-- [ ] `./scripts/graph-compile.sh` 通过
-- [ ] 本地可发起 `POST /api/ops/chat/stream` 并收到 SSE 事件
-- [ ] `ops_runs` 表有记录，`ops_run_events` 表有事件归档
+- [x] `pytest tests` 通过
+- [x] `ruff check app tests` 通过
+- [x] `./scripts/graph-compile.sh` 通过
+- [x] 本地可发起 `POST /api/ops/chat/stream` 并收到 SSE 事件
+- [x] `ops_runs` 表有记录，`ops_run_events` 表有事件归档
 
 ---
 
@@ -107,19 +107,22 @@
 
 | 项 | 状态 | 备注 |
 |---|---|---|
-| SiliconFlow 实现 | ⏳ | 任务 6.1；可并行 6.2 |
-| 百炼 fallback | ⏳ | 任务 6.2；可并行 6.1 |
-| Provider 工厂 | ⏳ | 任务 6.3；依赖 6.1、6.2 |
-| load_context_node | ⏳ | 任务 6.4；可并行 6.5 |
-| answer_node 接入 | ⏳ | 任务 6.5；依赖 6.3、6.4 |
-| SSE 事件映射 | ⏳ | 任务 6.6；依赖 6.5；建议用 `stream_mode="updates"` |
-| 持久化 | ⏳ | 任务 6.7；依赖 6.6；session 生命周期与 generator 解耦 |
+| SiliconFlow 实现 | ✅ | 任务 6.1；可并行 6.2 |
+| 百炼 fallback | ✅ | 任务 6.2；可并行 6.1 |
+| Provider 工厂 | ✅ | 任务 6.3；依赖 6.1、6.2 |
+| load_context_node | ✅ | 任务 6.4；可并行 6.5 |
+| answer_node 接入 | ✅ | 任务 6.5；依赖 6.3、6.4 |
+| SSE 事件映射 | ✅ | 任务 6.6；依赖 6.5；建议用 `stream_mode="updates"` |
+| 持久化 | ✅ | 任务 6.7；依赖 6.6；session 生命周期与 generator 解耦 |
 
 ---
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+- `pytest tests` 通过；`ruff check app tests` 通过；`./scripts/graph-compile.sh` 通过。
+- 本地 `POST /api/ops/chat/stream` 收到完整 SSE 事件序列（thinking/answer/done），`ops_runs` 与 `ops_run_events` 落库正常。
+- 已通过 PR #1 合并 master（分支 `task/llm-provider-and-chat-answer`）。
+- 2026-07-20 补记：task_slug 按 harness v2.2 惯例（不含 `_vN` 后缀）更正为 `llm-provider`；本文件遗留 active 未归档问题由 `harness task close` 处理。
 
 ---
 
@@ -129,3 +132,4 @@
 |---|---|
 | 2026-07-16 | 创建 task，匹配分支 `task/llm-provider-and-chat-answer` |
 | 2026-07-16 | 修复 chat stream：setup_session 未 commit 导致 FK 失败；`_persist_run_events` 重复插入事件导致唯一约束冲突；`_build_messages` 返回 dict 导致 provider 报 `'dict' object has no attribute 'role'` |
+| 2026-07-20 | 补回填：状态 completed、验收勾选、自检结论；task_slug 更正为 `llm-provider`（harness v2.2 惯例不含 `_vN`） |

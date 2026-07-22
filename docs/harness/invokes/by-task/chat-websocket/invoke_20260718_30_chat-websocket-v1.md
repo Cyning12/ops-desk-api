@@ -9,7 +9,7 @@
 | 字段 | 值 |
 |------|-----|
 | hat_id | 30（含 40 自检闭环） |
-| task_slug | `chat-websocket-v1` |
+| task_slug | `chat-websocket` |
 | freeze_id | — |
 | task_paths | `docs/tasks/done/task_chat_websocket_v1_2026-07-18.md` |
 | related_review_or_none | 无 |

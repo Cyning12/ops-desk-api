@@ -9,7 +9,7 @@
 | 字段 | 值 |
 |------|-----|
 | hat_id | 30（含 40 自检闭环） |
-| task_slug | `llm-provider-v1` |
+| task_slug | `llm-provider` |
 | freeze_id | — |
 | task_paths | `docs/tasks/active/task_llm_provider_v1.md` |
 | related_review_or_none | 无 |

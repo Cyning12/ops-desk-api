@@ -44,6 +44,7 @@
 | 同帽追问 | **不** 新增 invoke；沿用本节路径 |
 | 打回重开 | 新文件或 `_r2` 后缀 |
 | 与 reviews 分工 | reviews = 结论；invoke = **当时指令** |
+| close 机械闸 | `harness task close` 归档前校验 `by-task/<task_slug>/` 存在且含 ≥1 个 `.md`（v2.2+） |
 | commit | 落盘 + task 回填后再 commit（见 HANDOFF） |
 
 ---

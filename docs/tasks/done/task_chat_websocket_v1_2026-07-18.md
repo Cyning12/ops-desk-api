@@ -10,7 +10,7 @@
 
 | 字段 | 值 |
 |---|---|
-| **task_slug** | `chat-websocket-v1` |
+| **task_slug** | `chat-websocket` |
 | **test_strategy** | `required` |
 | **test_strategy_note** | WS 握手鉴权、消息流事件序列、cancel 语义集成测试 |
 | **code_quality_bar** | `L2_backend` |
