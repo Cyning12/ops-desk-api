@@ -1,6 +1,6 @@
 # Task：Overview 指标接口（Epic 5.1）
 
-> **状态**：draft  
+> **状态**：in_progress  
 > **类型**：功能实现  
 > **关联**：`app/ops/overview.py` · `app/db/models.py` · `../ops-desk-workspace/docs/contracts/data-v1.md` §2
 
@@ -22,8 +22,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| **HG-GRAPH-MODULES** | pending | **30** | 待确认：data 模块 overview 由空壳转为实现 + db 新增一列 |
-| **HG-AUDIT-R1** | pending | **30** | 待确认：范围含 Alembic migration（first_review_at）与契约偏差决策 |
+| **HG-GRAPH-MODULES** | approved | **30** | 用户确认：data 模块 overview 由空壳转为实现 + db 新增 first_review_at |
+| **HG-AUDIT-R1** | approved | **30** | 用户确认：补列 + snake_case + 不包外壳（契约对齐留后续任务） |
 
 ---
 
