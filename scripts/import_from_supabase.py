@@ -71,6 +71,12 @@ _JSONB_DEFAULTS: dict[str, dict[str, Any]] = {
     "ops_graph_snapshots": {"payload": dict},
 }
 
+# Plain-value defaults applied when the source value is NULL but the local
+# column is NOT NULL. Supabase legacy sync runs predate sync_type.
+_VALUE_DEFAULTS: dict[str, dict[str, Any]] = {
+    "ops_sync_runs": {"sync_type": "legacy"},
+}
+
 
 def normalize_row(table: str, row: dict, local_columns: set[str]) -> dict:
     """Map a source row onto local columns: intersection copy + type cleanup."""
@@ -85,6 +91,9 @@ def normalize_row(table: str, row: dict, local_columns: set[str]) -> dict:
     for key, default_factory in _JSONB_DEFAULTS.get(table, {}).items():
         if key in local_columns and out.get(key) is None:
             out[key] = default_factory()
+    for key, default in _VALUE_DEFAULTS.get(table, {}).items():
+        if key in local_columns and out.get(key) is None:
+            out[key] = default
     return out
 
 
