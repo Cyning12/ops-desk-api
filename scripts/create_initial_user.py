@@ -22,7 +22,6 @@ from app.db.models import OpsInviteToken, OpsUser
 from app.db.session import AsyncSessionLocal
 from app.ops.security import generate_invite_token, hash_token
 
-
 DEFAULT_USERNAME = "admin"
 DEFAULT_ROLE = "maintainer"
 
