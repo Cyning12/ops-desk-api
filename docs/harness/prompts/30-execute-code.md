@@ -21,6 +21,7 @@
 - `test_strategy: required` → **先** 可失败测试再改实现
 - 闸扫描通过后：运行 task **验证命令**；回填 `### 自检结论（执行者）`
 - invoke 快照落盘 `docs/harness/invokes/by-task/<task_slug>/`
+- 归档（active→done）**只能**走 `npx @cyning/harness task close --file <task> --yes`：`CLOSE: PASS` 后方可归档；机械校验 invoke 留档 / 自检结论 / 验收勾选 / slug / 状态，任一不过 **不执行** mv（v2.2+）
 
 ## 禁止什么
 

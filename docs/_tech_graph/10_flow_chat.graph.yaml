@@ -14,8 +14,12 @@ nodes:
     label: "POST /api/ops/chat/stream"
     kind: flow
 
+  - id: "chat_ws"
+    label: "WS /api/ops/chat/ws"
+    kind: flow
+
   - id: "event_gen"
-    label: "SSE Event Generator"
+    label: "ChatEventStreamer (SSE/WS 共享)"
     kind: flow
 
   - id: "chat_service"
@@ -76,20 +80,42 @@ edges:
       - path: "app/ops/chat/router.py"
         line: 36
 
+  - from: "client"
+    to: "chat_ws"
+    label: "message / cancel"
+    anchors:
+      - path: "app/ops/chat/ws.py"
+        line: 80
+
+  - from: "chat_ws"
+    to: "event_gen"
+    label: "creates"
+    anchors:
+      - path: "app/ops/chat/ws.py"
+        line: 120
+
+  - from: "chat_ws"
+    to: "client"
+    label: "JSON frames"
+
+  - from: "chat_ws"
+    to: "event_gen"
+    label: "request_cancel"
+
   - from: "chat_stream"
     to: "db"
     label: "inserts ops_runs"
 
   - from: "event_gen"
     to: "client"
-    label: "SSE stream"
+    label: "SSE / WS 事件流"
 
   - from: "event_gen"
     to: "chat_service"
     label: "invokes"
     anchors:
-      - path: "app/ops/chat/router.py"
-        line: 48
+      - path: "app/ops/chat/streaming.py"
+        line: 170
 
   - from: "chat_service"
     to: "stategraph"

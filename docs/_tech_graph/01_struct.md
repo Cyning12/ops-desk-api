@@ -12,7 +12,7 @@
 | `entry` | 入口与配置 | `app/main.py`, `app/config.py` | → `api`, `db` | FastAPI 实例、CORS、环境变量 |
 | `api` | API 路由注册 | `app/ops/router.py`, `app/ops/*/router.py` | → `service`, `auth`, `db` | HTTP 入口、SSE 流封装 |
 | `auth` | 鉴权模块 | `app/ops/auth.py`, `app/ops/deps.py`, `app/ops/security.py` | → `db` | 登录、登出、session cookie、invite token 验证、角色保护 |
-| `chat` | Chat 业务 | `app/ops/chat/**` | → `llm`, `db` | LangGraph StateGraph、SSE 事件 |
+| `chat` | Chat 业务 | `app/ops/chat/**` | → `llm`, `db` | LangGraph StateGraph、SSE/WS 双传输、共享 ChatEventStreamer |
 | `data` | 数据视图 | `app/ops/overview.py`, `app/ops/issues.py`, `app/ops/pulls.py`, `app/ops/graph.py` | → `db` | Issue/PR/Overview/Graph 快照只读查询（供 Chat / iOS 只读消费） |
 | `admin` | Admin 同步 | `app/ops/admin/sync.py`, `app/ops/admin/service.py`, `app/ops/admin/schema.py` | → `db` | 接收 GHA sync payload 并持久化到 data/chat 依赖的表 |
 | `llm` | LLM Provider | `app/llm/**` | → — | SiliconFlow / 百炼 provider 工厂 |
@@ -24,6 +24,7 @@
 |---|---|---|---|
 | `ChatState` | `chat` | `chat` 内部节点 | LangGraph 状态字典 |
 | `SseEvent` | `api` | `chat` / 前端 | SSE 事件 JSON 格式 |
+| `ChatWsProtocol` | `chat` | 面试演示 / 未来 iOS | `WS /api/ops/chat/ws` message/cancel 入参 + 与 SSE 一致的事件 JSON（当前不鉴权，演示用户=首个 maintainer） |
 | `AsyncSession` | `db` | `admin`, `data`（未来） | 数据库会话依赖 |
 | `LatestChatSession` | `chat` | `iOS v1` | `GET /api/ops/chat/sessions/latest` 自动获取/创建最近 session |
 | `SyncedRepo/Issue/PR/GraphSnapshot` | `admin` | `data`, `chat` | admin 写入的表同时供 data 只读接口和 chat 上下文加载 |

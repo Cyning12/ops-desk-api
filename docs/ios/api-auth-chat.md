@@ -231,6 +231,67 @@ curl -b /tmp/cookies.txt -X POST http://localhost:8000/api/ops/auth/logout
 
 ---
 
+## WebSocket Chat（实验性 · 暂不鉴权）
+
+> ⚠️ **临时方案**：`WS /api/ops/chat/ws` 当前**不做鉴权**，服务端自动以 DB 中首个 maintainer 作为演示用户。仅用于本地面试演示，iOS 暂未接入；公网部署前必须补鉴权。
+
+### 连接
+
+```
+ws://localhost:8000/api/ops/chat/ws
+```
+
+### 客户端 → 服务端
+
+```json
+// 发起一次对话
+{"type": "message", "message": "#1 是什么问题？", "session_id": null, "model": null}
+
+// 取消进行中的 run（run_id 来自 run.start 事件）
+{"type": "cancel", "run_id": "<run_id>"}
+```
+
+### 服务端 → 客户端
+
+事件 JSON 结构与 SSE 完全一致（`run_id` / `seq` / `ts_ms` / `agent_role` / `event_type` / `payload`），以 JSON text frame 推送：
+
+```
+run.start → thinking* → tool_result* → answer* → done
+                                              └─ 或 run.cancelled（取消时）
+                                              └─ 或 error（失败时）
+```
+
+### 与 SSE 的差异
+
+| 维度 | SSE `/chat/stream` | WS `/chat/ws` |
+|---|---|---|
+| 方向 | 单向（server→client） | 双向 |
+| 取消生成 | 不支持 | `{"type":"cancel"}` |
+| 鉴权 | cookie 必填 | 暂不鉴权（演示用户） |
+| 并发 | 每次请求独立 run | 单连接同时最多 1 个活跃 run |
+| 重连 | 浏览器自动 | 客户端自行处理 |
+
+### 协议错误
+
+非法 JSON / 未知 type / 活跃 run 期间重复发 message / cancel 不存在的 run，都会收到 `event_type: "error"` 的帧（`payload.stage` 分别为 `ws.protocol` / `ws.cancel`），连接保持不断开。
+
+### websocat 调试示例
+
+```bash
+# 连接并提问
+websocat ws://localhost:8000/api/ops/chat/ws
+> {"type":"message","message":"你好"}
+< {"run_id":"...","seq":1,"event_type":"run.start",...}
+< ...
+< {"event_type":"done",...}
+
+# 取消（另起一行发送）
+> {"type":"cancel","run_id":"<run_id>"}
+< {"event_type":"run.cancelled",...}
+```
+
+---
+
 ## 注意事项
 
 - 本地开发时 cookie 的 `secure` 标志为 `false`，支持 HTTP。

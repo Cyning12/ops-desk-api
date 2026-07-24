@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from app.ops.admin.sync import router as admin_sync_router
 from app.ops.auth import router as auth_router
 from app.ops.chat.router import router as chat_router
+from app.ops.chat.ws import router as chat_ws_router
 from app.ops.graph import router as graph_router
 from app.ops.issues import router as issues_router
 from app.ops.overview import router as overview_router
@@ -18,3 +19,4 @@ router.include_router(pulls_router)
 router.include_router(graph_router)
 router.include_router(admin_sync_router)
 router.include_router(chat_router)
+router.include_router(chat_ws_router)
