@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     ops_desk_auth_mode: str = Field(default="db")  # db | hmac
     session_cookie_name: str = "ops_session"
     session_ttl_hours: int = 168  # 7 days
+    session_cookie_path: str = "/"
+    session_cookie_secure: bool = False
+    session_cookie_httponly: bool = True
+    session_cookie_samesite: str = "lax"
 
     # CORS
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"

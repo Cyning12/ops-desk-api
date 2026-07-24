@@ -11,7 +11,7 @@
 |-----------|------|-----------|----------------------|-------------|
 | `entry` | 入口与配置 | `app/main.py`, `app/config.py` | → `api`, `db` | FastAPI 实例、CORS、环境变量 |
 | `api` | API 路由注册 | `app/ops/router.py`, `app/ops/*/router.py` | → `service`, `auth`, `db` | HTTP 入口、SSE 流封装 |
-| `auth` | 鉴权模块 | `app/ops/auth.py`, `app/ops/deps.py` | → `db` | 登录、登出、session cookie |
+| `auth` | 鉴权模块 | `app/ops/auth.py`, `app/ops/deps.py`, `app/ops/security.py` | → `db` | 登录、登出、session cookie、invite token 验证、角色保护 |
 | `chat` | Chat 业务 | `app/ops/chat/**` | → `llm`, `db` | LangGraph StateGraph、SSE 事件 |
 | `data` | 数据视图 | `app/ops/overview.py`, `app/ops/issues.py`, `app/ops/pulls.py`, `app/ops/graph.py` | → `db` | Issue/PR/Overview/Graph 快照只读查询 |
 | `admin` | Admin 同步 | `app/ops/admin/sync.py` | → `db` | 接收 GHA sync payload 并持久化 |
@@ -25,6 +25,7 @@
 | `ChatState` | `chat` | `chat` 内部节点 | LangGraph 状态字典 |
 | `SseEvent` | `api` | `chat` / 前端 | SSE 事件 JSON 格式 |
 | `AsyncSession` | `db` | `admin`, `data`（未来） | 数据库会话依赖 |
+| `LatestChatSession` | `chat` | `iOS v1` | `GET /api/ops/chat/sessions/latest` 自动获取/创建最近 session |
 
 ## 人签记录
 

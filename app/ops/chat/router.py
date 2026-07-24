@@ -14,9 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db.models import OpsRun, OpsRunEvent, OpsSessionChat, OpsUser
-from app.db.session import AsyncSessionLocal
+from app.db.session import AsyncSessionLocal, get_db
 from app.llm.model_catalog import get_default_model, get_models_for_provider
-from app.ops.chat.schema import ChatModelsResponse, ChatStreamRequest
+from app.ops.chat.schema import ChatModelsResponse, ChatSessionOut, ChatStreamRequest
 from app.ops.chat.service import run_chat_stream
 from app.ops.chat.sse import make_sse_event
 from app.ops.chat.state import ChatState
@@ -269,4 +269,37 @@ async def list_models() -> ChatModelsResponse:
         provider=provider,
         default_model=get_default_model(provider),
         models=get_models_for_provider(provider),
+    )
+
+
+@router.get("/sessions/latest", response_model=ChatSessionOut)
+async def get_latest_chat_session(
+    user: OpsUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ChatSessionOut:
+    """Return the current user's most recent chat session, creating one if needed.
+
+    This endpoint is optimized for iOS v1, which only supports a single Chat
+    screen and should always land on the latest session.
+    """
+    result = await db.execute(
+        select(OpsSessionChat)
+        .where(OpsSessionChat.user_id == user.id)
+        .order_by(OpsSessionChat.updated_at.desc())
+        .limit(1)
+    )
+    chat_session = result.scalar_one_or_none()
+
+    if chat_session is None:
+        chat_session = OpsSessionChat(user_id=user.id, title="New Chat")
+        db.add(chat_session)
+        await db.commit()
+        await db.refresh(chat_session)
+
+    return ChatSessionOut(
+        id=str(chat_session.id),
+        user_id=str(chat_session.user_id),
+        title=chat_session.title,
+        created_at=chat_session.created_at,
+        updated_at=chat_session.updated_at,
     )

@@ -1,6 +1,18 @@
 """Authentication endpoints."""
-from fastapi import APIRouter, Response, status
+from __future__ import annotations
+
+from datetime import datetime, timedelta
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.config import settings
+from app.db.models import OpsInviteToken, OpsSession, OpsUser
+from app.db.session import get_db
+from app.ops.deps import CurrentUser
+from app.ops.security import generate_session_token, hash_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -20,22 +32,106 @@ class UserOut(BaseModel):
     role: str
 
 
+def _set_session_cookie(response: Response, token: str) -> None:
+    """Set the HttpOnly session cookie."""
+    response.set_cookie(
+        key=settings.session_cookie_name,
+        value=token,
+        max_age=int(timedelta(hours=settings.session_ttl_hours).total_seconds()),
+        path=settings.session_cookie_path,
+        secure=settings.session_cookie_secure,
+        httponly=settings.session_cookie_httponly,
+        samesite=settings.session_cookie_samesite,
+    )
+
+
+def _delete_session_cookie(response: Response) -> None:
+    """Delete the session cookie."""
+    response.delete_cookie(
+        key=settings.session_cookie_name,
+        path=settings.session_cookie_path,
+        samesite=settings.session_cookie_samesite,
+    )
+
+
 @router.post("/login", status_code=status.HTTP_200_OK)
-async def login(body: LoginRequest, response: Response) -> dict:
+async def login(
+    body: LoginRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
     """Login with username and invite token, set session cookie."""
-    # TODO: validate invite token, create user/session, set cookie
-    return {"ok": True, "user": {"username": body.username}}
+    token_hash = hash_token(body.invite_token)
+    now = datetime.utcnow()
+
+    invite_result = await db.execute(
+        select(OpsInviteToken).where(
+            OpsInviteToken.token == token_hash,
+            OpsInviteToken.used_by_user_id.is_(None),
+            OpsInviteToken.expires_at > now,
+        )
+    )
+    invite = invite_result.scalar_one_or_none()
+    if invite is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired invite token",
+        )
+
+    user_result = await db.execute(
+        select(OpsUser).where(OpsUser.username == body.username)
+    )
+    user = user_result.scalar_one_or_none()
+    if user is None:
+        user = OpsUser(username=body.username, role=invite.role)
+        db.add(user)
+        await db.flush()
+
+    # Consume the invite token.
+    invite.used_by_user_id = user.id
+    invite.used_at = now
+
+    plaintext_token = generate_session_token()
+    session = OpsSession(
+        user_id=user.id,
+        token_hash=hash_token(plaintext_token),
+        expires_at=now + timedelta(hours=settings.session_ttl_hours),
+    )
+    db.add(session)
+    await db.commit()
+
+    _set_session_cookie(response, plaintext_token)
+
+    return {
+        "ok": True,
+        "user": UserOut(id=str(user.id), username=user.username, role=user.role).model_dump(),
+    }
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
-async def logout(response: Response) -> dict:
-    """Clear session cookie."""
-    response.delete_cookie("ops_session")
+async def logout(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Clear session cookie and invalidate the DB session."""
+    cookie_token = request.cookies.get(settings.session_cookie_name)
+    if cookie_token:
+        token_hash = hash_token(cookie_token)
+        await db.execute(
+            delete(OpsSession).where(OpsSession.token_hash == token_hash)
+        )
+        await db.commit()
+
+    _delete_session_cookie(response)
     return {"ok": True}
 
 
 @router.get("/me")
-async def me() -> dict:
+async def me(user: OpsUser = CurrentUser) -> dict:
     """Return current user info."""
-    # TODO: use get_current_user dependency
-    return {"user": None}
+    return {
+        "user": UserOut(
+            id=str(user.id), username=user.username, role=user.role
+        ).model_dump(),
+    }
