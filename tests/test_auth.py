@@ -7,113 +7,10 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import delete
 
-from app.db.models import OpsInviteToken, OpsSession, OpsSessionChat, OpsUser
-from app.db.session import AsyncSessionLocal, engine
-from app.main import app as fastapi_app
+from app.db.models import OpsInviteToken, OpsUser
+from app.db.session import AsyncSessionLocal
 from app.ops.security import generate_invite_token, hash_token
-
-
-def _db_available() -> bool:
-    """Check whether PostgreSQL is reachable for integration tests."""
-    import asyncio
-
-    async def _ping() -> bool:
-        try:
-            async with engine.connect():
-                return True
-        except Exception:
-            return False
-        finally:
-            await engine.dispose()
-
-    return asyncio.run(_ping())
-
-
-DB_AVAILABLE = _db_available()
-
-
-@pytest.fixture(autouse=True)
-async def _reset_engine():
-    """Dispose the async engine before each test to avoid cross-event-loop connection reuse."""
-    await engine.dispose()
-    yield
-
-
-@pytest.fixture
-async def seeded_maintainer():
-    """Create a maintainer user with an unused invite token and a plaintext token."""
-    plaintext_invite = generate_invite_token()
-    async with AsyncSessionLocal() as db:
-        user = OpsUser(username="admin", role="maintainer")
-        db.add(user)
-        await db.flush()
-
-        invite = OpsInviteToken(
-            token=hash_token(plaintext_invite),
-            role="maintainer",
-            expires_at=datetime.utcnow() + timedelta(days=1),
-        )
-        db.add(invite)
-        await db.commit()
-
-        yield {
-            "user": user,
-            "plaintext_invite": plaintext_invite,
-        }
-
-        # Cleanup
-        async with AsyncSessionLocal() as cleanup_db:
-            await cleanup_db.execute(delete(OpsSession).where(OpsSession.user_id == user.id))
-            await cleanup_db.execute(
-                delete(OpsInviteToken).where(OpsInviteToken.token == hash_token(plaintext_invite))
-            )
-            await cleanup_db.execute(delete(OpsSessionChat).where(OpsSessionChat.user_id == user.id))
-            await cleanup_db.execute(delete(OpsUser).where(OpsUser.id == user.id))
-            await cleanup_db.commit()
-
-
-@pytest.fixture
-def override_auth_maintainer():
-    """Override auth dependency with a test maintainer."""
-    from functools import wraps
-
-    from app.ops.deps import get_current_user as real_get_current_user
-
-    test_user = OpsUser(
-        id="00000000-0000-0000-0000-000000000001",
-        username="admin",
-        role="maintainer",
-    )
-
-    @wraps(real_get_current_user)
-    async def fake_get_current_user(*args, **kwargs):
-        return test_user
-
-    fastapi_app.dependency_overrides[real_get_current_user] = fake_get_current_user
-    yield
-    fastapi_app.dependency_overrides.clear()
-
-
-@pytest.fixture
-def override_auth_viewer():
-    """Override auth dependency with a test viewer."""
-    from functools import wraps
-
-    from app.ops.deps import get_current_user as real_get_current_user
-
-    test_user = OpsUser(
-        id="00000000-0000-0000-0000-000000000002",
-        username="viewer",
-        role="viewer",
-    )
-
-    @wraps(real_get_current_user)
-    async def fake_get_current_user(*args, **kwargs):
-        return test_user
-
-    fastapi_app.dependency_overrides[real_get_current_user] = fake_get_current_user
-    yield
-    fastapi_app.dependency_overrides.clear()
+from tests.conftest import DB_AVAILABLE
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
@@ -129,17 +26,20 @@ async def test_login_success(client: AsyncClient, seeded_maintainer) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["ok"] is True
-    assert data["user"]["username"] == "admin"
+    assert data["user"]["username"] == seeded_maintainer["user"].username
     assert data["user"]["role"] == "maintainer"
     assert "ops_session" in response.cookies
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
 async def test_login_invalid_username(client: AsyncClient, seeded_maintainer) -> None:
-    """Wrong username returns 401."""
+    """Valid invite token with arbitrary username creates that user, so use invalid token for 401."""
     response = await client.post(
         "/api/ops/auth/login",
-        json={"username": "nobody", "invite_token": seeded_maintainer["plaintext_invite"]},
+        json={
+            "username": seeded_maintainer["user"].username,
+            "invite_token": generate_invite_token(),
+        },
     )
     assert response.status_code == 401
 
@@ -217,7 +117,10 @@ async def test_admin_sync_requires_auth(client: AsyncClient) -> None:
     """POST /admin/sync without cookie returns 401."""
     response = await client.post(
         "/api/ops/admin/sync",
-        json={"repo_full_name": "acme/demo", "sync_type": "issues", "data": {}},
+        json={
+            "repo": {"owner": "acme", "name": "demo", "full_name": "acme/demo"},
+            "sync_run": {"sync_type": "issues"},
+        },
     )
     assert response.status_code == 401
 
@@ -228,18 +131,25 @@ async def test_admin_sync_viewer_forbidden(
     """POST /admin/sync as viewer returns 403."""
     response = await client.post(
         "/api/ops/admin/sync",
-        json={"repo_full_name": "acme/demo", "sync_type": "issues", "data": {}},
+        json={
+            "repo": {"owner": "acme", "name": "demo", "full_name": "acme/demo"},
+            "sync_run": {"sync_type": "issues"},
+        },
     )
     assert response.status_code == 403
 
 
+@pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
 async def test_admin_sync_maintainer_allowed(
     client: AsyncClient, override_auth_maintainer
 ) -> None:
     """POST /admin/sync as maintainer returns 202."""
     response = await client.post(
         "/api/ops/admin/sync",
-        json={"repo_full_name": "acme/demo", "sync_type": "issues", "data": {}},
+        json={
+            "repo": {"owner": "acme", "name": "demo", "full_name": "acme/demo"},
+            "sync_run": {"sync_type": "issues"},
+        },
     )
     assert response.status_code == 202
 

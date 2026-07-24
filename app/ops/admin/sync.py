@@ -1,28 +1,45 @@
 """Admin endpoint for receiving GitHub sync payloads."""
-from fastapi import APIRouter, Depends, status
+from __future__ import annotations
+
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.models import OpsUser
 from app.db.session import get_db
+from app.ops.admin.schema import SyncPayload, SyncSummaryOut
+from app.ops.admin.service import process_sync_payload
 from app.ops.deps import MaintainerUser
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin/sync", tags=["admin"])
 
 
-class SyncPayload(BaseModel):
-    """Generic sync payload from GitHub Actions."""
+class MinimalSyncPayload(BaseModel):
+    """Minimal payload for backward-compatible health checks."""
 
     repo_full_name: str
     sync_type: str
     data: dict
 
 
-@router.post("", status_code=status.HTTP_202_ACCEPTED)
+@router.post("", status_code=status.HTTP_202_ACCEPTED, response_model=SyncSummaryOut)
 async def receive_sync(
     payload: SyncPayload,
     db: AsyncSession = Depends(get_db),
-    user=MaintainerUser,
-) -> dict:
+    user: OpsUser = MaintainerUser,
+) -> SyncSummaryOut:
     """Receive sync payload and persist to PostgreSQL."""
-    # TODO: upsert repo/issues/pulls/sync_runs/snapshots
-    return {"ok": True, "sync_type": payload.sync_type}
+    try:
+        summary = await process_sync_payload(db, payload)
+        await db.commit()
+        return summary
+    except Exception as exc:
+        await db.rollback()
+        logger.exception("Admin sync failed", extra={"repo": payload.repo.full_name})
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"stage": "sync", "message": str(exc)},
+        ) from exc

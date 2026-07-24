@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_chat
 version: 2026-07-16
-generated_at: 2026-07-17T02:51:37Z
+generated_at: 2026-07-17T15:03:08Z
 source: 10_flow_chat.graph.yaml
 ---
 
@@ -24,9 +24,12 @@ flowchart TB
     llm[LLM Provider]
     db[PostgreSQL]
     main_doc[>00_main.md]
+    admin_sync[POST /api/ops/admin/sync]
 
-    client --"POST"--> chat_stream
-    // → app/ops/chat/router.py#L17
+    client --"POST sync payload"--> admin_sync
+    // → app/ops/admin/sync.py#L45
+    admin_sync --"upserts repo/issues/PRs/snapshots"--> db
+    // → app/ops/admin/sync.py#L45
     chat_stream --"creates"--> event_gen
     // → app/ops/chat/router.py#L36
     chat_stream --"inserts ops_runs"--> db
@@ -73,12 +76,14 @@ flowchart TB
 | llm | LLM Provider | external |
 | db | PostgreSQL | external |
 | main_doc | >00_main.md | external |
+| admin_sync | POST /api/ops/admin/sync | flow |
 
 ### Edges
 
 | From | To | Mark | Type | Label | Anchors |
 |------|----|------|------|-------|---------|
-| client | chat_stream | -> | depends_on | POST | 1 anchor(s) |
+| client | admin_sync | -> | depends_on | POST sync payload | 1 anchor(s) |
+| admin_sync | db | -> | depends_on | upserts repo/issues/PRs/snapshots | 1 anchor(s) |
 | chat_stream | event_gen | -> | depends_on | creates | 1 anchor(s) |
 | chat_stream | db | -> | depends_on | inserts ops_runs |  |
 | event_gen | client | -> | depends_on | SSE stream |  |
