@@ -139,6 +139,7 @@ async def test_admin_sync_viewer_forbidden(
     assert response.status_code == 403
 
 
+@pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
 async def test_admin_sync_maintainer_allowed(
     client: AsyncClient, override_auth_maintainer
 ) -> None:
