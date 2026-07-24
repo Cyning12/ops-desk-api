@@ -1,6 +1,6 @@
 # Task：Supabase 初始数据导入脚本（直连 DB）
 
-> **状态**：draft  
+> **状态**：in_progress  
 > **类型**：工具脚本  
 > **关联**：`app/db/models.py` · `ops_desk_ddl.sql` · `../ops-desk-workspace/docs/02-backend-analysis/00-current-state.md`
 
@@ -22,8 +22,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| **HG-GRAPH-MODULES** | pending | **30** | 待确认：scripts/ 工具类改动是否需纳入 graph（倾向仅登记，不加模块） |
-| **HG-AUDIT-R1** | pending | **30** | 待确认：范围含直连 Supabase + 配置指引文档 |
+| **HG-GRAPH-MODULES** | approved | **30** | 用户确认：scripts/ 工具类改动仅登记，不新增 graph 模块 |
+| **HG-AUDIT-R1** | approved | **30** | 用户确认：范围含直连 Supabase + 配置指引文档 |
 
 ---
 
