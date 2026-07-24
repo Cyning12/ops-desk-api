@@ -34,7 +34,7 @@ postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.co
 ```bash
 # 1. 确保本地 PG 已启动且已迁移
 docker compose up -d db
-alembic upgrade head
+.venv/bin/alembic upgrade head   # 或先 source .venv/bin/activate
 
 # 2. 设置源库 DSN（仅在当前 shell 会话有效）
 export SUPABASE_DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres"
