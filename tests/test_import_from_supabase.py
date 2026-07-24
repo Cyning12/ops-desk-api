@@ -23,6 +23,7 @@ SRC_DSN = f"postgresql://ops:ops_password@localhost:5432/{SRC_DB}"
 
 REPO_ID = "11111111-1111-1111-1111-111111111111"
 RUN_ID = "22222222-2222-2222-2222-222222222222"
+LEGACY_RUN_ID = "55555555-5555-5555-5555-555555555555"
 ISSUE_ID = "33333333-3333-3333-3333-333333333333"
 SCAN_ID = "44444444-4444-4444-4444-444444444444"
 FULL_NAME = "acme/import-src"
@@ -66,6 +67,14 @@ def test_normalize_row_defaults_null_jsonb() -> None:
     assert out["parsed_summary"] == {}
 
 
+def test_normalize_row_defaults_null_sync_type_to_legacy() -> None:
+    """Supabase legacy sync runs with NULL sync_type import as 'legacy'."""
+    row = {"id": RUN_ID, "sync_type": None, "status": "success"}
+    local_columns = {"id", "sync_type", "status"}
+    out = normalize_row("ops_sync_runs", row, local_columns)
+    assert out["sync_type"] == "legacy"
+
+
 # ---------------------------------------------------------------------------
 # Integration: scratch source database
 # ---------------------------------------------------------------------------
@@ -86,7 +95,7 @@ CREATE TABLE ops_repos (
 CREATE TABLE ops_sync_runs (
     id uuid PRIMARY KEY,
     repo_id uuid NOT NULL,
-    sync_type text NOT NULL,
+    sync_type text,
     status text,
     started_at timestamptz,
     finished_at timestamptz,
@@ -128,6 +137,10 @@ INSERT INTO ops_repos VALUES (
 INSERT INTO ops_sync_runs VALUES (
     '{RUN_ID}', '{REPO_ID}', 'full', 'completed',
     '2026-07-01T12:00:00Z', '2026-07-01T12:05:00Z', '{{"issues": 1}}', NULL
+);
+INSERT INTO ops_sync_runs VALUES (
+    '{LEGACY_RUN_ID}', '{REPO_ID}', NULL, 'success',
+    '2026-06-23T06:12:56Z', '2026-06-23T06:13:15Z', NULL, NULL
 );
 INSERT INTO ops_issues VALUES (
     '{ISSUE_ID}', '{REPO_ID}', 1, '导入测试 issue', 'body', 'open',
@@ -198,6 +211,12 @@ async def test_import_roundtrip_and_idempotency(scratch_source) -> None:
 
         run = await db.scalar(select(OpsSyncRun).where(OpsSyncRun.id == RUN_ID))
         assert run is not None
+
+        legacy_run = await db.scalar(
+            select(OpsSyncRun).where(OpsSyncRun.id == LEGACY_RUN_ID)
+        )
+        assert legacy_run is not None
+        assert legacy_run.sync_type == "legacy"  # NULL sync_type defaulted
 
         scan = await db.scalar(
             select(OpsScanSnapshot).where(OpsScanSnapshot.id == SCAN_ID)
