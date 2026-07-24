@@ -197,8 +197,9 @@ async def test_import_roundtrip_and_idempotency(scratch_source) -> None:
         repo = await db.scalar(select(OpsRepo).where(OpsRepo.full_name == FULL_NAME))
         assert repo is not None
         assert str(repo.id) == REPO_ID
-        # 2026-07-01T12:00:00+08:00 -> 04:00 UTC（ops_repos.created_at 为 timestamptz）
-        assert repo.created_at == datetime(2026, 7, 1, 4, 0, tzinfo=UTC)
+        # 2026-07-01T12:00:00+08:00 -> 04:00 UTC（dev 库该列为 timestamptz、
+        # 测试库由 create_all 建为 timestamp，统一按 naive UTC 断言）
+        assert repo.created_at.replace(tzinfo=None) == datetime(2026, 7, 1, 4, 0)
 
         issue = await db.scalar(
             select(OpsIssue).where(

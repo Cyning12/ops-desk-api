@@ -148,6 +148,7 @@ class OpsPullRequest(Base):
     updated_at: Mapped[datetime] = mapped_column(nullable=False)
     merged_at: Mapped[datetime | None] = mapped_column(nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    first_review_at: Mapped[datetime | None] = mapped_column(nullable=True)
     raw_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
