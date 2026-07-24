@@ -16,7 +16,7 @@ def main(graph_dir: str) -> None:
     edges = []
 
     for path in sorted(glob.glob(os.path.join(graph_dir, "*.graph.yaml"))):
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         graph_id = data["graph_id"]
@@ -53,8 +53,8 @@ def main(graph_dir: str) -> None:
 
     out = {
         "schema_version": "graph_v2",
-        "freeze_id": f"OPS_DESK_API_TECH_GRAPH_FREEZE_{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d')}_V1",
-        "generated_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "freeze_id": f"OPS_DESK_API_TECH_GRAPH_FREEZE_{datetime.datetime.now(datetime.UTC).strftime('%Y%m%d')}_V1",
+        "generated_at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "graphs": graphs,
         "nodes": nodes,
         "edges": edges,
