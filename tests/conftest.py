@@ -1,18 +1,66 @@
-"""Pytest fixtures."""
+"""Pytest fixtures.
+
+Database isolation: integration tests run against a dedicated ``opsdesk_test``
+database so destructive fixtures (e.g. ``clean_sync_data``) can never wipe the
+development database that holds real imported data. The test database is
+created on demand and its schema is managed via ``Base.metadata.create_all``.
+"""
 from __future__ import annotations
 
 import asyncio
+import os
 import random
 from datetime import datetime, timedelta
 
-import pytest
-from httpx import ASGITransport, AsyncClient
+_TEST_DB_URL = "postgresql+asyncpg://ops:ops_password@localhost:5432/opsdesk_test"
 
-from app.db.models import OpsInviteToken, OpsRepo, OpsSession, OpsSessionChat, OpsUser
-from app.db.session import AsyncSessionLocal, engine
-from app.main import app as fastapi_app
-from app.ops.deps import get_current_user
-from app.ops.security import generate_invite_token, hash_token
+
+def _setup_test_database() -> bool:
+    """Point DATABASE_URL at opsdesk_test if PostgreSQL is reachable.
+
+    Must run before app modules are imported (the engine is created at import
+    time). Returns whether PostgreSQL is available.
+    """
+    import asyncpg  # noqa: PLC0415
+
+    from app.config import settings  # noqa: PLC0415
+
+    async def _prepare() -> bool:
+        admin_dsn = settings.database_url.replace("+asyncpg", "").rsplit("/", 1)[0] + "/postgres"
+        try:
+            conn = await asyncpg.connect(admin_dsn)
+        except (OSError, asyncpg.PostgresError):
+            return False
+        try:
+            exists = await conn.fetchval(
+                "SELECT 1 FROM pg_database WHERE datname = 'opsdesk_test'"
+            )
+            if not exists:
+                await conn.execute("CREATE DATABASE opsdesk_test")
+        finally:
+            await conn.close()
+        return True
+
+    available = asyncio.run(_prepare())
+    if available:
+        os.environ["DATABASE_URL"] = _TEST_DB_URL
+        # settings is already instantiated by the import above; mutate it so
+        # the engine (created on app.db.session import) targets the test DB.
+        settings.database_url = _TEST_DB_URL
+    return available
+
+
+DB_AVAILABLE = _setup_test_database()
+
+import pytest  # noqa: E402
+from httpx import ASGITransport, AsyncClient  # noqa: E402
+
+from app.db.base import Base  # noqa: E402
+from app.db.models import OpsInviteToken, OpsRepo, OpsSession, OpsSessionChat, OpsUser  # noqa: E402
+from app.db.session import AsyncSessionLocal, engine  # noqa: E402
+from app.main import app as fastapi_app  # noqa: E402
+from app.ops.deps import get_current_user  # noqa: E402
+from app.ops.security import generate_invite_token, hash_token  # noqa: E402
 
 
 def _random_username() -> str:
@@ -30,22 +78,14 @@ async def client() -> AsyncClient:
         yield ac
 
 
-def _db_available() -> bool:
-    """Check whether PostgreSQL is reachable for integration tests."""
-
-    async def _ping() -> bool:
-        try:
-            async with engine.connect():
-                return True
-        except Exception:
-            return False
-        finally:
-            await engine.dispose()
-
-    return asyncio.run(_ping())
-
-
-DB_AVAILABLE = _db_available()
+@pytest.fixture(autouse=True, scope="session")
+async def _create_test_schema():
+    """Create all tables in the test database once per session."""
+    if DB_AVAILABLE:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        await engine.dispose()
+    yield
 
 
 @pytest.fixture(autouse=True)
@@ -57,7 +97,10 @@ async def _reset_engine():
 
 @pytest.fixture
 async def clean_sync_data():
-    """Remove all synced repos and cascading children before a test."""
+    """Remove all synced repos and cascading children before a test.
+
+    Safe to delete broadly: this only runs against the opsdesk_test database.
+    """
     from sqlalchemy import delete
 
     async with AsyncSessionLocal() as db:
