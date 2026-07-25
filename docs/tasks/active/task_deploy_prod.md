@@ -1,6 +1,6 @@
 # Task：生产部署 v1（API + PG + Web + Nginx + SSL）
 
-> **状态**：draft  
+> **状态**：in_progress  
 > **类型**：部署运维（Epic 8 核心）  
 > **关联**：`ops-desk-workspace/docs/04-infrastructure/deploy-info.local.md` · `docker-compose.yml` · `ops-desk-web/docs/deployment/nginx-static-hosting.md`
 
@@ -21,8 +21,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| **HG-GRAPH-MODULES** | pending | **30** | 待确认：chat 模块加 WS 开关；部署产物不入 graph |
-| **HG-AUDIT-R1** | pending | **30** | 待确认：范围含真实服务器操作（SSH 写入 /opt/ops-desk、Nginx 配置、防火墙验证） |
+| **HG-GRAPH-MODULES** | approved | **30** | 用户确认：chat 模块加 WS 开关；部署产物不入 graph |
+| **HG-AUDIT-R1** | approved | **30** | 用户确认：范围含真实服务器操作；SSL 证书执行时由用户提供 |
 
 ---
 
