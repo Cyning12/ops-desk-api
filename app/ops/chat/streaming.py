@@ -36,7 +36,7 @@ async def resolve_chat_session(
             select(OpsSessionChat).where(OpsSessionChat.id == session_id)
         )
         chat_session = result.scalar_one_or_none()
-        if chat_session is None or str(chat_session.user_id) != user_id:
+        if chat_session is None or str(chat_session.user_id) != str(user_id):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Chat session not found",
