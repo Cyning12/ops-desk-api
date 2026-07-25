@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
+    # Chat WebSocket transport (unauthenticated demo; must be false in production)
+    ops_chat_ws_enabled: bool = True
+
     # LLM
     ops_llm_provider: str = Field(default="siliconflow")
     ops_llm_model: str | None = Field(default=None)

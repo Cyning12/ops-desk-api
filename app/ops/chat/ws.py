@@ -78,7 +78,15 @@ async def _pump_events(streamer: ChatEventStreamer, websocket: WebSocket) -> Non
 
 @router.websocket("/ws")
 async def chat_ws(websocket: WebSocket) -> None:
-    """Handle a chat websocket connection: one active run at a time."""
+    """Handle a chat websocket connection: one active run at a time.
+
+    Disabled when OPS_CHAT_WS_ENABLED=false: the endpoint is unauthenticated
+    by design (demo user), so it must not be reachable on the public internet.
+    """
+    if not settings.ops_chat_ws_enabled:
+        await websocket.close(code=1008)  # policy violation
+        return
+
     await websocket.accept()
 
     user = await _resolve_demo_user()

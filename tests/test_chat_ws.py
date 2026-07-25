@@ -123,6 +123,29 @@ def _ws_message_then_cancel(message: str) -> list[dict]:
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
+async def test_ws_disabled_when_switch_off(monkeypatch, _portal_engine) -> None:
+    """OPS_CHAT_WS_ENABLED=false: handshake is refused with close code 1008."""
+    monkeypatch.setattr("app.ops.chat.ws.settings.ops_chat_ws_enabled", False)
+
+    def _scenario() -> int | None:
+        from starlette.testclient import TestClient
+        from starlette.websockets import WebSocketDisconnect
+
+        from app.main import app
+
+        with TestClient(app) as tc:
+            try:
+                with tc.websocket_connect("/api/ops/chat/ws"):
+                    pass
+            except WebSocketDisconnect as exc:
+                return exc.code
+        return None
+
+    code = await asyncio.to_thread(_scenario)
+    assert code == 1008
+
+
+@pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
 async def test_ws_message_streams_events(fake_provider, _portal_engine) -> None:
     """A message produces the same event sequence as the SSE stream."""
     fake_provider([LlmChunk(content="Hello"), LlmChunk(content="!")])
