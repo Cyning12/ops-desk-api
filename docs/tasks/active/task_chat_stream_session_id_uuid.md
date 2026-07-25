@@ -64,6 +64,18 @@ ops-desk-web W7 联调实证：`GET /chat/sessions/latest` 返回的 session_id 
 - [x] `pytest tests/test_chat_router.py` 全绿
 - [x] 容器重建后 curl 实测带 session_id 流式 200
 
+---
+
+### 自检结论（执行者）
+
+- 回归测试 `test_stream_existing_session_ok` 修复前 FAIL（`assert 404 == 200`，复现 str vs UUID 比较缺陷），修复后 PASS。
+- `pytest tests` 85 passed；`ruff check` 通过。
+- 容器 `docker compose up -d --build api` 重建后实测：`GET /chat/sessions/latest` → `POST /chat/stream`（带 session_id）SSE 序列完整（run.start → thinking×2 → answer → done）。
+- 修复仅 1 行（`str(user_id)`），对既有 str-id 测试向后兼容（test_stream_invalid_session 404 语义不变）。
+- **遗留**：WS transport（ws.py）是否同款比较缺陷未查，建议后端另开 task 排查。
+
+---
+
 ## 修订记录
 
 | 日期 | 说明 |
