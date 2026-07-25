@@ -1,6 +1,6 @@
 # Task：修复 chat stream 带 session_id 恒 404（str vs UUID 比较）
 
-> **状态**：in_progress  
+> **状态**：completed  
 > **类型**：缺陷修复  
 > **关联**：ops-desk-web Epic W7 联调阻断 · `app/ops/chat/streaming.py`
 
@@ -35,10 +35,10 @@ ops-desk-web W7 联调实证：`GET /chat/sessions/latest` 返回的 session_id 
 
 **完成态**：
 
-- [ ] `streaming.py` 修复为 `str(user_id)` 比较
-- [ ] 回归测试：真实 DB 用户（UUID id）+ 既有 session → 200 SSE；修复前红、修复后绿
-- [ ] `pytest tests/test_chat_router.py` 通过
-- [ ] docker compose 重建 api 后实测：latest → stream(带 session_id) → SSE 200
+- [x] `streaming.py` 修复为 `str(user_id)` 比较
+- [x] 回归测试：真实 DB 用户（UUID id）+ 既有 session → 200 SSE；修复前红、修复后绿
+- [x] `pytest tests/test_chat_router.py` 通过
+- [x] docker compose 重建 api 后实测：latest → stream(带 session_id) → SSE 200
 
 **不做**：WS 端点同构检查（如同款缺陷另开 task）；其他端点。
 
@@ -60,12 +60,13 @@ ops-desk-web W7 联调实证：`GET /chat/sessions/latest` 返回的 session_id 
 
 ## 验收标准
 
-- [ ] 回归测试修复前 FAIL、修复后 PASS
-- [ ] `pytest tests/test_chat_router.py` 全绿
-- [ ] 容器重建后 curl 实测带 session_id 流式 200
+- [x] 回归测试修复前 FAIL、修复后 PASS
+- [x] `pytest tests/test_chat_router.py` 全绿
+- [x] 容器重建后 curl 实测带 session_id 流式 200
 
 ## 修订记录
 
 | 日期 | 说明 |
 |---|---|
 | 2026-07-25 | 00统筹起草（web Epic W7 联调发现）；双闸代签 approved |
+| 2026-07-25 | 22 R1 零阻塞签收；30 修复 + 回归测试先红后绿；85 passed；容器实测 SSE 200 |
