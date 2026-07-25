@@ -49,8 +49,12 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _set_default_llm_model(self) -> "Settings":
-        """Use model_catalog default when ops_llm_model is not explicitly set."""
-        if self.ops_llm_model is None:
+        """Use model_catalog default when ops_llm_model is unset or empty.
+
+        Empty string matters: compose/env injection of `OPS_LLM_MODEL=`
+        would otherwise leak through as `model: ""` in chat done events.
+        """
+        if not self.ops_llm_model:
             from app.llm.model_catalog import get_default_model
 
             self.ops_llm_model = get_default_model(self.ops_llm_provider)
