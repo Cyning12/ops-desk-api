@@ -15,6 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt \
 
 COPY . .
 
+# Let ops scripts (create_initial_user, import_from_supabase) import the app package.
+ENV PYTHONPATH=/app
+
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
