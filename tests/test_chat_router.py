@@ -162,6 +162,58 @@ class TestChatStream:
 
         assert response.status_code == 404
 
+    @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
+    async def test_stream_existing_session_ok(self, client, fake_provider):
+        """Regression: a valid session_id must not 404.
+
+        Real DB auth loads ``OpsUser.id`` as ``uuid.UUID``; the session check
+        compared ``str(session.user_id)`` against that UUID object and always
+        404'd. This test overrides auth with a UUID-id user to reproduce it.
+        """
+        from functools import wraps
+
+        from sqlalchemy import delete
+
+        from app.db.models import OpsSessionChat
+        from app.db.models import OpsUser as DbUser
+        from app.db.session import AsyncSessionLocal
+        from app.ops.deps import get_current_user
+
+        fake_provider([LlmChunk(content="ok")])
+        async with AsyncSessionLocal() as db:
+            user = DbUser(username="uuid_regression_user", role="viewer")
+            db.add(user)
+            await db.flush()
+            chat_session = OpsSessionChat(user_id=user.id, title="regression")
+            db.add(chat_session)
+            await db.commit()
+            await db.refresh(user)
+            await db.refresh(chat_session)
+            uid, sid = user.id, chat_session.id
+
+        # Fresh instance whose id is a uuid.UUID, mimicking real DB-loaded auth.
+        auth_user = DbUser(id=uid, username="uuid_regression_user", role="viewer")
+
+        @wraps(get_current_user)
+        async def fake_get_current_user(*args, **kwargs):
+            return auth_user
+
+        fastapi_app.dependency_overrides[get_current_user] = fake_get_current_user
+        try:
+            response = await client.post(
+                "/api/ops/chat/stream",
+                json={"message": "hi", "session_id": str(sid)},
+                headers={"Accept": "text/event-stream"},
+            )
+        finally:
+            fastapi_app.dependency_overrides.clear()
+            async with AsyncSessionLocal() as db:
+                await db.execute(delete(OpsSessionChat).where(OpsSessionChat.id == sid))
+                await db.execute(delete(DbUser).where(DbUser.id == uid))
+                await db.commit()
+
+        assert response.status_code == 200
+
 
 class TestListModels:
     async def test_list_models(self, client):
