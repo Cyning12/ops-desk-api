@@ -1,6 +1,6 @@
 # Task：生产部署 v1（API + PG + Web + Nginx + SSL）
 
-> **状态**：in_progress  
+> **状态**：completed  
 > **类型**：部署运维（Epic 8 核心）  
 > **关联**：`ops-desk-workspace/docs/04-infrastructure/deploy-info.local.md` · `docker-compose.yml` · `ops-desk-web/docs/deployment/nginx-static-hosting.md`
 
@@ -44,15 +44,15 @@ Epic 3–6 后端、Web 前端 v1 全部完成；域名 `www.cynaya.cn` 已备�
 
 **完成态**：
 
-- [ ] `OPS_CHAT_WS_ENABLED` 开关（默认 true，false 时 WS 路由 404）+ 单测
-- [ ] 生产 compose（`ops-desk-workspace/deploy/docker-compose.prod.yml`：db + api）
-- [ ] Nginx 配置模板（TLS、`/` 静态、`/api` 反代、SSE `proxy_buffering off`、gzip）
-- [ ] 部署脚本 `ops-desk-workspace/deploy/deploy.sh`（build web → rsync → 服务器 build/up/migrate）
-- [ ] 服务器 `/opt/ops-desk/.env` 生产值（SECRET 生成、DB 密码、LLM keys、cookie secure、CORS、WS 禁用）
-- [ ] SSL 证书部署（用户提供 crt/key → scp）
-- [ ] 数据库初始化：migrate + 初始 maintainer + Supabase 数据导入
-- [ ] E2E checklist 全过（HTTPS）
-- [ ] invoke 落盘 + `harness task close` 归档
+- [x] `OPS_CHAT_WS_ENABLED` 开关（默认 true，false 时 WS 路由 404）+ 单测
+- [x] 生产 compose（`ops-desk-workspace/deploy/docker-compose.prod.yml`：db + api）
+- [x] Nginx 配置模板（TLS、`/` 静态、`/api` 反代、SSE `proxy_buffering off`、gzip）
+- [x] 部署脚本 `ops-desk-workspace/deploy/deploy.sh`（build web → rsync → 服务器 build/up/migrate）
+- [x] 服务器 `/opt/ops-desk/.env` 生产值（SECRET 生成、DB 密码、LLM keys、cookie secure、CORS、WS 禁用）
+- [x] SSL 证书部署（用户提供 crt/key → scp）
+- [x] 数据库初始化：migrate + 初始 maintainer + Supabase 数据导入
+- [x] E2E checklist 全过（HTTPS）
+- [x] invoke 落盘 + `harness task close` 归档
 
 **不做**：
 
@@ -62,11 +62,11 @@ Epic 3–6 后端、Web 前端 v1 全部完成；域名 `www.cynaya.cn` 已备�
 
 ## 范围
 
-- [ ] `app/ops/router.py` / `app/ops/chat/ws.py`（WS 开关）
-- [ ] `app/config.py`（`ops_chat_ws_enabled`）
-- [ ] `tests/test_chat_ws.py`（开关单测）
-- [ ] `ops-desk-workspace/deploy/`（compose.prod、nginx 模板、deploy.sh、README）
-- [ ] `ops-desk-workspace/docs/04-infrastructure/deploy-info.local.md`（执行回填）
+- [x] `app/ops/router.py` / `app/ops/chat/ws.py`（WS 开关）
+- [x] `app/config.py`（`ops_chat_ws_enabled`）
+- [x] `tests/test_chat_ws.py`（开关单测）
+- [x] `ops-desk-workspace/deploy/`（compose.prod、nginx 模板、deploy.sh、README）
+- [x] `ops-desk-workspace/docs/04-infrastructure/deploy-info.local.md`（执行回填）
 
 ## 非范围
 
@@ -89,13 +89,13 @@ Epic 3–6 后端、Web 前端 v1 全部完成；域名 `www.cynaya.cn` 已备�
 
 ## 验收标准
 
-- [ ] `pytest tests` 通过（含 WS 开关单测）
-- [ ] `ruff check app tests` 通过
-- [ ] 生产 `OPS_CHAT_WS_ENABLED=false` 时 `wss://www.cynaya.cn/api/ops/chat/ws` 不可达
-- [ ] `https://www.cynaya.cn/` 打开 Web 登录页（HTTP 自动跳 HTTPS）
-- [ ] 邀请密钥登录 → Overview/Issues/PRs/Graph 显示真实数据
-- [ ] Chat 页面 SSE 流式回答可用（经 Nginx 反代无缓冲）
-- [ ] 服务器重启后 `docker compose` 服务自启（restart policy）
+- [x] `pytest tests` 通过（含 WS 开关单测）
+- [x] `ruff check app tests` 通过
+- [x] 生产 `OPS_CHAT_WS_ENABLED=false` 时 `wss://www.cynaya.cn/api/ops/chat/ws` 不可达
+- [x] `https://www.cynaya.cn/` 打开 Web 登录页（HTTP 自动跳 HTTPS）
+- [x] 邀请密钥登录 → Overview/Issues/PRs/Graph 显示真实数据
+- [x] Chat 页面 SSE 流式回答可用（经 Nginx 反代无缓冲）
+- [x] 服务器重启后 `docker compose` 服务自启（restart policy）
 
 ---
 
@@ -114,17 +114,26 @@ Epic 3–6 后端、Web 前端 v1 全部完成；域名 `www.cynaya.cn` 已备�
 
 | 项 | 状态 | 备注 |
 |---|---|---|
-| WS 开关 | ⏳ | `OPS_CHAT_WS_ENABLED`，默认 true |
-| 生产 compose | ⏳ | workspace/deploy/ |
-| Nginx 模板 | ⏳ | TLS + 路径分流 + SSE |
-| deploy.sh | ⏳ | build→rsync→up→migrate→import |
-| E2E | ⏳ | HTTPS checklist |
+| WS 开关 | ✅ | 默认 true；生产 false，握手拒 404 |
+| 生产 compose | ✅ | workspace/deploy/docker-compose.prod.yml |
+| Nginx 模板 | ✅ | TLS + 路径分流 + SSE buffering off |
+| deploy.sh | ✅ | rsync→compose build/up→健康检查→nginx |
+| E2E | ✅ | 全部通过（见自检结论） |
 
 ---
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+- `pytest tests` 86 passed（含 WS 开关单测：disabled 时握手 1008）；`ruff check app tests` 通过。
+- 生产 E2E（2026-07-25，https://www.cynaya.cn）：
+  - HTTP→HTTPS 301 ✅；登录页 200 ✅；登录（invite token）✅
+  - Overview：cycle_time sample 955、throughput 48/30d、trend 26 天非零、scan ✅
+  - issues total 599、pulls total 1440、graph repo ✅
+  - Chat SSE 经 Nginx 无缓冲（run.start→thinking→…）✅
+  - WS 握手拒 404（OPS_CHAT_WS_ENABLED=false）✅；api 仅绑 127.0.0.1 ✅；compose restart=unless-stopped ✅
+- 数据初始化：maintainer 已建；Supabase 导入 2/49/599/1440/47/44 全量完成。
+- 过程修复：Docker Hub 不可达 → 腾讯云镜像加速（mirror.ccs.tencentyun.com）；apt/pip 国内镜像入 Dockerfile；容器 ops 脚本需 PYTHONPATH=/app（已入 Dockerfile 并重建）；云层防火墙 443 未放行 → 用户控制台放行。
+- 已知项：first_review_at 源数据全 NULL（review_time 恒 null，待 GHA sync 供数）；裸域未做 www 跳转外的 SEO 处理；备份策略 Epic 8.6 未做。
 
 ---
 
@@ -133,3 +142,4 @@ Epic 3–6 后端、Web 前端 v1 全部完成；域名 `www.cynaya.cn` 已备�
 | 日期 | 说明 |
 |---|---|
 | 2026-07-25 | 创建 task，匹配分支 `task/deploy-prod`；deploy-info §1–§3 已就绪 |
+| 2026-07-25 | 30+40 完成：首次生产部署上线 https://www.cynaya.cn，E2E 全过 |
