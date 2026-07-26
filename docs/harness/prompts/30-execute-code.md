@@ -20,8 +20,8 @@
 - 读 task **必读列表** + `AGENTS.md` + `_tech_graph/` + L2（涉码）
 - `test_strategy: required` → **先** 可失败测试再改实现
 - 闸扫描通过后：运行 task **验证命令**；回填 `### 自检结论（执行者）`
-- invoke 快照落盘 `docs/harness/invokes/by-task/<task_slug>/`
-- 归档（active→done）**只能**走 `npx @cyning/harness task close --file <task> --yes`：`CLOSE: PASS` 后方可归档；机械校验 invoke 留档 / 自检结论 / 验收勾选 / slug / 状态，任一不过 **不执行** mv（v2.2+）
+- invoke 快照落盘 `docs/harness/invokes/by-task/<task_slug>/`（须覆盖 task 要求的 hats；40 可与 30 合并为 `invoke_*_30_40_*.md`）
+- 归档（active→done）**只能**走 `npx @cyning/harness task close --file <task> --yes`：`CLOSE: PASS` 后方可归档；机械校验 **invoke hats 集合** / 自检结论 / 验收勾选 / slug / 状态 / R1 review，任一不过 **不执行** mv（v2.2+ · hats 集合 v2.12+）
 
 ## 禁止什么
 

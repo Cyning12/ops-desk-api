@@ -1,6 +1,6 @@
 # Task：Harness 升级至 2.13.0（api）
 
-> **状态**：active  
+> **状态**：completed  
 > **类型**：基础设施（过程轨 upgrade）  
 > **关联**：`Projects/docs/harness/guides/CHECKLIST_harness_pilot_dogfood_v1_zh.md` · npm `@cyning/harness@2.13.0`
 
@@ -36,13 +36,13 @@
 
 **完成态**：
 
-- [ ] `.cyning-harness/manifest.json` → `version: 2.13.0`
-- [ ] 干净工作区单次 `upgrade --yes`（无 `--ide`）**一把过**（无 S5）
-- [ ] `npx @cyning/harness check` → 已是最新
-- [ ] `npx @cyning/harness verify --target . --task <本文件>` PASS（或仅闸/审计类可解释 warn）
-- [ ] 可选摸底：`lifecycle show` · `discipline show` · `lifecycle dry-run`（close 旁路）
-- [ ] invoke 落盘 + 自检回填
-- [ ] Projects checklist 回填（api → 2.13.0；web 仍 2.11.1）
+- [x] `.cyning-harness/manifest.json` → `version: 2.13.0`
+- [x] 干净工作区单次 `upgrade --yes`（无 `--ide`）**一把过**（无 S5）
+- [x] `npx @cyning/harness check` → 已是最新
+- [x] `npx @cyning/harness verify --target . --task <本文件>` PASS（或仅闸/审计类可解释 warn）
+- [x] 可选摸底：`lifecycle show` · `discipline show` · `lifecycle dry-run`（close 旁路）
+- [x] invoke 落盘 + 自检回填
+- [x] Projects checklist 回填（api → 2.13.0；web 仍 2.11.1）
 
 **不做**：
 
@@ -74,17 +74,23 @@
 
 ## 验收标准
 
-- [ ] manifest `version` = `2.13.0`，仅 schema 五字段
-- [ ] 单次 upgrade 退出码 0，无 S5 中止
-- [ ] `harness check` 已是最新
-- [ ] checklist 状态/版本/修订记录已回填（注明仅 api）
-- [ ] `ruff check app tests` · `pytest tests` 仍绿（过程轨不影响业务）
+- [x] manifest `version` = `2.13.0`，仅 schema 五字段
+- [x] 单次 upgrade 退出码 0，无 S5 中止
+- [x] `harness check` 已是最新
+- [x] checklist 状态/版本/修订记录已回填（注明仅 api）
+- [x] `ruff check app tests` · `pytest tests` 仍绿（过程轨不影响业务）
 
 ---
 
 ### 自检结论（执行者）
 
-（30/40 后回填）
+- **upgrade 一把过**：干净仓 `npx @cyning/harness@2.13.0 upgrade --target . --yes`（无 `--ide`）；日志顺序 apply →「已更新 local.json」→「已更新 manifest」→「升级完成」，无 S5。
+- **manifest**：`version: 2.13.0` · `from_version: 2.11.1` · ide 保持 `cursor,claude,agents` · 仅五字段。
+- **check / verify**：`harness check` 已是最新；`verify --task` PASS（双闸 approved）。
+- **2.13 摸底**：`lifecycle show` / `discipline show`（as_of 2.13.0）OK；`lifecycle dry-run --transition close --from done --task …` 六项 close_* 均求值（非 unevaluated）——缺 invoke/未勾选时 correctly blocked。
+- **F1b**：本轮未带 `--ide`，未复现；产品侧仍开。
+- **业务回归**：`ruff check app tests` PASS；`.venv/bin/pytest tests` → **87 passed**。
+- **跨仓**：web/ios 本轮不升；Projects checklist 已回填。
 
 ---
 
@@ -93,3 +99,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-07-26 | 首版 · 升至 2.13.0（仅 api）+ checklist 回填 |
+| 2026-07-26 | 30/40 完成 · 一把过 · dry-run close_* 接线确认 |

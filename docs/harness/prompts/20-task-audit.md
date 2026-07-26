@@ -62,7 +62,8 @@
 
 ## 交接物
 
-- 审查 md 路径 + invoke 快照（可选）
+- 审查 md 路径（**必须** · `docs/harness/reviews/`）
+- invoke 快照：仅当 task `required_invoke_hats` / profile **含 20** 时必须落盘；默认 default 集合不含 20（与 reviews 硬闸分工）
 - 按 HANDOFF 分仓 commit
 
 ## 修订记录
@@ -70,6 +71,7 @@
 | 日期 | 摘要 |
 |------|------|
 | 2026-07-24 | V2 拆分收编：自 `22-task-audit.md` 改名为 `20-task-audit.md`（来源：工作区 `20-task-audit.md` · 2026-06-21 v3 + 原包内人工闸联动节保留） |
+| 2026-07-26 | v2.12：澄清 20 invoke 仅在 required 集合含 20 时强制；默认靠 reviews |
 
 ## 给 Cursor
 

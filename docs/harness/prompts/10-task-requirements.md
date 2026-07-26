@@ -15,6 +15,7 @@
 - 补齐 **`failure_paths`**（触发 → 行为 → 可重试 → 用户可见）
 - 写清 **非范围**、**依赖**（相对路径链接）
 - 建议 `test_strategy` + `code_quality_bar`
+- **选定 invoke 留档集合**（v2.12+）：写 `invoke_retention_profile`（`default`=`10,30,40` / `minimal`=`30` / `full`）或显式 `required_invoke_hats`；并落盘本帽 `invoke_*_10_*.md`
 - 承接 **20-task-audit 审查**：按 `docs/harness/reviews/*_audit_*.md` 回填 task
 
 ## 禁止什么
@@ -32,7 +33,7 @@
 ## 交接物
 
 - 可粘贴进 `docs/tasks/active/task_*.md` 的正文块；并注明建议 `test_strategy`。
-- 产出 task 须 `npx @cyning/harness task lint --file <task>` PASS（v2.3+ · 结构闸 E1–E7 / W1–W3）。
+- 产出 task 须 `npx @cyning/harness task lint --file <task>` PASS（v2.3+ · 结构闸 E1–E7 / W1+；v2.12+ 含 **W6** invoke 留档字段提醒）。
 - 承接 **20-task-audit 审查**：按 `docs/harness/reviews/*_audit_*.md` 回填 task。
 
 ## OSS 阶段 C · 思考轮（Starter 摘要）
@@ -48,7 +49,8 @@
 |------|------|
 | 2026-07-24 | V2 拆分收编：自 `10-requirements.md` 改名为 `10-task-requirements.md`（来源：工作区 `10-task-requirements.md` · 2026-06-12 v2） |
 | 2026-07-24 | G4：思考轮摘要节补 v2.6+ `task lint` 条件触发结构检查 |
+| 2026-07-26 | v2.12：起草时选定 `required_invoke_hats` / `invoke_retention_profile` |
 
 ## 给 Cursor
 
-`Harness`、`10-task`、`验收`、`failure_paths`、`test_strategy`、`task lint`、`拒开工`
+`Harness`、`10-task`、`验收`、`failure_paths`、`test_strategy`、`task lint`、`required_invoke_hats`、`拒开工`
