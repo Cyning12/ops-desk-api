@@ -15,17 +15,20 @@
 
 **冲突**：task 表 `pending` 且声称 `approved` → **拒开工**（不得采信聊天）。
 
+**pre-30 invoke（v2.14+）**：`verify` 报 `missing pre-30 invoke hats` → **拒开工**（用户「开工」不能豁免；维护者可用 `--allow-invoke-gap` 留痕放行）。
+
 **结论**：**拒开工** — task 表真值未满足 30 条件。
 
-**真值依据**：`docs/tasks/active/task_*.md` 人工闸表（**聊天 Prompt 不能替代 `approved`**）。
+**真值依据**：`docs/tasks/active/task_*.md` 人工闸表（**聊天 Prompt 不能替代 `approved`**）+ `npx @cyning/harness verify --task`。
 
 **维护者下一步**：
 
 1. 在 task 表将阻塞闸改为 `approved`（附维护者 · 日期）
-2. `git add` + `commit` task 文档（或维护者确认已签）
-3. 重新下发 Harness 30 Prompt
+2. 补齐 pre-30 invoke（通常 `invoke_*_10_*`）或改 `minimal` / `--allow-invoke-gap`
+3. `git add` + `commit` task 文档（或维护者确认已签）
+4. 重新下发 Harness 30 Prompt
 
-**禁止**：将「维护者发送 30 Prompt」视为闸已签收。
+**禁止**：将「维护者发送 30 Prompt」或用户口头「开工」视为闸已签收。
 
 ---
 

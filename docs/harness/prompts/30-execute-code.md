@@ -14,13 +14,14 @@
 3. 任一 **blocks 30** 的闸为 `pending` → **拒开工**（仅 STOP + 签闸指引）；**禁止**改业务码、禁止落 30 invoke
 4. **真值在 task 表**；维护者 / invoke 聊天 **不能**替代 `HG-AUDIT-R1` = `approved`
 5. **声称 vs 表冲突**（用户或 invoke 写 approved 但 task 表 pending）→ **STOP** · 输出冲突表 · **以 task 表为准**
+6. **用户「开工」≠ 闸**：须 `verify --task` PASS（含 **v2.14+ pre-30 invoke**）；缺 10 不得直进 30
 
 ## 只做什么
 
 - 读 task **必读列表** + `AGENTS.md` + `_tech_graph/` + L2（涉码）
 - `test_strategy: required` → **先** 可失败测试再改实现
 - 闸扫描通过后：运行 task **验证命令**；回填 `### 自检结论（执行者）`
-- invoke 快照落盘 `docs/harness/invokes/by-task/<task_slug>/`（须覆盖 task 要求的 hats；40 可与 30 合并为 `invoke_*_30_40_*.md`）
+- invoke 快照落盘 `docs/harness/invokes/by-task/<task_slug>/`（须覆盖 task 要求的 hats；40 可与 30 合并为 `invoke_*_30_40_*.md`；**pre-30** 须在 30 改码前落盘，见 verify v2.14+）
 - 归档（active→done）**只能**走 `npx @cyning/harness task close --file <task> --yes`：`CLOSE: PASS` 后方可归档；机械校验 **invoke hats 集合** / 自检结论 / 验收勾选 / slug / 状态 / R1 review，任一不过 **不执行** mv（v2.2+ · hats 集合 v2.12+）
 
 ## 禁止什么

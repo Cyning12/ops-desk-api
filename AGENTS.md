@@ -128,6 +128,7 @@ alembic upgrade head
    - 首输出闸扫描表 · 见 `docs/harness/prompts/FRAGMENT_30_gate_verify_v1_zh.md`
    - **`HG-AUDIT-R1` pending** → **30 拒改码**（须维护者签 task 表 `approved`）
    - **`HG-GRAPH-MODULES` pending** → **30 拒改码**（D4-a）
+   - **pre-30 invoke 缺失**（v2.14+ · default 须有 10 等）→ **拒改码**；用户「开工」≠ 闸
    - 用户声称与 task 表冲突 → **STOP** · 以 task 表为准
 4. 过程 invoke：`docs/harness/invokes/by-task/<task_slug>/`
 
