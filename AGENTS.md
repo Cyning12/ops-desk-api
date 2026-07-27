@@ -15,12 +15,14 @@
 
 1. **本文件 `AGENTS.md`** — Agent 导航与约束
 2. **`docs/tasks/active/task_*.md`** — 当前进行中任务与人工闸表（**每次新会话必须先读**）
-3. **`docs/standards/CODING_BACKEND_L2_v1_zh.md`** — 后端编码规范
-4. **`README.md`** — 本仓说明
-5. **`../ops-desk-workspace/docs/01-scope/00-project-brief.md`** — 项目范围与决策
-6. **`../ops-desk-workspace/docs/02-backend-analysis/00-current-state.md`** — 后端现状与改造方向
-7. **`../ops-desk-workspace/docs/02-backend-analysis/01-sse-chat-design.md`** — SSE Chat 详细设计
-8. **`../ops-desk-workspace/docs/05-plan/00-migration-roadmap.md`** — 阶段计划
+3. **`docs/_tech_graph/README.md`** + **`LAYER_README.md`** — 图谱物理分层（G-L0/G-L1/G-L2；目录 `l0`≡G-L0）
+4. **`docs/skills/`** — Skill 真值（S-L0/S-L1；IDE 仅拷贝）
+5. **`docs/standards/CODING_BACKEND_L2_v1_zh.md`** — 后端编码规范
+6. **`README.md`** — 本仓说明
+7. **`../ops-desk-workspace/docs/01-scope/00-project-brief.md`** — 项目范围与决策
+8. **`../ops-desk-workspace/docs/02-backend-analysis/00-current-state.md`** — 后端现状与改造方向
+9. **`../ops-desk-workspace/docs/02-backend-analysis/01-sse-chat-design.md`** — SSE Chat 详细设计
+10. **`../ops-desk-workspace/docs/05-plan/00-migration-roadmap.md`** — 阶段计划
 
 ---
 
@@ -38,7 +40,8 @@
 2. **核验人工闸**
    | 闸 | 阻塞 | 真值位置 |
    |---|---|---|
-   | `HG-GRAPH-MODULES` | 30 改码 | `docs/_tech_graph/01_struct.md` |
+   | `HG-GRAPH-MODULES` | 30 改码 | `docs/_tech_graph/l1/01_modules.md`（根 `01_struct.md` 为过渡 stub） |
+   | `HG-PILOT-OPSDESK-GLAYER` | 物理分层试点改码 | `docs/tasks/active/task_*.md` 人工闸表 |
    | `HG-AUDIT-R1` | 30 开工 | `docs/tasks/active/task_*.md` 人工闸表 |
 
 3. **确认分支正确**
@@ -100,13 +103,15 @@ alembic upgrade head
 - Chat：LangGraph StateGraph + `graph.astream_events` + FastAPI `StreamingResponse`
 - LLM：默认 SiliconFlow，百炼 fallback
 - 鉴权：DB session，表 `ops_users` / `ops_sessions` / `ops_invite_tokens`
-- 每次新增路由/表/事件类型必须同步更新 `docs/_tech_graph/`
+- 每次新增路由/表/事件类型必须同步更新 `docs/_tech_graph/`（物理分层：`l0`/`l1`/`l2`/`shared`）
+- task 生产字段须含 `graph_change_layer` 与 `review_hat`（默认 `20`）；正文写 G-L\*/S-L\*，禁止裸「L0」作架构义
+- Skill 只改 `docs/skills/`，再拷贝到 IDE skills 目录
 - **分支与提交流程：禁止直接在 `main`/`master` 改码，必须通过任务分支 + PR 合并**
-  - 新任务：`git checkout -b task/<short-description>`
-  - 所有代码改动在任务分支完成并提交
-  - 完成后通过 GitHub Pull Request 合并到 `main`
-  - PR 合并前必须 `./scripts/graph-compile.sh` 通过且 CI 绿
-  - 紧急修复也使用 `fix/<description>` 分支，不走 `main` 直推
+ - 新任务：`git checkout -b task/<short-description>`
+ - 所有代码改动在任务分支完成并提交
+ - 完成后通过 GitHub Pull Request 合并到 `main`
+ - PR 合并前必须 `./scripts/graph-compile.sh` 通过且 CI 绿
+ - 紧急修复也使用 `fix/<description>` 分支，不走 `main` 直推
 
 <!-- cyning-harness:begin -->
 # Harness Starter（业务仓 · 通用 Agent）
@@ -136,7 +141,7 @@ alembic upgrade head
 
 ## 关键词
 
-`Harness`、`task`、`invoke`、`HG-AUDIT-R1`、`HG-GRAPH-MODULES`、`human_gate`、`拒开工`
+`Harness`、`task`、`invoke`、`HG-AUDIT-R1`、`HG-GRAPH-MODULES`、`HG-PILOT-OPSDESK-GLAYER`、`G-L0`、`human_gate`、`拒开工`
 
 ## 完整库 POINTER
 

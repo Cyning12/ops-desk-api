@@ -2,7 +2,10 @@ schema_version: "inform_graph.v3"
 graph_id: "11_flow_sync_to_chat"
 title: "Sync 数据到 Chat 上下文流程"
 description: "Admin sync 导入的 repo/issue/PR/graph 数据如何被只读接口和 Chat 上下文加载消费"
-version: "2026-07-17"
+version: "2026-07-27"
+layer: "G-L1"
+primary_layer: "G-L1"
+depth: "module"
 direction: "LR"
 
 nodes:

@@ -1,13 +1,14 @@
 # Mermaid 拓扑协议（通用 · v3）
 
-> **用途**：`docs/_tech_graph/99_mermaid_protocol.md` — flowchart 边标记、节点形状与 YAML-first 生成真值。
+> **用途**：`docs/_tech_graph/shared/99_mermaid_protocol.md` — flowchart 边标记、节点形状与 YAML-first 生成真值。
 
 ## 0. YAML-first 工作流
 
-- **唯一人工编辑源**：`*.graph.yaml`（本目录下如 `00_main.graph.yaml`、`10_flow_MAIN.graph.yaml`）。
-- **生成物**：同名 `*.md` 由 `scripts/graph_yaml_compile.js` 自动生成，包含 YAML frontmatter、Mermaid flowchart、Nodes/Edges 表。
-- **禁止手写 `.md`**：如需改图，改 YAML 源后重新运行编译脚本；`--check` 模式可检测 `.md` 与 `.graph.yaml` 是否同步。
-- **历史 `.ai.md` 双轨已弃用**：Post-G0 后不再维护 `.md` + `.ai.md` 两份文件；所有结构化信息（锚点、边类型）集中在 YAML 源中。
+- **唯一人工编辑源**：`docs/_tech_graph/**/*.graph.yaml`（如 `l0/00_main.graph.yaml`、`l1/10_flow_*.graph.yaml`）。
+- **生成物**：同名 `*.md` 由 `./scripts/graph-compile.sh`（harness `graph yaml compile`）生成。
+- **禁止手写编译产物 `.md`**：改 YAML 后重跑 compile；`--check` 检测 `.md` 与 `.graph.yaml` 同步。
+- **export**：`shared/graph.json`（C1；根目录过渡双写）。
+- **历史 `.ai.md` 双轨已弃用**：结构化信息集中在 YAML 源中。
 
 ---
 

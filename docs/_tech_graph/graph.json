@@ -1,27 +1,31 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260724_V1",
-  "generated_at": "2026-07-24T07:27:59Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260727_V1",
+  "generated_at": "2026-07-27T06:51:00Z",
   "graphs": [
     {
       "id": "00_main",
       "title": "ops-desk-api 顶层流程总图",
-      "source_yaml_path": "00_main.graph.yaml"
+      "source_yaml_path": "l0/00_main.graph.yaml",
+      "layer": "G-L0"
     },
     {
       "id": "10_flow_auth",
       "title": "Authentication Flow",
-      "source_yaml_path": "10_flow_auth.graph.yaml"
+      "source_yaml_path": "l1/10_flow_auth.graph.yaml",
+      "layer": "G-L1"
     },
     {
       "id": "10_flow_chat",
       "title": "Chat 流式对话流程",
-      "source_yaml_path": "10_flow_chat.graph.yaml"
+      "source_yaml_path": "l1/10_flow_chat.graph.yaml",
+      "layer": "G-L1"
     },
     {
       "id": "11_flow_sync_to_chat",
       "title": "Sync 数据到 Chat 上下文流程",
-      "source_yaml_path": "11_flow_sync_to_chat.graph.yaml"
+      "source_yaml_path": "l1/11_flow_sync_to_chat.graph.yaml",
+      "layer": "G-L1"
     }
   ],
   "nodes": [
@@ -83,7 +87,7 @@
     {
       "graph_id": "00_main",
       "id": "chat_flow",
-      "label": ">10_flow_chat.md"
+      "label": ">../l1/10_flow_chat.md"
     },
     {
       "graph_id": "00_main",
@@ -98,7 +102,7 @@
     {
       "graph_id": "00_main",
       "id": "struct_doc",
-      "label": ">01_struct.md"
+      "label": ">../l1/01_modules.md"
     },
     {
       "graph_id": "10_flow_auth",
@@ -203,7 +207,7 @@
     {
       "graph_id": "10_flow_chat",
       "id": "main_doc",
-      "label": ">00_main.md"
+      "label": ">../l0/00_main.md"
     },
     {
       "graph_id": "10_flow_chat",
@@ -955,7 +959,7 @@
       "anchors": [
         {
           "path": "app/ops/chat/nodes.py",
-          "line": 60
+          "line": 109
         }
       ],
       "sync": true

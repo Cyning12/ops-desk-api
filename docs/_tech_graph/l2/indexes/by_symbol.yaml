@@ -1,0 +1,41 @@
+# chat 域 symbol → path 倒排（G-L2）
+# 源：l1/10_flow_chat.graph.yaml implementedBy
+
+version: "2026-07-27"
+graph_id: "10_flow_chat"
+layer: "G-L2"
+
+by_symbol:
+  chat_stream:
+    path: app/ops/chat/router.py
+    node_id: chat_stream
+    kind: method
+  chat_ws:
+    path: app/ops/chat/ws.py
+    node_id: chat_ws
+    kind: method
+  ChatEventStreamer:
+    path: app/ops/chat/streaming.py
+    node_id: event_gen
+    kind: class
+  run_chat_stream:
+    path: app/ops/chat/service.py
+    node_id: chat_service
+    kind: method
+  graph:
+    path: app/ops/chat/graph.py
+    node_id: stategraph
+    kind: module
+    note: "LangGraph compiled graph 对象"
+  intent_node:
+    path: app/ops/chat/nodes.py
+    node_id: intent
+    kind: method
+  load_issue_context_node:
+    path: app/ops/chat/nodes.py
+    node_id: context
+    kind: method
+  answer_node:
+    path: app/ops/chat/nodes.py
+    node_id: answer
+    kind: method

@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_chat
-version: 2026-07-16
-generated_at: 2026-07-24T07:27:59Z
+version: 2026-07-27
+generated_at: 2026-07-27T06:51:00Z
 source: 10_flow_chat.graph.yaml
 ---
 
@@ -24,7 +24,7 @@ flowchart TB
     answer[generate_answer]
     llm[LLM Provider]
     db[PostgreSQL]
-    main_doc[>00_main.md]
+    main_doc[>../l0/00_main.md]
     admin_sync[POST /api/ops/admin/sync]
 
     client --"POST sync payload"--> admin_sync
@@ -56,7 +56,7 @@ flowchart TB
     context --"->"--> answer
     // → app/ops/chat/graph.py#L23
     answer --"complete_stream"--> llm
-    // → app/ops/chat/nodes.py#L60
+    // → app/ops/chat/nodes.py#L109
     chat_service --"inserts ops_run_events"--> db
     event_gen --"updates ops_runs"--> db
     answer --"加载"--> main_doc
@@ -83,7 +83,7 @@ flowchart TB
 | answer | generate_answer | flow |
 | llm | LLM Provider | external |
 | db | PostgreSQL | external |
-| main_doc | >00_main.md | external |
+| main_doc | >../l0/00_main.md | external |
 | admin_sync | POST /api/ops/admin/sync | flow |
 
 ### Edges

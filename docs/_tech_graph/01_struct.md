@@ -1,43 +1,8 @@
-# 模块边界登记表（L0-b · D4-a 人签真值）
+# 过渡 stub · 原 `01_struct.md`（C2）
 
-> **用途**：`docs/_tech_graph/01_struct.md` — **一级模块** 边界；**HG-GRAPH-MODULES** approved 后方可 **30 执行改码**。  
-> **范围**：Ops Desk 后端 API（`ops-desk-api`）。
+> **真值已迁至**：[`l1/01_modules.md`](./l1/01_modules.md)  
+> **闸路径**：`HG-GRAPH-MODULES` → `docs/_tech_graph/l1/01_modules.md`  
+> **保留策略**：闸改指后 **≥1 Epic** 再删本 stub（OPEN_QUESTIONS C2）。  
+> **历史裸号**：旧文曾称「L0-b 模块表」· 今 **G-L1**。
 
----
-
-## 模块表（必填）
-
-| module_id | 名称 | 路径 glob | 依赖方向（仅指向谁） | 负责人/备注 |
-|-----------|------|-----------|----------------------|-------------|
-| `entry` | 入口与配置 | `app/main.py`, `app/config.py` | → `api`, `db` | FastAPI 实例、CORS、环境变量 |
-| `api` | API 路由注册 | `app/ops/router.py`, `app/ops/*/router.py` | → `service`, `auth`, `db` | HTTP 入口、SSE 流封装 |
-| `auth` | 鉴权模块 | `app/ops/auth.py`, `app/ops/deps.py`, `app/ops/security.py` | → `db` | 登录、登出、session cookie、invite token 验证、角色保护 |
-| `chat` | Chat 业务 | `app/ops/chat/**` | → `llm`, `db` | LangGraph StateGraph、SSE/WS 双传输、共享 ChatEventStreamer |
-| `data` | 数据视图 | `app/ops/overview.py`, `app/ops/issues.py`, `app/ops/pulls.py`, `app/ops/graph.py` | → `db` | Issue/PR/Overview 指标/Graph 快照只读查询（供 Chat / iOS 只读消费） |
-| `admin` | Admin 同步 | `app/ops/admin/sync.py`, `app/ops/admin/service.py`, `app/ops/admin/schema.py` | → `db` | 接收 GHA sync payload 并持久化到 data/chat 依赖的表 |
-| `llm` | LLM Provider | `app/llm/**` | → — | SiliconFlow / 百炼 provider 工厂 |
-| `db` | 数据库与 ORM | `app/db/**`, `alembic/**` | —（被依赖） | SQLAlchemy models、session、migrations |
-
-## 跨模块契约
-
-| 契约 | 提供方 module_id | 消费方 | 说明 |
-|---|---|---|---|
-| `ChatState` | `chat` | `chat` 内部节点 | LangGraph 状态字典 |
-| `SseEvent` | `api` | `chat` / 前端 | SSE 事件 JSON 格式 |
-| `ChatWsProtocol` | `chat` | 面试演示 / 未来 iOS | `WS /api/ops/chat/ws` message/cancel 入参 + 与 SSE 一致的事件 JSON（当前不鉴权，演示用户=首个 maintainer） |
-| `AsyncSession` | `db` | `admin`, `data`（未来） | 数据库会话依赖 |
-| `LatestChatSession` | `chat` | `iOS v1` | `GET /api/ops/chat/sessions/latest` 自动获取/创建最近 session |
-| `SyncedRepo/Issue/PR/GraphSnapshot` | `admin` | `data`, `chat` | admin 写入的表同时供 data 只读接口和 chat 上下文加载 |
-| `OpsIssue/OpsPullRequest/OpsGraphSnapshot` | `data` | `chat` | Chat 通过 data 层表消费同步后的数据 |
-
-## 人签记录
-
-| human_gate_id | status | 签核人 | 日期 | 说明 |
-|---|---|---|---|---|
-| HG-GRAPH-MODULES | approved | 见 `task_graph_bootstrap` | 2026-07-16 | 模块表覆盖 ops-desk-api 一级模块；图谱 bootstrap 已完成 |
-
-## 关联
-
-- 顶层图：[`00_main.md`](./00_main.md) · 源 [`00_main.graph.yaml`](./00_main.graph.yaml)
-- Chat 流程：[`10_flow_chat.md`](./10_flow_chat.md) · 源 [`10_flow_chat.graph.yaml`](./10_flow_chat.graph.yaml)
-- Mermaid 约定：[`99_mermaid_protocol.md`](./99_mermaid_protocol.md)
+Agent / 旧链接落到本文件时，请改读 `l1/01_modules.md`。

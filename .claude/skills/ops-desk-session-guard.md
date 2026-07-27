@@ -32,8 +32,9 @@ Active tasks:
 1. **读 `AGENTS.md`**
 2. **读 `docs/tasks/active/task_*.md`**（如有多个，按 ID 顺序读）
 3. **核验人工闸表**
-   - `HG-GRAPH-MODULES`：见 `docs/_tech_graph/01_struct.md`
+   - `HG-GRAPH-MODULES`：见 `docs/_tech_graph/l1/01_modules.md`（根 `01_struct.md` 为过渡 stub）
    - `HG-AUDIT-R1`：见 task 人工闸表
+   - Skill 真值：`docs/skills/`（IDE `.claude/skills` 仅副本）
 4. **确认当前分支**
    - 应为 `task/<slug>` 或 `fix/<description>`
    - 在 `main`/`master` 上 → 停止改码，先切分支

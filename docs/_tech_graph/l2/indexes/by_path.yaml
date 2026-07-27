@@ -1,0 +1,39 @@
+# chat 域 path → 节点倒排（G-L2）
+# 源：l1/10_flow_chat.graph.yaml implementedBy
+# 生成策略：手维启动；后续可 --check
+
+version: "2026-07-27"
+graph_id: "10_flow_chat"
+layer: "G-L2"
+
+by_path:
+  "app/ops/chat/router.py":
+    - node_id: chat_stream
+      symbol: chat_stream
+      kind: method
+  "app/ops/chat/ws.py":
+    - node_id: chat_ws
+      symbol: chat_ws
+      kind: method
+  "app/ops/chat/streaming.py":
+    - node_id: event_gen
+      symbol: ChatEventStreamer
+      kind: class
+  "app/ops/chat/service.py":
+    - node_id: chat_service
+      symbol: run_chat_stream
+      kind: method
+  "app/ops/chat/graph.py":
+    - node_id: stategraph
+      symbol: graph
+      kind: module
+  "app/ops/chat/nodes.py":
+    - node_id: intent
+      symbol: intent_node
+      kind: method
+    - node_id: context
+      symbol: load_issue_context_node
+      kind: method
+    - node_id: answer
+      symbol: answer_node
+      kind: method

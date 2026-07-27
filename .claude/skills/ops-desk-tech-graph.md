@@ -46,29 +46,18 @@ npx @cyning/harness init --preset harness-only --ide cursor,claude,agents --yes
 
 ### 1.3 创建/恢复真实图谱内容
 
-必须存在且符合 `inform_graph.v3` schema 的文件：
+必须存在且符合 `inform_graph.v3` schema 的文件（物理分层后）：
 
-- `docs/_tech_graph/00_main.graph.yaml` — 顶层总图
-- `docs/_tech_graph/01_struct.md` — 模块边界表（人签真值）
-- `docs/_tech_graph/02_version.md` — 版本时间线
-- `docs/_tech_graph/99_mermaid_protocol.md` — Mermaid 约定
-- 至少一条主 flow：`docs/_tech_graph/10_flow_*.graph.yaml`
+- `docs/_tech_graph/l0/00_main.graph.yaml` — 顶层总图（G-L0）
+- `docs/_tech_graph/l1/01_modules.md` — 模块边界表（人签真值 · G-L1）
+- `docs/_tech_graph/shared/02_version.md` — 版本时间线
+- `docs/_tech_graph/shared/99_mermaid_protocol.md` — Mermaid 约定
+- 至少一条主 flow：`docs/_tech_graph/l1/10_flow_*.graph.yaml`
+- Skill 真值：`docs/skills/`（本 IDE skill 为副本；改规程请回写 docs/skills）
 
 ### 1.4 配置编译脚本
 
-`scripts/graph-compile.sh`：
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "${ROOT_DIR}"
-npx @cyning/harness graph yaml compile --input docs/_tech_graph --all
-python3 scripts/graph_yaml_to_json.py docs/_tech_graph
-npx @cyning/harness graph yaml check --input docs/_tech_graph --all
-```
-
-`scripts/graph_yaml_to_json.py`：用于生成兼容 harness v2 check 的 `graph.json`。
+使用仓内 `scripts/graph-compile.sh`（递归子目录 + `shared/graph.json`）。勿再假设平铺单层 `--input docs/_tech_graph`。
 
 ### 1.5 首次编译并校验
 
@@ -76,16 +65,11 @@ npx @cyning/harness graph yaml check --input docs/_tech_graph --all
 ./scripts/graph-compile.sh
 ```
 
-输出应包含：
-
-```text
-OK: 00_main
-OK: 10_flow_xxx
-```
+输出应包含对各子目录的 `OK: …`。
 
 ### 1.6 人签 HG-GRAPH-MODULES
 
-在 `docs/_tech_graph/01_struct.md` 中填写一级模块表，维护者签核后将 `HG-GRAPH-MODULES` 状态改为 `approved`。
+在 `docs/_tech_graph/l1/01_modules.md` 中填写一级模块表，维护者签核后将 `HG-GRAPH-MODULES` 状态改为 `approved`（根 `01_struct.md` 仅为过渡 stub）。
 
 ---
 

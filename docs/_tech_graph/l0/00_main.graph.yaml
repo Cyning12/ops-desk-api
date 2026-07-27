@@ -2,7 +2,10 @@ schema_version: "inform_graph.v3"
 graph_id: "00_main"
 title: "ops-desk-api 顶层流程总图"
 description: "Ops Desk 后端 API 的架构总图：FastAPI 入口、各业务路由、LangGraph Chat 流程、数据库表与外部依赖的关系。"
-version: "2026-07-16"
+version: "2026-07-27"
+layer: "G-L0"
+primary_layer: "G-L0"
+depth: "framework"
 direction: "TB"
 
 nodes:
@@ -51,7 +54,7 @@ nodes:
     kind: flow
 
   - id: "chat_flow"
-    label: ">10_flow_chat.md"
+    label: ">../l1/10_flow_chat.md"
     kind: external
 
   - id: "llm"
@@ -63,7 +66,7 @@ nodes:
     kind: external
 
   - id: "struct_doc"
-    label: ">01_struct.md"
+    label: ">../l1/01_modules.md"
     kind: external
 
 edges:
