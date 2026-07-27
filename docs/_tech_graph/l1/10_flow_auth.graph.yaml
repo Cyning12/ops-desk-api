@@ -2,7 +2,10 @@ schema_version: "inform_graph.v3"
 graph_id: "10_flow_auth"
 title: "Authentication Flow"
 description: "Login, logout, session validation, and iOS latest chat session flow"
-version: "2026-07-17"
+version: "2026-07-27"
+layer: "G-L1"
+primary_layer: "G-L1"
+depth: "module"
 direction: "TB"
 
 nodes:

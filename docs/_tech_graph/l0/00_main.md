@@ -1,7 +1,7 @@
 ---
 graph_id: 00_main
-version: 2026-07-16
-generated_at: 2026-07-24T07:27:59Z
+version: 2026-07-27
+generated_at: 2026-07-27T06:50:58Z
 source: 00_main.graph.yaml
 ---
 
@@ -24,10 +24,10 @@ flowchart TB
     graph[Graph 快照路由]
     admin_sync[Admin Sync 路由]
     chat_router[Chat 路由]
-    chat_flow[>10_flow_chat.md]
+    chat_flow[>../l1/10_flow_chat.md]
     llm[LLM Provider]
     db[PostgreSQL]
-    struct_doc[>01_struct.md]
+    struct_doc[>../l1/01_modules.md]
 
     client --"GET"--> health
     client --"HTTP / SSE"--> app
@@ -84,10 +84,10 @@ flowchart TB
 | graph | Graph 快照路由 | flow |
 | admin_sync | Admin Sync 路由 | flow |
 | chat_router | Chat 路由 | flow |
-| chat_flow | >10_flow_chat.md | external |
+| chat_flow | >../l1/10_flow_chat.md | external |
 | llm | LLM Provider | external |
 | db | PostgreSQL | external |
-| struct_doc | >01_struct.md | external |
+| struct_doc | >../l1/01_modules.md | external |
 
 ### Edges
 

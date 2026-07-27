@@ -2,7 +2,10 @@ schema_version: "inform_graph.v3"
 graph_id: "10_flow_chat"
 title: "Chat 流式对话流程"
 description: "用户通过 SSE 与后端对话的完整流程：HTTP 入口、LangGraph StateGraph 执行、LLM 调用、事件归档。"
-version: "2026-07-16"
+version: "2026-07-27"
+layer: "G-L1"
+primary_layer: "G-L1"
+depth: "method"
 direction: "TB"
 
 nodes:
@@ -13,34 +16,74 @@ nodes:
   - id: "chat_stream"
     label: "POST /api/ops/chat/stream"
     kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/chat/router.py"
+        symbol: "chat_stream"
+        kind: method
 
   - id: "chat_ws"
     label: "WS /api/ops/chat/ws"
     kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/chat/ws.py"
+        symbol: "chat_ws"
+        kind: method
 
   - id: "event_gen"
     label: "ChatEventStreamer (SSE/WS 共享)"
     kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/chat/streaming.py"
+        symbol: "ChatEventStreamer"
+        kind: class
 
   - id: "chat_service"
     label: "run_chat_stream"
     kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/chat/service.py"
+        symbol: "run_chat_stream"
+        kind: method
 
   - id: "stategraph"
     label: "Chat StateGraph"
     kind: struct
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/chat/graph.py"
+        symbol: "graph"
+        kind: module
 
   - id: "intent"
     label: "detect_intent"
     kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/chat/nodes.py"
+        symbol: "intent_node"
+        kind: method
 
   - id: "context"
     label: "load_context"
     kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/chat/nodes.py"
+        symbol: "load_issue_context_node"
+        kind: method
 
   - id: "answer"
     label: "generate_answer"
     kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/chat/nodes.py"
+        symbol: "answer_node"
+        kind: method
 
   - id: "llm"
     label: "LLM Provider"
@@ -51,7 +94,7 @@ nodes:
     kind: external
 
   - id: "main_doc"
-    label: ">00_main.md"
+    label: ">../l0/00_main.md"
     kind: external
 
   - id: "admin_sync"
@@ -163,7 +206,7 @@ edges:
     label: "complete_stream"
     anchors:
       - path: "app/ops/chat/nodes.py"
-        line: 60
+        line: 109
 
   - from: "chat_service"
     to: "db"
