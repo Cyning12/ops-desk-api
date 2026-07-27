@@ -1,6 +1,6 @@
 # Task：Harness 升级至 2.14.0（api）+ pre-30 硬闸 dogfood
 
-> **状态**：active  
+> **状态**：completed  
 > **类型**：基础设施（过程轨 upgrade）  
 > **关联**：npm `@cyning/harness@2.14.0` · SPEC-verify-pre30-invoke-hats-gate · Phase α glayer
 

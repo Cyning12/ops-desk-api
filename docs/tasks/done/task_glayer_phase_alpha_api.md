@@ -1,6 +1,6 @@
 # Task：图谱 × Skill 物理分层 · Phase α（ops-desk-api）
 
-> **状态**：active  
+> **状态**：completed  
 > **类型**：图谱 / Skill 试点落盘（无业务功能改码）  
 > **关联**：`docs/_tech_graph/` · `docs/skills/` · 规格包 `Projects/.../graph_skill_layering_v1/`
 
