@@ -1,7 +1,7 @@
 {
-  "version": "2.14.0",
+  "version": "2.16.1",
   "preset": "fullstack-node-py",
   "ide": ["cursor","claude","agents"],
-  "from_version": "2.13.0",
-  "upgraded_at": "2026-07-27T07:38:52Z"
+  "from_version": "2.14.0",
+  "upgraded_at": "2026-07-27T13:33:19Z"
 }
