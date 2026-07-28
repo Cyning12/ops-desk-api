@@ -1,7 +1,7 @@
 # RUNBOOK · WikiTrack 启用 + Obsidian（可复用 · api dogfood）
 
 > **版本**：v1 · 2026-07-28  
-> **源仓 dogfood**：`ops-desk-api`（manifest ≥ **2.18.1**）  
+> **源仓 dogfood**：`ops-desk-api`（manifest ≥ **2.18.2**）  
 > **消费方**：`ops-desk-web`（及同类已接入 Harness 的业务仓）**原样对照执行**  
 > **原则**：**单份真值**（不把 `standards` / 部署文 / `_tech_graph` 正文复制进 `coding_wiki`）
 
@@ -13,7 +13,7 @@
 |---|---|
 | Open Folder | 目标业务仓根 |
 | 工作树 | `git status` 干净（或仅本 task 文件） |
-| Harness | 先钉 **`@cyning/harness@2.18.1`**（或更新），**再**改 wiki 文档 |
+| Harness | 先钉 **`@cyning/harness@2.18.2`**（或更新），**再**改 wiki 文档 |
 | 非范围 | 不改 cyning-harness 产品仓；不做 Obsidian 插件开发；不力导向 Web UI |
 
 破坏性（自 2.18.0，仍有效）：
@@ -24,21 +24,21 @@
 
 ---
 
-## 1. 升级到 2.18.1（文档动作前）
+## 1. 升级到 2.18.2（文档动作前）
 
 在业务仓根：
 
     git checkout -b task/harness-upgrade-2-18-1   # 或沿用已有 upgrade 分支
-    npx --yes @cyning/harness@2.18.1 upgrade --yes --target .
-    npx --yes @cyning/harness@2.18.1 check
+    npx --yes @cyning/harness@2.18.2 upgrade --yes --target .
+    npx --yes @cyning/harness@2.18.2 check
 
 验收：
 
-- `.cyning-harness/manifest.json` → `"version": "2.18.1"`
+- `.cyning-harness/manifest.json` → `"version": "2.18.2"`
 - `check` 输出「已是最新」· exit 0
 - upgrade 后 **diff AGENTS / FRAGMENT**：恢复本仓 overlay（api 例：pre-30 行、G-L0 / HG-PILOT、FRAGMENT 的 `l1/01_modules`）
 
-若仍停在 2.18.0：先完成 `wiki_delta` 存量补字段（见 USER_GUIDE §6.0b），再升 2.18.1。
+若仍停在 2.18.0：先完成 `wiki_delta` 存量补字段（见 USER_GUIDE §6.0b），再升 2.18.2。
 
 ---
 
@@ -79,11 +79,19 @@ task 元信息要点：
 | `docs/standards/` 等 | **正文真值**（唯一） |
 | `docs/_tech_graph/` | GraphTrack 真值（yaml 编译）；wiki **只链不拷** |
 
-### 3.2 必改四文件
+### 3.2 两层目录（v2.18.2 recommended · 非硬闸）
+
+- 根：`README` / 可选 `_index` / `stable`·`context`·`volatile`
+- 主题薄页：`topics/*.md`（勿按日期/PR/task_slug 建目录）
+- 未达加深阈值（md≥15 等）**不要**提前第 3 层
+- 缺两层 **≠** close BLOCK
+
+### 3.3 必改读序文件
+
 
 对 `README.md` / `stable.md` / `context.md` / `volatile.md`：
 
-1. 层内互链至少含：`[[README]]` · `[[stable]]` · `[[context]]` · `[[volatile]]`（保证 `wiki export` 有边；对齐 2.18.1 模板）
+1. 层内互链至少含：`[[README]]` · `[[stable]]` · `[[context]]` · `[[volatile]]`（保证 `wiki export` 有边；对齐 2.18.2 两层 + 互链模板）
 2. `context.md` 用**相对 md 链**指向真值（示例，按仓裁剪）：
 
     - `../standards/...`
@@ -93,7 +101,7 @@ task 元信息要点：
 3. `volatile.md` 填当前 `docs/tasks/active/` 的 slug 表；关账后清空
 4. **不要**把长规范/流程图粘进 coding_wiki
 
-### 3.3 Obsidian
+### 3.4 Obsidian
 
 1. Obsidian → Open folder as vault → 选择业务仓 **`docs/`**（推荐，可点开相对链到 standards）
 2. 备选：只开 `docs/coding_wiki/`（则 `../standards` 链可能出 vault，体验差）
@@ -104,9 +112,9 @@ task 元信息要点：
 
 ## 4. 校验命令（合并前）
 
-    npx --yes @cyning/harness@2.18.1 check
-    npx --yes @cyning/harness@2.18.1 wiki export --json --target .
-    npx --yes @cyning/harness@2.18.1 verify --target . --task docs/tasks/active/task_wikitrack_enable_p0.md
+    npx --yes @cyning/harness@2.18.2 check
+    npx --yes @cyning/harness@2.18.2 wiki export --json --target .
+    npx --yes @cyning/harness@2.18.2 verify --target . --task docs/tasks/active/task_wikitrack_enable_p0.md
     # 前端仓再加：pnpm lint && pnpm test && pnpm build
     # 后端仓再加：ruff check … && pytest …
 
@@ -136,7 +144,7 @@ task 元信息要点：
 
 ## 6. web 仓对照清单（直接勾选）
 
-- [ ] `upgrade` → manifest **2.18.1**
+- [ ] `upgrade` → manifest **2.18.2**
 - [ ] 恢复本仓 AGENTS/FRAGMENT overlay（若有）
 - [ ] 存量 task 已有 `wiki_delta`（若从 ≤2.17 升上来）
 - [ ] 改写 `docs/coding_wiki/{README,stable,context,volatile}.md`（互链 + 真值相对链）
@@ -163,7 +171,7 @@ task 元信息要点：
 |---|---|
 | S5 dirty 挡 upgrade | commit/stash 后再 upgrade |
 | upgrade 冲掉 overlay | 恢复后提交；记摩擦 |
-| export edges=0 | 补 `[[stable]]` 等互链（见 2.18.1 模板） |
+| export edges=0 | 补 `[[stable]]` 等互链（见 2.18.2 topics/wikilinks_export） |
 | close 缺 wiki_delta | 补字段；**不用** `--allow-wiki-gap` 当绿路径 |
 | 误复制正文进 coding_wiki | 删副本，改回相对链 |
 
@@ -173,10 +181,10 @@ task 元信息要点：
 
 | 项 | 值 |
 |---|---|
-| manifest | `2.18.1`（from 2.18.0） |
+| manifest | `2.18.2`（from 2.18.1） |
 | 分支 | `task/harness-upgrade-2-18-migrate`（含 WikiTrack P0） |
 | 单份真值 | 是（coding_wiki 仅指针） |
-| export | nodes=4 · edges=11 · warnings=0 |
+| export | 见合入前自检（含 topics/） |
 
 ## 修订记录
 

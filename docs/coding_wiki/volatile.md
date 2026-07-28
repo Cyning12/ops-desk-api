@@ -11,8 +11,8 @@
 
 | task_slug | 必读 | code_quality_bar |
 |-----------|------|------------------|
-| `harness-upgrade-2-18-migrate` | PR #22 · manifest 2.18.1 · wiki_delta 存量 | `not_applicable` |
-| `wikitrack-enable-p0` | 本目录入口启用 · RUNBOOK 交 web | `not_applicable` |
+| `harness-upgrade-2-18-migrate` | PR #22 · manifest 2.18.2 · wiki_delta 存量 | `not_applicable` |
+| `wikitrack-enable-p0` | 本目录入口启用 · RUNBOOK 交 web · 2.18.2 两层目录 | `not_applicable` |
 
 ## 执行帽速链
 

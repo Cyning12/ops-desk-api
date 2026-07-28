@@ -8,6 +8,9 @@
 - 稳定摘要：[[stable]]
 - 本 task：[[volatile]]
 - 目录说明：[[README]]
+- 主题索引：[[_index]]
+- 目录约定：[[topics/wiki_layout]]
+- export：[[topics/wikilinks_export]]
 
 ## 规范（真值）
 

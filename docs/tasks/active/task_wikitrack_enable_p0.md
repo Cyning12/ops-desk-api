@@ -2,8 +2,8 @@
 
 > **状态**：in_progress  
 > **类型**：基础设施 / 文档（WikiTrack 启用 · 无双份）  
-> **关联**：`@cyning/harness@2.18.1` · [`RUNBOOK_wikitrack_enable_obsidian_v1_zh.md`](../harness/RUNBOOK_wikitrack_enable_obsidian_v1_zh.md)  
-> **上游**：维护者 00 统筹 · 先升 2.18.1 再落文档
+> **关联**：`@cyning/harness@2.18.2` · [`RUNBOOK_wikitrack_enable_obsidian_v1_zh.md`](../harness/RUNBOOK_wikitrack_enable_obsidian_v1_zh.md)  
+> **上游**：维护者 00 统筹 · 先升 2.18.2 再落文档
 
 ---
 
@@ -24,9 +24,9 @@
 | **required_invoke_hats** | `00,30` |
 | **experience_capture** | `recommended` |
 | **test_strategy** | `recommended` |
-| **test_strategy_note** | `wiki export --json` 有边；`verify --task`；`check` 2.18.1；无业务 pytest 义务（有则报告） |
+| **test_strategy_note** | `wiki export --json` 有边；`verify --task`；`check` 2.18.2；无业务 pytest 义务（有则报告） |
 | **code_quality_bar** | `not_applicable` |
-| **orchestration** | 00 统筹；依赖同分支已升 2.18.1；产出 RUNBOOK 交 web |
+| **orchestration** | 00 统筹；依赖同分支已升 2.18.2；产出 RUNBOOK 交 web |
 
 ### 人工闸
 
@@ -40,11 +40,11 @@
 
 ## 背景与目标
 
-空壳 `coding_wiki` 不足以支撑 Obsidian / `wiki_delta=path`。在 **2.18.1** 上启用入口：**单份真值**、相对链 + `[[wikilink]]`，并产出 web 可勾选 RUNBOOK。
+空壳 `coding_wiki` 不足以支撑 Obsidian / `wiki_delta=path`。在 **2.18.2** 上启用入口：**单份真值**、相对链 + `[[wikilink]]`，并产出 web 可勾选 RUNBOOK。
 
 **完成态**：
 
-- [x] manifest ≥ 2.18.1
+- [x] manifest ≥ 2.18.2
 - [x] `docs/coding_wiki` 四文件为真实入口（互链 + 真值相对链）
 - [x] `wiki export --json` nodes≥4 且 edges>0
 - [x] RUNBOOK 落盘可交 web
@@ -58,7 +58,7 @@
 
 | 触发 | 行为 | 可重试 |
 |---|---|---|
-| export 空边 | 按 2.18.1 模板补 `[[wikilink]]` | 是 |
+| export 空边 | 按 2.18.2 模板补 `[[wikilink]]` | 是 |
 | upgrade 冲 overlay | 恢复 AGENTS/FRAGMENT | 是 |
 | 误双份正文 | 删副本改指针 | 是 |
 
@@ -77,7 +77,7 @@
 | 项 | 内容 |
 |---|---|
 | **日期** | 2026-07-28 |
-| **manifest** | `2.18.1` |
+| **manifest** | `2.18.2` |
 | **wiki export** | nodes=4 · edges=11 · warnings=0 · exit 0 |
 | **verify** | PASS · exit 0 |
 | **RUNBOOK** | `docs/harness/RUNBOOK_wikitrack_enable_obsidian_v1_zh.md` |

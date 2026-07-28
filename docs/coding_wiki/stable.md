@@ -5,8 +5,10 @@
 ## 相关页
 
 - 读序总览：[[README]]
+- 主题索引：[[_index]]
 - 项目指针：[[context]]
 - 本 task 易变上下文：[[volatile]]
+- 目录约定：[[topics/wiki_layout]]
 
 ## 编码底线（摘要）
 
