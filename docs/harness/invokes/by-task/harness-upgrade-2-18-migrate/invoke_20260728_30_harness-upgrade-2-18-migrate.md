@@ -53,3 +53,7 @@ pre-30 invoke：`minimal` → 无 preRequired · 不挡
 |------|------|
 | 2026-07-28 | upgrade 2.17.0 → 2.18.0 + wiki_delta 存量迁移 |
 | 2026-07-28 | check/verify/ruff/pytest 绿 · 待 PR |
+
+## CLOSE
+
+- CLOSE → docs/tasks/done/ · PR #22

@@ -45,3 +45,7 @@ reviews：存在？ 是 · pre-30：required 含 00 → 已落盘
 | 日期 | 说明 |
 |------|------|
 | 2026-07-28 | 落地 WikiTrack P0 · export 11 边 |
+
+## CLOSE
+
+- CLOSE → docs/tasks/done/ · PR #22
