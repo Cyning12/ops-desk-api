@@ -4,7 +4,8 @@
 # Harness Starter（业务仓 · Claude Code）
 
 > **单源真值**：`docs/coding_wiki/` 读序 + `docs/standards/` + `AGENTS.md`。  
-> **本片段**：摘要 + **POINTER**；条文真值在 `docs/harness/prompts/`。
+> **本片段**：摘要 + **POINTER**；条文真值在 `docs/harness/prompts/`。  
+> **仓内定制（v2.22+）**：写在本产品块 **外** 的 `<!-- cyning-harness-local:begin/end -->`；勿改本 begin/end 内文。
 
 ## 执行 task 前
 
