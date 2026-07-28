@@ -8,8 +8,8 @@
 ## A. RUNBOOK_upgrade_wiki_delta_v1_zh.md
 
 1. **§1 后增「overlay 自检」**（P2）  
-   - `diff`：`AGENTS.md` / `CLAUDE.md` / `.cursor/rules/05-harness-starter.mdc`  
-   - 说明：marker merge 会丢掉仓内定制关键词与 pre-30 句。
+   - `diff`：`AGENTS.md` / `CLAUDE.md` / `.cursor/rules/05-harness-starter.mdc` / `docs/harness/prompts/FRAGMENT_30_gate_verify_v1_zh.md`  
+   - 说明：marker merge 会丢掉仓内定制关键词与 pre-30 句；prompts 全量 sync 可能把 G-L 试点仓的 `l1/01_modules` 占位回退成 `01_struct`。
 
 2. **§5 增 Python/npx-only 交叉链**（P2）  
    - 一句指向 `ci/samples/README.md` 的 `package-manager-cache: false` 专节。  

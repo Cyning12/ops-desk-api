@@ -13,7 +13,7 @@
 | # | 现象 | severity | 说明 |
 |---|------|----------|------|
 | U1 | Open Folder 指令路径 `/Users/cyning/Desktop/Projects/Ops-desk/ops-desk-api` **不存在**；真根为 `/Users/cyning/Desktop/Ops-desk/ops-desk-api` | **P2** | 产品/调度 Prompt 与本机布局不一致；Agent 须自行定位 git root。建议 RUNBOOK/调度模板写「定位 git root」而非写死 Projects。 |
-| U2 | `upgrade --yes` **冲掉** `AGENTS.md` harness 片段定制（丢 `pre-30 invoke` 拒改码句 · 丢 `HG-PILOT-OPSDESK-GLAYER`/`G-L0` 关键词） | **P2** | merge(replace marker) 用产品 fragment 覆盖 marker 内正文。本仓已从 backup 恢复。RUNBOOK §1 宜显式写「upgrade 后必 diff AGENTS/CLAUDE/cursor overlay」。 |
+| U2 | `upgrade --yes` **冲掉** `AGENTS.md` harness 片段定制（丢 `pre-30 invoke` 拒改码句 · 丢 `HG-PILOT-OPSDESK-GLAYER`/`G-L0` 关键词）；`FRAGMENT_30` 把 `HG-GRAPH-MODULES` 占位从本仓 `l1/01_modules` **回退**为产品默认 `01_struct` | **P2** | merge(replace marker) / prompts 全量覆盖。本仓已从 backup 恢复 AGENTS，并手改回 FRAGMENT 的 `l1/01_modules`。RUNBOOK §1 宜显式写「upgrade 后必 diff AGENTS/CLAUDE/cursor/FRAGMENT overlay」。 |
 | U3 | `.cyning-harness/local.json` 写入本机 npx 缓存绝对路径 | **P3** | 多机/CI 无意义；本仓未 ignore。建议产品：推荐 gitignore，或 upgrade 不改写已存在的 local 路径。 |
 | U4 | 无 `package.json` 时每次 `npx @cyning/harness` 均 `npm warn exec … will be installed` | **P3** | Python 仓常态；CI 样例钉 `@2.20` + `--yes` 正确。本地可接受。 |
 | U5 | 环境出现 `npm warn Unknown env config "devdir"` | **P3** | 与 harness 包无关（本机 npmrc）；易误读为 upgrade 失败噪音。 |
