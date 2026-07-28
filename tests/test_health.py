@@ -8,4 +8,4 @@ async def test_health(client: AsyncClient) -> None:
     """Health check returns ok."""
     response = await client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "probe": "20260728-a"}
+    assert response.json() == {"status": "ok"}

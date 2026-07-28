@@ -97,3 +97,8 @@ uv pip install --system -r requirements.txt
 | workspace | `git@github.com:Cyning12/ops-desk-workspace.git` |
 | web | `git@github.com:Cyning12/ops-desk-web.git` |
 | ios | `git@github.com:Cyning12/ops-desk-ios.git` |
+
+## 生产部署
+
+- **GHA（推荐）**：合入 `master` 自动部署，见 [`docs/deployment/gha-api-deploy.md`](docs/deployment/gha-api-deploy.md)
+- **手动应急**：`ops-desk-workspace/deploy/deploy.sh --skip-web`
