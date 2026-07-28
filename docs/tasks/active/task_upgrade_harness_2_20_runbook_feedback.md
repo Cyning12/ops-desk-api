@@ -44,11 +44,11 @@
 
 **完成态**：
 
-- [ ] manifest → `2.22.0`
-- [ ] profile `graph_modules_path=l1/01_modules`
-- [ ] AGENTS local 块关键词在；upgrade×2 无需 backup 手恢复
-- [ ] lint / `--strict` PASS
-- [ ] FEEDBACK 2.22 落盘
+- [x] manifest → `2.22.0`
+- [x] profile `graph_modules_path=l1/01_modules`
+- [x] AGENTS local 块关键词在；upgrade×2 无需 backup 手恢复
+- [x] lint / `--strict` PASS
+- [x] FEEDBACK 2.22 落盘
 
 **不做**：改产品仓；默认 CI `--strict`；把仓特异词写回产品 marker
 
@@ -61,11 +61,25 @@
 | local 仍被冲 | 核对 marker 外位置；记 FEEDBACK severity | 是 |
 | FRAGMENT 仍 01_struct | 查 profile 字段与 hint | 是 |
 | lint missing>0 | 补字段 | 是 |
+| 脏树 S5 | 先 commit 契约再 upgrade | 是 |
 
 ---
 
 ## 验收标准
 
-- [ ] manifest=2.22.0 · check 最新
-- [ ] 合规路径：upgrade 后零手恢复
-- [ ] FEEDBACK 路径 + PR URL
+- [x] manifest=2.22.0 · check 最新
+- [x] 合规路径：upgrade 后零手恢复
+- [x] FEEDBACK 路径 + PR URL
+
+---
+
+### 自检结论（执行者）
+
+| 项 | 内容 |
+|---|---|
+| **日期** | 2026-07-28 |
+| **manifest** | `2.22.0` |
+| **U2 合规零手恢复** | **PASS**（×2 upgrade + 负面对照产品块仍冲） |
+| **lint / strict** | PASS · scanned=25 |
+| **FEEDBACK** | `docs/harness/evidence/FEEDBACK_harness_2_22_0_from_ops_desk_api_20260728.md` |
+| **PR** | https://github.com/Cyning12/ops-desk-api/pull/23 |

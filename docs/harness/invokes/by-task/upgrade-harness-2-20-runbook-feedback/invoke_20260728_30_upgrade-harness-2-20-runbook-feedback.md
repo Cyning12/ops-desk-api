@@ -34,13 +34,11 @@ pre-30 invoke：`minimal` · required=`30` → 无 preRequired 挡 → **是**
 
 ## 交付摘要
 
-- **upgrade**：`2.19.0` → `2.20.0` → **`2.21.0`**
-- **overlay**：每次 upgrade 后按 §1.2 恢复 AGENTS / FRAGMENT（`l1/01_modules`）
-- **lint / --strict**：scanned=25 · **PASS**
-- **wiki export**：nodes=7 · edges=33 · warnings=[]
-- **CI**：钉 `@cyning/harness@2.21.0` · `package-manager-cache: false`
-- **local.json**：gitignore + 停止跟踪（吸收 U3）
-- **FEEDBACK**：2.20 dogfood + **2.21 复检矩阵**（两仓吸收）
+- **upgrade**：`2.19` → `2.20` → `2.21` → **`2.22.0`**
+- **overlay 2.22**：local 块 + `graph_modules_path=l1/01_modules` → **合规零手恢复 PASS**（×2）
+- **负面对照**：产品 marker 内裸词仍冲；local 保留
+- **lint / --strict**：PASS · scanned=25
+- **FEEDBACK**：2.20 / 2.21 复检 / **2.22 U2**
 - **PR**：#23
 
 ---
@@ -52,3 +50,4 @@ pre-30 invoke：`minimal` · required=`30` → 无 preRequired 挡 → **是**
 | 2026-07-28 | 开工 · GATE_VERIFY PASS |
 | 2026-07-28 | 升级 2.20 · strict PASS · FEEDBACK · PR #23 |
 | 2026-07-28 | 吸收产品 2.21.0 · §0b 复检 · gitignore local.json |
+| 2026-07-28 | 2.22.0 overlay 部分根治验证 · FEEDBACK |
