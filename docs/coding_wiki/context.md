@@ -38,4 +38,4 @@
 
 ## 跨仓（仓外）
 
-- 总范围：`../../ops-desk-workspace/docs/01-scope/00-project-brief.md`（Obsidian 单 vault=`docs/` 时需另开 workspace vault）
+- 总范围：`../../ops-desk-workspace/docs/01-scope/00-project-brief.md`（跨仓另开 workspace vault；本 vault 仅 `coding_wiki/`）

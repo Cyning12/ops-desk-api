@@ -103,10 +103,11 @@ task 元信息要点：
 
 ### 3.4 Obsidian
 
-1. Obsidian → Open folder as vault → 选择业务仓 **`docs/`**（推荐，可点开相对链到 standards）
-2. 备选：只开 `docs/coding_wiki/`（则 `../standards` 链可能出 vault，体验差）
-3. Mermaid：图谱 md 需 Core/社区 Mermaid 插件（可选）
-4. **勿**把仓根（含 `node_modules` / `.venv`）当 vault
+1. Obsidian → Open folder as vault → 业务仓 **`docs/coding_wiki/`**（推荐）
+2. **不要**开上级 `docs/`：会把 `tasks/` · `harness/invokes` · `reviews` 等过程轨扫进图谱 → 大量孤点
+3. `context` 里指向 `../standards` 等的相对链是**真值指针**（单份、不双写）；出 vault 时用系统打开或 IDE 看正文即可，不必为进图谱而复制进 wiki
+4. Mermaid：图谱 md 在 vault 外时按需另开；本 vault 以入口互链为主
+5. **勿**把仓根（含 `node_modules` / `.venv`）当 vault
 
 ---
 
@@ -150,7 +151,7 @@ task 元信息要点：
 - [ ] 改写 `docs/coding_wiki/{README,stable,context,volatile}.md`（互链 + 真值相对链）
 - [ ] `wiki export --json` 有边
 - [ ] 新 task：`wikitrack-enable-p0` + R1 + invoke
-- [ ] Obsidian 打开 `docs/` 冒烟
+- [ ] Obsidian 打开 `docs/coding_wiki/` 冒烟（图谱应少孤点；勿开上级 `docs/`）
 - [ ] 拷贝本 RUNBOOK 到 web：`docs/harness/RUNBOOK_wikitrack_enable_obsidian_v1_zh.md`
 - [ ] PR 写明：已启用 WikiTrack；勿默认 `--allow-wiki-gap`
 
@@ -161,7 +162,7 @@ task 元信息要点：
 | 规范 | `CODING_BACKEND_L2` | `CODING_*_L2` 前端规范路径 |
 | 图谱 | `_tech_graph` G-L 分层 | 本仓 `_tech_graph` 读序（若有） |
 | 质量门 | ruff + pytest | pnpm lint/test/build |
-| vault | `docs/` | 同左 |
+| vault | `docs/coding_wiki/` | 同左（勿开上级 `docs/`） |
 
 ---
 

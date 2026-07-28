@@ -3,7 +3,7 @@
 > **单份真值**：正文仍在 `docs/standards/`、`docs/deployment/`、`docs/_tech_graph/` 等原路径。  
 > **本目录**：LLM / Obsidian 读序与互链入口，**不复制**业务正文。  
 > **目录约定**：v2.18.2 **recommended** 两层（根读序 + 三件套 + `topics/`）；**不是** close 硬闸。  
-> **Obsidian**：Open folder as vault → 仓内 `docs/`（推荐）。
+> **Obsidian**：Open folder as vault → **`docs/coding_wiki/`**（推荐）。勿开上级 `docs/`（tasks/invokes/reviews 会刷出大量孤点）。
 
 ## 默认两层
 

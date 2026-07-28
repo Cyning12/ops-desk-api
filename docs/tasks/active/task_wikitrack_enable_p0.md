@@ -66,7 +66,7 @@
 
 ## 验收标准
 
-- [x] coding_wiki 可读；Obsidian 开 `docs/` 可导航
+- [x] coding_wiki 可读；Obsidian 开 `docs/coding_wiki/` 可导航（勿开上级 `docs/`）
 - [x] export 有边；verify PASS
 - [x] RUNBOOK 含 web 勾选清单与 api/web 差异表
 
