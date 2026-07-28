@@ -49,7 +49,7 @@
 - [x] `harness check` 已是最新
 - [x] 代表性 `verify --task` PASS
 - [x] `ruff` + `pytest tests` 绿
-- [ ] invoke + 自检；PR（写明缺 wiki_delta → close BLOCK；勿默认 `--allow-wiki-gap`）
+- [x] invoke + 自检；PR（写明缺 wiki_delta → close BLOCK；勿默认 `--allow-wiki-gap`）
 
 **不做**：ops-desk-web / cyning-harness 产品仓；Obsidian / 力导向 UI；强制新建 WikiTrack
 
