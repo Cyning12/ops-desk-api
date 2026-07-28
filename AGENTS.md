@@ -15,14 +15,15 @@
 
 1. **本文件 `AGENTS.md`** — Agent 导航与约束
 2. **`docs/tasks/active/task_*.md`** — 当前进行中任务与人工闸表（**每次新会话必须先读**）
-3. **`docs/_tech_graph/README.md`** + **`LAYER_README.md`** — 图谱物理分层（G-L0/G-L1/G-L2；目录 `l0`≡G-L0）
-4. **`docs/skills/`** — Skill 真值（S-L0/S-L1；IDE 仅拷贝）
-5. **`docs/standards/CODING_BACKEND_L2_v1_zh.md`** — 后端编码规范
-6. **`README.md`** — 本仓说明
-7. **`../ops-desk-workspace/docs/01-scope/00-project-brief.md`** — 项目范围与决策
-8. **`../ops-desk-workspace/docs/02-backend-analysis/00-current-state.md`** — 后端现状与改造方向
-9. **`../ops-desk-workspace/docs/02-backend-analysis/01-sse-chat-design.md`** — SSE Chat 详细设计
-10. **`../ops-desk-workspace/docs/05-plan/00-migration-roadmap.md`** — 阶段计划
+3. **`docs/coding_wiki/README.md`** — WikiTrack 读序入口（正文真值仍在 standards / 图谱 / 部署等原路径）
+4. **`docs/_tech_graph/README.md`** + **`LAYER_README.md`** — 图谱物理分层（G-L0/G-L1/G-L2；目录 `l0`≡G-L0）
+5. **`docs/skills/`** — Skill 真值（S-L0/S-L1；IDE 仅拷贝）
+6. **`docs/standards/CODING_BACKEND_L2_v1_zh.md`** — 后端编码规范
+7. **`README.md`** — 本仓说明
+8. **`../ops-desk-workspace/docs/01-scope/00-project-brief.md`** — 项目范围与决策
+9. **`../ops-desk-workspace/docs/02-backend-analysis/00-current-state.md`** — 后端现状与改造方向
+10. **`../ops-desk-workspace/docs/02-backend-analysis/01-sse-chat-design.md`** — SSE Chat 详细设计
+11. **`../ops-desk-workspace/docs/05-plan/00-migration-roadmap.md`** — 阶段计划
 
 ---
 

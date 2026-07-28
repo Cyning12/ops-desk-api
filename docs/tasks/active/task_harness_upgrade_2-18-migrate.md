@@ -2,7 +2,7 @@
 
 > **状态**：in_progress  
 > **类型**：基础设施（过程轨 upgrade + task 字段迁移）  
-> **关联**：npm `@cyning/harness@2.18.0` · wiki_delta close 闸 · 维护者指示钉版本升级
+> **关联**：npm `@cyning/harness@2.18.1`（经 2.18.0）· wiki_delta close 闸 · 维护者指示钉版本升级
 
 ---
 
@@ -15,8 +15,8 @@
 | **graph_change_layer** | `none` |
 | **graph_delta** | `none` |
 | **graph_delta_note** | 仅过程轨 sync / manifest / task 元字段；不改业务图谱 |
-| **wiki_delta** | `n/a` |
-| **wiki_delta_note** | 本仓未启用 WikiTrack |
+| **wiki_delta** | `none` |
+| **wiki_delta_note** | 本 task 仅 upgrade/存量字段；WikiTrack 入口由姊妹 task `wikitrack-enable-p0` 改 `docs/coding_wiki` |
 | **review_hat** | `20` |
 | **thinking_profile** | `shortest` |
 | **invoke_retention_profile** | `minimal` |
@@ -43,10 +43,10 @@
 
 **完成态**：
 
-- [x] manifest → `2.18.0`
-- [x] `upgrade --yes`（无 `--ide`）一把过
+- [x] manifest → `2.18.0` → **`2.18.1`**
+- [x] `upgrade --yes`（无 `--ide`）一把过（含 2.18.1）
 - [x] 存量 `docs/tasks/**/task_*.md` 补 `wiki_delta` + `wiki_delta_note`
-- [x] `harness check` 已是最新
+- [x] `harness check` 已是最新（2.18.1）
 - [x] 代表性 `verify --task` PASS
 - [x] `ruff` + `pytest tests` 绿
 - [x] invoke + 自检；PR（写明缺 wiki_delta → close BLOCK；勿默认 `--allow-wiki-gap`）

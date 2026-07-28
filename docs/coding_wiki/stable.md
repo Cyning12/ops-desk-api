@@ -2,18 +2,27 @@
 
 > **层**：stable · 每次会话可注入的短摘要（≤15 行正文建议）
 
-## 编码底线（L1 摘要占位）
+## 相关页
+
+- 读序总览：[[README]]
+- 项目指针：[[context]]
+- 本 task 易变上下文：[[volatile]]
+
+## 编码底线（摘要）
 
 1. 最小改动 · 不扩 scope  
-2. 类型严格 · 禁 `any`（TS）  
-3. 错误结构化返回  
+2. 类型严格 · 禁滥用 Any / 缺注解  
+3. 错误结构化返回（HTTPException / SSE error）  
 4. 测试策略见 task `test_strategy`  
-5. 图谱优先于纯文本臆造  
+5. 图谱优先于纯文本臆造；改路由/表/事件先对 `_tech_graph`
 
-完整 L1：用户仓 `docs/standards/CODING_BASELINE_L1_*.md`（由 `standards/` 模板生成）。
+完整条文（**真值，勿在此复制**）：
+
+- L1：[`../standards/CODING_BASELINE_L1_v1_zh.md`](../standards/CODING_BASELINE_L1_v1_zh.md)
+- L2：[`../standards/CODING_BACKEND_L2_v1_zh.md`](../standards/CODING_BACKEND_L2_v1_zh.md)
 
 ## IDE 入口
 
-- Cursor：`.cursor/rules/*`  
-- Claude Code：`CLAUDE.md`  
+- Cursor：`.cursor/rules/*`
+- Claude Code：`CLAUDE.md`
 - 通用：`AGENTS.md`
