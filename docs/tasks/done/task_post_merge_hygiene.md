@@ -75,3 +75,16 @@ PR #13（`task/api-tech-graph-ci`）已合入 `master`；task 标 completed，�
 | harness verify | PASS · `task_post_merge_hygiene.md`（开工时 active 路径） |
 | 30 invoke | `docs/harness/invokes/by-task/post-merge-hygiene/` |
 | force push | 未使用 |
+
+---
+
+## CLOSE（合入后关账）
+
+| 项 | 内容 |
+|---|---|
+| **日期** | 2026-07-28 |
+| **PR** | [#14](https://github.com/Cyning12/ops-desk-api/pull/14) MERGED · `07747f3` |
+| **归档** | 同 PR 已 `active→done`（`harness task close` 对已 done 路径不适用；LINT-DONE PASS） |
+| **active/** | 已删 kickoff `PROMPT_30_post_merge_hygiene.md` |
+| **分支清理** | 删 `task/post-merge-hygiene`（本地+远程） |
+| **下一棒** | 交还 00（棒 B/C） |
