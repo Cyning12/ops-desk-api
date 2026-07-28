@@ -4,7 +4,7 @@
 > **业务仓**：`ops-desk-api`（FastAPI · preset `fullstack-node-py` · WikiTrack **已启用**）  
 > **起点**：manifest `2.19.0` → 目标钉 `@cyning/harness@2.20.0`  
 > **真值对照**：产品 `docs/RUNBOOK_upgrade_wiki_delta_v1_zh.md` · USER_GUIDE §6.0b · `ci/samples/lint-wiki-delta.yml.example`  
-> **本波 PR**：待填（开 PR 后回填 URL）
+> **本波 PR**：https://github.com/Cyning12/ops-desk-api/pull/23
 
 ---
 
