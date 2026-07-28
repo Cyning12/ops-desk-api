@@ -25,7 +25,14 @@
 - **status --check**：may_start_30=true · exit 0
 - **verify**：PASS
 - **overlay**：upgrade 曾将 FRAGMENT/`AGENTS` harness 段冲成产品默认；已保留本仓 `l1/01_modules` + pre-30 / G-L0 关键词（净 diff 仅 manifest）
-- **下一棒**：PR → 维护者 merge
+- **下一棒**：交还 00 · CLOSE
+
+---
+
+## CLOSE
+
+- **PR #20** MERGED（2026-07-28 · `d7c2ef5`）
+- **manifest**：`2.17.0`
 
 ---
 
@@ -34,3 +41,4 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-07-28 | upgrade 2.16.1 → 2.17.0 |
+| 2026-07-28 | CLOSE：PR 合入后归档 |

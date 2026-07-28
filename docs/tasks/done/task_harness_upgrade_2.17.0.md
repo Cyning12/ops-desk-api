@@ -1,8 +1,10 @@
 # Task：Harness 升级至 2.17.0（api）
 
-> **状态**：ready-for-merge  
+> **状态**：completed  
 > **类型**：基础设施（过程轨 upgrade）  
-> **关联**：npm `@cyning/harness@2.17.0` · 维护者指示升到最新
+> **关联**：npm `@cyning/harness@2.17.0` · 维护者指示升到最新  
+> **合入**：PR #20 · `d7c2ef5` · 2026-07-28  
+> **关账**：CLOSE · 迁入 `docs/tasks/done/`
 
 ---
 
@@ -49,15 +51,6 @@
 
 ---
 
-## 失败路径
-
-| 触发 | 行为 | 可重试 |
-|---|---|---|
-| S5 dirty | 先 commit/stash；人判 `--force` | 是 |
-| ide 被裁 | 记录，不擅自 `--ide` 重跑 | 人判 |
-
----
-
 ## 验收标准
 
 - [x] manifest 2.17.0 · preset=`fullstack-node-py`
@@ -75,4 +68,13 @@
 | **check** | 已是最新 · exit 0 |
 | **status/verify** | status list + --check 绿；verify PASS |
 | **overlay** | 保留本仓 FRAGMENT/AGENTS 定制；净 diff 主要为 manifest |
-| **下一棒** | merge PR |
+
+---
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| **日期** | 2026-07-28 |
+| **PR** | [#20](https://github.com/Cyning12/ops-desk-api/pull/20) MERGED |
+| **manifest** | `2.17.0` |
