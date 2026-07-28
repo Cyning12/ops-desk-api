@@ -2,6 +2,7 @@
   "version": 1,
   "preset": "fullstack-node-py",
   "description": "全栈 Ink 类：五轨 + quality + pytest",
+  "graph_modules_path": "l1/01_modules",
   "paths": {
     "ide_cursor": ".cursor/rules/05-harness-starter.mdc"
   },
