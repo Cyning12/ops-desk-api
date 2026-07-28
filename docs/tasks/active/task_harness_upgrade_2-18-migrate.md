@@ -1,8 +1,9 @@
-# Task：Harness 升级至 2.18.0（api）+ wiki_delta 存量迁移
+# Task：Harness 升级至 2.18.x（api）+ wiki_delta 存量迁移
 
-> **状态**：in_progress  
+> **状态**：completed  
 > **类型**：基础设施（过程轨 upgrade + task 字段迁移）  
-> **关联**：npm `@cyning/harness@2.18.2`（经 2.18.0→2.18.1）· wiki_delta close 闸 · 维护者指示钉版本升级
+> **关联**：npm `@cyning/harness@2.18.0`→`2.18.2` · wiki_delta close 闸 · 姊妹 `harness-upgrade-2.19.0` / `wikitrack-enable-p0`  
+> **合入**：PR #22
 
 ---
 
@@ -23,9 +24,9 @@
 | **required_invoke_hats** | `30` |
 | **experience_capture** | `recommended` |
 | **test_strategy** | `recommended` |
-| **test_strategy_note** | `upgrade --yes`（不带 `--ide`）；`check` 已是最新；`verify --task`；`ruff` + `pytest tests` |
+| **test_strategy_note** | `upgrade --yes`（不带 `--ide`）；`check`；`verify --task`；`ruff` + `pytest tests` |
 | **code_quality_bar** | `not_applicable` |
-| **orchestration** | 单 task；00 代签双闸（维护者当面：钉 2.18.0 + wiki_delta 迁移） |
+| **orchestration** | 与 wikitrack-p0 / 2.19.0 同波 CLOSE |
 
 ### 人工闸
 
@@ -39,19 +40,19 @@
 
 ## 背景与目标
 
-本仓 `manifest=2.17.0`；目标钉 **2.18.0**（`wiki_delta` / 晋升指针关账闸）。只做接入与文档迁移，不做可视化、不强制新建 WikiTrack、不改业务 API。
+本仓 `manifest=2.17.0`；本波钉 **2.18.0→2.18.2**（`wiki_delta` / 晋升指针 / 两层目录约定）。后续钉 2.19.0 见姊妹 task。
 
 **完成态**：
 
-- [x] manifest → `2.18.0` → **`2.18.2`**
-- [x] `upgrade --yes`（无 `--ide`）一把过（含 2.18.2）
+- [x] manifest → `2.18.0` → `2.18.1` → **`2.18.2`**
+- [x] `upgrade --yes` 一把过
 - [x] 存量 `docs/tasks/**/task_*.md` 补 `wiki_delta` + `wiki_delta_note`
-- [x] `harness check` 已是最新（2.18.2）
+- [x] `harness check` 已是最新（当时 2.18.2）
 - [x] 代表性 `verify --task` PASS
 - [x] `ruff` + `pytest tests` 绿
-- [x] invoke + 自检；PR（写明缺 wiki_delta → close BLOCK；勿默认 `--allow-wiki-gap`）
+- [x] invoke + 自检；PR #22
 
-**不做**：ops-desk-web / cyning-harness 产品仓；Obsidian / 力导向 UI；强制新建 WikiTrack
+**不做**：业务 API；默认 `--allow-wiki-gap`
 
 ---
 
@@ -59,19 +60,19 @@
 
 | 触发 | 行为 | 可重试 |
 |---|---|---|
-| S5 dirty 挡 upgrade | 先 commit/stash；人判 `--force` | 是 |
-| upgrade 冲掉本仓 AGENTS/FRAGMENT overlay | 恢复 `l1/01_modules` + pre-30 / G-L0 关键词 | 是 |
-| 存量 task 缺 wiki_delta 导致 close BLOCK | 批量补 `n/a` + note；**不**用 `--allow-wiki-gap` 当绿路径 | 是 |
+| S5 dirty 挡 upgrade | 先 commit/stash | 是 |
+| upgrade 冲 overlay | 恢复 | 是 |
+| 缺 wiki_delta | 批量补；不用 `--allow-wiki-gap` 当绿路径 | 是 |
 
 ---
 
 ## 验收标准
 
-- [x] manifest 2.18.0 · preset=`fullstack-node-py` · ide 三轨未裁
-- [x] check 已是最新
+- [x] manifest 2.18.x · preset=`fullstack-node-py` · ide 三轨未裁
+- [x] check 已是最新（升级当下）
 - [x] 全部 task_*.md 含 wiki_delta / wiki_delta_note
-- [x] verify --task 本文件 PASS（无业务图谱改 → 不加 `--graph`）
-- [x] ruff + pytest 绿；纪律层 PR（待开）
+- [x] verify --task PASS
+- [x] ruff + pytest 绿；纪律层 PR
 
 ---
 
@@ -80,9 +81,27 @@
 | 项 | 内容 |
 |---|---|
 | **日期** | 2026-07-28 |
-| **manifest** | `2.18.0`（from 2.17.0）· preset=`fullstack-node-py` · ide 三轨未裁 |
-| **check** | 已是最新 · exit 0 |
-| **verify** | PASS · exit 0（未加 `--graph`：graph_change_layer=none） |
-| **质量门** | ruff All checks passed · pytest 87 passed |
-| **wiki 迁移** | 存量 21 个 done task + 本 active → `n/a` +「本仓未启用 WikiTrack」；无 experience=required∩path |
-| **overlay** | 恢复 AGENTS pre-30 / G-L0 关键词；FRAGMENT `l1/01_modules` |
+| **manifest（本 task 终点）** | `2.18.2`（起点 2.17.0） |
+| **check / verify** | PASS |
+| **质量门** | ruff OK · pytest 87 passed |
+| **wiki 迁移** | 存量 done → `n/a` + note；后由 WikiTrack P0 启用 |
+| **overlay** | 保留 pre-30 / G-L0 / `l1/01_modules` |
+
+### 经验节（执行者）
+
+- 存量缺 `wiki_delta` 须自补；`upgrade` 不代写。
+- overlay 每次 upgrade 后必 diff 恢复。
+
+### KPI
+
+| 项 | 分 |
+|---|---|
+| Task_KPI% | 100 |
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| **日期** | 2026-07-28 |
+| **PR** | [#22](https://github.com/Cyning12/ops-desk-api/pull/22) |
+| **manifest（本 task）** | `2.18.2`（后续见 2.19.0 task） |

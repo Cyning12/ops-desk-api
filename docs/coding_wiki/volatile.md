@@ -9,15 +9,11 @@
 
 ## 本波 active
 
-| task_slug | 必读 | code_quality_bar |
-|-----------|------|------------------|
-| `harness-upgrade-2-18-migrate` | PR #22 · manifest 2.18.2 · wiki_delta 存量 | `not_applicable` |
-| `wikitrack-enable-p0` | 本目录入口启用 · RUNBOOK 交 web · 2.18.2 两层目录 | `not_applicable` |
+（关账后清空）无 active · 上一波已 CLOSE：`harness-upgrade-2-18-migrate` · `wikitrack-enable-p0` · `harness-upgrade-2.19.0`（PR #22）
 
 ## 执行帽速链
 
 - Active tasks：`../tasks/active/`
-- 过程 invoke：`../harness/invokes/by-task/`
 - WikiTrack RUNBOOK：[`../harness/RUNBOOK_wikitrack_enable_obsidian_v1_zh.md`](../harness/RUNBOOK_wikitrack_enable_obsidian_v1_zh.md)
 
 ## 关账后

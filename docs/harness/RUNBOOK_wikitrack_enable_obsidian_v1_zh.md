@@ -1,7 +1,7 @@
 # RUNBOOK · WikiTrack 启用 + Obsidian（可复用 · api dogfood）
 
-> **版本**：v1 · 2026-07-28  
-> **源仓 dogfood**：`ops-desk-api`（manifest ≥ **2.18.2**）  
+> **版本**：v1.1 · 2026-07-28  
+> **源仓 dogfood**：`ops-desk-api`（manifest ≥ **2.19.0**）  
 > **消费方**：`ops-desk-web`（及同类已接入 Harness 的业务仓）**原样对照执行**  
 > **原则**：**单份真值**（不把 `standards` / 部署文 / `_tech_graph` 正文复制进 `coding_wiki`）
 
@@ -13,7 +13,7 @@
 |---|---|
 | Open Folder | 目标业务仓根 |
 | 工作树 | `git status` 干净（或仅本 task 文件） |
-| Harness | 先钉 **`@cyning/harness@2.18.2`**（或更新），**再**改 wiki 文档 |
+| Harness | 先钉 **`@cyning/harness@2.19.0`**（或更新），**再**改 wiki 文档 |
 | 非范围 | 不改 cyning-harness 产品仓；不做 Obsidian 插件开发；不力导向 Web UI |
 
 破坏性（自 2.18.0，仍有效）：
@@ -24,21 +24,21 @@
 
 ---
 
-## 1. 升级到 2.18.2（文档动作前）
+## 1. 升级到 2.19.0（文档动作前）
 
 在业务仓根：
 
     git checkout -b task/harness-upgrade-2-18-1   # 或沿用已有 upgrade 分支
-    npx --yes @cyning/harness@2.18.2 upgrade --yes --target .
-    npx --yes @cyning/harness@2.18.2 check
+    npx --yes @cyning/harness@2.19.0 upgrade --yes --target .
+    npx --yes @cyning/harness@2.19.0 check
 
 验收：
 
-- `.cyning-harness/manifest.json` → `"version": "2.18.2"`
+- `.cyning-harness/manifest.json` → `"version": "2.19.0"`
 - `check` 输出「已是最新」· exit 0
 - upgrade 后 **diff AGENTS / FRAGMENT**：恢复本仓 overlay（api 例：pre-30 行、G-L0 / HG-PILOT、FRAGMENT 的 `l1/01_modules`）
 
-若仍停在 2.18.0：先完成 `wiki_delta` 存量补字段（见 USER_GUIDE §6.0b），再升 2.18.2。
+若仍停在 2.18.0：先完成 `wiki_delta` 存量补字段（见 USER_GUIDE §6.0b），再升 2.19.0。
 
 ---
 
@@ -113,9 +113,10 @@ task 元信息要点：
 
 ## 4. 校验命令（合并前）
 
-    npx --yes @cyning/harness@2.18.2 check
-    npx --yes @cyning/harness@2.18.2 wiki export --json --target .
-    npx --yes @cyning/harness@2.18.2 verify --target . --task docs/tasks/active/task_wikitrack_enable_p0.md
+    npx --yes @cyning/harness@2.19.0 check
+    npx --yes @cyning/harness@2.19.0 task lint-wiki-delta --target . --scope all
+    npx --yes @cyning/harness@2.19.0 wiki export --json --target .
+    npx --yes @cyning/harness@2.19.0 verify --target . --task docs/tasks/active/task_wikitrack_enable_p0.md
     # 前端仓再加：pnpm lint && pnpm test && pnpm build
     # 后端仓再加：ruff check … && pytest …
 
@@ -124,7 +125,7 @@ task 元信息要点：
 - `schema` = `harness.wiki_graph.v1`
 - `nodes.length` ≥ 4
 - `edges.length` > 0（wikilink）
-- `warnings` 可空；未解析 `[[...]]` 须修链
+- `warnings` 可空；未解析的双括号链须修链
 
 ---
 
@@ -145,9 +146,10 @@ task 元信息要点：
 
 ## 6. web 仓对照清单（直接勾选）
 
-- [ ] `upgrade` → manifest **2.18.2**
+- [ ] `upgrade` → manifest **2.19.0**
 - [ ] 恢复本仓 AGENTS/FRAGMENT overlay（若有）
 - [ ] 存量 task 已有 `wiki_delta`（若从 ≤2.17 升上来）
+- [ ] `task lint-wiki-delta --scope all` → PASS（missing=0）
 - [ ] 改写 `docs/coding_wiki/{README,stable,context,volatile}.md`（互链 + 真值相对链）
 - [ ] `wiki export --json` 有边
 - [ ] 新 task：`wikitrack-enable-p0` + R1 + invoke
@@ -172,7 +174,7 @@ task 元信息要点：
 |---|---|
 | S5 dirty 挡 upgrade | commit/stash 后再 upgrade |
 | upgrade 冲掉 overlay | 恢复后提交；记摩擦 |
-| export edges=0 | 补 `[[stable]]` 等互链（见 2.18.2 topics/wikilinks_export） |
+| export edges=0 | 补 stable 等互链（见 topics/wikilinks_export） |
 | close 缺 wiki_delta | 补字段；**不用** `--allow-wiki-gap` 当绿路径 |
 | 误复制正文进 coding_wiki | 删副本，改回相对链 |
 
@@ -182,7 +184,7 @@ task 元信息要点：
 
 | 项 | 值 |
 |---|---|
-| manifest | `2.18.2`（from 2.18.1） |
+| manifest | `2.19.0`（from 2.18.2） |
 | 分支 | `task/harness-upgrade-2-18-migrate`（含 WikiTrack P0） |
 | 单份真值 | 是（coding_wiki 仅指针） |
 | export | 见合入前自检（含 topics/） |
@@ -192,3 +194,4 @@ task 元信息要点：
 | 日期 | 说明 |
 |------|------|
 | 2026-07-28 | v1 · api 00 统筹 dogfood · 供 web 复用 |
+| 2026-07-28 | v1.1 · 钉 2.19.0 · lint-wiki-delta · vault=coding_wiki/ |
