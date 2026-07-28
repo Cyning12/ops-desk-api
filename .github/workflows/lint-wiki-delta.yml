@@ -1,0 +1,37 @@
+# Optional · wiki_delta 扫描（升级迁移清单 · v2.19+ / 可选 --strict · v2.20+）
+#
+# 来源：@cyning/harness ci/samples/lint-wiki-delta.yml.example
+# 本仓：Python/FastAPI · 无 package.json → npx-only + package-manager-cache: false
+# 策略：字段已齐 → 默认 lint 硬失败；--strict 暂作注释（关账预检本地跑）
+
+name: lint-wiki-delta
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  lint-wiki-delta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # npx-only：关闭 setup-node@v5 默认 packageManager 缓存
+      # （若未来 package.json 声明 packageManager=pnpm 且未装 pnpm → Unable to locate executable file: pnpm）
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: task lint-wiki-delta
+        run: npx --yes @cyning/harness@2.20 task lint-wiki-delta --target .
+
+      # 可选：关账预检（迁完字段后再开；半迁勿开）
+      # - name: lint-wiki-delta --strict
+      #   run: npx --yes @cyning/harness@2.20 task lint-wiki-delta --target . --strict
