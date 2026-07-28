@@ -18,6 +18,12 @@ venv/
 .vscode/
 *.swp
 
+# Obsidian（vault 可共享；本机布局/图谱状态不入库）
+**/.obsidian/workspace.json
+**/.obsidian/workspace-mobile.json
+**/.obsidian/graph.json
+**/.obsidian/cache
+
 # OS
 .DS_Store
 

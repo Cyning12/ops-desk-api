@@ -18,6 +18,8 @@
 | **graph_change_layer** | `none` |
 | **graph_delta** | `none` |
 | **graph_delta_note** | 无图谱变更；仅 CI workflow / 部署文档 / 去掉临时 `/health` probe |
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 本仓未启用 WikiTrack |
 | **review_hat** | `20` |
 | **thinking_profile** | `shortest` |
 | **invoke_retention_profile** | `minimal` |

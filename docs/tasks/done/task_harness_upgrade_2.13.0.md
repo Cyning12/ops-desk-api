@@ -17,6 +17,8 @@
 | **orchestration** | 单 task；00 代签双闸（RUNBOOK 基础设施惯例） |
 | **git_branch** | `task/harness-upgrade-2.13.0` |
 | **experience_capture** | `recommended` |
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 本仓未启用 WikiTrack |
 | **invoke_retention_profile** | `minimal` |
 | **required_invoke_hats** | `30` |
 

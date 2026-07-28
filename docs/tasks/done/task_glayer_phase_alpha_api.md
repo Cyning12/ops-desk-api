@@ -24,6 +24,8 @@
 | **code_quality_bar** | `not_applicable` |
 | **experience_capture** | `recommended` |
 
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 本仓未启用 WikiTrack |
 ### 拍板默认（C1–C4）
 
 | ID | 采用 |

@@ -15,6 +15,8 @@
 | **test_strategy_note** | 单测：NULL sync_type → "legacy"；集成：scratch 源含 NULL 行可导入 |
 | **code_quality_bar** | `L2_backend` |
 | **orchestration** | 单 task |
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 本仓未启用 WikiTrack |
 | **git_branch** | `fix/import-null-sync-type` |
 
 ### 人工闸

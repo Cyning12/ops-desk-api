@@ -1,15 +1,22 @@
 # coding_wiki · volatile
 
-> **层**：volatile · **本 task 专属**；由 task「给执行帽必读」或 invoke §3 引用
+> **层**：volatile · **当前 active task** 专属；关账后清空或归档要点
 
-## 用法
+## 相关页
 
-1. 每个 active task 在正文或 invoke 中 pointer 到本文件或 task 内小节  
-2. Epic 子 task 可共用 Epic 级 volatile 片段  
-3. 关账后归档或清空，避免 stale 上下文  
+- 稳定层：[[stable]]
+- 项目层：[[context]]
 
-## 本 task（占位）
+## 本波 active
 
-- task_slug：`<填写>`  
-- 必读图谱：`docs/_tech_graph/<flow>.md`  
-- `code_quality_bar`：`<strict | recommended | not_applicable>`  
+（关账后清空）无 active · 上一波已 CLOSE：`harness-upgrade-2-18-migrate` · `wikitrack-enable-p0` · `harness-upgrade-2.19.0`（PR #22）
+
+## 执行帽速链
+
+- Active tasks：`../tasks/active/`
+- WikiTrack RUNBOOK：[`../harness/RUNBOOK_wikitrack_enable_obsidian_v1_zh.md`](../harness/RUNBOOK_wikitrack_enable_obsidian_v1_zh.md)
+
+## 关账后
+
+- 可复用条目 → 晋升 [[context]] / [[stable]]（仍只写指针，不双份正文）
+- 本表清空，避免下一 task 读到 stale volatile
