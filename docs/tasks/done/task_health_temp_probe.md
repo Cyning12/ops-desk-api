@@ -22,6 +22,8 @@
 | **code_quality_bar** | `L2_backend` |
 | **orchestration** | 单 task；维护者当面指示临时探针 |
 
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 本仓未启用 WikiTrack |
 ### 人工闸
 
 | human_gate_id | status | blocks_hats | 说明 |

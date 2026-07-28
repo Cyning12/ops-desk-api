@@ -22,6 +22,8 @@
 | **code_quality_bar** | `not_applicable` |
 | **orchestration** | 00 统筹棒 A；00 代签双闸（文档归档惯例） |
 
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 本仓未启用 WikiTrack |
 ### 人工闸
 
 | human_gate_id | status | blocks_hats | 说明 |

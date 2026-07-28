@@ -18,6 +18,8 @@
 | **git_branch** | `task/graph-bootstrap` |
 | **experience_capture** | `recommended` |
 
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 本仓未启用 WikiTrack |
 ### 人工闸
 
 | human_gate_id | status | blocks_hats | 说明 |

@@ -17,6 +17,8 @@
 | **graph_change_layer** | `none` |
 | **graph_delta** | `none` |
 | **graph_delta_note** | 仅过程轨 sync / manifest；不改业务图谱 |
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 本仓未启用 WikiTrack |
 | **review_hat** | `20` |
 | **thinking_profile** | `shortest` |
 | **invoke_retention_profile** | `minimal` |

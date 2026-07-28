@@ -15,6 +15,8 @@
 | **test_strategy_note** | WS 开关单测；部署后 E2E checklist（HTTPS 登录/overview/issues/pulls/graph/chat）人工验收 |
 | **code_quality_bar** | `L2_backend` |
 | **orchestration** | 单 task（跨仓：ops-desk-api 代码 + ops-desk-workspace 部署产物 + 服务器执行） |
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 本仓未启用 WikiTrack |
 | **git_branch** | `task/deploy-prod`（api）· workspace 改动随行提交 |
 
 ### 人工闸

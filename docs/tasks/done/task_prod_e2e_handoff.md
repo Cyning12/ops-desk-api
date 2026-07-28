@@ -15,6 +15,8 @@
 | **test_strategy_note** | 单测：`OPS_LLM_MODEL=""` 空串回退默认模型 |
 | **code_quality_bar** | `L2_backend` |
 | **orchestration** | 单 task |
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 本仓未启用 WikiTrack |
 | **git_branch** | `fix/prod-e2e-handoff` |
 
 ### 人工闸
