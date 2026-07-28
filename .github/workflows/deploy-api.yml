@@ -1,0 +1,82 @@
+name: deploy-api
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Require deploy secrets
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          missing=0
+          if [ -z "$DEPLOY_HOST" ]; then echo "::error::缺少 Secret DEPLOY_HOST（服务器公网 IP 或域名）"; missing=1; fi
+          if [ -z "$DEPLOY_USER" ]; then echo "::error::缺少 Secret DEPLOY_USER（如 ubuntu）"; missing=1; fi
+          if [ -z "$DEPLOY_SSH_KEY" ]; then echo "::error::缺少 Secret DEPLOY_SSH_KEY（无口令 deploy 私钥全文）"; missing=1; fi
+          if [ "$missing" != "0" ]; then
+            echo "::error::请按 docs/deployment/gha-api-deploy.md 配置 Secrets 后重跑 workflow_dispatch"
+            exit 1
+          fi
+
+      - name: Rsync api and rebuild container
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_API_PATH: ${{ secrets.DEPLOY_API_PATH }}
+          DEPLOY_COMPOSE_DIR: ${{ secrets.DEPLOY_COMPOSE_DIR }}
+        run: |
+          set -euo pipefail
+          DEPLOY_API_PATH="${DEPLOY_API_PATH:-/opt/ops-desk/api}"
+          DEPLOY_COMPOSE_DIR="${DEPLOY_COMPOSE_DIR:-/opt/ops-desk/deploy}"
+
+          case "$DEPLOY_API_PATH" in
+            */web/*|/opt/ops-desk/web|/opt/ops-desk/web/*)
+              echo "::error::DEPLOY_API_PATH 不可指向 web dist（当前=$DEPLOY_API_PATH）"
+              exit 1
+              ;;
+          esac
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          SSH_OPTS=(-o BatchMode=yes -o StrictHostKeyChecking=yes -i "$HOME/.ssh/id_ed25519")
+
+          ssh "${SSH_OPTS[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_API_PATH'"
+
+          rsync -az --delete \
+            --exclude '.venv' --exclude '__pycache__' --exclude '.git' \
+            --exclude '.env' --exclude 'node_modules' --exclude '.pytest_cache' \
+            -e "ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i $HOME/.ssh/id_ed25519" \
+            ./ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_API_PATH/"
+
+          echo "Synced api -> $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_API_PATH"
+
+          # C1：仅 rebuild api；不重建 db；不碰 Nginx / web dist
+          # 推荐 DEPLOY_USER 在 docker 组（无 sudo）。若需 sudo，见 docs/deployment/gha-api-deploy.md
+          ssh "${SSH_OPTS[@]}" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "set -euo pipefail; \
+             cd '$DEPLOY_COMPOSE_DIR'; \
+             test -f docker-compose.prod.yml || { echo '缺少 docker-compose.prod.yml：请先手动 deploy.sh' >&2; exit 1; }; \
+             docker compose -f docker-compose.prod.yml --env-file /opt/ops-desk/.env up -d --build api; \
+             for i in \$(seq 1 30); do \
+               if curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1; then \
+                 echo API_healthy; curl -fsS http://127.0.0.1:8000/health; echo; exit 0; \
+               fi; \
+               sleep 2; \
+             done; \
+             echo 'API 健康检查超时' >&2; \
+             docker compose -f docker-compose.prod.yml --env-file /opt/ops-desk/.env logs --tail=80 api >&2 || true; \
+             exit 1"

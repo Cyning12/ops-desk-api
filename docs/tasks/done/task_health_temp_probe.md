@@ -1,8 +1,8 @@
 # Task：临时 health 探针（部署可辨）
 
-> **状态**：ready  
+> **状态**：completed  
 > **类型**：临时探针（docs + 极小 API 面）  
-> **关联**：生产 `./deploy.sh --skip-web` 冒烟 · 验完须回滚去掉 probe 字段
+> **关联**：生产 `./deploy.sh --skip-web` 冒烟 · 回滚由 `task_gha_deploy_api` 同波完成
 
 ---
 
@@ -40,7 +40,8 @@
 
 - [x] `GET /health` 含固定 `probe` 字段（如 `20260728-a`）
 - [x] `tests/test_health.py` 更新
-- [ ] commit → push → PR（部署与回滚由维护者执行）
+- [x] commit → push → PR（部署与回滚由维护者执行）
+- [x] 回滚：`gha-deploy-api` 同波删除 `probe`
 
 **不做**：GHA 自动部署、正式 version/sha 方案、改其它业务接口
 
@@ -67,7 +68,14 @@
 | 项 | 内容 |
 |---|---|
 | **日期** | 2026-07-28 |
-| **probe** | `20260728-a` |
+| **probe** | `20260728-a`（已由 gha-deploy-api 移除） |
 | **pytest** | `tests/test_health.py` 1 passed |
 | **verify** | PASS |
-| **下一棒** | PR → `deploy.sh --skip-web` → curl → 回滚删 probe |
+| **下一棒** | CLOSED · 回滚并入 `gha-deploy-api` |
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| **日期** | 2026-07-28 |
+| **说明** | 探针验收完成；字段删除随 `task/gha-deploy-api` |

@@ -33,8 +33,5 @@ app.include_router(ops_router)
 
 @app.get("/health", tags=["health"])
 async def health() -> dict:
-    """Health check endpoint.
-
-    ``probe`` 为临时部署可辨字段；冒烟确认后须回滚删除（task health-temp-probe）。
-    """
-    return {"status": "ok", "probe": "20260728-a"}
+    """Health check endpoint."""
+    return {"status": "ok"}
