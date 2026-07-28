@@ -1,8 +1,8 @@
 # RUNBOOK · WikiTrack 启用 + Obsidian（可复用 · api dogfood）
 
-> **版本**：v1.1 · 2026-07-28  
+> **版本**：v1.2 · 2026-07-28  
 > **源仓 dogfood**：`ops-desk-api`（manifest ≥ **2.19.0**）  
-> **消费方**：`ops-desk-web`（及同类已接入 Harness 的业务仓）**原样对照执行**  
+> **消费方**：`ops-desk-web`（当前常见起点 **2.18.0** · preset 可为 `harness-only`）**原样对照执行**  
 > **原则**：**单份真值**（不把 `standards` / 部署文 / `_tech_graph` 正文复制进 `coding_wiki`）
 
 ---
@@ -21,6 +21,41 @@
 - 缺 `wiki_delta` → `task close` **BLOCK**
 - `none` / `n/a` 无 `wiki_delta_note` → **BLOCK**
 - **勿默认** `--allow-wiki-gap`
+
+---
+
+## 0.5 从 2.18.0 起步（web 对照 · api dogfood）
+
+api 已走完 **2.18.0 → 2.18.1 → 2.18.2 → 2.19.0**。web 若停在 **2.18.0** 且已做 `wiki_delta` 存量（多为 `n/a`），建议**一把升到 2.19.0**（不必逐步停 2.18.1/2.18.2），再决定是否启用 WikiTrack。
+
+### 建议路径（两棒可同 PR）
+
+| 棒 | 做什么 | 验收 |
+|---|---|---|
+| A · 钉版本 | `npx --yes @cyning/harness@2.19.0 upgrade --yes`（不带 `--ide`） | manifest=`2.19.0` · `check` 已是最新 |
+| A · 字段扫描 | `task lint-wiki-delta --scope all` | missing=0 · exit 0；有缺失则补 `path\|none\|n/a`+note |
+| A · overlay | diff `AGENTS.md` / `FRAGMENT_30_gate_verify*` | 恢复本仓定制（upgrade 会冲掉） |
+| B · WikiTrack（可选） | 按下文 §2–§3 启用入口 | `wiki export` 有边；Obsidian 只开 `coding_wiki/` |
+| B · 若暂不启用 | 新 task 可继续 `wiki_delta=n/a`+note，或改为 `none`+note | 勿漏字段 |
+
+### api → web 差异（经验）
+
+| 点 | api dogfood | web 注意 |
+|---|---|---|
+| preset | `fullstack-node-py` | 现为 `harness-only` 亦可 upgrade；质量门用 `pnpm lint/test/build` |
+| 2.18.0 存量 | 曾标 `n/a`「未启用」→ 后启用 WikiTrack | 若已 `n/a` 且空壳/无 wiki：可保持 `n/a` 到启用日；**done 不必回刷** |
+| 2.18.2 | 两层目录 `topics/`（recommended） | 启用 WikiTrack 时一并做；未达加深阈值勿建第 3 层 |
+| 2.19.0 | `lint-wiki-delta` 替代 `rg -L` | **必跑**；缺字段 exit 2 |
+| Obsidian | vault = **`docs/coding_wiki/`** | **不要**开上级 `docs/`（tasks/invokes 会刷孤点） |
+| 关账 | `task close --file … --yes` | **勿**加 `--target .`（`--target`=归档目标路径，不是仓根） |
+| 单份真值 | coding_wiki 只指针 | 同左；禁复制 standards/图谱正文 |
+
+### 摩擦清单（升级时必查）
+
+1. **overlay 被冲**：每次 `upgrade` 后 diff AGENTS harness 段 / FRAGMENT（api：`l1/01_modules`、pre-30、G-L0 关键词）。  
+2. **伪双括号字面**：coding_wiki 叙述里不要写会进 export 的「假链接」字样（F-218-07）；真互链用真实页名。  
+3. **`upgrade` 不代写**：不补 task 的 `wiki_delta`，也不自动把已有 wiki 迁成 `topics/`。  
+4. **close 前**：状态 `completed` · 有 `### KPI`（或非 CLOSE 的 `kpi_aggregator`）· 勾选齐 · R1 review · invoke hats。
 
 ---
 
@@ -195,3 +230,4 @@ task 元信息要点：
 |------|------|
 | 2026-07-28 | v1 · api 00 统筹 dogfood · 供 web 复用 |
 | 2026-07-28 | v1.1 · 钉 2.19.0 · lint-wiki-delta · vault=coding_wiki/ |
+| 2026-07-28 | v1.2 · §0.5 从 2.18.0（web）起步 · api→web 差异与摩擦清单 |
