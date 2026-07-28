@@ -60,7 +60,14 @@ reviews R1 存在且签收：是 · minimal 无 pre-30 硬闸 · 结论：可开
 - **本 task**：标 completed · 移入 `docs/tasks/done/`；PROMPT + R1 一并入 PR
 - **禁改**：未触 `app/`、`.github/`、`docs/_tech_graph/`
 - **verify**：PASS · exit 0（开工时对 active task 路径）
-- **下一棒**：维护者 merge PR；交还 00（棒 B/C 并行/独立）
+- **下一棒**：交还 00（棒 B/C 并行/独立）
+
+---
+
+## CLOSE
+
+- **PR #14** MERGED（2026-07-28 · `07747f3`）
+- **关账**：清 `active/PROMPT_30_*`；删任务分支；task §CLOSE 回填
 
 ---
 
@@ -69,3 +76,4 @@ reviews R1 存在且签收：是 · minimal 无 pre-30 硬闸 · 结论：可开
 | 日期 | 说明 |
 |------|------|
 | 2026-07-28 | docs-only 归档 + PR |
+| 2026-07-28 | CLOSE：PR 合入后清 PROMPT / 分支 |
