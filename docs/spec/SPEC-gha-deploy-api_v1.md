@@ -1,13 +1,14 @@
 # SPEC：ops-desk-api GitHub Actions 自动部署（对齐 web）+ 移除临时 health probe（v1）
 
-> **状态**：`draft`（待 HG-SPEC-SIGNOFF）  
+> **状态**：`accepted`（HG-SPEC-SIGNOFF 已签）  
 > **track**：`feature`（基础设施 / CI·CD）  
 > **上游**：维护者 2026-07-28 · health 探针验收完成 · 「参照 web 自动构建，顺便删除 probe」  
 > **金样**：`ops-desk-web` · `.github/workflows/deploy-web.yml` · `docs/deployment/gha-frontend-deploy.md` · task `web-gha-deploy-frontend`  
 > **关联现状**：生产仍靠 `ops-desk-workspace/deploy/deploy.sh --skip-web`；`/health` 临时含 `probe=20260728-a`（PR #16）  
-> **下游**：人签 SPEC → 00 起草 task → 20-task-audit → 30 实现  
+> **下游**：00 已派发 → **30**（`docs/tasks/active/PROMPT_30_gha_deploy_api.md`）  
+> **审查**：`docs/harness/reviews/spec_gha-deploy-api_audit_R1_20260728.md`（conditional_pass → 条件已落盘）  
+> **task**：`docs/tasks/active/task_gha_deploy_api.md`（ready · 双闸 approved）  
 > **Open Folder（实现）**：`ops-desk-api/`（workflow / 文档 / 去 probe）；服务器 Secrets 与 sudo/docker 属维护者一次性操作
-
 ---
 
 ## Harness 元信息
@@ -25,7 +26,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | pending | 人签本 SPEC 后方可 00 出 task |
+| **HG-SPEC-SIGNOFF** | approved | 维护者 2026-07-28：接受 audit C1–C3 并签收；可 00 出 task |
 
 ---
 
@@ -62,10 +63,11 @@
 | 触发 | `push` → `master`；`workflow_dispatch` |
 | Runner | `ubuntu-latest`；合理 timeout（建议 ≥20min，含镜像 build） |
 | Checkout | 本仓 `ops-desk-api` |
-| 同步 | rsync 后端源码 → 服务器 `/opt/ops-desk/api/`（排除 `.venv` / `__pycache__` / `.git` / `.env` / `node_modules` / `.pytest_cache`，对齐 `deploy.sh`） |
-| 重建 | SSH 远端执行等价于：`cd /opt/ops-desk/deploy && sudo docker compose -f docker-compose.prod.yml --env-file /opt/ops-desk/.env up -d --build`（**仅重建/重启 api 相关**；不得部署 web `dist/`） |
+| 同步 | rsync 后端源码 → 服务器 `/opt/ops-desk/api/`（排除 `.venv` / `__pycache__` / `.git` / `.env` / `node_modules` / `.pytest_cache`，对齐 `deploy.sh`）；**不得** rsync/`--delete` 到 `/opt/ops-desk/web/` |
+| 重建 | SSH 远端执行（服务名锁死 **`api`**）：`cd /opt/ops-desk/deploy && docker compose -f docker-compose.prod.yml --env-file /opt/ops-desk/.env up -d --build api`（若未进 docker 组则按文档加 `sudo`）。**不**重建 `db`；库结构变更靠 api 启动命令内 `alembic upgrade head`（现网 compose）。**不得**部署或改动 web `dist/` |
 | 健康检查 | 远端 `curl -fsS http://127.0.0.1:8000/health` 轮询至成功或超时失败（对齐 `deploy.sh`） |
 | Secrets 门闩 | 缺 `DEPLOY_HOST` / `DEPLOY_USER` / `DEPLOY_SSH_KEY` 时 **显式失败**并指向文档（照抄 web `Require deploy secrets` 风格） |
+| Nginx | **本波不** copy/reload Nginx（与 web 金样一致；改 nginx conf 仍走 `deploy.sh --nginx-only`） |
 
 **不**在 GHA 内：`pnpm`/`pytest` 全量（仍由现有 `pytest.yml` / `tech-graph.yml` 负责校验）；本 workflow 是 **发版通道**。
 
@@ -92,6 +94,14 @@
 
 未解决则 `workflow_dispatch` 验收会红——属 **failure_path**，非代码 bug。
 
+**远端 api 目录属主（C3 · 推荐）**：维护者 **一次性**保证 `/opt/ops-desk/api`（及所需父目录）对 `DEPLOY_USER` 可写，例如：
+
+```bash
+sudo chown -R ubuntu:ubuntu /opt/ops-desk/api
+```
+
+（现网若已由 `deploy.sh` 做过可跳过。）GHA workflow **默认不**每次 `sudo chown`（与「推荐进 docker 组、少用 sudo」一致）。rsync 权限失败 → 查属主；**勿**与 docker/sudo 缺口混为一谈。
+
 **compose 文件来源**：默认 **不**每次从本仓同步 `ops-desk-workspace/deploy/`（避免跨仓 checkout）。假定服务器已有可用的 `docker-compose.prod.yml`；compose 变更仍走 workspace + 手动/`deploy.sh`。若首次发现远端缺文件 → 失败可读 + 文档指引。
 
 ---
@@ -99,7 +109,9 @@
 ## 3. 非范围
 
 - 改业务 `app/ops/**` 行为（除去掉 probe）
-- 自动部署前端 / 改 `deploy-web.yml`
+- 自动部署前端 / 改 `deploy-web.yml` / 改动 `/opt/ops-desk/web/dist`
+- 本波 **不** reload Nginx、**不**更新 nginx conf（应急：`deploy.sh --nginx-only` 或全量 `deploy.sh`）
+- **不**重建 `db` 服务（日常 schema 靠 Alembic；换 db 镜像/卷属 compose 运维，走 workspace）
 - 把 `ops-desk-workspace/deploy/**` 搬进 api 仓或改默认分支名
 - 正式 `git_sha` / `version` 暴露接口（可另开 SPEC；本波仅删临时 probe）
 - 灰度、多实例、零停机（v1 单实例短暂停机可接受，与既有 `deploy.sh` 一致）
@@ -134,8 +146,9 @@
 | Secrets 缺失 | job 显式失败 + 文档指针 | 是（配齐后 re-run） |
 | SSH 拒连 / 安全组 | job 红；查 key / authorized_keys | 是 |
 | 无 docker/sudo 权限 | job 红；按文档补 docker 组或 sudoers | 是（人） |
+| api 目录对 `DEPLOY_USER` 不可写 | job 红；一次性 `chown`（见 D4 C3）；勿与 docker 权限混淆 | 是（人） |
 | compose 目录缺失 | job 红；指引先跑一次手动 deploy | 是（人） |
-| 镜像 build / health 超时 | job 红；查 `docker compose logs api` | 是 |
+| 镜像 build / alembic 失败 / health 超时 | job 红；查 `docker compose logs api` | 是 |
 | 与 web 并发部署 | 可并行（不同路径）；勿互相 `--delete` 错目录 | 是 |
 
 ---
@@ -181,7 +194,7 @@
 
 ### R5 · 签收就绪
 
-SPEC 可交人签 `HG-SPEC-SIGNOFF`；签收后 00 出 task（建议 slug：`gha-deploy-api`；可含子清单「先去 probe 或同 PR」）。
+20-spec-audit R1 = `conditional_pass`（C1 仅 `api` · C2 不 reload Nginx · C3 一次性 chown）。维护者 2026-07-28 接受并签收 `HG-SPEC-SIGNOFF`。下一棒：00 出 task（slug：`gha-deploy-api`；可同 PR 去 probe）。
 
 ---
 
@@ -192,7 +205,7 @@ SPEC 可交人签 `HG-SPEC-SIGNOFF`；签收后 00 出 task（建议 slug：`gha
 | `actual_last_round` | R5 |
 | `early_stop` | no |
 | `early_stop_reason` | — |
-| `residual_risks` | ① 远端 docker/sudo 未配齐则首轮 dispatch 必红；② 复用 web key 的权限面扩大到可触发 compose——须接受或拆 key；③ 服务器 compose 与 workspace 漂移时 GHA 不同步 deploy/ 目录；④ 构建耗时可能导致 timeout，需按实测调高 |
+| `residual_risks` | ① 远端 docker/sudo 未配齐则首轮 dispatch 必红；② 复用 web key 的权限面扩大到可触发 compose——须接受或拆 key；③ 服务器 compose 与 workspace 漂移时 GHA 不同步 deploy/ 目录；④ 构建耗时可能导致 timeout，需按实测调高；⑤ api 目录属主未就绪则 rsync 红（与 ① 分开排查） |
 
 ---
 
@@ -233,3 +246,5 @@ SPEC 可交人签 `HG-SPEC-SIGNOFF`；签收后 00 出 task（建议 slug：`gha
 | 日期 | 说明 |
 |------|------|
 | 2026-07-28 | 10-spec 初稿：对齐 web GHA + 同波删 probe |
+| 2026-07-28 | 20-spec-audit C1–C3 落盘：`up -d --build api`；不 reload Nginx；一次性 chown；**HG-SPEC-SIGNOFF=approved** |
+| 2026-07-28 | 00 派发：task + PROMPT_30 + task R1；下一棒 30 |
