@@ -34,14 +34,14 @@ pre-30 invoke：`minimal` · required=`30` → 无 preRequired 挡 → **是**
 
 ## 交付摘要
 
-- **upgrade**：`@cyning/harness@2.20.0 upgrade --yes` → exit 0
-- **manifest**：`2.19.0` → `2.20.0`
-- **overlay**：AGENTS 定制已恢复
-- **lint-wiki-delta**：scanned=25 · missing=0 · PASS
-- **lint-wiki-delta --strict**：**PASS** · issues=0
-- **CI**：已挂 `.github/workflows/lint-wiki-delta.yml`（npx-only · cache false）
-- **FEEDBACK**：`docs/harness/evidence/FEEDBACK_harness_2_20_0_from_ops_desk_api_20260728.md`
-- **BACKFILL_DRAFT**：同目录可选稿
+- **upgrade**：`2.19.0` → `2.20.0` → **`2.21.0`**
+- **overlay**：每次 upgrade 后按 §1.2 恢复 AGENTS / FRAGMENT（`l1/01_modules`）
+- **lint / --strict**：scanned=25 · **PASS**
+- **wiki export**：nodes=7 · edges=33 · warnings=[]
+- **CI**：钉 `@cyning/harness@2.21.0` · `package-manager-cache: false`
+- **local.json**：gitignore + 停止跟踪（吸收 U3）
+- **FEEDBACK**：2.20 dogfood + **2.21 复检矩阵**（两仓吸收）
+- **PR**：#23
 
 ---
 
@@ -50,4 +50,5 @@ pre-30 invoke：`minimal` · required=`30` → 无 preRequired 挡 → **是**
 | 日期 | 说明 |
 |------|------|
 | 2026-07-28 | 开工 · GATE_VERIFY PASS |
-| 2026-07-28 | 升级完成 · strict PASS · FEEDBACK · 待 PR |
+| 2026-07-28 | 升级 2.20 · strict PASS · FEEDBACK · PR #23 |
+| 2026-07-28 | 吸收产品 2.21.0 · §0b 复检 · gitignore local.json |

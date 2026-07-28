@@ -1,8 +1,8 @@
-# Task：Harness 升级至 2.20.0（api）· wiki_delta RUNBOOK + FEEDBACK
+# Task：Harness 升级 2.20→2.21（api）· wiki_delta RUNBOOK + FEEDBACK 复检
 
 > **状态**：active  
 > **类型**：基础设施（过程轨 upgrade + wiki_delta 扫迁 + 产品 FEEDBACK）  
-> **关联**：npm `@cyning/harness@2.20.0` · `RUNBOOK_upgrade_wiki_delta_v1_zh` · `--strict`  
+> **关联**：npm `@cyning/harness@2.21.0` · 吸收 web+ops 2.20 FEEDBACK · PR #23  
 > **合入**：走 PR（禁直推 master）
 
 ---
@@ -24,31 +24,31 @@
 | **required_invoke_hats** | `30` |
 | **experience_capture** | `recommended` |
 | **test_strategy** | `recommended` |
-| **test_strategy_note** | `upgrade --yes`；`check`；`lint-wiki-delta` 默认绿；`--strict`；可选挂 CI；FEEDBACK 落盘 |
+| **test_strategy_note** | `upgrade --yes`；`check`；`lint-wiki-delta`；`--strict`；§0b 复检；gitignore local.json |
 | **code_quality_bar** | `not_applicable` |
-| **orchestration** | 产品 RUNBOOK dogfood → FEEDBACK 回产品仓 |
+| **orchestration** | 2.20 dogfood FEEDBACK → 产品 2.21 回填 → 本仓吸收复检 |
 
 ### 人工闸
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
 | **HG-GRAPH-MODULES** | approved | **30** | 00 代签：仅过程轨；不改 `docs/_tech_graph/` |
-| HG-TASK-DRAFT | approved | 22-R1 | 维护者指令：升 2.20.0 + wiki_delta 扫迁 + FEEDBACK + PR |
+| HG-TASK-DRAFT | approved | 22-R1 | 维护者：升 2.20 + FEEDBACK；续升 2.21 吸收复检 |
 | **HG-AUDIT-R1** | approved | **30** | 00 代签：无业务 API；禁改产品仓源码 / 禁 publish |
 
 ---
 
 ## 背景与目标
 
-产品仓交付 **2.20.0**（`lint-wiki-delta --strict` 关账预检）与升级 RUNBOOK。本仓已钉 **2.19.0** 且启用 WikiTrack；本 task 升到 2.20.0、再扫迁、写 FEEDBACK。
+产品仓已发版 **2.21.0**（吸收 web F-220-\* + ops U\*）。本 task 先 dogfood 2.20 写 FEEDBACK，再按 §0b 升 2.21 复检落地。
 
 **完成态**：
 
-- [x] manifest → `2.20.0`
-- [x] `lint-wiki-delta` 默认 PASS（缺字段补齐）
-- [x] `--strict` 结果写入 FEEDBACK（PASS）
-- [x] 挂 `lint-wiki-delta.yml`（npx-only · `package-manager-cache: false`）
-- [x] FEEDBACK 落盘 + PR
+- [x] manifest → `2.20.0` → **`2.21.0`**
+- [x] `lint-wiki-delta` 默认 PASS；`--strict` PASS
+- [x] 挂 / 钉 `lint-wiki-delta.yml`（`@2.21.0` · `package-manager-cache: false`）
+- [x] 吸收：gitignore `local.json`；overlay §1.2 恢复
+- [x] FEEDBACK（2.20）+ 复检证据（2.21）+ PR #23
 
 **不做**：改 ops-desk-web；改 cyning-harness 产品源码；npm publish；默认 `--allow-wiki-gap`；直推 master
 
@@ -60,15 +60,16 @@
 |---|---|---|
 | lint-wiki-delta missing>0 | 按决策树补 n/a\|none\|path + note | 是 |
 | --strict 报 note/path | 补 note 或修正 path；写入 FEEDBACK | 是 |
-| upgrade 冲 overlay | diff 后恢复 AGENTS/FRAGMENT | 是 |
+| upgrade 冲 overlay | diff 后恢复 AGENTS/FRAGMENT（§1.2） | 是 |
 
 ---
 
 ## 验收标准
 
-- [x] manifest `2.20.0` · `check` 对齐
-- [x] 默认 `lint-wiki-delta` 绿或 FEEDBACK 列剩余缺口
-- [x] FEEDBACK 路径 + PR URL
+- [x] manifest `2.21.0` · `check` 对齐
+- [x] 默认 `lint-wiki-delta` 绿 · `--strict` 绿
+- [x] 两仓 FEEDBACK 吸收矩阵写入复检证据
+- [x] FEEDBACK / 复检路径 + PR URL
 
 ---
 
@@ -77,9 +78,13 @@
 | 项 | 内容 |
 |---|---|
 | **日期** | 2026-07-28 |
-| **manifest** | `2.20.0`（from `2.19.0`） |
-| **lint-wiki-delta** | scanned=25 · missing=0 · issues=0 · PASS |
-| **lint-wiki-delta --strict** | scanned=25 · missing=0 · issues=0 · **strict PASS** |
-| **CI** | 已挂 `.github/workflows/lint-wiki-delta.yml`（硬失败 · 默认 lint；`--strict` 注释保留） |
-| **FEEDBACK** | `docs/harness/evidence/FEEDBACK_harness_2_20_0_from_ops_desk_api_20260728.md` |
-| **overlay** | AGENTS 定制行被 upgrade 冲掉后已恢复 |
+| **manifest** | `2.21.0`（from `2.20.0`；此前 from `2.19.0`） |
+| **lint-wiki-delta** | scanned=25 · missing=0 · PASS |
+| **lint-wiki-delta --strict** | scanned=25 · issues=0 · **strict PASS** |
+| **wiki export** | schema v1 · nodes=7 · edges=33 · warnings=[] |
+| **CI** | `@cyning/harness@2.21.0` · cache false |
+| **local.json** | 已 gitignore + 停止跟踪 |
+| **FEEDBACK 2.20** | `docs/harness/evidence/FEEDBACK_harness_2_20_0_from_ops_desk_api_20260728.md` |
+| **复检 2.21** | `docs/harness/evidence/FEEDBACK_harness_2_21_0_recheck_from_ops_desk_api_20260728.md` |
+| **overlay** | 2.21 upgrade 仍冲 AGENTS/FRAGMENT · 已按 §1.2 恢复 |
+| **PR** | https://github.com/Cyning12/ops-desk-api/pull/23 |
