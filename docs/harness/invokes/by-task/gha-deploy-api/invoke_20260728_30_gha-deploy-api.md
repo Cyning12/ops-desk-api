@@ -28,17 +28,14 @@
 - **workflow**：`.github/workflows/deploy-api.yml`（master push + dispatch；rsync api；`up -d --build api`；health 轮询）
 - **文档**：`docs/deployment/gha-api-deploy.md` + README
 - **pytest**：`tests/test_health.py` 绿
-- **下一棒**：push + PR；维护者 Secrets / docker 组 / chown → `workflow_dispatch`
+- **下一棒**：交还 00 · CLOSE
 
 ---
 
-## 维护者首次验收清单
+## CLOSE
 
-1. `gh secret set`：`DEPLOY_HOST` / `DEPLOY_USER` / `DEPLOY_SSH_KEY`（可复用 web）
-2. `DEPLOY_USER` 入 docker 组（或 sudoers）
-3. `sudo chown -R ubuntu:ubuntu /opt/ops-desk/api`（若尚不可写）
-4. Actions → deploy-api → Run workflow
-5. `ssh … 'curl -fsS http://127.0.0.1:8000/health'` → 无 `probe`
+- **PR #18** MERGED（2026-07-28 · `978912a`）
+- **生产**：deploy-api run `30327570930` success · health `{"status":"ok"}`（无 probe）
 
 ---
 
@@ -47,3 +44,4 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-07-28 | 实现 deploy-api + 去 probe |
+| 2026-07-28 | CLOSE：PR 合入 + 生产 deploy 绿 |
