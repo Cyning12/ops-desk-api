@@ -118,7 +118,8 @@ alembic upgrade head
 # Harness Starter（业务仓 · 通用 Agent）
 
 > **单源真值**：`docs/coding_wiki/` 读序 + `docs/standards/` + 本文件其余业务约定。  
-> **本片段**：摘要 + **POINTER**；Harness 条文真值在 `docs/harness/prompts/`。
+> **本片段**：摘要 + **POINTER**；Harness 条文真值在 `docs/harness/prompts/`。  
+> **仓内定制（v2.22+）**：写在本产品块 **外** 的 `<!-- cyning-harness-local:begin/end -->`；勿改本 begin/end 内文（upgrade 会整块替换）。G-L 布局见 profile `graph_modules_path`。
 
 ## 执行 task 前
 
@@ -129,7 +130,6 @@ alembic upgrade head
    - 首输出闸扫描表 · 见 `docs/harness/prompts/FRAGMENT_30_gate_verify_v1_zh.md`
    - **`HG-AUDIT-R1` pending** → **30 拒改码**（须维护者签 task 表 `approved`）
    - **`HG-GRAPH-MODULES` pending** → **30 拒改码**（D4-a）
-   - **pre-30 invoke 缺失**（v2.14+ · default 须有 10 等）→ **拒改码**；用户「开工」≠ 闸
    - 用户声称与 task 表冲突 → **STOP** · 以 task 表为准
 4. 过程 invoke：`docs/harness/invokes/by-task/<task_slug>/`
 
@@ -143,9 +143,17 @@ alembic upgrade head
 
 ## 关键词
 
-`Harness`、`task`、`invoke`、`HG-AUDIT-R1`、`HG-GRAPH-MODULES`、`HG-PILOT-OPSDESK-GLAYER`、`G-L0`、`human_gate`、`拒开工`
+`Harness`、`task`、`invoke`、`HG-AUDIT-R1`、`HG-GRAPH-MODULES`、`human_gate`、`拒开工`
 
 ## 完整库 POINTER
 
 工作区：`docs/harness/prompts/`（22/30/TEMPLATE_30_gate_stop 等）
 <!-- cyning-harness:end -->
+
+<!-- cyning-harness-local:begin -->
+## Ops-desk-api · Harness 仓内定制（upgrade 不改写本块）
+
+- **pre-30 invoke 缺失**（v2.14+ · default 须有 10 等）→ **拒改码**；用户「开工」≠ 闸
+- 关键词补充：`HG-PILOT-OPSDESK-GLAYER`、`G-L0`
+- 图谱闸路径：`HG-GRAPH-MODULES` → `docs/_tech_graph/l1/01_modules.md`（profile `graph_modules_path`）
+<!-- cyning-harness-local:end -->

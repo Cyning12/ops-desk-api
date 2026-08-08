@@ -1,4 +1,11 @@
-"""LangGraph StateGraph compilation."""
+"""LangGraph StateGraph 编译：装配 Chat 节点与边，供 service 侧 graph.astream 消费。
+
+拓扑（简化）：
+  START → detect_intent
+            ├─ issue_qa  → load_context → generate_answer → END
+            ├─ general   → generate_answer → END
+            └─ overview  → generate_answer → END
+"""
 from langgraph.graph import END, START, StateGraph
 
 from app.ops.chat.nodes import (
@@ -9,18 +16,29 @@ from app.ops.chat.nodes import (
 )
 from app.ops.chat.state import ChatState
 
+# 以 ChatState 为共享状态；各节点返回的 dict 会 merge 回 state
 builder = StateGraph(ChatState)
+
+# 注册节点（名称供边引用；实现见 nodes.py）
 builder.add_node("detect_intent", intent_node)
 builder.add_node("load_context", load_issue_context_node)
 builder.add_node("generate_answer", answer_node)
 
+# 固定边：入口始终先做意图识别
 builder.add_edge(START, "detect_intent")
+
+# 条件边：route_by_intent 返回 intent 字符串，映射到下一节点名
 builder.add_conditional_edges(
     "detect_intent",
     route_by_intent,
-    {"issue_qa": "load_context", "general": "generate_answer", "overview": "generate_answer"},
+    {
+        "issue_qa": "load_context",  # 含 #编号 → 先查 issue 再回答
+        "general": "generate_answer",
+        "overview": "generate_answer",
+    },
 )
 builder.add_edge("load_context", "generate_answer")
 builder.add_edge("generate_answer", END)
 
+# 编译为可执行图；模块级单例，由 service 导入使用
 graph = builder.compile()

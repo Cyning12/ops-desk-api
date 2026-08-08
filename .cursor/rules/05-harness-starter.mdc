@@ -8,7 +8,8 @@ globs:
 # Harness Starter（业务仓 · Cursor）
 
 > **单源真值**：`docs/coding_wiki/` 读序 + `docs/standards/` + `AGENTS.md`。  
-> **本规则**：摘要 + **POINTER**；条文真值在 `docs/harness/prompts/`。
+> **本规则**：摘要 + **POINTER**；条文真值在 `docs/harness/prompts/`。  
+> **仓内定制（v2.22+）**：勿改本文件作仓特异词（upgrade 全量 `cp`）；关键词放 `AGENTS.md` 的 local 块或仓内非 sync 文档。
 
 ## 执行 task 前
 
