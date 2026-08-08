@@ -279,7 +279,9 @@ async def run_import(
         return 2
 
     try:
-        src = await asyncpg.connect(src_dsn)
+        # Supabase Session Pooler 是 pgbouncer transaction 模式，
+        # 不支持 prepared statement 缓存（DuplicatePreparedStatementError）。
+        src = await asyncpg.connect(src_dsn, statement_cache_size=0)
     except (OSError, asyncpg.PostgresError) as exc:
         print(f"源库连接失败: {exc}\n{GUIDE_HINT}", file=sys.stderr)
         return 1
