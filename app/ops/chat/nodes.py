@@ -1,4 +1,9 @@
-"""LangGraph nodes for chat."""
+"""LangGraph Chat 节点：纯业务函数，只读/写 ChatState，不依赖 FastAPI。
+
+约定：
+- 每个节点返回「局部更新 dict」，由 LangGraph merge 进 ChatState
+- events 字段带 Annotated[..., add] 累加，供 SSE/WS 流式推送
+"""
 import re
 
 from sqlalchemy import select
@@ -17,7 +22,13 @@ _SYSTEM_PROMPT = (
 
 
 async def intent_node(state: ChatState) -> dict:
-    """Route user intent."""
+    """识别用户意图，写入 state.intent，供条件边路由。
+
+    规则（轻量启发式，非 LLM）：
+    - 含 #数字 → issue_qa
+    - 含「总览」/overview → overview
+    - 其余 → general
+    """
     query = state["query"]
     intent = "general"
     if re.search(r"#\d+", query):
@@ -38,12 +49,12 @@ async def intent_node(state: ChatState) -> dict:
 
 
 def route_by_intent(state: ChatState) -> str:
-    """Conditional edge routing."""
+    """条件边回调：返回下一跳 key（须与 graph.add_conditional_edges 映射一致）。"""
     return state["intent"]
 
 
 async def _fetch_issue_by_number(number: int) -> dict | None:
-    """Load an issue from the database by its GitHub number."""
+    """按 GitHub issue number 查库，返回精简 dict；未找到则 None。"""
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(OpsIssue).where(OpsIssue.number == number))
         issue = result.scalar_one_or_none()
@@ -61,7 +72,10 @@ async def _fetch_issue_by_number(number: int) -> dict | None:
 
 
 async def load_issue_context_node(state: ChatState) -> dict:
-    """Load issue context by issue number."""
+    """从 query 提取 #N，加载 issue 上下文到 state.issue_context。
+
+    仅 issue_qa 路径会到达本节点；查库失败不抛出，以 tool_result 事件上报。
+    """
     match = re.search(r"#(\d+)", state["query"])
     issue_number = int(match.group(1)) if match else None
     issue: dict | None = None
@@ -92,12 +106,13 @@ async def load_issue_context_node(state: ChatState) -> dict:
 
 
 def _build_messages(state: ChatState) -> list[LlmMessage]:
-    """Build OpenAI-compatible messages from state."""
+    """组装 OpenAI 兼容 messages：system + 可选 issue 上下文 + 用户 query。"""
     messages: list[LlmMessage] = [LlmMessage(role="system", content=_SYSTEM_PROMPT)]
 
     issue_context = state.get("issue_context") or []
     if issue_context:
         issue = issue_context[0]
+        # body 截断，避免撑爆上下文窗口
         body = (issue.get("body") or "")[:2000]
         context_text = f"相关 issue #{issue.get('number')}：\n标题：{issue.get('title')}\n{body}"
         messages.append(LlmMessage(role="user", content=context_text))
@@ -107,7 +122,7 @@ def _build_messages(state: ChatState) -> list[LlmMessage]:
 
 
 async def answer_node(state: ChatState) -> dict:
-    """Generate final answer via LLM."""
+    """调用 LLM 流式生成最终回答；token/fallback/error 均写入 events。"""
     provider = get_llm_provider()
     model = state.get("model") or settings.ops_llm_model
     messages = _build_messages(state)
@@ -123,6 +138,7 @@ async def answer_node(state: ChatState) -> dict:
 
     try:
         async for chunk in provider.complete_stream(messages, model=model):
+            # Provider 可能在流中插入 fallback 元事件，与正文 chunk 分流
             if chunk.meta and chunk.meta.get("event_type") == "model.fallback":
                 events.append(
                     {
