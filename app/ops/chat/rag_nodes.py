@@ -22,7 +22,7 @@ from app.ops.tracing import trace_span, update_current_span_metadata
 logger = logging.getLogger(__name__)
 
 GRADER_PROVIDER = os.getenv("RAG_GRADER_PROVIDER", "bailian")
-GRADER_MODEL = os.getenv("RAG_GRADER_MODEL", "deepseek-v4-flash")  # 便宜款（契约 4b：每 query +1 次调用）
+GRADER_MODEL = os.getenv("RAG_GRADER_MODEL", "qwen3.7-max")  # 契约 4b：每 query +1 次调用；默认对齐有额度款（2026-08-10 人定）
 
 _embedder: SentenceTransformerEmbedder | None = None
 
