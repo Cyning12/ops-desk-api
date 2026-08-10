@@ -18,6 +18,10 @@ class ChatState(TypedDict):
     graph_context: dict | None
     intent: str
     answer: str
+    # R-3 检索链：retrieve → grade → gate
+    retrieved: list  # RetrievedChunk 列表（hybrid_recall 输出）
+    gate_action: str  # refuse | answer_partial | answer（契约 Q4）
+    sources: list  # 引用卡片（契约 4c：type/id/title/snippet/url/relevance）
     # Annotated[..., add]：声明 reducer = operator.add
     # 多个节点各自 return {"events": [...]} 时，列表会拼接而非互相覆盖，
     # 这样 intent / load_context / answer 产生的 SSE 事件能完整保留到 service 侧消费。

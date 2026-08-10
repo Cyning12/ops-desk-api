@@ -14,6 +14,7 @@ from app.db.session import AsyncSessionLocal
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage, LlmProviderError, LlmUsage
 from app.ops.chat.state import ChatState
+from app.ops.rag.prefix import strip_doc_context_prefix
 from app.ops.tracing import trace_span, update_current_generation_usage
 
 _SYSTEM_PROMPT = (
@@ -117,6 +118,31 @@ def _build_messages(state: ChatState) -> list[LlmMessage]:
         body = (issue.get("body") or "")[:2000]
         context_text = f"相关 issue #{issue.get('number')}：\n标题：{issue.get('title')}\n{body}"
         messages.append(LlmMessage(role="user", content=context_text))
+
+    # R-3 检索链上下文（general/overview 路径）：命中块 + 引用约束（契约 4c/T13）
+    retrieved = state.get("retrieved") or []
+    if retrieved:
+        parts = []
+        for c in retrieved:
+            body = strip_doc_context_prefix(c.content)[:1200]
+            parts.append(f"### 资料 [{c.source_type} {c.anchor}]\n{body}")
+        partial_note = (
+            "\n重要：现有证据仅覆盖问题的一部分，回答开头必须注明「仅部分证据」。"
+            if state.get("gate_action") == "answer_partial"
+            else ""
+        )
+        messages.append(
+            LlmMessage(
+                role="user",
+                content=(
+                    "以下是与问题相关的资料：\n\n"
+                    + "\n\n".join(parts)
+                    + "\n\n回答规则：仅基于以上资料回答，资料未覆盖的内容不得编造；"
+                      "引用来源用 [类型 编号] 标注（如 [issue 2720]、[doc contracts/xx.md]）。"
+                    + partial_note
+                ),
+            )
+        )
 
     messages.append(LlmMessage(role="user", content=state["query"]))
     return messages

@@ -101,14 +101,17 @@ def trace_span(name: str, *, run_type: str | None = None, **metadata: Any) -> It
         # SDK v3 正统上下文管理器：with 期间该 observation 即为 current，
         # with 体内的 update_current_generation / metadata 更新才会正确落点
         if as_type == "generation":
-            ctx = client.start_as_current_generation(
+            cm = client.start_as_current_generation(
                 name=name, model=model, metadata=metadata or None
             )
         else:
-            ctx = client.start_as_current_span(name=name, metadata=metadata or None)
-        with ctx:
-            yield None
+            cm = client.start_as_current_span(name=name, metadata=metadata or None)
     except Exception:
+        yield None
+        return
+    # 注意：with 体内的异常必须正常传播（cm.__exit__ 记录错误后抛出），
+    # 不能再 yield（否则 generator didn't stop after throw()）
+    with cm:
         yield None
 
 
