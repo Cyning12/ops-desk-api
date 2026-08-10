@@ -25,6 +25,8 @@ dependencies = [
     "python-multipart>=0.0.9",
     "python-jose[cryptography]>=3.3,<4",
     "passlib[bcrypt]>=1.7,<2",
+    "langfuse>=3.0,<4",
+    "langchain>=0.2.17",
 ]
 
 [project.optional-dependencies]

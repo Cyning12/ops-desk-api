@@ -35,6 +35,8 @@ class BaseProviderImpl(BaseProvider):
             "model": model,
             "messages": BaseProviderImpl._messages_to_openai(messages),
             "stream": True,
+            # 末帧回传 token usage（OpenAI 兼容），供观测上报
+            "stream_options": {"include_usage": True},
         }
 
         timeout = httpx.Timeout(connect=10.0, read=180.0, write=30.0, pool=5.0)
@@ -88,6 +90,10 @@ class BaseProviderImpl(BaseProvider):
 
         choices = payload.get("choices") or []
         if not choices:
+            # include_usage 末帧：choices 为空、携带 usage
+            usage = payload.get("usage")
+            if usage:
+                return LlmChunk(content="", meta={"usage": usage})
             return None
         delta = choices[0].get("delta") or {}
         content = delta.get("content") or ""

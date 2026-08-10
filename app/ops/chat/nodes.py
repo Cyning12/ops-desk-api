@@ -12,8 +12,9 @@ from app.config import settings
 from app.db.models import OpsIssue
 from app.db.session import AsyncSessionLocal
 from app.llm.factory import get_llm_provider
-from app.llm.schema import LlmMessage, LlmProviderError
+from app.llm.schema import LlmMessage, LlmProviderError, LlmUsage
 from app.ops.chat.state import ChatState
+from app.ops.tracing import trace_span, update_current_generation_usage
 
 _SYSTEM_PROMPT = (
     "你是 Ops Desk 助手，帮助用户理解 GitHub 仓库中的 issue、PR 和代码图谱。"
@@ -137,25 +138,37 @@ async def answer_node(state: ChatState) -> dict:
     answer_parts: list[str] = []
 
     try:
-        async for chunk in provider.complete_stream(messages, model=model):
-            # Provider 可能在流中插入 fallback 元事件，与正文 chunk 分流
-            if chunk.meta and chunk.meta.get("event_type") == "model.fallback":
-                events.append(
-                    {
-                        "event_type": "model.fallback",
-                        "agent_role": "answer",
-                        "payload": chunk.meta,
-                    }
-                )
-            else:
-                answer_parts.append(chunk.content)
-                events.append(
-                    {
-                        "event_type": "answer",
-                        "agent_role": "answer",
-                        "payload": {"content": chunk.content},
-                    }
-                )
+        # 手动 generation 观测：自研 provider 不走 LangChain LLM 类，
+        # CallbackHandler 抓不到这次调用，需显式包裹（Langfuse 技能基线：LLM 调用必须是 generation）
+        with trace_span("answer_llm", run_type="llm", model=model):
+            async for chunk in provider.complete_stream(messages, model=model):
+                # include_usage 末帧：上报 token 用量到 generation（观测基线）
+                if chunk.meta and chunk.meta.get("usage"):
+                    update_current_generation_usage(
+                        LlmUsage(
+                            prompt_tokens=chunk.meta["usage"].get("prompt_tokens") or 0,
+                            completion_tokens=chunk.meta["usage"].get("completion_tokens") or 0,
+                        )
+                    )
+                    continue
+                # Provider 可能在流中插入 fallback 元事件，与正文 chunk 分流
+                if chunk.meta and chunk.meta.get("event_type") == "model.fallback":
+                    events.append(
+                        {
+                            "event_type": "model.fallback",
+                            "agent_role": "answer",
+                            "payload": chunk.meta,
+                        }
+                    )
+                else:
+                    answer_parts.append(chunk.content)
+                    events.append(
+                        {
+                            "event_type": "answer",
+                            "agent_role": "answer",
+                            "payload": {"content": chunk.content},
+                        }
+                    )
     except Exception as exc:
         retryable = isinstance(exc, LlmProviderError) and exc.retryable
         events.append(
