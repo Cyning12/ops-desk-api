@@ -28,8 +28,8 @@ _SEMANTIC_SQL = text(
 _KEYWORD_SQL = text(
     "SELECT id, repo, source_type, source_id, chunk_index, content, metadata, images "
     "FROM ops_knowledge_chunks "
-    "WHERE fts_tokens @@ plainto_tsvector('simple', :q) "
-    "ORDER BY ts_rank(fts_tokens, plainto_tsvector('simple', :q)) DESC "
+    "WHERE fts_tokens @@ plainto_tsquery('simple'::regconfig, CAST(:q AS text)) "
+    "ORDER BY ts_rank(fts_tokens, plainto_tsquery('simple'::regconfig, CAST(:q AS text))) DESC "
     "LIMIT :k"
 )
 
