@@ -17,7 +17,7 @@
 | 维度 | 自建 `app/ops/rag` | LlamaIndex 默认 |
 |------|--------------------|-----------------|
 | chunk 数 / 边界 | 7 块 · 全起于 `###` 章节 · 小章节按 E2 合并 | 11 块 · 逐标题成块，**4 个 69–146 字符的微型块未合并** |
-| fence 完整性 | 原子不拆（规则保证） | 0/11 切断——**但系侥幸**（各块恰好 <800）；无原子规则，更大 fence 必断（库内实测最大 4,019 字符） |
+| fence 完整性 | 原子不拆（规则保证） | #2720 上 0/11 切断——**侥幸**（各块 token≤800）；**无 fence 原子规则**（#43 未切亦是 token≤800，非护栏） |
 | 表格处理 | 行切+重复表头 | 本样本未超限未触发；无表头重复规则 |
 | 图片/HTML | 锚点化 + 清洗 | 本样本无图未触发；默认 HTML 原文进向量 |
 | tokenizer 口径 | bge-m3 同源（E5） | **tiktoken（默认）**，与被嵌模型不同源 |
@@ -36,13 +36,33 @@
 
 | 样本 | 结构 | 自建 | LI |
 |------|------|------|-----|
-| #43 | 整篇一个 4,019 字符 fence | 1 块（E1 有意裁决 + 8192 保险丝） | 1 块，但 9,290 字符 ≈2.5k tokens **远超其自设 chunk_size=800 未切**，无护栏说明 |
-| #1089 | fence 标记 9 个（奇数 · 源畸形） | 边界落在嵌套 ``` 处（CommonMark 语义，无内容丢失） | 同位置被迫切 + 尺寸驱动切割叠加（node 5 从 fence 正文中间续起） |
+| #43 | 整篇几乎一个大 fence；字符多、有效内容少 | 1 块（E1 原子 + 8192 保险丝） | 1 块——**不是 fence 护栏**，见下方「#43 未切」 |
+| #1089 | fence 标记 9 个（奇数 · 源畸形） | 边界落在嵌套 ``` 处（CommonMark 语义，无内容丢失） | 同位置被迫切 + 尺寸驱动切割叠加（node 5 从 diff 正文中间续起） |
 | #2540 / #699 | fence 均 ≤800 | 完整 | 完整 |
+
+#### #43 未切：LI 怎么「做到」的（2026-08-10 源码+复测）
+
+先前用「字符/4 ≈ 2.5k tokens」高估了；复测：
+
+| 口径 | 数值 |
+|------|------|
+| body 字符 | 9,678（MarkdownNodeParser 后节点 9,290） |
+| 其中空白 | **83.3%**（粘贴进 fence 的宽空白/对齐） |
+| 非空白 | 1,620 |
+| LI 默认 tokenizer（tiktoken `cl100k_base`） | **656 ≤ chunk_size=800** → 不切 |
+| bge-m3 | 595（同样 <800） |
+
+机制（`llama_index/.../text/sentence.py` · `SentenceSplitter._split`）：
+
+1. `MarkdownNodeParser`：无标题可切 → **1 个 md node**（与 fence 无关）
+2. `SentenceSplitter`：**先** `_token_size(text)`；`<= chunk_size` 则整段原样返回（early return）
+3. **没有**「遇 \`\`\` 则原子保留」的规则；本样本只是 token 预算没超
+
+若把同结构写成密代码、tiktoken >800，且几乎无 `\n\n`，LI 会沿 段落 → 句子 → 次级正则 → 空格 → 字符 递归切，**会从 fence 中间切断**。自建则走 E1：原子超限整块保留，再靠 8192 保险丝。
 
 - 非平衡 fence 全库 5/881（0.6%），系源格式问题，任何解析器（含 GitHub 渲染）行为一致
 - 公平性注记：LI 侧为「默认-ish」装配（MarkdownNodeParser→SentenceSplitter），不代表调优后上限
-- 核心差异不变：**well-formed fence 上，自建永不切（规则），LI 尺寸不够必切（无规则）**
+- 核心差异不变：**well-formed fence 上，自建永不切（规则），LI 只认 token 预算（无 fence 规则）**；#43 未切是预算巧合，不是能力
 
 ## 运行
 
@@ -67,3 +87,4 @@ uv pip install -r experiments/rag_compare/requirements.txt
 |------|------|
 | 2026-08-10 | 首版 |
 | 2026-08-10 | 增补本目录 requirements.txt；安装 llama-index-core 0.14.23 + embeddings-huggingface 0.7.0 |
+| 2026-08-10 | fence/#43：纠正「超 800 未切」误判；根因是 tiktoken=656≤800 early return，非 fence 护栏 |
