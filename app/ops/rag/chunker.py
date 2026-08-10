@@ -21,7 +21,18 @@ HARD_TOKEN_LIMIT = 8192  # bge-m3 模型序列上限
 _HEADER_RE = re.compile(r"^#{1,6}\s")
 _TABLE_ROW_RE = re.compile(r"^\s*\|.*\|")
 _FENCE_LINE_RE = re.compile(r"^\s*(```|~~~)")
+_FENCE_OPEN_RE = re.compile(r"^\s*(`{3,}|~{3,})")  # 捕获fence字符与长度（E9 参考实现用）
 _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?。！？;；:：])\s+|\n{2,}")
+
+
+def _is_fence_close(line: str, opener: tuple[str, int], strict: bool) -> bool:
+    """fence 闭合判定。strict=True 时按 CommonMark：同字符且长度 >= 开 fence。"""
+    m = _FENCE_OPEN_RE.match(line)
+    if not m:
+        return False
+    if not strict:
+        return True
+    return m.group(1)[0] == opener[0] and len(m.group(1)) >= opener[1]
 
 
 @dataclass
@@ -30,7 +41,7 @@ class Block:
     text: str
 
 
-def parse_blocks(md: str) -> list[Block]:
+def parse_blocks(md: str, *, _fence_strict: bool = False) -> list[Block]:
     """行级解析：fence / 表格 / 标题 / 段落四类块。空行仅作分隔。"""
     blocks: list[Block] = []
     lines = md.split("\n")
@@ -41,8 +52,10 @@ def parse_blocks(md: str) -> list[Block]:
             i += 1
             continue
         if _FENCE_LINE_RE.match(line):
+            om = _FENCE_OPEN_RE.match(line)
+            opener = (om.group(1)[0], len(om.group(1)))
             j = i + 1
-            while j < len(lines) and not _FENCE_LINE_RE.match(lines[j]):
+            while j < len(lines) and not _is_fence_close(lines[j], opener, _fence_strict):
                 j += 1
             j = min(j + 1, len(lines))  # 含闭合行；未闭合则到文末
             blocks.append(Block("code", "\n".join(lines[i:j])))
@@ -69,6 +82,17 @@ def parse_blocks(md: str) -> list[Block]:
             blocks.append(Block("paragraph", "\n".join(lines[i:j])))
             i = j
     return blocks
+
+
+def parse_blocks_commonmark(md: str) -> list[Block]:
+    """【未调用 · E9 参考实现】CommonMark fence 长度配对版 parse_blocks。
+
+    与生产版的差异：开 fence 为 N 个反引号时，只有同字符且 >=N 的反引号行
+    才闭合，```` 外层包裹 ``` 内层的嵌套代码块可正确识别为一个原子块。
+    注意：#1089 类「内外同为 ``` 」的畸形源在本实现下行为不变（规范本就如此）；
+    切换条件：语料中 ```` 嵌套形态增多时，将 parse_blocks 调用点换成本函数。
+    """
+    return parse_blocks(md, _fence_strict=True)
 
 
 def split_sections(blocks: list[Block]) -> list[list[Block]]:

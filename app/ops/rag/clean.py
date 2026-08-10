@@ -14,6 +14,7 @@ import re
 from dataclasses import dataclass, field
 
 _FENCE_LINE_RE = re.compile(r"^\s*(```|~~~)")
+_FENCE_OPEN_RE = re.compile(r"^\s*(`{3,}|~{3,})")  # 捕获fence字符与长度（E9 参考实现用）
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 _DETAILS_OPEN_RE = re.compile(r"<details[^>]*>", re.IGNORECASE)
 _DETAILS_CLOSE_RE = re.compile(r"</details\s*>", re.IGNORECASE)
@@ -39,11 +40,23 @@ class CleanResult:
     # media 条目: {"anchor": "[IMAGE#1]", "url": ..., "alt": ..., "kind": "image"|"video"}
 
 
-def _fence_segments(text: str) -> list[tuple[bool, str]]:
+def _is_fence_close(line: str, opener: tuple[str, int] | None, strict: bool) -> bool:
+    """fence 闭合判定。strict=True 时按 CommonMark：同字符且长度 >= 开 fence。"""
+    m = _FENCE_OPEN_RE.match(line)
+    if not m:
+        return False
+    if not strict or opener is None:
+        return True
+    char, count = m.group(1)[0], len(m.group(1))
+    return char == opener[0] and count >= opener[1]
+
+
+def _fence_segments(text: str, _fence_strict: bool = False) -> list[tuple[bool, str]]:
     """按 fence 边界切成 (is_fence, segment) 序列，换行符保留在段内。"""
     segments: list[tuple[bool, str]] = []
     buf: list[str] = []
     in_fence = False
+    opener: tuple[str, int] | None = None
 
     def flush() -> None:
         if buf:
@@ -51,14 +64,28 @@ def _fence_segments(text: str) -> list[tuple[bool, str]]:
             buf.clear()
 
     for line in text.splitlines(keepends=True):
-        if _FENCE_LINE_RE.match(line):
+        m = _FENCE_OPEN_RE.match(line)
+        is_boundary = bool(m) and (not in_fence or _is_fence_close(line, opener, _fence_strict))
+        if is_boundary:
             flush()
             in_fence = not in_fence
+            opener = (m.group(1)[0], len(m.group(1))) if in_fence else None
         buf.append(line)
     if buf:
         # 未闭合 fence 的容错：末段按 fence 处理（不清洗），宁可不洗也不错洗代码
         segments.append((in_fence, "".join(buf)))
     return segments
+
+
+def _fence_segments_commonmark(text: str) -> list[tuple[bool, str]]:
+    """【未调用 · E9 参考实现】CommonMark fence 长度配对版分段器。
+
+    与生产版的差异：开 fence 为 N 个反引号时，只有同字符且 >=N 的反引号行才闭合，
+    因此 ```` 外层包裹 ``` 内层的嵌套代码块能被正确识别为一段。
+    注意：#1089 类「内外同为 ``` 」的畸形源在本实现下行为不变（规范本就如此），
+    切换条件：语料中 ```` 嵌套形态增多时，替换 _fence_segments 调用点即可。
+    """
+    return _fence_segments(text, _fence_strict=True)
 
 
 def _anchor(kind: str, url: str, alt: str, media: list[dict], counters: dict[str, int]) -> str:
