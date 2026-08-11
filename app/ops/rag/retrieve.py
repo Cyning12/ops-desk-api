@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
@@ -93,10 +94,10 @@ async def hybrid_recall(
     top_n: int = 5,
 ) -> list[RetrievedChunk]:
     """混合召回入口：两路各取 k_each，RRF 融合后取 top_n（契约：grader 评 top-5）。"""
-    sem_rows = (
-        await session.execute(_SEMANTIC_SQL, {"qvec": json.dumps(query_vector), "k": k_each})
-    ).all()
-    kw_rows = (await session.execute(_KEYWORD_SQL, {"q": query, "k": k_each})).all()
+    sem_task = session.execute(_SEMANTIC_SQL, {"qvec": json.dumps(query_vector), "k": k_each})
+    kw_task = session.execute(_KEYWORD_SQL, {"q": query, "k": k_each})
+
+    sem_rows, kw_rows = await asyncio.gather(sem_task, kw_task)
 
     semantic = [_row_to_chunk(r) for r in sem_rows]
     keyword = [_row_to_chunk(r) for r in kw_rows]
