@@ -1,7 +1,7 @@
 # 金样查询集 v1（task golden-query-set-v1）
 # 断言锚格式：source_id#chunk_index；评测卫生：runner 断言前过滤含金样原文的文档
 # expect_relevance 为预填值，需人校准一遍（部分覆盖的降为 relevant）
-# 负样本（negative 象限）待人手写后追加
+# 负样本双审制：词面零命中验证 + 语义零命中验证（2026-08-11 G67 教训立规）
 golden:
   # ---- G01–G05：契约 Q5 迁入（锚定 kimi-code#2720 · 单文档多角度深挖）----
   - id: G01
@@ -525,12 +525,26 @@ golden:
     expect_relevance: weak
     note: "语料验证：离线模式 0 命中"
   - id: G67
-    query: "Kimi Code 有没有内置番茄钟或者久坐提醒功能？"
+    query: "Kimi Code 能把会议录音转写成文字吗?"
     quadrant: negative
     expect_hit: null
     assert: { max_relevance: weak, must_refuse: true }
     expect_relevance: irrelevant
-    note: "语料验证：番茄钟 0 命中 · 主题不搭型"
+    note: "替换原番茄钟样本（2026-08-11）：原样本词面零命中但语义有 157#0 cron 提醒近亲功能 → 负样本双审制由此立（词面+语义）· 本样本两关均已验证"
+  - id: G72
+    query: "Kimi Code 支持把 Markdown 大纲一键排版成 PPT 幻灯片吗?"
+    quadrant: negative
+    expect_hit: null
+    assert: { max_relevance: weak, must_refuse: true }
+    expect_relevance: irrelevant
+    note: "负样本双审制验证（词面零命中 + 语义 top5 全为无关 changelog/checklist）"
+  - id: G73
+    query: "kimi-code 能不能设置定时提醒，到点自动提醒我做什么?"
+    quadrant: zh2en
+    expect_hit: { source_type: issue, source_id: "157" }
+    assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
+    expect_relevance: exact
+    note: "G67 解剖的物尽其用：157#0 session cron/reminder 功能正文直答"
   - id: G68
     query: "Kimi Code 能把任务计划渲染成甘特图展示吗？"
     quadrant: negative
