@@ -9,484 +9,484 @@ golden:
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "2720" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact
-    note: "真实用户遇到压缩取消错误时,需要快速定位原因和解决方案"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "真实用户遇到压缩取消错误时,需要快速定位原因和解决方案 · 校准：文档完整覆盖原因、错误机制及规避/修复方案，保持不变"
   - id: G02
     query: "compaction_trigger_ratio 设置多少可以避免自动压缩被取消的问题?"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "2720" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: relevant
-    note: "issue 给了 blockRatio 行为(0.85),没给「安全值」→ 只算部分覆盖"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "issue 给了 blockRatio 行为(0.85),没给「安全值」→ 只算部分覆盖 · 校准：文档明确给出推荐值0.85并说明有效，升级为exact"
   - id: G03
     query: "为什么 Kimi Code 手动压缩成功但自动压缩总是失败?"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "2720" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact
-    note: "「Manual /compact on the exact same context always succeeds」正文直答"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "「Manual /compact on the exact same context always succeeds」正文直答 · 校准：文档完整覆盖手动/自动差异及机制，保持不变"
   - id: G04
     query: "Kimi Code 的 historySafeToCompact 函数是做什么的?"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "2720" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: relevant
-    note: "函数名在标题,正文讲 fullCompactionService 机制 → 部分覆盖"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "函数名在标题,正文讲 fullCompactionService 机制 → 部分覆盖 · 校准：文档完整给出函数实现与逻辑，升级为exact"
   - id: G05
     query: "Kimi Code 自动压缩每次浪费多少 token?"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "2720" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact
-    note: "「~160K cached input tokens per attempt」正文有数"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "「~160K cached input tokens per attempt」正文有数 · 校准：文档明确给出数值，保持不变"
 
   - id: G06
     query: "我现在是通过 KIMI_CODE_PLUGIN_MARKETPLACE_URL 配置自定义市场的，如果想把自己写的插件提交到官方市场，文档里有提供提交入口吗？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "1566" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=配置 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=配置 · 三方生成人筛 · 校准：文档明确回答「没有」，保持 exact"
 
   - id: G07
     query: "社区插件通过 GitHub URL 手动安装和从官方 marketplace.json 里安装，除了好不好找之外，在信任机制上具体有什么区别？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "1566" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=对比 · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=对比 · 三方生成人筛 · 校准：仅提供间接对比线索，未明确具体机制区别，降为 relevant"
 
   - id: G08
     query: "markLoadedTasksLost 里标记 lost 之前为什么不先用 process.kill(pid, 0) 检查一下进程是不是真死了？任务 JSON 里明明存了 pid，直接拿来探活不就能避免误判吗？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "1924" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点（保持不变）
+    note: "angle=原因 · 三方生成人筛 · 校准：文档完整覆盖，无降级必要 · 校准：文档完整覆盖两个子问，保持 exact"
 
   - id: G09
     query: "resume_hint 里把 task.lost 列成恢复场景并让模型调 Agent(resume=agent_id)，但这个逻辑实际会拉起重复的 worker。这是设计上的预期行为还是缺陷？有没有配置开关能禁止自动 resume？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "1924" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=对比 · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=对比 · 三方生成人筛 · 校准：机制描述精确，但'设计预期/缺陷'未明确定性，'配置开关'未覆盖 → relevant"
 
   - id: G10
     query: "我看 Codex 能把 token_count.rate_limits 写到本地 rollout JSONL，Claude Code 也能通过 statusLine 传限频数据，为啥 Kimi 这边 /status 和 /usage 算出来的配额只能在 TUI 里看，不能搞个类似的机器可读通道？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "2157" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=对比 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=对比 · 三方生成人筛 · 校准：原始文档完整覆盖了 TUI 锁定现状、对比参照、缺失原因及 ACP 落地进展，故维持 exact"
 
   - id: G11
     query: "正文里说 kimi acp 的 /usage 只报 session tokens/context，不报托管账户配额，那如果想在外部监控里看剩余周配额和重置时间，除了自己拿 token 调 provider API 或者爬 TUI，有没有别的现成接口可以用？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "2157" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=机制 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=机制 · 三方生成人筛 · 校准：文档明确给出 ACP usage_update 帧（_meta）作为已实现的现成接口，覆盖全部子问，维持 exact"
 
   - id: G12
     query: "同样的 credentials 和二进制，为什么 TUI 能正常回答，但 kimi -p 会挂起且 stdout/stderr 都是零字节？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "2358" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：现象完整但未给出确定性原因，降为 relevant"
 
   - id: G13
     query: "非交互模式下 access token 刷新逻辑和 TUI 是不是不一样？我看 expires_at 只有 15 分钟，但之前 token 过期超过 24 小时 TUI 还能工作，headless 路径是不是根本不刷新 token？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "2358" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=对比 · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=对比 · 三方生成人筛 · 校准：仅推测未定性，降为 relevant"
 
   - id: G14
     query: "为什么每个 Tooltip 组件实例都要注册全局的 scroll 和 resize 监听器？这些监听器在 Tooltip 关闭后是不是还一直运行，导致滚动卡顿？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "2548" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：文档未解释注册原因，仅描述行为，故降为relevant"
 
   - id: G15
     query: "建议里说 ChatPane.vue 只渲染最新的 200 条对话，这个 200 是建议值还是硬编码限制？我能自己调整这个上限吗？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "2548" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=配置 · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=配置 · 三方生成人筛 · 校准：文档仅说明200为示例值，未提调整方式，故降为relevant"
 
   - id: G16
     query: "启动时报错 spawn ENOTDIR，这个错误是不是因为我当前所在的目录有问题？是不是必须在某个特定类型的目录下才能启动？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "87" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: weak  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：文档仅复现错误，未解释原因或目录要求，降为 weak"
 
   - id: G17
     query: "我全新安装的 0.2.0 版本，一跑 kimi 就报错。这个版本是不是有已知的启动兼容性问题，比如对 macOS 或 Node.js 版本有特殊要求？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "87" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: weak  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：文档仅记录故障现象，未提及任何已知兼容性或版本要求，降为 weak"
 
   - id: G18
     query: "终端标题更新用 OSC 0 而不用 OSC 9;4，是不是因为有些终端根本不支持 OSC 9;4？比如 VSCode 编辑器区的 terminal tab 就渲染不了？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "1885" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点（保持不变）
+    note: "angle=原因 · 三方生成人筛 · 校准：文档完全覆盖两个子问，保持 exact"
 
   - id: G19
     query: "这个把工作状态写到 terminal title 的功能，是不是通过 tui.toml 里的某个配置项来控制开启或关闭的？默认是开还是关？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "1885" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=配置 · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=配置 · 三方生成人筛 · 校准：文档仅提理想配置设想，未确认实现及默认值，降为 relevant"
 
   - id: G20
     query: "为什么子代理没法发现包目录下的 AGENTS.md？是 prepareSystemPromptContext 只从 kaos.getcwd() 往上找，而子代理又继承了父代理的 cwd 导致的吗？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "173" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：issue Root Cause 完整覆盖两个子问，保持 exact"
 
   - id: G21
     query: "PR #172 里加了 cwd 参数后，默认行为会不会变？是不是只有我显式传了 cwd 才会启用隔离工作目录？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "173" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=机制 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=机制 · 三方生成人筛 · 校准：Proposed Fix 完整覆盖两个子问，保持 exact"
 
   - id: G22
     query: "我点了 Approved for session，为什么下次写文件或者执行命令还要再弹审批？这个 session 到底是怎么算的，是不是每次新对话都重置了？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "325" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: weak  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：文档仅复现现象，未解释机制或重置逻辑，降为weak"
 
   - id: G23
     query: "我观察到同样的 Write 和 Bash 操作，有时候会提示 Approved for session，有时候不会。这个审批状态是不是跟具体操作类型或者工作目录有关？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "325" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=机制 · 三方生成人筛"
+    expect_relevance: weak  # ⬅️ 修改点
+    note: "angle=机制 · 三方生成人筛 · 校准：文档仅复现现象，未解释差异原因或关联因素，降为weak"
 
   - id: G24
     query: "为什么我给 DeepSeek 模型配置 thinking.effort = 'xhigh'，实际发出去的 reasoning_effort 却是 'high'？是哪里把它改掉了？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "525" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：文档完整覆盖全部子问，保持 exact"
 
   - id: G25
     query: "v0.11.0 之前和之后，xhigh 和 max 的 thinking effort 处理方式到底有什么区别？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "525" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=对比 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=对比 · 三方生成人筛 · 校准：文档完整覆盖前后差异，保持 exact"
 
   - id: G26
     query: "终端流式输出时为什么会偶尔自动滚到最顶部？是哪个条件判断触发的？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "981" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：根因分析完整覆盖原因和条件判断，保持 exact"
 
   - id: G27
     query: "fullRender(true) 触发清屏的具体机制是什么？为什么 firstChanged < prevViewportTop 这个条件会导致全屏重绘？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "981" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=机制 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=机制 · 三方生成人筛 · 校准：根因分析完整覆盖机制和条件逻辑，保持 exact"
 
   - id: G28
     query: "在 Windows Git Bash 里跑 kimi update，execFile('npm.cmd') 为什么会报 EINVAL 错误？是 Node.js 版本问题还是什么原因？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "1356" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：文档完整覆盖所有子问，维持 exact"
 
   - id: G29
     query: "detectInstallSource() 里直接捕获异常就返回 'unsupported'，那加了 {shell:true} 就能正常工作是什么原理？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "1356" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=机制 · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=机制 · 三方生成人筛 · 校准：文档确认现象但未解释原理，降为 relevant"
 
   - id: G30
     query: "wind-allskill 插件执行 Wind 查询时为什么总返回 NETWORK_ERROR？是网络问题还是哪里配置不对？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "1909" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：根因分析完整覆盖原因及归因判断，保持 exact"
 
   - id: G31
     query: "我按 issue 里说的创建了 ~/.kimi/agent-gw.json 想绕过依赖检查，为什么还是没用？导入失败发生在配置文件读取之前是什么意思？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "1909" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=机制 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=机制 · 三方生成人筛 · 校准：文档直接解释 workaround 无效原因及时序，保持 exact"
 
   - id: G32
     query: "/provider 命令的描述里明明写着可以 refresh，为什么实际打开的界面里只有 add 和 delete，根本没有刷新按钮？是 UI 实现漏了还是设计上本来就不打算做？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "2111" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：文档完整覆盖原因和定性，保持 exact"
 
   - id: G33
     query: "我手动调 POST /api/v1/providers:refresh 接口，为什么对 minimax-cn-coding-plan 和 opencode-go 这种 provider 完全没效果，返回 unchanged 或者直接不在列表里？refreshProviderModels 是按什么规则决定刷不刷新的？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "2111" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=机制 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=机制 · 三方生成人筛 · 校准：文档完整覆盖原因和规则，保持 exact"
 
   - id: G34
     query: "MCP server 重启后 session 失效，client 收到 -32600 错误为什么不自动重新 initialize？明明错误信息里都写着 'client should reinitialize' 了"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "2380" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：文档仅说明重连触发条件不足，未给出完整因果，降为 relevant"
 
   - id: G35
     query: "0.29.0 的 changelog 不是说 'Reconnect a dropped MCP server connection automatically when one of its tools is called, and retry the call once' 吗？为什么 server 重启后 session 失效就不触发这个重连逻辑了？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "2380" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=对比 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点（保持 exact）
+    note: "angle=对比 · 三方生成人筛 · 校准：文档直接给出原因，保持 exact"
 
   - id: G36
     query: "全新安装后启动就报 spawn ENOTDIR，错误栈里提到了 readPullRequest 和 refreshPullRequestIfNeeded，这是什么原因导致的？是环境问题还是代码逻辑问题？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "87" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: weak  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：文档仅显示错误栈，未解释原因或定性，降为 weak"
 
   - id: G37
     query: "readPullRequest 在启动时被调用是做什么用的？为什么会触发 child_process.spawn 并报 ENOTDIR？这个函数在什么条件下才会执行？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "87" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=机制 · 三方生成人筛"
+    expect_relevance: weak  # ⬅️ 修改点
+    note: "angle=机制 · 三方生成人筛 · 校准：文档仅含函数名与堆栈，未解释功能、原因或条件，降为 weak"
 
   - id: G38
     query: "为什么我把终端放在 VSCode 的编辑器区域时，看不到 Kimi Code 的工作状态指示？OSC 9;4 在这里不起作用吗？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "1885" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点（保持不变）
+    note: "angle=原因 · 三方生成人筛 · 校准：文档完整覆盖两个子问，保持 exact"
 
   - id: G39
     query: "setProgress 函数里用了一个定时器来更新终端标题，这个定时器的刷新间隔是多少？它和已有的 progress keepalive 是共用还是独立的？"
     quadrant: zh2zh
     expect_hit: { source_type: issue, source_id: "1885" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=机制 · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=机制 · 三方生成人筛 · 校准：间隔明确，但独立性问题仅间接暗示，未直接确认，降为 relevant"
 
   - id: G40
     query: "What is the root cause of the hash divergence in computeWorkdirBucket on Windows, and how should the test derive the expected hash to be portable?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "225" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=cause · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=cause · 三方生成人筛 · 校准：文档完整覆盖根因和可移植方案，保持exact"
 
   - id: G41
     query: "Why do the Glob tool description snapshots fail on Windows, and what are the proposed approaches to make them platform-stable?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "225" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=comparison · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=comparison · 三方生成人筛 · 校准：原因完整，方案仅为问询，未完整覆盖，降为relevant"
 
   - id: G42
     query: "What causes the ACP authorization response to return only 'bash' instead of the full command, while the terminal mode displays the complete command for interactive approval?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "800" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=cause · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=cause · 三方生成人筛 · 校准：文档仅描述现象与预期，未解释根本原因，故降为relevant"
 
   - id: G43
     query: "How does the absence of the concrete command in the ACP authorization response prevent ACP clients from applying allow-list, deny-list, or other policy rules for automatic authorization?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "800" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=mechanism · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 保持原值
+    note: "angle=mechanism · 三方生成人筛 · 校准：文档完整阐述了阻断机制，保持exact"
 
   - id: G44
     query: "What causes the version discrepancy where pip install kimi-code fetches 1.48.0 from PyPI, but the install.sh script downloads 0.20.3 as the latest from code.kimi.com?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "1219" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=cause · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=cause · 三方生成人筛 · 校准：文档仅描述现象，未解释原因，故降为 relevant"
 
   - id: G45
     query: "Is the PyPI package (kimi-code 1.48.0) intentionally kept at a different versioning scheme than the CLI releases distributed via install.sh, and what is the expected alignment strategy going forward?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "1219" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=comparison · 三方生成人筛"
+    expect_relevance: weak  # ⬅️ 修改点
+    note: "angle=comparison · 三方生成人筛 · 校准：文档未回答意图与策略，仅描述现象，故降为 weak"
 
   - id: G46
     query: "Why does the proposal for `/undo` include an explicit guard to refuse execution while a turn is running, given that the kernel's `context.undo` lacks an active-turn guard?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "1685" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=cause · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=cause · 三方生成人筛 · 校准：文档完整覆盖原因，保持 exact"
 
   - id: G47
     query: "What is the implication of the known limitation that `mcpServers` supplied via ACP are not carried into forked sessions, and how does this affect clients that rely on dynamically provided MCP servers?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "1685" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=comparison · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=comparison · 三方生成人筛 · 校准：缺含义和影响说明，降为 relevant"
 
   - id: G48
     query: "What is the root cause of the SIGSEGV crashes in the V8 GC marking phase for the 0.27.0 web server, given that the logs show no JS errors and the issue is intermittent?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "1943" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=cause · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=cause · 三方生成人筛 · 校准：文档未给出明确根因，仅推测性线索，故降为relevant"
 
   - id: G49
     query: "Are there any safe runtime flags or configuration values that can be set to mitigate the SIGSEGV crashes in the V8 GC marking phase, similar to the workaround guidance requested in the issue?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "1943" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=config · 三方生成人筛"
+    expect_relevance: weak  # ⬅️ 修改点
+    note: "angle=config · 三方生成人筛 · 校准：文档未给出任何具体标志或配置值，仅提及需求，故降为weak"
 
   - id: G50
     query: "Why do agent-initiated turns fail to emit session/update notifications even though ACP permits agent→client notifications outside the prompt lifecycle—is this a protocol-level gap or an implementation bug in the streaming layer?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "2163" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=cause · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点（保持不变）
+    note: "angle=cause · 三方生成人筛 · 校准：文档完整覆盖现象、原因及定性，维持 exact"
 
   - id: G51
     query: "What is the exact behavioral difference between agent-initiated turns and client-initiated prompt turns regarding session/update emission, and does the current implementation provide any configuration flag or workaround to enable streaming for autonomous turns?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "2163" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=comparison · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=comparison · 三方生成人筛 · 校准：未覆盖配置标志/workaround，降为relevant"
 
   - id: G52
     query: "Why does AcpSession.prompt() map directly to session.prompt() with no reference to steering anywhere in the adapter, even though the core SDK and TUI already expose Session.steer() — is this a deliberate omission or an architectural gap in the ACP adapter layer?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "2370" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=cause · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=cause · 三方生成人筛 · 校准：文档确认事实但未回答原因定性，降为 relevant"
 
   - id: G53
     query: "What is the behavioral difference between the startedNewTurn outcome in claude-agent-acp (which starts a detached turn with discarded terminal responses) and the proposed approach for Kimi (leaving content unconsumed when no live turn exists), and how does this affect host-side lifecycle ownership and the proposed idleBehavior config?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "2370" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=comparison · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 保持不变
+    note: "angle=comparison · 三方生成人筛 · 校准：文档完整覆盖所有对比项，保持 exact"
 
   - id: G54
     query: "Does exclude_skill_names filtering happen during the scan phase or only during the merge phase in WorkspaceSkillCatalogService.remerge(), and what is the performance impact of excluding skills versus disabling an entire source?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "2549" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=mechanism · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=mechanism · 三方生成人筛 · 校准：阶段未明示且性能无提及，降为 relevant"
 
   - id: G55
     query: "When [skill_sources] toggles disable a source (e.g., workspace = false), does the scan still occur with the same I/O cost, or is the source skipped entirely before scanning to reduce runtime overhead?"
     quadrant: en2en
     expect_hit: { source_type: issue, source_id: "2549" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=cost · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=cost · 三方生成人筛 · 校准：文档明确回答扫描仍发生且未跳过，保持 exact"
 
   - id: G56
     query: "这个页脚用量指示器默认是开启的吗？还是需要我手动在配置文件里设个开关才能显示？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "43" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=配置 · 三方生成人筛"
+    expect_relevance: weak  # ⬅️ 修改点
+    note: "angle=配置 · 三方生成人筛 · 校准：文档仅提出开放问题，未给出任何确定性答案"
 
   - id: G57
     query: "正文里提到 auto-refresh 每 60 秒更新一次，又说 on turn completion 也能触发刷新，这两个机制是同时生效还是互斥的？实际刷新逻辑到底是轮询还是事件驱动？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "43" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=机制 · 三方生成人筛"
+    expect_relevance: weak  # ⬅️ 修改点
+    note: "angle=机制 · 三方生成人筛 · 校准：文档仅提及提议和开放问题，未给出任何确定性回答"
 
   - id: G58
     query: "报错里说 tool_call_id Read:158 没有对应的 tool response，但我看日志里 Read 工具明明是执行完了的，这到底是怎么弄丢的？是并发写 state 的时候 race 了吗？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "705" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=原因 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=原因 · 三方生成人筛 · 校准：文档完整覆盖丢失原因及race假设，保持exact"
 
   - id: G59
     query: "我看到 Related PR 里有个 cleanupOrphanedToolCalls() 函数，这个修复是默认就会生效，还是需要我在配置里手动开启某个开关才能用？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "705" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=配置 · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=配置 · 三方生成人筛 · 校准：函数存在但未说明默认行为或开关，降为relevant"
 
   - id: G60
     query: "MCP 服务器发过来 notifications/tools/list_changed 之后，为什么 McpConnectionManager 还是只认旧的工具列表？是不是 listChanged.tools.onChanged 这个事件根本没有被接进现有的 MCP client 封装里？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "1138" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=机制 · 三方生成人筛"
+    expect_relevance: exact  # ⬅️ 修改点
+    note: "angle=机制 · 三方生成人筛 · 校准：文档完整覆盖问题原因和确认，保持 exact"
 
   - id: G61
     query: "看 Related 里提到 #383 的 reload 命令可以手动刷新，那这个修复跟手动 reload 比，实际用起来有什么本质区别？是不是修完之后就不用再手动敲 reload 了？"
     quadrant: zh2en
     expect_hit: { source_type: issue, source_id: "1138" }
     assert: { recall_at: 5, min_relevance: relevant, citation_in_hits: true }
-    expect_relevance: exact  # 预填 · 人校准（部分覆盖改 relevant）
-    note: "angle=对比 · 三方生成人筛"
+    expect_relevance: relevant  # ⬅️ 修改点
+    note: "angle=对比 · 三方生成人筛 · 校准：文档仅间接提示手动reload非协议处理，未明确区别和是否完全替代，降为relevant"
   # ---- 负样本（2026-08-11 AI 起草 · 全部经语料零命中验证 · 待人审）----
   # 断言口径：max_relevance ≤ weak → 必须拒答（枚举闸存在意义的直接证据）
   - id: G62

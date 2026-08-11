@@ -1,0 +1,17 @@
+# 评测卫生 · 含金样原文的污染源登记（契约#13 教训）
+#
+# 用途：runner 断言前剔除这些文档的 hit，避免「金样写进契约/文档后被逐字召回」虚高。
+# 动态补充：run_eval 还会按 content 是否含子串=任一金样 query 再滤一遍。
+#
+# source_id 与 chunk 表一致（doc 为路径片段；issue/pr 为数字字符串）。
+
+denylist:
+  - source_type: doc
+    source_id_contains: rag-knowledge-contract
+    note: "契约 Q5 内嵌 G01–G05 原文 · 实测双路登顶（契约#13）"
+  - source_type: doc
+    source_id_contains: queries_v1
+    note: "金样 yaml 若误入 docs 灌库"
+  - source_type: doc
+    source_id_contains: query_gen_pack
+    note: "生成包含大量 issue 正文摘录，不作 expect_hit"
