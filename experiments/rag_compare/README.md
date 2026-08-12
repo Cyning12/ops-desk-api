@@ -85,10 +85,12 @@ uv pip install -r experiments/rag_compare/requirements.txt
 
 | 臂 | 报告 | 结论 |
 |---|---|---|
-| 基准 | `reports/r4-2.yaml` | zh2zh recall@5 17/20 |
-| D glossary | `reports/r4-D.yaml` | 边际；kw 仍约 5/73 |
+| 基准 | `reports/r4-2.yaml` | zh2zh recall@5 17/20；negative 9/10 |
+| D glossary | `reports/r4-D.yaml` | 边际；kw 仍约 5/73 → 不继续投入 |
 | **A zhparser** | `reports/r4-A.yaml` | zh2zh **+0pp**；kw 仍死 → **弃 A 上生产** |
-| C sparse | （待维护者实跑）`reports/r4-C.yaml` | 见 `sparse_arm_c/` · `RAG_SECOND_PATH=sparse` |
+| **C sparse** | `reports/r4-C.yaml` | 第二路 73/73 非空；zh2zh **+10pp**；negative 9/11 → **不上默认**，开关保留 |
+
+综合对照（第三方稿 + 勘误 + 下一步）：`experiments/rag_compare/REPORT_q6_arms_vs_baseline_20260812.md`
 
 **A 入口保留（可调用，不删）**：
 
@@ -111,3 +113,4 @@ uv pip install -r experiments/rag_compare/requirements.txt
 | 2026-08-10 | fence/#43：纠正「超 800 未切」误判；根因是 tiktoken=656≤800 early return，非 fence 护栏 |
 | 2026-08-12 | Q6：A 臂实测弃上生产；保留 A 入口；指向 C 臂 task |
 | 2026-08-12 | C 臂入口：`sparse_arm_c/`（SQL/重嵌/README）；`RAG_SECOND_PATH=sparse` |
+| 2026-08-12 | 落盘 Q6 综合报告 `REPORT_q6_arms_vs_baseline_20260812.md`；更新 C 实测结论 |
