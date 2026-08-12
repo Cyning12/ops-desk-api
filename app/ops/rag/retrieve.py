@@ -9,10 +9,13 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from dataclasses import dataclass, field
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.ops.rag.glossary import expand_query_for_fts
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +35,27 @@ _KEYWORD_SQL = text(
     "ORDER BY ts_rank(fts_tokens, plainto_tsquery('simple'::regconfig, CAST(:q AS text))) DESC "
     "LIMIT :k"
 )
+
+# 方案 D（glossary 展开 · env RAG_KW_EXPAND=true 启用）：组内 OR 组间 AND 的 tsquery 表达式
+_KEYWORD_SQL_EXPANDED = text(
+    "SELECT id, repo, source_type, source_id, chunk_index, content, metadata, images "
+    "FROM ops_knowledge_chunks "
+    "WHERE fts_tokens @@ to_tsquery('simple'::regconfig, CAST(:q AS text)) "
+    "ORDER BY ts_rank(fts_tokens, to_tsquery('simple'::regconfig, CAST(:q AS text))) DESC "
+    "LIMIT :k"
+)
+
+
+def _keyword_query(query: str):
+    """关键词路查询构造：默认 plainto_tsquery 原文；RAG_KW_EXPAND=true 时走 glossary 展开。
+
+    返回 (SQL 对象, 查询参数)。展开无可用词项时回退原文查询。
+    """
+    if os.getenv("RAG_KW_EXPAND", "").strip().lower() in ("1", "true", "yes"):
+        expanded = expand_query_for_fts(query)
+        if expanded:
+            return _KEYWORD_SQL_EXPANDED, expanded
+    return _KEYWORD_SQL, query
 
 
 @dataclass
@@ -105,7 +129,8 @@ async def hybrid_recall_detail(
     sem_rows = await session.execute(
         _SEMANTIC_SQL, {"qvec": json.dumps(query_vector), "k": k_each}
     )
-    kw_rows = await session.execute(_KEYWORD_SQL, {"q": query, "k": k_each})
+    kw_sql, kw_param = _keyword_query(query)
+    kw_rows = await session.execute(kw_sql, {"q": kw_param, "k": k_each})
 
     semantic = [_row_to_chunk(r) for r in sem_rows]
     keyword = [_row_to_chunk(r) for r in kw_rows]
