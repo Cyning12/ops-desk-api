@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """R-4 金样评测 runner（task golden-query-set-v1）。
 
-加载 queries_v1.yaml → 逐条 hybrid_recall → grade_chunks → decide
+加载 queries_v1.yaml → 逐条 hybrid_recall →（可选 CE rerank）→ grade_chunks → decide
 （复用 app/ops/rag 生产同路径函数，不旁路重写）→ 卫生过滤后断言 → 出报告。
 
 用法：
@@ -10,7 +10,7 @@
   .venv/bin/python evals/golden/run_eval.py --stability 0    # 跳过评级稳定性抽查
   .venv/bin/python evals/golden/run_eval.py --out reports/r4.yaml
   .venv/bin/python evals/golden/run_eval.py --out reports/r4-A.yaml --resume
-  .venv/bin/python evals/golden/run_eval.py --from-log path/to/terminal.log --out reports/r4-A.yaml
+  RAG_RERANK_ENABLED=true .venv/bin/python evals/golden/run_eval.py --out reports/r4-R.yaml --stability 0
 """
 from __future__ import annotations
 
@@ -38,6 +38,14 @@ from app.llm.factory import get_llm_provider  # noqa: E402
 from app.ops.chat.rag_nodes import GRADER_MODEL, GRADER_PROVIDER  # noqa: E402
 from app.ops.rag.embedder import SentenceTransformerEmbedder  # noqa: E402
 from app.ops.rag.grader import decide, grade_chunks  # noqa: E402
+from app.ops.rag.reranker import (  # noqa: E402
+    recall_k_each,
+    rerank_candidates,
+    rerank_chunks,
+    rerank_enabled,
+    rerank_min_score,
+    rerank_score_ratio,
+)
 from app.ops.rag.retrieve import RetrievedChunk, hybrid_recall_detail  # noqa: E402
 
 DEFAULT_QUERIES = Path(__file__).resolve().parent / "queries_v1.yaml"
@@ -54,6 +62,34 @@ _RANK = {
 # 召回多取若干，卫生过滤后再截 top-5 送给 grader（避免污染槽位挤掉真命中）
 RECALL_POOL = 15
 GRADE_TOP_N = 5
+
+
+def recall_knobs() -> tuple[int, int, bool]:
+    """返回 (k_each, coarse_top_n, rerank_on)。
+
+    rerank 开启：对齐生产 CE（默认 k_each=20、候选 M=20）；
+    关闭：保持历史 runner（k_each=10、卫生池 RECALL_POOL）。
+    """
+    if rerank_enabled():
+        return recall_k_each(), rerank_candidates(), True
+    return 10, RECALL_POOL, False
+
+
+def arm_report_meta() -> dict[str, Any]:
+    """写入报告头/summary，便于与误跑 Normal 对照。"""
+    k_each, coarse_n, on = recall_knobs()
+    meta: dict[str, Any] = {
+        "arm": "rerank" if on else "normal",
+        "rerank_enabled": on,
+        "recall_k_each": k_each,
+        "coarse_top_n": coarse_n,
+    }
+    if on:
+        meta["rerank_model"] = os.getenv("RAG_RERANK_MODEL") or "BAAI/bge-reranker-v2-m3"
+        meta["rerank_min_score"] = rerank_min_score()
+        meta["rerank_score_ratio"] = rerank_score_ratio()
+        meta["compare_with"] = "reports/r4-R-misrun-no-ce.yaml"
+    return meta
 
 
 @dataclass
@@ -317,14 +353,25 @@ def build_report(
     }
     if extra_summary:
         summary.update(extra_summary)
-    return {
+    arm = arm_report_meta()
+    summary.update(arm)
+    report: dict[str, Any] = {
         "run": run_id or f"eval-rag-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}-r4",
+        "arm": arm["arm"],
+        "rerank_enabled": arm["rerank_enabled"],
+        "recall_k_each": arm["recall_k_each"],
+        "coarse_top_n": arm["coarse_top_n"],
         "embed": embed_name,
         "grader": grader_model,
         "corpus": f"ops_knowledge_chunks(N={corpus_n if corpus_n is not None else '?'})",
         "results": [asdict(r) for r in results],
         "summary": summary,
     }
+    if arm.get("rerank_model"):
+        report["rerank_model"] = arm["rerank_model"]
+    if arm.get("compare_with"):
+        report["compare_with"] = arm["compare_with"]
+    return report
 
 
 def write_report(path: Path, report: dict[str, Any]) -> None:
@@ -504,13 +551,17 @@ async def eval_one(
 ) -> CaseResult:
     query = str(case["query"])
     qvec = (await asyncio.to_thread(embedder.embed, [query]))[0]
+    k_each, coarse_n, use_rerank = recall_knobs()
     async with AsyncSessionLocal() as session:
         recall = await hybrid_recall_detail(
-            session, query, qvec, k_each=10, top_n=RECALL_POOL
+            session, query, qvec, k_each=k_each, top_n=coarse_n
         )
     raw = recall.fused
     sem_hits = [c.anchor for c in recall.semantic]
     kw_hits = [c.anchor for c in recall.keyword]
+    # CE：对粗排整池精排保留全序，再卫生过滤取 top-5（与生产「精排后再截断」同序）
+    if use_rerank and raw:
+        raw = await asyncio.to_thread(rerank_chunks, query, raw, len(raw))
     kept, removed = apply_hygiene(raw, queries, rules)
     clean_top = kept[:GRADE_TOP_N]
 
@@ -544,16 +595,20 @@ async def run_stability(
 ) -> float | None:
     if not sample or repeats < 2:
         return None
-    # 先固定召回，再对同一 clean_top 重复评级
+    # 先固定召回（含可选 CE），再对同一 clean_top 重复评级
+    k_each, coarse_n, use_rerank = recall_knobs()
     tops: list[list[RetrievedChunk]] = []
     for case in sample:
         query = str(case["query"])
         qvec = (await asyncio.to_thread(embedder.embed, [query]))[0]
         async with AsyncSessionLocal() as session:
             recall = await hybrid_recall_detail(
-                session, query, qvec, k_each=10, top_n=RECALL_POOL
+                session, query, qvec, k_each=k_each, top_n=coarse_n
             )
-        kept, _ = apply_hygiene(recall.fused, queries, rules)
+        raw = recall.fused
+        if use_rerank and raw:
+            raw = await asyncio.to_thread(rerank_chunks, query, raw, len(raw))
+        kept, _ = apply_hygiene(raw, queries, rules)
         tops.append(kept[:GRADE_TOP_N])
 
     runs: list[list[str]] = []
@@ -650,6 +705,13 @@ async def async_main(args: argparse.Namespace) -> int:
     provider = get_llm_provider(os.getenv("RAG_GRADER_PROVIDER", GRADER_PROVIDER))
     model = os.getenv("RAG_GRADER_MODEL", GRADER_MODEL)
     corpus_n = await _corpus_count()
+    arm = arm_report_meta()
+    print(
+        f"arm={arm['arm']} rerank={arm['rerank_enabled']} "
+        f"k_each={arm['recall_k_each']} coarse_top_n={arm['coarse_top_n']} "
+        f"grader={model}",
+        flush=True,
+    )
 
     def _checkpoint(stability: float | None = None, note: str | None = None) -> None:
         if not out_path:

@@ -110,6 +110,7 @@ class RetrievedChunk:
     semantic_rank: int | None = None
     keyword_rank: int | None = None
     rrf_score: float = 0.0
+    rerank_score: float | None = None  # CE 精排分；仅观测，不进闸
 
     @property
     def anchor(self) -> str:

@@ -16,6 +16,14 @@ from app.ops.chat.state import ChatState
 from app.ops.rag.embedder import SentenceTransformerEmbedder
 from app.ops.rag.grader import REFUSAL_TEXT, decide, grade_chunks
 from app.ops.rag.prefix import strip_doc_context_prefix
+from app.ops.rag.reranker import (
+    recall_k_each,
+    rerank_candidates,
+    rerank_chunks,
+    rerank_enabled,
+    rerank_min_score,
+    rerank_score_ratio,
+)
 from app.ops.rag.retrieve import RetrievedChunk, hybrid_recall
 from app.ops.tracing import trace_span, update_current_span_metadata
 
@@ -59,25 +67,39 @@ def _to_source(c: RetrievedChunk, relevance: str) -> dict:
 
 
 async def retrieve_node(state: ChatState) -> dict:
-    """混合召回：bge-m3 嵌 query → pgvector 语义 + tsvector 关键词 → RRF top-5。"""
+    """混合召回：bge-m3 嵌 query → 语义+第二路 RRF →（可选）CE 精排 → top-5。"""
     query = state["query"]
     qvec = (await asyncio.to_thread(_get_embedder().embed, [query]))[0]
+    use_rerank = rerank_enabled()
+    k_each = recall_k_each() if use_rerank else 10
+    top_n = rerank_candidates() if use_rerank else 5
     async with AsyncSessionLocal() as session:
-        chunks = await hybrid_recall(session, query, qvec)
-    # 契约 4b：RRF 分数进观测/日志，不进闸
-    update_current_span_metadata(
-        {
-            "hits": [
-                {
-                    "anchor": c.anchor,
-                    "rrf": round(c.rrf_score, 4),
-                    "sem_rank": c.semantic_rank,
-                    "kw_rank": c.keyword_rank,
-                }
-                for c in chunks
-            ]
-        }
-    )
+        coarse = await hybrid_recall(session, query, qvec, k_each=k_each, top_n=top_n)
+    rrf_top = list(coarse)
+    if use_rerank:
+        chunks = await asyncio.to_thread(rerank_chunks, query, coarse, 5)
+    else:
+        chunks = coarse
+    # 契约 4b：RRF/rerank 分数进观测/日志，不进闸
+    meta: dict = {
+        "rerank_enabled": use_rerank,
+        "hits": [
+            {
+                "anchor": c.anchor,
+                "rrf": round(c.rrf_score, 4),
+                "rerank": None if c.rerank_score is None else round(c.rerank_score, 4),
+                "sem_rank": c.semantic_rank,
+                "kw_rank": c.keyword_rank,
+            }
+            for c in chunks
+        ],
+    }
+    if use_rerank:
+        meta["rrf_top"] = [c.anchor for c in rrf_top]
+        meta["rerank_top"] = [c.anchor for c in chunks]
+        meta["rerank_min_score"] = rerank_min_score()
+        meta["rerank_score_ratio"] = rerank_score_ratio()
+    update_current_span_metadata(meta)
     return {
         "retrieved": chunks,
         "events": [
@@ -88,6 +110,7 @@ async def retrieve_node(state: ChatState) -> dict:
                     "tool": "retrieve",
                     "ok": bool(chunks),
                     "hits": [c.anchor for c in chunks],
+                    "rerank_enabled": use_rerank,
                 },
             }
         ],

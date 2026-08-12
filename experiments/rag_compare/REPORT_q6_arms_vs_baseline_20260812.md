@@ -132,7 +132,7 @@ RRF 参数：k=60，两路 1:1 等权
 
 ### 一句话
 
-**现网维持 Normal；下一刀优先 Cross-Encoder 重排；辅路径（sparse）只做控噪实验；HyDE 小样验证后再谈上线。**
+**现网维持 Normal；下一刀优先 Cross-Encoder 重排（SPEC 已签 · 实现见 `experiments/rag_compare/reranker_p0/` · 金样 `reports/r4-R.yaml` 待复测）；辅路径（sparse）只做控噪实验；HyDE 小样验证后再谈上线。**
 
 ---
 

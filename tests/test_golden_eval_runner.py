@@ -1,6 +1,7 @@
 """R-4 golden eval runner 纯函数单测（零模型零库）。"""
 from pathlib import Path
 
+from app.ops.rag.retrieve import RetrievedChunk
 from evals.golden.run_eval import (
     CaseResult,
     DenyRule,
@@ -13,8 +14,8 @@ from evals.golden.run_eval import (
     load_denylist,
     load_golden,
     quadrant_recall_summary,
+    recall_knobs,
 )
-from app.ops.rag.retrieve import RetrievedChunk
 
 QUERIES = Path("evals/golden/queries_v1.yaml")
 DENYLIST = Path("evals/golden/hygiene_denylist.yaml")
@@ -44,6 +45,22 @@ def test_load_golden_73():
     assert len(cases) == 73
     quads = {c["quadrant"] for c in cases}
     assert quads == {"zh2en", "zh2zh", "en2en", "negative"}
+
+
+def test_recall_knobs_default_normal(monkeypatch):
+    monkeypatch.delenv("RAG_RERANK_ENABLED", raising=False)
+    k, n, on = recall_knobs()
+    assert (k, n, on) == (10, 15, False)
+
+
+def test_recall_knobs_rerank_enabled(monkeypatch):
+    monkeypatch.setenv("RAG_RERANK_ENABLED", "true")
+    monkeypatch.delenv("RAG_RECALL_K_EACH", raising=False)
+    monkeypatch.delenv("RAG_RERANK_CANDIDATES", raising=False)
+    k, n, on = recall_knobs()
+    assert on is True
+    assert k == 20
+    assert n == 20
 
 
 def test_load_denylist():
