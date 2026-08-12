@@ -9,13 +9,18 @@
   .venv/bin/python evals/golden/run_eval.py --limit 3        # 冒烟
   .venv/bin/python evals/golden/run_eval.py --stability 0    # 跳过评级稳定性抽查
   .venv/bin/python evals/golden/run_eval.py --out reports/r4.yaml
+  .venv/bin/python evals/golden/run_eval.py --out reports/r4-A.yaml --resume
+  .venv/bin/python evals/golden/run_eval.py --from-log path/to/terminal.log --out reports/r4-A.yaml
 """
 from __future__ import annotations
 
 import argparse
+import ast
 import asyncio
 import os
+import re
 import sys
+import tempfile
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
@@ -292,29 +297,189 @@ def build_report(
     grader_model: str,
     stability: float | None,
     corpus_n: int | None,
+    run_id: str | None = None,
+    extra_summary: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     passed = sum(1 for r in results if r.verdict == "pass")
     neg = [r for r in results if r.quadrant == "negative"]
     neg_ok = sum(1 for r in neg if r.verdict == "pass")
+    summary: dict[str, Any] = {
+        "pass": f"{passed}/{len(results)}",
+        "recall_at5_by_quadrant": quadrant_recall_summary(results),
+        "negative_refuse": f"{neg_ok}/{len(neg)}" if neg else "0/0",
+        "grade_stability_agree": (
+            round(stability, 3) if stability is not None else None
+        ),
+        # 观测 SPEC 三字段（已签 2026-08-07）
+        "measurement_source": "observed",
+        "confidence": "low",  # 小样本老实标
+        "comparability": "not_comparable",  # 首跑无基线
+    }
+    if extra_summary:
+        summary.update(extra_summary)
     return {
-        "run": f"eval-rag-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}-r4",
+        "run": run_id or f"eval-rag-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}-r4",
         "embed": embed_name,
         "grader": grader_model,
         "corpus": f"ops_knowledge_chunks(N={corpus_n if corpus_n is not None else '?'})",
         "results": [asdict(r) for r in results],
-        "summary": {
-            "pass": f"{passed}/{len(results)}",
-            "recall_at5_by_quadrant": quadrant_recall_summary(results),
-            "negative_refuse": f"{neg_ok}/{len(neg)}" if neg else "0/0",
-            "grade_stability_agree": (
-                round(stability, 3) if stability is not None else None
-            ),
-            # 观测 SPEC 三字段（已签 2026-08-07）
-            "measurement_source": "observed",
-            "confidence": "low",  # 小样本老实标
-            "comparability": "not_comparable",  # 首跑无基线
-        },
+        "summary": summary,
     }
+
+
+def write_report(path: Path, report: dict[str, Any]) -> None:
+    """原子写入报告（先写临时文件再 replace），每条完成后可安全落盘。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = yaml.safe_dump(report, allow_unicode=True, sort_keys=False)
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    tmp = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        tmp.replace(path)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+def load_existing_results(path: Path) -> tuple[list[CaseResult], dict[str, Any]]:
+    """从已有报告加载 CaseResult 列表与元信息（供 --resume）。"""
+    if not path.exists():
+        return [], {}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    results: list[CaseResult] = []
+    for row in data.get("results") or []:
+        results.append(
+            CaseResult(
+                id=str(row["id"]),
+                quadrant=str(row.get("quadrant") or ""),
+                top5=list(row.get("top5") or []),
+                filtered_out=list(row.get("filtered_out") or []),
+                recall_at5=row.get("recall_at5"),
+                best_relevance=row.get("best_relevance"),
+                min_relevance=row.get("min_relevance"),
+                citation_in_hits=row.get("citation_in_hits"),
+                must_refuse=row.get("must_refuse"),
+                gate_action=row.get("gate_action"),
+                verdict=str(row.get("verdict") or "fail"),
+                fail_reasons=list(row.get("fail_reasons") or []),
+                semantic_hits=list(row.get("semantic_hits") or []),
+                keyword_hits=list(row.get("keyword_hits") or []),
+            )
+        )
+    meta = {
+        "run": data.get("run"),
+        "embed": data.get("embed"),
+        "grader": data.get("grader"),
+        "summary": data.get("summary") or {},
+    }
+    return results, meta
+
+
+_LOG_CASE_RE = re.compile(
+    r"^\[(?P<i>\d+)/(?P<n>\d+)\]\s+(?P<id>\S+)\s+·\s+(?P<quadrant>\S+)\s+…"
+)
+_LOG_SEM_RE = re.compile(r"^\s*→\s*sem=(?P<v>.+)\s*$")
+_LOG_KW_RE = re.compile(r"^\s*→\s*kw\s*=(?P<v>.+)\s*$")
+_LOG_VERDICT_RE = re.compile(
+    r"^\s*→\s*(?P<flag>PASS|FAIL)\s+"
+    r"top5=(?P<top5>.+?)\s+"
+    r"best=(?P<best>\S+)\s+"
+    r"filtered=(?P<filtered>.+?)\s+"
+    r"reasons=(?P<reasons>.+)\s*$"
+)
+
+
+def _literal_list(raw: str) -> list[Any]:
+    return list(ast.literal_eval(raw))
+
+
+def infer_assert_fields(
+    *,
+    quadrant: str,
+    verdict: str,
+    reasons: list[str],
+) -> dict[str, Any]:
+    """从日志 verdict/reasons 推断 assert 字段（gate_action 日志未打印 → null）。"""
+    if quadrant == "negative":
+        return {
+            "recall_at5": None,
+            "min_relevance": None,
+            "citation_in_hits": None,
+            "must_refuse": "pass" if verdict == "pass" else "fail",
+            "gate_action": None,
+        }
+    recall_fail = any(r.startswith("recall@") for r in reasons)
+    min_fail = any("min_relevance" in r for r in reasons)
+    cite_fail = any("citation_in_hits" in r for r in reasons)
+    return {
+        "recall_at5": "fail" if recall_fail else "pass",
+        "min_relevance": "fail" if min_fail else "pass",
+        "citation_in_hits": "fail" if (cite_fail or recall_fail) else "pass",
+        "must_refuse": None,
+        "gate_action": None,
+    }
+
+
+def parse_eval_log(text: str) -> list[CaseResult]:
+    """从 run_eval 终端日志恢复 CaseResult（主评测行；不含稳定性抽查）。"""
+    results: list[CaseResult] = []
+    cur: dict[str, Any] | None = None
+    for line in text.splitlines():
+        m = _LOG_CASE_RE.match(line)
+        if m:
+            cur = {
+                "id": m.group("id"),
+                "quadrant": m.group("quadrant"),
+                "sem": [],
+                "kw": [],
+            }
+            continue
+        if cur is None:
+            continue
+        m = _LOG_SEM_RE.match(line)
+        if m:
+            cur["sem"] = _literal_list(m.group("v"))
+            continue
+        m = _LOG_KW_RE.match(line)
+        if m:
+            cur["kw"] = _literal_list(m.group("v"))
+            continue
+        m = _LOG_VERDICT_RE.match(line)
+        if not m:
+            continue
+        flag = m.group("flag")
+        best_raw = m.group("best")
+        best = None if best_raw == "None" else best_raw
+        reasons = [str(x) for x in _literal_list(m.group("reasons"))]
+        verdict = "pass" if flag == "PASS" else "fail"
+        fields = infer_assert_fields(
+            quadrant=str(cur["quadrant"]), verdict=verdict, reasons=reasons
+        )
+        results.append(
+            CaseResult(
+                id=str(cur["id"]),
+                quadrant=str(cur["quadrant"]),
+                top5=[str(x) for x in _literal_list(m.group("top5"))],
+                filtered_out=[str(x) for x in _literal_list(m.group("filtered"))],
+                recall_at5=fields["recall_at5"],
+                best_relevance=best,
+                min_relevance=fields["min_relevance"],
+                citation_in_hits=fields["citation_in_hits"],
+                must_refuse=fields["must_refuse"],
+                gate_action=fields["gate_action"],
+                verdict=verdict,
+                fail_reasons=reasons,
+                semantic_hits=[str(x) for x in cur["sem"]],
+                keyword_hits=[str(x) for x in cur["kw"]],
+            )
+        )
+        cur = None
+    return results
 
 
 async def _corpus_count() -> int | None:
@@ -421,27 +586,105 @@ def pick_stability_sample(cases: list[dict[str, Any]], n: int = 4) -> list[dict[
 
 
 async def async_main(args: argparse.Namespace) -> int:
+    # --from-log：不调模型，仅从终端日志恢复报告
+    if args.from_log:
+        if not args.out:
+            raise SystemExit("--from-log 须同时指定 --out")
+        log_path = Path(args.from_log)
+        results = parse_eval_log(log_path.read_text(encoding="utf-8"))
+        if not results:
+            raise SystemExit(f"日志未解析到任何 case: {log_path}")
+        report = build_report(
+            results,
+            embed_name=args.embed_name or "BAAI/bge-m3",
+            grader_model=args.grader_name or os.getenv("RAG_GRADER_MODEL", GRADER_MODEL),
+            stability=None,
+            corpus_n=args.corpus_n,
+            extra_summary={
+                "recovered_from_log": str(log_path),
+                "gate_action_note": "日志未含 gate_action，已置 null",
+            },
+        )
+        out = Path(args.out)
+        write_report(out, report)
+        summary = report["summary"]
+        print(
+            f"从日志恢复 {len(results)} 条 → {out} · "
+            f"pass={summary['pass']} recall_by_q={summary['recall_at5_by_quadrant']}"
+        )
+        failed = sum(1 for r in results if r.verdict == "fail")
+        return 1 if failed else 0
+
     cases = load_golden(Path(args.queries))
     if args.limit:
         cases = cases[: args.limit]
     rules = load_denylist(Path(args.denylist))
     queries = golden_query_texts(load_golden(Path(args.queries)))  # 全量 query 作污染词典
 
-    embedder = SentenceTransformerEmbedder()
-    provider = get_llm_provider(os.getenv("RAG_GRADER_PROVIDER", GRADER_PROVIDER))
+    out_path = Path(args.out) if args.out else None
+    results: list[CaseResult] = []
+    done_ids: set[str] = set()
+    run_id = f"eval-rag-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}-r4"
+    embed_name = "BAAI/bge-m3"
     model = os.getenv("RAG_GRADER_MODEL", GRADER_MODEL)
 
-    results: list[CaseResult] = []
-    for i, case in enumerate(cases, 1):
-        print(f"[{i}/{len(cases)}] {case['id']} · {case.get('quadrant')} …", flush=True)
-        r = await eval_one(
-            case,
-            embedder=embedder,
-            provider=provider,
-            queries=queries,
-            rules=rules,
-            model=model,
+    if args.resume:
+        if not out_path:
+            raise SystemExit("--resume 须同时指定 --out")
+        results, meta = load_existing_results(out_path)
+        done_ids = {r.id for r in results}
+        if meta.get("run"):
+            run_id = str(meta["run"])
+        if meta.get("embed"):
+            embed_name = str(meta["embed"])
+        if meta.get("grader"):
+            model = str(meta["grader"])
+        print(f"resume: 已有 {len(results)} 条 · skip={sorted(done_ids)}", flush=True)
+
+    pending = [c for c in cases if str(c["id"]) not in done_ids]
+    if not pending and results:
+        print("resume: 无待跑 case，仅重算 summary / 可选稳定性", flush=True)
+
+    embedder = SentenceTransformerEmbedder()
+    embed_name = embedder.name
+    provider = get_llm_provider(os.getenv("RAG_GRADER_PROVIDER", GRADER_PROVIDER))
+    model = os.getenv("RAG_GRADER_MODEL", GRADER_MODEL)
+    corpus_n = await _corpus_count()
+
+    def _checkpoint(stability: float | None = None, note: str | None = None) -> None:
+        if not out_path:
+            return
+        extra_summary: dict[str, Any] = {"partial": True, "completed": len(results)}
+        if note:
+            extra_summary["note"] = note
+        report = build_report(
+            results,
+            embed_name=embed_name,
+            grader_model=model,
+            stability=stability,
+            corpus_n=corpus_n,
+            run_id=run_id,
+            extra_summary=extra_summary,
         )
+        write_report(out_path, report)
+
+    total = len(cases)
+    for case in pending:
+        i = next(j for j, c in enumerate(cases, 1) if c["id"] == case["id"])
+        print(f"[{i}/{total}] {case['id']} · {case.get('quadrant')} …", flush=True)
+        try:
+            r = await eval_one(
+                case,
+                embedder=embedder,
+                provider=provider,
+                queries=queries,
+                rules=rules,
+                model=model,
+            )
+        except Exception as e:
+            _checkpoint(note=f"interrupted_at={case['id']}: {type(e).__name__}: {e}")
+            print(f"  → ERROR {type(e).__name__}: {e} · 已 checkpoint → {out_path}", flush=True)
+            raise
         flag = "PASS" if r.verdict == "pass" else "FAIL"
         print(
             f"  → sem={r.semantic_hits}\n"
@@ -451,35 +694,43 @@ async def async_main(args: argparse.Namespace) -> int:
             flush=True,
         )
         results.append(r)
+        _checkpoint()
 
     stability = None
     if args.stability > 0:
         sample = pick_stability_sample(cases, n=args.stability)
         print(f"评级稳定性抽查 ×3 · sample={[c['id'] for c in sample]}", flush=True)
-        stability = await run_stability(
-            sample,
-            embedder=embedder,
-            provider=provider,
-            queries=queries,
-            rules=rules,
-            model=model,
-            repeats=3,
-        )
-        print(f"  → agree={stability}", flush=True)
+        try:
+            stability = await run_stability(
+                sample,
+                embedder=embedder,
+                provider=provider,
+                queries=queries,
+                rules=rules,
+                model=model,
+                repeats=3,
+            )
+            print(f"  → agree={stability}", flush=True)
+        except Exception as e:
+            print(
+                f"  → 稳定性抽查失败（主结果已保留）: {type(e).__name__}: {e}",
+                flush=True,
+            )
+            _checkpoint(note=f"stability_failed: {type(e).__name__}: {e}")
 
     report = build_report(
         results,
-        embed_name=embedder.name,
+        embed_name=embed_name,
         grader_model=model,
         stability=stability,
-        corpus_n=await _corpus_count(),
+        corpus_n=corpus_n,
+        run_id=run_id,
+        extra_summary={"partial": False, "completed": len(results)},
     )
     text = yaml.safe_dump(report, allow_unicode=True, sort_keys=False)
-    if args.out:
-        out = Path(args.out)
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(text, encoding="utf-8")
-        print(f"报告写入 {out}")
+    if out_path:
+        write_report(out_path, report)
+        print(f"报告写入 {out_path}")
     else:
         print(text)
 
@@ -508,7 +759,25 @@ def main() -> None:
         default=4,
         help="稳定性抽查象限数（0=跳过）",
     )
-    p.add_argument("--out", default="", help="报告 yaml 输出路径")
+    p.add_argument("--out", default="", help="报告 yaml 输出路径（建议必填；逐条落盘）")
+    p.add_argument(
+        "--resume",
+        action="store_true",
+        help="跳过 --out 中已有 id，从断点续跑",
+    )
+    p.add_argument(
+        "--from-log",
+        default="",
+        help="从 run_eval 终端日志恢复报告（不调模型；须配 --out）",
+    )
+    p.add_argument("--embed-name", default="", help="--from-log 时写入的 embed 字段")
+    p.add_argument("--grader-name", default="", help="--from-log 时写入的 grader 字段")
+    p.add_argument(
+        "--corpus-n",
+        type=int,
+        default=None,
+        help="--from-log 时写入的 corpus N（默认未知）",
+    )
     args = p.parse_args()
     raise SystemExit(asyncio.run(async_main(args)))
 

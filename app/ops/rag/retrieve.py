@@ -1,7 +1,7 @@
 """R-3 混合召回（契约 §1 主路径：语义 + 关键词 → RRF 融合）。
 
 - 语义路：pgvector cosine（HNSW 索引）
-- 关键词路：PG tsvector（'simple' 配置 · 对应 BM25 角色，方案同构）
+- 关键词路：PG tsvector（默认 'simple'；可用 RAG_FTS_CONFIG 切到 chinese 等）
 - 融合：RRF k=60，两路 1:1 起跑（契约 4c · Ink hybrid_fusion 实证）
 - RRF 分数只进日志/返回体供观测，**不进闸**（契约 4b）
 """
@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from dataclasses import dataclass, field
 
 from sqlalchemy import text
@@ -21,6 +22,9 @@ logger = logging.getLogger(__name__)
 
 RRF_K = 60  # 契约 4c：与 Ink hybrid_fusion.RRF_K 对齐
 
+# text search config 标识符（防 SQL 注入；非法则回退 simple）
+_FTS_CONFIG_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
 _SEMANTIC_SQL = text(
     "SELECT id, repo, source_type, source_id, chunk_index, content, metadata, images "
     "FROM ops_knowledge_chunks "
@@ -28,34 +32,49 @@ _SEMANTIC_SQL = text(
     "LIMIT :k"
 )
 
-_KEYWORD_SQL = text(
-    "SELECT id, repo, source_type, source_id, chunk_index, content, metadata, images "
-    "FROM ops_knowledge_chunks "
-    "WHERE fts_tokens @@ plainto_tsquery('simple'::regconfig, CAST(:q AS text)) "
-    "ORDER BY ts_rank(fts_tokens, plainto_tsquery('simple'::regconfig, CAST(:q AS text))) DESC "
-    "LIMIT :k"
-)
 
-# 方案 D（glossary 展开 · env RAG_KW_EXPAND=true 启用）：组内 OR 组间 AND 的 tsquery 表达式
-_KEYWORD_SQL_EXPANDED = text(
-    "SELECT id, repo, source_type, source_id, chunk_index, content, metadata, images "
-    "FROM ops_knowledge_chunks "
-    "WHERE fts_tokens @@ to_tsquery('simple'::regconfig, CAST(:q AS text)) "
-    "ORDER BY ts_rank(fts_tokens, to_tsquery('simple'::regconfig, CAST(:q AS text))) DESC "
-    "LIMIT :k"
-)
+def _fts_config() -> str:
+    """关键词路 regconfig：env RAG_FTS_CONFIG，默认 simple（生产）；影子 A 臂可设 chinese。"""
+    raw = (os.getenv("RAG_FTS_CONFIG") or "simple").strip() or "simple"
+    if not _FTS_CONFIG_RE.fullmatch(raw):
+        logger.warning("invalid RAG_FTS_CONFIG=%r; fallback to simple", raw)
+        return "simple"
+    return raw
+
+
+def _keyword_sql_plain(cfg: str):
+    return text(
+        "SELECT id, repo, source_type, source_id, chunk_index, content, metadata, images "
+        "FROM ops_knowledge_chunks "
+        f"WHERE fts_tokens @@ plainto_tsquery('{cfg}'::regconfig, CAST(:q AS text)) "
+        f"ORDER BY ts_rank(fts_tokens, plainto_tsquery('{cfg}'::regconfig, CAST(:q AS text))) DESC "
+        "LIMIT :k"
+    )
+
+
+def _keyword_sql_expanded(cfg: str):
+    # 方案 D（glossary 展开 · env RAG_KW_EXPAND=true 启用）：组内 OR 组间 AND
+    return text(
+        "SELECT id, repo, source_type, source_id, chunk_index, content, metadata, images "
+        "FROM ops_knowledge_chunks "
+        f"WHERE fts_tokens @@ to_tsquery('{cfg}'::regconfig, CAST(:q AS text)) "
+        f"ORDER BY ts_rank(fts_tokens, to_tsquery('{cfg}'::regconfig, CAST(:q AS text))) DESC "
+        "LIMIT :k"
+    )
 
 
 def _keyword_query(query: str):
     """关键词路查询构造：默认 plainto_tsquery 原文；RAG_KW_EXPAND=true 时走 glossary 展开。
 
     返回 (SQL 对象, 查询参数)。展开无可用词项时回退原文查询。
+    regconfig 由 RAG_FTS_CONFIG 决定（默认 simple）。
     """
+    cfg = _fts_config()
     if os.getenv("RAG_KW_EXPAND", "").strip().lower() in ("1", "true", "yes"):
         expanded = expand_query_for_fts(query)
         if expanded:
-            return _KEYWORD_SQL_EXPANDED, expanded
-    return _KEYWORD_SQL, query
+            return _keyword_sql_expanded(cfg), expanded
+    return _keyword_sql_plain(cfg), query
 
 
 @dataclass
