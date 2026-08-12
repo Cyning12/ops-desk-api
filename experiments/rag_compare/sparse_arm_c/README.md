@@ -127,7 +127,7 @@ export RAG_KW_EXPAND=false
 
 - zh2zh 相对 r4-2 **≥ +10pp**（或双象限明显优于 A）→ 采 C  
 - **+5～8pp** → 缓上生产，入口保留  
-- **&lt; +5pp** → 维持 dense + glossary  
+- **< +5pp** → 维持 dense + glossary  
 
 ---
 

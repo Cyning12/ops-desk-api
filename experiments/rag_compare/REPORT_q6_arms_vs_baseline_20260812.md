@@ -100,7 +100,8 @@ RRF 参数：k=60，两路 1:1 等权
 
 - RRF/ dense top-20（或 top-30）→ **bge-reranker-v2-m3** → top-5 再进 prompt。  
 - 直接针对「exact→relevant/weak」与 C 噪声挤榜；**不改库、不加第二路复杂度**。  
-- 验收：同金样对比 `best_relevance` 分布 + recall@5 + negative；对标 `r4-2`。
+- 验收：同金样对比 `best_relevance` 分布 + recall@5 + negative；对标 `r4-2`。  
+- **SPEC（draft）**：`docs/spec/SPEC-rag-reranker-p0_v1.md`（分支 `task/rag-reranker-p0`）
 
 **P1 · 查询侧（原文 HyDE 可做，但排在 Reranker 后或小样先行）**
 
