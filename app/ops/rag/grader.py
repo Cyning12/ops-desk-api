@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from app.llm.schema import BaseProvider, LlmMessage
 from app.ops.rag.prefix import strip_doc_context_prefix
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 REFUSAL_TEXT = "未查询到相关内容，无法针对此问题进行回答"  # 契约 4c 人填话术
 
 
-class Relevance(str, Enum):
+class Relevance(StrEnum):
     IRRELEVANT = "irrelevant"
     WEAK = "weak"
     RELEVANT = "relevant"
@@ -105,7 +105,7 @@ async def grade_chunks(
     query: str,
     chunks: list[RetrievedChunk],
     model: str | None = None,
-    snippet_chars: int = 600,
+    snippet_chars: int = 1200,
 ) -> list[Grade]:
     """top-5 批量一次调用（契约 4b：每 query +1 次 LLM 调用，便宜模型）。"""
     blocks = []

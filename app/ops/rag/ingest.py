@@ -11,7 +11,7 @@ import hashlib
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import select, text
@@ -113,7 +113,7 @@ def load_doc_units(docs_roots: list[Path]) -> list[SourceUnit]:
                 (line[2:].strip() for line in body.splitlines() if line.startswith("# ")),
                 path.stem,
             )
-            mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+            mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
             units.append(
                 SourceUnit(
                     repo=DOCS_REPO,
@@ -213,7 +213,7 @@ def ingest(
 
     # 3) 整组替换（D3）：单元级删旧插新，逐单元提交（崩溃可续，水位跳过已写）
     by_key: dict[tuple[str, str, str], list[tuple[SourceUnit, int, str, list[dict], list[float]]]] = {}
-    for (u, idx, content, media), vec in zip(pending, vectors):
+    for (u, idx, content, media), vec in zip(pending, vectors, strict=True):
         by_key.setdefault((u.repo, u.source_type, u.source_id), []).append(
             (u, idx, content, media, vec)
         )
