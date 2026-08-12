@@ -7,6 +7,30 @@
 
 ---
 
+## Harness 元信息
+
+| 字段 | 值 |
+|---|---|
+| **task_slug** | `rag-sparse-arm-c` |
+| **git_branch** | `task/rag-sparse-arm-c` |
+| **test_strategy** | `required` |
+| **test_strategy_note** | sparsevec 灌满断言 + r4-C 与 r4-2/r4-A/r4-D 分象限对比 |
+| **code_quality_bar** | `standard` |
+| **graph_change_layer** | `none` |
+| **graph_delta** | `none` |
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 对照实验（稀疏向量路）；不改 coding_wiki 正文 |
+| **review_hat** | `20` |
+| **orchestration** | 单 task · 在 A 臂后顺序执行 |
+
+### 人工闸
+
+| human_gate_id | status | blocks_hats | 说明 |
+|---|---|---|---|
+| HG-TASK-DRAFT | pending | 22-R1 | 维护者确认 C 臂方案与判读口径（draft · 待人审） |
+
+---
+
 ## 目标
 
 同一 runner、同一金样（73 条）、同一嵌入模型，**只替换第二路**：tsvector 关键词路 → bge-m3 稀疏向量路（lexical weights），验证「免分词 + 跨语言词项扩展」对召回的修复效果，与 A 臂数据对比，支撑 Q6 的 A/C 互斥裁决。

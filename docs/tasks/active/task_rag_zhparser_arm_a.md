@@ -7,6 +7,30 @@
 
 ---
 
+## Harness 元信息
+
+| 字段 | 值 |
+|---|---|
+| **task_slug** | `rag-zhparser-arm-a` |
+| **git_branch** | `task/rag-zhparser-arm-a` |
+| **test_strategy** | `required` |
+| **test_strategy_note** | 影子库 to_tsvector 分词证明 + r4-A 与 r4-2/r4-D 分象限对比 |
+| **code_quality_bar** | `standard` |
+| **graph_change_layer** | `none` |
+| **graph_delta** | `none` |
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 对照实验（影子库/镜像）；不改 coding_wiki 正文 |
+| **review_hat** | `20` |
+| **orchestration** | 单 task · 与 C 臂互斥顺序执行 |
+
+### 人工闸
+
+| human_gate_id | status | blocks_hats | 说明 |
+|---|---|---|---|
+| HG-TASK-DRAFT | pending | 22-R1 | 维护者确认 A 臂方案与判读口径（draft · 待人审） |
+
+---
+
 ## 目标
 
 同一 runner、同一金样（73 条）、同一嵌入模型，**只换 fts 分词配置**（'simple' → 中文配置），验证 zhparser 对关键词路的修复效果，产出与基准/D 臂可比的分象限 recall@5 数据，为 Q6 的 A/C 裁决提供 A 侧证据。

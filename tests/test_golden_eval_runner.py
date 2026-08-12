@@ -38,9 +38,10 @@ def _chunk(
     )
 
 
-def test_load_golden_71():
+def test_load_golden_73():
     cases = load_golden(QUERIES)
-    assert len(cases) == 71
+    # G67 双审后 157 转正样本 G73 → 71+2=73（见 commit cc4f30f）
+    assert len(cases) == 73
     quads = {c["quadrant"] for c in cases}
     assert quads == {"zh2en", "zh2zh", "en2en", "negative"}
 
