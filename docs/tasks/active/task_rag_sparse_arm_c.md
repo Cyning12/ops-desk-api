@@ -1,6 +1,6 @@
 # Task：RAG 第二路 C 臂——bge-m3 稀疏向量对照实验
 
-> **状态**：active（闸已签 · 00 派 30/40 · 实现进行中）  
+> **状态**：active（30/40 已交 · 50 初验 PASS 附条件 · 重嵌/r4-C 待维护者实跑）  
 > **类型**：对照实验（契约 Q6 裁决链路 · A 已否决上生产 · C 为下一候选）  
 > **关联**：契约 Q6 · A 臂 `task_rag_zhparser_arm_a.md` · 基准 `reports/r4-2.yaml` · A 实测 `reports/r4-A.yaml` · D `reports/r4-D.yaml`  
 > **分支**：`task/rag-sparse-arm-c`（自 `master` 新开；勿在 A 臂分支上直接改 C 实现）
