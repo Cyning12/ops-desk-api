@@ -156,11 +156,20 @@ export RAG_KW_EXPAND=false
 
 > 30/40 回填区（命令、退出码、验收摘要、已知未测项）。
 
-- [ ] 闸已签 · verify PASS
-- [ ] sparse 列灌满 8574 / 脚本可断点
-- [ ] `RAG_SECOND_PATH=sparse` 单测绿；默认 `fts` 不回归
-- [ ] A 入口未删
-- [ ] r4-C（或 partial checkpoint）说明
+- [x] 闸已签 · verify PASS（`npx @cyning/harness@2.22.0 verify` → `VERIFY: PASS`）
+- [ ] sparse 列灌满 8574 / 脚本可断点 — **脚本已交付**（`embed_sparse.py` 断点续写）；**全量重嵌标维护者实跑**（本机未跑满）
+- [x] `RAG_SECOND_PATH=sparse` 单测绿；默认 `fts` 不回归
+- [x] A 入口未删（`Dockerfile.pg-zhparser` · `zhparser_arm_a/` · `RAG_FTS_CONFIG`）
+- [ ] r4-C — **未产出完整报告**；评测命令见 `experiments/rag_compare/sparse_arm_c/README.md`（维护者实跑）
+
+**40 命令与退出码**
+
+| 命令 | 退出码 |
+|------|--------|
+| `uv run ruff check app/ops/rag/retrieve.py app/ops/rag/sparse_vec.py experiments/rag_compare/sparse_arm_c/embed_sparse.py tests/test_rag_second_path.py tests/test_rag_fts_config.py` | 0 |
+| `uv run pytest tests/test_rag_second_path.py tests/test_rag_fts_config.py tests/test_golden_eval_runner.py -q --tb=short` | 0（27 passed） |
+
+**交付摘要**：`RAG_SECOND_PATH`（默认 `fts`）接入 `hybrid_recall_detail`；sparse 路 SQL + `sparse_vec` 格式化/懒编码；实验目录 SQL/重嵌/README。未写生产库；未改 dense。
 
 ---
 

@@ -44,3 +44,17 @@ export RAG_SECOND_PATH=sparse
 export RAG_KW_EXPAND=false
 .venv/bin/python evals/golden/run_eval.py --out reports/r4-C.yaml --stability 0
 ```
+
+---
+
+## 验证摘要（30/40 执行后）
+
+| 项 | 结果 |
+|---|---|
+| GATE_VERIFY / harness verify | PASS（闸表 approved · reviews R1 在 · pre-30 invoke 10 在） |
+| 代码 | `RAG_SECOND_PATH` · `app/ops/rag/sparse_vec.py` · `retrieve.py` sparse 路 · `experiments/rag_compare/sparse_arm_c/` |
+| A 入口 | 保留（未删 Dockerfile / zhparser_arm_a / `RAG_FTS_CONFIG`） |
+| ruff（相关文件） | exit 0 |
+| pytest `test_rag_second_path` + `test_rag_fts_config` + `test_golden_eval_runner` | exit 0 · 27 passed |
+| 全量 8574 重嵌 | **未测**（维护者实跑；脚本支持断点） |
+| `reports/r4-C.yaml` | **未产出**（维护者实跑；`--out` / `--resume` 已文档化） |

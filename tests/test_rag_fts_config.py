@@ -1,8 +1,6 @@
 """RAG_FTS_CONFIG：关键词路 regconfig 可配置（默认 simple；影子 A 臂 chinese）。"""
 from __future__ import annotations
 
-import os
-
 import pytest
 
 from app.ops.rag.retrieve import _fts_config, _keyword_query

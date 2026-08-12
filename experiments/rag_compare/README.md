@@ -88,13 +88,19 @@ uv pip install -r experiments/rag_compare/requirements.txt
 | 基准 | `reports/r4-2.yaml` | zh2zh recall@5 17/20 |
 | D glossary | `reports/r4-D.yaml` | 边际；kw 仍约 5/73 |
 | **A zhparser** | `reports/r4-A.yaml` | zh2zh **+0pp**；kw 仍死 → **弃 A 上生产** |
-| C sparse | （待）`reports/r4-C.yaml` | 见 `docs/tasks/active/task_rag_sparse_arm_c.md` |
+| C sparse | （待维护者实跑）`reports/r4-C.yaml` | 见 `sparse_arm_c/` · `RAG_SECOND_PATH=sparse` |
 
 **A 入口保留（可调用，不删）**：
 
 - 镜像：`Dockerfile.pg-zhparser` · 脚本：`experiments/rag_compare/zhparser_arm_a/`
 - 运行时：`RAG_FTS_CONFIG=chinese`（生产默认 `simple`）
 - 说明：`experiments/rag_compare/zhparser_arm_a/README.md`
+
+**C 入口（实验）**：
+
+- 脚本：`experiments/rag_compare/sparse_arm_c/`（加列 SQL · 断点重嵌 · README）
+- 运行时：`RAG_SECOND_PATH=sparse`（默认 `fts`）；评测建议 `RAG_KW_EXPAND=false`
+- 说明：`experiments/rag_compare/sparse_arm_c/README.md`
 
 ## 修订
 
@@ -104,3 +110,4 @@ uv pip install -r experiments/rag_compare/requirements.txt
 | 2026-08-10 | 增补本目录 requirements.txt；安装 llama-index-core 0.14.23 + embeddings-huggingface 0.7.0 |
 | 2026-08-10 | fence/#43：纠正「超 800 未切」误判；根因是 tiktoken=656≤800 early return，非 fence 护栏 |
 | 2026-08-12 | Q6：A 臂实测弃上生产；保留 A 入口；指向 C 臂 task |
+| 2026-08-12 | C 臂入口：`sparse_arm_c/`（SQL/重嵌/README）；`RAG_SECOND_PATH=sparse` |
