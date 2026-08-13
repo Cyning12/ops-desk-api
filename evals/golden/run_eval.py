@@ -37,7 +37,7 @@ from app.db.session import AsyncSessionLocal  # noqa: E402
 from app.llm.factory import get_llm_provider  # noqa: E402
 from app.ops.chat.rag_nodes import GRADER_MODEL, GRADER_PROVIDER  # noqa: E402
 from app.ops.rag.embedder import SentenceTransformerEmbedder  # noqa: E402
-from app.ops.rag.grader import decide, grade_chunks  # noqa: E402
+from app.ops.rag.grader import decide, grade_chunks, grader_prompt_version  # noqa: E402
 from app.ops.rag.reranker import (  # noqa: E402
     recall_k_each,
     rerank_candidates,
@@ -83,6 +83,7 @@ def arm_report_meta() -> dict[str, Any]:
         "rerank_enabled": on,
         "recall_k_each": k_each,
         "coarse_top_n": coarse_n,
+        "grader_prompt": grader_prompt_version(),
     }
     if on:
         meta["rerank_model"] = os.getenv("RAG_RERANK_MODEL") or "BAAI/bge-reranker-v2-m3"

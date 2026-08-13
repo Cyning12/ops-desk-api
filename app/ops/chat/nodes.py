@@ -14,12 +14,35 @@ from app.db.session import AsyncSessionLocal
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage, LlmProviderError, LlmUsage
 from app.ops.chat.state import ChatState
+from app.ops.rag.grader import REFUSAL_TEXT
 from app.ops.rag.prefix import strip_doc_context_prefix
 from app.ops.tracing import trace_span, update_current_generation_usage
 
+# 与 _build_messages 注入的「资料」块 + 契约 4c 引用/拒答对齐
 _SYSTEM_PROMPT = (
-    "你是 Ops Desk 助手，帮助用户理解 GitHub 仓库中的 issue、PR 和代码图谱。"
-    "回答要简洁、准确，优先基于提供的上下文。"
+    "### 角色声明\n"
+    "你是 Ops Desk 助手，专为供应商运营与销售团队提供技术知识问答支持。\n"
+    "\n"
+    "### 任务边界\n"
+    "你的知识来源仅限于后续消息中提供的「资料」"
+    "（含 issue 上下文或检索命中块），不得使用外部知识或训练数据中的记忆。\n"
+    "\n"
+    "### 关键约束\n"
+    "- 必须基于资料作答，不得编造或扩展。\n"
+    "- 若后续消息已注明「仅部分证据」：仍须作答，开头写明「仅部分证据」，"
+    "只陈述资料已覆盖部分，未覆盖处不要猜测。\n"
+    "- 若无资料、或资料与问题无关：直接拒答，不要尝试猜测。\n"
+    "- 准确性优先于简洁性——若精简会丢失关键信息，请保留完整细节。\n"
+    "\n"
+    "### 输出格式\n"
+    "- 引用来源用 [类型 编号] 标注，与资料标题一致"
+    "（如 [issue 2720]、[doc contracts/xx.md]、[pr 123]）。\n"
+    "- 若资料中存在多个观点或版本，请分别说明并标注对应引用。\n"
+    "- 若资料含代码片段，回答中保留原格式（```）。\n"
+    "\n"
+    "### 兜底行为\n"
+    "需要拒答时，直接输出以下原文，不要解释原因：\n"
+    f"\"{REFUSAL_TEXT}\"\n"
 )
 
 
@@ -108,7 +131,10 @@ async def load_issue_context_node(state: ChatState) -> dict:
 
 
 def _build_messages(state: ChatState) -> list[LlmMessage]:
-    """组装 OpenAI 兼容 messages：system + 可选 issue 上下文 + 用户 query。"""
+    """组装 OpenAI 兼容 messages：system + 可选 issue/检索资料 + 用户 query。
+
+    引用格式与拒答话术以 _SYSTEM_PROMPT / REFUSAL_TEXT 为准；本函数只注入资料正文。
+    """
     messages: list[LlmMessage] = [LlmMessage(role="system", content=_SYSTEM_PROMPT)]
 
     issue_context = state.get("issue_context") or []
@@ -116,33 +142,32 @@ def _build_messages(state: ChatState) -> list[LlmMessage]:
         issue = issue_context[0]
         # body 截断，避免撑爆上下文窗口
         body = (issue.get("body") or "")[:2000]
-        context_text = f"相关 issue #{issue.get('number')}：\n标题：{issue.get('title')}\n{body}"
-        messages.append(LlmMessage(role="user", content=context_text))
-
-    # R-3 检索链上下文（general/overview 路径）：命中块 + 引用约束（契约 4c/T13）
-    retrieved = state.get("retrieved") or []
-    if retrieved:
-        parts = []
-        for c in retrieved:
-            body = strip_doc_context_prefix(c.content)[:1200]
-            parts.append(f"### 资料 [{c.source_type} {c.anchor}]\n{body}")
-        partial_note = (
-            "\n重要：现有证据仅覆盖问题的一部分，回答开头必须注明「仅部分证据」。"
-            if state.get("gate_action") == "answer_partial"
-            else ""
-        )
+        num = issue.get("number")
         messages.append(
             LlmMessage(
                 role="user",
                 content=(
-                    "以下是与问题相关的资料：\n\n"
-                    + "\n\n".join(parts)
-                    + "\n\n回答规则：仅基于以上资料回答，资料未覆盖的内容不得编造；"
-                      "引用来源用 [类型 编号] 标注（如 [issue 2720]、[doc contracts/xx.md]）。"
-                    + partial_note
+                    f"### 资料 [issue {num}]\n"
+                    f"标题：{issue.get('title')}\n{body}"
                 ),
             )
         )
+
+    # R-3 检索链上下文（general/overview 路径）：命中块（契约 4c/T13）
+    retrieved = state.get("retrieved") or []
+    if retrieved:
+        parts = [
+            f"### 资料 [{c.source_type} {c.anchor}]\n"
+            f"{strip_doc_context_prefix(c.content)[:1200]}"
+            for c in retrieved
+        ]
+        header = "以下是与问题相关的资料：\n\n" + "\n\n".join(parts)
+        if state.get("gate_action") == "answer_partial":
+            header += (
+                "\n\n重要：现有证据仅覆盖问题的一部分；"
+                "请按系统约束作答，开头注明「仅部分证据」，不要因此拒答。"
+            )
+        messages.append(LlmMessage(role="user", content=header))
 
     messages.append(LlmMessage(role="user", content=state["query"]))
     return messages
