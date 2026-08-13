@@ -33,14 +33,20 @@ jobs:
         uses: astral-sh/setup-uv@v3
         with:
           version: "0.11.7"
+          enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --extra dev
+        # 用当前解释器解析（避免 uv sync 跨 3.12/3.13 通用解析与 qdrant-client/numpy 冲突）
+        run: |
+          uv python install 3.11
+          uv venv --python 3.11
+          uv pip install -r requirements.txt
+          uv pip install "pytest>=8.2,<9" "pytest-asyncio>=0.23,<1" "ruff>=0.5,<1"
 
       - name: Run pytest
-        run: uv run pytest tests -q --tb=short
+        run: .venv/bin/pytest tests -q --tb=short
         # 有 slow/intent marker 时示例：
-        # run: uv run pytest tests -m "not intent_eval and not intent_benchmark" -q --tb=short
+        # run: .venv/bin/pytest tests -m "not intent_eval and not intent_benchmark" -q --tb=short
 
       # --- 可选：Ruff / mypy（L2 落地后启用）---
       # - name: Ruff

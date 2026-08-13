@@ -37,7 +37,7 @@ audience: agent-30
 | `LatestChatSession` | `chat` | `iOS v1` | `GET /api/ops/chat/sessions/latest` 自动获取/创建最近 session |
 | `SyncedRepo/Issue/PR/GraphSnapshot` | `admin` | `data`, `chat` | admin 写入的表同时供 data 只读接口和 chat 上下文加载 |
 | `OpsIssue/OpsPullRequest/OpsGraphSnapshot` | `data` | `chat` | Chat 通过 data 层表消费同步后的数据 |
-| `RetrievedChunk` / `RAG_VECTOR_BACKEND` | `rag` | `chat` | dense 默认真源 pgvector；`qdrant` 时 Top-k id → PG hydrate；影子写 `RAG_QDRANT_SHADOW_WRITE` |
+| `RetrievedChunk` / `RAG_VECTOR_BACKEND` | `rag` | `chat` | dense 默认 Qdrant Top-k id → PG hydrate；失败即时降级 pgvector；影子写 `RAG_QDRANT_SHADOW_WRITE` |
 
 ## 人签记录
 

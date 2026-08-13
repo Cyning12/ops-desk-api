@@ -3,7 +3,7 @@ name = "ops-desk-api"
 version = "0.1.0"
 description = "Ops Desk Kimi Code backend API"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.12"
 license = {text = "MIT"}
 authors = [
     {name = "Cyning"},
@@ -18,7 +18,7 @@ dependencies = [
     "asyncpg>=0.29,<1",
     "psycopg[binary]>=3.1,<4",
     "pgvector>=0.2.5,<1",
-    "qdrant-client>=1.13.0,<1.14",
+    "qdrant-client>=1.14.0,<2",
     "sentence-transformers>=3.0,<5",
     "langgraph>=0.2,<0.3",
     "langchain-core>=0.2,<0.3",
@@ -27,7 +27,7 @@ dependencies = [
     "python-jose[cryptography]>=3.3,<4",
     "passlib[bcrypt]>=1.7,<2",
     "langfuse>=3.0,<4",
-    "langchain>=0.2.17",
+    "langchain>=0.2.17,<0.3",
 ]
 
 [project.optional-dependencies]

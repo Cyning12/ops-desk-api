@@ -1,6 +1,6 @@
 """稠密向量后端 Flag + 即时降级（SPEC-qdrant-migration v1.1）。
 
-默认 pgvector；禁止跨进程 fail_streak 作唯一熔断。
+默认 qdrant；失败即时回退 pgvector。禁止跨进程 fail_streak 作唯一熔断。
 """
 from __future__ import annotations
 
@@ -24,10 +24,10 @@ class VectorBackend(StrEnum):
 
 
 def vector_backend() -> VectorBackend:
-    raw = (os.getenv("RAG_VECTOR_BACKEND") or "pgvector").strip().lower()
+    raw = (os.getenv("RAG_VECTOR_BACKEND") or "qdrant").strip().lower()
     if raw not in ("pgvector", "qdrant"):
-        logger.warning("invalid RAG_VECTOR_BACKEND=%r; fallback to pgvector", raw)
-        return VectorBackend.PGVECTOR
+        logger.warning("invalid RAG_VECTOR_BACKEND=%r; fallback to qdrant", raw)
+        return VectorBackend.QDRANT
     return VectorBackend(raw)
 
 

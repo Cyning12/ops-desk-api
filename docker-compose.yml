@@ -17,7 +17,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Qdrant v1.13.6：稠密向量副本（默认读仍走 pgvector，见 RAG_VECTOR_BACKEND）
+  # Qdrant v1.13.6：稠密读默认；回退 RAG_VECTOR_BACKEND=pgvector
   # 生产目标机 2C4G：建议 mem_limit≈3.5g，留余量给 API/PG；切流前须过 fio/RSS/P95 门禁
   qdrant:
     image: qdrant/qdrant:v1.13.6
@@ -52,9 +52,9 @@ services:
       BAILIAN_MODEL: ${BAILIAN_MODEL:-qwen-plus}
       OPS_DESK_SECRET: ${OPS_DESK_SECRET:-change-me}
       OPS_DESK_AUTH_MODE: ${OPS_DESK_AUTH_MODE:-db}
-      # 默认 pgvector；切流前保持 false / pgvector
-      RAG_VECTOR_BACKEND: ${RAG_VECTOR_BACKEND:-pgvector}
-      RAG_QDRANT_SHADOW_WRITE: ${RAG_QDRANT_SHADOW_WRITE:-false}
+      # 默认 qdrant；回退设 RAG_VECTOR_BACKEND=pgvector
+      RAG_VECTOR_BACKEND: ${RAG_VECTOR_BACKEND:-qdrant}
+      RAG_QDRANT_SHADOW_WRITE: ${RAG_QDRANT_SHADOW_WRITE:-true}
       QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
       QDRANT_COLLECTION: ${QDRANT_COLLECTION:-ops_knowledge}
     depends_on:

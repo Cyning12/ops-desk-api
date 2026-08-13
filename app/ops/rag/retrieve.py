@@ -1,6 +1,6 @@
 """R-3 混合召回（契约 §1 主路径：语义 + 第二路 → RRF 融合）。
 
-- 语义路：默认 pgvector cosine（HNSW）；`RAG_VECTOR_BACKEND=qdrant` 时走 Qdrant + PG hydrate
+- 语义路：默认 Qdrant Cosine + PG hydrate；`RAG_VECTOR_BACKEND=pgvector` 时走 pgvector
 - 第二路（默认 FTS）：PG tsvector（默认 'simple'；可用 RAG_FTS_CONFIG 切到 chinese 等）
 - 第二路（C 臂）：`RAG_SECOND_PATH=sparse` 时走 `sparse_embedding`（pgvector sparsevec 内积）
 - 融合：RRF k=60，两路 1:1 起跑（契约 4c · Ink hybrid_fusion 实证）
@@ -189,7 +189,7 @@ async def hybrid_recall_detail(
 ) -> HybridRecallResult:
     """混合召回（含融合前两路）；两路串行 await（AsyncSession 禁同会话并发）。
 
-    稠密路：默认 pgvector；`RAG_VECTOR_BACKEND=qdrant` 时走 Qdrant + 即时降级。
+    稠密路：默认 Qdrant（失败即时降级 pgvector）；`RAG_VECTOR_BACKEND=pgvector` 强制 PG。
     FTS/sparse 第二路始终在 PG。
 
     `query_sparse`：可选预编码的 sparsevec 文本；`RAG_SECOND_PATH=sparse` 且未传时

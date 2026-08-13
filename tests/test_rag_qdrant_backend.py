@@ -29,13 +29,13 @@ def _reset_env(monkeypatch: pytest.MonkeyPatch):
     set_enqueue_hook(None)
 
 
-def test_vector_backend_default_pgvector():
-    assert vector_backend() == VectorBackend.PGVECTOR
+def test_vector_backend_default_qdrant():
+    assert vector_backend() == VectorBackend.QDRANT
 
 
 def test_vector_backend_invalid_fallback(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("RAG_VECTOR_BACKEND", "diskann")
-    assert vector_backend() == VectorBackend.PGVECTOR
+    assert vector_backend() == VectorBackend.QDRANT
 
 
 def test_shadow_write_default_off():
@@ -43,9 +43,9 @@ def test_shadow_write_default_off():
 
 
 @pytest.mark.asyncio
-async def test_hybrid_recall_default_uses_pg_semantic(monkeypatch: pytest.MonkeyPatch):
-    """默认 pgvector：稠密路走 PG SQL，不触达 Qdrant client。"""
-    monkeypatch.delenv("RAG_VECTOR_BACKEND", raising=False)
+async def test_hybrid_recall_pg_backend_uses_pg_semantic(monkeypatch: pytest.MonkeyPatch):
+    """显式 pgvector：稠密路走 PG SQL，不触达 Qdrant client。"""
+    monkeypatch.setenv("RAG_VECTOR_BACKEND", "pgvector")
     calls: list[str] = []
 
     async def fake_execute(sql, params=None):
