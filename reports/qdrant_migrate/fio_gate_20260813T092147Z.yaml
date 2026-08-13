@@ -1,0 +1,10 @@
+gate: fio_randread
+status: pass
+mode: fio
+iops: 139462.651245
+p95_ms: 0.0
+threshold_iops: 3000
+threshold_p95_ms: 1.0
+target_dir: /Users/cyning/Desktop/Ops-desk/ops-desk-api/reports/qdrant_migrate
+recorded_at: 20260813T092147Z
+note: "fio 4K randread gate ok"

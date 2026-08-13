@@ -85,11 +85,11 @@
 
 ## 验收标准
 
-- [ ] fio / 硬件门禁记录落盘（或书面否决关 track）  
-- [ ] Collection 配置符合 SPEC（on_disk、轻量 payload、过滤索引）  
-- [ ] 对账：抽样 ≥500，L∞ &lt; 1e-5；Top-5 重叠 ≥ 95%；count 差 = 0  
-- [ ] 构建期峰值 ≤ 3.8GB；稳态 &lt; 3.2GB  
-- [ ] bench：`--baseline pgvector` 报告存在；Qdrant search P95 &lt; 150ms（过门禁才允许切流议案）  
+- [x] fio / 硬件门禁记录落盘（或书面否决关 track） · P1 本机 APFS：`reports/qdrant_migrate/fio_gate_20260813T092147Z.yaml`（非生产盘）  
+- [x] Collection 配置符合 SPEC（on_disk、轻量 payload、过滤索引） · 本机 recreate + payload indexes  
+- [x] 对账：抽样 ≥500，L∞ &lt; 1e-5；Top-5 重叠 ≥ 95%；count 差 = 0 · **全量 N=8574** · `reconcile_p1_20260813.yaml`  
+- [x] 构建期峰值 ≤ 3.8GB；稳态 &lt; 3.2GB · upsert peak **286.6MiB**；稳态 ≈500MiB（N=8574，未测 80 万）  
+- [x] bench：`--baseline pgvector` 报告存在；Qdrant search P95 &lt; 150ms（过门禁才允许切流议案） · qdrant P95 **14.62ms** · `reports/qdrant_bench.yaml`  
 - [ ] `RAG_VECTOR_BACKEND=pgvector` 默认行为与现网一致（单测）  
 - [ ] Qdrant 失败：单次重试后 fallback PG；metric/日志可见  
 - [ ] 影子写：PG commit 成功且 Qdrant 宕机时进 DLQ；重放幂等  
@@ -155,16 +155,16 @@ fio、RSS 双门、P95、对账、bench 双臂、金样、回滚、非阻塞影�
 
 ### 自检结论
 
-> 00 编排回填 · 30 由子 agent 交付 P0 · **未关账**（P1 实测未齐）。
+> 00 编排回填 · 30 P0 + **40 P1 现网规模冒烟** · **未关账**（80 万峰值 + 金样未齐）。
 
 - [x] SPEC v1.1 已签（HG-SPEC-SIGNOFF=approved）
 - [x] task 含验收 / failure_paths / 非范围 / compare_with 锁死
 - [x] HG-TASK-DRAFT approved（00 代签 · 维护者授权）
 - [x] HG-AUDIT-R1 approved（00 代签 · 接受 20 审 C1–C3）
 - [x] 30 P0 已交（`23508e8` · [30 实现](130d18e3-ff25-42ef-96c0-e7a582ba341b)）：Flag/hydrate/影子写+DLQ/脚本/单测 9 passed · verify PASS
-- [ ] P1：真实 fio / 80 万灌库 / bench 双臂实测 / 金样 vs r4-2（脚本具备，本机未跑通）
+- [x] P1（部分）：现网 **N=8574** 全链路 fio→upsert→reconcile→bench 绿；invoke `invoke_20260813_40_p1_qdrant-migration.md` · **未** 80 万灌库 · 金样因本地无 `chinese` FTS 跳过
 - [ ] DLQ cron replayer（可选）
-- [ ] 关账（00 执行 · 待 P1 或维护者指示「按 P0 关账」）
+- [ ] 关账（00 执行 · 待峰值/金样或维护者指示）
 
 ---
 
@@ -176,3 +176,4 @@ fio、RSS 双门、P95、对账、bench 双臂、金样、回滚、非阻塞影�
 | 2026-08-13 | 维护者授权 00 代签全部人闸；00 除关账外不实现；HG-TASK-DRAFT=approved；派 20 子 agent |
 | 2026-08-13 | 20 审 conditional_pass（C1–C3）；00 代签 HG-AUDIT-R1=approved；派 30 子 agent |
 | 2026-08-13 | 30 P0 交卷 `23508e8`；00 核对 verify/单测；**暂不关账**（待 P1 或人令） |
+| 2026-08-13 | 40 P1 现网规模冒烟：N=8574 对账/bench/fio 绿；未达 80 万；金样 skip（无 chinese FTS）；invoke_20260813_40_p1 |

@@ -1,0 +1,11 @@
+status: pass
+pg_count: 8574
+qdrant_count: 8574
+count_diff: 0
+sample: 8574
+max_l_inf: 0.0
+linf_fail: 0
+topk: 5
+mean_topk_overlap: 1.0
+thresholds: {"max_l_inf_err": 1e-05, "min_topk_overlap": 0.95}
+recorded_at: 2026-08-13T09:25:50.070433+00:00
