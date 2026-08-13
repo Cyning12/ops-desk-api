@@ -1,6 +1,7 @@
 # Task：Harness 升级 2.22→2.24（api）· overlay / skills 复检
 
-> **状态**：active（30/40 已完成 · 待 00 验收关账）  
+> **状态**：completed  
+
 > **类型**：基础设施（upgrade + FEEDBACK + overlay/local 块复检）  
 > **关联**：npm `@cyning/harness@2.24.0`（registry 最新；仓内 manifest 已 `2.24.0`）· local 块 · `graph_modules_path` · 前波 2.22 FEEDBACK / PR #23  
 > **合入**：走 PR（禁直推 master）
@@ -101,6 +102,29 @@
 | **FEEDBACK** | `docs/harness/evidence/FEEDBACK_harness_2_24_0_from_ops_desk_api_20260813.md` |
 | **invoke** | `docs/harness/invokes/by-task/upgrade-harness-2-20-runbook-feedback/invoke_20260813_30_40_upgrade-harness-2-24.md` |
 
+---
+
+### KPI
+
+| 项 | 分 |
+|---|---|
+| Task_KPI% | 100 |
+
+### 经验
+
+- Wiki: n/a（本波不改 coding_wiki）
+- 可复用：upgrade 前先 commit 契约/产物（S5）；合规 local 块在 2.24 仍零手恢复 · 见 `docs/harness/evidence/FEEDBACK_harness_2_24_0_from_ops_desk_api_20260813.md`
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| **日期** | 2026-08-13 |
+| **00 验收** | PASS · manifest 2.24.0 · check 已是最新 · local/profile 在 · FEEDBACK 齐 |
+| **已知外因** | 全局 `lint-wiki-delta --strict` 仅 `task_ops_sync_sender_migration`（本波禁改 · 不挡关账） |
+| **归档** | `docs/tasks/done/task_upgrade_harness_2_20_runbook_feedback.md` |
+| **HEAD** | `7abeddc`（关账前；CLOSE 文档可能再 commit） |
+
 ## 修订
 
 | 日期 | 说明 |
@@ -108,3 +132,4 @@
 | 2026-07-28 | 初版：2.20→2.22 overlay 验证（完成态曾勾满，未关账） |
 | 2026-08-13 | 00：registry 最新 **2.24.0** · 仓内仍 2.22.0 → **改目标并重开完成态** · 派 30/40 |
 | 2026-08-13 | 30/40：钉升 2.24.0 · FEEDBACK · 完成态勾选 · 待 00 验收关账 |
+| 2026-08-13 | 00：验收 PASS · CLOSE |
