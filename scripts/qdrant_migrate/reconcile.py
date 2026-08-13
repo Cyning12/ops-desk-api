@@ -116,13 +116,23 @@ def main() -> int:
                 {"qvec": json.dumps(list(emb)), "k": args.topk},
             ).all()
             pg_top = [int(r[0]) for r in pg_rows]
-            hits = client.search(
-                collection_name=args.collection,
-                query_vector=list(emb),
-                limit=args.topk,
-                with_payload=False,
-            )
-            q_top = [int(h.id) for h in hits]
+            # qdrant-client≥1.14：search 已弃用/移除，改用 query_points
+            if hasattr(client, "query_points"):
+                resp = client.query_points(
+                    collection_name=args.collection,
+                    query=list(emb),
+                    limit=args.topk,
+                    with_payload=False,
+                )
+                q_top = [int(p.id) for p in resp.points]
+            else:
+                hits = client.search(
+                    collection_name=args.collection,
+                    query_vector=list(emb),
+                    limit=args.topk,
+                    with_payload=False,
+                )
+                q_top = [int(h.id) for h in hits]
             overlaps.append(_overlap(pg_top, q_top))
 
     mean_overlap = float(np.mean(overlaps)) if overlaps else 0.0
