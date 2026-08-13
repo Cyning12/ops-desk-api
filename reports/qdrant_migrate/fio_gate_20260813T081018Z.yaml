@@ -1,0 +1,7 @@
+gate: fio_randread
+status: skipped
+reason: "fio not installed"
+warn: true
+note: "本地无 fio；禁止据此灌库/切流；维护者须在目标盘重跑或提供 PROVISIONED_IOPS>=5000"
+recorded_at: 20260813T081018Z
+target_dir: /Users/cyning/Desktop/Ops-desk/ops-desk-api

@@ -1,6 +1,6 @@
 """R-3 混合召回（契约 §1 主路径：语义 + 第二路 → RRF 融合）。
 
-- 语义路：pgvector cosine（HNSW 索引）
+- 语义路：默认 Qdrant Cosine + PG hydrate；`RAG_VECTOR_BACKEND=pgvector` 时走 pgvector
 - 第二路（默认 FTS）：PG tsvector（默认 'simple'；可用 RAG_FTS_CONFIG 切到 chinese 等）
 - 第二路（C 臂）：`RAG_SECOND_PATH=sparse` 时走 `sparse_embedding`（pgvector sparsevec 内积）
 - 融合：RRF k=60，两路 1:1 起跑（契约 4c · Ink hybrid_fusion 实证）
@@ -158,6 +158,27 @@ class HybridRecallResult:
     keyword: list[RetrievedChunk]
 
 
+async def _semantic_search_pg(
+    session: AsyncSession,
+    query_vector: list[float],
+    k: int,
+) -> list[RetrievedChunk]:
+    sem_rows = await session.execute(
+        _SEMANTIC_SQL, {"qvec": json.dumps(query_vector), "k": k}
+    )
+    return [_row_to_chunk(r) for r in sem_rows]
+
+
+async def _semantic_search_qdrant(
+    session: AsyncSession,
+    query_vector: list[float],
+    k: int,
+) -> list[RetrievedChunk]:
+    from app.ops.rag.retrievers.qdrant_retriever import QdrantRetriever
+
+    return await QdrantRetriever(session).search(query_vector, k=k)
+
+
 async def hybrid_recall_detail(
     session: AsyncSession,
     query: str,
@@ -168,11 +189,17 @@ async def hybrid_recall_detail(
 ) -> HybridRecallResult:
     """混合召回（含融合前两路）；两路串行 await（AsyncSession 禁同会话并发）。
 
+    稠密路：默认 Qdrant（失败即时降级 pgvector）；`RAG_VECTOR_BACKEND=pgvector` 强制 PG。
+    FTS/sparse 第二路始终在 PG。
+
     `query_sparse`：可选预编码的 sparsevec 文本；`RAG_SECOND_PATH=sparse` 且未传时
     进程内懒加载 FlagEmbedding 编码（实验依赖，默认 fts 路径不触达）。
     """
-    sem_rows = await session.execute(
-        _SEMANTIC_SQL, {"qvec": json.dumps(query_vector), "k": k_each}
+    from app.ops.rag.backend import search_dense_with_fallback
+
+    semantic = await search_dense_with_fallback(
+        lambda: _semantic_search_qdrant(session, query_vector, k_each),
+        lambda: _semantic_search_pg(session, query_vector, k_each),
     )
     path = _second_path()
     if path == "sparse":
@@ -186,7 +213,6 @@ async def hybrid_recall_detail(
         kw_sql, kw_param = _keyword_query(query)
         kw_rows = await session.execute(kw_sql, {"q": kw_param, "k": k_each})
 
-    semantic = [_row_to_chunk(r) for r in sem_rows]
     keyword = [_row_to_chunk(r) for r in kw_rows]
     fused = rrf_fuse(semantic, keyword, top_n)
     logger.info(

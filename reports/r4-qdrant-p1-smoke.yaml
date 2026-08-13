@@ -1,0 +1,36 @@
+run: eval-rag-20260813-092618-r4
+arm: normal
+rerank_enabled: false
+recall_k_each: 10
+coarse_top_n: 15
+embed: BAAI/bge-m3
+grader: qwen3.7-flash
+corpus: ops_knowledge_chunks(N=8574)
+results: []
+summary:
+  pass: 0/0
+  recall_at5_by_quadrant: {}
+  negative_refuse: 0/0
+  grade_stability_agree: null
+  measurement_source: observed
+  confidence: low
+  comparability: not_comparable
+  partial: true
+  completed: 0
+  note: 'interrupted_at=G01: ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError)
+    <class ''asyncpg.exceptions.UndefinedObjectError''>: text search configuration
+    "chinese" does not exist
+
+    [SQL: SELECT id, repo, source_type, source_id, chunk_index, content, metadata,
+    images FROM ops_knowledge_chunks WHERE fts_tokens @@ plainto_tsquery(''chinese''::regconfig,
+    CAST($1 AS text)) ORDER BY ts_rank(fts_tokens, plainto_tsquery(''chinese''::regconfig,
+    CAST($1 AS text))) DESC LIMIT $2]
+
+    [parameters: (''Kimi Code 自动压缩被取消并报错 This operation was aborted 是什么原因?'', 10)]
+
+    (Background on this error at: https://sqlalche.me/e/20/f405)'
+  arm: normal
+  rerank_enabled: false
+  recall_k_each: 10
+  coarse_top_n: 15
+  grader_prompt: v2

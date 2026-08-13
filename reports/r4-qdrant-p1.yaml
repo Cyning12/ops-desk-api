@@ -1,0 +1,2207 @@
+run: eval-rag-20260813-093645-r4
+arm: normal
+rerank_enabled: false
+recall_k_each: 10
+coarse_top_n: 15
+embed: BAAI/bge-m3
+grader: qwen3.7-flash
+corpus: ops_knowledge_chunks(N=8574)
+results:
+- id: G01
+  quadrant: zh2en
+  top5:
+  - 2720#0
+  - 2720#1
+  - 1585#0
+  - 2427#0
+  - 1146#2
+  filtered_out:
+  - contracts/rag-knowledge-contract-v1.md#13
+  recall_at5: pass
+  best_relevance: weak
+  min_relevance: fail
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: refuse
+  verdict: fail
+  fail_reasons:
+  - 'min_relevance: got irrelevant < relevant'
+  - 'expect_relevance: got irrelevant < exact'
+  semantic_hits:
+  - 2720#0
+  - contracts/rag-knowledge-contract-v1.md#13
+  - 2720#1
+  - 1585#0
+  - 2427#0
+  - 1146#2
+  - 1585#2
+  - 2720#6
+  - 1177#0
+  - 1089#2
+  keyword_hits:
+  - contracts/rag-knowledge-contract-v1.md#13
+- id: G02
+  quadrant: zh2en
+  top5:
+  - 2720#6
+  - 2720#3
+  - 2720#4
+  - 2720#5
+  - 2720#2
+  filtered_out:
+  - contracts/rag-knowledge-contract-v1.md#13
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2720#6
+  - 2720#3
+  - 2720#4
+  - 2720#5
+  - contracts/rag-knowledge-contract-v1.md#13
+  - 2720#2
+  - 120#0
+  - 840#0
+  - 1156#1
+  - 1129#2
+  keyword_hits:
+  - contracts/rag-knowledge-contract-v1.md#13
+- id: G03
+  quadrant: zh2en
+  top5:
+  - 1177#2
+  - 1177#0
+  - 2427#0
+  - 1177#3
+  - 1177#5
+  filtered_out:
+  - contracts/rag-knowledge-contract-v1.md#13
+  recall_at5: fail
+  best_relevance: irrelevant
+  min_relevance: fail
+  citation_in_hits: fail
+  must_refuse: null
+  gate_action: refuse
+  verdict: fail
+  fail_reasons:
+  - 'recall@5: {''source_type'': ''issue'', ''source_id'': ''2720''} not in top'
+  - 'min_relevance: expect_hit 未召回，无法评级'
+  - 'citation_in_hits: expect_hit 不在命中集'
+  semantic_hits:
+  - contracts/rag-knowledge-contract-v1.md#13
+  - 1177#2
+  - 1177#0
+  - 2427#0
+  - 1177#3
+  - 1177#5
+  - 489#24
+  - 1055#2
+  - 178#0
+  - 489#21
+  keyword_hits:
+  - contracts/rag-knowledge-contract-v1.md#13
+- id: G04
+  quadrant: zh2en
+  top5:
+  - 2720#0
+  - 1011#2
+  - 2720#6
+  - 2720#3
+  - 2720#1
+  filtered_out:
+  - contracts/rag-knowledge-contract-v1.md#13
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - contracts/rag-knowledge-contract-v1.md#13
+  - 2720#0
+  - 1011#2
+  - 2720#6
+  - 2720#3
+  - 2720#1
+  - 328#3
+  - 1011#3
+  - 1011#0
+  - 05-plan/01-epic-task-backlog.md#5
+  keyword_hits:
+  - contracts/rag-knowledge-contract-v1.md#13
+- id: G05
+  quadrant: zh2en
+  top5:
+  - 2031#2
+  - 2364#0
+  - 2031#0
+  - 1500#3
+  - 735#3
+  filtered_out:
+  - contracts/rag-knowledge-contract-v1.md#13
+  recall_at5: fail
+  best_relevance: relevant
+  min_relevance: fail
+  citation_in_hits: fail
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: fail
+  fail_reasons:
+  - 'recall@5: {''source_type'': ''issue'', ''source_id'': ''2720''} not in top'
+  - 'min_relevance: expect_hit 未召回，无法评级'
+  - 'citation_in_hits: expect_hit 不在命中集'
+  semantic_hits:
+  - 2031#2
+  - 2364#0
+  - 2031#0
+  - 1500#3
+  - contracts/rag-knowledge-contract-v1.md#13
+  - 735#3
+  - 679#0
+  - 1619#0
+  - 2031#3
+  - 2364#2
+  keyword_hits:
+  - contracts/rag-knowledge-contract-v1.md#13
+- id: G06
+  quadrant: zh2en
+  top5:
+  - 1566#0
+  - 2737#0
+  - 1566#1
+  - 709#0
+  - 2093#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1566#0
+  - 2737#0
+  - 1566#1
+  - 709#0
+  - 2093#0
+  - 1540#0
+  - 1046#0
+  - 1205#0
+  - 709#2
+  - 1566#3
+  keyword_hits: []
+- id: G07
+  quadrant: zh2en
+  top5:
+  - 2738#0
+  - 1566#2
+  - 221#0
+  - 221#1
+  - 2063#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2738#0
+  - 1566#2
+  - 221#0
+  - 221#1
+  - 2063#0
+  - 2738#1
+  - 1566#0
+  - 1801#0
+  - 709#1
+  - 1566#3
+  keyword_hits: []
+- id: G08
+  quadrant: zh2en
+  top5:
+  - 2190#0
+  - 1924#2
+  - 2190#1
+  - 1924#1
+  - 1924#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2190#0
+  - 1924#2
+  - 2190#1
+  - 1924#1
+  - 1924#0
+  - 2190#3
+  - 2190#2
+  - 1038#1
+  - 2109#0
+  - 1897#2
+  keyword_hits: []
+- id: G09
+  quadrant: zh2en
+  top5:
+  - 1924#1
+  - 1027#2
+  - 1027#1
+  - 380#0
+  - 833#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: relevant
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1924#1
+  - 1027#2
+  - 1027#1
+  - 380#0
+  - 833#0
+  - 2190#0
+  - 1152#2
+  - 1924#0
+  - 380#1
+  - 1924#2
+  keyword_hits: []
+- id: G10
+  quadrant: zh2en
+  top5:
+  - 2157#0
+  - 1954#0
+  - 2116#0
+  - 1835#0
+  - 1954#3
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2157#0
+  - 1954#0
+  - 2116#0
+  - 1835#0
+  - 1954#3
+  - 2716#0
+  - 1171#0
+  - 2116#1
+  - 1954#1
+  - 1954#2
+  keyword_hits: []
+- id: G11
+  quadrant: zh2en
+  top5:
+  - 2716#0
+  - 2157#0
+  - 2027#0
+  - 2483#0
+  - 1886#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2716#0
+  - 2157#0
+  - 2027#0
+  - 2483#0
+  - 1886#0
+  - 1858#0
+  - 2106#2
+  - 2485#0
+  - 2106#3
+  - 1171#0
+  keyword_hits: []
+- id: G12
+  quadrant: zh2en
+  top5:
+  - 2358#0
+  - 2358#1
+  - 2358#4
+  - 2358#3
+  - 2358#2
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2358#0
+  - 2358#1
+  - 2358#4
+  - 2358#3
+  - 2358#2
+  - 535#2
+  - 1892#0
+  - 1984#0
+  - 1984#7
+  - 704#2
+  keyword_hits: []
+- id: G13
+  quadrant: zh2en
+  top5:
+  - 2358#3
+  - 2358#2
+  - 2157#0
+  - 2111#2
+  - 2111#5
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2358#3
+  - 2358#2
+  - 2157#0
+  - 2111#2
+  - 2111#5
+  - 2358#0
+  - 2025#1
+  - 1835#8
+  - 2646#1
+  - 2111#3
+  keyword_hits: []
+- id: G14
+  quadrant: zh2en
+  top5:
+  - 2548#5
+  - 1316#0
+  - 1106#2
+  - 1900#0
+  - 2324#4
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2548#5
+  - 1316#0
+  - 1106#2
+  - 1900#0
+  - 2324#4
+  - 2548#4
+  - 1900#1
+  - 81#0
+  - 269#2
+  - 269#4
+  keyword_hits: []
+- id: G15
+  quadrant: zh2en
+  top5:
+  - 1001#0
+  - 841#5
+  - 1156#0
+  - 2548#5
+  - 1994#1
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: relevant
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1001#0
+  - 841#5
+  - 1156#0
+  - 2548#5
+  - 1994#1
+  - 2584#1
+  - 1862#2
+  - 1001#1
+  - 234#5
+  - 1010#0
+  keyword_hits: []
+- id: G16
+  quadrant: zh2en
+  top5:
+  - 1077#2
+  - 87#2
+  - 2143#4
+  - 549#2
+  - 2143#3
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: fail
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: fail
+  fail_reasons:
+  - 'min_relevance: got irrelevant < relevant'
+  - 'expect_relevance: got irrelevant < weak'
+  semantic_hits:
+  - 1077#2
+  - 87#2
+  - 2143#4
+  - 549#2
+  - 2143#3
+  - 1356#1
+  - 558#0
+  - 245#0
+  - 89#0
+  - 550#0
+  keyword_hits: []
+- id: G17
+  quadrant: zh2en
+  top5:
+  - 291#0
+  - 394#2
+  - 394#0
+  - 370#3
+  - 370#0
+  filtered_out: []
+  recall_at5: fail
+  best_relevance: irrelevant
+  min_relevance: fail
+  citation_in_hits: fail
+  must_refuse: null
+  gate_action: refuse
+  verdict: fail
+  fail_reasons:
+  - 'recall@5: {''source_type'': ''issue'', ''source_id'': ''87''} not in top'
+  - 'min_relevance: expect_hit 未召回，无法评级'
+  - 'citation_in_hits: expect_hit 不在命中集'
+  semantic_hits:
+  - 291#0
+  - 394#2
+  - 394#0
+  - 370#3
+  - 370#0
+  - 1077#0
+  - 87#0
+  - 32#0
+  - 370#2
+  - 1077#3
+  keyword_hits: []
+- id: G18
+  quadrant: zh2en
+  top5:
+  - 1884#3
+  - 1885#1
+  - 1885#0
+  - 1885#2
+  - 1884#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1884#3
+  - 1885#1
+  - 1885#0
+  - 1885#2
+  - 1884#0
+  - 1885#3
+  - 1884#1
+  - 2073#0
+  - 2073#1
+  - 727#4
+  keyword_hits: []
+- id: G19
+  quadrant: zh2en
+  top5:
+  - 1885#2
+  - 1885#3
+  - 2239#1
+  - 398#1
+  - 2238#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1885#2
+  - 1885#3
+  - 2239#1
+  - 398#1
+  - 2238#0
+  - 2238#1
+  - 2238#2
+  - 1844#0
+  - 2276#1
+  - 2239#0
+  keyword_hits: []
+- id: G20
+  quadrant: zh2zh
+  top5:
+  - 173#1
+  - 173#4
+  - 489#7
+  - 489#8
+  - 173#3
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 173#1
+  - 173#4
+  - 489#7
+  - 489#8
+  - 173#3
+  - 173#0
+  - 172#0
+  - 489#14
+  - 489#2
+  - 489#4
+  keyword_hits: []
+- id: G21
+  quadrant: zh2zh
+  top5:
+  - 1057#1
+  - 173#4
+  - 994#1
+  - 994#5
+  - 994#4
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1057#1
+  - 173#4
+  - 994#1
+  - 994#5
+  - 994#4
+  - 994#3
+  - 994#0
+  - 994#2
+  - 2048#4
+  - 722#2
+  keyword_hits: []
+- id: G22
+  quadrant: zh2zh
+  top5:
+  - 325#2
+  - 901#0
+  - 1889#2
+  - 1889#3
+  - 437#2
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 325#2
+  - 901#0
+  - 1889#2
+  - 1889#3
+  - 437#2
+  - 576#2
+  - 437#1
+  - 437#0
+  - 351#2
+  - 496#0
+  keyword_hits: []
+- id: G23
+  quadrant: zh2zh
+  top5:
+  - 325#2
+  - 901#0
+  - 576#2
+  - 1889#2
+  - 901#1
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 325#2
+  - 901#0
+  - 576#2
+  - 1889#2
+  - 901#1
+  - 1889#3
+  - 437#1
+  - 496#0
+  - 437#2
+  - 437#0
+  keyword_hits: []
+- id: G24
+  quadrant: zh2zh
+  top5:
+  - 525#7
+  - 525#1
+  - 525#4
+  - 525#3
+  - 525#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 525#7
+  - 525#1
+  - 525#4
+  - 525#3
+  - 525#0
+  - 525#2
+  - 532#0
+  - 525#8
+  - 525#5
+  - 525#9
+  keyword_hits: []
+- id: G25
+  quadrant: zh2zh
+  top5:
+  - 525#4
+  - 525#7
+  - 525#3
+  - 1639#5
+  - 525#1
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: relevant
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: fail
+  fail_reasons:
+  - 'expect_relevance: got relevant < exact'
+  semantic_hits:
+  - 525#4
+  - 525#7
+  - 525#3
+  - 1639#5
+  - 525#1
+  - 525#5
+  - 546#0
+  - 1639#4
+  - 1639#2
+  - 1639#3
+  keyword_hits: []
+- id: G26
+  quadrant: zh2zh
+  top5:
+  - 981#2
+  - 981#3
+  - 981#1
+  - 981#0
+  - 2167#1
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 981#2
+  - 981#3
+  - 981#1
+  - 981#0
+  - 2167#1
+  - 2167#0
+  - 2167#2
+  - 1117#1
+  - 1805#2
+  - 1117#2
+  keyword_hits: []
+- id: G27
+  quadrant: zh2zh
+  top5:
+  - 981#3
+  - 2205#0
+  - 1315#0
+  - 1188#0
+  - 2324#4
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 981#3
+  - 2205#0
+  - 1315#0
+  - 1188#0
+  - 2324#4
+  - 2442#0
+  - 2324#2
+  - 2442#1
+  - 347#0
+  - 1141#1
+  keyword_hits: []
+- id: G28
+  quadrant: zh2zh
+  top5:
+  - 1356#1
+  - 1356#2
+  - 1358#0
+  - 1356#3
+  - 1356#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1356#1
+  - 1356#2
+  - 1358#0
+  - 1356#3
+  - 1356#0
+  - 558#0
+  - 550#1
+  - 550#0
+  - 1332#0
+  - 504#0
+  keyword_hits: []
+- id: G29
+  quadrant: zh2zh
+  top5:
+  - 1356#1
+  - 1356#0
+  - 2135#2
+  - 1358#1
+  - 1356#3
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: relevant
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1356#1
+  - 1356#0
+  - 2135#2
+  - 1358#1
+  - 1356#3
+  - 2307#2
+  - 1850#3
+  - 2135#3
+  - 2307#3
+  - 2307#0
+  keyword_hits: []
+- id: G30
+  quadrant: zh2zh
+  top5:
+  - 1909#7
+  - 1909#4
+  - 1909#0
+  - 1909#1
+  - 1909#5
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1909#7
+  - 1909#4
+  - 1909#0
+  - 1909#1
+  - 1909#5
+  - 1909#2
+  - 1909#6
+  - 1909#3
+  - 1917#3
+  - 1917#1
+  keyword_hits: []
+- id: G31
+  quadrant: zh2zh
+  top5:
+  - 1909#3
+  - 1909#6
+  - 2307#3
+  - 1909#1
+  - 1909#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1909#3
+  - 1909#6
+  - 2307#3
+  - 1909#1
+  - 1909#0
+  - 1177#5
+  - 1177#2
+  - 489#23
+  - 291#2
+  - 489#20
+  keyword_hits: []
+- id: G32
+  quadrant: zh2zh
+  top5:
+  - 2111#0
+  - 2111#3
+  - 2111#8
+  - 2111#9
+  - 2111#2
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2111#0
+  - 2111#3
+  - 2111#8
+  - 2111#9
+  - 2111#2
+  - 2111#5
+  - 2111#7
+  - 2111#4
+  - 2111#10
+  - 2111#1
+  keyword_hits: []
+- id: G33
+  quadrant: zh2zh
+  top5:
+  - 2111#7
+  - 2111#5
+  - 2111#10
+  - 2111#4
+  - 2111#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2111#7
+  - 2111#5
+  - 2111#10
+  - 2111#4
+  - 2111#0
+  - 2111#1
+  - 2111#6
+  - 2111#2
+  - 2111#9
+  - 713#1
+  keyword_hits: []
+- id: G34
+  quadrant: zh2zh
+  top5:
+  - 2380#2
+  - 2380#1
+  - 2380#0
+  - 1110#0
+  - 2387#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2380#2
+  - 2380#1
+  - 2380#0
+  - 1110#0
+  - 2387#0
+  - 2109#2
+  - 2109#1
+  - 2387#1
+  - 2606#1
+  - 2109#0
+  keyword_hits: []
+- id: G35
+  quadrant: zh2zh
+  top5:
+  - 1991#1
+  - 1991#0
+  - 2380#2
+  - 2109#2
+  - 2380#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1991#1
+  - 1991#0
+  - 2380#2
+  - 2109#2
+  - 2380#0
+  - 2109#1
+  - 2109#0
+  - 2380#1
+  - 2387#1
+  - 2387#0
+  keyword_hits: []
+- id: G36
+  quadrant: zh2zh
+  top5:
+  - 234#4
+  - 234#2
+  - 1356#1
+  - 550#1
+  - 89#0
+  filtered_out: []
+  recall_at5: fail
+  best_relevance: exact
+  min_relevance: fail
+  citation_in_hits: fail
+  must_refuse: null
+  gate_action: answer
+  verdict: fail
+  fail_reasons:
+  - 'recall@5: {''source_type'': ''issue'', ''source_id'': ''87''} not in top'
+  - 'min_relevance: expect_hit 未召回，无法评级'
+  - 'citation_in_hits: expect_hit 不在命中集'
+  semantic_hits:
+  - 234#4
+  - 234#2
+  - 1356#1
+  - 550#1
+  - 89#0
+  - 1077#2
+  - 234#1
+  - 549#2
+  - 234#6
+  - 234#3
+  keyword_hits: []
+- id: G37
+  quadrant: zh2zh
+  top5:
+  - 234#2
+  - 1356#1
+  - 2332#2
+  - 05-plan/02-epic6-implementation-plan.md#14
+  - 234#4
+  filtered_out: []
+  recall_at5: fail
+  best_relevance: irrelevant
+  min_relevance: fail
+  citation_in_hits: fail
+  must_refuse: null
+  gate_action: refuse
+  verdict: fail
+  fail_reasons:
+  - 'recall@5: {''source_type'': ''issue'', ''source_id'': ''87''} not in top'
+  - 'min_relevance: expect_hit 未召回，无法评级'
+  - 'citation_in_hits: expect_hit 不在命中集'
+  semantic_hits:
+  - 234#2
+  - 1356#1
+  - 2332#2
+  - 05-plan/02-epic6-implementation-plan.md#14
+  - 234#4
+  - 05-plan/02-epic6-implementation-plan.md#12
+  - 558#1
+  - 504#0
+  - 1077#2
+  - 559#1
+  keyword_hits: []
+- id: G38
+  quadrant: zh2zh
+  top5:
+  - 1885#1
+  - 2073#0
+  - 1885#0
+  - 1884#0
+  - 1780#1
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1885#1
+  - 2073#0
+  - 1885#0
+  - 1884#0
+  - 1780#1
+  - 1405#2
+  - 1884#1
+  - 1884#3
+  - 1405#1
+  - 1932#0
+  keyword_hits: []
+- id: G39
+  quadrant: zh2zh
+  top5:
+  - 1695#1
+  - 1861#1
+  - 1027#1
+  - 2499#1
+  - 2435#2
+  filtered_out: []
+  recall_at5: fail
+  best_relevance: irrelevant
+  min_relevance: fail
+  citation_in_hits: fail
+  must_refuse: null
+  gate_action: refuse
+  verdict: fail
+  fail_reasons:
+  - 'recall@5: {''source_type'': ''issue'', ''source_id'': ''1885''} not in top'
+  - 'min_relevance: expect_hit 未召回，无法评级'
+  - 'citation_in_hits: expect_hit 不在命中集'
+  semantic_hits:
+  - 1695#1
+  - 1861#1
+  - 1027#1
+  - 2499#1
+  - 2435#2
+  - 2436#2
+  - 1207#1
+  - 666#0
+  - 2154#1
+  - 2568#1
+  keyword_hits: []
+- id: G40
+  quadrant: en2en
+  top5:
+  - 275#0
+  - 225#4
+  - 2035#1
+  - 275#1
+  - 225#7
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 275#0
+  - 225#4
+  - 2035#1
+  - 275#1
+  - 225#7
+  - 225#3
+  - 225#2
+  - 1809#0
+  - 225#0
+  - 1816#4
+  keyword_hits: []
+- id: G41
+  quadrant: en2en
+  top5:
+  - 225#6
+  - 1495#3
+  - 225#8
+  - 1296#1
+  - 1568#1
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: relevant
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 225#6
+  - 1495#3
+  - 225#8
+  - 1296#1
+  - 1568#1
+  - 1068#0
+  - 225#1
+  - 282#0
+  - 283#0
+  - 1197#2
+  keyword_hits: []
+- id: G42
+  quadrant: en2en
+  top5:
+  - 800#5
+  - 800#2
+  - 800#4
+  - 800#1
+  - 800#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: relevant
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 800#5
+  - 800#2
+  - 800#4
+  - 800#1
+  - 800#0
+  - 800#3
+  - 912#0
+  - 739#0
+  - 426#3
+  - 426#4
+  keyword_hits: []
+- id: G43
+  quadrant: en2en
+  top5:
+  - 800#2
+  - 800#4
+  - 800#3
+  - 912#0
+  - 800#5
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 800#2
+  - 800#4
+  - 800#3
+  - 912#0
+  - 800#5
+  - 800#0
+  - 800#1
+  - 2566#3
+  - 426#2
+  - 426#4
+  keyword_hits: []
+- id: G44
+  quadrant: en2en
+  top5:
+  - 1219#0
+  - 1219#12
+  - 1219#1
+  - 1219#22
+  - 1219#10
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: weak
+  min_relevance: fail
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: refuse
+  verdict: fail
+  fail_reasons:
+  - 'min_relevance: got weak < relevant'
+  - 'expect_relevance: got weak < relevant'
+  semantic_hits:
+  - 1219#0
+  - 1219#12
+  - 1219#1
+  - 1219#22
+  - 1219#10
+  - 1219#21
+  - 1219#11
+  - 1219#3
+  - 1219#14
+  - 1219#13
+  keyword_hits: []
+- id: G45
+  quadrant: en2en
+  top5:
+  - 1219#0
+  - 2664#0
+  - 1219#1
+  - 1219#9
+  - 1219#20
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: relevant
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1219#0
+  - 2664#0
+  - 1219#1
+  - 1219#9
+  - 1219#20
+  - 370#2
+  - 394#2
+  - 1219#4
+  - 1219#15
+  - 1219#14
+  keyword_hits: []
+- id: G46
+  quadrant: en2en
+  top5:
+  - 553#1
+  - 1686#3
+  - 326#0
+  - 1685#1
+  - 1686#1
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 553#1
+  - 1686#3
+  - 326#0
+  - 1685#1
+  - 1686#1
+  - 326#1
+  - 1522#0
+  - 2145#2
+  - 1324#0
+  - 1685#0
+  keyword_hits: []
+- id: G47
+  quadrant: en2en
+  top5:
+  - 1637#0
+  - 2480#0
+  - 1686#0
+  - 239#1
+  - 2487#1
+  filtered_out: []
+  recall_at5: fail
+  best_relevance: relevant
+  min_relevance: fail
+  citation_in_hits: fail
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: fail
+  fail_reasons:
+  - 'recall@5: {''source_type'': ''issue'', ''source_id'': ''1685''} not in top'
+  - 'min_relevance: expect_hit 未召回，无法评级'
+  - 'citation_in_hits: expect_hit 不在命中集'
+  semantic_hits:
+  - 1637#0
+  - 2480#0
+  - 1686#0
+  - 239#1
+  - 2487#1
+  - 2380#2
+  - 1637#1
+  - 1685#0
+  - 1728#0
+  - 2380#0
+  keyword_hits: []
+- id: G48
+  quadrant: en2en
+  top5:
+  - 1943#4
+  - 1943#3
+  - 1943#2
+  - 1943#0
+  - 1943#1
+  filtered_out:
+  - contracts/rag-knowledge-contract-v1.md#13
+  recall_at5: pass
+  best_relevance: relevant
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1943#4
+  - 1943#3
+  - 1943#2
+  - 1943#0
+  - 1943#1
+  - 1758#0
+  - 1917#3
+  - contracts/rag-knowledge-contract-v1.md#13
+  - 1917#0
+  - 2364#0
+  keyword_hits: []
+- id: G49
+  quadrant: en2en
+  top5:
+  - 1943#2
+  - 1943#4
+  - 1943#3
+  - 1943#1
+  - 1943#0
+  filtered_out:
+  - contracts/rag-knowledge-contract-v1.md#18
+  recall_at5: pass
+  best_relevance: weak
+  min_relevance: fail
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: refuse
+  verdict: fail
+  fail_reasons:
+  - 'min_relevance: got weak < relevant'
+  semantic_hits:
+  - 1943#2
+  - 1943#4
+  - 1943#3
+  - 1943#1
+  - 1943#0
+  - 689#1
+  - contracts/rag-knowledge-contract-v1.md#18
+  - 1303#1
+  - 1303#2
+  - 1233#2
+  keyword_hits: []
+- id: G50
+  quadrant: en2en
+  top5:
+  - 2163#3
+  - 2392#0
+  - 2163#2
+  - 1485#6
+  - 2163#1
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: fail
+  fail_reasons:
+  - 'expect_relevance: got relevant < exact'
+  semantic_hits:
+  - 2163#3
+  - 2392#0
+  - 2163#2
+  - 1485#6
+  - 2163#1
+  - 2163#0
+  - 2482#0
+  - 2392#1
+  - 1485#5
+  - 1485#3
+  keyword_hits: []
+- id: G51
+  quadrant: en2en
+  top5:
+  - 2163#2
+  - 2163#3
+  - 2392#0
+  - 2392#1
+  - 2370#3
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: relevant
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2163#2
+  - 2163#3
+  - 2392#0
+  - 2392#1
+  - 2370#3
+  - 2163#1
+  - 685#1
+  - 1708#1
+  - 2400#1
+  - 1708#0
+  keyword_hits: []
+- id: G52
+  quadrant: en2en
+  top5:
+  - 2370#1
+  - 2374#0
+  - 2370#0
+  - 2370#2
+  - 1886#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2370#1
+  - 2374#0
+  - 2370#0
+  - 2370#2
+  - 1886#0
+  - 2514#0
+  - 2370#3
+  - 1686#2
+  - 1685#0
+  - 1865#0
+  keyword_hits: []
+- id: G53
+  quadrant: en2en
+  top5:
+  - 2370#3
+  - 2455#3
+  - 2392#1
+  - 2163#0
+  - 2499#1
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2370#3
+  - 2455#3
+  - 2392#1
+  - 2163#0
+  - 2499#1
+  - 2456#2
+  - 2392#0
+  - 670#2
+  - 2568#3
+  - 2358#3
+  keyword_hits: []
+- id: G54
+  quadrant: en2en
+  top5:
+  - 2550#1
+  - 2549#2
+  - 2549#1
+  - 2550#0
+  - 2549#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: relevant
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2550#1
+  - 2549#2
+  - 2549#1
+  - 2550#0
+  - 2549#0
+  - 1442#1
+  - 1982#0
+  - 1392#1
+  - 468#2
+  - 502#3
+  keyword_hits: []
+- id: G55
+  quadrant: en2en
+  top5:
+  - 2549#1
+  - 2549#0
+  - 2550#1
+  - 1144#1
+  - 1635#2
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2549#1
+  - 2549#0
+  - 2550#1
+  - 1144#1
+  - 1635#2
+  - 2549#2
+  - 2565#0
+  - 1264#1
+  - 2550#0
+  - 1362#1
+  keyword_hits: []
+- id: G56
+  quadrant: zh2en
+  top5:
+  - 2106#1
+  - 1171#0
+  - 1232#0
+  - 2257#0
+  - 43#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: weak
+  min_relevance: fail
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: refuse
+  verdict: fail
+  fail_reasons:
+  - 'min_relevance: got weak < relevant'
+  semantic_hits:
+  - 2106#1
+  - 1171#0
+  - 1232#0
+  - 2257#0
+  - 43#0
+  - 1501#0
+  - 1835#2
+  - 1484#1
+  - 2106#3
+  - 763#0
+  keyword_hits: []
+- id: G57
+  quadrant: zh2en
+  top5:
+  - 1207#1
+  - 234#5
+  - 1207#3
+  - 1309#2
+  - 1207#2
+  filtered_out: []
+  recall_at5: fail
+  best_relevance: relevant
+  min_relevance: fail
+  citation_in_hits: fail
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: fail
+  fail_reasons:
+  - 'recall@5: {''source_type'': ''issue'', ''source_id'': ''43''} not in top'
+  - 'min_relevance: expect_hit 未召回，无法评级'
+  - 'citation_in_hits: expect_hit 不在命中集'
+  semantic_hits:
+  - 1207#1
+  - 234#5
+  - 1207#3
+  - 1309#2
+  - 1207#2
+  - 666#0
+  - 1542#0
+  - 691#0
+  - 2499#0
+  - 1309#0
+  keyword_hits: []
+- id: G58
+  quadrant: zh2en
+  top5:
+  - 705#11
+  - 705#8
+  - 1027#0
+  - 269#2
+  - 705#4
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 705#11
+  - 705#8
+  - 1027#0
+  - 269#2
+  - 705#4
+  - 705#7
+  - 762#0
+  - 705#5
+  - 705#9
+  - 705#2
+  keyword_hits: []
+- id: G59
+  quadrant: zh2en
+  top5:
+  - 1027#3
+  - 771#0
+  - 723#1
+  - 1308#2
+  - 1292#1
+  filtered_out: []
+  recall_at5: fail
+  best_relevance: relevant
+  min_relevance: fail
+  citation_in_hits: fail
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: fail
+  fail_reasons:
+  - 'recall@5: {''source_type'': ''issue'', ''source_id'': ''705''} not in top'
+  - 'min_relevance: expect_hit 未召回，无法评级'
+  - 'citation_in_hits: expect_hit 不在命中集'
+  semantic_hits:
+  - 1027#3
+  - 771#0
+  - 723#1
+  - 1308#2
+  - 1292#1
+  - 1027#1
+  - 762#3
+  - 1308#1
+  - 723#2
+  - 1308#0
+  keyword_hits: []
+- id: G60
+  quadrant: zh2en
+  top5:
+  - 1138#3
+  - 1138#1
+  - 1138#6
+  - 1138#2
+  - 1350#0
+  filtered_out: []
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1138#3
+  - 1138#1
+  - 1138#6
+  - 1138#2
+  - 1350#0
+  - 1138#0
+  - 1138#5
+  - 1138#4
+  - 2421#0
+  - 1991#1
+  keyword_hits: []
+- id: G61
+  quadrant: zh2en
+  top5:
+  - 1086#2
+  - 383#1
+  - 1086#1
+  - 383#0
+  - 1086#0
+  filtered_out: []
+  recall_at5: fail
+  best_relevance: relevant
+  min_relevance: fail
+  citation_in_hits: fail
+  must_refuse: null
+  gate_action: answer_partial
+  verdict: fail
+  fail_reasons:
+  - 'recall@5: {''source_type'': ''issue'', ''source_id'': ''1138''} not in top'
+  - 'min_relevance: expect_hit 未召回，无法评级'
+  - 'citation_in_hits: expect_hit 不在命中集'
+  semantic_hits:
+  - 1086#2
+  - 383#1
+  - 1086#1
+  - 383#0
+  - 1086#0
+  - 876#1
+  - 1409#1
+  - 876#0
+  - 2111#5
+  - 1027#1
+  keyword_hits: []
+- id: G62
+  quadrant: negative
+  top5:
+  - 2444#0
+  - 2444#3
+  - 2547#4
+  - 818#0
+  - 2547#2
+  filtered_out: []
+  recall_at5: null
+  best_relevance: relevant
+  min_relevance: null
+  citation_in_hits: null
+  must_refuse: fail
+  gate_action: answer_partial
+  verdict: fail
+  fail_reasons:
+  - 'max_relevance: got relevant > weak'
+  - 'must_refuse: gate_action=answer_partial'
+  semantic_hits:
+  - 2444#0
+  - 2444#3
+  - 2547#4
+  - 818#0
+  - 2547#2
+  - 1002#0
+  - 371#11
+  - 2547#3
+  - 2547#6
+  - 828#0
+  keyword_hits: []
+- id: G63
+  quadrant: negative
+  top5:
+  - 05-plan/00-migration-roadmap.md#16
+  - 1762#3
+  - 1619#0
+  - 2323#1
+  - 42#3
+  filtered_out: []
+  recall_at5: null
+  best_relevance: relevant
+  min_relevance: null
+  citation_in_hits: null
+  must_refuse: fail
+  gate_action: answer_partial
+  verdict: fail
+  fail_reasons:
+  - 'max_relevance: got relevant > weak'
+  - 'must_refuse: gate_action=answer_partial'
+  semantic_hits:
+  - 05-plan/00-migration-roadmap.md#16
+  - 1762#3
+  - 1619#0
+  - 2323#1
+  - 42#3
+  - 1422#2
+  - 2736#0
+  - 2141#0
+  - 138#0
+  - 302#0
+  keyword_hits: []
+- id: G64
+  quadrant: negative
+  top5:
+  - 1702#2
+  - 05-plan/01-epic-task-backlog.md#7
+  - 2547#6
+  - 458#4
+  - 570#7
+  filtered_out: []
+  recall_at5: null
+  best_relevance: weak
+  min_relevance: null
+  citation_in_hits: null
+  must_refuse: pass
+  gate_action: refuse
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1702#2
+  - 05-plan/01-epic-task-backlog.md#7
+  - 2547#6
+  - 458#4
+  - 570#7
+  - 245#2
+  - 1061#4
+  - 1023#0
+  - 2641#4
+  - 140#1
+  keyword_hits: []
+- id: G65
+  quadrant: negative
+  top5:
+  - 1416#1
+  - 2631#0
+  - 1416#0
+  - 694#2
+  - 694#3
+  filtered_out: []
+  recall_at5: null
+  best_relevance: relevant
+  min_relevance: null
+  citation_in_hits: null
+  must_refuse: fail
+  gate_action: answer_partial
+  verdict: fail
+  fail_reasons:
+  - 'max_relevance: got relevant > weak'
+  - 'must_refuse: gate_action=answer_partial'
+  semantic_hits:
+  - 1416#1
+  - 2631#0
+  - 1416#0
+  - 694#2
+  - 694#3
+  - 2676#0
+  - 299#2
+  - 600#0
+  - 1795#0
+  - 2002#0
+  keyword_hits: []
+- id: G66
+  quadrant: negative
+  top5:
+  - 2658#0
+  - 1619#0
+  - 138#0
+  - 2424#0
+  - 1717#1
+  filtered_out: []
+  recall_at5: null
+  best_relevance: irrelevant
+  min_relevance: null
+  citation_in_hits: null
+  must_refuse: pass
+  gate_action: refuse
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2658#0
+  - 1619#0
+  - 138#0
+  - 2424#0
+  - 1717#1
+  - 1810#1
+  - 2213#0
+  - 381#3
+  - 2658#2
+  - 2165#1
+  keyword_hits: []
+- id: G67
+  quadrant: negative
+  top5:
+  - 138#0
+  - 2141#0
+  - 2102#0
+  - 371#0
+  - 63#0
+  filtered_out: []
+  recall_at5: null
+  best_relevance: irrelevant
+  min_relevance: null
+  citation_in_hits: null
+  must_refuse: pass
+  gate_action: refuse
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 138#0
+  - 2141#0
+  - 2102#0
+  - 371#0
+  - 63#0
+  - 2323#1
+  - 1619#0
+  - 1170#0
+  - 2141#1
+  - 997#3
+  keyword_hits: []
+- id: G72
+  quadrant: negative
+  top5:
+  - 1785#3
+  - 2204#2
+  - 1989#18
+  - 1989#11
+  - 1818#0
+  filtered_out: []
+  recall_at5: null
+  best_relevance: irrelevant
+  min_relevance: null
+  citation_in_hits: null
+  must_refuse: pass
+  gate_action: refuse
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1785#3
+  - 2204#2
+  - 1989#18
+  - 1989#11
+  - 1818#0
+  - 2084#0
+  - 2194#0
+  - 2194#3
+  - 319#2
+  - 1000#0
+  keyword_hits: []
+- id: G73
+  quadrant: zh2en
+  top5:
+  - 1619#0
+  - 1810#0
+  - 140#1
+  - 140#4
+  - 1479#1
+  filtered_out: []
+  recall_at5: fail
+  best_relevance: exact
+  min_relevance: fail
+  citation_in_hits: fail
+  must_refuse: null
+  gate_action: answer
+  verdict: fail
+  fail_reasons:
+  - 'recall@5: {''source_type'': ''issue'', ''source_id'': ''157''} not in top'
+  - 'min_relevance: expect_hit 未召回，无法评级'
+  - 'citation_in_hits: expect_hit 不在命中集'
+  semantic_hits:
+  - 1619#0
+  - 1810#0
+  - 140#1
+  - 140#4
+  - 1479#1
+  - 453#3
+  - 1810#1
+  - 381#3
+  - 2084#0
+  - 237#7
+  keyword_hits: []
+- id: G68
+  quadrant: negative
+  top5:
+  - 1818#0
+  - 05-plan/01-epic-task-backlog.md#5
+  - 05-plan/00-migration-roadmap.md#7
+  - 489#21
+  - 2102#0
+  filtered_out: []
+  recall_at5: null
+  best_relevance: irrelevant
+  min_relevance: null
+  citation_in_hits: null
+  must_refuse: pass
+  gate_action: refuse
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 1818#0
+  - 05-plan/01-epic-task-backlog.md#5
+  - 05-plan/00-migration-roadmap.md#7
+  - 489#21
+  - 2102#0
+  - 1821#0
+  - 904#1
+  - 2716#0
+  - 55#0
+  - 1583#7
+  keyword_hits: []
+- id: G69
+  quadrant: negative
+  top5:
+  - 2631#0
+  - 694#3
+  - 2631#2
+  - 2631#1
+  - 694#2
+  filtered_out: []
+  recall_at5: null
+  best_relevance: irrelevant
+  min_relevance: null
+  citation_in_hits: null
+  must_refuse: pass
+  gate_action: refuse
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2631#0
+  - 694#3
+  - 2631#2
+  - 2631#1
+  - 694#2
+  - 1795#0
+  - 1795#1
+  - 1523#0
+  - 371#9
+  - 2624#2
+  keyword_hits: []
+- id: G70
+  quadrant: negative
+  top5:
+  - 2022#1
+  - 647#0
+  - 1093#0
+  - 2022#0
+  - 1780#1
+  filtered_out: []
+  recall_at5: null
+  best_relevance: irrelevant
+  min_relevance: null
+  citation_in_hits: null
+  must_refuse: pass
+  gate_action: refuse
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2022#1
+  - 647#0
+  - 1093#0
+  - 2022#0
+  - 1780#1
+  - 1075#0
+  - 1714#0
+  - 1494#1
+  - 400#0
+  - 2722#4
+  keyword_hits: []
+- id: G71
+  quadrant: negative
+  top5:
+  - 453#3
+  - 2547#4
+  - 2464#4
+  - 2434#0
+  - 2547#2
+  filtered_out: []
+  recall_at5: null
+  best_relevance: relevant
+  min_relevance: null
+  citation_in_hits: null
+  must_refuse: fail
+  gate_action: answer_partial
+  verdict: fail
+  fail_reasons:
+  - 'max_relevance: got relevant > weak'
+  - 'must_refuse: gate_action=answer_partial'
+  semantic_hits:
+  - 453#3
+  - 2547#4
+  - 2464#4
+  - 2434#0
+  - 2547#2
+  - 05-plan/01-epic-task-backlog.md#7
+  - 1810#0
+  - 2547#3
+  - 2641#1
+  - 2547#1
+  keyword_hits: []
+summary:
+  pass: 51/73
+  recall_at5_by_quadrant:
+    en2en: 15/16
+    zh2en: 19/26
+    zh2zh: 17/20
+  negative_refuse: 7/11
+  grade_stability_agree: null
+  measurement_source: observed
+  confidence: low
+  comparability: not_comparable
+  partial: false
+  completed: 73
+  arm: normal
+  rerank_enabled: false
+  recall_k_each: 10
+  coarse_top_n: 15
+  grader_prompt: v1
