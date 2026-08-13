@@ -8,19 +8,14 @@
 
 ## 00 已做
 
-- 代签 `HG-TASK-DRAFT=approved`
-- 派发 **20-task-audit** 子 agent
-- 接受 C1–C3 → 代签 `HG-AUDIT-R1=approved`
-- 派发 **30** → P0 `23508e8`
-- 派发 **40/P1** → 现网冒烟 `2a4684a`
-- 派发 **40b** → 金样+80 万 `2f4dfe1`（核对：800k P95≈867ms **FAIL**；RSS 过门；金样 flash≠max）
+- 代签闸；派 20 / 30 / 40 / 40b / **40c**
+- 40c：`c35873a` · Qdrant+CE floor04 金样 vs `r4-R-floor04` → **pass 47/73 vs 57/73**，neg 10/11 vs 11/11
 
 ## 00 裁决（未关账）
 
-- **禁止切流**（SPEC failure_paths：P95 门禁未过）
-- 可合入：**开关化能力 + 实验证据**（默认仍 pgvector）
-- 关账选项待维护者：① 按「P0 交付 + 停迁证据」关账开 PR；② 再生产盘/SQ int8 复测后再关
+- 40c **劣于** pgvector+floor04 → **禁止据此默认切流**
+- 若技术方案仍要切 Qdrant：须先查 47 vs 57 差分（dense 排序/hydrate/CE 输入差异），再复测；不可忽略金样回退
 
-## 00 禁止
+## 00 待维护者
 
-- 不写业务码、不跑压测（交子 agent）
+- ① 查差分后复测再切；② 仍强制切流（接受质量回退，书面签字）；③ 按「能力合入、默认 pgvector」关账开 PR
