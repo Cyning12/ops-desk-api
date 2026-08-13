@@ -155,7 +155,7 @@ fio、RSS 双门、P95、对账、bench 双臂、金样、回滚、非阻塞影�
 
 ### 自检结论
 
-> 00 编排回填 · 30 P0 + 40 P1 + 40b + **40c Qdrant+CE floor04 金样** · **未关账**（800k P95 未过门；floor04 总 pass 劣于基线）。
+> 00 编排回填 · 30 P0 + 40 P1 + 40b + 40c + **40d grader v1 公平重跑** · **未关账**（800k P95 未过门；v1 收回 40c 假性回退，相对 floor04 仍差 2 pass）。
 
 - [x] SPEC v1.1 已签（HG-SPEC-SIGNOFF=approved）
 - [x] task 含验收 / failure_paths / 非范围 / compare_with 锁死
@@ -165,6 +165,7 @@ fio、RSS 双门、P95、对账、bench 双臂、金样、回滚、非阻塞影�
 - [x] P1（部分）：现网 **N=8574** 全链路 fio→upsert→reconcile→bench 绿；invoke `invoke_20260813_40_p1_qdrant-migration.md`
 - [x] P1-40b：金样纠偏 FTS=`simple` · `reports/r4-qdrant-p1.yaml`；合成扩样 **N=800000** → `ops_knowledge_scale`；RSS 过门 / P95 **未过** · invoke `invoke_20260813_40b_p1_scale_golden.md`
 - [x] P1-40c：Qdrant+CE floor04 金样 · `reports/r4-qdrant-R-floor04.yaml` · pass **47/73**（基线 floor04 **57/73**）· neg 10/11 vs 11/11 · zh2zh/zh2en 并列 · en2en 15/16>14/16 · grader=flash · invoke `invoke_20260813_40c_qdrant_floor04_golden.md` · **未关账**
+- [x] P1-40d：公平重跑 grader **v1** · `reports/r4-qdrant-R-floor04-v1.yaml` · pass **55/73**（基线 57；40c/v2 为 47）· neg **11/11** · 召回并列/en2en 优 · identical top5 下 v2→v1 flip +8 · invoke `invoke_20260813_40d_qdrant_floor04_grader_v1.md` · **未关账** · **不切流**
 - [ ] DLQ cron replayer（可选）
 - [ ] 关账（00 执行 · 待峰值/金样或维护者指示）
 
@@ -180,3 +181,4 @@ fio、RSS 双门、P95、对账、bench 双臂、金样、回滚、非阻塞影�
 | 2026-08-13 | 30 P0 交卷 `23508e8`；00 核对 verify/单测；**暂不关账**（待 P1 或人令） |
 | 2026-08-13 | 40 P1 现网规模冒烟：N=8574 对账/bench/fio 绿；未达 80 万；金样 skip（无 chinese FTS）；invoke_20260813_40_p1 |
 | 2026-08-13 | 40c：Qdrant+CE floor04 金样 `r4-qdrant-R-floor04.yaml` pass 47/73（基线 57/73）；invoke_20260813_40c；**未关账** |
+| 2026-08-13 | 40d：grader v1 公平重跑 `r4-qdrant-R-floor04-v1.yaml` pass 55/73（基线 57；收回 40c/v2 假性 −10）；invoke_20260813_40d；**未关账** |
