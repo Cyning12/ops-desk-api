@@ -9,14 +9,15 @@
 ## 00 已做
 
 - 代签 `HG-TASK-DRAFT=approved`
-- 派发 **20-task-audit** 子 agent（本 invoke 时刻）
+- 派发 **20-task-audit** 子 agent
+- 接受 C1–C3 → 代签 `HG-AUDIT-R1=approved`
+- 派发 **30** 子 agent → P0 交卷 `23508e8`
+- 核对：verify PASS · `tests/test_rag_qdrant_backend.py` 9 passed
 
-## 00 将做（条件触发）
+## 00 待做
 
-- 20 审查文落盘且结论 pass/conditional_pass → 代签 `HG-AUDIT-R1=approved`
-- 派发 **30** 子 agent（实现）
-- 验收齐备后 **关账**（仅此由 00 执行）
+- **关账**：待 P1（fio/灌库/金样）完成，或维护者指示「按 P0 关账」
 
 ## 00 禁止
 
-- 不写业务码、不跑 fio/灌库/压测、不改 compose 实现细节（交 30 子 agent）
+- 不写业务码、不跑 fio/灌库/压测（交子 agent）

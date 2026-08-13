@@ -155,13 +155,16 @@ fio、RSS 双门、P95、对账、bench 双臂、金样、回滚、非阻塞影�
 
 ### 自检结论
 
-> 00 起草自检 · 30 开工前须 HG-AUDIT-R1=approved 并回填本区。
+> 00 编排回填 · 30 由子 agent 交付 P0 · **未关账**（P1 实测未齐）。
 
 - [x] SPEC v1.1 已签（HG-SPEC-SIGNOFF=approved）
 - [x] task 含验收 / failure_paths / 非范围 / compare_with 锁死
 - [x] HG-TASK-DRAFT approved（00 代签 · 维护者授权）
 - [x] HG-AUDIT-R1 approved（00 代签 · 接受 20 审 C1–C3）
-- [x] 00 不执行 30；实现交子 agent
+- [x] 30 P0 已交（`23508e8` · [30 实现](130d18e3-ff25-42ef-96c0-e7a582ba341b)）：Flag/hydrate/影子写+DLQ/脚本/单测 9 passed · verify PASS
+- [ ] P1：真实 fio / 80 万灌库 / bench 双臂实测 / 金样 vs r4-2（脚本具备，本机未跑通）
+- [ ] DLQ cron replayer（可选）
+- [ ] 关账（00 执行 · 待 P1 或维护者指示「按 P0 关账」）
 
 ---
 
@@ -172,3 +175,4 @@ fio、RSS 双门、P95、对账、bench 双臂、金样、回滚、非阻塞影�
 | 2026-08-13 | 00 起草：承接 SPEC v1.1 人签；闸 pending；禁止 30 |
 | 2026-08-13 | 维护者授权 00 代签全部人闸；00 除关账外不实现；HG-TASK-DRAFT=approved；派 20 子 agent |
 | 2026-08-13 | 20 审 conditional_pass（C1–C3）；00 代签 HG-AUDIT-R1=approved；派 30 子 agent |
+| 2026-08-13 | 30 P0 交卷 `23508e8`；00 核对 verify/单测；**暂不关账**（待 P1 或人令） |
