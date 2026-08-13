@@ -1,0 +1,9 @@
+status: "skipped"
+baseline: "pgvector"
+compare_with: "reports/r4-2.yaml"
+pgvector_search_p95_ms: None
+qdrant_search_p95_ms: None
+p95_budget_ms: 150
+note: "未在本机跑通原因：--skip-live；维护者环境无生产盘/无全量语料时仅校验脚本入口"
+recorded_at: "2026-08-13T08:18:26.387114+00:00"
+rerank_enabled_required: False

@@ -19,8 +19,8 @@
 | **test_strategy_note** | fio 门禁；对账 L∞+Top-k；构建期/稳态 RSS；Flag 回滚单测；bench `--baseline pgvector`；金样 vs `reports/r4-2.yaml` |
 | **code_quality_bar** | `standard` |
 | **graph_change_layer** | `G-L1` |
-| **graph_delta** | `pending` |
-| **graph_delta_note** | 稠密检索后端可切换（pgvector\|qdrant）；实现时更新 `docs/_tech_graph/` 对应模块说明 |
+| **graph_delta** | `docs/_tech_graph/l1/01_modules.md` |
+| **graph_delta_note** | 增 `rag` 模块与 `RetrievedChunk`/`RAG_VECTOR_BACKEND` 契约（默认仍 pgvector） |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本波不改 coding_wiki；运维说明可落 experiments/ 或 docs 短文 |
 | **review_hat** | `20` |

@@ -17,6 +17,27 @@ services:
       timeout: 5s
       retries: 5
 
+  # Qdrant v1.13.6：稠密向量副本（默认读仍走 pgvector，见 RAG_VECTOR_BACKEND）
+  # 生产目标机 2C4G：建议 mem_limit≈3.5g，留余量给 API/PG；切流前须过 fio/RSS/P95 门禁
+  qdrant:
+    image: qdrant/qdrant:v1.13.6
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: 6334
+    # 本地开发可不设 limit；生产对齐 SPEC 2C4G 预算：
+    # deploy.resources.limits.memory: 3584M
+    # deploy.resources.limits.cpus: "2.0"
+    mem_limit: 3584m
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build: .
     ports:
@@ -31,11 +52,19 @@ services:
       BAILIAN_MODEL: ${BAILIAN_MODEL:-qwen-plus}
       OPS_DESK_SECRET: ${OPS_DESK_SECRET:-change-me}
       OPS_DESK_AUTH_MODE: ${OPS_DESK_AUTH_MODE:-db}
+      # 默认 pgvector；切流前保持 false / pgvector
+      RAG_VECTOR_BACKEND: ${RAG_VECTOR_BACKEND:-pgvector}
+      RAG_QDRANT_SHADOW_WRITE: ${RAG_QDRANT_SHADOW_WRITE:-false}
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-ops_knowledge}
     depends_on:
       db:
         condition: service_healthy
+      qdrant:
+        condition: service_started
     command: >
       sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
 volumes:
   pgdata:
+  qdrant_data:

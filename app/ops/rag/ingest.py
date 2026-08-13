@@ -22,6 +22,12 @@ from app.ops.rag.chunker import HARD_TOKEN_LIMIT, chunk_markdown, truncate_middl
 from app.ops.rag.clean import clean_markdown
 from app.ops.rag.embedder import Embedder
 from app.ops.rag.prefix import build_prefix, embed_text
+from app.ops.rag.shadow_write import (
+    ShadowPoint,
+    enqueue_shadow_delete,
+    enqueue_shadow_upsert,
+    filter_payload,
+)
 from app.ops.rag.tokenizer import TokenCounter
 
 logger = logging.getLogger(__name__)
@@ -152,11 +158,17 @@ _DELETE_BY_KEY = text(
     "WHERE repo = :repo AND source_type = :stype AND source_id = :sid"
 )
 
+_SELECT_IDS_BY_KEY = text(
+    "SELECT id FROM ops_knowledge_chunks "
+    "WHERE repo = :repo AND source_type = :stype AND source_id = :sid"
+)
+
 _INSERT_CHUNK = text(
     "INSERT INTO ops_knowledge_chunks "
     "(repo, source_type, source_id, chunk_index, content, metadata, images, content_hash, embedding) "
     "VALUES (:repo, :stype, :sid, :idx, :content, "
-    "CAST(:meta AS jsonb), CAST(:images AS jsonb), :hash, CAST(:vec AS vector))"
+    "CAST(:meta AS jsonb), CAST(:images AS jsonb), :hash, CAST(:vec AS vector)) "
+    "RETURNING id"
 )
 
 
@@ -218,9 +230,16 @@ def ingest(
             (u, idx, content, media, vec)
         )
     for (repo, stype, sid), rows in by_key.items():
+        old_ids = [
+            int(r.id)
+            for r in session.execute(
+                _SELECT_IDS_BY_KEY, {"repo": repo, "stype": stype, "sid": sid}
+            )
+        ]
         session.execute(_DELETE_BY_KEY, {"repo": repo, "stype": stype, "sid": sid})
+        shadow_points: list[ShadowPoint] = []
         for u, idx, content, media, vec in rows:
-            session.execute(
+            new_id = session.execute(
                 _INSERT_CHUNK,
                 {
                     "repo": repo,
@@ -240,15 +259,40 @@ def ingest(
                     "hash": u.content_hash,
                     "vec": json.dumps(vec),
                 },
+            ).scalar_one()
+            shadow_points.append(
+                ShadowPoint(
+                    point_id=int(new_id),
+                    vector=list(vec),
+                    payload=filter_payload(
+                        source_type=stype,
+                        repo=repo,
+                        source_id=sid,
+                        chunk_index=idx,
+                    ),
+                )
             )
+        # PG 先提交；影子写失败不得回滚
         session.commit()
+        if old_ids:
+            enqueue_shadow_delete(old_ids)
+        enqueue_shadow_upsert(shadow_points)
         report["chunks_written"] += len(rows)
         logger.info("upsert %s %s：%d chunks", stype, sid, len(rows))
 
     # 4) 全集对账：源里消失的单元，chunk 表删除（墓碑清理）
+    stale_ids: list[int] = []
     for repo, stype, sid in stale:
+        stale_ids.extend(
+            int(r.id)
+            for r in session.execute(
+                _SELECT_IDS_BY_KEY, {"repo": repo, "stype": stype, "sid": sid}
+            )
+        )
         session.execute(_DELETE_BY_KEY, {"repo": repo, "stype": stype, "sid": sid})
     if stale:
         session.commit()
+        if stale_ids:
+            enqueue_shadow_delete(stale_ids)
 
     return report
