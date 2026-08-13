@@ -87,11 +87,16 @@ class TestLoadIssueContextNode:
 
 class TestBuildMessages:
     def test_includes_system_prompt(self):
+        from app.ops.rag.grader import REFUSAL_TEXT
+
         state = _make_state(query="hello")
         messages = _build_messages(state)
 
         assert messages[0].role == "system"
         assert "Ops Desk" in messages[0].content
+        assert "[类型 编号]" in messages[0].content
+        assert REFUSAL_TEXT in messages[0].content
+        assert "[1]" not in messages[0].content  # 禁止与资料标题冲突的纯序号引用
         assert messages[-1] == LlmMessage(role="user", content="hello")
 
     def test_includes_issue_context(self):
@@ -102,8 +107,30 @@ class TestBuildMessages:
         messages = _build_messages(state)
 
         assert messages[1].role == "user"
+        assert "### 资料 [issue 1]" in messages[1].content
         assert "Bug" in messages[1].content
         assert messages[2] == LlmMessage(role="user", content="summarize")
+
+    def test_retrieved_partial_note(self):
+        from types import SimpleNamespace
+
+        chunk = SimpleNamespace(
+            source_type="issue",
+            anchor="2720",
+            content="doc-context: x\n\n证据正文",
+        )
+        state = _make_state(
+            query="q",
+            retrieved=[chunk],
+            gate_action="answer_partial",
+        )
+        messages = _build_messages(state)
+        body = messages[1].content
+        assert "### 资料 [issue 2720]" in body
+        assert "仅部分证据" in body
+        assert "不要因此拒答" in body
+        # 引用规则只在 system，避免与资料消息重复冲突
+        assert "[类型 编号]" not in body
 
     def test_truncates_long_body(self):
         state = _make_state(
