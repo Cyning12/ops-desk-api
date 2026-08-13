@@ -1,8 +1,8 @@
 # Task：RAG 关键词路 A 臂——zhparser 中文分词对照实验
 
-> **状态**：active（实测完成 · 裁决弃 A→C · A 入口保留 · 待 close）  
+> **状态**：completed  
 > **类型**：对照实验（契约 Q6 裁决链路 · A/C 互斥候选）  
-> **关联**：契约 Q6 · `experiments/rag_compare/` · 基准 `reports/r4-2.yaml` · D 臂 `reports/r4-D.yaml`  
+> **关联**：契约 Q6 · `experiments/rag_compare/` · 基准 `reports/r4-2.yaml` · D 臂 `reports/r4-D.yaml` · 定稿 `reports/r4-A.yaml`  
 > **分支**：`task/rag-zhparser-arm-a`（自 `master` 新开）
 
 ---
@@ -155,7 +155,7 @@ r4-A vs r4-2 / r4-D；**主看 zh2zh**（中文 query × 中文/混合 docs）�
 
 - [x] `SELECT to_tsvector('chinese', 'Kimi Code 自动压缩被取消')` 中文词素已拆开（维护者实跑）
 - [x] `reports/r4-A.yaml` 产出，与 r4-2 / r4-D 同表对比（分象限 recall@5 + kw 命中率）
-- [ ] 结论回写契约 Q6 + `experiments/rag_compare/README.md`（裁决已定：弃 A→C；契约正文回写可随 C 臂一并）
+- [x] 结论回写：`experiments/rag_compare/README.md` + `REPORT_q6_arms_vs_baseline_20260812.md`（裁决弃 A→C；契约正文随 C 臂）
 - [x] 未碰主库/生产数据与生产镜像
 
 **实测结论（2026-08-12 · 相对 r4-2）**：
@@ -244,7 +244,24 @@ r4-A vs r4-2 / r4-D；**主看 zh2zh**（中文 query × 中文/混合 docs）�
 
 **维护者实跑**：docker build · 影子库探针 · COPY 8574 · `reports/r4-A.yaml`（日志恢复 + 逐条落盘改造）。
 
+**交付摘要**：A 臂对照完成 · zh2zh +0pp → **弃 A 上生产、转 C** · 保留 `Dockerfile.pg-zhparser` / `zhparser_arm_a/` / `RAG_FTS_CONFIG=chinese`（默认仍 `simple`）。
+
 ---
+
+### KPI
+
+| 项 | 分 |
+|---|---|
+| Task_KPI% | 100 |
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-13 |
+| 定稿 | zh2zh +0pp · 弃 A→C · `reports/r4-A.yaml` |
+| 归档 | `docs/tasks/done/task_rag_zhparser_arm_a.md` |
+| A 入口 | 保留（不删）；生产 FTS 默认仍 `simple` |
 
 ## 修订
 
@@ -255,5 +272,6 @@ r4-A vs r4-2 / r4-D；**主看 zh2zh**（中文 query × 中文/混合 docs）�
 | 2026-08-12 | HG-AUDIT-R1 签收；派 30/40；实跑镜像/灌库/r4-A 留给维护者 |
 | 2026-08-12 | 50 初验 PASS（附条件）；补 graph_delta_note；实跑仍待维护者 |
 | 2026-08-12 | 实测 r4-A：zh2zh +0pp、kw 仍死 → **弃 A 转 C**；保留 `RAG_FTS_CONFIG` / Dockerfile / 影子脚本入口 |
+| 2026-08-13 | 关账：验收全勾 · KPI · CLOSE；归档 done |
 
 

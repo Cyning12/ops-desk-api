@@ -5,7 +5,7 @@
 加载失败 fail-closed：回退粗排 top-5。
 
 过滤策略（方案 B）：
-1. 顶分地板 ``RAG_RERANK_MIN_SCORE``（默认 0.6）：``max(score) < 地板`` → 空列表（真空拒答）
+1. 顶分地板 ``RAG_RERANK_MIN_SCORE``（默认 0.4）：``max(score) < 地板`` → 空列表（真空拒答）
 2. 相对顶分 ``RAG_RERANK_SCORE_RATIO``（默认 0.75）：保留 ``score >= max * ratio``
 """
 from __future__ import annotations
@@ -24,7 +24,7 @@ DEFAULT_RERANK_MODEL = "BAAI/bge-reranker-v2-m3"
 DEFAULT_CANDIDATES = 20
 DEFAULT_K_EACH = 20
 DEFAULT_TOP_N = 5
-DEFAULT_MIN_SCORE = 0.6
+DEFAULT_MIN_SCORE = 0.4
 DEFAULT_SCORE_RATIO = 0.75
 
 _cross_encoder = None

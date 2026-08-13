@@ -61,7 +61,7 @@ def test_candidates_and_k_each_defaults_and_override(monkeypatch: pytest.MonkeyP
 
 
 def test_rerank_floor_and_ratio_defaults_and_override(monkeypatch: pytest.MonkeyPatch):
-    assert rerank_min_score() == 0.6
+    assert rerank_min_score() == 0.4
     assert rerank_score_ratio() == 0.75
     monkeypatch.setenv("RAG_RERANK_MIN_SCORE", "0.45")
     monkeypatch.setenv("RAG_RERANK_SCORE_RATIO", "0.8")
