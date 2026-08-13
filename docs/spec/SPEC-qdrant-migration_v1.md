@@ -1,9 +1,9 @@
 # SPEC：Qdrant Migration —— pgvector → Qdrant（稠密向量主路）（v1.1）
 
-> **状态**：`draft`（HG-SPEC-SIGNOFF=pending · **禁止 00/30 改码**）  
+> **状态**：`accepted`（HG-SPEC-SIGNOFF=**approved** · 2026-08-13 维护者签收 v1.1）  
 > **track**：`infra`（向量存储迁移 · 架构解耦）  
 > **上游**：现网 `ops_knowledge_chunks`（pgvector 0.8.5 · BGE-M3@1024 · N≈8,574）  
-> **下游**：人签 SPEC → 00 出 task → **fio 摸盘** → 实验/压测 → 影子双写 → 切流 → 回滚演练  
+> **下游**：00 出 task → 20-task-audit + HG-AUDIT-R1 → 30（**fio 摸盘** → 压测 → 影子双写 → 切流）  
 > **Open Folder（实现）**：`ops-desk-api/`  
 > **Bounded Context**：排除 Kafka CDC；排除 GPU 加速索引；FTS / sparse 第二路本期仍留 PG；**Qdrant 不存 content/metadata/images**。  
 > **修订**：v1.1（2026-08-13）吸收三方审 + 20-audit：硬件 IOPS 硬门禁、Payload 回查 PG、构建期 mem-gate、即时降级、对账门禁纠错、影子写非阻塞、bench 双臂。
@@ -27,7 +27,7 @@
 
 | human_gate_id | status | 说明 |
 | --- | --- | --- |
-| **HG-SPEC-SIGNOFF** | pending | 维护者签收本 SPEC（含 v1.1 增量）后方可 00 出 task / 30 改码 |
+| **HG-SPEC-SIGNOFF** | approved | 维护者 2026-08-13 签收 v1.1；00 可出 task；**30 仍须** HG-AUDIT-R1 |
 
 ---
 
@@ -631,13 +631,14 @@ def _shadow_upsert_safe(row_id: int, vector: list[float], payload: dict) -> None
 
 ---
 
-## 6. 建议的下一步（人签后）
+## 6. 建议的下一步（签收后）
 
-1. 维护者签 `HG-SPEC-SIGNOFF=approved`（确认接受 v1.1 硬性增量）。  
+1. ~~维护者签 `HG-SPEC-SIGNOFF=approved`~~ **完成（2026-08-13）**。  
 2. 00 出 `docs/tasks/active/task_qdrant_migration.md`（含 failure_paths、compare_with=`reports/r4-2.yaml`）。  
-3. **Phase0**：fio 摸盘；不过则关闭 track。  
-4. 过盘后再灌 80 万压测（构建期+稳态 mem-gate + `--baseline pgvector`）；用实测替换仿真表。  
-5. 压测过门禁再影子双写与切流；不过则保留 pgvector。
+3. 20-task-audit → 人签 `HG-AUDIT-R1` 后方可 30。  
+4. **Phase0**：fio 摸盘；不过则关闭 track。  
+5. 过盘后再灌 80 万压测（构建期+稳态 mem-gate + `--baseline pgvector`）；用实测替换仿真表。  
+6. 压测过门禁再影子双写与切流；不过则保留 pgvector。
 
 ---
 
@@ -647,3 +648,4 @@ def _shadow_upsert_safe(row_id: int, vector: list[float], payload: dict) -> None
 | --- | --- | --- |
 | v1 | 2026-08-12 | 初稿：ADR + 自纠 + taskfile + 骨架 |
 | v1.1 | 2026-08-13 | 三方审吸收：硬件/fio 硬门禁、Payload 回查 PG、构建期 RSS、即时降级、对账纠错（`<=>`）、影子写非阻塞、bench 双臂、compare_with 锁死 |
+| v1.1-signed | 2026-08-13 | 维护者签收：`HG-SPEC-SIGNOFF=approved` · status=`accepted`；00 出 task |

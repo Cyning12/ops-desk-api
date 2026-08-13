@@ -12,8 +12,8 @@
 | 项 | 值 |
 |---|---|
 | **判定** | **conditional_pass**（R1）→ **v1.1 已覆盖 C1–C4 与三方阻塞项** |
-| **HG-SPEC-SIGNOFF** | **仍待人签**（维护者确认 v1.1 后改 `approved`；**本审不代签**） |
-| **下一棒** | 人签 → 00 起草 `task_qdrant_migration` → **禁止**在签收前 30 改码 |
+| **HG-SPEC-SIGNOFF** | **approved**（维护者 2026-08-13 口头「签收」· 已落盘 SPEC） |
+| **下一棒** | ~~人签~~ → ~~00 起草 task~~ → **20-task-audit** → 人签 `HG-AUDIT-R1` → 30 |
 
 ---
 
@@ -140,4 +140,5 @@ SPEC status：draft → accepted
 | 日期 | 说明 |
 |------|------|
 | 2026-08-13 | 20-spec-audit R1：conditional_pass；建议人签（附 C1–C4） |
-| 2026-08-13 | SPEC **v1.1** 已吸收：硬件/fio 硬门禁（C1↑）、Payload 回查 PG、构建期 mem-gate、即时降级、对账纠错、影子写非阻塞、bench `--baseline pgvector`（C4=`reports/r4-2.yaml`）。**仍待人签** `HG-SPEC-SIGNOFF`；本审不代签。 |
+| 2026-08-13 | SPEC **v1.1** 已吸收三方审阻塞项与 C1–C4。 |
+| 2026-08-13 | 维护者「签收」→ SPEC `accepted` · `HG-SPEC-SIGNOFF=approved`；00 已出 `task_qdrant_migration` |
