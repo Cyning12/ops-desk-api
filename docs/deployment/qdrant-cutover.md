@@ -1,156 +1,203 @@
-# 生产：Qdrant 切流操作清单
+# 生产：Qdrant 切流操作清单（对照现网）
 
-> **前提**：PR 合入后代码默认 `RAG_VECTOR_BACKEND=qdrant`。  
-> **写源仍是 PostgreSQL**；Qdrant 为 dense 读索引 + PG hydrate。  
-> **FTS**：生产用 `RAG_FTS_CONFIG=simple`（或省略）；**不要**设 `chinese`，除非库已装 zhparser 且 index/query 同配置。
+> **和 `01-environment-setup.md` 的关系**  
+> 那份是**第一次**买机器 / 装 Docker / 配域名 / 起 db+api。你已经做完了，**不要重做**。  
+> 本文件是：**现网已在跑**（`/opt/ops-desk/deploy` + GHA 发版 api）之后，再加一层 Qdrant 读索引。
+
+> **现网目录（与 `gha-api-deploy.md` 一致）**  
+> - 代码：`/opt/ops-desk/api`  
+> - compose：`/opt/ops-desk/deploy/docker-compose.prod.yml`  
+> - 环境变量：`/opt/ops-desk/.env`  
+> - 常用：`docker compose -f /opt/ops-desk/deploy/docker-compose.prod.yml --env-file /opt/ops-desk/.env …`
+
+> **写源仍是 PostgreSQL**；Qdrant 只存向量副本，回答内容仍从 PG hydrate。  
+> **FTS**：生产用 `simple`；**不要**设 `RAG_FTS_CONFIG=chinese`。
 
 ---
 
-## 0. 回滚一句话
+## 先建立直觉（第 2 步以后在干什么）
 
-任一步失败或 P95/金样异常：
+| 步骤 | 一句话 | 类比 |
+|---|---|---|
+| 1 | 服务器上多跑一个 Qdrant 容器 | 像当初多跑一个 `db` |
+| 2 | 建空「书架」+ DLQ 表 | collection = 空索引；DLQ = 双写失败记事本 |
+| 3 | 把 PG 里已有向量**抄一份**进 Qdrant | 全量搬家；没抄完不能切读 |
+| 4 | 新写入一边写 PG、一边异步写 Qdrant | 影子写，避免切读后落后 |
+| 5 | 改 env，让 api **读** Qdrant | 真正切流 |
+| 6 | 看健康 / 日志 / DLQ | 验收 |
+
+回滚（任意步失败）：
 
 ```bash
-# 生产 .env / compose 环境变量
+# 编辑 /opt/ops-desk/.env
 RAG_VECTOR_BACKEND=pgvector
-RAG_QDRANT_SHADOW_WRITE=false   # 可选：先停影子写再回退读
-# 然后重建 api：docker compose up -d --build api
+RAG_QDRANT_SHADOW_WRITE=false
+
+cd /opt/ops-desk/deploy
+docker compose -f docker-compose.prod.yml --env-file /opt/ops-desk/.env up -d --build api
 ```
 
-读路径即时降级也会在 Qdrant 失败时走 pgvector；Flag 回退是硬切。
-
 ---
 
-## 1. 一次性：基础设施
+## 1. 一次性：把 Qdrant 加进现网 compose
 
-| # | 操作 | 验收 |
-|---|---|---|
-| 1.1 | 部署 Qdrant **v1.13.6**（与 compose 镜像一致；生产可用同 tag） | `curl -s $QDRANT_URL/readyz` → ok |
-| 1.2 | 持久化 volume + 资源上限（compose 已有 `mem_limit` 参考） | 重启后 collection 仍在 |
-| 1.3 | 网络：api 容器能访问 `QDRANT_URL`（compose 服务名或内网地址） | api 内 `curl`/`wget` 通 |
-| 1.4 | （可选）fio 随机读门禁：`scripts/qdrant_migrate/fio_randread_gate.sh` | 按 SPEC 阈值绿 |
-
----
-
-## 2. 一次性：库表与集合
-
-在 **能连生产 PG + Qdrant** 的机器上（建议跳板 / 维护窗）：
+仓内真值：`ops-desk-workspace/deploy/docker-compose.prod.yml`（已含 `qdrant` 服务）。  
+GHA **不会**自动同步该文件，需拷到服务器：
 
 ```bash
-cd /opt/ops-desk/api   # 或本地已配好 DATABASE_URL / QDRANT_URL 的检出
-
-# 2.1 DLQ 表
-alembic upgrade head
-# 验收：\d ops_qdrant_dlq
-
-# 2.2 建 collection（HNSW on_disk；维度与现网 embedding 一致）
-python scripts/qdrant_migrate/create_collection.py
-
-# 2.3 payload 索引（过滤字段）
-python scripts/qdrant_migrate/ensure_payload_indexes.py
+# 在你本机（有 workspace 仓的机器）
+scp /Users/cyning/Desktop/Ops-desk/ops-desk-workspace/deploy/docker-compose.prod.yml \
+  ubuntu@<生产机>:/opt/ops-desk/deploy/docker-compose.prod.yml
 ```
 
----
-
-## 3. 全量灌库（现网规模）
+然后在生产机：
 
 ```bash
-# 3.1 从 PG 导出向量 JSONL
-python scripts/qdrant_migrate/export_vectors.py --out /tmp/ops_vectors.jsonl
-
-# 3.2 批量 upsert
-python scripts/qdrant_migrate/bulk_upsert.py --in /tmp/ops_vectors.jsonl
-
-# 3.3 对账
-python scripts/qdrant_migrate/reconcile.py
-# 验收：missing / extra / mismatch 为 0（或在约定阈值内）
-
-# 3.4 （可选）延迟冒烟
-python scripts/qdrant_migrate/bench_hnsw.py
+cd /opt/ops-desk/deploy
+docker compose -f docker-compose.prod.yml --env-file /opt/ops-desk/.env up -d qdrant
+docker compose -f docker-compose.prod.yml --env-file /opt/ops-desk/.env ps
+# 验收（未映射宿主机端口，用 exec）
+docker compose -f docker-compose.prod.yml --env-file /opt/ops-desk/.env \
+  exec qdrant bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333 && echo ok'
 ```
 
-**不要**在未对账通过时把读切到 qdrant。
+切流前 **不要**在 `.env` 里设 `RAG_VECTOR_BACKEND=qdrant`（compose 默认仍 `pgvector`）。  
+`api` 经 compose 网络访问 `http://qdrant:6333`。
 
 ---
 
-## 4. 影子写（双写）窗口
+## 2. 一次性：空架子（表 + collection）
 
-在切读之前或同时：
-
-| 变量 | 建议值 | 说明 |
-|---|---|---|
-| `RAG_QDRANT_SHADOW_WRITE` | `true` | ingest 提交后异步 upsert；失败入 DLQ |
-| `RAG_VECTOR_BACKEND` | 可暂 `pgvector` | 先双写、读仍 PG，观察 DLQ |
-
-验收：
+**在哪跑**：SSH 上生产机后，用 **api 容器**跑（它已有代码、依赖、能连 `db`；合入含脚本的版本后）。
 
 ```bash
-# DLQ 持续接近 0；偶发可重放
-SELECT status, count(*) FROM ops_qdrant_dlq GROUP BY 1;
+cd /opt/ops-desk/deploy
+COMPOSE="docker compose -f docker-compose.prod.yml --env-file /opt/ops-desk/.env"
+
+# 2.1 DLQ 表：重启/重建 api 时 command 里已有 alembic upgrade head
+# 若刚合入含 migration 的 master，执行一次：
+$COMPOSE up -d --build api
+# 验收：
+$COMPOSE exec db psql -U ops -d opsdesk -c '\d ops_qdrant_dlq'
+
+# 2.2 建空 collection（默认 dim=1024，与现网 embedding 一致）
+$COMPOSE exec api python scripts/qdrant_migrate/create_collection.py \
+  --url http://qdrant:6333 --name ops_knowledge
+
+# 2.3 payload 过滤字段索引
+$COMPOSE exec api python scripts/qdrant_migrate/ensure_payload_indexes.py \
+  --url http://qdrant:6333 --collection ops_knowledge
+```
+
+到这里：**Qdrant 是空的**，生产问答仍走 pgvector（只要 env 还没切）。
+
+---
+
+## 3. 全量灌库（把现有知识抄进 Qdrant）
+
+仍在生产机、仍用 api 容器：
+
+```bash
+COMPOSE="docker compose -f docker-compose.prod.yml --env-file /opt/ops-desk/.env"
+
+# 3.1 从 PG 导出（只要 id + embedding + 过滤字段，不要正文）
+$COMPOSE exec api python scripts/qdrant_migrate/export_vectors.py \
+  --out /tmp/ops_vectors.jsonl
+
+# 3.2 写入 Qdrant
+$COMPOSE exec api python scripts/qdrant_migrate/bulk_upsert.py \
+  --url http://qdrant:6333 --in /tmp/ops_vectors.jsonl
+
+# 3.3 对账：PG 有的点，Qdrant 都要有（注意参数是 --qdrant-url，不是 --url）
+$COMPOSE exec api python scripts/qdrant_migrate/reconcile.py \
+  --qdrant-url http://qdrant:6333
+# 通过标准：missing / extra / mismatch ≈ 0
+
+# 3.4 可选：延迟冒烟（默认约 200 次查询，会打生产 PG + Qdrant；不是长时间压测）
+# 灌库为 0 / 对账未过时不要跑
+$COMPOSE exec api python scripts/qdrant_migrate/bench_hnsw.py \
+  --qdrant-url http://qdrant:6333
+```
+
+**对账没绿 → 不要做第 5 步切读。**
+
+---
+
+## 4. 影子写窗口（可选但推荐）
+
+目的：切读前先让「新入库」同时进 Qdrant，避免全量抄完后又落后。
+
+在 `/opt/ops-desk/.env` 增加/修改：
+
+```bash
+RAG_QDRANT_SHADOW_WRITE=true
+RAG_VECTOR_BACKEND=pgvector          # 这一阶段读仍用 PG
+QDRANT_URL=http://qdrant:6333
+QDRANT_COLLECTION=ops_knowledge
+```
+
+```bash
+$COMPOSE up -d --build api
+$COMPOSE exec db psql -U ops -d opsdesk -c \
+  "SELECT status, count(*) FROM ops_qdrant_dlq GROUP BY 1;"
+# pending/failed 应接近 0
 ```
 
 ---
 
-## 5. 切读（生产 Flag）
+## 5. 切读（真正改 Flag）
 
-在服务器 `/opt/ops-desk/deploy` 的 `.env` / `docker-compose.prod.yml` 中设置：
+`/opt/ops-desk/.env`：
 
 ```bash
 RAG_VECTOR_BACKEND=qdrant
 RAG_QDRANT_SHADOW_WRITE=true
-QDRANT_URL=http://qdrant:6333          # 按实际改
+QDRANT_URL=http://qdrant:6333
 QDRANT_COLLECTION=ops_knowledge
-RAG_FTS_CONFIG=simple                  # 或删除该行用代码默认
+RAG_FTS_CONFIG=simple
 RAG_KW_EXPAND=false
 RAG_RERANK_ENABLED=true
 RAG_RERANK_MIN_SCORE=0.4
 RAG_RERANK_SCORE_RATIO=0.75
-RAG_GRADER_PROMPT=v1                   # 勿用 v2 做生产裁决
+RAG_GRADER_PROMPT=v1
 ```
 
-然后：
+并确认 `docker-compose.prod.yml` 的 `api.environment` **把这些变量传进容器**（仅写 `.env` 但 compose 未引用 → api 看不到）。
 
 ```bash
-cd /opt/ops-desk/deploy
-docker compose -f docker-compose.prod.yml up -d --build api
-# 若 qdrant 为 compose 服务：确保 qdrant 已 up
-curl -s https://<api-host>/health
+$COMPOSE up -d --build api
+curl -s http://127.0.0.1:8000/health
 ```
 
-合入 master 后 GHA 部署会重建 api；**务必确认生产 env 已写入上述变量**（仅靠代码默认不够，若生产仍显式写着 `pgvector`）。
+合入 master 后 GHA 只会重建 api：**不会自动起 qdrant、也不会改 `.env`**。基础设施与 Flag 仍靠本清单手工（或你后续改 deploy 脚本）。
 
 ---
 
-## 6. 切流后验收（30–60 min）
+## 6. 切流后看 30–60 分钟
 
-| # | 检查 | 通过标准 |
-|---|---|---|
-| 6.1 | `/health` | ok |
-| 6.2 | 日志无持续 `qdrant fallback to pgvector` 暴涨 | fallback 计数平稳 |
-| 6.3 | `ops_qdrant_dlq` | pending/failed 不堆积 |
-| 6.4 | 抽样问答 / 金样子集 | 与切前主观一致；正式对照用 grader **v1** |
-| 6.5 |（可选）`bench_hnsw.py` | 现网规模 P95 可接受（**不**用 80 万合成失败结果宣称峰值就绪） |
+| 检查 | 通过 |
+|---|---|
+| `/health` | ok |
+| api 日志 | 无持续 `qdrant fallback to pgvector` 暴涨 |
+| `ops_qdrant_dlq` | 不堆积 |
+| 抽样问答 | 主观正常 |
 
 ---
 
-## 7. 与 FTS / `RAG_FTS_CONFIG` 的关系
+## 7. FTS / chinese（与切流正交）
 
 | 项 | 结论 |
 |---|---|
-| 机制 | **未删除**：`RAG_FTS_CONFIG` 仍切换 FTS `regconfig` |
-| 生产 | **`simple`**（标准 `pgvector` 镜像无 zhparser） |
-| `chinese` / zhparser | **不上生产**（A 臂实验：recall 无增益、运维重）；入口保留在 `experiments/rag_compare/zhparser_arm_a/` |
-| 误配后果 | 设 `chinese` 且库无扩展 → 关键词路 `UndefinedObjectError` |
-
-第二路若开 sparse：`RAG_SECOND_PATH=sparse`（与 Qdrant dense 正交；切流清单默认保持 `fts`）。
+| `RAG_FTS_CONFIG` | 机制保留；生产 **`simple`** |
+| `chinese` | **不上生产**（需 zhparser；实验入口在 `experiments/rag_compare/zhparser_arm_a/`） |
 
 ---
 
-## 8. 常见失败
+## 8. 常见卡点
 
 | 现象 | 处理 |
 |---|---|
-| CI / 本地缺 `qdrant-client` | `requirements.txt`：`qdrant-client>=1.14.0,<2` |
-| hydrate 空结果 | 对账 missing；检查 point id = chunk id |
-| 延迟飙高 | 查磁盘 IOPS / `QDRANT_HNSW_EF`；必要时 Flag 回 `pgvector` |
-| grader 分数骤降 | 确认 `RAG_GRADER_PROMPT=v1`，勿与 v2 混比 |
+| `exec api` 找不到脚本 | 先合入/部署含 `scripts/qdrant_migrate/` 的 api |
+| 连不上 `http://qdrant:6333` | qdrant 未 up，或不在同一 compose 网络 |
+| hydrate 空 | 对账 missing；point id 必须等于 chunk id |
+| 想立刻恢复 | §0 回滚：`RAG_VECTOR_BACKEND=pgvector` |
