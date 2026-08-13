@@ -1,3 +1,13 @@
+---
+name: harness-10-spec
+description: 起草/修订 SPEC（SDD 需求规格：背景/范围/非范围/验收/failure_paths + R0–R5 思考轮回填）。当需要把模糊需求写成可签收 SPEC、或评审 SPEC 完备性时使用。不用于：实现代码；拆 task（用 harness-10-task）；bugfix 或上游 Issue 可跳过本帽。
+license: MIT
+compatibility: Requires docs/spec/ 目录约定 · SPEC_TEMPLATE
+metadata:
+  hat_id: "10-spec"
+  track: starter
+---
+
 # 帽子：10-spec · SPEC 需求分析（Harness · Starter 子集）
 
 > **hat_id（V2）**：**10-spec**（自工作区 Extended 收编进包）。  

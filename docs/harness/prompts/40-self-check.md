@@ -1,3 +1,13 @@
+---
+name: harness-40-self-check
+description: 与 30 同上下文的执行者自检闭环：逐条对照 task 验收标准标记 pass/fail、真跑验证命令并摘要退出码、回填「自检结论（执行者）」。当 30 实现完成后、交 50/CLOSE 之前使用。不用于：凭记忆声称测过（须真跑）；修改 tasks/reviews/invokes 留档；独立修复（不通过则回 30 改码重跑）。
+license: MIT
+compatibility: Requires npx @cyning/harness CLI（verify / task close）
+metadata:
+  hat_id: "40"
+  track: starter-experimental
+---
+
 # 帽子：自检（执行者）（Harness · Starter 子集）
 
 > **完整版 POINTER**（Ink 工作区）：`docs/harness/prompts/40-self-check.md`  

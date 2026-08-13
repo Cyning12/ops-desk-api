@@ -1,3 +1,13 @@
+---
+name: harness-30-execute
+description: 在 Harness task 边界内实现代码并自检（hat 30+40 闭环）。仅当存在 active task 且其人工闸表 HG-AUDIT-R1=approved、npx @cyning/harness verify --task PASS 时使用；激活后首动作必须是 GATE_VERIFY 闸扫描。不要用于：无 task 的直接改码请求；任何 blocks-30 闸 pending 的状态（此时只能输出 STOP 与签闸指引）；起草 task/SPEC（用 harness-10-task / harness-10-spec）。
+license: MIT
+compatibility: Requires npx @cyning/harness CLI（verify / task close）· docs/tasks/active/ 与 docs/harness/invokes/ 目录约定
+metadata:
+  hat_id: "30"
+  track: starter-experimental
+---
+
 # 帽子：执行编码（Harness · Starter 子集）
 
 > **完整版 POINTER**（Ink 工作区）：`docs/harness/prompts/30-execute-code.md` · `40-self-check.md`  

@@ -1,3 +1,13 @@
+---
+name: harness-20-spec-audit
+description: 书面审查 SPEC：核对范围/非范围/验收/failure_paths 与 R0–R5 思考轮控制，结论落盘 docs/harness/reviews/ 审查文。当 SPEC draft 完成、进入 HG-SPEC-SIGNOFF 人签之前使用。不用于：改 SPEC 实质内容（退回 10-spec）；审 task（用 harness-20-task-audit）；代签 human_gate（仅人）。
+license: MIT
+compatibility: Requires docs/harness/reviews/ 目录约定
+metadata:
+  hat_id: "20-spec-audit"
+  track: starter
+---
+
 # 帽子：20-spec-audit · SPEC 书面审（Harness · Starter 子集）
 
 > **hat_id（V2）**：**20-spec-audit**（自工作区 Extended 收编进包）。  

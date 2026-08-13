@@ -1,3 +1,13 @@
+---
+name: harness-10-task
+description: 起草/修订 Harness task 文件（验收标准、failure_paths、非范围、依赖、思考轮控制表 R0–R5）。当需要把一项工作拆成可执行可验收的 task、或补全 task 结构时使用。不用于：直接实现代码（那是 hat 30，且须 HG-AUDIT-R1=approved）；起草 SPEC（用 harness-10-spec）。
+license: MIT
+compatibility: Requires npx @cyning/harness CLI（task lint / verify）· docs/tasks/active/ 目录约定
+metadata:
+  hat_id: "10-task"
+  track: starter
+---
+
 # 帽子：10-task · 任务需求分析（Harness · Starter 子集）
 
 > **hat_id（V2）**：**10-task**。  
