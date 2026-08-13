@@ -1,6 +1,6 @@
 # Task Audit R1：golden-query-set-v1
 
-> **task**：`docs/tasks/active/task_golden_query_set_v1.md`  
+> **task**：`docs/tasks/active/task_golden-query-set-v1.md`  
 > **日期**：2026-08-11 · 审查：维护者签收（会话内「签收，在新分支进行」）  
 > **结论**：`pass` · 建议 `HG-AUDIT-R1=approved`
 

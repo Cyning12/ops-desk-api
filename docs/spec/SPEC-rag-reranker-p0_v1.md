@@ -108,7 +108,7 @@ embed(query)
 | `RAG_RERANK_MODEL`      | `BAAI/bge-reranker-v2-m3`         | 可覆盖                        |
 | `RAG_RERANK_CANDIDATES` | `20`                              | 粗排 top-M                   |
 | `RAG_RECALL_K_EACH`     | `20`（仅当 rerank 开启时生效；关闭时保持现网 10）  | 每路召回条数                     |
-| `RAG_RERANK_MIN_SCORE`  | `0.6`                             | 顶分地板：`max < 此值` → 真空拒答   |
+| `RAG_RERANK_MIN_SCORE`  | `0.4`                             | 顶分地板：`max < 此值` → 真空拒答（r4-R-floor04 定稿） |
 | `RAG_RERANK_SCORE_RATIO`| `0.75`                            | 相对顶分：保留 `score ≥ max * ratio` |
 
 

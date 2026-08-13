@@ -1,8 +1,8 @@
 # Task：RAG 第二路 C 臂——bge-m3 稀疏向量对照实验
 
-> **状态**：active（30/40 已交 · 50 初验 PASS 附条件 · 重嵌/r4-C 待维护者实跑）  
-> **类型**：对照实验（契约 Q6 裁决链路 · A 已否决上生产 · C 为下一候选）  
-> **关联**：契约 Q6 · A 臂 `task_rag_zhparser_arm_a.md` · 基准 `reports/r4-2.yaml` · A 实测 `reports/r4-A.yaml` · D `reports/r4-D.yaml`  
+> **状态**：completed  
+> **类型**：对照实验（契约 Q6 裁决链路 · A 已否决上生产 · C 实测结案）  
+> **关联**：契约 Q6 · `experiments/rag_compare/REPORT_q6_arms_vs_baseline_20260812.md` · 基准 `reports/r4-2.yaml` · A `reports/r4-A.yaml` · C 定稿 `reports/r4-C.yaml` · D `reports/r4-D.yaml`  
 > **分支**：`task/rag-sparse-arm-c`（自 `master` 新开；勿在 A 臂分支上直接改 C 实现）
 
 ---
@@ -99,11 +99,12 @@ export RAG_KW_EXPAND=false
 
 ## 验收标准
 
-- [ ] `sparse_embedding` 灌满 8,574 块（无 NULL）  
-- [ ] `reports/r4-C.yaml` 产出；分象限 recall@5 + 第二路命中率（sparse hits）与 r4-2 / r4-A / r4-D 同表对比  
-- [ ] A 相关入口仍可调用（`RAG_FTS_CONFIG` / 影子 zhparser 脚本未删）  
-- [ ] 结论回写契约 Q6 + `experiments/rag_compare/README.md`  
-- [ ] 未写生产库；dense 列未改  
+- [x] `sparse_embedding` 灌满 8,574 块（无 NULL）——维护者实跑；`r4-C` corpus `N=8574` + sparse 路 73/73 非空命中  
+- [x] `reports/r4-C.yaml` 产出；分象限 recall@5 + 第二路命中率（sparse hits）与 r4-2 / r4-A / r4-D 同表对比（见 Q6 报告）  
+- [x] A 相关入口仍可调用（`RAG_FTS_CONFIG` / 影子 zhparser 脚本未删）  
+- [x] 结论回写契约 Q6 + `experiments/rag_compare/README.md`（裁决：**不上默认**；开关保留）  
+- [x] 未写生产库主路径默认；dense 列未改；`RAG_SECOND_PATH` 默认仍 `fts`  
+
 
 **判读口径（预先约定 · 承接 A 否决）**：
 
@@ -157,10 +158,10 @@ export RAG_KW_EXPAND=false
 > 30/40 回填区（命令、退出码、验收摘要、已知未测项）。
 
 - [x] 闸已签 · verify PASS（`npx @cyning/harness@2.22.0 verify` → `VERIFY: PASS`）
-- [ ] sparse 列灌满 8574 / 脚本可断点 — **脚本已交付**（`embed_sparse.py` 断点续写）；**全量重嵌标维护者实跑**（本机未跑满）
+- [x] sparse 列灌满 8574 / 脚本可断点 — 脚本交付 + 维护者全量重嵌（`r4-C` corpus N=8574）
 - [x] `RAG_SECOND_PATH=sparse` 单测绿；默认 `fts` 不回归
 - [x] A 入口未删（`Dockerfile.pg-zhparser` · `zhparser_arm_a/` · `RAG_FTS_CONFIG`）
-- [ ] r4-C — **未产出完整报告**；评测命令见 `experiments/rag_compare/sparse_arm_c/README.md`（维护者实跑）
+- [x] r4-C — `reports/r4-C.yaml` completed 73/73；Q6 裁决落地
 
 **40 命令与退出码**
 
@@ -169,7 +170,23 @@ export RAG_KW_EXPAND=false
 | `uv run ruff check app/ops/rag/retrieve.py app/ops/rag/sparse_vec.py experiments/rag_compare/sparse_arm_c/embed_sparse.py tests/test_rag_second_path.py tests/test_rag_fts_config.py` | 0 |
 | `uv run pytest tests/test_rag_second_path.py tests/test_rag_fts_config.py tests/test_golden_eval_runner.py -q --tb=short` | 0（27 passed） |
 
-**交付摘要**：`RAG_SECOND_PATH`（默认 `fts`）接入 `hybrid_recall_detail`；sparse 路 SQL + `sparse_vec` 格式化/懒编码；实验目录 SQL/重嵌/README。未写生产库；未改 dense。
+**交付摘要**：`RAG_SECOND_PATH`（默认 `fts`）接入 `hybrid_recall_detail`；sparse 路 SQL + `sparse_vec` 格式化/懒编码；实验目录 SQL/重嵌/README；维护者产出 `r4-C` 与 Q6 结案（不上默认）。
+
+### KPI
+
+| 项 | 分 |
+|---|---|
+| Task_KPI% | 100 |
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-13 |
+| 定稿 | `reports/r4-C.yaml` · zh2zh 19/20（+10pp）· sparse hits 73/73 · neg 9/11 |
+| 裁决 | **不上默认**；`RAG_SECOND_PATH` 默认仍 `fts`；开关保留待控噪 |
+| 归档 | `docs/tasks/done/task_rag_sparse_arm_c.md` |
+| Q6 | `experiments/rag_compare/REPORT_q6_arms_vs_baseline_20260812.md` |
 
 ---
 
@@ -180,5 +197,6 @@ export RAG_KW_EXPAND=false
 | 2026-08-12 | 初版（AI 起草 · 待人审） |
 | 2026-08-12 | 承接 A 实测（zh2zh +0pp 弃 A）；补闸字段/判读/入口保留/`RAG_SECOND_PATH`/逐条落盘；待 HG-TASK-DRAFT |
 | 2026-08-12 | HG-TASK-DRAFT + HG-AUDIT-R1 签收；00 派 30/40 |
+| 2026-08-13 | 维护者 r4-C + Q6 裁决落地；实验结案 CLOSE（不上生产默认） |
 
 

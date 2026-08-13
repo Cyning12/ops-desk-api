@@ -8,8 +8,8 @@
 |------|-----|
 | hat_id | 30（含 40 自检） |
 | task_slug | `golden-query-set-v1` |
-| task_paths | `docs/tasks/active/task_golden_query_set_v1.md` |
-| related_review_or_none | `docs/harness/reviews/task_golden_query_set_v1_audit_R1_20260811.md` |
+| task_paths | `docs/tasks/active/task_golden-query-set-v1.md` |
+| related_review_or_none | `docs/harness/reviews/task_golden-query-set-v1_audit_R1_20260811.md` |
 | git_branch | `task/golden-query-set-v1` |
 | created_utc_or_local | 2026-08-11 |
 | notes | R-4 eval runner；复用 `hybrid_recall`/`grade_chunks`/`decide`；minimal invoke |

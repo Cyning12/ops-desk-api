@@ -5,10 +5,10 @@
 | 项 | 内容 |
 |----|------|
 | SPEC | `docs/spec/SPEC-rag-reranker-p0_v1.md`（signed） |
-| task | `docs/tasks/active/task_rag_reranker_p0.md` |
+| task | `docs/tasks/done/task_rag_reranker_p0.md`（关账） |
 | 代码 | `app/ops/rag/reranker.py` · 接入点 `app/ops/chat/rag_nodes.py::retrieve_node` |
-| 基线 | `reports/r4-2.yaml` |
-| 金样产出 | `reports/r4-R.yaml`（维护者复测） |
+| 基线 | `reports/r4-2.yaml` / 误跑对照 `reports/r4-R-misrun-no-ce.yaml` |
+| 定稿报告 | `reports/r4-R-floor04.yaml`（floor=0.4 / ratio=0.75） |
 
 ## 链路
 
@@ -25,11 +25,11 @@ embed(query)
 
 | env | 默认 | 含义 |
 |-----|------|------|
-| `RAG_RERANK_ENABLED` | `false` | 生产/合入默认关 |
+| `RAG_RERANK_ENABLED` | `false` | 生产/合入默认关（总 pass 相对 misrun +3，仍不默认开 CE） |
 | `RAG_RERANK_MODEL` | `BAAI/bge-reranker-v2-m3` | CE 模型 |
 | `RAG_RERANK_CANDIDATES` | `20` | 粗排 top-M |
 | `RAG_RECALL_K_EACH` | `20` | 每路召回（仅开启时） |
-| `RAG_RERANK_MIN_SCORE` | `0.6` | **顶分地板**：`max(score) < 此值` → 空召回拒答 |
+| `RAG_RERANK_MIN_SCORE` | `0.4` | **顶分地板**：`max(score) < 此值` → 空召回拒答 |
 | `RAG_RERANK_SCORE_RATIO` | `0.75` | **相对顶分**：保留 `score ≥ max * ratio` |
 
 依赖：根 `requirements.txt` 已有 `sentence-transformers`（`CrossEncoder`）。权重走 HF cache，约 1GB；CPU 可跑，首检延迟较高。
@@ -56,14 +56,14 @@ export RAG_GRADER_MODEL=qwen3.7-max-2026-05-20
 
 | 报告 | 含义 |
 |------|------|
-| `reports/r4-R-misrun-no-ce.yaml` | 误标归档：runner 未接 CE，实质 Normal（73） |
-| `reports/r4-R.yaml` | 方案 B 默认（floor=0.6 / ratio=0.75）：**54/73 · neg 11/11** |
-| `reports/r4-R-pre-floor.yaml` | 无地板对照（neg 掉，不采纳） |
-| `reports/r4-R-floor03.yaml` | floor=0.3 / ratio=0.75：57/73 但 **neg 10/11**（不采纳） |
-| `reports/r4-R-floor03-ratio085.yaml` | floor=0.3 / ratio=0.85：51/73 · neg 10/11（不采纳） |
-| `reports/r4-R-floor04.yaml` | floor=0.4 / ratio=0.75：**partial**（G48 grader 额度中断，不作裁决） |
+| `reports/r4-R-misrun-no-ce.yaml` | 误标归档：runner 未接 CE，实质 Normal（54/73 · neg 11/11） |
+| `reports/r4-R-pre-floor.yaml` | CE 无地板（55/73 · neg 10/11，不采纳） |
+| `reports/r4-R.yaml` | 早期方案 B floor=0.6 / 0.75（54/73 · neg 11/11） |
+| `reports/r4-R-floor03.yaml` | floor=0.3 / 0.75：57/73 但 **neg 10/11**（G71 漏，不采纳） |
+| `reports/r4-R-floor03-ratio085.yaml` | floor=0.3 / 0.85：51/73 · neg 10/11（不采纳） |
+| `reports/r4-R-floor04.yaml` | **定稿**：floor=0.4 / 0.75 · **57/73 · neg 11/11 · G71 pass** |
 
-合入默认仍为 `RAG_RERANK_ENABLED=false`（未达「总 pass +2 且 neg 不掉」）。
+合入默认仍为 `RAG_RERANK_ENABLED=false`；过滤初始值按 floor04 定为 **0.4 / 0.75**。
 
 对比脚本：`experiments/rag_compare/reranker_p0/compare_r4r.py`
 
@@ -72,4 +72,4 @@ export RAG_GRADER_MODEL=qwen3.7-max-2026-05-20
 | 日期 | 说明 |
 |------|------|
 | 2026-08-12 | 首版（P0 CE · 默认 false） |
-| 2026-08-13 | 归档 floor 0.3/0.4 与 ratio=0.85 消融；默认参数仍 0.6/0.75 |
+| 2026-08-13 | 消融 floor 0.3/0.4 与 ratio=0.85；**定稿 floor=0.4 / ratio=0.75**；关账 |
