@@ -1,10 +1,11 @@
 # Task：Qdrant Migration（pgvector dense 主路 → Qdrant）
 
-> **状态**：active（00 起草 · 待 HG-TASK-DRAFT / HG-AUDIT-R1）  
+> **状态**：active（闸由 00 代签推进 · 实现交子 agent · 00 仅关账）  
 > **类型**：infra（向量存储迁移 · 架构解耦）  
 > **关联**：`docs/spec/SPEC-qdrant-migration_v1.md`（v1.1 · HG-SPEC-SIGNOFF=approved）· 审查 `docs/harness/reviews/spec_qdrant-migration_audit_R1_20260813.md`  
 > **分支**：`task/qdrant-migration`  
-> **合入**：走 PR（禁直推 master）
+> **合入**：走 PR（禁直推 master）  
+> **编排授权（2026-08-13 维护者）**：00 可代签本 task 全部人闸；**00 除关账外不改业务码/不跑实现**，20/30/40 交子 agent。
 
 ---
 
@@ -31,8 +32,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 | --- | --- | --- | --- |
-| HG-TASK-DRAFT | pending | 22-R1 | 维护者确认 task 范围/阶段与 SPEC v1.1 一致 |
-| HG-AUDIT-R1 | pending | 30 | 20-task-audit 书面审通过并人签后方可改码 |
+| HG-TASK-DRAFT | approved | 22-R1 | **00 代签**（维护者 2026-08-13 授权代签全部人闸）· 范围对齐 SPEC v1.1 |
+| HG-AUDIT-R1 | approved | 30 | **00 代签**（维护者授权）· 审查 `docs/harness/reviews/task_qdrant_migration_audit_R1_20260813.md` · 接受 C1–C3 |
 
 ---
 
@@ -69,6 +70,9 @@
 | 构建峰值 RSS | **≤ 3.8GB** |
 | Qdrant search P95 | **&lt; 150ms**（80 万 / Top-10 + filter） |
 | 磁盘 | fio 过门禁或预配 IOPS ≥ 5000；否则禁止切流 |
+| 金样 | **`RAG_RERANK_ENABLED=false`**（C1） |
+| 影子写覆盖 | ingest 的 upsert **与** delete/整组替换 → Qdrant 删点入队；本期写入口仅 `ingest`（C2） |
+| 磁盘数值 | IOPS≥3000 且 p95≤1ms，或预配≥5000；以 SPEC 硬性增量为准（C3） |
 
 ## 实施步骤（30 顺序 · 闸签后）
 
@@ -155,9 +159,9 @@ fio、RSS 双门、P95、对账、bench 双臂、金样、回滚、非阻塞影�
 
 - [x] SPEC v1.1 已签（HG-SPEC-SIGNOFF=approved）
 - [x] task 含验收 / failure_paths / 非范围 / compare_with 锁死
-- [ ] HG-TASK-DRAFT approved
-- [ ] HG-AUDIT-R1 approved（20-task-audit 落盘）
-- [ ] 30 未提前开工
+- [x] HG-TASK-DRAFT approved（00 代签 · 维护者授权）
+- [x] HG-AUDIT-R1 approved（00 代签 · 接受 20 审 C1–C3）
+- [x] 00 不执行 30；实现交子 agent
 
 ---
 
@@ -166,3 +170,5 @@ fio、RSS 双门、P95、对账、bench 双臂、金样、回滚、非阻塞影�
 | 日期 | 说明 |
 | --- | --- |
 | 2026-08-13 | 00 起草：承接 SPEC v1.1 人签；闸 pending；禁止 30 |
+| 2026-08-13 | 维护者授权 00 代签全部人闸；00 除关账外不实现；HG-TASK-DRAFT=approved；派 20 子 agent |
+| 2026-08-13 | 20 审 conditional_pass（C1–C3）；00 代签 HG-AUDIT-R1=approved；派 30 子 agent |
