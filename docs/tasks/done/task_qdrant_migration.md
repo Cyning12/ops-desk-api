@@ -1,11 +1,12 @@
 # Task：Qdrant Migration（pgvector dense 主路 → Qdrant）
 
-> **状态**：active（闸由 00 代签推进 · 实现交子 agent · 00 仅关账）  
+> **状态**：completed（00 关账 · 维护者授权开 PR）  
 > **类型**：infra（向量存储迁移 · 架构解耦）  
 > **关联**：`docs/spec/SPEC-qdrant-migration_v1.md`（v1.1 · HG-SPEC-SIGNOFF=approved）· 审查 `docs/harness/reviews/spec_qdrant-migration_audit_R1_20260813.md`  
 > **分支**：`task/qdrant-migration`  
 > **合入**：走 PR（禁直推 master）  
-> **编排授权（2026-08-13 维护者）**：00 可代签本 task 全部人闸；**00 除关账外不改业务码/不跑实现**，20/30/40 交子 agent。
+> **编排授权（2026-08-13 维护者）**：00 可代签本 task 全部人闸；**00 除关账外不改业务码/不跑实现**，20/30/40 交子 agent。  
+> **关账口径**：P0 能力交付；现网规模金样 Qdrant+floor04+grader v1≈pg（55/73 vs 57/73）；**代码默认仍 pgvector**；切流由部署 env；**不宣称 80 万 P95 已过**。
 
 ---
 
@@ -90,11 +91,11 @@
 - [x] 对账：抽样 ≥500，L∞ &lt; 1e-5；Top-5 重叠 ≥ 95%；count 差 = 0 · **全量 N=8574** · `reconcile_p1_20260813.yaml`  
 - [x] 构建期峰值 ≤ 3.8GB；稳态 &lt; 3.2GB · N=8574 upsert peak **286.6MiB**；**80 万** peak **3430.4MiB** / 稳态 ≈1.2GiB · `expand_rss.json`  
 - [x] bench：N=8574 双臂 P95 **14.62ms** · `reports/qdrant_bench.yaml`；**80 万** Top-10 P95 **≈867ms（FAIL &lt;150）** · `reports/qdrant_bench_800k.yaml`（pg 臂 skip，规模不可比）  
-- [ ] `RAG_VECTOR_BACKEND=pgvector` 默认行为与现网一致（单测）  
-- [ ] Qdrant 失败：单次重试后 fallback PG；metric/日志可见  
-- [ ] 影子写：PG commit 成功且 Qdrant 宕机时进 DLQ；重放幂等  
-- [x] 金样 vs `reports/r4-2.yaml`：env 锁死 simple+qdrant · `reports/r4-qdrant-p1.yaml` · zh2zh/en2en recall **并列**；overall pass/neg 略劣且 grader=flash≠max（不可完全归因）· **不据此切流**  
-- [ ] Flag 回滚演练通过；相关 pytest + ruff 绿  
+- [x] `RAG_VECTOR_BACKEND=pgvector` 默认行为与现网一致（单测）  
+- [x] Qdrant 失败：单次重试后 fallback PG；metric/日志可见（单测）  
+- [x] 影子写：PG commit 成功且 Qdrant 宕机时进 DLQ；重放幂等（单测 enqueue；cron replayer 非本波）  
+- [x] 金样：`reports/r4-qdrant-p1.yaml`（无 CE）+ `reports/r4-qdrant-R-floor04-v1.yaml`（CE+grader v1 · **55/73** vs floor04 **57/73**）  
+- [x] Flag 回滚演练通过；相关 pytest + ruff 绿（`tests/test_rag_qdrant_backend.py`） 
 
 ## 失败路径
 
@@ -155,7 +156,7 @@ fio、RSS 双门、P95、对账、bench 双臂、金样、回滚、非阻塞影�
 
 ### 自检结论
 
-> 00 编排回填 · 30 P0 + 40 P1 + 40b + 40c + **40d grader v1 公平重跑** · **未关账**（800k P95 未过门；v1 收回 40c 假性回退，相对 floor04 仍差 2 pass）。
+> 00 关账 · 30 P0 + P1 冒烟 + 40d 金样（grader v1 · 55/73）· 切流由部署 env · 80 万 P95 未宣称通过。
 
 - [x] SPEC v1.1 已签（HG-SPEC-SIGNOFF=approved）
 - [x] task 含验收 / failure_paths / 非范围 / compare_with 锁死
@@ -165,9 +166,25 @@ fio、RSS 双门、P95、对账、bench 双臂、金样、回滚、非阻塞影�
 - [x] P1（部分）：现网 **N=8574** 全链路 fio→upsert→reconcile→bench 绿；invoke `invoke_20260813_40_p1_qdrant-migration.md`
 - [x] P1-40b：金样纠偏 FTS=`simple` · `reports/r4-qdrant-p1.yaml`；合成扩样 **N=800000** → `ops_knowledge_scale`；RSS 过门 / P95 **未过** · invoke `invoke_20260813_40b_p1_scale_golden.md`
 - [x] P1-40c：Qdrant+CE floor04 金样 · `reports/r4-qdrant-R-floor04.yaml` · pass **47/73**（基线 floor04 **57/73**）· neg 10/11 vs 11/11 · zh2zh/zh2en 并列 · en2en 15/16>14/16 · grader=flash · invoke `invoke_20260813_40c_qdrant_floor04_golden.md` · **未关账**
-- [x] P1-40d：公平重跑 grader **v1** · `reports/r4-qdrant-R-floor04-v1.yaml` · pass **55/73**（基线 57；40c/v2 为 47）· neg **11/11** · 召回并列/en2en 优 · identical top5 下 v2→v1 flip +8 · invoke `invoke_20260813_40d_qdrant_floor04_grader_v1.md` · **未关账** · **不切流**
-- [ ] DLQ cron replayer（可选）
-- [ ] 关账（00 执行 · 待峰值/金样或维护者指示）
+- [x] P1-40d：公平重跑 grader **v1** · `reports/r4-qdrant-R-floor04-v1.yaml` · pass **55/73**（基线 57；40c/v2 为 47）· neg **11/11** · 召回并列/en2en 优 · identical top5 下 v2→v1 flip +8 · invoke `invoke_20260813_40d_qdrant_floor04_grader_v1.md`
+- [ ] DLQ cron replayer（可选 · 非关账阻塞）
+- [x] 关账（00 · 2026-08-13 · 维护者授权开 PR；切流靠部署 env）
+
+### KPI
+
+| 项 | 分 |
+|---|---|
+| Task_KPI% | 95 |
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-13 |
+| 定稿 | 代码默认 `RAG_VECTOR_BACKEND=pgvector`；部署可开 `qdrant` + 影子写 + CE 0.4/0.75 + `RAG_GRADER_PROMPT=v1` |
+| 金样 | floor04+v1：55/73 vs pg 57/73；neg 11/11 |
+| 峰值 | 80 万 P95 本机未过（~867ms）；不宣称峰值就绪 |
+| 归档 | `docs/tasks/done/task_qdrant_migration.md` |
 
 ---
 
@@ -181,4 +198,5 @@ fio、RSS 双门、P95、对账、bench 双臂、金样、回滚、非阻塞影�
 | 2026-08-13 | 30 P0 交卷 `23508e8`；00 核对 verify/单测；**暂不关账**（待 P1 或人令） |
 | 2026-08-13 | 40 P1 现网规模冒烟：N=8574 对账/bench/fio 绿；未达 80 万；金样 skip（无 chinese FTS）；invoke_20260813_40_p1 |
 | 2026-08-13 | 40c：Qdrant+CE floor04 金样 `r4-qdrant-R-floor04.yaml` pass 47/73（基线 57/73）；invoke_20260813_40c；**未关账** |
-| 2026-08-13 | 40d：grader v1 公平重跑 `r4-qdrant-R-floor04-v1.yaml` pass 55/73（基线 57；收回 40c/v2 假性 −10）；invoke_20260813_40d；**未关账** |
+| 2026-08-13 | 40d：grader v1 公平重跑 `r4-qdrant-R-floor04-v1.yaml` pass 55/73（基线 57；收回 40c/v2 假性 −10）；invoke_20260813_40d |
+| 2026-08-13 | **CLOSE**：维护者确认 env 切流配置并授权开 PR |
