@@ -26,7 +26,7 @@
 | **review_hat** | `20` |
 | **required_invoke_hats** | `10,30` |
 | **invoke_retention_profile** | `minimal` |
-| **orchestration** | SPEC 已签 → 00 出卡 → 20-task-audit → HG-AUDIT-R1 → 30（fio→压测→双写→切流） |
+| **orchestration** | SPEC 已签 → 00 出卡 → 20 审 → 人闸 R1 → 30（fio→压测→双写→切流） |
 
 ### 人工闸
 
