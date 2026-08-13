@@ -1,0 +1,40 @@
+# pgvector + zhparser（中文分词）· 供 A 臂影子库对照实验
+# 构建：docker build -f Dockerfile.pg-zhparser -t pg-zhparser:15 .
+#
+# 注意：Debian bookworm（含 arm64）官方源无 libscws-dev，须源码编译 SCWS。
+FROM pgvector/pgvector:pg15
+
+USER root
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        curl \
+        git \
+        postgresql-server-dev-15 \
+    && curl -fsSL https://github.com/hightman/scws/archive/refs/tags/1.2.3.tar.gz \
+        -o /tmp/scws.tar.gz \
+    && mkdir -p /tmp/scws \
+    && tar -xzf /tmp/scws.tar.gz -C /tmp/scws --strip-components=1 \
+    && cd /tmp/scws \
+    && touch README \
+    && apt-get install -y --no-install-recommends autoconf automake libtool \
+    && aclocal && autoconf && autoheader && libtoolize --force && automake --add-missing \
+    && ./configure --prefix=/usr/local \
+    && make -j"$(nproc)" \
+    && make install \
+    && ldconfig \
+    && git clone --depth 1 https://github.com/amutu/zhparser.git /tmp/zhparser \
+    && cd /tmp/zhparser \
+    && make SCWS_HOME=/usr/local \
+    && make SCWS_HOME=/usr/local install \
+    && ldconfig \
+    && cd / \
+    && rm -rf /tmp/scws /tmp/scws.tar.gz /tmp/zhparser \
+    && apt-get purge -y --auto-remove \
+        build-essential curl git postgresql-server-dev-15 \
+        autoconf automake libtool \
+    && rm -rf /var/lib/apt/lists/*
+
+USER postgres

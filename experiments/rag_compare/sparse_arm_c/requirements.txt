@@ -1,0 +1,3 @@
+# C 臂稀疏重嵌专用（隔离 venv 安装；勿强行并进根 .venv 若 torch 冲突）
+# 安装示例见同目录 README.md
+FlagEmbedding>=1.2.10,<2

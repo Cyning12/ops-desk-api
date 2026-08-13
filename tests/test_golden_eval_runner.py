@@ -1,6 +1,7 @@
 """R-4 golden eval runner 纯函数单测（零模型零库）。"""
 from pathlib import Path
 
+from app.ops.rag.retrieve import RetrievedChunk
 from evals.golden.run_eval import (
     CaseResult,
     DenyRule,
@@ -13,8 +14,8 @@ from evals.golden.run_eval import (
     load_denylist,
     load_golden,
     quadrant_recall_summary,
+    recall_knobs,
 )
-from app.ops.rag.retrieve import RetrievedChunk
 
 QUERIES = Path("evals/golden/queries_v1.yaml")
 DENYLIST = Path("evals/golden/hygiene_denylist.yaml")
@@ -44,6 +45,22 @@ def test_load_golden_73():
     assert len(cases) == 73
     quads = {c["quadrant"] for c in cases}
     assert quads == {"zh2en", "zh2zh", "en2en", "negative"}
+
+
+def test_recall_knobs_default_normal(monkeypatch):
+    monkeypatch.delenv("RAG_RERANK_ENABLED", raising=False)
+    k, n, on = recall_knobs()
+    assert (k, n, on) == (10, 15, False)
+
+
+def test_recall_knobs_rerank_enabled(monkeypatch):
+    monkeypatch.setenv("RAG_RERANK_ENABLED", "true")
+    monkeypatch.delenv("RAG_RECALL_K_EACH", raising=False)
+    monkeypatch.delenv("RAG_RERANK_CANDIDATES", raising=False)
+    k, n, on = recall_knobs()
+    assert on is True
+    assert k == 20
+    assert n == 20
 
 
 def test_load_denylist():
@@ -188,3 +205,45 @@ def test_quadrant_recall_and_spec_fields():
 def test_grade_stability_rate():
     assert grade_stability_rate([["exact", "weak"], ["exact", "weak"], ["exact", "weak"]]) == 1.0
     assert grade_stability_rate([["exact", "weak"], ["exact", "relevant"]]) == 0.5
+
+
+def test_parse_eval_log_and_write_report(tmp_path: Path):
+    from evals.golden.run_eval import parse_eval_log, write_report
+
+    log = """
+[1/2] G01 · zh2en …
+  → sem=['2720#0', '1#0']
+  → kw =['2720#0']
+  → FAIL top5=['2720#0', '1#0', '2#0', '3#0', '4#0'] best=irrelevant filtered=['x#0'] reasons=['min_relevance: got irrelevant < relevant']
+[2/2] G62 · negative …
+  → sem=['9#0']
+  → kw =[]
+  → PASS top5=['9#0', '8#0', '7#0', '6#0', '5#0'] best=weak filtered=[] reasons=[]
+"""
+    results = parse_eval_log(log)
+    assert len(results) == 2
+    assert results[0].id == "G01"
+    assert results[0].verdict == "fail"
+    assert results[0].keyword_hits == ["2720#0"]
+    assert results[0].recall_at5 == "pass"
+    assert results[0].min_relevance == "fail"
+    assert results[1].quadrant == "negative"
+    assert results[1].must_refuse == "pass"
+    assert results[1].recall_at5 is None
+
+    report = build_report(
+        results,
+        embed_name="BAAI/bge-m3",
+        grader_model="qwen",
+        stability=None,
+        corpus_n=8574,
+        extra_summary={"recovered_from_log": "test"},
+    )
+    out = tmp_path / "partial.yaml"
+    write_report(out, report)
+    loaded, meta = __import__(
+        "evals.golden.run_eval", fromlist=["load_existing_results"]
+    ).load_existing_results(out)
+    assert len(loaded) == 2
+    assert meta["summary"]["recovered_from_log"] == "test"
+    assert report["summary"]["pass"] == "1/2"
