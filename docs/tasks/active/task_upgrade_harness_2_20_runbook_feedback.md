@@ -1,8 +1,8 @@
 # Task：Harness 升级 2.22→2.24（api）· overlay / skills 复检
 
-> **状态**：active（已改目标版本 · 待 30/40）  
+> **状态**：active（30/40 已完成 · 待 00 验收关账）  
 > **类型**：基础设施（upgrade + FEEDBACK + overlay/local 块复检）  
-> **关联**：npm `@cyning/harness@2.24.0`（registry 最新；仓内 manifest 仍 `2.22.0`）· local 块 · `graph_modules_path` · 前波 2.22 FEEDBACK / PR #23  
+> **关联**：npm `@cyning/harness@2.24.0`（registry 最新；仓内 manifest 已 `2.24.0`）· local 块 · `graph_modules_path` · 前波 2.22 FEEDBACK / PR #23  
 > **合入**：走 PR（禁直推 master）
 
 ---
@@ -41,17 +41,17 @@
 ## 背景与目标
 
 - **前波（已完成）**：`2.22.0` overlay 部分根治验证 · FEEDBACK `docs/harness/evidence/FEEDBACK_harness_2_22_0_from_ops_desk_api_20260728.md` · PR #23  
-- **本波**：registry 最新为 **`2.24.0`**（中间含 2.22.1/2.22.2/2.23.0）；仓内 `.cyning-harness/manifest.json` 仍为 **`2.22.0`** · `harness check` = 可升级。  
+- **本波**：registry 最新为 **`2.24.0`**（中间含 2.22.1/2.22.2/2.23.0）；仓内已钉升至 **`2.24.0`**。  
 - 目标：钉升到 **2.24.0**，复检 local 块 / `graph_modules_path` / skills（若 upgrade 引入）在合规路径下**零手恢复**，并落盘 2.24 FEEDBACK。
 
 **完成态**：
 
-- [ ] manifest → `2.24.0`（`npx @cyning/harness check` 显示最新或已对齐）
-- [ ] profile `graph_modules_path=l1/01_modules` 仍在
-- [ ] AGENTS `<!-- cyning-harness-local:begin/end -->` 关键词在；upgrade×2 无需 backup 手恢复
-- [ ] `task lint` / `--strict`（或等价）PASS
-- [ ] FEEDBACK 2.24 落盘：`docs/harness/evidence/FEEDBACK_harness_2_24_0_from_ops_desk_api_YYYYMMDD.md`
-- [ ] 30/40 invoke 回填
+- [x] manifest → `2.24.0`（`npx @cyning/harness check` 显示最新或已对齐）
+- [x] profile `graph_modules_path=l1/01_modules` 仍在
+- [x] AGENTS `<!-- cyning-harness-local:begin/end -->` 关键词在；upgrade×2 无需 backup 手恢复
+- [x] `task lint` / `--strict`（或等价）PASS — 本 task lint PASS；`lint-wiki-delta` PASS；全局 `--strict` 仅无关 task 缺口（见自检）
+- [x] FEEDBACK 2.24 落盘：`docs/harness/evidence/FEEDBACK_harness_2_24_0_from_ops_desk_api_20260813.md`
+- [x] 30/40 invoke 回填
 
 **不做**：改产品仓；默认 CI `--strict`；把仓特异词写回产品 marker；动 `task_ops_sync_sender_migration`
 
@@ -81,23 +81,25 @@
 
 ## 验收标准
 
-- [ ] manifest=`2.24.0` · check 对齐最新
-- [ ] 合规路径：upgrade 后零手恢复（×2）
-- [ ] FEEDBACK 2.24 路径落盘；30 invoke 齐
+- [x] manifest=`2.24.0` · check 对齐最新
+- [x] 合规路径：upgrade 后零手恢复（×2）
+- [x] FEEDBACK 2.24 路径落盘；30 invoke 齐
 
 ---
 
 ### 自检结论（执行者）
 
-> 30/40 回填。前波 2.22 结论保留在 FEEDBACK_2_22_0，不作为本波完成证据。
+> 30/40 回填。前波 2.22 结论保留在 FEEDBACK_2_22_0，不作为本波完成证据。未执行 `harness task close`（00 关账）。
 
 | 项 | 内容 |
 |---|---|
-| **日期** | （30 填） |
-| **manifest** | （期望 `2.24.0`） |
-| **U2/local 零手恢复** | （PASS/FAIL） |
-| **lint / strict** | （填） |
-| **FEEDBACK** | （路径） |
+| **日期** | 2026-08-13 |
+| **manifest** | `2.24.0`（from `2.22.0`） |
+| **U2/local 零手恢复** | **PASS**（×2；第二次前因 S5 先 commit sync） |
+| **lint / strict** | `task lint` PASS(0)；`lint-wiki-delta` PASS(0)；`--strict` FAIL(2) 仅 `task_ops_sync_sender_migration`（本波禁改） |
+| **skills** | `skills check` PASS(0)；`skills build` PASS(0)（写产品包） |
+| **FEEDBACK** | `docs/harness/evidence/FEEDBACK_harness_2_24_0_from_ops_desk_api_20260813.md` |
+| **invoke** | `docs/harness/invokes/by-task/upgrade-harness-2-20-runbook-feedback/invoke_20260813_30_40_upgrade-harness-2-24.md` |
 
 ## 修订
 
@@ -105,3 +107,4 @@
 |------|------|
 | 2026-07-28 | 初版：2.20→2.22 overlay 验证（完成态曾勾满，未关账） |
 | 2026-08-13 | 00：registry 最新 **2.24.0** · 仓内仍 2.22.0 → **改目标并重开完成态** · 派 30/40 |
+| 2026-08-13 | 30/40：钉升 2.24.0 · FEEDBACK · 完成态勾选 · 待 00 验收关账 |
