@@ -1,5 +1,7 @@
 # 生产：Qdrant 切流操作清单（对照现网）
 
+> **整体过程纪要（选型→评测→本机→生产）**：[`qdrant-migration-narrative.md`](./qdrant-migration-narrative.md)
+
 > **和 `01-environment-setup.md` 的关系**  
 > 那份是**第一次**买机器 / 装 Docker / 配域名 / 起 db+api。你已经做完了，**不要重做**。  
 > 本文件是：**现网已在跑**（`/opt/ops-desk/deploy` + GHA 发版 api）之后，再加一层 Qdrant 读索引。
