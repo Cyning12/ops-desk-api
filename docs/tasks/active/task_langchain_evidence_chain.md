@@ -26,7 +26,7 @@
 | **review_hat** | `20` |
 | **required_invoke_hats** | `10,30` |
 | **invoke_retention_profile** | `default` |
-| **orchestration** | SPEC 签收 → task 审 → HG-AUDIT-R1 → **维护者 30** → 40/验收辅助 |
+| **orchestration** | SPEC 签收 → task 审 → R1 闸 → **维护者 30** → 40/验收辅助 |
 
 ### 人工闸
 
