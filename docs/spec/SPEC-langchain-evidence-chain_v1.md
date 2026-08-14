@@ -1,9 +1,9 @@
 # SPEC：LangChain Evidence+Answer Chain（并行于现网 LangGraph）（v1）
 
-> **状态**：`draft`（HG-SPEC-SIGNOFF=**pending** · **禁止 30 改码**）  
+> **状态**：`accepted`（HG-SPEC-SIGNOFF=**approved** · 2026-08-14 维护者签收 v1）  
 > **track**：`rag`（答问链实验 · 与现网 graph 解耦）  
 > **上游**：现网 `app/ops/chat/graph.py`（LangGraph）· `app/ops/rag/*`（hybrid_recall / Qdrant Flag）· 规划 `docs/deployment/rag-frontend-api-plan.md`  
-> **下游**：人签 SPEC → 00/10-task 出卡 → 20-task-audit + HG-AUDIT-R1 → **维护者本人执行 30**（Agent 只辅助验收）  
+> **下游**：00/10-task 已预置 → 20-task-audit + HG-AUDIT-R1 → **维护者本人执行 30**（按 IMPL）  
 > **Open Folder（实现）**：`ops-desk-api/`  
 > **Bounded Context**：**禁止**改 `graph.py` / 现网 SSE 默认路径；本波只交付可独立调用的 LangChain 链 + 可选旁路入口。
 
@@ -26,7 +26,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | pending | 维护者签收后方可 00 出 task / 推进 HG-AUDIT-R1 |
+| **HG-SPEC-SIGNOFF** | approved | 维护者 2026-08-14 签收 v1；可推进 task 审与 HG-AUDIT-R1 |
 
 ---
 
@@ -161,3 +161,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-14 | v1 draft：并行 LangChain evidence+answer 链 |
+| 2026-08-14 | 维护者签收 · HG-SPEC-SIGNOFF=approved |

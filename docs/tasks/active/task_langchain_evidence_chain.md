@@ -1,8 +1,8 @@
 # Task：LangChain Evidence+Answer Chain（并行于 LangGraph）
 
-> **状态**：active（draft · 待人审）  
+> **状态**：active（闸已齐 · **维护者执行 30**）  
 > **类型**：rag / 实验旁路（学习向 + 可演进）  
-> **关联 SPEC**：`docs/spec/SPEC-langchain-evidence-chain_v1.md`  
+> **关联 SPEC**：`docs/spec/SPEC-langchain-evidence-chain_v1.md`（v1 · HG-SPEC-SIGNOFF=approved）  
 > **实现辅助文档（与 task 分开 · 30 必读）**：`docs/guides/IMPL_langchain-evidence-chain_v1.md`  
 > **分支**：`task/langchain-evidence-chain`  
 > **编排**：Agent 辅助 10/20/验收；**30 第一版由维护者本人按 IMPL 文档手写**；Agent **不**代写 P0 业务实现（除非维护者改口）。
@@ -32,8 +32,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| HG-TASK-DRAFT | pending | 22-R1 | SPEC 签收后维护者确认 task 范围与「本人执行 30」 |
-| HG-AUDIT-R1 | pending | 30 | 20-task-audit 通过后维护者签；**未签禁止 Agent 代写 30** |
+| HG-TASK-DRAFT | approved | 22-R1 | 维护者签收 SPEC 后确认 · 2026-08-14 |
+| HG-AUDIT-R1 | approved | 30 | 审查 `docs/harness/reviews/task_langchain_evidence_chain_audit_R1_20260814.md` · 维护者「签收」推进 · **30 仍由维护者手写** |
 
 ---
 
@@ -157,9 +157,9 @@ evidence 字段兼容现网引用卡片，便于日后升为 graph node 或单�
 - [x] 已写 SPEC draft（并行 LCEL · 勿改 graph）
 - [x] 已写 IMPL 分阶段示例（与 task 分文件）
 - [x] 验收 / failure_paths / 非范围齐全
-- [ ] HG-TASK-DRAFT approved
-- [ ] HG-AUDIT-R1 approved
-- [ ] 维护者确认「本人执行 30」
+- [x] HG-TASK-DRAFT approved
+- [x] HG-AUDIT-R1 approved（20 审 pass · 维护者签收推进）
+- [x] 维护者确认「本人执行 30」
 
 ---
 
