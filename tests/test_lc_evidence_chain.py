@@ -13,6 +13,7 @@ from app.ops.lc_evidence_chain.chain import _trace_config, ainvoke_evidence_answ
 from app.ops.lc_evidence_chain.grader import decide_grade
 from app.ops.lc_evidence_chain.types import EvidenceItem, Grade, RetrieveResult
 from app.ops.rag.grader import Relevance
+from app.ops.rag.retrieve import RetrievedChunk
 
 
 def _fake_langfuse_langchain_module(handler: MagicMock) -> types.ModuleType:
@@ -39,6 +40,29 @@ def _item(
         content=content,
         title=f"title-{sid}",
     )
+
+
+def test_from_retrieved_chunk_accepts_media_dicts():
+    """入库 images 为 {alt,url,anchor}，不得当 list[str] 校验失败（联调 500）。"""
+    chunk = RetrievedChunk(
+        id=1,
+        repo="MoonshotAI/kimi-code",
+        source_type="issue",
+        source_id="2720",
+        chunk_index=4,
+        content="Title: img\n---\nContent: body",
+        images=[
+            {
+                "alt": "Image",
+                "url": "https://example.com/1.png",
+                "anchor": "[IMAGE#1]",
+                "kind": "image",
+            }
+        ],
+    )
+    item = EvidenceItem.from_retrieved_chunk(chunk)
+    assert item.images[0]["anchor"] == "[IMAGE#1]"
+    assert item.snippet
 
 
 def test_decide_keeps_exact_drops_weak():
