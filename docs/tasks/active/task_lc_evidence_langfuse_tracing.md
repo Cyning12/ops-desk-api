@@ -191,6 +191,22 @@ pytest mock 开关路径；本机 smoke+UI 抽检为人工项；ruff/pytest 绿�
 
 ---
 
+### 自检结论（50）
+
+> Harness 50 · 2026-08-16 · 父窗独立复检 · **PASS（机械）** · **等维护者确认再 CLOSE**
+
+- [x] 验收表机械项已勾且与实现一致（抽读 chain/grader/answer/CLI/G-L1）
+- [x] `git diff origin/master -- app/ops/chat/graph.py` 为空
+- [x] `harness verify` PASS · ruff PASS · pytest **14 passed**
+- [x] freeze：`run_name` / tags = `lc-evidence-chain`；LLM 用 `trace_span(run_type="llm")`
+- [x] invoke 50 已落档
+- [ ] （人工）本机 Langfuse UI 按 tag 过滤 — **留给维护者**
+- [ ] CLOSE / PR — **等维护者进一步确认**
+
+**50 结论：PASS（机械）· 阻塞 CLOSE 仅人工 UI（可选）+ 维护者确认。**
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
@@ -198,3 +214,4 @@ pytest mock 开关路径；本机 smoke+UI 抽检为人工项；ruff/pytest 绿�
 | 2026-08-16 | 首稿：旁路 Langfuse tracing · HG-TASK-DRAFT/HG-AUDIT-R1=pending |
 | 2026-08-16 | 维护者签收 · R1 留痕 · 派 30+40；50 后等确认再 CLOSE |
 | 2026-08-16 | 30+40 完成：CallbackHandler + generation span · 单测/ruff 绿 · UI 人工项待确认 |
+| 2026-08-16 | 50 PASS（机械）· 等维护者确认再 CLOSE/合入 |
