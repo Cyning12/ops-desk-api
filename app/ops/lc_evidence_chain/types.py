@@ -35,7 +35,8 @@ class EvidenceItem(BaseModel):
     chunk_index: int
     content: str  # 原始内容（含前缀）
     metadata: dict[str, Any] = Field(default_factory=dict)
-    images: list[str] = Field(default_factory=list)
+    # 与入库 jsonb 对齐：[{anchor, url, alt, kind}, ...]；兼容旧数据里的纯 URL 字符串
+    images: list[Any] = Field(default_factory=list)
     semantic_rank: int | None = None
     keyword_rank: int | None = None
     rrf_score: float = 0.0
