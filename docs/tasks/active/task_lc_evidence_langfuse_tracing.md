@@ -96,13 +96,13 @@
 
 ## 验收标准
 
-- [ ] `OPS_CHAT_TRACER` 未开 / keys 缺失：`ainvoke_evidence_answer` 行为与改前一致；pytest 断言无 CallbackHandler 注入  
-- [ ] 开启 tracing：`ainvoke` config 含 `callbacks` + `metadata.langfuse_tags` 含 `lc-evidence-chain` + `run_name=lc-evidence-chain`（单测 mock）  
-- [ ] LLM 相关 observation 类型为 generation（代码路径或本机 UI 抽检说明写入 invoke/40）  
-- [ ] CLI 结束调用 `flush_traces()`（tracing 开时）  
-- [ ] `git diff`（相对合入基线）**不改** `app/ops/chat/graph.py` 拓扑  
-- [ ] `ruff check` 相关路径 + `pytest tests/test_lc_evidence_chain.py`（及本 task 新增测）绿  
-- [ ] `docs/_tech_graph/l1/01_modules.md` 已注明旁路可选 Langfuse  
+- [x] `OPS_CHAT_TRACER` 未开 / keys 缺失：`ainvoke_evidence_answer` 行为与改前一致；pytest 断言无 CallbackHandler 注入  
+- [x] 开启 tracing：`ainvoke` config 含 `callbacks` + `metadata.langfuse_tags` 含 `lc-evidence-chain` + `run_name=lc-evidence-chain`（单测 mock）  
+- [x] LLM 相关 observation 类型为 generation（代码路径：`trace_span(..., run_type="llm")` → as_type=generation；本机 UI 抽检见人工项）  
+- [x] CLI 结束调用 `flush_traces()`（tracing 开时）  
+- [x] `git diff`（相对合入基线）**不改** `app/ops/chat/graph.py` 拓扑  
+- [x] `ruff check` 相关路径 + `pytest tests/test_lc_evidence_chain.py`（及本 task 新增测）绿  
+- [x] `docs/_tech_graph/l1/01_modules.md` 已注明旁路可选 Langfuse  
 - [ ] （人工）本机 keys 下 smoke 后 Langfuse Traces 可见且可用 tag 过滤  
 
 ---
@@ -173,9 +173,28 @@ pytest mock 开关路径；本机 smoke+UI 抽检为人工项；ruff/pytest 绿�
 
 ---
 
+### 自检结论（执行者）
+
+> 30 实现 + 40 自检 · 2026-08-16 · 分支 `task/lc-evidence-langfuse-tracing`
+
+- [x] GATE_VERIFY + `harness verify` PASS（闸表均为 approved）
+- [x] `_trace_config` + `ainvoke` config 注入；grade/answer LLM 用 `trace_span(run_type="llm")` 保证 generation
+- [x] CLI：`tracing on/off` 打印 + 开启时 `flush_traces()`
+- [x] 单测：关闭无 config；开启含 callbacks/tags/`run_name`（14 passed）
+- [x] G-L1 `01_modules.md` 已补可选 Langfuse · tags=`lc-evidence-chain`
+- [x] `git diff origin/master -- app/ops/chat/graph.py` 为空
+- [x] ruff + pytest 绿
+- [ ] （人工遗留）本机 Langfuse UI 真连冒烟（维护者 keys）
+- [x] 30/40 invoke 已落盘；**未** task close / 开 PR
+
+**40 结论：PASS**（机械项全绿；人工 UI 项留给维护者）
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-16 | 首稿：旁路 Langfuse tracing · HG-TASK-DRAFT/HG-AUDIT-R1=pending |
 | 2026-08-16 | 维护者签收 · R1 留痕 · 派 30+40；50 后等确认再 CLOSE |
+| 2026-08-16 | 30+40 完成：CallbackHandler + generation span · 单测/ruff 绿 · UI 人工项待确认 |
