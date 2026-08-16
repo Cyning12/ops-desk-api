@@ -1,11 +1,11 @@
 # Task：lc_evidence_chain · Langfuse tracing 监控
 
-> **状态**：active（draft · 待人审）  
+> **状态**：active（闸已签 · 30/40 执行中）  
 > **类型**：observability / rag-debug  
-> **上游**：`docs/tasks/done/task_langchain_evidence_chain.md`（旁路 LCEL 已关账 · 代码合入见依赖）  
+> **上游**：`docs/tasks/done/task_langchain_evidence_chain.md`（旁路 LCEL 已关账 · PR #33 已合入 master）  
 > **关联实现**：`app/ops/lc_evidence_chain/` · 现网 Chat 埋点 `app/ops/tracing.py` + `app/ops/chat/service.py`  
 > **分支**：`task/lc-evidence-langfuse-tracing`  
-> **编排**：10-task 本卡 → 20 审 → 闸齐 → 30 改码 → 40/50
+> **编排**：闸齐 → 子 agent 30+40 → **本窗 50** → **等维护者确认**再 CLOSE/合入
 
 ---
 
@@ -32,9 +32,9 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| HG-TASK-DRAFT | pending | 22-R1 | 维护者确认范围：仅旁路链埋点，不扩 HTTP、不改 Chat 默认 |
-| HG-AUDIT-R1 | pending | 30 | 须 `docs/harness/reviews/task_lc_evidence_langfuse_tracing_audit_R1_*.md` 通过后签表 |
-| HG-GRAPH-MODULES | approved | 30 | 真值 `docs/_tech_graph/l1/01_modules.md`；本 task 仅增量备注，开工前仍按 verify 扫闸 |
+| HG-TASK-DRAFT | approved | 22-R1 | 维护者 2026-08-16 会话「签收」· 范围锁定：仅旁路埋点 |
+| HG-AUDIT-R1 | approved | 30 | 审查 `docs/harness/reviews/task_lc_evidence_langfuse_tracing_audit_R1_20260816.md` · 维护者授权 00 代签推进 |
+| HG-GRAPH-MODULES | approved | 30 | 真值 `docs/_tech_graph/l1/01_modules.md`；本 task 仅增量备注 |
 
 ---
 
@@ -76,7 +76,7 @@
 
 | 项 | 说明 |
 |---|---|
-| 旁路包 | `app/ops/lc_evidence_chain/`（**blocked_by**：`task_langchain_evidence_chain` 合入 master / PR 可用；本分支可叠在旁路 PR 之上） |
+| 旁路包 | `app/ops/lc_evidence_chain/`（已合入 master · PR #33 · 2026-08-16） |
 | 现网 tracing | `app/ops/tracing.py` · Chat 参考 `app/ops/chat/service.py` |
 | SDK | `langfuse`（`pyproject.toml` 已列）；dotenv **先于** langfuse import（与 `scripts/trace_smoke.py` 一致） |
 | 编码规范 | `docs/standards/CODING_BACKEND_L2_v1_zh.md` |
@@ -138,7 +138,7 @@
 |---|---|
 | **actual_last_round** | R5 |
 | **early_stop** | no |
-| **residual_risks** | 旁路尚未合入 master 时需叠分支；RunnableLambda 可能削弱自动 span 粒度，须补手工 span |
+| **residual_risks** | RunnableLambda 可能削弱自动 span 粒度，须补手工 span；本机 UI 抽检依赖 keys |
 
 ### R0
 为当前 LangChain evidence 旁路补齐 Langfuse 监控，与 Chat 轨迹可区分。
@@ -167,9 +167,9 @@ pytest mock 开关路径；本机 smoke+UI 抽检为人工项；ruff/pytest 绿�
 - [x] 验收 / failure_paths / 非范围 / 依赖齐全
 - [x] 思考轮 R0–R5 + 控制表已写
 - [x] 10-task invoke 已落档
-- [ ] HG-TASK-DRAFT approved（待维护者）
-- [ ] HG-AUDIT-R1 approved（待 20 审）
-- [ ] 旁路包已在 30 合入基线（或明确叠分支）
+- [x] HG-TASK-DRAFT approved（维护者签收 2026-08-16）
+- [x] HG-AUDIT-R1 approved（R1 审查文 · 维护者授权代签）
+- [x] 旁路包已合入 master（PR #33）
 
 ---
 
@@ -178,3 +178,4 @@ pytest mock 开关路径；本机 smoke+UI 抽检为人工项；ruff/pytest 绿�
 | 日期 | 说明 |
 |---|---|
 | 2026-08-16 | 首稿：旁路 Langfuse tracing · HG-TASK-DRAFT/HG-AUDIT-R1=pending |
+| 2026-08-16 | 维护者签收 · R1 留痕 · 派 30+40；50 后等确认再 CLOSE |
