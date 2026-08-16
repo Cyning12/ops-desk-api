@@ -21,7 +21,7 @@ audience: agent-30
 | `auth` | 鉴权模块 | `app/ops/auth.py`, `app/ops/deps.py`, `app/ops/security.py` | → `db` | 登录、登出、session cookie、invite token 验证、角色保护 |
 | `chat` | Chat 业务 | `app/ops/chat/**` | → `llm`, `db`, `rag` | LangGraph StateGraph、SSE/WS 双传输、共享 ChatEventStreamer |
 | `rag` | RAG 检索与入库 | `app/ops/rag/**` | → `db` | 混合召回（dense: pgvector\|qdrant Flag；FTS/sparse 仍 PG）；ingest；影子写+DLQ；被 `lc_evidence_chain` 复用 `hybrid_recall` |
-| `lc_evidence_chain` | LangChain 旁路答问 | `app/ops/lc_evidence_chain/**` | → `rag`, `llm`, `db` | LCEL：retrieve→grade→answer；CLI/库级入口；**默认不进入** `chat/graph`；可选 Langfuse（复用 `OPS_CHAT_TRACER`）· tags=`lc-evidence-chain` |
+| `lc_evidence_chain` | LangChain 旁路答问 | `app/ops/lc_evidence_chain/**` | → `rag`, `llm`, `db` | LCEL：retrieve→grade→answer；CLI/库级 + HTTP `POST /api/ops/lc-evidence/invoke`（cookie 鉴权 · freeze `lc-evidence-http-v1`）；**默认不进入** `chat/graph`；可选 Langfuse（复用 `OPS_CHAT_TRACER`）· tags=`lc-evidence-chain` |
 | `data` | 数据视图 | `app/ops/overview.py`, `app/ops/issues.py`, `app/ops/pulls.py`, `app/ops/graph.py` | → `db` | Issue/PR/Overview 指标/Graph 快照只读查询（供 Chat / iOS 只读消费） |
 | `admin` | Admin 同步 | `app/ops/admin/sync.py`, `app/ops/admin/service.py`, `app/ops/admin/schema.py` | → `db` | 接收 GHA sync payload 并持久化到 data/chat 依赖的表 |
 | `llm` | LLM Provider | `app/llm/**` | → — | SiliconFlow / 百炼 provider 工厂 |
@@ -39,7 +39,7 @@ audience: agent-30
 | `SyncedRepo/Issue/PR/GraphSnapshot` | `admin` | `data`, `chat` | admin 写入的表同时供 data 只读接口和 chat 上下文加载 |
 | `OpsIssue/OpsPullRequest/OpsGraphSnapshot` | `data` | `chat` | Chat 通过 data 层表消费同步后的数据 |
 | `RetrievedChunk` / `RAG_VECTOR_BACKEND` | `rag` | `chat`, `lc_evidence_chain` | dense 默认 Qdrant Top-k id → PG hydrate；失败即时降级 pgvector；影子写 `RAG_QDRANT_SHADOW_WRITE` |
-| `EvidenceItem` / `ChainResult` / `GateDecision` | `lc_evidence_chain` | CLI 冒烟 / 实验调用方（未来可被 `chat` 复用） | LCEL 旁路输出：evidence（含 grade）+ answer + meta.gate_action；形状兼容现网 sources 子集；**不改** graph 边 |
+| `EvidenceItem` / `ChainResult` / `GateDecision` | `lc_evidence_chain` | CLI 冒烟 / `api` HTTP / web LC Evidence 页 | LCEL 旁路输出：evidence（含 grade + **snippet**）+ answer + meta.gate_action；HTTP 外壳 `{ok,data}`（freeze `lc-evidence-http-v1`）；**不改** graph 边 |
 
 ## 人签记录
 
