@@ -213,6 +213,10 @@ def test_trace_config_off_returns_none():
 
 
 def test_trace_config_on_has_callbacks_tags_run_name():
+    # langfuse.langchain 为惰性子模块；patch 前须先 import，否则
+    # AttributeError: module 'langfuse' has no attribute 'langchain'（CI 常见）
+    import langfuse.langchain  # noqa: F401
+
     handler = MagicMock(name="CallbackHandler")
     with (
         patch("app.ops.lc_evidence_chain.chain.tracing_enabled", return_value=True),
@@ -257,6 +261,8 @@ async def test_ainvoke_tracing_off_omits_config():
 @pytest.mark.asyncio
 async def test_ainvoke_tracing_on_injects_config():
     """开启 tracing：config 含 callbacks + tags + run_name（mock，不连云）。"""
+    import langfuse.langchain  # noqa: F401
+
     captured: dict = {}
     handler = MagicMock(name="CallbackHandler")
 
