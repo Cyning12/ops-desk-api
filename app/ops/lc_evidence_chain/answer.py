@@ -13,6 +13,7 @@ from app.config import settings
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage
 from app.ops.lc_evidence_chain.types import EvidenceItem
+from app.ops.tracing import trace_span
 
 logger = logging.getLogger(__name__)
 
@@ -114,13 +115,15 @@ async def answer_question(
     provider_name = (os.getenv("RAG_LC_ANSWER_PROVIDER") or "").strip() or None
     provider = get_llm_provider(provider_name)
     model = _answer_model()
-    text = await provider.complete(
-        [
-            LlmMessage(role="system", content=system),
-            LlmMessage(role="user", content=user),
-        ],
-        model=model,
-    )
+    # 自研 provider 不走 LangChain LLM 类，CallbackHandler 抓不到 → 显式 generation
+    with trace_span("answer_llm", run_type="llm", model=model):
+        text = await provider.complete(
+            [
+                LlmMessage(role="system", content=system),
+                LlmMessage(role="user", content=user),
+            ],
+            model=model,
+        )
     logger.info(
         "answer: prompt=%s gate=%s model=%s query=%r evidence=%d chars=%d",
         ver,

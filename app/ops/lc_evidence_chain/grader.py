@@ -16,6 +16,7 @@ from app.ops.rag.grader import (
     user_prompt,
 )
 from app.ops.rag.prefix import strip_doc_context_prefix
+from app.ops.tracing import trace_span
 
 logger = logging.getLogger(__name__)
 
@@ -98,10 +99,12 @@ async def _grade_chunks_llm(
         # 线协议仍用 chunk_id=（复用 rag grader prompt / parse_grades）
         blocks.append(f"### chunk_id={c.id}（{c.source_type} {c.anchor}）\n{body}")
     user = user_prompt(query, blocks)
-    raw = await provider.complete(
-        [LlmMessage(role="system", content=system), LlmMessage(role="user", content=user)],
-        model=model,
-    )
+    # 自研 provider 不走 LangChain LLM 类，CallbackHandler 抓不到 → 显式 generation
+    with trace_span("grade_llm", run_type="llm", model=model):
+        raw = await provider.complete(
+            [LlmMessage(role="system", content=system), LlmMessage(role="user", content=user)],
+            model=model,
+        )
     parsed = parse_grades(raw, {c.id for c in evidence})
     grades = [Grade(evidence_id=g.chunk_id, relevance=g.relevance, reason=g.reason) for g in parsed]
     logger.info(
