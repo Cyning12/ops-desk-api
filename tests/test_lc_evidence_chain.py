@@ -2,15 +2,24 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+import sys
+import types
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from app.ops.lc_evidence_chain.answer import EMPTY_EVIDENCE_ANSWER, answer_question
-from app.ops.lc_evidence_chain.chain import ainvoke_evidence_answer
+from app.ops.lc_evidence_chain.chain import _trace_config, ainvoke_evidence_answer
 from app.ops.lc_evidence_chain.grader import decide_grade
 from app.ops.lc_evidence_chain.types import EvidenceItem, Grade, RetrieveResult
 from app.ops.rag.grader import Relevance
+
+
+def _fake_langfuse_langchain_module(handler: MagicMock) -> types.ModuleType:
+    """注入假 ``langfuse.langchain``，避免 CI 缺 ``langchain`` 包时真实 import 失败。"""
+    mod = types.ModuleType("langfuse.langchain")
+    mod.CallbackHandler = MagicMock(return_value=handler)
+    return mod
 
 
 def _item(
@@ -205,3 +214,86 @@ async def test_ainvoke_partial_passes_gate_action_to_answer():
 
     assert out.meta["gate_action"] == "answer_partial"
     assert seen.get("gate_action") == "answer_partial"
+
+
+def test_trace_config_off_returns_none():
+    with patch("app.ops.lc_evidence_chain.chain.tracing_enabled", return_value=False):
+        assert _trace_config() is None
+
+
+def test_trace_config_on_has_callbacks_tags_run_name():
+    handler = MagicMock(name="CallbackHandler")
+    fake = _fake_langfuse_langchain_module(handler)
+    with (
+        patch("app.ops.lc_evidence_chain.chain.tracing_enabled", return_value=True),
+        patch.dict(sys.modules, {"langfuse.langchain": fake}),
+    ):
+        cfg = _trace_config()
+    assert cfg is not None
+    assert cfg["run_name"] == "lc-evidence-chain"
+    assert "lc-evidence-chain" in cfg["metadata"]["langfuse_tags"]
+    assert cfg["callbacks"] == [handler]
+    fake.CallbackHandler.assert_called_once_with()
+
+
+@pytest.mark.asyncio
+async def test_ainvoke_tracing_off_omits_config():
+    """关闭 tracing：ainvoke 不传 config（无 CallbackHandler）。"""
+    captured: dict = {}
+
+    class _FakeChain:
+        async def ainvoke(self, inp, **kwargs):
+            captured["kwargs"] = kwargs
+            return {
+                "query": "q",
+                "evidence": [],
+                "answer": EMPTY_EVIDENCE_ANSWER,
+                "meta": {},
+            }
+
+    with (
+        patch("app.ops.lc_evidence_chain.chain.tracing_enabled", return_value=False),
+        patch(
+            "app.ops.lc_evidence_chain.chain.build_chain",
+            return_value=_FakeChain(),
+        ),
+    ):
+        out = await ainvoke_evidence_answer("q")
+
+    assert "config" not in captured["kwargs"]
+    assert out.answer == EMPTY_EVIDENCE_ANSWER
+
+
+@pytest.mark.asyncio
+async def test_ainvoke_tracing_on_injects_config():
+    """开启 tracing：config 含 callbacks + tags + run_name（mock，不连云）。"""
+    captured: dict = {}
+    handler = MagicMock(name="CallbackHandler")
+    fake = _fake_langfuse_langchain_module(handler)
+
+    class _FakeChain:
+        async def ainvoke(self, inp, **kwargs):
+            captured["kwargs"] = kwargs
+            return {
+                "query": "q",
+                "evidence": [],
+                "answer": "ok",
+                "meta": {"gate_action": "refuse"},
+            }
+
+    with (
+        patch("app.ops.lc_evidence_chain.chain.tracing_enabled", return_value=True),
+        patch.dict(sys.modules, {"langfuse.langchain": fake}),
+        patch(
+            "app.ops.lc_evidence_chain.chain.build_chain",
+            return_value=_FakeChain(),
+        ),
+    ):
+        out = await ainvoke_evidence_answer("q")
+
+    cfg = captured["kwargs"].get("config")
+    assert cfg is not None
+    assert cfg["run_name"] == "lc-evidence-chain"
+    assert "lc-evidence-chain" in cfg["metadata"]["langfuse_tags"]
+    assert cfg["callbacks"] == [handler]
+    assert out.answer == "ok"
