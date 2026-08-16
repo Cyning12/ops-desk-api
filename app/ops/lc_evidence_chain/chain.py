@@ -25,10 +25,14 @@ _TAG = "lc-evidence-chain"
 
 
 def _trace_config() -> dict | None:
-    """旁路专用 Langfuse CallbackHandler config；未开启时返回 None。"""
+    """旁路专用 Langfuse CallbackHandler config；未开启或 SDK 不可用时返回 None。"""
     if not tracing_enabled():
         return None
-    from langfuse.langchain import CallbackHandler  # 延迟导入：SDK 为可选依赖
+    try:
+        from langfuse.langchain import CallbackHandler  # 延迟导入：SDK 为可选依赖
+    except ImportError:
+        # CI / 精简依赖可能仅有 langchain-core，无完整 langchain 包
+        return None
 
     return {
         "callbacks": [CallbackHandler()],
