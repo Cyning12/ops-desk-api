@@ -22,9 +22,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dotenv import load_dotenv  # noqa: E402
 
-load_dotenv()
+load_dotenv()  # 必须先于 langfuse 相关 import
 
 from app.ops.lc_evidence_chain import ainvoke_evidence_answer  # noqa: E402
+from app.ops.tracing import flush_traces, tracing_enabled  # noqa: E402
 
 DEFAULT_QUERY = "Kimi Code 自动压缩被取消并报错 This operation was aborted 是什么原因?"
 
@@ -47,6 +48,8 @@ async def main() -> int:
     )
     args = parser.parse_args()
 
+    tracing_on = tracing_enabled()
+    print(f"tracing: {'on' if tracing_on else 'off'} (OPS_CHAT_TRACER + LANGFUSE_* keys)")
     print(f"query: {args.query}")
     result = await ainvoke_evidence_answer(args.query)
 
@@ -66,6 +69,10 @@ async def main() -> int:
 
     print("\n== full json (truncated) ==")
     print(_dump(result.model_dump(mode="json"), args.max_chars))
+
+    if tracing_on:
+        flush_traces()
+        print("flushed Langfuse traces (tag/run_name=lc-evidence-chain)")
 
     ok = bool(result.answer)
     return 0 if ok else 1
