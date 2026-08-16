@@ -66,6 +66,14 @@ docker compose -f docker-compose.prod.yml --env-file /opt/ops-desk/.env \
 切流前 **不要**在 `.env` 里设 `RAG_VECTOR_BACKEND=qdrant`（compose 默认仍 `pgvector`）。  
 `api` 经 compose 网络访问 `http://qdrant:6333`。
 
+### 1.1 镜像升级（v1.13.6 → v1.19.0）
+
+完整窗口（先切 `pgvector` → scp compose → `pull/up` → 旧盘不兼容则重建 → 再切回 `qdrant`）：
+
+**[`qdrant-server-upgrade.md`](./qdrant-server-upgrade.md)**
+
+GHA **不会**升 Qdrant。本机已升完；生产必须人工执行该指南。
+
 ---
 
 ## 2. 一次性：空架子（表 + collection）
@@ -203,3 +211,4 @@ curl -s http://127.0.0.1:8000/health
 | 连不上 `http://qdrant:6333` | qdrant 未 up，或不在同一 compose 网络 |
 | hydrate 空 | 对账 missing；point id 必须等于 chunk id |
 | 想立刻恢复 | §0 回滚：`RAG_VECTOR_BACKEND=pgvector` |
+| 1.19 读不了 1.13 volume | 见 [`qdrant-server-upgrade.md`](./qdrant-server-upgrade.md) §5；先切 pgvector 再删卷重建 |

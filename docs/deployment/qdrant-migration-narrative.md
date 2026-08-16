@@ -51,7 +51,7 @@
 
 | 决策 | 选择 |
 |---|---|
-| 引擎版本 | Qdrant **v1.13.6** |
+| 引擎版本 | Qdrant **v1.19.0**（`qdrant/qdrant:v1.19.0`；对齐 client 1.19） |
 | 索引 | HNSW **`on_disk`**（非 DiskANN、非全内存上架） |
 | 向量 | Cosine / **1024**（BGE-M3） |
 | Payload | **仅 filter**（`source_type` / `repo` / `source_id` / `chunk_index`） |
@@ -201,7 +201,7 @@ SPEC 起草 / 20-audit / 人签 v1.1
 | 本机 vs 生产语料混淆 | 生产 export **0** | 先 `count(*)`；本机 8574、生产曾 0 |
 | zsh `$COMPOSE="docker compose"` | `command not found: docker compose` | 用数组 `COMPOSE=(docker compose)` 或直接写命令 |
 | CI `qdrant-client<1.14` | uv 跨版本解析失败 | `>=1.14,<2`；CI 改 **Python 3.11 + uv pip**（不 `uv sync`） |
-| client 1.19 vs server 1.13.6 | Warning；`search` 属性缺失 | reconcile 改 `query_points`；警告可暂忽略 |
+| client 1.19 vs server 1.13.6（已收敛） | 曾 Warning / `search` 缺失 | 热路径 `query_points`（PR #37）；server 升 **v1.19.0** |
 | api 镜像旧 / alembic stamp 新 | `Can't locate revision 20260813_qdrant_dlq` | `build --no-cache api` |
 | 生产 ingest 拉 HF | Network unreachable | 拷贝已嵌入语料或配镜像/离线 tokenizer |
 | `RAG_FTS_CONFIG=chinese` | 无 zhparser 则 KW 路炸 | 生产只用 **simple**；A 臂实验不上生产 |
@@ -231,7 +231,7 @@ SPEC 起草 / 20-audit / 人签 v1.1
 已知技术债：
 
 1. 生产语料来源应改为「生产 issues/PR/docs 现场 ingest」（需解决 HF/镜像或 ApiEmbedder 分词依赖）。  
-2. client/server 次版本差（1.19 vs 1.13.6）宜收敛。  
+2. client/server 次版本差已收敛：compose 钉 **v1.19.0**（task `qdrant-server-upgrade`）。  
 3. 80 万 P95 未过 → 峰值容量不作 SLA 承诺。  
 4. DLQ cron 重放器非本波交付。  
 5. 前端 chat 联调验收未做。
@@ -245,6 +245,7 @@ SPEC 起草 / 20-audit / 人签 v1.1
 | SPEC | `docs/spec/SPEC-qdrant-migration_v1.md` |
 | Task 关账 | `docs/tasks/done/task_qdrant_migration.md` |
 | 切流操作 | `docs/deployment/qdrant-cutover.md` |
+| 生产升镜像 | `docs/deployment/qdrant-server-upgrade.md` |
 | GHA 发版 | `docs/deployment/gha-api-deploy.md` |
 | 本纪要 | `docs/deployment/qdrant-migration-narrative.md` |
 | Invokes | `docs/harness/invokes/by-task/qdrant-migration/` |
@@ -259,7 +260,6 @@ SPEC 起草 / 20-audit / 人签 v1.1
 
 - 生产现场 ingest 通路（HF/镜像/API 分词）与水位日更（`ops-sync-sender-migration` 等相关）  
 - 观测：成功路径也打结构化日志（backend / latency / fallback）便于无前端时验收  
-- client/server 版本对齐  
 - 峰值容量（若业务需要）单独立项，不以本次 80 万 FAIL 冒充通过  
 
 ---
@@ -269,3 +269,4 @@ SPEC 起草 / 20-audit / 人签 v1.1
 | 日期 | 说明 |
 |---|---|
 | 2026-08-14 | 首版：汇总 SPEC→生产切流全流程、踩坑与索引 |
+| 2026-08-16 | 引擎版本句改为 v1.19.0；client/server 差记为已收敛 |

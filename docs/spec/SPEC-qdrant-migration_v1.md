@@ -146,14 +146,14 @@ write_pg + commit
 
 | 项 | 选择 |
 | --- | --- |
-| 引擎 | **Qdrant v1.13.6**（`qdrant/qdrant:v1.13.6`） |
+| 引擎 | **Qdrant v1.19.0**（`qdrant/qdrant:v1.19.0`；对齐 `qdrant-client` 1.19） |
 | 距离 | Cosine（对齐 pgvector `<=>` + 归一化嵌入） |
 | 索引 | **HNSW**；否决 DiskANN；否决 GPU；否决全内存上架 |
 | 存储 | `vectors.on_disk=true`，`hnsw_config.on_disk=true` |
 | Payload | **仅** `source_type` / `repo` / `source_id` / `chunk_index`；`on_disk_payload=true`；**禁止**存 `content`/`metadata`/`images` |
 | Hydrate | Top-k id → `SELECT … FROM ops_knowledge_chunks WHERE id = ANY(:ids)` 回填 `RetrievedChunk` |
 | 参数起步 | `m=16`，`ef_construct=100`（构建峰值超限可降到 64），查询 `ef=64` |
-| 优化器建议 | `indexing_threshold` / `max_segment_size` 控制段积压（实现时按 Qdrant 1.13 文档微调，避免一次积压过大） |
+| 优化器建议 | `indexing_threshold` / `max_segment_size` 控制段积压（实现时按 Qdrant 1.19 文档微调，避免一次积压过大） |
 | 真源 | **PostgreSQL**；Qdrant = dense 检索副本 |
 | 切流 | `RAG_VECTOR_BACKEND`；默认 `pgvector` |
 | 同步 | 全量 + **commit 后**影子双写 + DLQ；无 Kafka CDC |
@@ -226,7 +226,7 @@ sequenceDiagram
 
     Note over Ops,Q: Phase0 摸盘+准备（在线）Ops
     Ops->>Ops: fio 4K randread（IOPS/延迟门禁）
-    Ops->>Q: docker compose 起 Qdrant v1.13.6（2C4G limits）
+    Ops->>Q: docker compose 起 Qdrant v1.19.0（2C4G limits）
     Ops->>Q: create collection（1024/Cosine/on_disk HNSW；轻量 payload）
     Ops->>API: RAG_VECTOR_BACKEND=pgvector（默认）
 
@@ -649,3 +649,4 @@ def _shadow_upsert_safe(row_id: int, vector: list[float], payload: dict) -> None
 | v1 | 2026-08-12 | 初稿：ADR + 自纠 + taskfile + 骨架 |
 | v1.1 | 2026-08-13 | 三方审吸收：硬件/fio 硬门禁、Payload 回查 PG、构建期 RSS、即时降级、对账纠错（`<=>`）、影子写非阻塞、bench 双臂、compare_with 锁死 |
 | v1.1-signed | 2026-08-13 | 维护者签收：`HG-SPEC-SIGNOFF=approved` · status=`accepted`；00 出 task |
+| v1.1.1 | 2026-08-16 | 引擎钉 `qdrant/qdrant:v1.19.0`（对齐 client 1.19；task `qdrant-server-upgrade`） |
