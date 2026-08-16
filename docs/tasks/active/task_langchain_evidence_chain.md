@@ -1,11 +1,11 @@
 # Task：LangChain Evidence+Answer Chain（并行于 LangGraph）
 
-> **状态**：active（闸已齐 · **维护者执行 30**）  
+> **状态**：active（30 交付齐 · **待 40/50 关账**）  
 > **类型**：rag / 实验旁路（学习向 + 可演进）  
 > **关联 SPEC**：`docs/spec/SPEC-langchain-evidence-chain_v1.md`（v1 · HG-SPEC-SIGNOFF=approved）  
 > **实现辅助文档（与 task 分开 · 30 必读）**：`docs/guides/IMPL_langchain-evidence-chain_v1.md`  
 > **分支**：`task/langchain-evidence-chain`  
-> **编排**：Agent 辅助 10/20/验收；**30 第一版由维护者本人按 IMPL 文档手写**；Agent **不**代写 P0 业务实现（除非维护者改口）。
+> **编排**：维护者手写 30 主码；Agent 辅助调试/单测/图谱；**00 统筹 40→50 关账**。
 
 ---
 
@@ -93,13 +93,13 @@ evidence 字段兼容现网引用卡片，便于日后升为 graph node 或单�
 
 ## 验收标准
 
-- [ ] `app/ops/chat/graph.py` 拓扑无变更（或仅文档字符串，须在 PR 说明）  
-- [ ] `build_chain().ainvoke({"query": ...})` 返回 `evidence` + `answer`  
-- [ ] evidence 含 `anchor` / `snippet`（或等价）  
-- [ ] `tests/test_lc_evidence_chain.py` 通过  
-- [ ] CLI 冒烟 exit 0  
-- [ ] `docs/_tech_graph/l1/01_modules.md` 有旁路说明  
-- [ ] IMPL 文档仍在且与实现一致（可小改同步）
+- [x] `app/ops/chat/graph.py` 拓扑无变更（或仅文档字符串，须在 PR 说明）  
+- [x] `build_chain().ainvoke({"query": ...})` 返回 `evidence` + `answer`  
+- [x] evidence 含 `anchor` / `snippet`（或等价）  
+- [x] `tests/test_lc_evidence_chain.py` 通过  
+- [x] CLI 冒烟 exit 0  
+- [x] `docs/_tech_graph/l1/01_modules.md` 有旁路说明  
+- [x] IMPL 文档仍在且与实现一致（可小改同步）
 
 ## failure_paths
 
@@ -168,3 +168,4 @@ evidence 字段兼容现网引用卡片，便于日后升为 graph node 或单�
 | 日期 | 说明 |
 |---|---|
 | 2026-08-14 | 首稿：并行 LCEL 链；30 交维护者；IMPL 分文档 |
+| 2026-08-16 | 30 交付：包内 decide + answer_partial；G-L1/单测/smoke；待 40/50 |

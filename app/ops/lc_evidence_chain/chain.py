@@ -48,7 +48,13 @@ async def _grade_step(payload: dict[str, Any]) -> dict[str, Any]:
 
 async def _answer_step(payload: dict[str, Any]) -> dict[str, Any]:
     evidence: list[EvidenceItem] = list(payload.get("evidence") or [])
-    answer = await answer_question(str(payload["query"]), evidence)
+    meta = dict(payload.get("meta") or {})
+    gate_action = str(meta.get("gate_action") or "")
+    answer = await answer_question(
+        str(payload["query"]),
+        evidence,
+        gate_action=gate_action or None,
+    )
     return {
         **payload,
         "answer": answer,

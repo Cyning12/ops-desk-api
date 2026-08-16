@@ -151,3 +151,57 @@ async def test_answer_question_empty_skips_llm():
         text = await answer_question("q", [])
     assert text == EMPTY_EVIDENCE_ANSWER
     factory.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_answer_partial_injects_partial_evidence_note():
+    captured: list = []
+
+    class _Prov:
+        async def complete(self, messages, model=None):
+            captured.extend(messages)
+            return "仅部分证据。根据资料……"
+
+    with patch(
+        "app.ops.lc_evidence_chain.answer.get_llm_provider",
+        return_value=_Prov(),
+    ):
+        text = await answer_question(
+            "q",
+            [_item(3, source_id="2720", content="partial body")],
+            gate_action="answer_partial",
+        )
+
+    assert "仅部分证据" in text or text
+    assert any("仅部分证据" in m.content for m in captured if m.role == "system")
+    assert captured[-1].role == "user" and captured[-1].content.startswith("仅部分证据")
+
+
+@pytest.mark.asyncio
+async def test_ainvoke_partial_passes_gate_action_to_answer():
+    item = _item(3, source_id="2720")
+    grades = [Grade(evidence_id=3, relevance=Relevance.RELEVANT, reason="partial")]
+    seen: dict = {}
+
+    async def _fake_answer(query, evidence, *, gate_action=None, **kwargs):
+        seen["gate_action"] = gate_action
+        return "仅部分证据。ok"
+
+    with (
+        patch(
+            "app.ops.lc_evidence_chain.chain.retrieve_evidence",
+            new=AsyncMock(return_value=RetrieveResult(query="q", evidence=[item])),
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.chain.grade_chunk",
+            new=AsyncMock(return_value=grades),
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.chain.answer_question",
+            new=_fake_answer,
+        ),
+    ):
+        out = await ainvoke_evidence_answer("q")
+
+    assert out.meta["gate_action"] == "answer_partial"
+    assert seen.get("gate_action") == "answer_partial"

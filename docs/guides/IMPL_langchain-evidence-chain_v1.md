@@ -22,7 +22,7 @@ output: {"query", "evidence", "answer", "meta"}
 建议目录：
 
 ```
-app/ops/rag/lc_evidence_chain/
+app/ops/lc_evidence_chain/
   __init__.py      # export build_chain, ainvoke_evidence_answer
   types.py         # EvidenceItem TypedDict / dataclass
   retrieve.py      # 召回 → evidence
@@ -44,7 +44,7 @@ tests/test_lc_evidence_chain.py
 
 ```
 """LangChain LCEL：evidence + answer（并行于 LangGraph，默认不挂 graph）。"""
-from app.ops.rag.lc_evidence_chain.chain import ainvoke_evidence_answer, build_chain
+from app.ops.lc_evidence_chain.chain import ainvoke_evidence_answer, build_chain
 
 __all__ = ["build_chain", "ainvoke_evidence_answer"]
 ```
@@ -72,7 +72,7 @@ class ChainResult(TypedDict):
     meta: dict[str, Any]
 ```
 
-**自检**：`python -c "from app.ops.rag.lc_evidence_chain.types import EvidenceItem"`
+**自检**：`python -c "from app.ops.lc_evidence_chain.types import EvidenceItem"`
 
 ---
 
@@ -95,7 +95,7 @@ from app.db.session import AsyncSessionLocal
 from app.ops.rag.backend import vector_backend
 from app.ops.rag.embedder import SentenceTransformerEmbedder
 from app.ops.rag.retrieve import RetrievedChunk, hybrid_recall
-from app.ops.rag.lc_evidence_chain.types import EvidenceItem
+from app.ops.lc_evidence_chain.types import EvidenceItem
 
 _embedder: SentenceTransformerEmbedder | None = None
 
@@ -213,8 +213,8 @@ from typing import Any
 
 from langchain_core.runnables import RunnableLambda
 
-from app.ops.rag.lc_evidence_chain.answer import generate_answer
-from app.ops.rag.lc_evidence_chain.retrieve import retrieve_evidence
+from app.ops.lc_evidence_chain.answer import generate_answer
+from app.ops.lc_evidence_chain.retrieve import retrieve_evidence
 
 async def _retrieve_step(inp: dict[str, Any]) -> dict[str, Any]:
     query = inp["query"] if isinstance(inp, dict) else str(inp)
@@ -235,7 +235,7 @@ async def ainvoke_evidence_answer(query: str) -> dict[str, Any]:
 
 ```
 import asyncio
-from app.ops.rag.lc_evidence_chain import ainvoke_evidence_answer
+from app.ops.lc_evidence_chain import ainvoke_evidence_answer
 print(asyncio.run(ainvoke_evidence_answer("自动压缩被取消怎么办")))
 ```
 
@@ -258,7 +258,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.ops.rag.lc_evidence_chain import ainvoke_evidence_answer
+from app.ops.lc_evidence_chain import ainvoke_evidence_answer
 
 async def main() -> int:
     p = argparse.ArgumentParser()
@@ -306,13 +306,13 @@ async def test_chain_returns_evidence_and_answer():
         "meta": {"backend": "qdrant", "hit_count": 1},
     }
     with patch(
-        "app.ops.rag.lc_evidence_chain.chain.retrieve_evidence",
+        "app.ops.lc_evidence_chain.chain.retrieve_evidence",
         new=AsyncMock(return_value=fake),
     ), patch(
-        "app.ops.rag.lc_evidence_chain.chain.generate_answer",
+        "app.ops.lc_evidence_chain.chain.generate_answer",
         new=AsyncMock(side_effect=lambda p: {**p, "answer": "ok"}),
     ):
-        from app.ops.rag.lc_evidence_chain import ainvoke_evidence_answer
+        from app.ops.lc_evidence_chain import ainvoke_evidence_answer
         out = await ainvoke_evidence_answer("q")
     assert out["answer"] == "ok"
     assert out["evidence"][0]["anchor"] == "2720#0"
@@ -360,7 +360,7 @@ async def test_chain_returns_evidence_and_answer():
 
 ```
 阶段：S2
-文件：app/ops/rag/lc_evidence_chain/answer.py
+文件：app/ops/lc_evidence_chain/answer.py
 现象：provider.chat 报错 …
 已对照：app/ops/chat/nodes.py 的调用方式
 请：只辅助改本包，禁止改 graph.py
