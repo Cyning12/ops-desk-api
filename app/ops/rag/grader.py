@@ -12,6 +12,7 @@ Prompt 版本（env ``RAG_GRADER_PROMPT``，默认 ``v1``）：
   v1 — 基线文案（r4-2 / r4-R-floor04 等历史报告所用）
   v2 — 加严「可用证据」边界，便于在 CE floor=0.4/ratio=0.75 下对照实验
 """
+
 from __future__ import annotations
 
 import json
@@ -36,13 +37,51 @@ class Relevance(StrEnum):
     WEAK = "weak"
     RELEVANT = "relevant"
     EXACT = "exact"
+    UNRATED = "unrated"  # 未走 grader；不得写进 StrEnum 类体其它非 str 属性
+
+    @property
+    def level(self) -> int:
+        return _RANK[self]
+
+    @property
+    def should_reject(self) -> bool:
+        """返回是否应拒答（契约 4c）。"""
+        return self in (Relevance.IRRELEVANT, Relevance.WEAK)
+
+    @property
+    def is_partial(self) -> bool:
+        """返回是否为部分证据（契约 4c）。"""
+        return self is Relevance.RELEVANT
+
+    @property
+    def is_exact(self) -> bool:
+        """返回是否为直接回答（契约 4c）。"""
+        return self is Relevance.EXACT
+
+    def get_response(self) -> str:
+        if self.should_reject:
+            return REFUSAL_TEXT
+        if self.is_partial:
+            return "仅部分证据"  # 契约：仍应作答并注明，不在此拒答
+        if self.is_exact:
+            return "根据提供的证据，可以回答此问题。"
+        return ""
+
+    @classmethod
+    def safe_parse(cls, value: str) -> Relevance | None:
+        try:
+            return cls(value)
+        except ValueError:
+            return None
 
 
+# 等级表必须在类外：StrEnum 会把类体里的 dict 误当成成员值
 _RANK = {
     Relevance.IRRELEVANT: 0,
     Relevance.WEAK: 1,
     Relevance.RELEVANT: 2,
     Relevance.EXACT: 3,
+    Relevance.UNRATED: -1,
 }
 
 
@@ -116,6 +155,10 @@ def grader_system_prompt(version: str | None = None) -> str:
     return _GRADER_PROMPTS.get(ver, GRADER_SYSTEM_V1)
 
 
+def user_prompt(query: str, blocks: list[str]) -> str:
+    return f"用户问题：{query}\n\n候选文档块：\n\n" + "\n\n".join(blocks)
+
+
 def decide(grades: list[Grade]) -> GateDecision:
     """闸判定（纯函数 · 契约 4b）：最高评级定行为。"""
     if not grades:
@@ -166,7 +209,7 @@ async def grade_chunks(
     for c in chunks:
         body = strip_doc_context_prefix(c.content)[:snippet_chars]
         blocks.append(f"### chunk_id={c.id}（{c.source_type} {c.anchor}）\n{body}")
-    user = f"用户问题：{query}\n\n候选文档块：\n\n" + "\n\n".join(blocks)
+    user = user_prompt(query, blocks)
     raw = await provider.complete(
         [LlmMessage(role="system", content=system), LlmMessage(role="user", content=user)],
         model=model,
