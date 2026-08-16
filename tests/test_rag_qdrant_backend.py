@@ -87,7 +87,7 @@ async def test_qdrant_retriever_hydrates_from_pg():
 
     hit = SimpleNamespace(id=42, payload={"repo": "x"})
     client = MagicMock()
-    client.search = AsyncMock(return_value=[hit])
+    client.query_points = AsyncMock(return_value=SimpleNamespace(points=[hit]))
     client.close = AsyncMock()
 
     row = SimpleNamespace(
@@ -110,7 +110,7 @@ async def test_qdrant_retriever_hydrates_from_pg():
     assert len(chunks) == 1
     assert chunks[0].id == 42
     assert chunks[0].content.startswith("Title:")
-    client.search.assert_awaited()
+    client.query_points.assert_awaited()
     # hydrate 走 PG
     session.execute.assert_awaited()
 

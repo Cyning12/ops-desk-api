@@ -69,13 +69,25 @@ class QdrantRetriever(BaseRetriever):
         k: int,
         query_filter: qm.Filter | None,
     ) -> list[Any]:
+        """稠密检索。client≥1.14 无 ``search``，走 ``query_points``（对齐 reconcile.py）。"""
         client = self._get_client()
+        if hasattr(client, "query_points"):
+            resp = await client.query_points(
+                collection_name=self._collection,
+                query=query_vector,
+                query_filter=query_filter,
+                limit=k,
+                with_payload=True,  # 仅含 filter 小字段
+                with_vectors=False,
+                search_params=qm.SearchParams(hnsw_ef=self._ef),
+            )
+            return list(resp.points)
         return await client.search(
             collection_name=self._collection,
             query_vector=query_vector,
             query_filter=query_filter,
             limit=k,
-            with_payload=True,  # 仅含 filter 小字段
+            with_payload=True,
             with_vectors=False,
             search_params=qm.SearchParams(hnsw_ef=self._ef),
         )
