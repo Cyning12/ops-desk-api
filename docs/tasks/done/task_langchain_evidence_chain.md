@@ -1,6 +1,6 @@
 # Task：LangChain Evidence+Answer Chain（并行于 LangGraph）
 
-> **状态**：active（30 交付齐 · **待 40/50 关账**）  
+> **状态**：completed  
 > **类型**：rag / 实验旁路（学习向 + 可演进）  
 > **关联 SPEC**：`docs/spec/SPEC-langchain-evidence-chain_v1.md`（v1 · HG-SPEC-SIGNOFF=approved）  
 > **实现辅助文档（与 task 分开 · 30 必读）**：`docs/guides/IMPL_langchain-evidence-chain_v1.md`  
@@ -161,6 +161,48 @@ evidence 字段兼容现网引用卡片，便于日后升为 graph node 或单�
 - [x] HG-AUDIT-R1 approved（20 审 pass · 维护者签收推进）
 - [x] 维护者确认「本人执行 30」
 
+### 自检结论（执行者）
+
+> Harness 40 · 2026-08-16 · 分支 `task/langchain-evidence-chain` · 子 agent 自检 · 00 回填
+
+- [x] `npx @cyning/harness@2.24.0 verify --target . --task docs/tasks/active/task_langchain_evidence_chain.md` → EXIT 0 · VERIFY: PASS
+- [x] `git diff master -- app/ops/chat/graph.py` 为空
+- [x] `.venv/bin/ruff check app/ops/lc_evidence_chain tests/test_lc_evidence_chain.py` → EXIT 0
+- [x] `.venv/bin/pytest tests/test_lc_evidence_chain.py -q` → EXIT 0 · **10 passed**
+- [x] `./scripts/graph-compile.sh` → EXIT 0
+- [x] 验收表已勾：ainvoke / anchor·snippet / G-L1 / IMPL / CLI 存在性
+- [x] CLI：`scripts/lc_evidence_smoke.py` 存在且可 import（完整 DB smoke 留给本机有语料时可选复跑）
+
+**结论**：机械验收全绿，进入 50。
+
+### 自检结论（50）
+
+> Harness 50 · 2026-08-16 · 独立复检 · PASS
+
+- [x] 验收表已勾且与实现一致
+- [x] `git diff master -- app/ops/chat/graph.py` 为空
+- [x] 包 `app/ops/lc_evidence_chain/` + tests + smoke + G-L1 旁路说明存在
+- [x] 抽读 `chain` / `decide_grade` / `answer_question(gate_action=)` 合理
+- [x] `.venv/bin/pytest tests/test_lc_evidence_chain.py -q` → **10 passed**
+- [x] invoke 50 / CLOSE 已落档
+
+**结论**：50 PASS · 关账。
+
+### KPI
+
+| 项 | 分 |
+|---|---|
+| Task_KPI% | 100 |
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-16 |
+| 定稿 | LCEL 旁路 `retrieve→grade→answer`；默认不进 chat/graph |
+| 归档 | `docs/tasks/done/task_langchain_evidence_chain.md` |
+| 生产开关 | 无默认切流；仅 CLI/库级入口 |
+
 ---
 
 ## 修订
@@ -169,3 +211,4 @@ evidence 字段兼容现网引用卡片，便于日后升为 graph node 或单�
 |---|---|
 | 2026-08-14 | 首稿：并行 LCEL 链；30 交维护者；IMPL 分文档 |
 | 2026-08-16 | 30 交付：包内 decide + answer_partial；G-L1/单测/smoke；待 40/50 |
+| 2026-08-16 | 40 PASS · 50 PASS · CLOSE 归档 |
