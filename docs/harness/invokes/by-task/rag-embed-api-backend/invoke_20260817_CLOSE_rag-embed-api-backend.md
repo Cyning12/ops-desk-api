@@ -13,3 +13,5 @@
 `--allow-unchecked`：仅豁免人工小机 recreate 抽检。
 
 归档：`docs/tasks/done/task_rag_embed_api_backend.md`
+
+PR：https://github.com/Cyning12/ops-desk-api/pull/42
