@@ -1,9 +1,10 @@
 """Chat service glue between graph and persistence."""
 from collections.abc import AsyncIterator
+from contextlib import nullcontext
 
 from app.ops.chat.graph import graph
 from app.ops.chat.state import ChatState
-from app.ops.tracing import tracing_enabled
+from app.ops.tracing import ensure_langfuse_environment, trace_span, tracing_enabled
 
 
 def _trace_config(state: ChatState) -> dict | None:
@@ -14,6 +15,7 @@ def _trace_config(state: ChatState) -> dict | None:
     """
     if not tracing_enabled():
         return None
+    ensure_langfuse_environment()
     from langfuse.langchain import CallbackHandler  # 延迟导入：SDK 为可选依赖
 
     metadata: dict = {"langfuse_tags": ["ops-chat"]}
@@ -33,18 +35,25 @@ async def run_chat_stream(state: ChatState) -> AsyncIterator[dict]:
         astream_kwargs: dict = {"stream_mode": "updates"}
         if config := _trace_config(state):
             astream_kwargs["config"] = config
-        async for node_update in graph.astream(state, **astream_kwargs):
-            for node_name, node_output in node_update.items():
-                if not isinstance(node_output, dict):
-                    continue
-                for event in node_output.get("events", []) or []:
-                    if not isinstance(event, dict):
+        # 根 span：手工 grade_llm / answer_llm 才能挂到同一调用链（否则各成单节点 trace）
+        span_cm = (
+            trace_span("ops-chat", run_type="chain", tags=["ops-chat"])
+            if tracing_enabled()
+            else nullcontext()
+        )
+        with span_cm:
+            async for node_update in graph.astream(state, **astream_kwargs):
+                for node_name, node_output in node_update.items():
+                    if not isinstance(node_output, dict):
                         continue
-                    yield {
-                        "event_type": event.get("event_type", "unknown"),
-                        "agent_role": event.get("agent_role", node_name),
-                        "payload": event.get("payload", {}),
-                    }
+                    for event in node_output.get("events", []) or []:
+                        if not isinstance(event, dict):
+                            continue
+                        yield {
+                            "event_type": event.get("event_type", "unknown"),
+                            "agent_role": event.get("agent_role", node_name),
+                            "payload": event.get("payload", {}),
+                        }
     except Exception as exc:
         yield {
             "event_type": "error",

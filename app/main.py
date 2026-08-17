@@ -6,11 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.ops.router import router as ops_router
+from app.ops.tracing import log_tracing_startup
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan."""
+    log_tracing_startup()
     yield
 
 
