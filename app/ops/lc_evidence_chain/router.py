@@ -15,6 +15,7 @@ from app.db.models import OpsUser
 from app.ops.deps import CurrentUser
 from app.ops.lc_evidence_chain.chain import ainvoke_evidence_answer
 from app.ops.lc_evidence_chain.types import ChainResult, EvidenceItem, Grade
+from app.ops.tracing import flush_traces, tracing_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +124,8 @@ async def invoke_lc_evidence(
         result = await ainvoke_evidence_answer(body.query)
     except Exception:
         logger.exception("lc-evidence invoke failed")
+        if tracing_enabled():
+            flush_traces()
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
@@ -130,6 +133,8 @@ async def invoke_lc_evidence(
                 "error": {"code": _FAIL_CODE, "message": _FAIL_MESSAGE},
             },
         )
+    if tracing_enabled():
+        flush_traces()
     return JSONResponse(
         content={"ok": True, "data": serialize_chain_result(result).model_dump()}
     )

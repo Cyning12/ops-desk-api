@@ -1,11 +1,11 @@
 # Task：lc_evidence_chain · Langfuse tracing 监控
 
-> **状态**：active（闸已签 · 30/40 执行中）  
+> **状态**：completed（维护者 UI 验收通过 · 2026-08-17）  
 > **类型**：observability / rag-debug  
 > **上游**：`docs/tasks/done/task_langchain_evidence_chain.md`（旁路 LCEL 已关账 · PR #33 已合入 master）  
 > **关联实现**：`app/ops/lc_evidence_chain/` · 现网 Chat 埋点 `app/ops/tracing.py` + `app/ops/chat/service.py`  
-> **分支**：`task/lc-evidence-langfuse-tracing`  
-> **编排**：闸齐 → 子 agent 30+40 → **本窗 50** → **等维护者确认**再 CLOSE/合入
+> **分支**：`task/lc-evidence-langfuse-tracing`（首合 PR #34）· 调用树/`LANGFUSE_ENV` 跟随 `task/siliconflow-rerank-api`  
+> **编排**：闸齐 → 30+40 → 50 → 维护者 UI 确认 → CLOSE
 
 ---
 
@@ -103,7 +103,9 @@
 - [x] `git diff`（相对合入基线）**不改** `app/ops/chat/graph.py` 拓扑  
 - [x] `ruff check` 相关路径 + `pytest tests/test_lc_evidence_chain.py`（及本 task 新增测）绿  
 - [x] `docs/_tech_graph/l1/01_modules.md` 已注明旁路可选 Langfuse  
-- [ ] （人工）本机 keys 下 smoke 后 Langfuse Traces 可见且可用 tag 过滤  
+- [x] （人工）本机 keys 下 smoke 后 Langfuse Traces 可见且可用 tag 过滤  
+  - 2026-08-17：`LANGFUSE_ENV`（默认 prod，本机 dev）须与 UI 顶栏 Environment 一致；`t-` 前缀是 **trace** 合成 id，当 observation 打开会 404。根 span 已包一层，避免 grade_llm/answer_llm 各成单节点。  
+  - 维护者确认：`make dev` 启动见 `langfuse tracing=on`；invoke 后 JP 云 `dev` 环境可见调用树。  
 
 ---
 
@@ -184,7 +186,7 @@ pytest mock 开关路径；本机 smoke+UI 抽检为人工项；ruff/pytest 绿�
 - [x] G-L1 `01_modules.md` 已补可选 Langfuse · tags=`lc-evidence-chain`
 - [x] `git diff origin/master -- app/ops/chat/graph.py` 为空
 - [x] ruff + pytest 绿
-- [ ] （人工遗留）本机 Langfuse UI 真连冒烟（维护者 keys）
+- [x] （人工遗留）本机 Langfuse UI 真连冒烟（维护者 keys）
 - [x] 30/40 invoke 已落盘；**未** task close / 开 PR
 
 **40 结论：PASS**（机械项全绿；人工 UI 项留给维护者）
@@ -200,10 +202,31 @@ pytest mock 开关路径；本机 smoke+UI 抽检为人工项；ruff/pytest 绿�
 - [x] `harness verify` PASS · ruff PASS · pytest **14 passed**
 - [x] freeze：`run_name` / tags = `lc-evidence-chain`；LLM 用 `trace_span(run_type="llm")`
 - [x] invoke 50 已落档
-- [ ] （人工）本机 Langfuse UI 按 tag 过滤 — **留给维护者**
-- [ ] CLOSE / PR — **等维护者进一步确认**
+- [x] （人工）本机 Langfuse UI 按 tag 过滤 — **维护者 2026-08-17 确认**
+- [x] CLOSE / PR — 跟随 `task/siliconflow-rerank-api`
 
 **50 结论：PASS（机械）· 阻塞 CLOSE 仅人工 UI（可选）+ 维护者确认。**
+
+---
+
+### KPI
+
+| 项 | 分 |
+|---|---|
+| Task_KPI% | 100 |
+
+### 经验
+
+- Wiki: n/a
+- `make dev` 须 `load_dotenv`；Langfuse 应用 logger 默认不出现在 uvicorn 终端。`LANGFUSE_ENV` 须同步 `LANGFUSE_TRACING_ENVIRONMENT`。
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-17 |
+| 定稿 | 旁路+Chat 根 span；`LANGFUSE_ENV` 默认 prod / 本机 dev |
+| 归档 | `docs/tasks/done/task_lc_evidence_langfuse_tracing.md` |
 
 ---
 
@@ -215,3 +238,4 @@ pytest mock 开关路径；本机 smoke+UI 抽检为人工项；ruff/pytest 绿�
 | 2026-08-16 | 维护者签收 · R1 留痕 · 派 30+40；50 后等确认再 CLOSE |
 | 2026-08-16 | 30+40 完成：CallbackHandler + generation span · 单测/ruff 绿 · UI 人工项待确认 |
 | 2026-08-16 | 50 PASS（机械）· 等维护者确认再 CLOSE/合入 |
+| 2026-08-17 | 维护者 UI 确认；补 LANGFUSE_ENV / 根 span / load_dotenv / 启动日志；CLOSE |

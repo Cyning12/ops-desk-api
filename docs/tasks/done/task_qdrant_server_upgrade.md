@@ -1,11 +1,11 @@
 # Task：Qdrant server 升级（本机 + 生产 · 对齐 client 1.19）
 
-> **状态**：active（30 本机+生产窗口完成 · 待 PR）  
+> **状态**：completed（生产窗口完成 · PR #38 已合入）  
 > **类型**：infra / 运维（镜像升级）  
 > **上游**：`docs/tasks/done/task_qdrant_migration.md` · 热修 PR #37（`query_points`）  
 > **审查对照**：`docs/harness/reviews/task_qdrant_server_upgrade_audit_R1_20260816.md`（20 · **pass**）  
 > **分支**：`task/qdrant-server-upgrade`  
-> **编排**：00 已签闸 → 30 本机先、再生产
+> **编排**：00 已签闸 → 30 本机先、再生产 → CLOSE
 
 ---
 
@@ -171,6 +171,39 @@ pytest 绿 + 本机一问无 warning；生产探活为人工项。
 
 ---
 
+### 自检结论（执行者）
+
+> 30 · 2026-08-16 · 本机+生产窗口完成 · PR #38 已合入 master
+
+| 命令 / 窗口 | 摘要 |
+|---|---|
+| 本机 compose 钉 `qdrant/qdrant:v1.19.0` | 旧 volume 不兼容，从 PG 重建 8574 |
+| 生产升镜像 | `docs/deployment/qdrant-server-upgrade.md`；reconcile pass；Flag=qdrant |
+| pytest `tests/test_rag_qdrant_backend.py` | 随 PR #38 合入 |
+
+---
+
+### KPI
+
+| 项 | 分 |
+|---|---|
+| Task_KPI% | 100 |
+
+### 经验
+
+- Wiki: n/a
+- Qdrant 1.19 **读不了** 1.13 volume；升镜像须删盘从 PG 重建。
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-17 |
+| 定稿 | `qdrant/qdrant:v1.19.0` · PR #38 |
+| 归档 | `docs/tasks/done/task_qdrant_server_upgrade.md` |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
@@ -180,3 +213,4 @@ pytest 绿 + 本机一问无 warning；生产探活为人工项。
 | 2026-08-16 | 30：钉 v1.19.0；本机 volume 不兼容已从 PG 重建 8574；生产 compose 已改未 up |
 | 2026-08-16 | 生产升镜像完整窗口：`docs/deployment/qdrant-server-upgrade.md` |
 | 2026-08-16 | 生产窗口完成：1.19.0 · reconcile pass · Flag=qdrant |
+| 2026-08-17 | PR #38 已合入；CLOSE 归档 |

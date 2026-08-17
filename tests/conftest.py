@@ -12,6 +12,9 @@ import os
 import random
 from datetime import datetime, timedelta
 
+# 先于 import app.config（其 load_dotenv）关掉 tracing，避免本机 .env 的 keys 在 pytest 里误上报
+os.environ.setdefault("OPS_CHAT_TRACER", "")
+
 _TEST_DB_URL = "postgresql+asyncpg://ops:ops_password@localhost:5432/opsdesk_test"
 
 

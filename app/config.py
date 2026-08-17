@@ -1,7 +1,14 @@
 """Application configuration."""
 
+from pathlib import Path
+
+from dotenv import load_dotenv
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# pydantic Settings 只把认识的字段读进对象；reranker / tracing 用 os.getenv。
+# 按本文件定位仓根 .env，不依赖 uvicorn 的 cwd。
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 class Settings(BaseSettings):

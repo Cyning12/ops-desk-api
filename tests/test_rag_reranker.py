@@ -1,13 +1,16 @@
-"""RAG_RERANK：Cross-Encoder 精排开关与排序稳定性。"""
+"""RAG_RERANK：精排开关、方案 B 过滤与 SiliconFlow 打分后端。"""
 from __future__ import annotations
 
 from collections.abc import Sequence
 from unittest.mock import MagicMock
 
+import httpx
 import pytest
 
+from app.ops.rag import reranker as reranker_mod
 from app.ops.rag.reranker import (
     recall_k_each,
+    rerank_backend,
     rerank_candidates,
     rerank_chunks,
     rerank_enabled,
@@ -34,16 +37,27 @@ def _clear_rerank_env(monkeypatch: pytest.MonkeyPatch):
     for key in (
         "RAG_RERANK_ENABLED",
         "RAG_RERANK_MODEL",
+        "RAG_RERANK_BACKEND",
         "RAG_RERANK_CANDIDATES",
         "RAG_RECALL_K_EACH",
         "RAG_RERANK_MIN_SCORE",
         "RAG_RERANK_SCORE_RATIO",
+        "SILICONFLOW_API_KEY",
+        "SILICONFLOW_BASE_URL",
     ):
         monkeypatch.delenv(key, raising=False)
 
 
 def test_rerank_disabled_by_default():
     assert rerank_enabled() is False
+
+
+def test_rerank_backend_defaults_to_siliconflow(monkeypatch: pytest.MonkeyPatch):
+    assert rerank_backend() == "siliconflow"
+    monkeypatch.setenv("RAG_RERANK_BACKEND", "")
+    assert rerank_backend() == "siliconflow"
+    monkeypatch.setenv("RAG_RERANK_BACKEND", "local")
+    assert rerank_backend() == "local"
 
 
 def test_rerank_enabled_true(monkeypatch: pytest.MonkeyPatch):
@@ -171,8 +185,25 @@ async def test_retrieve_node_disabled_does_not_call_rerank(monkeypatch: pytest.M
 
     monkeypatch.setattr(rag_nodes, "rerank_chunks", _should_not)
 
+    http_calls = {"n": 0}
+
+    def _no_http(*_a, **_k):
+        http_calls["n"] += 1
+        raise AssertionError("must not POST /rerank when RAG_RERANK_ENABLED=false")
+
+    ce_calls = {"n": 0}
+
+    def _no_ce(*_a, **_k):
+        ce_calls["n"] += 1
+        raise AssertionError("must not load CrossEncoder when RAG_RERANK_ENABLED=false")
+
+    monkeypatch.setattr(reranker_mod.httpx, "post", _no_http)
+    monkeypatch.setattr(reranker_mod, "_load_cross_encoder", _no_ce)
+
     result = await rag_nodes.retrieve_node({"query": "hello"})
     assert called["n"] == 0
+    assert http_calls["n"] == 0
+    assert ce_calls["n"] == 0
     assert [c.id for c in result["retrieved"]] == [1, 2, 3, 4, 5]
     assert hybrid.call_args.kwargs.get("k_each") == 10
     assert hybrid.call_args.kwargs.get("top_n") == 5
@@ -217,3 +248,134 @@ async def test_retrieve_node_enabled_reranks(monkeypatch: pytest.MonkeyPatch):
     result = await rag_nodes.retrieve_node({"query": "hello"})
     assert [c.id for c in result["retrieved"]] == [7, 6, 5, 4, 3]
     assert result["events"][0]["payload"]["rerank_enabled"] is True
+
+
+def _forbid_cross_encoder(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
+    calls = {"n": 0}
+
+    def boom(*_a, **_k):
+        calls["n"] += 1
+        raise AssertionError("sentence_transformers.CrossEncoder must not be loaded")
+
+    monkeypatch.setattr(reranker_mod, "_load_cross_encoder", boom)
+    return calls
+
+
+def _mock_siliconflow_post(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    results: list[dict] | None = None,
+    error: BaseException | None = None,
+    status_code: int = 200,
+) -> dict:
+    capture: dict = {"n": 0, "calls": []}
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        capture["n"] += 1
+        capture["calls"].append(
+            {"url": url, "json": json, "headers": headers, "timeout": timeout}
+        )
+        if error is not None:
+            raise error
+        request = httpx.Request("POST", str(url))
+        if status_code >= 400:
+            resp = httpx.Response(status_code, request=request, json={"error": "fail"})
+            return resp
+        resp = httpx.Response(
+            status_code,
+            request=request,
+            json={"results": results or []},
+        )
+        return resp
+
+    monkeypatch.setattr(reranker_mod.httpx, "post", fake_post)
+    return capture
+
+
+def test_siliconflow_backend_skips_cross_encoder(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("RAG_RERANK_ENABLED", "true")
+    monkeypatch.setenv("RAG_RERANK_BACKEND", "siliconflow")
+    monkeypatch.setenv("SILICONFLOW_API_KEY", "sk-test")
+    ce = _forbid_cross_encoder(monkeypatch)
+    capture = _mock_siliconflow_post(
+        monkeypatch,
+        results=[
+            {"index": 0, "relevance_score": 0.9},
+            {"index": 1, "relevance_score": 0.85},
+        ],
+    )
+    cands = [_chunk(1), _chunk(2)]
+    out = rerank_chunks("q", cands, top_n=5, min_score=0.0, score_ratio=0.0)
+    assert ce["n"] == 0
+    assert capture["n"] == 1
+    assert [c.id for c in out] == [1, 2]
+
+
+def test_siliconflow_unordered_index_then_scheme_b(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("SILICONFLOW_API_KEY", "sk-test")
+    monkeypatch.setenv("SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1")
+    _forbid_cross_encoder(monkeypatch)
+    capture = _mock_siliconflow_post(
+        monkeypatch,
+        results=[
+            {"index": 2, "relevance_score": 0.95},
+            {"index": 0, "relevance_score": 0.50},
+            {"index": 1, "relevance_score": 0.80},
+            {"index": 3, "relevance_score": 0.70},
+        ],
+    )
+    cands = [_chunk(i) for i in range(1, 5)]
+    # max=0.95 >= 0.4；cut=0.95*0.75=0.7125 → 保留 0.95, 0.80
+    out = rerank_chunks("hello query", cands, top_n=5)
+    req = capture["calls"][0]
+    assert req["url"] == "https://api.siliconflow.cn/v1/rerank"
+    assert req["json"]["top_n"] == 4
+    assert req["json"]["query"] == "hello query"
+    assert req["json"]["documents"] == ["body-1", "body-2", "body-3", "body-4"]
+    assert req["json"]["model"] == "BAAI/bge-reranker-v2-m3"
+    assert req["headers"]["Authorization"] == "Bearer sk-test"
+    assert req["timeout"] == 12.0
+    assert [c.id for c in out] == [3, 2]
+    assert out[0].rerank_score == 0.95
+    assert out[1].rerank_score == 0.80
+
+
+def test_siliconflow_http_failure_falls_back_coarse(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("SILICONFLOW_API_KEY", "sk-test")
+    _forbid_cross_encoder(monkeypatch)
+    _mock_siliconflow_post(
+        monkeypatch,
+        error=httpx.TimeoutException("rerank timeout"),
+    )
+    cands = [_chunk(i) for i in range(1, 8)]
+    out = rerank_chunks("q", cands, top_n=5)
+    assert [c.id for c in out] == [1, 2, 3, 4, 5]
+
+
+def test_siliconflow_http_5xx_falls_back_coarse(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("SILICONFLOW_API_KEY", "sk-test")
+    _forbid_cross_encoder(monkeypatch)
+    _mock_siliconflow_post(monkeypatch, status_code=500)
+    cands = [_chunk(i) for i in range(1, 7)]
+    out = rerank_chunks("q", cands, top_n=5)
+    assert [c.id for c in out] == [1, 2, 3, 4, 5]
+
+
+def test_siliconflow_missing_api_key_falls_back_coarse(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    _forbid_cross_encoder(monkeypatch)
+    http_calls = {"n": 0}
+
+    def _no_http(*_a, **_k):
+        http_calls["n"] += 1
+        raise AssertionError("缺 key 时不得发 /rerank")
+
+    monkeypatch.setattr(reranker_mod.httpx, "post", _no_http)
+    cands = [_chunk(i) for i in range(1, 6)]
+    with caplog.at_level("ERROR", logger="app.ops.rag.reranker"):
+        out = rerank_chunks("q", cands, top_n=5)
+    assert [c.id for c in out] == [1, 2, 3, 4, 5]
+    assert http_calls["n"] == 0
+    assert "rerank failed; fallback to coarse" in caplog.text
+    assert "SILICONFLOW_API_KEY" in caplog.text
