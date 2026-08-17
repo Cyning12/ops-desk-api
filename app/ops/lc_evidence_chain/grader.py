@@ -16,7 +16,7 @@ from app.ops.rag.grader import (
     user_prompt,
 )
 from app.ops.rag.prefix import strip_doc_context_prefix
-from app.ops.tracing import trace_span
+from app.ops.tracing import trace_span, update_current_span_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +67,12 @@ def decide_grade(evidence: list[EvidenceItem], grades: list[Grade]) -> GateDecis
             g = item.grade
             if g is not None and (g.relevance.is_partial or g.relevance.is_exact):
                 kept.append(item)
+        # 按档降序；同档保持召回相对序（sorted 稳定）
+        kept = sorted(
+            kept,
+            key=lambda it: it.grade.relevance.level if it.grade is not None else -1,
+            reverse=True,
+        )
 
     logger.info(
         "decide: action=%s best=%s kept=%d/%d",
@@ -101,10 +107,16 @@ async def _grade_chunks_llm(
     user = user_prompt(query, blocks)
     # 自研 provider 不走 LangChain LLM 类，CallbackHandler 抓不到 → 显式 generation
     with trace_span("grade_llm", run_type="llm", model=model):
-        raw = await provider.complete(
-            [LlmMessage(role="system", content=system), LlmMessage(role="user", content=user)],
-            model=model,
-        )
+        try:
+            raw = await provider.complete(
+                [LlmMessage(role="system", content=system), LlmMessage(role="user", content=user)],
+                model=model,
+            )
+        except Exception:
+            # LlmProviderError 与其它完成期异常：空 grades → decide_grade refuse
+            logger.exception("grader LLM 失败，fail-closed 为空 grades")
+            update_current_span_metadata({"grade_failed": True})
+            return []
     parsed = parse_grades(raw, {c.id for c in evidence})
     grades = [Grade(evidence_id=g.chunk_id, relevance=g.relevance, reason=g.reason) for g in parsed]
     logger.info(

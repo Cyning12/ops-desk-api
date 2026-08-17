@@ -80,6 +80,50 @@ class TestSiliconFlowProvider:
 
         assert answer == "OneTwo"
 
+    async def test_complete_reports_usage_when_tracing_on(self, monkeypatch):
+        lines = [
+            'data: {"choices":[{"delta":{"content":"One"}}]}',
+            'data: {"choices":[{"delta":{"content":"Two"}}]}',
+            'data: {"choices":[],"usage":{"prompt_tokens":11,"completion_tokens":7}}',
+            "data: [DONE]",
+        ]
+        monkeypatch.setattr(httpx, "AsyncClient", _fake_client_factory(200, lines))
+        monkeypatch.setattr("app.ops.tracing.tracing_enabled", lambda: True)
+        captured: list = []
+        monkeypatch.setattr(
+            "app.ops.tracing.update_current_generation_usage",
+            lambda usage: captured.append(usage),
+        )
+
+        provider = SiliconFlowProvider(api_key="test-key")
+        answer = await provider.complete([LlmMessage(role="user", content="hi")])
+
+        assert answer == "OneTwo"
+        assert len(captured) == 1
+        assert captured[0].prompt_tokens == 11
+        assert captured[0].completion_tokens == 7
+
+    async def test_complete_usage_silent_when_tracing_off(self, monkeypatch):
+        lines = [
+            'data: {"choices":[{"delta":{"content":"One"}}]}',
+            'data: {"choices":[{"delta":{"content":"Two"}}]}',
+            'data: {"choices":[],"usage":{"prompt_tokens":11,"completion_tokens":7}}',
+            "data: [DONE]",
+        ]
+        monkeypatch.setattr(httpx, "AsyncClient", _fake_client_factory(200, lines))
+        monkeypatch.setattr("app.ops.tracing.tracing_enabled", lambda: False)
+        captured: list = []
+        monkeypatch.setattr(
+            "app.ops.tracing.update_current_generation_usage",
+            lambda usage: captured.append(usage),
+        )
+
+        provider = SiliconFlowProvider(api_key="test-key")
+        answer = await provider.complete([LlmMessage(role="user", content="hi")])
+
+        assert answer == "OneTwo"
+        assert captured == []
+
     async def test_complete_stream_ignores_empty_chunks(self, monkeypatch):
         lines = [
             'data: {"choices":[{"delta":{"content":""}}]}',
@@ -323,3 +367,40 @@ class TestBailianProvider:
         answer = await provider.complete([LlmMessage(role="user", content="hi")])
 
         assert answer == "OneTwo"
+
+    async def test_complete_reports_usage(self, mock_bailian_stream, monkeypatch):
+        mock_bailian_stream({
+            "deepseek-v4-pro": [
+                LlmChunk(content="One"),
+                LlmChunk(content="Two"),
+                LlmChunk(
+                    content="",
+                    meta={"usage": {"prompt_tokens": 3, "completion_tokens": 4}},
+                ),
+            ],
+        })
+        captured: list = []
+        monkeypatch.setattr("app.ops.tracing.tracing_enabled", lambda: True)
+        monkeypatch.setattr(
+            "app.ops.tracing.update_current_generation_usage",
+            lambda usage: captured.append(usage),
+        )
+        provider = BailianProvider(api_key="test-key")
+
+        answer = await provider.complete([LlmMessage(role="user", content="hi")])
+
+        assert answer == "OneTwo"
+        assert len(captured) == 1
+        assert captured[0].prompt_tokens == 3
+        assert captured[0].completion_tokens == 4
+
+    async def test_complete_skips_fallback_meta(self, mock_bailian_stream):
+        mock_bailian_stream({
+            "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
+            "deepseek-v4-flash": [LlmChunk(content="fallback ok")],
+        })
+        provider = BailianProvider(api_key="test-key")
+
+        answer = await provider.complete([LlmMessage(role="user", content="hi")])
+
+        assert answer == "fallback ok"

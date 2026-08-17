@@ -6,7 +6,7 @@ from collections.abc import AsyncIterator, Iterable
 
 import httpx
 
-from app.llm.schema import BaseProvider, LlmChunk, LlmMessage, LlmProviderError
+from app.llm.schema import BaseProvider, LlmChunk, LlmMessage, LlmProviderError, LlmUsage
 
 
 class BaseProviderImpl(BaseProvider):
@@ -22,6 +22,46 @@ class BaseProviderImpl(BaseProvider):
         if not key:
             raise ValueError(f"{name} API key is not configured")
         return key
+
+    async def _complete_from_stream(
+        self,
+        messages: Iterable[LlmMessage],
+        model: str | None = None,
+    ) -> str:
+        """聚合 complete_stream：拼正文，usage 末帧副作用上报。"""
+        parts: list[str] = []
+        usage_meta: object | None = None
+        async for chunk in self.complete_stream(messages, model=model):
+            meta = chunk.meta or {}
+            if meta.get("usage"):
+                usage_meta = meta["usage"]
+                continue
+            if meta.get("event_type") == "model.fallback":
+                continue
+            parts.append(chunk.content)
+        if usage_meta is not None:
+            self._report_complete_usage(usage_meta)
+        return "".join(parts)
+
+    @staticmethod
+    def _report_complete_usage(usage_meta: object) -> None:
+        """把 usage 报到当前 generation；tracing 关或失败则静默。"""
+        if not isinstance(usage_meta, dict):
+            return
+        try:
+            # 函数内 lazy import：llm 不硬依赖 ops，图谱出边保持「—」
+            from app.ops.tracing import tracing_enabled, update_current_generation_usage
+
+            if not tracing_enabled():
+                return
+            update_current_generation_usage(
+                LlmUsage(
+                    prompt_tokens=usage_meta.get("prompt_tokens") or 0,
+                    completion_tokens=usage_meta.get("completion_tokens") or 0,
+                )
+            )
+        except Exception:
+            return
 
     @staticmethod
     async def _stream_openai_compatible(
