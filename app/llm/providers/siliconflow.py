@@ -18,10 +18,7 @@ class SiliconFlowProvider(BaseProviderImpl):
 
     async def complete(self, messages: Iterable[LlmMessage], model: str | None = None) -> str:
         """Non-streaming completion by aggregating the stream."""
-        parts: list[str] = []
-        async for chunk in self.complete_stream(messages, model=model):
-            parts.append(chunk.content)
-        return "".join(parts)
+        return await self._complete_from_stream(messages, model=model)
 
     async def complete_stream(
         self,

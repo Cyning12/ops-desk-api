@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.llm.schema import LlmProviderError
 from app.ops.lc_evidence_chain.answer import EMPTY_EVIDENCE_ANSWER, answer_question
 from app.ops.lc_evidence_chain.chain import _trace_config, ainvoke_evidence_answer
 from app.ops.lc_evidence_chain.grader import decide_grade
@@ -121,6 +122,20 @@ def test_decide_skips_ungraded_items():
     assert [k.id for k in d.kept] == [2]
 
 
+def test_decide_kept_orders_exact_before_relevant_stable():
+    """exact 在 relevant 前；同档保持原相对序。"""
+    items = [_item(1), _item(2), _item(3), _item(4)]
+    grades = [
+        Grade(evidence_id=1, relevance=Relevance.RELEVANT, reason="r1"),
+        Grade(evidence_id=2, relevance=Relevance.EXACT, reason="e1"),
+        Grade(evidence_id=3, relevance=Relevance.RELEVANT, reason="r2"),
+        Grade(evidence_id=4, relevance=Relevance.EXACT, reason="e2"),
+    ]
+    d = decide_grade(items, grades)
+    assert d.action == "answer"
+    assert [k.id for k in d.kept] == [2, 4, 1, 3]
+
+
 @pytest.mark.asyncio
 async def test_ainvoke_happy_path_mocks_io():
     item = _item(2, source_id="2720", content="auto compaction race")
@@ -169,6 +184,32 @@ async def test_ainvoke_refuse_yields_empty_evidence_answer():
         patch(
             "app.ops.lc_evidence_chain.chain.grade_chunk",
             new=AsyncMock(return_value=grades),
+        ),
+    ):
+        out = await ainvoke_evidence_answer("q")
+
+    assert out.meta["gate_action"] == "refuse"
+    assert out.evidence == []
+    assert out.answer == EMPTY_EVIDENCE_ANSWER
+
+
+@pytest.mark.asyncio
+async def test_ainvoke_grader_llm_error_refuses():
+    """grader complete 抛 LlmProviderError → 链内 refuse，不 500。"""
+    items = [_item(1), _item(2)]
+
+    class _Boom:
+        async def complete(self, messages, model=None):
+            raise LlmProviderError("grader down", retryable=True, status_code=503)
+
+    with (
+        patch(
+            "app.ops.lc_evidence_chain.chain.retrieve_evidence",
+            new=AsyncMock(return_value=RetrieveResult(query="q", evidence=items)),
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.grader.get_llm_provider",
+            return_value=_Boom(),
         ),
     ):
         out = await ainvoke_evidence_answer("q")

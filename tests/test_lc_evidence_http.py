@@ -5,7 +5,9 @@ from unittest.mock import AsyncMock, patch
 
 from httpx import AsyncClient
 
-from app.ops.lc_evidence_chain.types import ChainResult, EvidenceItem, Grade
+from app.llm.schema import LlmProviderError
+from app.ops.lc_evidence_chain.answer import EMPTY_EVIDENCE_ANSWER
+from app.ops.lc_evidence_chain.types import ChainResult, EvidenceItem, Grade, RetrieveResult
 from app.ops.rag.grader import Relevance
 
 _PATH = "/api/ops/lc-evidence/invoke"
@@ -143,3 +145,41 @@ async def test_invoke_upstream_failure_envelope(
     assert body["ok"] is False
     assert body["error"]["code"] == "lc_evidence_failed"
     assert body["error"]["message"]
+
+
+async def test_invoke_grader_llm_error_is_200(
+    client: AsyncClient, override_auth_maintainer
+) -> None:
+    """grader complete 抛错走真实 ainvoke → 200 refuse，不是 500。"""
+    item = EvidenceItem(
+        id=1,
+        repo="MoonshotAI/kimi-code",
+        source_type="issue",
+        source_id="1",
+        chunk_index=0,
+        content="body",
+        title="t",
+    )
+
+    class _Boom:
+        async def complete(self, messages, model=None):
+            raise LlmProviderError("grader down", retryable=True, status_code=503)
+
+    with (
+        patch(
+            "app.ops.lc_evidence_chain.chain.retrieve_evidence",
+            new=AsyncMock(return_value=RetrieveResult(query="q", evidence=[item])),
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.grader.get_llm_provider",
+            return_value=_Boom(),
+        ),
+    ):
+        response = await client.post(_PATH, json={"query": "为什么自动压缩失败"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is True
+    assert body["data"]["meta"]["gate_action"] == "refuse"
+    assert body["data"]["evidence"] == []
+    assert body["data"]["answer"] == EMPTY_EVIDENCE_ANSWER
