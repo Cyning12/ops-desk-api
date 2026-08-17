@@ -26,4 +26,6 @@
 
 归档：`docs/tasks/done/task_lc_evidence_chain_hardening.md`
 
+PR：https://github.com/Cyning12/ops-desk-api/pull/41
+
 下一棒：commit → PR 合入 `master`（禁止直推）。
