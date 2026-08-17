@@ -13,7 +13,7 @@ import os
 from app.db.session import AsyncSessionLocal
 from app.llm.factory import get_llm_provider
 from app.ops.chat.state import ChatState
-from app.ops.rag.embedder import SentenceTransformerEmbedder
+from app.ops.rag.embedder import Embedder, get_query_embedder
 from app.ops.rag.grader import REFUSAL_TEXT, decide, grade_chunks
 from app.ops.rag.prefix import strip_doc_context_prefix
 from app.ops.rag.reranker import (
@@ -32,15 +32,10 @@ logger = logging.getLogger(__name__)
 GRADER_PROVIDER = os.getenv("RAG_GRADER_PROVIDER", "bailian")
 GRADER_MODEL = os.getenv("RAG_GRADER_MODEL", "qwen3.7-flash")  # 契约 4b：每 query +1 次调用；默认对齐有额度款（2026-08-10 人定）
 
-_embedder: SentenceTransformerEmbedder | None = None
 
-
-def _get_embedder() -> SentenceTransformerEmbedder:
-    """进程内单例 + 懒加载（契约 Q3：首次检索才加载 2.3GB 权重）。"""
-    global _embedder
-    if _embedder is None:
-        _embedder = SentenceTransformerEmbedder()
-    return _embedder
+def _get_embedder() -> Embedder:
+    """查询侧工厂（默认 SiliconFlow ApiEmbedder；``RAG_EMBED_BACKEND=local`` 才加载 ST）。"""
+    return get_query_embedder()
 
 
 def _title_of(content: str) -> str:

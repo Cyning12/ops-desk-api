@@ -4,7 +4,7 @@ import asyncio
 
 from app.db.session import AsyncSessionLocal
 from app.ops.lc_evidence_chain.types import EvidenceItem, RetrieveResult
-from app.ops.rag.embedder import SentenceTransformerEmbedder
+from app.ops.rag.embedder import Embedder, get_query_embedder
 from app.ops.rag.reranker import (
     recall_k_each,
     rerank_candidates,
@@ -13,14 +13,10 @@ from app.ops.rag.reranker import (
 )
 from app.ops.rag.retrieve import hybrid_recall
 
-_embedder: None | SentenceTransformerEmbedder = None
 
-
-def _get_embedder() -> SentenceTransformerEmbedder:
-    global _embedder
-    if _embedder is None:
-        _embedder = SentenceTransformerEmbedder()
-    return _embedder
+def _get_embedder() -> Embedder:
+    """查询侧工厂（默认 SiliconFlow；见 ``get_query_embedder``）。"""
+    return get_query_embedder()
 
 
 async def retrieve_evidence(query: str) -> RetrieveResult:
