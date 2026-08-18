@@ -15,8 +15,9 @@ def main() -> int:
     parser.add_argument("--name", default="ops_knowledge")
     parser.add_argument("--dim", type=int, default=1024)
     parser.add_argument("--metric", default="Cosine", choices=["Cosine", "Euclid", "Dot"])
-    parser.add_argument("--m", type=int, default=16)
-    parser.add_argument("--ef-construct", type=int, default=100)
+    # 查询延迟优先：m/ef_construct 略降（相对原 16/100）；召回下降需用金样/bench 验收
+    parser.add_argument("--m", type=int, default=12)
+    parser.add_argument("--ef-construct", type=int, default=80)
     parser.add_argument("--on-disk-vectors", action="store_true", default=True)
     parser.add_argument("--no-on-disk-vectors", action="store_false", dest="on_disk_vectors")
     parser.add_argument("--on-disk-hnsw", action="store_true", default=True)

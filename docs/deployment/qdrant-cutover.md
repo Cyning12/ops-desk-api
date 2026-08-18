@@ -91,8 +91,11 @@ $COMPOSE up -d --build api
 $COMPOSE exec db psql -U ops -d opsdesk -c '\d ops_qdrant_dlq'
 
 # 2.2 建空 collection（默认 dim=1024，与现网 embedding 一致）
+# HNSW 默认：m=12 · ef_construct=80（查询延迟优先；重建才生效）
+# 查询期 ef 另用环境变量 QDRANT_HNSW_EF（默认 30），不必重建
 $COMPOSE exec api python scripts/qdrant_migrate/create_collection.py \
-  --url http://qdrant:6333 --name ops_knowledge
+  --url http://qdrant:6333 --name ops_knowledge \
+  --m 12 --ef-construct 80
 
 # 2.3 payload 过滤字段索引
 $COMPOSE exec api python scripts/qdrant_migrate/ensure_payload_indexes.py \
