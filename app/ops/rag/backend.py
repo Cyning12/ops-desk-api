@@ -45,12 +45,13 @@ def qdrant_api_key() -> str | None:
 
 
 def qdrant_hnsw_ef() -> int:
-    raw = (os.getenv("QDRANT_HNSW_EF") or "64").strip()
+    """查询期 HNSW ef（SearchParams.hnsw_ef）。默认 30（延迟优先；原 64）。"""
+    raw = (os.getenv("QDRANT_HNSW_EF") or "30").strip()
     try:
         value = int(raw)
     except ValueError:
-        return 64
-    return value if value > 0 else 64
+        return 30
+    return value if value > 0 else 30
 
 
 async def search_dense_with_fallback(
