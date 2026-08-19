@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 import types
+from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,6 +13,7 @@ from app.llm.schema import LlmProviderError
 from app.ops.lc_evidence_chain.answer import EMPTY_EVIDENCE_ANSWER, answer_question
 from app.ops.lc_evidence_chain.chain import _trace_config, ainvoke_evidence_answer
 from app.ops.lc_evidence_chain.grader import decide_grade
+from app.ops.lc_evidence_chain.retrieve import retrieve_evidence
 from app.ops.lc_evidence_chain.types import EvidenceItem, Grade, RetrieveResult
 from app.ops.rag.grader import Relevance
 from app.ops.rag.retrieve import RetrievedChunk
@@ -362,3 +364,135 @@ async def test_ainvoke_tracing_on_injects_config():
     assert "lc-evidence-chain" in cfg["metadata"]["langfuse_tags"]
     assert cfg["callbacks"] == [handler]
     assert out.answer == "ok"
+
+
+def _coarse_chunk() -> RetrievedChunk:
+    return RetrievedChunk(
+        id=1,
+        repo="MoonshotAI/kimi-code",
+        source_type="issue",
+        source_id="2720",
+        chunk_index=0,
+        content="Title: t\n---\nContent: body",
+    )
+
+
+def _session_cm() -> MagicMock:
+    session = AsyncMock()
+    cm = MagicMock()
+    cm.__aenter__ = AsyncMock(return_value=session)
+    cm.__aexit__ = AsyncMock(return_value=None)
+    return MagicMock(return_value=cm)
+
+
+@pytest.mark.asyncio
+async def test_retrieve_evidence_wraps_embed_as_query_embed_generation():
+    """tracing 路径：embed 由 query_embed / run_type=llm 包裹；rerank 关则无 rerank span。"""
+    spans: list[tuple[str, dict]] = []
+
+    @contextmanager
+    def fake_trace_span(name: str, **kwargs):
+        spans.append((name, kwargs))
+        yield
+
+    embedder = MagicMock()
+    embedder.name = "test-embed-model"
+    embedder.embed = MagicMock(return_value=[[0.1, 0.2, 0.3]])
+    coarse = [_coarse_chunk()]
+
+    with (
+        patch("app.ops.lc_evidence_chain.retrieve.trace_span", fake_trace_span),
+        patch(
+            "app.ops.lc_evidence_chain.retrieve._get_embedder",
+            return_value=embedder,
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.retrieve.rerank_enabled",
+            return_value=False,
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.retrieve.AsyncSessionLocal",
+            _session_cm(),
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.retrieve.hybrid_recall",
+            new=AsyncMock(return_value=coarse),
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.retrieve.rerank_chunks",
+            side_effect=AssertionError("rerank must not run when disabled"),
+        ),
+    ):
+        out = await retrieve_evidence("q")
+
+    assert out.query == "q"
+    assert len(out.evidence) == 1
+    embed_spans = [s for s in spans if s[0] == "query_embed"]
+    assert len(embed_spans) == 1
+    assert embed_spans[0][1].get("run_type") == "llm"
+    assert embed_spans[0][1].get("model") == "test-embed-model"
+    assert not any(s[0] == "rerank" for s in spans)
+
+
+@pytest.mark.asyncio
+async def test_retrieve_evidence_wraps_rerank_when_enabled():
+    """RAG_RERANK_ENABLED=true：rerank 亦为 generation；embed 仍有 query_embed。"""
+    spans: list[tuple[str, dict]] = []
+
+    @contextmanager
+    def fake_trace_span(name: str, **kwargs):
+        spans.append((name, kwargs))
+        yield
+
+    embedder = MagicMock()
+    embedder.name = "test-embed-model"
+    embedder.embed = MagicMock(return_value=[[0.1, 0.2]])
+    coarse = [_coarse_chunk()]
+    reranked = [
+        RetrievedChunk(
+            id=2,
+            repo="MoonshotAI/kimi-code",
+            source_type="issue",
+            source_id="99",
+            chunk_index=1,
+            content="Title: r\n---\nContent: reranked",
+        )
+    ]
+
+    with (
+        patch("app.ops.lc_evidence_chain.retrieve.trace_span", fake_trace_span),
+        patch(
+            "app.ops.lc_evidence_chain.retrieve._get_embedder",
+            return_value=embedder,
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.retrieve.rerank_enabled",
+            return_value=True,
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.retrieve.rerank_model_name",
+            return_value="BAAI/bge-reranker-v2-m3",
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.retrieve.AsyncSessionLocal",
+            _session_cm(),
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.retrieve.hybrid_recall",
+            new=AsyncMock(return_value=coarse),
+        ),
+        patch(
+            "app.ops.lc_evidence_chain.retrieve.rerank_chunks",
+            return_value=reranked,
+        ),
+    ):
+        out = await retrieve_evidence("q")
+
+    assert [e.id for e in out.evidence] == [2]
+    assert any(
+        name == "query_embed" and kw.get("run_type") == "llm" for name, kw in spans
+    )
+    rerank_spans = [s for s in spans if s[0] == "rerank"]
+    assert len(rerank_spans) == 1
+    assert rerank_spans[0][1].get("run_type") == "llm"
+    assert rerank_spans[0][1].get("model") == "BAAI/bge-reranker-v2-m3"
