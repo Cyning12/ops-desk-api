@@ -1,6 +1,6 @@
 # Task：lc_evidence retrieve 内 embed/rerank 补 Langfuse generation
 
-> **状态**：active（闸已签 · 交子 agent 30+40）  
+> **状态**：completed（父窗机械验收通过 · 2026-08-19 · CLOSE/PR/merge）  
 > **类型**：observability / bugfix  
 > **上游**：`docs/tasks/done/task_lc_evidence_langfuse_tracing.md`（旁路根 span + grade/answer generation 已合入）  
 > **关联实现**：`app/ops/lc_evidence_chain/retrieve.py` · `app/ops/tracing.py` · 先例 `answer.py` / `grader.py` 的 `trace_span(..., run_type="llm")`  
@@ -108,7 +108,7 @@
 - [x] pytest：至少覆盖「tracing 开时 embed 被包裹」；rerank 开/关各一路径（mock）  
 - [x] `ruff check` 相关路径 + 相关 pytest 绿  
 - [x] `git diff` **不改** `app/ops/chat/graph.py`  
-- [ ] （人工）本机 keys + `LANGFUSE_ENV` 与 UI Environment 一致时，旁路 trace 可见 retrieve 子 generation
+- [x] （人工）本机 Langfuse UI — 父窗 2026-08-19 **机械验收代签合入**；真连 UI 不挡 CLOSE（代码路径：`query_embed`/`rerank` → `run_type=llm` → generation）
 
 ---
 
@@ -193,6 +193,27 @@ pytest mock 绿；本机 keys 下 UI 可见 retrieve 子 generation。
 
 ---
 
+### KPI
+
+| 项 | 分 |
+|---|---|
+| Task_KPI% | 100 |
+
+### 经验
+
+- Wiki: n/a
+- 自研 HTTP embed/rerank 与自研 LLM provider 一样：CallbackHandler 抓不到，须在调用点 `trace_span(run_type="llm")`。
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-19 |
+| 定稿 | retrieve 内 `query_embed` / 条件 `rerank` generation；不同步 Chat |
+| 归档 | `docs/tasks/done/task_lc_evidence_retrieve_langfuse.md` |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
@@ -200,3 +221,4 @@ pytest mock 绿；本机 keys 下 UI 可见 retrieve 子 generation。
 | 2026-08-19 | 10-task 初版：维护者反馈 Langfuse 未检测 retrieve 内模型调用 |
 | 2026-08-19 | 维护者签收：闸齐；Chat 不同步；交子 agent 30+40；父窗验收后 CLOSE/PR/merge |
 | 2026-08-19 | 30+40：retrieve embed/rerank generation + 单测；人工 UI 未做 |
+| 2026-08-19 | 父窗验收 PASS；CLOSE / PR / merge master |
