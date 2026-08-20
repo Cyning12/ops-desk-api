@@ -22,7 +22,7 @@ audience: agent-30
 | `chat` | Chat 业务 | `app/ops/chat/**` | → `llm`, `db`, `rag` | LangGraph StateGraph、SSE/WS 双传输、共享 ChatEventStreamer |
 | `rag` | RAG 检索与入库 | `app/ops/rag/**` | → `db` | 混合召回（dense: pgvector\|qdrant Flag；FTS/sparse 仍 PG）；ingest；影子写+DLQ；查询 embed 默认 SiliconFlow HTTP（`RAG_EMBED_BACKEND`）；被 `lc_evidence_chain` 复用 `hybrid_recall` |
 | `lc_evidence_chain` | LangChain 旁路答问 | `app/ops/lc_evidence_chain/**` | → `rag`, `llm`, `db` | LCEL：retrieve→grade→answer；CLI/库级 + HTTP `POST /api/ops/lc-evidence/invoke`（cookie 鉴权 · freeze `lc-evidence-http-v1`）；**默认不进入** `chat/graph`；查询 embed 与 Chat 同工厂（默认可走 SiliconFlow）；可选 Langfuse（复用 `OPS_CHAT_TRACER`）· tags=`lc-evidence-chain`；complete 路径上报 usage；grader 故障 refuse |
-| `lg_rag` | LangGraph 旁路单 Agent | `app/ops/lg_rag/**` | → `lc_evidence_chain` | Phase 1：`START→rag→END`；state=`MessagesState`（`LgRagState` 薄子类）；黑盒复用 `ainvoke_evidence_answer`；默认 `InMemorySaver`；**默认不进入** `chat/graph` |
+| `lg_rag` | LangGraph 旁路单 Agent | `app/ops/lg_rag/**` | → `lc_evidence_chain` | Phase 1：`START→rag→END`；state=`MessagesState`（`LgRagState` 薄子类）；黑盒复用 `ainvoke_evidence_answer`；checkpointer 默认 `InMemorySaver`，可选 `AsyncPostgresSaver`（`checkpointer.py`：DSN 自动 asyncpg→psycopg，`setup()` 幂等建表，跨进程续写已验证）；**默认不进入** `chat/graph` |
 | `data` | 数据视图 | `app/ops/overview.py`, `app/ops/issues.py`, `app/ops/pulls.py`, `app/ops/graph.py` | → `db` | Issue/PR/Overview 指标/Graph 快照只读查询（供 Chat / iOS 只读消费） |
 | `admin` | Admin 同步 | `app/ops/admin/sync.py`, `app/ops/admin/service.py`, `app/ops/admin/schema.py` | → `db` | 接收 GHA sync payload 并持久化到 data/chat 依赖的表 |
 | `llm` | LLM Provider | `app/llm/**` | → — | SiliconFlow / 百炼 provider 工厂；complete 路径上报 usage；grader 故障 refuse |

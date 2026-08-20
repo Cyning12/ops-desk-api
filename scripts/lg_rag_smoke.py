@@ -35,9 +35,23 @@ async def main() -> int:
     p.add_argument("--query", default=DEFAULT_QUERY)
     p.add_argument("--thread-id", default="lg-rag-smoke")
     p.add_argument("--parity", action="store_true", help="直连 LCEL 对比 answer（级别 A）")
+    p.add_argument(
+        "--postgres",
+        action="store_true",
+        help="用 AsyncPostgresSaver（需本地 PG）；同 thread-id 跑两次验证跨进程续写",
+    )
     args = p.parse_args()
     print(f"tracing: {'on' if tracing_enabled() else 'off'}")
-    out = await ainvoke_basic_agent(args.query, thread_id=args.thread_id)
+    if args.postgres:
+        from app.ops.lg_rag.checkpointer import apostgres_saver
+
+        async with apostgres_saver(setup=True) as saver:
+            out = await ainvoke_basic_agent(
+                args.query, thread_id=args.thread_id, checkpointer=saver
+            )
+    else:
+        out = await ainvoke_basic_agent(args.query, thread_id=args.thread_id)
+    print(f"[messages] count={len(out['messages'])}")
     msg = out["messages"][-1]
     text = getattr(msg, "content", "") or ""
     print(text[:1200])

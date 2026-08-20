@@ -52,6 +52,7 @@
 - [x] `scripts/lg_rag_smoke.py` CLI 冒烟（含 `--parity`；真链 exit 0）
 - [x] `tests/test_lg_rag_basic.py` mock 单测绿（3 passed）
 - [x] Golden 级别 A：严格相等对非确定 LLM 不适用（维护者 2026-08-19 确认「不一致属正常」）；判定改为 mock 恒等 + 真链引用重叠（`--parity` 已实跑通过）
+- [x] S5 PostgresSaver：`checkpointer.py` 工厂（Async 优先）+ 跨进程同 thread_id 续写验证（两独立进程 messages 2→4，对应 PLAN 1.4）
 - [x] G-L1 登记 + `./scripts/graph-compile.sh` 通过；`git diff master -- app/ops/chat/graph.py` 为空
 
 ---
@@ -77,7 +78,7 @@
 - 挂 `POST /api/ops/chat/stream`（避免搅动现网 SSE；旁路 CLI/库级即可）
 - 改 `lc_evidence_chain` 内部拓扑（黑盒复用）
 - 改 `app/ops/chat/graph.py`（硬约束）
-- `PostgresSaver` / `langgraph-checkpoint-postgres`（可后置到 Phase 1 尾或另开 task；若做须处理 asyncpg→psycopg DSN 与 `setup()` 建表）
+- ~~`PostgresSaver` / `langgraph-checkpoint-postgres`~~（**2026-08-19 维护者裁定纳入本 task**：作为 Phase 1 收尾，对应 PLAN 1.4「重启后同 thread_id 恢复状态」）
 - 全量 73 条 golden「答问通过率」（另开 eval 入口 / 下个 task）
 
 ---
@@ -115,8 +116,9 @@
 - [x] state 为 `MessagesState` 薄子类 `LgRagState`；`messages` 增量 reducer 语义正确
 - [x] 本地真链 `ainvoke_basic_agent('自动压缩被取消怎么办')` 返回非空 answer（含证据引用）
 - [x] 同 `thread_id` 二次 invoke：state.messages 含上一轮 Human+AI（InMemorySaver 续写）
+- [x] **跨进程**同 `thread_id` 续写：`--postgres` 两独立进程 messages 2→4（PLAN 1.4「重启恢复」达成）
 - [x] Langfuse UI 可见 tag `lg-rag` / run_name `lg-rag` 执行树（Langfuse API 复查确认 name/tags/session 正确；树形 root lg-rag → rag → lc-evidence-chain 完整）
-- [x] `pytest tests/test_lg_rag_basic.py` 绿（3 passed，mock 不连库）
+- [x] `pytest tests/test_lg_rag_basic.py` 绿（5 passed，mock 不连库；含重启恢复语义与 checkpointer 注入断言）
 - [x] 级别 A：按维护者确认「LLM 生成不一致属正常」调整判定——封装无损由 mock 恒等单测确定性证明；真链 parity 改断言双侧非空 + 引用证据标识重叠（实测 overlap=[2720]，exit 0）
 - [x] `git diff master -- app/ops/chat/graph.py` 为空；`lc_evidence_chain` 无改动
 - [x] G-L1 `01_modules.md` 含 `lg_rag` 行；`./scripts/graph-compile.sh` exit 0
@@ -180,5 +182,7 @@ PG checkpointer 后置不挡 Phase 1 验收；asyncpg DSN 坑已记入 failure_p
 | 2026-08-19 | 初版（AI 起草 · 待 HG-TASK-DRAFT 人审）：依据 IMPL S0–S9；用户点名第一步先落盘 state 定义 |
 | 2026-08-19 | 维护者会话签收三闸；切 `task/lg-rag-phase1`；落盘第一步：`state.py`（`LgRagState`=`MessagesState` 薄子类）+ 修正 `nodes.py` 错误导入 + G-L1 登记 |
 | 2026-08-19 | 修复 Langfuse trace 命名：内层 LCEL CallbackHandler 在其根 run `update_trace(name="lc-evidence-chain")` 抢占 trace 名（后置 `update_current_trace` 抢不回）；改用官方 `propagate_attributes(trace_name=...)` 包裹 ainvoke，API 实证 name=`lg-rag`；验收项转 [x] |
+| 2026-08-19 | S5 完成：`checkpointer.py`（`apostgres_saver`/`postgres_saver`，DSN asyncpg→psycopg，`setup()` 幂等建表）；smoke `--postgres` 两独立进程同 thread-id 验证 messages 2→4（跨进程续写 = PLAN 1.4 达成）；单测增至 5 passed；G-L1 备注更新 |
+| 2026-08-19 | 维护者裁定下一步=S5：PostgresSaver 从非范围纳入本 task（Phase 1 收尾 · PLAN 1.4）；全量 73 条 Golden 仍另开 task |
 | 2026-08-19 | 维护者裁定级别 A：LLM 生成不一致属正常；`--parity` 判定改为双侧非空 + 引用标识重叠（`_extract_refs`），实跑 overlap=[2720] exit 0；验收项转 [x] |
 | 2026-08-19 | 30/40 按 IMPL 顺序填实：S2 `rag_node` + S3/S4 `graph.py`（InMemorySaver + Langfuse 注入）+ S0 export + S7 mock 单测（3 passed）+ S6 冒烟脚本（真链 exit 0）；级别 A 严格相等受 LLM 非确定影响标 [~]；全量 pytest 204 passed / 3 failed（chat_ws/router 因本地测试库缺 `ops_knowledge_chunks` 表，与本改动无关，待人工复核） |
