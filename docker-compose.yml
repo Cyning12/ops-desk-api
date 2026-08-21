@@ -28,10 +28,10 @@ services:
       - qdrant_data:/qdrant/storage
     environment:
       QDRANT__SERVICE__GRPC_PORT: 6334
-    # 本地开发可不设 limit；生产对齐 SPEC 2C4G 预算：
+    # 本机容量实验（全内存 80 万）需 ≥8g；生产 compose 仍按 2C4G≈3.5g。
     # deploy.resources.limits.memory: 3584M
     # deploy.resources.limits.cpus: "2.0"
-    mem_limit: 3584m
+    mem_limit: 8192m
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333'"]
       interval: 10s

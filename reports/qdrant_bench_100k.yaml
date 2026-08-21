@@ -1,0 +1,27 @@
+status: "measured"
+baseline: "none"
+baseline_note: "pgvector skipped: PG corpus N=8574 not comparable to synthetic Qdrant N=100000"
+collection: "ops_knowledge_scale_100k"
+points_count: 100000
+indexed_vectors_count: 99840
+source_collection: "ops_knowledge"
+source_n: 8574
+compare_with: "reports/r4-2.yaml"
+hnsw_ef: 30
+pgvector_search_p95_ms: None
+qdrant_search_p50_ms: 6.342875014524907
+qdrant_search_p95_ms: 33.80008297972381
+qdrant_search_p95_ms_warmup: 8.64504196215421
+qdrant_search_p99_ms_warmup: 9.33866697596386
+ops_knowledge_8k_p95_ms: 8.30075005069375
+n_queries: 200
+top_k: 10
+p95_budget_ms: 150.0
+p95_pass: true
+peak_rss_mb_build: 2762.752
+steady_rss_mb: 2039.808
+rss_log: "reports/qdrant_migrate/expand_rss_100k.json"
+gate: {"steady_rss_lt_3200mb": true, "peak_rss_le_3800mb": true, "p95_lt_150ms": true}
+note: "n_queries=200; hnsw_ef=30; compare_with=reports/r4-2.yaml"
+recorded_at: "2026-08-21T02:38:06.904951+00:00"
+rerank_enabled_required: false

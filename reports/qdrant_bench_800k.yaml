@@ -3,25 +3,25 @@ baseline: "none"
 baseline_note: "pgvector skipped: PG corpus N=8574 not comparable to synthetic Qdrant N=800000"
 collection: "ops_knowledge_scale"
 points_count: 800000
-indexed_vectors_count: 797952
+indexed_vectors_count: 798976
 source_collection: "ops_knowledge"
 source_n: 8574
 compare_with: "reports/r4-2.yaml"
+hnsw_ef: 30
 pgvector_search_p95_ms: null
-qdrant_search_p50_ms: 571.78
-qdrant_search_p95_ms: 867.08
-qdrant_search_p95_ms_warmup: 974.53
-qdrant_search_p99_ms_warmup: 1091.32
-ops_knowledge_8k_p95_ms: 5.18
+qdrant_search_p50_ms: 142.15587498620152
+qdrant_search_p95_ms: 316.3640000275336
+qdrant_search_p95_ms_warmup: 343.64999999525025
+qdrant_search_p99_ms_warmup: 404.5294169918634
+ops_knowledge_8k_p95_ms: 9.185665985569358
 n_queries: 200
 top_k: 10
-p95_budget_ms: 150
+p95_budget_ms: 150.0
 p95_pass: false
-peak_rss_mb_build: 3430.4
-steady_rss_mb: 1229.0
+peak_rss_mb_build: 3333.12
+steady_rss_mb: 1007.0
 rss_log: "reports/qdrant_migrate/expand_rss.json"
-docker_stats_log: "reports/qdrant_migrate/expand_docker_stats.log"
 gate: {"steady_rss_lt_3200mb": true, "peak_rss_le_3800mb": true, "p95_lt_150ms": false}
-note: "synthetic expand via scripts/qdrant_migrate/expand_synthetic.py; on_disk HNSW; P95 fail attributed to disk-bound search (docker volume BLOCK I/O high during bench); 8k collection p95~5ms for contrast"
-recorded_at: "2026-08-13T10:03:38.789082+00:00"
+note: "n_queries=200; hnsw_ef=30; compare_with=reports/r4-2.yaml"
+recorded_at: "2026-08-21T02:04:20.181808+00:00"
 rerank_enabled_required: false
