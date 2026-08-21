@@ -33,8 +33,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| HG-TASK-DRAFT | pending | 22-R1 | 维护者审 DESIGN 后签 |
-| HG-AUDIT-R1 | pending | 30 | 维护者签（或省略独立 20 轮注明理由，同前例） |
+| HG-TASK-DRAFT | approved | 22-R1 | 2026-08-21 维护者会话签收 DESIGN（无修订），task 为其机械闸化 |
+| HG-AUDIT-R1 | approved | 30 | 2026-08-21 维护者会话直签（「签收」+ 指定 00 编排模式）：省略独立 20 轮，DESIGN 当面审签收即视为审查通过（同前例） |
 | HG-GRAPH-MODULES | pending | 30 | 随 30 更新 `lg_rag` 行备注后签 |
 
 ---
@@ -114,3 +114,4 @@ Mock 工具先行，真实 API 另议；并行 Send 另议。
 | 日期 | 说明 |
 |---|---|
 | 2026-08-21 | 初版（AI 起草 · 待人审）：DESIGN 同步提交；三闸 pending |
+| 2026-08-21 | 维护者签收并指定身份模式：父窗固定 00（编排/验收），30/40 实际执行交子 agent |

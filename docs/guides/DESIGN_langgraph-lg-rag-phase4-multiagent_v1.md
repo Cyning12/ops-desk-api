@@ -2,7 +2,7 @@
 
 > **总纲**：`docs/guides/PLAN-langgraph-agent-framework_v1.md` Phase 4（第 6–8 周 · 多智能体协作）  
 > **前置资产**：Phase 1（basic）· Phase 2（router 三路，标注集 34 条 100%）· Phase 3（evaluate/rewrite 回环）  
-> **状态**：draft · 待维护者审；审后 HG-TASK-DRAFT 方可转 approved  
+> **状态**：**approved（2026-08-21 维护者会话签收）**；task=`docs/tasks/active/task_lg_rag_phase4.md`；执行模式：00 编排验收，30/40 派子 agent  
 > **硬约束延续**：不改 `app/ops/chat/graph.py`；不改 `lc_evidence_chain` 内部；不挂 SSE  
 > **包约束**：落在 `app/ops/lg_rag/` 内（子包 `multi/`，非平行新包）
 
@@ -100,3 +100,4 @@ class LgRagState(MessagesState):
 | 日期 | 说明 |
 |---|---|
 | 2026-08-21 | 首版（AI 起草 · 待审）：Supervisor 顺序 fan-out v1；rag 子任务复用 router 图；Mock 工具注册表；aggregator 综合 |
+| 2026-08-21 | 维护者会话签收，无修订；执行模式定为 00 编排 + 子 agent 执行 30/40 |
