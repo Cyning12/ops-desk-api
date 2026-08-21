@@ -3,7 +3,7 @@
 > **总纲**：`docs/guides/PLAN-langgraph-agent-framework_v1.md` Phase 2（第 3 周 · 意图路由）  
 > **前置资产**：Phase 1 已完成（`app/ops/lg_rag/`：state / rag_node / graph / checkpointer / tracing）  
 > **路线决策**：**2026-08-19 维护者拍板 Track A**——router 落在 `lg_rag` 包演进，**Chat 图继续冻结**；本文含双轨漂移缓解  
-> **状态**：draft · 待维护者审；审后走 10-task 建 `task_lg_rag_phase2`，闸前禁改码  
+> **状态**：**approved（2026-08-19 维护者会话签收）**；task=`docs/tasks/active/task_lg_rag_phase2.md`  
 > **硬约束延续**：不改 `app/ops/chat/graph.py`；不改 `lc_evidence_chain` 内部；不挂 SSE
 
 ---
@@ -121,3 +121,4 @@ class LgRagState(MessagesState):
 | 日期 | 说明 |
 |---|---|
 | 2026-08-19 | 首版（AI 起草 · 待审）：Track A 落地——router 入 lg_rag，Chat 冻结；State 最小扩展仅 `route` |
+| 2026-08-19 | 维护者会话签收，无修订；转入 10-task 闸化 |
