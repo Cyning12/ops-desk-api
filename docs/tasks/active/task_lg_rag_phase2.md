@@ -156,10 +156,28 @@ basic/router 双图并存，default 切换与 Chat 接回均另议。
 
 ---
 
+## 自检结论（50 · 子 agent 机械复检）
+
+> 2026-08-21 · 子 agent 50 机械验收 · **PASS（8/8 全绿）**
+
+- [x] 代码结构：state route 字段 / 四节点函数 / build_router_agent + basic 保留
+- [x] ruff 五路径 EXIT=0
+- [x] 单测 13 passed（router 8 + basic 5）
+- [x] 硬约束：chat/graph.py 与 lc_evidence_chain 对 master diff 均 0 字节
+- [x] 图谱：lg_rag 行含三路拓扑 + 出边 llm；graph-compile EXIT=0
+- [x] 语义抽检：#快路径零 LLM；异常/非法双 fallback=rag；direct 不触检索；refuse 同源 REFUSAL_TEXT；route_by_route({})=rag；propagate_attributes
+- [x] task 一致性：标注集 30 条（15/10/5）；100% 与 Langfuse 实证记录自洽（不可重放项已注明）
+- [x] 提交整洁：6ef2223 最新；工作区干净
+
+**50 结论：PASS（机械）** · 观察项（不挡）：DESIGN §10 复选框未勾（该节自述以 task 表为准）；无独立 invoke 文件（与 phase1 先例一致）
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-19 | 初版（AI 起草）：DESIGN 已维护者签收；HG-TASK-DRAFT 随签收转 approved，余两闸待人审 |
 | 2026-08-19 | 维护者签收 HG-AUDIT-R1 并指示执行 30+40 |
+| 2026-08-21 | 50：子 agent 机械复检 PASS（8/8）；结论回写上节 |
 | 2026-08-21 | 30/40 完成：state+route、router/direct/refuse 节点、build_router_agent、标注集 30 条（实测准确率 100%）、8 个 mock 单测（共 13 passed）、Langfuse API 实证 route metadata、G-L1 更新；HG-GRAPH-MODULES 签 |
