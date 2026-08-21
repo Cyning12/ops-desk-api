@@ -22,7 +22,7 @@ audience: agent-30
 | `chat` | Chat 业务 | `app/ops/chat/**` | → `llm`, `db`, `rag` | LangGraph StateGraph、SSE/WS 双传输、共享 ChatEventStreamer |
 | `rag` | RAG 检索与入库 | `app/ops/rag/**` | → `db` | 混合召回（dense: pgvector\|qdrant Flag；FTS/sparse 仍 PG）；ingest；影子写+DLQ；查询 embed 默认 SiliconFlow HTTP（`RAG_EMBED_BACKEND`）；被 `lc_evidence_chain` 复用 `hybrid_recall` |
 | `lc_evidence_chain` | LangChain 旁路答问 | `app/ops/lc_evidence_chain/**` | → `rag`, `llm`, `db` | LCEL：retrieve→grade→answer；CLI/库级 + HTTP `POST /api/ops/lc-evidence/invoke`（cookie 鉴权 · freeze `lc-evidence-http-v1`）；**默认不进入** `chat/graph`；查询 embed 与 Chat 同工厂（默认可走 SiliconFlow）；可选 Langfuse（复用 `OPS_CHAT_TRACER`）· tags=`lc-evidence-chain`；complete 路径上报 usage；grader 故障 refuse |
-| `lg_rag` | LangGraph 旁路单 Agent | `app/ops/lg_rag/**` | → `lc_evidence_chain`, `llm` | Phase 3：rag 路径加 `evaluate→low→rewrite→rag` 自纠错回环（≤2 次熔断；state 增 `retry_count`/`current_query`/`chain_meta`；evaluate 复用 chain gate 结论零额外 LLM）；Phase 2：`START→router→direct/rag/refuse` 三路（`route` 字段；#数字快路径+LLM 分类+fallback=rag；标注集准确率 100%）；Phase 1 basic 图保留对照；state=`MessagesState`（`LgRagState` 薄子类）；黑盒复用 `ainvoke_evidence_answer`；checkpointer 默认 `InMemorySaver`，可选 `AsyncPostgresSaver`（`checkpointer.py`）；**默认不进入** `chat/graph` |
+| `lg_rag` | LangGraph 旁路单 Agent | `app/ops/lg_rag/**` | → `lc_evidence_chain`, `llm` | Phase 4：`multi/` Supervisor 多智能体（LLM 拆解 ≤4 子任务 → 顺序分派 rag/extract/tool → aggregator 综合；state 增 `subtasks`/`subtask_results`；rag 子任务复用 router 图全能力；Mock 工具注册表）；Phase 3：rag 路径加 `evaluate→low→rewrite→rag` 自纠错回环（≤2 次熔断；state 增 `retry_count`/`current_query`/`chain_meta`；evaluate 复用 chain gate 结论零额外 LLM）；Phase 2：`START→router→direct/rag/refuse` 三路（`route` 字段；#数字快路径+LLM 分类+fallback=rag；标注集准确率 100%）；Phase 1 basic 图保留对照；state=`MessagesState`（`LgRagState` 薄子类）；黑盒复用 `ainvoke_evidence_answer`；checkpointer 默认 `InMemorySaver`，可选 `AsyncPostgresSaver`（`checkpointer.py`）；**默认不进入** `chat/graph` |
 | `data` | 数据视图 | `app/ops/overview.py`, `app/ops/issues.py`, `app/ops/pulls.py`, `app/ops/graph.py` | → `db` | Issue/PR/Overview 指标/Graph 快照只读查询（供 Chat / iOS 只读消费） |
 | `admin` | Admin 同步 | `app/ops/admin/sync.py`, `app/ops/admin/service.py`, `app/ops/admin/schema.py` | → `db` | 接收 GHA sync payload 并持久化到 data/chat 依赖的表 |
 | `llm` | LLM Provider | `app/llm/**` | → — | SiliconFlow / 百炼 provider 工厂；complete 路径上报 usage；grader 故障 refuse |
@@ -50,6 +50,7 @@ audience: agent-30
 | HG-GRAPH-MODULES | approved | 维护者（Phase α 迁路径） | 2026-07-27 | 真值迁至本文件；根 stub 保留 ≥1 Epic（C2） |
 | HG-GRAPH-MODULES | approved | 维护者（task_lg_rag_phase1 会话签收） | 2026-08-19 | 新增 `lg_rag` 一级模块（LangGraph 旁路 Phase 1） |
 | HG-GRAPH-MODULES | approved | 维护者（task_lg_rag_phase2 会话签收） | 2026-08-19 | `lg_rag` 行更新 Phase 2 router 三路拓扑；依赖出边补 `llm`；不新增一级模块 |
+| HG-GRAPH-MODULES | approved | 维护者（task_lg_rag_phase4 会话签收 · 00 模式） | 2026-08-21 | `lg_rag` 行更新 Phase 3 回环 + Phase 4 Supervisor 拓扑；不新增一级模块 |
 
 ## 关联
 

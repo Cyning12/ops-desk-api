@@ -13,6 +13,9 @@ Router / rewrite / evaluate 等扩展字段留待 Phase 2/3 再引入，
 
 from __future__ import annotations
 
+from operator import add
+from typing import Annotated
+
 from langgraph.graph import MessagesState
 
 
@@ -30,9 +33,17 @@ class LgRagState(MessagesState):
         子集（gate_action/hit_count/kept_count/best_relevance/grade_count），
         evaluate_node 的数据源；evidence 本体不进 state（黑盒原则）。
         缺失时 evaluate 视为 high（安全默认，防意外回环）。
+    subtasks（Phase 4）：supervisor_node 拆解产出的子任务列表
+        [{"id","type","input","tool"?}]；无 reducer，节点写回即覆盖。
+        老 checkpoint 无此键：仅 supervisor 图入口写入，router/basic 图不受影响。
+    subtask_results（Phase 4）：各子任务结果，Annotated add reducer 追加；
+        与子任务按序一一对应（dispatch 以 len(subtask_results) 作推进索引）。
+        中间结果只进本字段，不进 messages（避免消息膨胀）。
     """
 
     route: str
     retry_count: int
     current_query: str
     chain_meta: dict
+    subtasks: list[dict]
+    subtask_results: Annotated[list[dict], add]
