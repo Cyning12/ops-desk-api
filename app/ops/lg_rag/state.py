@@ -23,8 +23,16 @@ class LgRagState(MessagesState):
     route（Phase 2）：router_node 写入的意图分流，取值
         "rag" | "direct" | "refuse"；无 reducer，节点写回即覆盖。
         老 checkpoint 无此键：条件边 route_by_route 缺省 "rag"。
-
-    Phase 3 的 retry_count / evaluate 字段届时再扩（须保持向后兼容）。
+    retry_count（Phase 3）：rewrite_node 递增的重试计数；缺省 0。
+    current_query（Phase 3）：rewrite 后的查询；rag_node 优先取用，
+        缺失时回退末条 HumanMessage。rewrite 熔断时置空以终止回环。
+    chain_meta（Phase 3）：rag_node 写回的 ChainResult.meta 质量信号
+        子集（gate_action/hit_count/kept_count/best_relevance/grade_count），
+        evaluate_node 的数据源；evidence 本体不进 state（黑盒原则）。
+        缺失时 evaluate 视为 high（安全默认，防意外回环）。
     """
 
     route: str
+    retry_count: int
+    current_query: str
+    chain_meta: dict

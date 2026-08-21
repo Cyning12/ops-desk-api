@@ -2,7 +2,7 @@
 
 > **总纲**：`docs/guides/PLAN-langgraph-agent-framework_v1.md` Phase 3（第 4–5 周 · 自纠错）  
 > **前置资产**：Phase 1（basic 图 / checkpointer / tracing）· Phase 2（router 三路，标注集 100%）  
-> **状态**：draft · 待维护者审；审后 HG-TASK-DRAFT 方可转 approved  
+> **状态**：**approved（2026-08-21 维护者会话签收）**；task=`docs/tasks/active/task_lg_rag_phase3.md`  
 > **硬约束延续**：不改 `app/ops/chat/graph.py`；不改 `lc_evidence_chain` 内部；不挂 SSE  
 > **关键事实**：chain 黑盒输出 `ChainResult.meta` 已含质量信号（`gate_action` / `hit_count` / `kept_count` / `best_relevance` / `grade_count`，见 chain.py `_meta_span_update`）——evaluate 无需第二次 grader LLM
 
@@ -50,7 +50,7 @@ class LgRagState(MessagesState):
 
 ## 4. rewrite_node（PLAN 3.2）
 
-- LLM 同义改写（与 router 同档小模型、低温度）：输入 `current_query or 末条 HumanMessage`，prompt 约束「**保持语义、保留核心实体、针对检索优化表达**（补充同义词/展开复合问的关键侧面），输出单行新 query」。
+- LLM 改写（与 router 同档小模型、低温度）：输入 `current_query or 末条 HumanMessage`。**2026-08-21 实施修正（30 中发现）**：长句自然语言 query 会被检索层零命中（实测：`readPullRequest` 单词命中 issue 87，G37 整句 0 命中），故 prompt 从「同义改写」改为「**核心可检索关键词组合**」（保留函数名/错误码/组件名，去叙述包裹，可中英混合），输出单行关键词。
   - 针对 G37/G39 这类**复合机制问**：引导展开关键侧面而非拆成多查询（rag_node 是单查询入口；多查询并行检索属非范围）。
 - 写回 `current_query` + `retry_count += 1`；写 span metadata（原/新 query 截断、retry_count）。
 - **熔断语义**：LLM 失败 / 输出为空 / 与原 query 相同 → 不写回、不递增，直接 END（视为无法改写，终止回环）。
@@ -125,3 +125,5 @@ return {
 | 日期 | 说明 |
 |---|---|
 | 2026-08-21 | 首版（AI 起草 · 待审）：evaluate 复用 chain gate 结论（零额外 LLM）；rewrite 单查询改写 + 2 次熔断；state 增 3 字段 |
+| 2026-08-21 | 维护者会话签收，无修订；转入 30 |
+| 2026-08-21 | 30 实施修正：rewrite 策略改关键词组合（G37 诊断驱动）；router prompt 收紧 direct 定义（eval 发现「有没有某功能」类误分流 direct），标注集扩至 34 条复测 100% |

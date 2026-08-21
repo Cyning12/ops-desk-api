@@ -44,8 +44,10 @@ _ISSUE_NO_RE = re.compile(r"#\d+")
 _ROUTER_SYSTEM = (
     "你是 Ops Desk 运维知识库助手的意图分类器。把用户问题分为三类，只输出 JSON：\n"
     '- {"route": "rag"}：与项目/运维/issue/PR/故障相关的技术问题，需要查知识库；\n'
-    '- {"route": "direct"}：闲聊、问候、身份/能力等元问题，不需要查知识库；\n'
+    '- {"route": "direct"}：与助手自身的闲聊、问候、身份/能力元问题，不需要查知识库；\n'
     '- {"route": "refuse"}：明确要求泄密、违法、或与运维知识库完全无关且不应回答的内容。\n'
+    "注意：凡涉及产品/项目功能、用法、配置、故障的问题（包括「有没有某功能」"
+    "「怎么做到某事」），一律选 rag，不要选 direct。\n"
     "只输出一个 JSON 对象，不要输出其他文字。"
 )
 
@@ -140,16 +142,123 @@ def route_by_route(state: LgRagState) -> str:
     return route if route in ROUTES else DEFAULT_ROUTE
 
 
+_META_KEYS = ("gate_action", "hit_count", "kept_count", "best_relevance", "grade_count")
+
+MAX_RETRIES = int(os.getenv("LG_RAG_MAX_RETRIES", "2"))
+
+
 async def rag_node(state: LgRagState) -> dict:
-    """黑盒 RAG：LCEL evidence chain → 追加一条 AIMessage。
+    """黑盒 RAG：LCEL evidence chain → 追加一条 AIMessage + 写回 chain_meta。
 
     messages 走 add_messages reducer，返回「增量」列表即可，
     不要手写全量覆盖。ChainResult 为 Pydantic：用 .answer；
     勿写成 result["answer"]。
+    Phase 3：优先取 current_query（rewrite 产物）；写回 chain_meta
+    质量信号子集供 evaluate_node 判定（evidence 本体不进 state）。
     """
-    query = _last_user_text(state["messages"])
+    query = state.get("current_query") or _last_user_text(state["messages"])
     result = await ainvoke_evidence_answer(query)
-    return {"messages": [AIMessage(content=result.answer or "")]}
+    chain_meta = {k: result.meta[k] for k in _META_KEYS if k in result.meta}
+    return {
+        "messages": [AIMessage(content=result.answer or "")],
+        "chain_meta": chain_meta,
+    }
+
+
+def _judge_quality(chain_meta: dict | None) -> str:
+    """复用 chain gate 结论的确定性映射（DESIGN §3，零额外 LLM）。"""
+    if not chain_meta:
+        return "high"  # 安全默认：无信号不回环
+    gate = str(chain_meta.get("gate_action") or "")
+    if gate == "answer_partial":
+        return "medium"
+    if gate == "refuse" or not chain_meta.get("kept_count"):
+        return "low"
+    return "high"
+
+
+async def evaluate_node(state: LgRagState) -> dict:
+    """评估检索质量：high/medium→END；low 且未达熔断→rewrite。"""
+    meta = state.get("chain_meta") or {}
+    quality = _judge_quality(meta)
+    retry_count = state.get("retry_count") or 0
+    if tracing_enabled():
+        try:
+            from langfuse import get_client
+
+            get_client().update_current_span(
+                metadata={
+                    "quality": quality,
+                    "retry_count": retry_count,
+                    **{k: meta.get(k) for k in _META_KEYS if k in meta},
+                }
+            )
+        except Exception:  # 观测失败不挡主流程
+            pass
+    return {}
+
+
+def route_by_quality(state: LgRagState) -> str:
+    """evaluate 后的条件边：low 且 retry_count < MAX_RETRIES → rewrite，否则 END。"""
+    quality = _judge_quality(state.get("chain_meta") or {})
+    if quality == "low" and (state.get("retry_count") or 0) < MAX_RETRIES:
+        return "rewrite"
+    return "end"
+
+
+_REWRITE_SYSTEM = (
+    "你是检索查询改写器。用户的问题在运维知识库中没有检索到足够证据。"
+    "知识库为 GitHub issue/PR 文档（中英混排），全文包裹的长句检索效果差。"
+    "请把问题改写为**核心可检索关键词组合**："
+    "保留函数名 / 错误码 / 组件名 / issue 编号等精确词，去掉叙述性包裹，"
+    "可中英混合；复合问题保留各侧面的关键词。"
+    "只输出关键词组合（单行），不要输出完整句子，不要解释。"
+)
+
+
+async def rewrite_node(state: LgRagState) -> dict:
+    """LLM 单查询改写（DESIGN §4）。
+
+    熔断语义：LLM 失败 / 空输出 / 与原 query 相同 → 清空 current_query
+    并把 retry_count 顶到上限，route_after_rewrite 随之导向 END。
+    """
+    original = state.get("current_query") or _last_user_text(state["messages"])
+    retry_count = state.get("retry_count") or 0
+    provider = get_llm_provider(_ROUTER_PROVIDER)
+    with trace_span("rewrite", run_type="chain"):
+        try:
+            raw = await provider.complete(
+                [
+                    LlmMessage(role="system", content=_REWRITE_SYSTEM),
+                    LlmMessage(role="user", content=original),
+                ],
+                model=_ROUTER_MODEL,
+            )
+            new_query = (raw or "").strip().splitlines()[0].strip()
+        except Exception as exc:
+            logger.warning("lg_rag rewrite LLM 失败，终止回环 err=%r", exc)
+            new_query = ""
+    if not new_query or new_query == original:
+        return {"current_query": "", "retry_count": MAX_RETRIES}
+    if tracing_enabled():
+        try:
+            from langfuse import get_client
+
+            get_client().update_current_span(
+                metadata={
+                    "rewrite_from": original[:200],
+                    "rewrite_to": new_query[:200],
+                    "retry_count": retry_count + 1,
+                }
+            )
+        except Exception:
+            pass
+    return {"current_query": new_query, "retry_count": retry_count + 1}
+
+
+def route_after_rewrite(state: LgRagState) -> str:
+    """rewrite 后的条件边：有新 query → rag 重试；熔断置空 → END。"""
+    return "rag" if state.get("current_query") else "end"
 
 
 async def direct_answer_node(state: LgRagState) -> dict:

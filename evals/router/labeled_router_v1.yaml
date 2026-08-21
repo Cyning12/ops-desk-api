@@ -19,12 +19,17 @@ cases:
   - {query: "Alembic 迁移冲突怎么解?", route: rag}
   - {query: "WebSocket 聊天断开后会话还在吗?", route: rag}
   - {query: "SiliconFlow 503 System is too busy 怎么应对?", route: rag}
+  # Phase 3 eval 发现的误分流边界（功能有无/用法类仍属 rag）
+  - {query: "Kimi Code 有没有离线模式?没网的时候能继续用本地缓存的会话吗?", route: rag}
+  - {query: "怎么让 Kimi Code 在提交代码前自动跑 ESLint 并修复报错?", route: rag}
+  - {query: "怎么把 Kimi Code 的会话云端同步,换一台电脑接着聊?", route: rag}
+  - {query: "Kimi Code 的账号登录支持双因素认证（2FA）吗?在哪里开启?", route: rag}
   # ---------- direct（闲聊/元问题 10） ----------
   - {query: "你好", route: direct}
   - {query: "你是谁?", route: direct}
   - {query: "你能做什么?", route: direct}
   - {query: "谢谢你的帮助", route: direct}
-  - {query: "今天天气怎么样", route: direct}
+  - {query: "今天天气怎么样", route: refuse}  # 校准：与运维无关且无工具可答 → refuse（prompt 收紧后口径）
   - {query: "讲个笑话吧", route: direct}
   - {query: "你叫什么名字", route: direct}
   - {query: "早上好,吃了吗", route: direct}

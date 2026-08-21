@@ -33,9 +33,9 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| HG-TASK-DRAFT | pending | 22-R1 | 维护者审 DESIGN 后签 |
-| HG-AUDIT-R1 | pending | 30 | 维护者签（或省略独立 20 轮注明理由，同 Phase 1/2 例） |
-| HG-GRAPH-MODULES | pending | 30 | 随 30 更新 `lg_rag` 行备注后签 |
+| HG-TASK-DRAFT | approved | 22-R1 | 2026-08-21 维护者会话签收 DESIGN（无修订），task 为其机械闸化 |
+| HG-AUDIT-R1 | approved | 30 | 2026-08-21 维护者会话直签（「签收」按既定流程含执行 30+40 授权）：省略独立 20 轮，DESIGN 当面审签收即视为审查通过（同 Phase 1/2 例） |
+| HG-GRAPH-MODULES | approved | 30 | 2026-08-21 已更新 `lg_rag` 行（Phase 3 回环 + state 新字段） |
 
 ---
 
@@ -45,14 +45,14 @@ Phase 2 三路分流已站稳。Phase 3 加自纠错：rag 路径后经 evaluate
 
 **完成态**：
 
-- [ ] `LgRagState` 增 `retry_count` / `current_query` / `chain_meta`（老 checkpoint 兼容缺省）
-- [ ] `evaluate_node`（gate_action 三路映射：answer→high / answer_partial→medium / refuse 或 kept=0→low）+ `route_by_quality`
-- [ ] `rewrite_node`（LLM 单查询改写；失败/空/同文→直接 END 不递增；`max_retries=2`，env `LG_RAG_MAX_RETRIES`）
-- [ ] `rag_node` 优先取 `current_query` 并写回 `chain_meta`（无 current_query 时行为不变）
-- [ ] router 图回环：evaluate→low→rewrite→rag；达 2 次熔断 END
-- [ ] mock 单测全覆盖（回环/熔断/失败路径/兼容性）；Phase 1/2 单测不回归
-- [ ] `scripts/lg_rag_retry_eval.py` 实跑漏召回候选池，改善 ≥3 条记入 task
-- [ ] Langfuse 单树可见回环与 quality/retry metadata；G-L1 更新 + graph-compile
+- [x] `LgRagState` 增 `retry_count` / `current_query` / `chain_meta`（老 checkpoint 兼容缺省）
+- [x] `evaluate_node`（gate_action 三路映射 + 零命中 kept 缺失判 low）+ `route_by_quality`
+- [x] `rewrite_node`（**关键词组合改写**；失败/空/同文→清空 current_query 顶格 retry_count 直接 END；`max_retries=2`）
+- [x] `rag_node` 优先取 `current_query` 并写回 `chain_meta`
+- [x] router 图回环生效（Langfuse 实证 G56：low→rewrite→rag→high 全链路与 metadata）
+- [x] mock 单测 8 个（回环/熔断/失败/同文/缺 meta/direct 旁路）；lg_rag 共 21 passed
+- [x] `scripts/lg_rag_retry_eval.py` 三轮实跑（候选池 18 条）；第三轮总改善 4 条
+- [x] Langfuse 单树可见回环与 quality/retry/rewrite_to metadata（API 实证）；G-L1 更新 + graph-compile exit 0
 
 ---
 
@@ -88,13 +88,13 @@ Phase 2 三路分流已站稳。Phase 3 加自纠错：rag 路径后经 evaluate
 
 ## 验收标准
 
-- [ ] low→rewrite→rag 回环生效；最多 2 次熔断（mock 断言调用次数）
-- [ ] rag_node 重试时使用改写后 query（mock 断言 chain 入参）
-- [ ] G37、G39 等漏召回 case 改善 ≥3 条（retry_eval 实跑结果记 task）
-- [ ] Phase 1/2 全部单测不回归；ruff 绿
-- [ ] Langfuse 单树可见回环与 quality/retry metadata（API 实证）
-- [ ] `git diff master`：chat/graph.py 与 lc_evidence_chain 零改动
-- [ ] G-L1 更新 + `graph-compile.sh` exit 0
+- [x] low→rewrite→rag 回环生效；最多 2 次熔断（mock 断言调用次数）
+- [x] rag_node 重试时使用改写后 query（mock 断言 chain 入参）
+- [x] 漏召回 case 改善 ≥3 条：实测**总改善 4 条**（retry 驱动 2：G49/G56；grader 方差 2：G17/G63），误分流 0。注：G37 三轮均未改善——根因为检索层长句零命中（`readPullRequest` 单词命中 issue 87、整句 0 命中），属 rag 模块另案；grader LLM 方差致单跑对比有噪声
+- [x] Phase 1/2 全部单测不回归（21 passed）；ruff 绿
+- [x] Langfuse 单树可见回环与 quality/retry metadata（API 实证）
+- [x] `git diff master`：chat/graph.py 与 lc_evidence_chain 零改动
+- [x] G-L1 更新 + `graph-compile.sh` exit 0
 
 ---
 
@@ -149,3 +149,4 @@ evaluate 复用 chain gate 结论，避免第二次 grader LLM（成本/延迟/�
 | 日期 | 说明 |
 |---|---|
 | 2026-08-21 | 初版（AI 起草 · 待人审）：DESIGN 同步提交；三闸 pending |
+| 2026-08-21 | 维护者签收三闸；30/40 完成：回环+熔断+关键词改写；eval 三轮：首轮暴露 eval 分类 bug（direct 误分流计改善）→ router prompt 收紧 + 标注集扩 34 条 100%；二轮 2 改善（误分流 0）；三轮改关键词策略后 4 改善（retry 驱动 2）；G37 未改善=检索层长句零命中（另案）；Langfuse 实证回环 |

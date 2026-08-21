@@ -8,7 +8,8 @@
 - basic ：START → rag → END（Phase 1，保留作回归对照与回滚）
 - router：START → router ─┬─ direct → direct_answer → END
                           ├─ refuse → refuse → END
-                          └─ rag → rag → END
+                          └─ rag → rag → evaluate ─┬─ high/medium → END
+                                                   └─ low → rewrite → rag（回环 ≤2 次）
 
 默认 InMemorySaver；ainvoke 注入 Langfuse（propagate_attributes
 修内层 run_name 抢占，见 Phase 1 修订记录）。
@@ -25,8 +26,12 @@ from langgraph.graph import END, START, StateGraph
 
 from app.ops.lg_rag.nodes import (
     direct_answer_node,
+    evaluate_node,
     rag_node,
     refuse_node,
+    rewrite_node,
+    route_after_rewrite,
+    route_by_quality,
     route_by_route,
     router_node,
 )
@@ -56,12 +61,14 @@ def build_basic_agent(*, checkpointer: Any | None = None):
 
 
 def build_router_agent(*, checkpointer: Any | None = None):
-    """START → router → direct/rag/refuse 三路；默认 InMemorySaver（Phase 2）。"""
+    """START → router → 三路；rag 路径带 evaluate/rewrite 自纠错回环（≤2 次）。"""
     builder = StateGraph(LgRagState)
     builder.add_node("router", router_node)
     builder.add_node("rag", rag_node)
     builder.add_node("direct_answer", direct_answer_node)
     builder.add_node("refuse", refuse_node)
+    builder.add_node("evaluate", evaluate_node)
+    builder.add_node("rewrite", rewrite_node)
     builder.add_edge(START, "router")
     builder.add_conditional_edges(
         "router",
@@ -72,7 +79,23 @@ def build_router_agent(*, checkpointer: Any | None = None):
             "refuse": "refuse",
         },
     )
-    builder.add_edge("rag", END)
+    builder.add_edge("rag", "evaluate")
+    builder.add_conditional_edges(
+        "evaluate",
+        route_by_quality,
+        {
+            "rewrite": "rewrite",
+            "end": END,
+        },
+    )
+    builder.add_conditional_edges(
+        "rewrite",
+        route_after_rewrite,
+        {
+            "rag": "rag",
+            "end": END,
+        },
+    )
     builder.add_edge("direct_answer", END)
     builder.add_edge("refuse", END)
     return _compile(builder, checkpointer)
