@@ -34,8 +34,8 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
 | HG-TASK-DRAFT | approved | 22-R1 | 2026-08-19 维护者会话签收 DESIGN（无修订），task 为其机械闸化 |
-| HG-AUDIT-R1 | pending | 30 | 维护者签（或省略独立 20 轮注明理由，同 Phase 1 例） |
-| HG-GRAPH-MODULES | pending | 30 | 随 30 更新 `lg_rag` 行备注后签 |
+| HG-AUDIT-R1 | approved | 30 | 2026-08-19 维护者会话直签（「签收，执行30+40」）：省略独立 20 轮，DESIGN 当面审签收即视为审查通过（同 Phase 1 例） |
+| HG-GRAPH-MODULES | approved | 30 | 2026-08-19 已更新 `lg_rag` 行（router 三路拓扑 + 出边补 llm）并加人签记录 |
 
 ---
 
@@ -45,13 +45,13 @@ Phase 1 最小图（START→rag→END）已站稳。Phase 2 加意图路由：�
 
 **完成态**：
 
-- [ ] `LgRagState` 增 `route: str`（`rag|direct|refuse`；缺省 `rag`，老 checkpoint 兼容）
-- [ ] `router_node`：`#\d+` 规则快路径→rag；LLM 三分类（低温度、JSON 白名单）；异常/超时/非法输出 fallback=rag + warning
-- [ ] `direct_answer_node`（LLM 直答闲聊，不检索）· `refuse_node`（固定拒答文案，与 Chat `REFUSAL_TEXT` 同款）
-- [ ] `build_router_agent()` / `ainvoke_router_agent()`；`build_basic_agent` 保留作对照（Phase 1 单测全绿不回归）
-- [ ] 标注集 `evals/router/labeled_router_v1.yaml`（~30 条）+ 准确率脚本 ≥90%
-- [ ] Langfuse 单 trace 树含 router 节点与 route/fallback metadata
-- [ ] smoke `--router`；G-L1 备注更新 + graph-compile；chat/graph.py 与 lc_evidence_chain 零改动
+- [x] `LgRagState` 增 `route: str`（`rag|direct|refuse`；缺省 `rag`，老 checkpoint 兼容）
+- [x] `router_node`：`#\d+` 规则快路径→rag；LLM 三分类（低温度、JSON 白名单）；异常/超时/非法输出 fallback=rag + warning
+- [x] `direct_answer_node`（LLM 直答闲聊，不检索）· `refuse_node`（固定拒答文案，与 Chat `REFUSAL_TEXT` 同源复用）
+- [x] `build_router_agent()` / `ainvoke_router_agent()`；`build_basic_agent` 保留作对照（Phase 1+2 共 13 单测全绿）
+- [x] 标注集 `evals/router/labeled_router_v1.yaml`（30 条）+ `scripts/router_accuracy.py`：**实测 30/30 = 100%**
+- [x] Langfuse 单 trace 树含 router 节点与 route/fallback metadata（API 实证：route=rag/direct/refuse 均正确落 span）
+- [x] smoke `--router`（三路真链冒烟全对）；G-L1 备注更新 + graph-compile；chat/graph.py 与 lc_evidence_chain 零改动
 
 ---
 
@@ -100,13 +100,13 @@ Phase 1 最小图（START→rag→END）已站稳。Phase 2 加意图路由：�
 
 ## 验收标准
 
-- [ ] 三路分流拓扑生效；闲聊 query 不触发检索（mock 断言 `ainvoke_evidence_answer` 未被调用）
-- [ ] `#\d+` 快路径直进 rag；LLM 故障/非法输出 fallback=rag（warning 日志）
-- [ ] router 标注集准确率 ≥ 90%（真 LLM 本地跑，结果记入 task）
-- [ ] `build_basic_agent` 不回归（Phase 1 + Phase 2 单测全绿）
-- [ ] Langfuse 单 trace 树含 router 节点与 route metadata（API 实证）
-- [ ] `git diff master -- app/ops/chat/graph.py` 为空；`lc_evidence_chain` 零改动
-- [ ] ruff + pytest 触及路径绿；G-L1 更新 + `graph-compile.sh` exit 0
+- [x] 三路分流拓扑生效；闲聊 query 不触发检索（mock 断言 + 真链冒烟双重验证）
+- [x] `#\d+` 快路径直进 rag（LLM 零调用断言）；LLM 故障/非法输出 fallback=rag
+- [x] router 标注集准确率 **100%**（30/30，真 bailian qwen3.7-flash，2026-08-21 实测）
+- [x] `build_basic_agent` 不回归（13 passed）
+- [x] Langfuse 单 trace 树含 router 节点与 route metadata（API 实证）
+- [x] `git diff master -- app/ops/chat/graph.py` 为空；`lc_evidence_chain` 零改动
+- [x] ruff + pytest 触及路径绿（全量 214 passed / 3 failed 为既有本地库缺表，与 Phase 1 同）；G-L1 更新 + `graph-compile.sh` exit 0
 
 ---
 
@@ -161,3 +161,5 @@ basic/router 双图并存，default 切换与 Chat 接回均另议。
 | 日期 | 说明 |
 |---|---|
 | 2026-08-19 | 初版（AI 起草）：DESIGN 已维护者签收；HG-TASK-DRAFT 随签收转 approved，余两闸待人审 |
+| 2026-08-19 | 维护者签收 HG-AUDIT-R1 并指示执行 30+40 |
+| 2026-08-21 | 30/40 完成：state+route、router/direct/refuse 节点、build_router_agent、标注集 30 条（实测准确率 100%）、8 个 mock 单测（共 13 passed）、Langfuse API 实证 route metadata、G-L1 更新；HG-GRAPH-MODULES 签 |

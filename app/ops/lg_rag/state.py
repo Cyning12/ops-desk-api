@@ -17,9 +17,14 @@ from langgraph.graph import MessagesState
 
 
 class LgRagState(MessagesState):
-    """lg_rag Phase 1 图状态。
+    """lg_rag 图状态。
 
-    当前与 MessagesState 等价（仅 messages 字段）；
-    定义为薄子类是为了给 Phase 2/3 的扩展字段留锚点，
-    并让 graph/nodes 的注解语义明确（不直接依赖内建名）。
+    messages：内建 add_messages reducer（HumanMessage in → AIMessage out）。
+    route（Phase 2）：router_node 写入的意图分流，取值
+        "rag" | "direct" | "refuse"；无 reducer，节点写回即覆盖。
+        老 checkpoint 无此键：条件边 route_by_route 缺省 "rag"。
+
+    Phase 3 的 retry_count / evaluate 字段届时再扩（须保持向后兼容）。
     """
+
+    route: str

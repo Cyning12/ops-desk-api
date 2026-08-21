@@ -1,9 +1,17 @@
-"""lg_rag 最小 StateGraph 组装（Phase 1）。
+"""lg_rag StateGraph 组装（Phase 1 basic + Phase 2 router）。
 
-说明书：docs/guides/IMPL_langgraph-lg-rag-phase1_v1.md S3/S4。
-拓扑：START → rag → END；默认 InMemorySaver；
-ainvoke 注入 Langfuse config（对齐 app/ops/chat/service.py 与
-lc_evidence_chain 的 _trace_config 约定，不改 Chat service）。
+说明书：
+- Phase 1：docs/guides/IMPL_langgraph-lg-rag-phase1_v1.md S3/S4
+- Phase 2：docs/guides/DESIGN_langgraph-lg-rag-phase2-router_v1.md §1
+
+拓扑：
+- basic ：START → rag → END（Phase 1，保留作回归对照与回滚）
+- router：START → router ─┬─ direct → direct_answer → END
+                          ├─ refuse → refuse → END
+                          └─ rag → rag → END
+
+默认 InMemorySaver；ainvoke 注入 Langfuse（propagate_attributes
+修内层 run_name 抢占，见 Phase 1 修订记录）。
 """
 
 from __future__ import annotations
@@ -15,7 +23,13 @@ from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 
-from app.ops.lg_rag.nodes import rag_node
+from app.ops.lg_rag.nodes import (
+    direct_answer_node,
+    rag_node,
+    refuse_node,
+    route_by_route,
+    router_node,
+)
 from app.ops.lg_rag.state import LgRagState
 from app.ops.tracing import (
     ensure_langfuse_environment,
@@ -27,14 +41,41 @@ _RUN_NAME = "lg-rag"
 _TAG = "lg-rag"
 
 
+def _compile(builder: StateGraph, checkpointer: Any | None):
+    saver = checkpointer if checkpointer is not None else InMemorySaver()
+    return builder.compile(checkpointer=saver)
+
+
 def build_basic_agent(*, checkpointer: Any | None = None):
-    """START → rag → END；默认 InMemorySaver。"""
+    """START → rag → END；默认 InMemorySaver（Phase 1，保留对照）。"""
     builder = StateGraph(LgRagState)
     builder.add_node("rag", rag_node)
     builder.add_edge(START, "rag")
     builder.add_edge("rag", END)
-    saver = checkpointer if checkpointer is not None else InMemorySaver()
-    return builder.compile(checkpointer=saver)
+    return _compile(builder, checkpointer)
+
+
+def build_router_agent(*, checkpointer: Any | None = None):
+    """START → router → direct/rag/refuse 三路；默认 InMemorySaver（Phase 2）。"""
+    builder = StateGraph(LgRagState)
+    builder.add_node("router", router_node)
+    builder.add_node("rag", rag_node)
+    builder.add_node("direct_answer", direct_answer_node)
+    builder.add_node("refuse", refuse_node)
+    builder.add_edge(START, "router")
+    builder.add_conditional_edges(
+        "router",
+        route_by_route,
+        {
+            "rag": "rag",
+            "direct": "direct_answer",
+            "refuse": "refuse",
+        },
+    )
+    builder.add_edge("rag", END)
+    builder.add_edge("direct_answer", END)
+    builder.add_edge("refuse", END)
+    return _compile(builder, checkpointer)
 
 
 def _trace_config(*, thread_id: str | None = None) -> dict | None:
@@ -55,14 +96,10 @@ def _trace_config(*, thread_id: str | None = None) -> dict | None:
     }
 
 
-async def ainvoke_basic_agent(
-    query: str,
-    *,
-    thread_id: str = "lg-rag-smoke",
-    checkpointer: Any | None = None,
+async def _ainvoke_with_tracing(
+    graph: Any, query: str, *, thread_id: str
 ) -> dict[str, Any]:
-    """单 query 走通图；同 thread_id 可经 checkpointer 续写 messages。"""
-    graph = build_basic_agent(checkpointer=checkpointer)
+    """共享 ainvoke 外壳：thread_id 截断 + Langfuse config/span/属性传播。"""
     config: dict = {"configurable": {"thread_id": thread_id[:255]}}
     if tc := _trace_config(thread_id=thread_id):
         # 合并 callbacks / metadata / run_name；勿丢掉 thread_id
@@ -93,3 +130,25 @@ async def ainvoke_basic_agent(
                 {"messages": [HumanMessage(content=query)]},
                 config,
             )
+
+
+async def ainvoke_basic_agent(
+    query: str,
+    *,
+    thread_id: str = "lg-rag-smoke",
+    checkpointer: Any | None = None,
+) -> dict[str, Any]:
+    """Phase 1 单节点图；同 thread_id 可经 checkpointer 续写 messages。"""
+    graph = build_basic_agent(checkpointer=checkpointer)
+    return await _ainvoke_with_tracing(graph, query, thread_id=thread_id)
+
+
+async def ainvoke_router_agent(
+    query: str,
+    *,
+    thread_id: str = "lg-rag-smoke",
+    checkpointer: Any | None = None,
+) -> dict[str, Any]:
+    """Phase 2 三路路由图；同 thread_id 可经 checkpointer 续写 messages。"""
+    graph = build_router_agent(checkpointer=checkpointer)
+    return await _ainvoke_with_tracing(graph, query, thread_id=thread_id)

@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from app.ops.lg_rag import ainvoke_basic_agent  # noqa: E402
+from app.ops.lg_rag import ainvoke_basic_agent, ainvoke_router_agent  # noqa: E402
 from app.ops.tracing import flush_traces, tracing_enabled  # noqa: E402
 
 DEFAULT_QUERY = "Kimi Code 自动压缩被取消并报错 This operation was aborted 是什么原因?"
@@ -35,6 +35,7 @@ async def main() -> int:
     p.add_argument("--query", default=DEFAULT_QUERY)
     p.add_argument("--thread-id", default="lg-rag-smoke")
     p.add_argument("--parity", action="store_true", help="直连 LCEL 对比 answer（级别 A）")
+    p.add_argument("--router", action="store_true", help="走 Phase 2 三路路由图")
     p.add_argument(
         "--postgres",
         action="store_true",
@@ -42,15 +43,16 @@ async def main() -> int:
     )
     args = p.parse_args()
     print(f"tracing: {'on' if tracing_enabled() else 'off'}")
+    invoke = ainvoke_router_agent if args.router else ainvoke_basic_agent
     if args.postgres:
         from app.ops.lg_rag.checkpointer import apostgres_saver
 
         async with apostgres_saver(setup=True) as saver:
-            out = await ainvoke_basic_agent(
+            out = await invoke(
                 args.query, thread_id=args.thread_id, checkpointer=saver
             )
     else:
-        out = await ainvoke_basic_agent(args.query, thread_id=args.thread_id)
+        out = await invoke(args.query, thread_id=args.thread_id)
     print(f"[messages] count={len(out['messages'])}")
     msg = out["messages"][-1]
     text = getattr(msg, "content", "") or ""
