@@ -33,7 +33,7 @@
 |---|---|---|---|
 | HG-TASK-DRAFT | approved | 22-R1 | 2026-08-21 00 代签（维护者授权「作为00签收过程文档」） |
 | HG-AUDIT-R1 | approved | 30 | 2026-08-21 00 代签（同上授权；契约完全沿用 lc-evidence-http 先例，风险面小） |
-| HG-GRAPH-MODULES | pending | 30 | 随 30 更新 G-L1 后由 00 签 |
+| HG-GRAPH-MODULES | approved | 30 | 2026-08-22 00 签：G-L1 lg_rag 行已补 HTTP 端点与 freeze 契约名 |
 
 ---
 
@@ -47,7 +47,7 @@
 {
   "query": "string, 1..8000",
   "mode": "router | basic | supervisor（缺省 router）",
-  "thread_id": "string 可选，≤255；缺省由服务端生成"
+  "thread_id": "string 可选，≤255（超长 422 显式拒绝，与 web SPEC 对齐）；缺省由服务端生成"
 }
 ```
 
@@ -104,12 +104,35 @@
 
 ## 验收标准
 
-- [ ] 契约三项（请求/响应/失败外壳）与上文一致；freeze 名 `lg-rag-http-v1` 写入代码注释与 G-L1
-- [ ] 三 mode 分派正确（mock 断言调用对应入口）
-- [ ] 鉴权/校验/异常路径单测绿；既有 30 个 lg_rag 单测不回归
-- [ ] 40：本地真服务 curl 三 mode 各一次（router 必跑），响应壳与字段正确
-- [ ] `git diff master`：chat/graph.py 与 lc_evidence_chain 零改动
-- [ ] G-L1 更新 + graph-compile exit 0；ruff 绿
+- [x] 契约三项一致；freeze 名写入 router.py docstring 与 G-L1；00 修正 thread_id 超长 422（与 web SPEC 对齐）
+- [x] 三 mode 分派正确（mock 断言 + 40 真机 curl 三 mode 全 200）
+- [x] 11 例全绿（401/422×5/分派/envelope/500 外壳/thread_id 生成回显）；lg_rag 30 + lc http 8 不回归（合跑 49 passed）
+- [x] 40 真机（uvicorn+真 PG/Qdrant/LLM）：三 mode + 续写 + 401/422 全 PASS；chain_meta 有值；supervisor 拆出 rag+tool
+- [x] `git diff master`：chat/graph.py 与 lc_evidence_chain 零改动
+- [x] G-L1 更新 + graph-compile exit 0；ruff 绿
+
+---
+
+## 自检结论（50 · 00 验收）
+
+> 2026-08-22 · 00（父窗）：30/40 子 agent 执行，00 复检 · **PASS**
+
+- [x] 30 产出复检：router.py 抽读合格；ruff/11 例全绿；禁区零 diff
+- [x] 契约对齐修正：thread_id 超长由静默截断改为 422（对齐 web SPEC）
+- [x] 40 真机验证 PASS（三 mode + 续写 + 鉴权/校验 + Langfuse + 回归 242 passed 无新增失败）
+- [x] 00 抽验 Langfuse：verify40-* traces 在案（name=lg-rag, session=thread_id）
+- [ ] （观察，不挡）PG checkpointer 支路无单测（env-gated 默认不开）；续写 query 过简致 0 命中属检索质量范畴
+
+**50 结论：PASS（机械）· 可 CLOSE**
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-22 |
+| 定稿 | lg_rag 对外 HTTP：POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1；三 mode；cookie 鉴权；InMemory 默认 / env 可切 PG） |
+| 归档 | `docs/tasks/done/task_lg_rag_http.md` |
+| 下游 | ops-desk-web `docs/spec/SPEC-web-lg-rag-page_v1.md` + `task_web_lg_rag_page`（draft 待 web 维护者审） |
 
 ---
 
@@ -118,3 +141,5 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-21 | 初版（00 起草 + 代签闸 · 维护者授权）：契约沿用 lc-evidence-http 先例；执行交子 agent |
+| 2026-08-22 | 30 子 agent 实施（router.py + 注册 + 10 例）；00 复检 + thread_id 422 契约修正（11 例） |
+| 2026-08-22 | 40 子 agent 真机验证全项 PASS；00 50 验收 PASS；CLOSE 归档 |
