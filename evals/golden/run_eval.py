@@ -36,7 +36,7 @@ if str(ROOT) not in sys.path:
 from app.db.session import AsyncSessionLocal  # noqa: E402
 from app.llm.factory import get_llm_provider  # noqa: E402
 from app.ops.chat.rag_nodes import GRADER_MODEL, GRADER_PROVIDER  # noqa: E402
-from app.ops.rag.embedder import SentenceTransformerEmbedder  # noqa: E402
+from app.ops.rag.embedder import Embedder, get_query_embedder  # noqa: E402
 from app.ops.rag.grader import decide, grade_chunks, grader_prompt_version  # noqa: E402
 from app.ops.rag.reranker import (  # noqa: E402
     recall_k_each,
@@ -544,7 +544,7 @@ async def _corpus_count() -> int | None:
 async def eval_one(
     case: dict[str, Any],
     *,
-    embedder: SentenceTransformerEmbedder,
+    embedder: Embedder,
     provider,
     queries: list[str],
     rules: list[DenyRule],
@@ -587,7 +587,7 @@ async def eval_one(
 async def run_stability(
     sample: list[dict[str, Any]],
     *,
-    embedder: SentenceTransformerEmbedder,
+    embedder: Embedder,
     provider,
     queries: list[str],
     rules: list[DenyRule],
@@ -701,7 +701,8 @@ async def async_main(args: argparse.Namespace) -> int:
     if not pending and results:
         print("resume: 无待跑 case，仅重算 summary / 可选稳定性", flush=True)
 
-    embedder = SentenceTransformerEmbedder()
+    # 对齐生产查询路径：默认 SiliconFlow ApiEmbedder（避免本机 ST 冷启动/崩溃）
+    embedder = get_query_embedder()
     embed_name = embedder.name
     provider = get_llm_provider(os.getenv("RAG_GRADER_PROVIDER", GRADER_PROVIDER))
     model = os.getenv("RAG_GRADER_MODEL", GRADER_MODEL)
@@ -710,7 +711,7 @@ async def async_main(args: argparse.Namespace) -> int:
     print(
         f"arm={arm['arm']} rerank={arm['rerank_enabled']} "
         f"k_each={arm['recall_k_each']} coarse_top_n={arm['coarse_top_n']} "
-        f"grader={model}",
+        f"embed={embed_name} grader={model}",
         flush=True,
     )
 

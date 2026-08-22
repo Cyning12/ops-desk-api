@@ -1,0 +1,159 @@
+"""LangGraph 旁路 HTTP：POST /api/ops/lg-rag/invoke。
+
+freeze 契约：lg-rag-http-v1（真值 docs/tasks/active/task_lg_rag_http.md）。
+
+薄包装 lg_rag 三个 ainvoke 入口（basic / router / supervisor）；
+{ok,data} 外壳、cookie 鉴权、异常 500 外壳、flush_traces 体例对齐
+lc_evidence_chain/router.py 先例。
+
+Checkpointer：默认不传（入口默认 InMemorySaver，进程内同 thread_id 续写）；
+env LG_RAG_HTTP_CHECKPOINTER=postgres 时走 apostgres_saver(setup=True)
+（每请求构建，幂等建表；生产默认不开）。
+"""
+from __future__ import annotations
+
+import logging
+import os
+import uuid
+from typing import Any, Literal
+
+from fastapi import APIRouter, status
+from fastapi.responses import JSONResponse
+from langchain_core.messages import AIMessage
+from pydantic import BaseModel, Field
+
+from app.db.models import OpsUser
+from app.ops.deps import CurrentUser
+from app.ops.lg_rag import (
+    ainvoke_basic_agent,
+    ainvoke_router_agent,
+    ainvoke_supervisor_agent,
+)
+from app.ops.lg_rag.checkpointer import apostgres_saver
+from app.ops.tracing import flush_traces, tracing_enabled
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/lg-rag", tags=["lg-rag"])
+
+QUERY_MAX_LENGTH = 8000
+THREAD_ID_MAX_LENGTH = 255
+_FAIL_CODE = "lg_rag_failed"
+_FAIL_MESSAGE = "旁路调用失败"
+
+Mode = Literal["router", "basic", "supervisor"]
+
+
+class InvokeRequest(BaseModel):
+    """旁路 invoke 请求体（freeze lg-rag-http-v1）。"""
+
+    query: str = Field(..., min_length=1, max_length=QUERY_MAX_LENGTH)
+    mode: Mode = "router"
+    thread_id: str | None = Field(default=None, max_length=THREAD_ID_MAX_LENGTH)
+
+
+class ChainMetaOut(BaseModel):
+    """rag 路径质量信号子集（对齐 lc 的 MetaOut 风格，缺省 0/""）。"""
+
+    gate_action: str = ""
+    hit_count: int = 0
+    kept_count: int = 0
+    best_relevance: str = ""
+    grade_count: int = 0
+
+
+class DataOut(BaseModel):
+    """freeze 响应 data（lg-rag-http-v1）。"""
+
+    answer: str
+    mode: str
+    thread_id: str
+    route: str = ""
+    retry_count: int = 0
+    chain_meta: ChainMetaOut
+    subtasks: list[dict[str, Any]] = []
+    subtask_results: list[dict[str, Any]] = []
+
+
+def _extract_answer(messages: Any) -> str:
+    """取末条 AIMessage content；无则空串。"""
+    for msg in reversed(messages or []):
+        if isinstance(msg, AIMessage):
+            content = msg.content
+            return content if isinstance(content, str) else str(content)
+    return ""
+
+
+def _chain_meta_out(meta: Any) -> ChainMetaOut:
+    meta = meta or {}
+    return ChainMetaOut(
+        gate_action=str(meta.get("gate_action") or ""),
+        hit_count=int(meta.get("hit_count") or 0),
+        kept_count=int(meta.get("kept_count") or 0),
+        best_relevance=str(meta.get("best_relevance") or ""),
+        grade_count=int(meta.get("grade_count") or 0),
+    )
+
+
+def serialize_state(state: dict[str, Any], *, mode: str, thread_id: str) -> DataOut:
+    """把图返回 state 转成 freeze 响应 data。"""
+    return DataOut(
+        answer=_extract_answer(state.get("messages")),
+        mode=mode,
+        thread_id=thread_id,
+        route=str(state.get("route") or ""),
+        retry_count=int(state.get("retry_count") or 0),
+        chain_meta=_chain_meta_out(state.get("chain_meta")),
+        subtasks=list(state.get("subtasks") or []),
+        subtask_results=list(state.get("subtask_results") or []),
+    )
+
+
+def _use_postgres_checkpointer() -> bool:
+    return os.getenv("LG_RAG_HTTP_CHECKPOINTER", "").strip().lower() == "postgres"
+
+
+async def _dispatch(mode: Mode, query: str, thread_id: str) -> dict[str, Any]:
+    """mode → 对应 ainvoke 入口；env 开关决定是否包 PG checkpointer。"""
+    if mode == "basic":
+        entry = ainvoke_basic_agent
+    elif mode == "supervisor":
+        entry = ainvoke_supervisor_agent
+    else:
+        entry = ainvoke_router_agent
+    if _use_postgres_checkpointer():
+        async with apostgres_saver(setup=True) as saver:
+            return await entry(query, thread_id=thread_id, checkpointer=saver)
+    return await entry(query, thread_id=thread_id)
+
+
+@router.post("/invoke")
+async def invoke_lg_rag(
+    body: InvokeRequest,
+    _user: OpsUser = CurrentUser,
+) -> JSONResponse:
+    """同步调用 lg_rag 旁路图；须登录。"""
+    thread_id = (body.thread_id or uuid.uuid4().hex)[:THREAD_ID_MAX_LENGTH]
+    try:
+        state = await _dispatch(body.mode, body.query, thread_id)
+    except Exception:
+        logger.exception("lg-rag invoke failed")
+        if tracing_enabled():
+            flush_traces()
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "ok": False,
+                "error": {"code": _FAIL_CODE, "message": _FAIL_MESSAGE},
+            },
+        )
+    if tracing_enabled():
+        flush_traces()
+    return JSONResponse(
+        content={
+            "ok": True,
+            "data": serialize_state(
+                state, mode=body.mode, thread_id=thread_id
+            ).model_dump(),
+        }
+    )

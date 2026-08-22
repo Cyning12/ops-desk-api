@@ -24,6 +24,19 @@ def main() -> int:
     parser.add_argument("--no-on-disk-hnsw", action="store_false", dest="on_disk_hnsw")
     parser.add_argument("--on-disk-payload", action="store_true", default=True)
     parser.add_argument("--no-on-disk-payload", action="store_false", dest="on_disk_payload")
+    parser.add_argument(
+        "--quantization",
+        default="none",
+        choices=["none", "scalar"],
+        help="none=不量化；scalar=int8（生产向 P95 保险）",
+    )
+    parser.add_argument(
+        "--quant-always-ram",
+        action="store_true",
+        default=True,
+        help="标量量化码本常驻内存（默认开，利于延迟）",
+    )
+    parser.add_argument("--no-quant-always-ram", action="store_false", dest="quant_always_ram")
     parser.add_argument("--indexing-threshold", type=int, default=10000)
     parser.add_argument("--max-segment-size", type=int, default=20000)
     parser.add_argument("--recreate", action="store_true")
@@ -47,6 +60,16 @@ def main() -> int:
         client.delete_collection(args.name)
 
     distance = getattr(qm.Distance, args.metric.upper())
+    quant_cfg = None
+    if args.quantization == "scalar":
+        quant_cfg = qm.ScalarQuantization(
+            scalar=qm.ScalarQuantizationConfig(
+                type=qm.ScalarType.INT8,
+                quantile=0.99,
+                always_ram=args.quant_always_ram,
+            )
+        )
+
     client.create_collection(
         collection_name=args.name,
         vectors_config=qm.VectorParams(
@@ -63,12 +86,14 @@ def main() -> int:
             indexing_threshold=args.indexing_threshold,
             max_segment_size=args.max_segment_size,
         ),
+        quantization_config=quant_cfg,
         on_disk_payload=args.on_disk_payload,
     )
     print(
         f"created {args.name}: dim={args.dim} metric={args.metric} "
         f"m={args.m} ef_construct={args.ef_construct} "
-        f"on_disk_vectors={args.on_disk_vectors} on_disk_hnsw={args.on_disk_hnsw}"
+        f"on_disk_vectors={args.on_disk_vectors} on_disk_hnsw={args.on_disk_hnsw} "
+        f"quantization={args.quantization}"
     )
     return 0
 
