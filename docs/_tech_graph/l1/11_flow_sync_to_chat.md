@@ -1,7 +1,7 @@
 ---
 graph_id: 11_flow_sync_to_chat
 version: 2026-07-27
-generated_at: 2026-08-22T02:26:49Z
+generated_at: 2026-08-24T08:33:50Z
 source: 11_flow_sync_to_chat.graph.yaml
 ---
 
@@ -13,34 +13,37 @@ Admin sync 导入的 repo/issue/PR/graph 数据如何被只读接口和 Chat 上
 
 ```mermaid
 flowchart LR
-    client[用户 / iOS]
-    admin_sync[POST /api/ops/admin/sync]
-    issues_endpoint[GET /api/ops/issues]
-    pulls_endpoint[GET /api/ops/pulls]
-    graph_endpoint[GET /api/ops/graph]
-    chat_stream[POST /api/ops/chat/stream]
+    client["用户 / iOS"]
+    admin_sync["POST /api/ops/admin/sync"]
+    issues_endpoint["GET /api/ops/issues"]
+    pulls_endpoint["GET /api/ops/pulls"]
+    graph_endpoint["GET /api/ops/graph"]
+    chat_stream["POST /api/ops/chat/stream"]
     db[PostgreSQL]
 
-    client --"POST sync payload"--> admin_sync
-    // → app/ops/admin/sync.py#L45
-    admin_sync --"upserts ops_repos / ops_issues / ops_pull_requests / snapshots"--> db
-    // → app/ops/admin/service.py#L20
-    db --"query"--> issues_endpoint
-    // → app/ops/issues.py#L25
-    db --"query"--> pulls_endpoint
-    // → app/ops/pulls.py#L25
-    db --"query latest"--> graph_endpoint
-    // → app/ops/graph.py#L16
-    db --"load_issue_context"--> chat_stream
-    // → app/ops/chat/nodes.py#L63
-    issues_endpoint --"JSON list"--> client
-    pulls_endpoint --"JSON list"--> client
-    graph_endpoint --"JSON snapshot"--> client
-    chat_stream --"SSE"--> client
+    client -->|"POST sync payload"| admin_sync
+    %% → app/ops/admin/sync.py#L45
+    admin_sync -->|"upserts ops_repos / ops_issues / ops_pull_requests / snapshots"| db
+    %% → app/ops/admin/service.py#L20
+    db -->|"query"| issues_endpoint
+    %% → app/ops/issues.py#L25
+    db -->|"query"| pulls_endpoint
+    %% → app/ops/pulls.py#L25
+    db -->|"query latest"| graph_endpoint
+    %% → app/ops/graph.py#L16
+    db -->|"load_issue_context"| chat_stream
+    %% → app/ops/chat/nodes.py#L63
+    issues_endpoint -->|"JSON list"| client
+    pulls_endpoint -->|"JSON list"| client
+    graph_endpoint -->|"JSON snapshot"| client
+    chat_stream -->|"SSE"| client
 
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
+
+    class client,admin_sync,issues_endpoint,pulls_endpoint,graph_endpoint,chat_stream phase
+    class db infra
 ```
 
 ## Structured Data

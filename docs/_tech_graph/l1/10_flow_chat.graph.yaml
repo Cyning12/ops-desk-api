@@ -1,8 +1,8 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_chat"
 title: "Chat 流式对话流程"
-description: "用户通过 SSE 与后端对话的完整流程：HTTP 入口、LangGraph StateGraph 执行、LLM 调用、事件归档。"
-version: "2026-07-27"
+description: "用户通过 SSE 与后端对话的完整流程：HTTP 入口、LangGraph StateGraph 执行（含 RAG 检索链）、LLM 调用、事件归档。"
+version: "2026-08-23"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "method"
@@ -76,6 +76,33 @@ nodes:
         symbol: "load_issue_context_node"
         kind: method
 
+  - id: "retrieve"
+    label: "hybrid_recall"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/chat/rag_nodes.py"
+        symbol: "retrieve_node"
+        kind: method
+
+  - id: "grade"
+    label: "grade_chunks + gate"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/chat/rag_nodes.py"
+        symbol: "grade_node"
+        kind: method
+
+  - id: "refuse_answer"
+    label: "refuse on low relevance"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/chat/rag_nodes.py"
+        symbol: "refuse_node"
+        kind: method
+
   - id: "answer"
     label: "generate_answer"
     kind: flow
@@ -84,6 +111,10 @@ nodes:
       - path: "app/ops/chat/nodes.py"
         symbol: "answer_node"
         kind: method
+
+  - id: "rag"
+    label: "RAG hybrid_recall"
+    kind: external
 
   - id: "llm"
     label: "LLM Provider"
@@ -121,21 +152,21 @@ edges:
     label: "creates"
     anchors:
       - path: "app/ops/chat/router.py"
-        line: 36
+        line: 75
 
   - from: "client"
     to: "chat_ws"
     label: "message / cancel"
     anchors:
       - path: "app/ops/chat/ws.py"
-        line: 80
+        line: 79
 
   - from: "chat_ws"
     to: "event_gen"
     label: "creates"
     anchors:
       - path: "app/ops/chat/ws.py"
-        line: 120
+        line: 165
 
   - from: "chat_ws"
     to: "client"
@@ -158,37 +189,41 @@ edges:
     label: "invokes"
     anchors:
       - path: "app/ops/chat/streaming.py"
-        line: 170
+        line: 232
 
   - from: "chat_service"
     to: "stategraph"
     label: "astream_events"
     anchors:
       - path: "app/ops/chat/service.py"
-        line: 9
+        line: 31
       - path: "app/ops/chat/graph.py"
-        line: 26
+        line: 29
 
   - from: "stategraph"
     to: "intent"
     label: "first_node"
     anchors:
       - path: "app/ops/chat/graph.py"
-        line: 17
+        line: 37
 
   - from: "intent"
     to: "context"
     label: "[issue_qa]"
+    mark: "?>"
+    type: "branches"
     anchors:
       - path: "app/ops/chat/graph.py"
-        line: 21
+        line: 40
 
   - from: "intent"
-    to: "answer"
-    label: "[overview|general]"
+    to: "retrieve"
+    label: "[general|overview]"
+    mark: "?>"
+    type: "branches"
     anchors:
       - path: "app/ops/chat/graph.py"
-        line: 21
+        line: 40
 
   - from: "context"
     to: "db"
@@ -199,14 +234,58 @@ edges:
     label: "->"
     anchors:
       - path: "app/ops/chat/graph.py"
-        line: 23
+        line: 49
+
+  - from: "retrieve"
+    to: "rag"
+    mark: "::triggers"
+    type: "triggers"
+    label: "hybrid_recall"
+    anchors:
+      - path: "app/ops/chat/rag_nodes.py"
+        line: 64
+      - path: "app/ops/rag/retrieve.py"
+        symbol: "hybrid_recall"
+
+  - from: "retrieve"
+    to: "db"
+    label: "vector / FTS query"
+
+  - from: "retrieve"
+    to: "grade"
+    label: "->"
+    anchors:
+      - path: "app/ops/chat/graph.py"
+        line: 50
+
+  - from: "grade"
+    to: "refuse_answer"
+    label: "[refuse]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/chat/graph.py"
+        line: 51
+
+  - from: "grade"
+    to: "answer"
+    label: "[generate_answer]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/chat/graph.py"
+        line: 51
+
+  - from: "grade"
+    to: "llm"
+    label: "grade_chunks"
 
   - from: "answer"
     to: "llm"
     label: "complete_stream"
     anchors:
       - path: "app/ops/chat/nodes.py"
-        line: 109
+        line: 176
 
   - from: "chat_service"
     to: "db"
