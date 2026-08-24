@@ -55,11 +55,11 @@
 
 ## 验收标准
 
-- [ ] SPEC §4 矩阵 V1/V2/V4/V5 有实测记录（V3 人工项标注）
-- [ ] DEF-023 在 1.5.1 的修复状态有明确结论（含证据：changelog/源码行）
-- [ ] 迁移日三脚本备份入库 `scripts/legacy/`
-- [ ] 需要 kit 更新时：FEEDBACK 文档落盘（含反哺规则集与 fixture 对照）
-- [ ] `./scripts/graph-compile.sh` 现状（harness + normalize）仍 exit 0
+- [x] SPEC §4 矩阵 V1/V2/V4/V5 有实测记录（V3 人工项标注）（实测记录见 FEEDBACK §3：V1 PASS · V2 PASS · V4 PASS 双模式 · V5 PASS 边集合；V3 待维护者勾）
+- [x] DEF-023 在 1.5.1 的修复状态有明确结论（含证据：changelog/源码行）（4 条规则 3 修 1 未修；lib/cli-graph-yaml.js L326-405 行号证据见 FEEDBACK §2）
+- [x] 迁移日三脚本备份入库 `scripts/legacy/`（`*.20260824.pre-dsh-kit-migrate.bak` ×3 已落盘 untracked，待 00 统一 commit）
+- [x] 需要 kit 更新时：FEEDBACK 文档落盘（含反哺规则集与 fixture 对照）（`docs/harness/evidence/FEEDBACK_dsh_kit_1_5_1_mermaid_from_ops_desk_api_20260824.md`：§5 规则集 R1-R6 · §4 chat fixture 对照 · §6 差异 D1-D3）
+- [x] `./scripts/graph-compile.sh` 现状（harness + normalize）仍 exit 0（收尾实跑 exit 0，时间戳 diff 已还原）
 
 ---
 
@@ -68,3 +68,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-24 | 初版（00 起草 + 代签闸 · 维护者授权）：执行预留迁移 SPEC 的验证矩阵；判定后按需落 FEEDBACK |
+| 2026-08-24 | 30 执行回填：V1-V5 实测完成；判定「kit 仍差（class 按 kind 未修 + export 丢 label/graph_id 命名空间差异）」→ 不切命令面、保留 normalize；FEEDBACK 落盘；legacy 备份 ×3 落盘待 00 入库 |
