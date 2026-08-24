@@ -1,7 +1,7 @@
 ---
 graph_id: 00_main
-version: 2026-07-27
-generated_at: 2026-08-22T02:26:48Z
+version: 2026-08-23
+generated_at: 2026-08-24T03:26:25Z
 source: 00_main.graph.yaml
 ---
 
@@ -13,58 +13,71 @@ Ops Desk 后端 API 的架构总图：FastAPI 入口、各业务路由、LangGra
 
 ```mermaid
 flowchart TB
-    client[用户 / 前端]
-    health[GET /health]
-    app[FastAPI App]
-    ops_router[/api/ops Router]
-    auth[Auth 路由]
-    overview[Overview 路由]
-    issues[Issues 路由]
-    pulls[Pulls 路由]
-    graph[Graph 快照路由]
-    admin_sync[Admin Sync 路由]
-    chat_router[Chat 路由]
-    chat_flow[>../l1/10_flow_chat.md]
-    llm[LLM Provider]
+    client["用户 / 前端"]
+    health["GET /health"]
+    app["FastAPI App"]
+    ops_router["/api/ops Router"]
+    auth["Auth 路由"]
+    overview["Overview 路由"]
+    issues["Issues 路由"]
+    pulls["Pulls 路由"]
+    graph["Graph 快照路由"]
+    admin_sync["Admin Sync 路由"]
+    chat_router["Chat 路由（SSE + WS）"]
+    lc_evidence_router["LC Evidence 路由"]
+    lg_rag_router["LG RAG 路由"]
+    chat_flow[">../l1/10_flow_chat.md"]
+    llm["LLM Provider"]
     db[PostgreSQL]
-    struct_doc[>../l1/01_modules.md]
+    struct_doc[">../l1/01_modules.md"]
 
-    client --"GET"--> health
-    client --"HTTP / SSE"--> app
-    health --"mounted_on"--> app
-    app --"include_router"--> ops_router
-    // → app/main.py#L31
-    // → app/ops/router.py#L12
-    ops_router --"routes"--> auth
-    // → app/ops/router.py#L14
-    ops_router --"routes"--> overview
-    // → app/ops/router.py#L15
-    ops_router --"routes"--> issues
-    // → app/ops/router.py#L16
-    ops_router --"routes"--> pulls
-    // → app/ops/router.py#L17
-    ops_router --"routes"--> graph
-    // → app/ops/router.py#L18
-    ops_router --"routes"--> admin_sync
-    // → app/ops/router.py#L19
-    ops_router --"routes"--> chat_router
-    // → app/ops/router.py#L20
-    chat_router --"::triggers"--> chat_flow
-    // → app/ops/chat/router.py#L48
-    chat_flow --"calls"--> llm
-    chat_flow --"persists"--> db
-    auth --"validates / creates"--> db
-    overview --"queries"--> db
-    issues --"queries"--> db
-    pulls --"queries"--> db
-    graph --"queries"--> db
-    admin_sync --"upserts"--> db
-    app --"加载"--> struct_doc
-    app --"depends_on"--> db
+    client -->|"GET"| health
+    client -->|"HTTP / SSE"| app
+    health -->|"mounted_on"| app
+    app -->|"include_router"| ops_router
+    %% → app/main.py#L33
+    %% → app/ops/router.py#L15
+    ops_router -->|"routes"| auth
+    %% → app/ops/router.py#L17
+    ops_router -->|"routes"| overview
+    %% → app/ops/router.py#L18
+    ops_router -->|"routes"| issues
+    %% → app/ops/router.py#L19
+    ops_router -->|"routes"| pulls
+    %% → app/ops/router.py#L20
+    ops_router -->|"routes"| graph
+    %% → app/ops/router.py#L21
+    ops_router -->|"routes"| admin_sync
+    %% → app/ops/router.py#L22
+    ops_router -->|"routes"| chat_router
+    %% → app/ops/router.py#L23
+    %% → app/ops/router.py#L24
+    ops_router -->|"routes"| lc_evidence_router
+    %% → app/ops/router.py#L25
+    ops_router -->|"routes"| lg_rag_router
+    %% → app/ops/router.py#L26
+    chat_router -->|"::triggers"| chat_flow
+    %% → app/ops/chat/router.py#L33
+    chat_flow -->|"calls"| llm
+    chat_flow -->|"persists"| db
+    auth -->|"validates / creates"| db
+    overview -->|"queries"| db
+    issues -->|"queries"| db
+    pulls -->|"queries"| db
+    graph -->|"queries"| db
+    admin_sync -->|"upserts"| db
+    lc_evidence_router -->|"session / query"| db
+    lg_rag_router -->|"optional checkpointer"| db
+    app -->|"加载"| struct_doc
+    app -->|"depends_on"| db
 
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
+
+    class client,health,app,ops_router,auth,overview,issues,pulls,graph,admin_sync,chat_router,lc_evidence_router,lg_rag_router phase
+    class chat_flow,struct_doc doc
+    class llm,db infra
 ```
 
 ## Structured Data
@@ -83,7 +96,9 @@ flowchart TB
 | pulls | Pulls 路由 | flow |
 | graph | Graph 快照路由 | flow |
 | admin_sync | Admin Sync 路由 | flow |
-| chat_router | Chat 路由 | flow |
+| chat_router | Chat 路由（SSE + WS） | flow |
+| lc_evidence_router | LC Evidence 路由 | flow |
+| lg_rag_router | LG RAG 路由 | flow |
 | chat_flow | >../l1/10_flow_chat.md | external |
 | llm | LLM Provider | external |
 | db | PostgreSQL | external |
@@ -103,7 +118,9 @@ flowchart TB
 | ops_router | pulls | -> | depends_on | routes | 1 anchor(s) |
 | ops_router | graph | -> | depends_on | routes | 1 anchor(s) |
 | ops_router | admin_sync | -> | depends_on | routes | 1 anchor(s) |
-| ops_router | chat_router | -> | depends_on | routes | 1 anchor(s) |
+| ops_router | chat_router | -> | depends_on | routes | 2 anchor(s) |
+| ops_router | lc_evidence_router | -> | depends_on | routes | 1 anchor(s) |
+| ops_router | lg_rag_router | -> | depends_on | routes | 1 anchor(s) |
 | chat_router | chat_flow | ::triggers | triggers |  | 1 anchor(s) |
 | chat_flow | llm | -> | depends_on | calls |  |
 | chat_flow | db | -> | depends_on | persists |  |
@@ -113,6 +130,8 @@ flowchart TB
 | pulls | db | -> | depends_on | queries |  |
 | graph | db | -> | depends_on | queries |  |
 | admin_sync | db | -> | depends_on | upserts |  |
+| lc_evidence_router | db | -> | depends_on | session / query |  |
+| lg_rag_router | db | -> | depends_on | optional checkpointer |  |
 | app | struct_doc | -> | depends_on | 加载 |  |
 | app | db | -> | depends_on | depends_on |  |
 

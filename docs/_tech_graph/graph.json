@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260822_V1",
-  "generated_at": "2026-08-22T02:26:49Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260824_V1",
+  "generated_at": "2026-08-24T03:26:27Z",
   "graphs": [
     {
       "id": "00_main",
@@ -82,7 +82,17 @@
     {
       "graph_id": "00_main",
       "id": "chat_router",
-      "label": "Chat 路由"
+      "label": "Chat 路由（SSE + WS）"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "lc_evidence_router",
+      "label": "LC Evidence 路由"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "lg_rag_router",
+      "label": "LG RAG 路由"
     },
     {
       "graph_id": "00_main",
@@ -191,8 +201,28 @@
     },
     {
       "graph_id": "10_flow_chat",
+      "id": "retrieve",
+      "label": "hybrid_recall"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "grade",
+      "label": "grade_chunks + gate"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "refuse_answer",
+      "label": "refuse on low relevance"
+    },
+    {
+      "graph_id": "10_flow_chat",
       "id": "answer",
       "label": "generate_answer"
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "id": "rag",
+      "label": "RAG hybrid_recall"
     },
     {
       "graph_id": "10_flow_chat",
@@ -291,11 +321,11 @@
       "anchors": [
         {
           "path": "app/main.py",
-          "line": 31
+          "line": 33
         },
         {
           "path": "app/ops/router.py",
-          "line": 12
+          "line": 15
         }
       ],
       "sync": true
@@ -310,7 +340,7 @@
       "anchors": [
         {
           "path": "app/ops/router.py",
-          "line": 14
+          "line": 17
         }
       ],
       "sync": true
@@ -325,7 +355,7 @@
       "anchors": [
         {
           "path": "app/ops/router.py",
-          "line": 15
+          "line": 18
         }
       ],
       "sync": true
@@ -340,7 +370,7 @@
       "anchors": [
         {
           "path": "app/ops/router.py",
-          "line": 16
+          "line": 19
         }
       ],
       "sync": true
@@ -355,7 +385,7 @@
       "anchors": [
         {
           "path": "app/ops/router.py",
-          "line": 17
+          "line": 20
         }
       ],
       "sync": true
@@ -370,7 +400,7 @@
       "anchors": [
         {
           "path": "app/ops/router.py",
-          "line": 18
+          "line": 21
         }
       ],
       "sync": true
@@ -385,7 +415,7 @@
       "anchors": [
         {
           "path": "app/ops/router.py",
-          "line": 19
+          "line": 22
         }
       ],
       "sync": true
@@ -400,7 +430,41 @@
       "anchors": [
         {
           "path": "app/ops/router.py",
-          "line": 20
+          "line": 23
+        },
+        {
+          "path": "app/ops/router.py",
+          "line": 24
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "ops_router",
+      "to": "lc_evidence_router",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "routes",
+      "anchors": [
+        {
+          "path": "app/ops/router.py",
+          "line": 25
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "ops_router",
+      "to": "lg_rag_router",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "routes",
+      "anchors": [
+        {
+          "path": "app/ops/router.py",
+          "line": 26
         }
       ],
       "sync": true
@@ -415,7 +479,7 @@
       "anchors": [
         {
           "path": "app/ops/chat/router.py",
-          "line": 48
+          "line": 33
         }
       ],
       "sync": true
@@ -497,6 +561,26 @@
       "mark": "->",
       "type": "depends_on",
       "label": "upserts",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "lc_evidence_router",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "session / query",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "lg_rag_router",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "optional checkpointer",
       "anchors": [],
       "sync": true
     },
@@ -770,7 +854,7 @@
       "anchors": [
         {
           "path": "app/ops/chat/router.py",
-          "line": 36
+          "line": 75
         }
       ],
       "sync": true
@@ -785,7 +869,7 @@
       "anchors": [
         {
           "path": "app/ops/chat/ws.py",
-          "line": 80
+          "line": 79
         }
       ],
       "sync": true
@@ -800,7 +884,7 @@
       "anchors": [
         {
           "path": "app/ops/chat/ws.py",
-          "line": 120
+          "line": 165
         }
       ],
       "sync": true
@@ -855,7 +939,7 @@
       "anchors": [
         {
           "path": "app/ops/chat/streaming.py",
-          "line": 170
+          "line": 232
         }
       ],
       "sync": true
@@ -870,11 +954,11 @@
       "anchors": [
         {
           "path": "app/ops/chat/service.py",
-          "line": 9
+          "line": 31
         },
         {
           "path": "app/ops/chat/graph.py",
-          "line": 26
+          "line": 29
         }
       ],
       "sync": true
@@ -889,7 +973,7 @@
       "anchors": [
         {
           "path": "app/ops/chat/graph.py",
-          "line": 17
+          "line": 37
         }
       ],
       "sync": true
@@ -898,13 +982,13 @@
       "graph_id": "10_flow_chat",
       "from": "intent",
       "to": "context",
-      "mark": "->",
-      "type": "depends_on",
+      "mark": "?>",
+      "type": "branches",
       "label": "[issue_qa]",
       "anchors": [
         {
           "path": "app/ops/chat/graph.py",
-          "line": 21
+          "line": 40
         }
       ],
       "sync": true
@@ -912,14 +996,14 @@
     {
       "graph_id": "10_flow_chat",
       "from": "intent",
-      "to": "answer",
-      "mark": "->",
-      "type": "depends_on",
-      "label": "[overview|general]",
+      "to": "retrieve",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[general|overview]",
       "anchors": [
         {
           "path": "app/ops/chat/graph.py",
-          "line": 21
+          "line": 40
         }
       ],
       "sync": true
@@ -944,9 +1028,93 @@
       "anchors": [
         {
           "path": "app/ops/chat/graph.py",
-          "line": 23
+          "line": 49
         }
       ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "retrieve",
+      "to": "rag",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "hybrid_recall",
+      "anchors": [
+        {
+          "path": "app/ops/chat/rag_nodes.py",
+          "line": 64
+        },
+        {
+          "path": "app/ops/rag/retrieve.py",
+          "symbol": "hybrid_recall"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "retrieve",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "vector / FTS query",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "retrieve",
+      "to": "grade",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "->",
+      "anchors": [
+        {
+          "path": "app/ops/chat/graph.py",
+          "line": 50
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "grade",
+      "to": "refuse_answer",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[refuse]",
+      "anchors": [
+        {
+          "path": "app/ops/chat/graph.py",
+          "line": 51
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "grade",
+      "to": "answer",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[generate_answer]",
+      "anchors": [
+        {
+          "path": "app/ops/chat/graph.py",
+          "line": 51
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_chat",
+      "from": "grade",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "grade_chunks",
+      "anchors": [],
       "sync": true
     },
     {
@@ -959,7 +1127,7 @@
       "anchors": [
         {
           "path": "app/ops/chat/nodes.py",
-          "line": 109
+          "line": 176
         }
       ],
       "sync": true

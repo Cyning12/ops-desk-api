@@ -2,7 +2,7 @@ schema_version: "inform_graph.v3"
 graph_id: "00_main"
 title: "ops-desk-api 顶层流程总图"
 description: "Ops Desk 后端 API 的架构总图：FastAPI 入口、各业务路由、LangGraph Chat 流程、数据库表与外部依赖的关系。"
-version: "2026-07-27"
+version: "2026-08-23"
 layer: "G-L0"
 primary_layer: "G-L0"
 depth: "framework"
@@ -50,7 +50,15 @@ nodes:
     kind: flow
 
   - id: "chat_router"
-    label: "Chat 路由"
+    label: "Chat 路由（SSE + WS）"
+    kind: flow
+
+  - id: "lc_evidence_router"
+    label: "LC Evidence 路由"
+    kind: flow
+
+  - id: "lg_rag_router"
+    label: "LG RAG 路由"
     kind: flow
 
   - id: "chat_flow"
@@ -87,58 +95,74 @@ edges:
     label: "include_router"
     anchors:
       - path: "app/main.py"
-        line: 31
+        line: 33
       - path: "app/ops/router.py"
-        line: 12
+        line: 15
 
   - from: "ops_router"
     to: "auth"
     label: "routes"
     anchors:
       - path: "app/ops/router.py"
-        line: 14
+        line: 17
 
   - from: "ops_router"
     to: "overview"
     label: "routes"
     anchors:
       - path: "app/ops/router.py"
-        line: 15
+        line: 18
 
   - from: "ops_router"
     to: "issues"
     label: "routes"
     anchors:
       - path: "app/ops/router.py"
-        line: 16
+        line: 19
 
   - from: "ops_router"
     to: "pulls"
     label: "routes"
     anchors:
       - path: "app/ops/router.py"
-        line: 17
+        line: 20
 
   - from: "ops_router"
     to: "graph"
     label: "routes"
     anchors:
       - path: "app/ops/router.py"
-        line: 18
+        line: 21
 
   - from: "ops_router"
     to: "admin_sync"
     label: "routes"
     anchors:
       - path: "app/ops/router.py"
-        line: 19
+        line: 22
 
   - from: "ops_router"
     to: "chat_router"
     label: "routes"
     anchors:
       - path: "app/ops/router.py"
-        line: 20
+        line: 23
+      - path: "app/ops/router.py"
+        line: 24
+
+  - from: "ops_router"
+    to: "lc_evidence_router"
+    label: "routes"
+    anchors:
+      - path: "app/ops/router.py"
+        line: 25
+
+  - from: "ops_router"
+    to: "lg_rag_router"
+    label: "routes"
+    anchors:
+      - path: "app/ops/router.py"
+        line: 26
 
   - from: "chat_router"
     to: "chat_flow"
@@ -146,7 +170,7 @@ edges:
     type: "triggers"
     anchors:
       - path: "app/ops/chat/router.py"
-        line: 48
+        line: 33
 
   - from: "chat_flow"
     to: "llm"
@@ -179,6 +203,14 @@ edges:
   - from: "admin_sync"
     to: "db"
     label: "upserts"
+
+  - from: "lc_evidence_router"
+    to: "db"
+    label: "session / query"
+
+  - from: "lg_rag_router"
+    to: "db"
+    label: "optional checkpointer"
 
   - from: "app"
     to: "struct_doc"

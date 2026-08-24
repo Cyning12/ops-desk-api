@@ -5,10 +5,25 @@
 ## 0. YAML-first 工作流
 
 - **唯一人工编辑源**：`docs/_tech_graph/**/*.graph.yaml`（如 `l0/00_main.graph.yaml`、`l1/10_flow_*.graph.yaml`）。
-- **生成物**：同名 `*.md` 由 `./scripts/graph-compile.sh`（harness `graph yaml compile`）生成。
-- **禁止手写编译产物 `.md`**：改 YAML 后重跑 compile；`--check` 检测 `.md` 与 `.graph.yaml` 同步。
+- **生成物**：同名 `*.md` 由 `./scripts/graph-compile.sh`（当前：`npx @cyning/harness graph yaml compile` + **post-compile** `scripts/graph_mermaid_normalize.py`）生成。
+- **禁止手写编译产物 `.md`**：改 YAML 后重跑 compile；手改会在下次 compile 被覆盖（normalize 只修 emit 句法，不保留手工 PascalCase 等）。
+- **`--check` 语义**：harness `graph yaml check` 比对 YAML 与 `shared/graph.json` 切片；另跑 `graph_mermaid_normalize.py --check` 断言 mermaid 围栏无 `//` 注释、无旧边 `--"…"-->`。
 - **export**：`shared/graph.json`（C1；根目录过渡双写）。
 - **历史 `.ai.md` 双轨已弃用**：结构化信息集中在 YAML 源中。
+- **迁移预留**：`docs/spec/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`（切 dsh-coding-kit 前须备份 `scripts/legacy/`，验完成度；本仓更好则反哺 kit DEF-023）。
+
+---
+
+## 0.1 IDE 预览兼容（编译器 / 归一化输出契约）
+
+| 项 | 禁止（旧 harness emit） | 要求（本仓 normalize / 未来 kit） |
+|----|-------------------------|----------------------------------|
+| 注释 | `// → path` | `%% → path`（[Mermaid 注释](https://mermaid.js.org/intro/syntax-reference.html)） |
+| 带标签边 | `A --"label"--> B` | `A -->|"label"| B`（[flowchart 边上文字](https://mermaid.js.org/syntax/flowchart.html)） |
+| 特殊字符标签 | `id[含空格/()/ >…]` | `id["…"]` |
+| class | 仅 classDef、无赋值 | 按 yaml `kind` 补 `class … phase/doc/infra`（可选增强） |
+
+语法真值以官网 + 本地 mermaid 仓 docs 为准，禁止凭记忆改 emit。
 
 ---
 
@@ -27,10 +42,10 @@
 
 | 标记 | 语义 | 示例 |
 |------|------|------|
-| `[ok]` | 成功路径 | `validate() --"[ok]"--> save()` |
-| `[err]` | 失败 / 异常 | `parse() --"[err]"--> fallback()` |
-| `[retry=N]` | 重试 | `call_api() --"[retry=3]"--> call_api()` |
-| `[timeout]` | 超时降级 | `fetch() --"[timeout]"--> cache_get()` |
+| `[ok]` | 成功路径 | `validate() -->|"[ok]"| save()` |
+| `[err]` | 失败 / 异常 | `parse() -->|"[err]"| fallback()` |
+| `[retry=N]` | 重试 | `call_api() -->|"[retry=3]"| call_api()` |
+| `[timeout]` | 超时降级 | `fetch() -->|"[timeout]"| cache_get()` |
 
 ### 1.3 元关系（`::` 命名空间）
 
@@ -117,4 +132,5 @@ edges:
 | 日期 | 说明 |
 |------|------|
 | 2026-06-30 | v3：YAML-first，删除 `.ai.md` 双轨，新增 YAML → Mermaid 映射 |
+| 2026-08-24 | §0/§0.1：post-compile normalize + IDE 契约；§1.2 示例改 `-->|"…"|`；挂迁移预留 SPEC |
 | YYYY-MM-DD | 嵌入用户仓时填写首次版本 |
