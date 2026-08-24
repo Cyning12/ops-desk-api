@@ -2,7 +2,7 @@ schema_version: "inform_graph.v3"
 graph_id: "00_main"
 title: "ops-desk-api 顶层流程总图"
 description: "Ops Desk 后端 API 的架构总图：FastAPI 入口、各业务路由、LangGraph Chat 流程、数据库表与外部依赖的关系。"
-version: "2026-08-23"
+version: "2026-08-24"
 layer: "G-L0"
 primary_layer: "G-L0"
 depth: "framework"
@@ -63,6 +63,14 @@ nodes:
 
   - id: "chat_flow"
     label: ">../l1/10_flow_chat.md"
+    kind: external
+
+  - id: "lc_evidence_flow"
+    label: ">../l1/10_flow_lc_evidence.md"
+    kind: external
+
+  - id: "lg_rag_flow"
+    label: ">../l1/10_flow_lg_rag.md"
     kind: external
 
   - id: "llm"
@@ -171,6 +179,22 @@ edges:
     anchors:
       - path: "app/ops/chat/router.py"
         line: 33
+
+  - from: "lc_evidence_router"
+    to: "lc_evidence_flow"
+    mark: "::triggers"
+    type: "triggers"
+    anchors:
+      - path: "app/ops/lc_evidence_chain/router.py"
+        line: 117
+
+  - from: "lg_rag_router"
+    to: "lg_rag_flow"
+    mark: "::triggers"
+    type: "triggers"
+    anchors:
+      - path: "app/ops/lg_rag/router.py"
+        line: 130
 
   - from: "chat_flow"
     to: "llm"

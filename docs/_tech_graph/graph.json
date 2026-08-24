@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260824_V1",
-  "generated_at": "2026-08-24T08:33:50Z",
+  "generated_at": "2026-08-24T18:01:51Z",
   "graphs": [
     {
       "id": "00_main",
@@ -19,6 +19,18 @@
       "id": "10_flow_chat",
       "title": "Chat 流式对话流程",
       "source_yaml_path": "l1/10_flow_chat.graph.yaml",
+      "layer": "G-L1"
+    },
+    {
+      "id": "10_flow_lc_evidence",
+      "title": "LC Evidence 旁路答问流程",
+      "source_yaml_path": "l1/10_flow_lc_evidence.graph.yaml",
+      "layer": "G-L1"
+    },
+    {
+      "id": "10_flow_lg_rag",
+      "title": "LG RAG 旁路三模式流程（basic / router / supervisor）",
+      "source_yaml_path": "l1/10_flow_lg_rag.graph.yaml",
       "layer": "G-L1"
     },
     {
@@ -98,6 +110,16 @@
       "graph_id": "00_main",
       "id": "chat_flow",
       "label": ">../l1/10_flow_chat.md"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "lc_evidence_flow",
+      "label": ">../l1/10_flow_lc_evidence.md"
+    },
+    {
+      "graph_id": "00_main",
+      "id": "lg_rag_flow",
+      "label": ">../l1/10_flow_lg_rag.md"
     },
     {
       "graph_id": "00_main",
@@ -243,6 +265,166 @@
       "graph_id": "10_flow_chat",
       "id": "admin_sync",
       "label": "POST /api/ops/admin/sync"
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "id": "client",
+      "label": "用户 / 前端"
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "id": "lc_invoke",
+      "label": "POST /api/ops/lc-evidence/invoke（freeze lc-evidence-http-v1）"
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "id": "chain",
+      "label": "ainvoke_evidence_answer（LCEL · 不进入 chat/graph）"
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "id": "retrieve",
+      "label": "retrieve_evidence"
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "id": "grade",
+      "label": "grade_chunk + decide_grade（gate）"
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "id": "answer",
+      "label": "answer_question（按 gate_action 应答/拒答）"
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "id": "rag",
+      "label": "RAG hybrid_recall"
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "id": "llm",
+      "label": "LLM Provider"
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "id": "db",
+      "label": "PostgreSQL"
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "id": "main_doc",
+      "label": ">../l0/00_main.md"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "client",
+      "label": "用户 / 前端"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "lg_invoke",
+      "label": "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "basic_graph",
+      "label": "basic 图 build_basic_agent（Phase 1 对照）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "router_graph",
+      "label": "router 图 build_router_agent（Phase 2-3）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "sup_graph",
+      "label": "supervisor 图 build_supervisor_agent（Phase 4）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "b_rag",
+      "label": "rag_node"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "r_router",
+      "label": "router_node（#数字快路径 + LLM 三分类）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "r_direct",
+      "label": "direct_answer_node"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "r_refuse",
+      "label": "refuse_node（固定文案）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "r_rag",
+      "label": "rag_node（黑盒调 lc chain）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "r_evaluate",
+      "label": "evaluate_node（复用 chain gate · 零额外 LLM）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "r_rewrite",
+      "label": "rewrite_node（LLM 改写 · 熔断封顶）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "s_supervisor",
+      "label": "supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "s_dispatch",
+      "label": "route_next_subtask（dispatch）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "s_rag",
+      "label": "rag_subtask_node（复用 router 子图）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "s_extract",
+      "label": "info_extract_node"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "s_tool",
+      "label": "tool_exec_node（Mock 注册表）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "s_aggregator",
+      "label": "aggregator_node（LLM 综合）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "lc_chain",
+      "label": "LC Evidence chain（黑盒 · 不展开 LCEL）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "llm",
+      "label": "LLM Provider"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "db",
+      "label": "PostgreSQL"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "main_doc",
+      "label": ">../l0/00_main.md"
     },
     {
       "graph_id": "11_flow_sync_to_chat",
@@ -480,6 +662,36 @@
         {
           "path": "app/ops/chat/router.py",
           "line": 33
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "lc_evidence_router",
+      "to": "lc_evidence_flow",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "",
+      "anchors": [
+        {
+          "path": "app/ops/lc_evidence_chain/router.py",
+          "line": 117
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "00_main",
+      "from": "lg_rag_router",
+      "to": "lg_rag_flow",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/router.py",
+          "line": 130
         }
       ],
       "sync": true
@@ -1155,6 +1367,691 @@
     {
       "graph_id": "10_flow_chat",
       "from": "answer",
+      "to": "main_doc",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "加载",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "from": "client",
+      "to": "lc_invoke",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "POST {query}（cookie auth）",
+      "anchors": [
+        {
+          "path": "app/ops/lc_evidence_chain/router.py",
+          "line": 117
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "from": "lc_invoke",
+      "to": "chain",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "ainvoke",
+      "anchors": [
+        {
+          "path": "app/ops/lc_evidence_chain/router.py",
+          "line": 124
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "from": "lc_invoke",
+      "to": "client",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "200 {ok,data}（gate refuse 仍 200）",
+      "anchors": [
+        {
+          "path": "app/ops/lc_evidence_chain/router.py",
+          "line": 138
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "from": "chain",
+      "to": "retrieve",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "first step",
+      "anchors": [
+        {
+          "path": "app/ops/lc_evidence_chain/chain.py",
+          "line": 115
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "from": "retrieve",
+      "to": "rag",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "hybrid_recall",
+      "anchors": [
+        {
+          "path": "app/ops/lc_evidence_chain/retrieve.py",
+          "line": 34
+        },
+        {
+          "path": "app/ops/rag/retrieve.py",
+          "symbol": "hybrid_recall"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "from": "retrieve",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "vector / FTS query（经 rag）",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "from": "retrieve",
+      "to": "grade",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "->",
+      "anchors": [
+        {
+          "path": "app/ops/lc_evidence_chain/chain.py",
+          "line": 118
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "from": "grade",
+      "to": "answer",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "kept evidence + meta.gate_action",
+      "anchors": [
+        {
+          "path": "app/ops/lc_evidence_chain/chain.py",
+          "line": 118
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "from": "grade",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "grade_chunk",
+      "anchors": [
+        {
+          "path": "app/ops/lc_evidence_chain/grader.py",
+          "line": 27
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "from": "answer",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "complete",
+      "anchors": [
+        {
+          "path": "app/ops/lc_evidence_chain/answer.py",
+          "line": 116
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lc_evidence",
+      "from": "answer",
+      "to": "main_doc",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "加载",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "client",
+      "to": "lg_invoke",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "POST {query, mode, thread_id}（cookie auth）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/router.py",
+          "line": 130
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "lg_invoke",
+      "to": "basic_graph",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[mode=basic]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/router.py",
+          "line": 118
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "lg_invoke",
+      "to": "router_graph",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[mode=router（默认）]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/router.py",
+          "line": 122
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "lg_invoke",
+      "to": "sup_graph",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[mode=supervisor]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/router.py",
+          "line": 120
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "lg_invoke",
+      "to": "client",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "200 {ok,data}",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/router.py",
+          "line": 152
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "lg_invoke",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "optional PG checkpointer（env LG_RAG_HTTP_CHECKPOINTER）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/router.py",
+          "line": 125
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "basic_graph",
+      "to": "b_rag",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "START → rag → END",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/graph.py",
+          "line": 58
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "b_rag",
+      "to": "lc_chain",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "ainvoke_evidence_answer",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/nodes.py",
+          "line": 160
+        },
+        {
+          "path": "app/ops/lc_evidence_chain/chain.py",
+          "symbol": "ainvoke_evidence_answer"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "router_graph",
+      "to": "r_router",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "START → router",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/graph.py",
+          "line": 72
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "r_router",
+      "to": "r_rag",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[rag]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/graph.py",
+          "line": 77
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "r_router",
+      "to": "r_direct",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[direct → END]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/graph.py",
+          "line": 78
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "r_router",
+      "to": "r_refuse",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[refuse → END]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/graph.py",
+          "line": 79
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "r_router",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "LLM 三分类（fallback=rag）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/nodes.py",
+          "line": 127
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "r_rag",
+      "to": "r_evaluate",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "->",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/graph.py",
+          "line": 82
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "r_rag",
+      "to": "lc_chain",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "ainvoke_evidence_answer（写回 chain_meta）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/nodes.py",
+          "line": 160
+        },
+        {
+          "path": "app/ops/lc_evidence_chain/chain.py",
+          "symbol": "ainvoke_evidence_answer"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "r_evaluate",
+      "to": "r_rewrite",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[low 且 retry<2 → rewrite；high/medium → END]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/graph.py",
+          "line": 87
+        },
+        {
+          "path": "app/ops/lg_rag/nodes.py",
+          "line": 204
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "r_rewrite",
+      "to": "r_rag",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[有新 query → 重试 rag；熔断置空 → END]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/graph.py",
+          "line": 95
+        },
+        {
+          "path": "app/ops/lg_rag/nodes.py",
+          "line": 261
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "r_direct",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "complete",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/nodes.py",
+          "line": 269
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "r_rewrite",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "complete",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/nodes.py",
+          "line": 230
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "sup_graph",
+      "to": "s_supervisor",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "START → supervisor",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 52
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_supervisor",
+      "to": "s_dispatch",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "subtasks（≤4）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 53
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_dispatch",
+      "to": "s_rag",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[type=rag]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 35
+        },
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "line": 238
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_dispatch",
+      "to": "s_extract",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[type=extract]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 36
+        },
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "line": 238
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_dispatch",
+      "to": "s_tool",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[type=tool]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 37
+        },
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "line": 238
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_dispatch",
+      "to": "s_aggregator",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[耗尽/空 → aggregate]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 38
+        },
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "line": 237
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_rag",
+      "to": "s_dispatch",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "回 dispatch（追加一条结果）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 55
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_extract",
+      "to": "s_dispatch",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "回 dispatch（追加一条结果）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 55
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_tool",
+      "to": "s_dispatch",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "回 dispatch（追加一条结果）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 55
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_rag",
+      "to": "router_graph",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "ainvoke_router_agent（复用 router 子图）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "line": 266
+        },
+        {
+          "path": "app/ops/lg_rag/graph.py",
+          "symbol": "ainvoke_router_agent"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_supervisor",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "complete（拆解）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "line": 200
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_extract",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "complete（抽取）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "line": 299
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_aggregator",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "complete（综合 → END）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "line": 361
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "router_graph",
       "to": "main_doc",
       "mark": "->",
       "type": "depends_on",
