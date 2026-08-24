@@ -1,7 +1,7 @@
 ---
 graph_id: 00_main
-version: 2026-08-23
-generated_at: 2026-08-24T17:49:24Z
+version: 2026-08-24
+generated_at: 2026-08-24T18:01:49Z
 source: 00_main.graph.yaml
 ---
 
@@ -27,6 +27,8 @@ flowchart TB
     lc_evidence_router["LC Evidence 路由"]
     lg_rag_router["LG RAG 路由"]
     chat_flow[">../l1/10_flow_chat.md"]
+    lc_evidence_flow[">../l1/10_flow_lc_evidence.md"]
+    lg_rag_flow[">../l1/10_flow_lg_rag.md"]
     llm["LLM Provider"]
     db[PostgreSQL]
     struct_doc[">../l1/01_modules.md"]
@@ -58,6 +60,10 @@ flowchart TB
     %% → app/ops/router.py#L26
     chat_router -->|"::triggers"| chat_flow
     %% → app/ops/chat/router.py#L33
+    lc_evidence_router -->|"::triggers"| lc_evidence_flow
+    %% → app/ops/lc_evidence_chain/router.py#L117
+    lg_rag_router -->|"::triggers"| lg_rag_flow
+    %% → app/ops/lg_rag/router.py#L130
     chat_flow -->|"calls"| llm
     chat_flow -->|"persists"| db
     auth -->|"validates / creates"| db
@@ -76,7 +82,7 @@ flowchart TB
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
 
     class client,health,app,ops_router,auth,overview,issues,pulls,graph,admin_sync,chat_router,lc_evidence_router,lg_rag_router phase
-    class chat_flow,struct_doc doc
+    class chat_flow,lc_evidence_flow,lg_rag_flow,struct_doc doc
     class llm,db infra
 ```
 
@@ -100,6 +106,8 @@ flowchart TB
 | lc_evidence_router | LC Evidence 路由 | flow |
 | lg_rag_router | LG RAG 路由 | flow |
 | chat_flow | >../l1/10_flow_chat.md | external |
+| lc_evidence_flow | >../l1/10_flow_lc_evidence.md | external |
+| lg_rag_flow | >../l1/10_flow_lg_rag.md | external |
 | llm | LLM Provider | external |
 | db | PostgreSQL | external |
 | struct_doc | >../l1/01_modules.md | external |
@@ -122,6 +130,8 @@ flowchart TB
 | ops_router | lc_evidence_router | -> | depends_on | routes | 1 anchor(s) |
 | ops_router | lg_rag_router | -> | depends_on | routes | 1 anchor(s) |
 | chat_router | chat_flow | ::triggers | triggers |  | 1 anchor(s) |
+| lc_evidence_router | lc_evidence_flow | ::triggers | triggers |  | 1 anchor(s) |
+| lg_rag_router | lg_rag_flow | ::triggers | triggers |  | 1 anchor(s) |
 | chat_flow | llm | -> | depends_on | calls |  |
 | chat_flow | db | -> | depends_on | persists |  |
 | auth | db | -> | depends_on | validates / creates |  |

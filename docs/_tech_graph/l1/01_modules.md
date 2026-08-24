@@ -21,8 +21,8 @@ audience: agent-30
 | `auth` | 鉴权模块 | `app/ops/auth.py`, `app/ops/deps.py`, `app/ops/security.py` | → `db` | 登录、登出、session cookie、invite token 验证、角色保护 |
 | `chat` | Chat 业务 | `app/ops/chat/**` | → `llm`, `db`, `rag` | LangGraph StateGraph、SSE/WS 双传输、共享 ChatEventStreamer |
 | `rag` | RAG 检索与入库 | `app/ops/rag/**` | → `db` | 混合召回（dense: pgvector\|qdrant Flag；FTS/sparse 仍 PG）；ingest；影子写+DLQ；查询 embed 默认 SiliconFlow HTTP（`RAG_EMBED_BACKEND`）；被 `lc_evidence_chain` 复用 `hybrid_recall` |
-| `lc_evidence_chain` | LangChain 旁路答问 | `app/ops/lc_evidence_chain/**` | → `rag`, `llm`, `db` | LCEL：retrieve→grade→answer；CLI/库级 + HTTP `POST /api/ops/lc-evidence/invoke`（cookie 鉴权 · freeze `lc-evidence-http-v1`）；**默认不进入** `chat/graph`；查询 embed 与 Chat 同工厂（默认可走 SiliconFlow）；可选 Langfuse（复用 `OPS_CHAT_TRACER`）· tags=`lc-evidence-chain`；complete 路径上报 usage；grader 故障 refuse |
-| `lg_rag` | LangGraph 旁路单 Agent | `app/ops/lg_rag/**` | → `lc_evidence_chain`, `llm` | Phase 4：`multi/` Supervisor 多智能体（LLM 拆解 ≤4 子任务 → 顺序分派 rag/extract/tool → aggregator 综合；state 增 `subtasks`/`subtask_results`；rag 子任务复用 router 图全能力；Mock 工具注册表）；Phase 3：rag 路径加 `evaluate→low→rewrite→rag` 自纠错回环（≤2 次熔断；state 增 `retry_count`/`current_query`/`chain_meta`；evaluate 复用 chain gate 结论零额外 LLM）；Phase 2：`START→router→direct/rag/refuse` 三路（`route` 字段；#数字快路径+LLM 分类+fallback=rag；标注集准确率 100%）；Phase 1 basic 图保留对照；state=`MessagesState`（`LgRagState` 薄子类）；黑盒复用 `ainvoke_evidence_answer`；checkpointer 默认 `InMemorySaver`，可选 `AsyncPostgresSaver`（`checkpointer.py`）；HTTP `POST /api/ops/lg-rag/invoke`（cookie 鉴权 · mode=basic/router/supervisor 分派 · freeze `lg-rag-http-v1` · env `LG_RAG_HTTP_CHECKPOINTER=postgres` 走 PG saver）；**默认不进入** `chat/graph` |
+| `lc_evidence_chain` | LangChain 旁路答问 | `app/ops/lc_evidence_chain/**` | → `rag`, `llm`, `db` | LCEL 旁路 retrieve→grade(gate)→answer，HTTP `POST /api/ops/lc-evidence/invoke`（cookie 鉴权 · freeze `lc-evidence-http-v1`），**默认不进入** `chat/graph`，被 `lg_rag` 黑盒复用；拓扑详见 [`10_flow_lc_evidence.md`](./10_flow_lc_evidence.md) |
+| `lg_rag` | LangGraph 旁路单 Agent | `app/ops/lg_rag/**` | → `lc_evidence_chain`, `llm` | 旁路三模式：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（拆解→分派→聚合），HTTP `POST /api/ops/lg-rag/invoke`（mode 分派 · freeze `lg-rag-http-v1`），黑盒复用 `ainvoke_evidence_answer`，**默认不进入** `chat/graph`；拓扑详见 [`10_flow_lg_rag.md`](./10_flow_lg_rag.md) |
 | `data` | 数据视图 | `app/ops/overview.py`, `app/ops/issues.py`, `app/ops/pulls.py`, `app/ops/graph.py` | → `db` | Issue/PR/Overview 指标/Graph 快照只读查询（供 Chat / iOS 只读消费） |
 | `admin` | Admin 同步 | `app/ops/admin/sync.py`, `app/ops/admin/service.py`, `app/ops/admin/schema.py` | → `db` | 接收 GHA sync payload 并持久化到 data/chat 依赖的表 |
 | `llm` | LLM Provider | `app/llm/**` | → — | SiliconFlow / 百炼 provider 工厂；complete 路径上报 usage；grader 故障 refuse |
@@ -56,5 +56,7 @@ audience: agent-30
 
 - 顶层图（G-L0）：[`../l0/00_main.md`](../l0/00_main.md) · 源 [`../l0/00_main.graph.yaml`](../l0/00_main.graph.yaml)
 - Chat 流程（G-L1 + chat G-L2）：[`10_flow_chat.md`](./10_flow_chat.md) · 源 [`10_flow_chat.graph.yaml`](./10_flow_chat.graph.yaml)
+- LC Evidence 旁路流程（G-L1）：[`10_flow_lc_evidence.md`](./10_flow_lc_evidence.md) · 源 [`10_flow_lc_evidence.graph.yaml`](./10_flow_lc_evidence.graph.yaml)
+- LG RAG 旁路流程（G-L1）：[`10_flow_lg_rag.md`](./10_flow_lg_rag.md) · 源 [`10_flow_lg_rag.graph.yaml`](./10_flow_lg_rag.graph.yaml)
 - 方法倒排（G-L2）：[`../l2/indexes/by_path.yaml`](../l2/indexes/by_path.yaml)
 - Mermaid 约定：[`../shared/99_mermaid_protocol.md`](../shared/99_mermaid_protocol.md)

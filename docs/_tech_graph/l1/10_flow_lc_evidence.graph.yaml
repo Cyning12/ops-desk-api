@@ -1,0 +1,157 @@
+schema_version: "inform_graph.v3"
+graph_id: "10_flow_lc_evidence"
+title: "LC Evidence 旁路答问流程"
+description: "POST /api/ops/lc-evidence/invoke → LCEL chain（retrieve → grade(gate) → answer）；旁路独立链路，默认不进入 chat/graph；gate 拒答仍返回 200 {ok,data}（freeze lc-evidence-http-v1）。"
+version: "2026-08-24"
+layer: "G-L1"
+primary_layer: "G-L1"
+depth: "method"
+direction: "TB"
+
+nodes:
+  - id: "client"
+    label: "用户 / 前端"
+    kind: external
+
+  - id: "lc_invoke"
+    label: "POST /api/ops/lc-evidence/invoke（freeze lc-evidence-http-v1）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lc_evidence_chain/router.py"
+        symbol: "invoke_lc_evidence"
+        kind: method
+
+  - id: "chain"
+    label: "ainvoke_evidence_answer（LCEL · 不进入 chat/graph）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lc_evidence_chain/chain.py"
+        symbol: "ainvoke_evidence_answer"
+        kind: method
+      - path: "app/ops/lc_evidence_chain/chain.py"
+        symbol: "build_chain"
+        kind: method
+
+  - id: "retrieve"
+    label: "retrieve_evidence"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lc_evidence_chain/retrieve.py"
+        symbol: "retrieve_evidence"
+        kind: method
+
+  - id: "grade"
+    label: "grade_chunk + decide_grade（gate）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lc_evidence_chain/grader.py"
+        symbol: "grade_chunk"
+        kind: method
+      - path: "app/ops/lc_evidence_chain/grader.py"
+        symbol: "decide_grade"
+        kind: method
+
+  - id: "answer"
+    label: "answer_question（按 gate_action 应答/拒答）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lc_evidence_chain/answer.py"
+        symbol: "answer_question"
+        kind: method
+
+  - id: "rag"
+    label: "RAG hybrid_recall"
+    kind: external
+
+  - id: "llm"
+    label: "LLM Provider"
+    kind: external
+
+  - id: "db"
+    label: "PostgreSQL"
+    kind: external
+
+  - id: "main_doc"
+    label: ">../l0/00_main.md"
+    kind: external
+
+edges:
+  - from: "client"
+    to: "lc_invoke"
+    label: "POST {query}（cookie auth）"
+    anchors:
+      - path: "app/ops/lc_evidence_chain/router.py"
+        line: 117
+
+  - from: "lc_invoke"
+    to: "chain"
+    label: "ainvoke"
+    anchors:
+      - path: "app/ops/lc_evidence_chain/router.py"
+        line: 124
+
+  - from: "lc_invoke"
+    to: "client"
+    label: "200 {ok,data}（gate refuse 仍 200）"
+    anchors:
+      - path: "app/ops/lc_evidence_chain/router.py"
+        line: 138
+
+  - from: "chain"
+    to: "retrieve"
+    label: "first step"
+    anchors:
+      - path: "app/ops/lc_evidence_chain/chain.py"
+        line: 115
+
+  - from: "retrieve"
+    to: "rag"
+    mark: "::triggers"
+    type: "triggers"
+    label: "hybrid_recall"
+    anchors:
+      - path: "app/ops/lc_evidence_chain/retrieve.py"
+        line: 34
+      - path: "app/ops/rag/retrieve.py"
+        symbol: "hybrid_recall"
+
+  - from: "retrieve"
+    to: "db"
+    label: "vector / FTS query（经 rag）"
+
+  - from: "retrieve"
+    to: "grade"
+    label: "->"
+    anchors:
+      - path: "app/ops/lc_evidence_chain/chain.py"
+        line: 118
+
+  - from: "grade"
+    to: "answer"
+    label: "kept evidence + meta.gate_action"
+    anchors:
+      - path: "app/ops/lc_evidence_chain/chain.py"
+        line: 118
+
+  - from: "grade"
+    to: "llm"
+    label: "grade_chunk"
+    anchors:
+      - path: "app/ops/lc_evidence_chain/grader.py"
+        line: 27
+
+  - from: "answer"
+    to: "llm"
+    label: "complete"
+    anchors:
+      - path: "app/ops/lc_evidence_chain/answer.py"
+        line: 116
+
+  - from: "answer"
+    to: "main_doc"
+    label: "加载"

@@ -1,0 +1,469 @@
+schema_version: "inform_graph.v3"
+graph_id: "10_flow_lg_rag"
+title: "LG RAG 旁路三模式流程（basic / router / supervisor）"
+description: "POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（拆解→分派→聚合）。同图分节：节点 id 前缀 b_/r_/s_；rag 路径黑盒复用 lc_evidence_chain，不展开 LCEL；默认不进入 chat/graph。freeze lg-rag-http-v1。"
+version: "2026-08-24"
+layer: "G-L1"
+primary_layer: "G-L1"
+depth: "method"
+direction: "TB"
+
+nodes:
+  - id: "client"
+    label: "用户 / 前端"
+    kind: external
+
+  - id: "lg_invoke"
+    label: "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/router.py"
+        symbol: "invoke_lg_rag"
+        kind: method
+      - path: "app/ops/lg_rag/router.py"
+        symbol: "_dispatch"
+        kind: method
+
+  - id: "basic_graph"
+    label: "basic 图 build_basic_agent（Phase 1 对照）"
+    kind: struct
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/graph.py"
+        symbol: "build_basic_agent"
+        kind: method
+
+  - id: "router_graph"
+    label: "router 图 build_router_agent（Phase 2-3）"
+    kind: struct
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/graph.py"
+        symbol: "build_router_agent"
+        kind: method
+
+  - id: "sup_graph"
+    label: "supervisor 图 build_supervisor_agent（Phase 4）"
+    kind: struct
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        symbol: "build_supervisor_agent"
+        kind: method
+
+  - id: "b_rag"
+    label: "rag_node"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/nodes.py"
+        symbol: "rag_node"
+        kind: method
+
+  - id: "r_router"
+    label: "router_node（#数字快路径 + LLM 三分类）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/nodes.py"
+        symbol: "router_node"
+        kind: method
+
+  - id: "r_direct"
+    label: "direct_answer_node"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/nodes.py"
+        symbol: "direct_answer_node"
+        kind: method
+
+  - id: "r_refuse"
+    label: "refuse_node（固定文案）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/nodes.py"
+        symbol: "refuse_node"
+        kind: method
+
+  - id: "r_rag"
+    label: "rag_node（黑盒调 lc chain）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/nodes.py"
+        symbol: "rag_node"
+        kind: method
+
+  - id: "r_evaluate"
+    label: "evaluate_node（复用 chain gate · 零额外 LLM）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/nodes.py"
+        symbol: "evaluate_node"
+        kind: method
+      - path: "app/ops/lg_rag/nodes.py"
+        symbol: "route_by_quality"
+        kind: method
+
+  - id: "r_rewrite"
+    label: "rewrite_node（LLM 改写 · 熔断封顶）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/nodes.py"
+        symbol: "rewrite_node"
+        kind: method
+      - path: "app/ops/lg_rag/nodes.py"
+        symbol: "route_after_rewrite"
+        kind: method
+
+  - id: "s_supervisor"
+    label: "supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "supervisor_node"
+        kind: method
+
+  - id: "s_dispatch"
+    label: "route_next_subtask（dispatch）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "route_next_subtask"
+        kind: method
+
+  - id: "s_rag"
+    label: "rag_subtask_node（复用 router 子图）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "rag_subtask_node"
+        kind: method
+
+  - id: "s_extract"
+    label: "info_extract_node"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "info_extract_node"
+        kind: method
+
+  - id: "s_tool"
+    label: "tool_exec_node（Mock 注册表）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "tool_exec_node"
+        kind: method
+
+  - id: "s_aggregator"
+    label: "aggregator_node（LLM 综合）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "aggregator_node"
+        kind: method
+
+  - id: "lc_chain"
+    label: "LC Evidence chain（黑盒 · 不展开 LCEL）"
+    kind: external
+
+  - id: "llm"
+    label: "LLM Provider"
+    kind: external
+
+  - id: "db"
+    label: "PostgreSQL"
+    kind: external
+
+  - id: "main_doc"
+    label: ">../l0/00_main.md"
+    kind: external
+
+edges:
+  - from: "client"
+    to: "lg_invoke"
+    label: "POST {query, mode, thread_id}（cookie auth）"
+    anchors:
+      - path: "app/ops/lg_rag/router.py"
+        line: 130
+
+  - from: "lg_invoke"
+    to: "basic_graph"
+    label: "[mode=basic]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/router.py"
+        line: 118
+
+  - from: "lg_invoke"
+    to: "router_graph"
+    label: "[mode=router（默认）]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/router.py"
+        line: 122
+
+  - from: "lg_invoke"
+    to: "sup_graph"
+    label: "[mode=supervisor]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/router.py"
+        line: 120
+
+  - from: "lg_invoke"
+    to: "client"
+    label: "200 {ok,data}"
+    anchors:
+      - path: "app/ops/lg_rag/router.py"
+        line: 152
+
+  - from: "lg_invoke"
+    to: "db"
+    label: "optional PG checkpointer（env LG_RAG_HTTP_CHECKPOINTER）"
+    anchors:
+      - path: "app/ops/lg_rag/router.py"
+        line: 125
+
+  - from: "basic_graph"
+    to: "b_rag"
+    label: "START → rag → END"
+    anchors:
+      - path: "app/ops/lg_rag/graph.py"
+        line: 58
+
+  - from: "b_rag"
+    to: "lc_chain"
+    mark: "::triggers"
+    type: "triggers"
+    label: "ainvoke_evidence_answer"
+    anchors:
+      - path: "app/ops/lg_rag/nodes.py"
+        line: 160
+      - path: "app/ops/lc_evidence_chain/chain.py"
+        symbol: "ainvoke_evidence_answer"
+
+  - from: "router_graph"
+    to: "r_router"
+    label: "START → router"
+    anchors:
+      - path: "app/ops/lg_rag/graph.py"
+        line: 72
+
+  - from: "r_router"
+    to: "r_rag"
+    label: "[rag]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/graph.py"
+        line: 77
+
+  - from: "r_router"
+    to: "r_direct"
+    label: "[direct → END]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/graph.py"
+        line: 78
+
+  - from: "r_router"
+    to: "r_refuse"
+    label: "[refuse → END]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/graph.py"
+        line: 79
+
+  - from: "r_router"
+    to: "llm"
+    label: "LLM 三分类（fallback=rag）"
+    anchors:
+      - path: "app/ops/lg_rag/nodes.py"
+        line: 127
+
+  - from: "r_rag"
+    to: "r_evaluate"
+    label: "->"
+    anchors:
+      - path: "app/ops/lg_rag/graph.py"
+        line: 82
+
+  - from: "r_rag"
+    to: "lc_chain"
+    mark: "::triggers"
+    type: "triggers"
+    label: "ainvoke_evidence_answer（写回 chain_meta）"
+    anchors:
+      - path: "app/ops/lg_rag/nodes.py"
+        line: 160
+      - path: "app/ops/lc_evidence_chain/chain.py"
+        symbol: "ainvoke_evidence_answer"
+
+  - from: "r_evaluate"
+    to: "r_rewrite"
+    label: "[low 且 retry<2 → rewrite；high/medium → END]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/graph.py"
+        line: 87
+      - path: "app/ops/lg_rag/nodes.py"
+        line: 204
+
+  - from: "r_rewrite"
+    to: "r_rag"
+    label: "[有新 query → 重试 rag；熔断置空 → END]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/graph.py"
+        line: 95
+      - path: "app/ops/lg_rag/nodes.py"
+        line: 261
+
+  - from: "r_direct"
+    to: "llm"
+    label: "complete"
+    anchors:
+      - path: "app/ops/lg_rag/nodes.py"
+        line: 269
+
+  - from: "r_rewrite"
+    to: "llm"
+    label: "complete"
+    anchors:
+      - path: "app/ops/lg_rag/nodes.py"
+        line: 230
+
+  - from: "sup_graph"
+    to: "s_supervisor"
+    label: "START → supervisor"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 52
+
+  - from: "s_supervisor"
+    to: "s_dispatch"
+    label: "subtasks（≤4）"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 53
+
+  - from: "s_dispatch"
+    to: "s_rag"
+    label: "[type=rag]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 35
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        line: 238
+
+  - from: "s_dispatch"
+    to: "s_extract"
+    label: "[type=extract]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 36
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        line: 238
+
+  - from: "s_dispatch"
+    to: "s_tool"
+    label: "[type=tool]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 37
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        line: 238
+
+  - from: "s_dispatch"
+    to: "s_aggregator"
+    label: "[耗尽/空 → aggregate]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 38
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        line: 237
+
+  - from: "s_rag"
+    to: "s_dispatch"
+    label: "回 dispatch（追加一条结果）"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 55
+
+  - from: "s_extract"
+    to: "s_dispatch"
+    label: "回 dispatch（追加一条结果）"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 55
+
+  - from: "s_tool"
+    to: "s_dispatch"
+    label: "回 dispatch（追加一条结果）"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 55
+
+  - from: "s_rag"
+    to: "router_graph"
+    mark: "::triggers"
+    type: "triggers"
+    label: "ainvoke_router_agent（复用 router 子图）"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        line: 266
+      - path: "app/ops/lg_rag/graph.py"
+        symbol: "ainvoke_router_agent"
+
+  - from: "s_supervisor"
+    to: "llm"
+    label: "complete（拆解）"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        line: 200
+
+  - from: "s_extract"
+    to: "llm"
+    label: "complete（抽取）"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        line: 299
+
+  - from: "s_aggregator"
+    to: "llm"
+    label: "complete（综合 → END）"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        line: 361
+
+  - from: "router_graph"
+    to: "main_doc"
+    label: "加载"

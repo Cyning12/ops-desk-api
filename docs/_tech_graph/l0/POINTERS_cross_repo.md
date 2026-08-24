@@ -17,5 +17,5 @@
 | Chat SSE/WS | `l1/10_flow_chat.*` + `l2/indexes` |
 | Auth session cookie | `l1/10_flow_auth.*` |
 | Admin sync → chat context | `l1/11_flow_sync_to_chat.*` |
-| LC Evidence HTTP | `l1/10_flow_lc_evidence.*`（**W2 待建** · TBD） |
-| LG RAG HTTP | `l1/10_flow_lg_rag.*`（**W2 待建** · TBD） |
+| LC Evidence HTTP | `l1/10_flow_lc_evidence.*`（W2 已建） |
+| LG RAG HTTP | `l1/10_flow_lg_rag.*`（W2 已建 · basic/router/supervisor 三拓扑同图分节） |
