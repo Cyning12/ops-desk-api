@@ -1,6 +1,6 @@
 # Task：LangGraph lg_rag Phase 2（Router Agent 意图路由）
 
-> **状态**：active（draft · 待人审）  
+> **状态**：completed（draft · 待人审；2026-08-22 随 PR #45 关账归档）  
 > **类型**：feature / Agent 框架落地（LangGraph 旁路 Phase 2）  
 > **总纲**：`docs/guides/PLAN-langgraph-agent-framework_v1.md` Phase 2  
 > **Detailed Design**：`docs/guides/DESIGN_langgraph-lg-rag-phase2-router_v1.md`（**approved 2026-08-19 维护者签收**，本 task 的执行真值说明书）  
@@ -173,6 +173,17 @@ basic/router 双图并存，default 切换与 Chat 接回均另议。
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-22 |
+| 定稿 | Phase 2 Router 三路（50 PASS 8/8） |
+| 归档 | `docs/tasks/done/task_lg_rag_phase2.md` |
+| PR | [#45](https://github.com/Cyning12/ops-desk-api/pull/45) MERGED |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
@@ -181,3 +192,4 @@ basic/router 双图并存，default 切换与 Chat 接回均另议。
 | 2026-08-19 | 维护者签收 HG-AUDIT-R1 并指示执行 30+40 |
 | 2026-08-21 | 50：子 agent 机械复检 PASS（8/8）；结论回写上节 |
 | 2026-08-21 | 30/40 完成：state+route、router/direct/refuse 节点、build_router_agent、标注集 30 条（实测准确率 100%）、8 个 mock 单测（共 13 passed）、Langfuse API 实证 route metadata、G-L1 更新；HG-GRAPH-MODULES 签 |
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-22 · PR #45） |

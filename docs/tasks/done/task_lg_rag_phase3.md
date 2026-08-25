@@ -1,6 +1,6 @@
 # Task：LangGraph lg_rag Phase 3（自我纠正 evaluate/rewrite 循环）
 
-> **状态**：active（draft · 待人审）  
+> **状态**：completed（draft · 待人审；2026-08-22 随 PR #45 关账归档）  
 > **类型**：feature / Agent 框架落地（LangGraph 旁路 Phase 3）  
 > **总纲**：`docs/guides/PLAN-langgraph-agent-framework_v1.md` Phase 3  
 > **Detailed Design**：`docs/guides/DESIGN_langgraph-lg-rag-phase3-selfcorrect_v1.md`（draft · 待维护者签收，30 说明书）  
@@ -144,6 +144,17 @@ evaluate 复用 chain gate 结论，避免第二次 grader LLM（成本/延迟/�
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-22 |
+| 定稿 | Phase 3 自纠错回环（验收裁定通过） |
+| 归档 | `docs/tasks/done/task_lg_rag_phase3.md` |
+| PR | [#45](https://github.com/Cyning12/ops-desk-api/pull/45) MERGED |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
@@ -151,3 +162,4 @@ evaluate 复用 chain gate 结论，避免第二次 grader LLM（成本/延迟/�
 | 2026-08-21 | 初版（AI 起草 · 待人审）：DESIGN 同步提交；三闸 pending |
 | 2026-08-21 | 维护者裁定：PLAN 3.3「改善 ≥3 条」按面值（总 4 条）**通过**；已知口径（retry 驱动 2 + grader 方差 2）与 G37 检索层问题记录在案，检索层另立分析 task（非修复） |
 | 2026-08-21 | 维护者签收三闸；30/40 完成：回环+熔断+关键词改写；eval 三轮：首轮暴露 eval 分类 bug（direct 误分流计改善）→ router prompt 收紧 + 标注集扩 34 条 100%；二轮 2 改善（误分流 0）；三轮改关键词策略后 4 改善（retry 驱动 2）；G37 未改善=检索层长句零命中（另案）；Langfuse 实证回环 |
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-22 · PR #45） |

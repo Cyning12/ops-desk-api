@@ -1,6 +1,6 @@
 # Task：LangGraph lg_rag Phase 1（基础单 Agent 旁路）
 
-> **状态**：active（draft · 待人审）  
+> **状态**：completed（draft · 待人审；2026-08-22 随 PR #45 关账归档）  
 > **类型**：feature / Agent 框架落地（LangGraph 旁路）  
 > **总纲**：`docs/guides/PLAN-langgraph-agent-framework_v1.md`  
 > **实现说明书**：`docs/guides/IMPL_langgraph-lg-rag-phase1_v1.md`（S0–S9，本 task 的 30 手写说明书）  
@@ -175,6 +175,17 @@ PG checkpointer 后置不挡 Phase 1 验收；asyncpg DSN 坑已记入 failure_p
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-22 |
+| 定稿 | PLAN Phase 1（basic 图/checkpointer/Langfuse） |
+| 归档 | `docs/tasks/done/task_lg_rag_phase1.md` |
+| PR | [#45](https://github.com/Cyning12/ops-desk-api/pull/45) MERGED |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
@@ -186,3 +197,4 @@ PG checkpointer 后置不挡 Phase 1 验收；asyncpg DSN 坑已记入 failure_p
 | 2026-08-19 | 维护者裁定下一步=S5：PostgresSaver 从非范围纳入本 task（Phase 1 收尾 · PLAN 1.4）；全量 73 条 Golden 仍另开 task |
 | 2026-08-19 | 维护者裁定级别 A：LLM 生成不一致属正常；`--parity` 判定改为双侧非空 + 引用标识重叠（`_extract_refs`），实跑 overlap=[2720] exit 0；验收项转 [x] |
 | 2026-08-19 | 30/40 按 IMPL 顺序填实：S2 `rag_node` + S3/S4 `graph.py`（InMemorySaver + Langfuse 注入）+ S0 export + S7 mock 单测（3 passed）+ S6 冒烟脚本（真链 exit 0）；级别 A 严格相等受 LLM 非确定影响标 [~]；全量 pytest 204 passed / 3 failed（chat_ws/router 因本地测试库缺 `ops_knowledge_chunks` 表，与本改动无关，待人工复核） |
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-22 · PR #45） |

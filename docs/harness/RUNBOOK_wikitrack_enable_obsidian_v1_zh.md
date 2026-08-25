@@ -150,7 +150,7 @@ task 元信息要点：
 
     npx --yes @cyning/harness@2.19.0 check
     npx --yes @cyning/harness@2.19.0 task lint-wiki-delta --target . --scope all
-    npx --yes @cyning/harness@2.19.0 wiki export --json --target .
+    npx --yes dsh-coding-kit wiki export --json --target .   # 原钉 @cyning/harness@2.19.0；kit ≥1.6.1 参数面兼容（2026-08-25 实证）；本块其余行为 2.19.0 时代历史上下文
     npx --yes @cyning/harness@2.19.0 verify --target . --task docs/tasks/active/task_wikitrack_enable_p0.md
     # 前端仓再加：pnpm lint && pnpm test && pnpm build
     # 后端仓再加：ruff check … && pytest …

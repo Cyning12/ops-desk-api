@@ -1,6 +1,6 @@
 # Task：dsh-coding-kit 1.5.1 graph 迁移探针（预留 SPEC 验证 + FEEDBACK）
 
-> **状态**：active（闸已签 · 00 代签授权）  
+> **状态**：completed（闸已签 · 00 代签授权；2026-08-24 随 PR #47 关账归档）  
 > **类型**：基础设施 / 图谱工具链 · **验证+对比型（默认不切命令面）**  
 > **执行 SPEC**：`docs/spec/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`（预留 · DEF-023）  
 > **前置**：`task_dsh_coding_kit_upgrade_1_5_1`（kit 已入库 1.5.1）  
@@ -63,9 +63,21 @@
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-24 |
+| 定稿 | 迁移探针：不切命令面 + FEEDBACK |
+| 归档 | `docs/tasks/done/task_dsh_kit_graph_migrate_probe.md` |
+| PR | [#47](https://github.com/Cyning12/ops-desk-api/pull/47) MERGED |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-24 | 初版（00 起草 + 代签闸 · 维护者授权）：执行预留迁移 SPEC 的验证矩阵；判定后按需落 FEEDBACK |
 | 2026-08-24 | 30 执行回填：V1-V5 实测完成；判定「kit 仍差（class 按 kind 未修 + export 丢 label/graph_id 命名空间差异）」→ 不切命令面、保留 normalize；FEEDBACK 落盘；legacy 备份 ×3 落盘待 00 入库 |
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-24 · PR #47） |

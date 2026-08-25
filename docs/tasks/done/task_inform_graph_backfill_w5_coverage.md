@@ -1,6 +1,6 @@
 # Task：Inform 图谱补齐 · W5（anchors + coverage warn）
 
-> **状态**：active（闸已签 · 00 代签授权）  
+> **状态**：completed（闸已签 · 00 代签授权；2026-08-25 随 PR #49 关账归档）  
 > **类型**：图谱 / 文档（无业务 Python 改码）  
 > **范围真值**：`docs/spec/inform-graph-backfill/01_execution_waves.md` §W5 及对应模块/层 spec  
 > **分支**：`task/inform-graph-backfill-w3-w6`（W3–W6 集成分支）  
@@ -68,9 +68,21 @@
 - 10_flow_chat 的 admin_sync 两处 anchors 漂移待其责任 wave 刷新。
 - anchors 行号比对未自动化（spec 明确列二期）。
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-25 |
+| 定稿 | W5 anchors + coverage warn |
+| 归档 | `docs/tasks/done/task_inform_graph_backfill_w5_coverage.md` |
+| PR | [#49](https://github.com/Cyning12/ops-desk-api/pull/49) MERGED |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-25 | 初版（00 起草 + 代签闸 · 维护者授权）：范围自 01_execution_waves.md §W5 锁定 |
 | 2026-08-25 | 30 回填：anchors 刷新至当前真实行 + 新增 graph_coverage_check.py（warn）+ CI warn 步骤；验收三项全勾 |
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-25 · PR #49） |
