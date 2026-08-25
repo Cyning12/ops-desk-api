@@ -1,7 +1,7 @@
 # chat 域 symbol → path 倒排（G-L2）
 # 源：l1/10_flow_chat.graph.yaml implementedBy
 
-version: "2026-07-27"
+version: "2026-08-25"
 graph_id: "10_flow_chat"
 layer: "G-L2"
 
@@ -38,4 +38,16 @@ by_symbol:
   answer_node:
     path: app/ops/chat/nodes.py
     node_id: answer
+    kind: method
+  retrieve_node:
+    path: app/ops/chat/rag_nodes.py
+    node_id: retrieve
+    kind: method
+  grade_node:
+    path: app/ops/chat/rag_nodes.py
+    node_id: grade
+    kind: method
+  refuse_node:
+    path: app/ops/chat/rag_nodes.py
+    node_id: refuse_answer
     kind: method

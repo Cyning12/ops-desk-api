@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260824_V1",
-  "generated_at": "2026-08-24T18:01:51Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260825_V1",
+  "generated_at": "2026-08-25T01:50:22Z",
   "graphs": [
     {
       "id": "00_main",
@@ -31,6 +31,12 @@
       "id": "10_flow_lg_rag",
       "title": "LG RAG 旁路三模式流程（basic / router / supervisor）",
       "source_yaml_path": "l1/10_flow_lg_rag.graph.yaml",
+      "layer": "G-L1"
+    },
+    {
+      "id": "10_flow_rag",
+      "title": "RAG 混合检索摘要流程（hybrid_recall）",
+      "source_yaml_path": "l1/10_flow_rag.graph.yaml",
       "layer": "G-L1"
     },
     {
@@ -423,6 +429,81 @@
     },
     {
       "graph_id": "10_flow_lg_rag",
+      "id": "main_doc",
+      "label": ">../l0/00_main.md"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "caller",
+      "label": "调用方（chat/rag_nodes · lc_evidence_chain）"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "embed_query",
+      "label": "query embed（bge-m3）"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "hybrid_recall",
+      "label": "hybrid_recall（入口）"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "backend_gate",
+      "label": "search_dense_with_fallback（即时降级）"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "dense_qdrant",
+      "label": "dense · Qdrant Cosine（默认）"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "dense_pgvector",
+      "label": "dense · pgvector fallback"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "fts_pg",
+      "label": "FTS / sparse 第二路（PG）"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "hydrate",
+      "label": "PG hydrate（Qdrant 命中回表）"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "rrf_fuse",
+      "label": "RRF 融合（k=60 · 两路等权）"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "rerank",
+      "label": "rerank（可选 · CE 精排）"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "result",
+      "label": "RetrievedChunk[]（fused top-5）"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "siliconflow",
+      "label": "SiliconFlow（/embeddings · /rerank）"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "qdrant",
+      "label": "Qdrant"
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "id": "db",
+      "label": "PostgreSQL（ops_knowledge_chunks）"
+    },
+    {
+      "graph_id": "10_flow_rag",
       "id": "main_doc",
       "label": ">../l0/00_main.md"
     },
@@ -826,7 +907,7 @@
       "anchors": [
         {
           "path": "app/ops/auth.py",
-          "line": 45
+          "line": 57
         }
       ],
       "sync": true
@@ -841,7 +922,7 @@
       "anchors": [
         {
           "path": "app/ops/auth.py",
-          "line": 50
+          "line": 67
         }
       ],
       "sync": true
@@ -856,7 +937,7 @@
       "anchors": [
         {
           "path": "app/ops/auth.py",
-          "line": 92
+          "line": 103
         }
       ],
       "sync": true
@@ -871,7 +952,7 @@
       "anchors": [
         {
           "path": "app/ops/auth.py",
-          "line": 99
+          "line": 111
         }
       ],
       "sync": true
@@ -886,7 +967,7 @@
       "anchors": [
         {
           "path": "app/ops/auth.py",
-          "line": 108
+          "line": 121
         }
       ],
       "sync": true
@@ -901,7 +982,7 @@
       "anchors": [
         {
           "path": "app/ops/auth.py",
-          "line": 119
+          "line": 130
         }
       ],
       "sync": true
@@ -916,7 +997,7 @@
       "anchors": [
         {
           "path": "app/ops/deps.py",
-          "line": 13
+          "line": 16
         }
       ],
       "sync": true
@@ -931,7 +1012,7 @@
       "anchors": [
         {
           "path": "app/ops/chat/router.py",
-          "line": 277
+          "line": 103
         }
       ],
       "sync": true
@@ -946,7 +1027,7 @@
       "anchors": [
         {
           "path": "app/ops/deps.py",
-          "line": 13
+          "line": 16
         }
       ],
       "sync": true
@@ -961,7 +1042,7 @@
       "anchors": [
         {
           "path": "app/ops/chat/router.py",
-          "line": 285
+          "line": 113
         }
       ],
       "sync": true
@@ -976,7 +1057,7 @@
       "anchors": [
         {
           "path": "app/ops/admin/sync.py",
-          "line": 20
+          "line": 28
         }
       ],
       "sync": true
@@ -991,7 +1072,7 @@
       "anchors": [
         {
           "path": "app/ops/deps.py",
-          "line": 41
+          "line": 52
         }
       ],
       "sync": true
@@ -1006,7 +1087,7 @@
       "anchors": [
         {
           "path": "app/ops/deps.py",
-          "line": 33
+          "line": 52
         }
       ],
       "sync": true
@@ -1021,7 +1102,7 @@
       "anchors": [
         {
           "path": "app/ops/deps.py",
-          "line": 27
+          "line": 30
         }
       ],
       "sync": true
@@ -1036,7 +1117,7 @@
       "anchors": [
         {
           "path": "app/ops/admin/sync.py",
-          "line": 45
+          "line": 29
         }
       ],
       "sync": true
@@ -1051,7 +1132,7 @@
       "anchors": [
         {
           "path": "app/ops/admin/sync.py",
-          "line": 45
+          "line": 36
         }
       ],
       "sync": true
@@ -2060,6 +2141,321 @@
       "sync": true
     },
     {
+      "graph_id": "10_flow_rag",
+      "from": "caller",
+      "to": "embed_query",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "query",
+      "anchors": [
+        {
+          "path": "app/ops/chat/rag_nodes.py",
+          "line": 68
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "embed_query",
+      "to": "siliconflow",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "POST /embeddings（默认 ApiEmbedder；RAG_EMBED_BACKEND=local → 本机 ST）",
+      "anchors": [
+        {
+          "path": "app/ops/rag/embedder.py",
+          "line": 92
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "embed_query",
+      "to": "hybrid_recall",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "qvec",
+      "anchors": [
+        {
+          "path": "app/ops/chat/rag_nodes.py",
+          "line": 73
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "hybrid_recall",
+      "to": "backend_gate",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "dense 路选择",
+      "anchors": [
+        {
+          "path": "app/ops/rag/retrieve.py",
+          "line": 200
+        },
+        {
+          "path": "app/ops/rag/backend.py",
+          "line": 57
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "backend_gate",
+      "to": "dense_qdrant",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[默认 qdrant · 失败再试 1 次]",
+      "anchors": [
+        {
+          "path": "app/ops/rag/backend.py",
+          "line": 63
+        },
+        {
+          "path": "app/ops/rag/backend.py",
+          "line": 68
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "backend_gate",
+      "to": "dense_pgvector",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[err → 即时降级 | RAG_VECTOR_BACKEND=pgvector]",
+      "anchors": [
+        {
+          "path": "app/ops/rag/backend.py",
+          "line": 64
+        },
+        {
+          "path": "app/ops/rag/backend.py",
+          "line": 78
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "dense_qdrant",
+      "to": "qdrant",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "query_points（hnsw_ef · with_payload 仅小字段）",
+      "anchors": [
+        {
+          "path": "app/ops/rag/retrievers/qdrant_retriever.py",
+          "line": 75
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "dense_qdrant",
+      "to": "hydrate",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "hit ids",
+      "anchors": [
+        {
+          "path": "app/ops/rag/retrievers/qdrant_retriever.py",
+          "line": 109
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "hydrate",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "SELECT ... WHERE id = ANY(:ids)",
+      "anchors": [
+        {
+          "path": "app/ops/rag/retrievers/qdrant_retriever.py",
+          "line": 113
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "hybrid_recall",
+      "to": "fts_pg",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "第二路 [fts 默认 | sparse C 臂]",
+      "anchors": [
+        {
+          "path": "app/ops/rag/retrieve.py",
+          "line": 204
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "fts_pg",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "tsvector @@ plainto_tsquery（可选 glossary 展开）",
+      "anchors": [
+        {
+          "path": "app/ops/rag/retrieve.py",
+          "line": 214
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "hydrate",
+      "to": "rrf_fuse",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "semantic 路（k_each）",
+      "anchors": [
+        {
+          "path": "app/ops/rag/retrieve.py",
+          "line": 217
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "dense_pgvector",
+      "to": "rrf_fuse",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "semantic 路（k_each）",
+      "anchors": [
+        {
+          "path": "app/ops/rag/retrieve.py",
+          "line": 217
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "fts_pg",
+      "to": "rrf_fuse",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "keyword 路（k_each）",
+      "anchors": [
+        {
+          "path": "app/ops/rag/retrieve.py",
+          "line": 217
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "rrf_fuse",
+      "to": "rerank",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[RAG_RERANK_ENABLED → 粗排 top-M 精排]",
+      "anchors": [
+        {
+          "path": "app/ops/chat/rag_nodes.py",
+          "line": 76
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "rrf_fuse",
+      "to": "result",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[rerank off → 粗排 top-5]",
+      "anchors": [
+        {
+          "path": "app/ops/chat/rag_nodes.py",
+          "line": 78
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "rerank",
+      "to": "siliconflow",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "POST /rerank（[err] fail-closed 回退粗排）",
+      "anchors": [
+        {
+          "path": "app/ops/rag/reranker.py",
+          "line": 171
+        },
+        {
+          "path": "app/ops/rag/reranker.py",
+          "line": 260
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "rerank",
+      "to": "result",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "top-5（顶分地板 + 相对顶分过滤）",
+      "anchors": [
+        {
+          "path": "app/ops/rag/reranker.py",
+          "line": 277
+        },
+        {
+          "path": "app/ops/rag/reranker.py",
+          "line": 287
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "result",
+      "to": "caller",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "RetrievedChunk[]（.fused）",
+      "anchors": [
+        {
+          "path": "app/ops/rag/retrieve.py",
+          "line": 233
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_rag",
+      "from": "hybrid_recall",
+      "to": "main_doc",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "加载",
+      "anchors": [],
+      "sync": true
+    },
+    {
       "graph_id": "11_flow_sync_to_chat",
       "from": "client",
       "to": "admin_sync",
@@ -2069,7 +2465,7 @@
       "anchors": [
         {
           "path": "app/ops/admin/sync.py",
-          "line": 45
+          "line": 28
         }
       ],
       "sync": true
@@ -2084,7 +2480,7 @@
       "anchors": [
         {
           "path": "app/ops/admin/service.py",
-          "line": 20
+          "line": 46
         }
       ],
       "sync": true
@@ -2099,7 +2495,7 @@
       "anchors": [
         {
           "path": "app/ops/issues.py",
-          "line": 25
+          "line": 40
         }
       ],
       "sync": true
@@ -2114,7 +2510,7 @@
       "anchors": [
         {
           "path": "app/ops/pulls.py",
-          "line": 25
+          "line": 38
         }
       ],
       "sync": true
@@ -2129,7 +2525,7 @@
       "anchors": [
         {
           "path": "app/ops/graph.py",
-          "line": 16
+          "line": 21
         }
       ],
       "sync": true
@@ -2144,7 +2540,7 @@
       "anchors": [
         {
           "path": "app/ops/chat/nodes.py",
-          "line": 63
+          "line": 99
         }
       ],
       "sync": true

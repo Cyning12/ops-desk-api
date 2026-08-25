@@ -1,7 +1,7 @@
 ---
 graph_id: 11_flow_sync_to_chat
-version: 2026-07-27
-generated_at: 2026-08-24T18:01:50Z
+version: 2026-08-25
+generated_at: 2026-08-25T01:50:21Z
 source: 11_flow_sync_to_chat.graph.yaml
 ---
 
@@ -22,17 +22,17 @@ flowchart LR
     db[PostgreSQL]
 
     client -->|"POST sync payload"| admin_sync
-    %% → app/ops/admin/sync.py#L45
+    %% → app/ops/admin/sync.py#L28
     admin_sync -->|"upserts ops_repos / ops_issues / ops_pull_requests / snapshots"| db
-    %% → app/ops/admin/service.py#L20
+    %% → app/ops/admin/service.py#L46
     db -->|"query"| issues_endpoint
-    %% → app/ops/issues.py#L25
+    %% → app/ops/issues.py#L40
     db -->|"query"| pulls_endpoint
-    %% → app/ops/pulls.py#L25
+    %% → app/ops/pulls.py#L38
     db -->|"query latest"| graph_endpoint
-    %% → app/ops/graph.py#L16
+    %% → app/ops/graph.py#L21
     db -->|"load_issue_context"| chat_stream
-    %% → app/ops/chat/nodes.py#L63
+    %% → app/ops/chat/nodes.py#L99
     issues_endpoint -->|"JSON list"| client
     pulls_endpoint -->|"JSON list"| client
     graph_endpoint -->|"JSON snapshot"| client

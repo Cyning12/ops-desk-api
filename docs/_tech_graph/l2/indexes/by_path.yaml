@@ -2,7 +2,7 @@
 # 源：l1/10_flow_chat.graph.yaml implementedBy
 # 生成策略：手维启动；后续可 --check
 
-version: "2026-07-27"
+version: "2026-08-25"
 graph_id: "10_flow_chat"
 layer: "G-L2"
 
@@ -36,4 +36,14 @@ by_path:
       kind: method
     - node_id: answer
       symbol: answer_node
+      kind: method
+  "app/ops/chat/rag_nodes.py":
+    - node_id: retrieve
+      symbol: retrieve_node
+      kind: method
+    - node_id: grade
+      symbol: grade_node
+      kind: method
+    - node_id: refuse_answer
+      symbol: refuse_node
       kind: method

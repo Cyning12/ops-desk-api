@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_auth
-version: 2026-07-27
-generated_at: 2026-08-24T18:01:50Z
+version: 2026-08-25
+generated_at: 2026-08-25T01:50:21Z
 source: 10_flow_auth.graph.yaml
 ---
 
@@ -24,33 +24,33 @@ flowchart TB
     db[PostgreSQL]
 
     client -->|"POST username + invite_token"| login
-    %% → app/ops/auth.py#L45
+    %% → app/ops/auth.py#L57
     login -->|"validate invite token; create ops_sessions"| db
-    %% → app/ops/auth.py#L50
+    %% → app/ops/auth.py#L67
     login -->|"Set-Cookie: ops_session"| client
-    %% → app/ops/auth.py#L92
+    %% → app/ops/auth.py#L103
     client -->|"POST with cookie"| logout
-    %% → app/ops/auth.py#L99
+    %% → app/ops/auth.py#L111
     logout -->|"delete ops_sessions"| db
-    %% → app/ops/auth.py#L108
+    %% → app/ops/auth.py#L121
     client -->|"GET with cookie"| me
-    %% → app/ops/auth.py#L119
+    %% → app/ops/auth.py#L130
     me -->|"Depends"| session_check
-    %% → app/ops/deps.py#L13
+    %% → app/ops/deps.py#L16
     client -->|"GET with cookie"| latest_session
-    %% → app/ops/chat/router.py#L277
+    %% → app/ops/chat/router.py#L103
     latest_session -->|"Depends"| session_check
-    %% → app/ops/deps.py#L13
+    %% → app/ops/deps.py#L16
     latest_session -->|"query / create ops_sessions_chat"| db
-    %% → app/ops/chat/router.py#L285
+    %% → app/ops/chat/router.py#L113
     client -->|"POST with cookie"| admin_sync
-    %% → app/ops/admin/sync.py#L20
+    %% → app/ops/admin/sync.py#L28
     admin_sync -->|"Depends"| maintainer_check
-    %% → app/ops/deps.py#L41
+    %% → app/ops/deps.py#L52
     maintainer_check -->|"Depends"| session_check
-    %% → app/ops/deps.py#L33
+    %% → app/ops/deps.py#L52
     session_check -->|"query ops_sessions by token_hash"| db
-    %% → app/ops/deps.py#L27
+    %% → app/ops/deps.py#L30
 
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
