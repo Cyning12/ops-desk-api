@@ -46,3 +46,4 @@
 |---|---|
 | 2026-08-25 | 初版（00 起草 + 代签闸 · 维护者授权）：SSH keepalive 修 deploy 断连 |
 | 2026-08-25 | 30 执行：SSH_OPTS 与 rsync `-e ssh` 均加 `ServerAliveInterval=30 ServerAliveCountMax=10 TCPKeepAlive=yes`；yaml 校验过；graph-compile exit 0；diff 仅限 deploy-api.yml（未 commit，待 00 统一提交） |
+| 2026-08-25 | keepalive 合并后实证：run 32818362999 连接 30 分钟无 Broken pipe（修复生效），但被 job 自有 `timeout-minutes: 30` 取消——暴露第二约束（PR #45 改 requirements 致依赖缓存层失效，torch 等全量重装超 30min）。修法：timeout 30→60（fix/deploy-job-timeout） |
