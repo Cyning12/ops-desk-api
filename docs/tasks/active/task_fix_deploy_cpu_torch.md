@@ -53,3 +53,4 @@
 |---|---|
 | 2026-08-25 | 初版（00 起草 + 代签闸 · 维护者授权）：CPU-only torch 根治部署超时 |
 | 2026-08-25 | 30 执行：Dockerfile 插入 CPU torch 预装步（注释含 0.67MB/s 实证）；Dockerfile.pg-zhparser 排查无 pip/torch 不动；graph-compile exit 0；deploy 实证项留 00 合并后 |
+| 2026-08-25 | 实证 run 32827272733：pytorch cpu index 的依赖（sympy 等）链接 files.pythonhosted.org 直连超时（exit 1）。修法（00 直接）：CPU torch 步加 `--extra-index-url tuna` + `--default-timeout=120 --retries 5`（fix/deploy-cpu-torch-index） |
