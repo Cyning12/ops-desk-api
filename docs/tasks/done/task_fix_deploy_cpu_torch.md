@@ -1,6 +1,6 @@
 # Task：fix · 生产部署改装 CPU-only torch（根治 deploy 超时）
 
-> **状态**：active（闸已签 · 00 代签授权）  
+> **状态**：completed（00 关账 · 2026-08-25）  
 > **类型**：fix / 部署构建优化  
 > **现象**：deploy-api 连续三败：① SSH Broken pipe（已修 keepalive）② 30min job 超时（已提 60）③ 60min 仍不够——实证 torch 2.13.0 默认 CUDA 版拖入 nvidia-* 轮子（cudnn 366MB 以 674KB/s 爬、还有 cusparselt 170MB 等，合计数 GB）  
 > **根因**：生产 2C4G **无 GPU**，却装 CUDA 全家桶；官方 CPU 版 torch 无 nvidia-* 依赖（约 200MB）  
@@ -37,7 +37,7 @@
 ## 验收标准
 
 - [x] Dockerfile：requirements 安装前先装 CPU-only torch（pytorch cpu index）；注释写明原因（30 执行 2026-08-25）
-- [ ] 合并后 deploy run：build 日志无 nvidia-* 包下载，run 成功（留 00 合并后实证）
+- [x] 合并后 deploy run：build 日志 nvidia 命中 **0**、镜像 DONE、容器 API_healthy、run **success**（run 32828193672，2026-08-25 00 实证）
 - [x] 本地 `ruff check` 无关联改动（仅 Dockerfile，无 Python 改动）；graph-compile exit 0（过闸 · 30 自检通过）
 
 ## 风险与回退
@@ -54,3 +54,15 @@
 | 2026-08-25 | 初版（00 起草 + 代签闸 · 维护者授权）：CPU-only torch 根治部署超时 |
 | 2026-08-25 | 30 执行：Dockerfile 插入 CPU torch 预装步（注释含 0.67MB/s 实证）；Dockerfile.pg-zhparser 排查无 pip/torch 不动；graph-compile exit 0；deploy 实证项留 00 合并后 |
 | 2026-08-25 | 实证 run 32827272733：pytorch cpu index 的依赖（sympy 等）链接 files.pythonhosted.org 直连超时（exit 1）。修法（00 直接）：CPU torch 步加 `--extra-index-url tuna` + `--default-timeout=120 --retries 5`（fix/deploy-cpu-torch-index） |
+| 2026-08-25 | 终验：run 32828193672 **success**——nvidia 命中 0、deploy-api:latest 构建 DONE、API_healthy；全链路四修闭环（keepalive #53 → timeout60 #54 → CPU torch #55 → tuna extra-index #56）。00 关账归档 |
+
+---
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-25 |
+| 定稿 | Dockerfile 预装 CPU-only torch（+tuna extra-index 兜底依赖）；生产部署修复，全链路四修闭环 |
+| 归档 | `docs/tasks/done/task_fix_deploy_cpu_torch.md` |
+| PR | #55（CPU torch）· #56（extra-index） |
