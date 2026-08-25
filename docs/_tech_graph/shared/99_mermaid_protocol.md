@@ -5,18 +5,18 @@
 ## 0. YAML-first 工作流
 
 - **唯一人工编辑源**：`docs/_tech_graph/**/*.graph.yaml`（如 `l0/00_main.graph.yaml`、`l1/10_flow_*.graph.yaml`）。
-- **生成物**：同名 `*.md` 由 `./scripts/graph-compile.sh`（当前：`npx @cyning/harness graph yaml compile` + **post-compile** `scripts/graph_mermaid_normalize.py`）生成。
-- **禁止手写编译产物 `.md`**：改 YAML 后重跑 compile；手改会在下次 compile 被覆盖（normalize 只修 emit 句法，不保留手工 PascalCase 等）。
-- **`--check` 语义**：harness `graph yaml check` 比对 YAML 与 `shared/graph.json` 切片；另跑 `graph_mermaid_normalize.py --check` 断言 mermaid 围栏无 `//` 注释、无旧边 `--"…"-->`。
+- **生成物**：同名 `*.md` 由 `./scripts/graph-compile.sh`（当前：`npx dsh-coding-kit graph yaml compile`；默认 `GRAPH_CLI=dsh-coding-kit`，env 可切回）生成；kit 1.6.1 emit 直接满足 §0.1 契约，不再需要 post-compile 改写。
+- **禁止手写编译产物 `.md`**：改 YAML 后重跑 compile；手改会在下次 compile 被覆盖。
+- **`--check` 语义**：kit `graph yaml check` 比对 YAML 与 `shared/graph.json` 切片；另跑 `graph_mermaid_normalize.py --check`（check-only 护栏，不改写）断言 mermaid 围栏无 `//` 注释、无旧边 `--"…"-->`。
 - **export**：`shared/graph.json`（C1；根目录过渡双写）。
 - **历史 `.ai.md` 双轨已弃用**：结构化信息集中在 YAML 源中。
-- **迁移预留**：`docs/spec/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`（切 dsh-coding-kit 前须备份 `scripts/legacy/`，验完成度；本仓更好则反哺 kit DEF-023）。
+- **命令面已切换（2026-08-25）**：`@cyning/harness` → `dsh-coding-kit` 1.6.1（`docs/spec/SPEC-harness-to-dsh-kit-graph-migrate_v0.md` §6 执行完毕；回滚备份 `scripts/legacy/*.20260825.pre-cmd-switch.bak`；V3 对照材料 `docs/harness/evidence/V3_mermaid_compare_dsh_kit_1_6_1_20260825.md`）。
 
 ---
 
 ## 0.1 IDE 预览兼容（编译器 / 归一化输出契约）
 
-| 项 | 禁止（旧 harness emit） | 要求（本仓 normalize / 未来 kit） |
+| 项 | 禁止（旧 harness emit） | 要求（kit ≥1.6.1 emit 已满足；normalize 仅作 check 护栏） |
 |----|-------------------------|----------------------------------|
 | 注释 | `// → path` | `%% → path`（[Mermaid 注释](https://mermaid.js.org/intro/syntax-reference.html)） |
 | 带标签边 | `A --"label"--> B` | `A -->|"label"| B`（[flowchart 边上文字](https://mermaid.js.org/syntax/flowchart.html)） |
@@ -133,4 +133,5 @@ edges:
 |------|------|
 | 2026-06-30 | v3：YAML-first，删除 `.ai.md` 双轨，新增 YAML → Mermaid 映射 |
 | 2026-08-24 | §0/§0.1：post-compile normalize + IDE 契约；§1.2 示例改 `-->|"…"|`；挂迁移预留 SPEC |
+| 2026-08-25 | §0：命令面切至 dsh-coding-kit 1.6.1（emit 治根）；normalize 降级 check-only 护栏 |
 | YYYY-MM-DD | 嵌入用户仓时填写首次版本 |

@@ -3,7 +3,7 @@
 | 字段 | 值 |
 |------|----|
 | SPEC ID | SPEC-harness-to-dsh-kit-graph-migrate_v0 |
-| 状态 | **reserved（预留 · 未开工）** |
+| 状态 | **executed（2026-08-25 §6 已执行：命令面切至 dsh-coding-kit 1.6.1）** |
 | 日期 | 2026-08-24 |
 | 关联缺陷 | kit 侧 **DEF-023 / PROP-12（P0-HOT）** · 本仓过渡：`scripts/graph_mermaid_normalize.py` |
 | 上游调查 | `Projects/docs/dsh_coding_kit_optimization/`（DEF-023 调查 / PRD / Prompt） |
@@ -123,3 +123,4 @@ cp scripts/graph_yaml_to_json.py \
 | 日期 | 说明 |
 |------|------|
 | 2026-08-24 | v0 预留：normalize 过渡 + 备份纪律 + 完成度矩阵 + 反哺条款 |
+| 2026-08-25 | §6 执行（task_dsh_kit_graph_command_switch）：矩阵 V1/V2/V4/V5 PASS；命令面切 dsh-coding-kit 1.6.1（GRAPH_CLI 回退口保留）；normalize 降 check-only 护栏；graph.json 保留本仓脚本（kit export 缺 layer 字段 / freeze_id 语义异 / 无根双写）；备份 scripts/legacy/*.20260825.pre-cmd-switch.bak |

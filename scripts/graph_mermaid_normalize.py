@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
-"""Post-compile Mermaid 归一化：把 harness emit 改成 IDE 可预览形态。
+"""Mermaid 护栏（check-only）：校验编译产物 mermaid 围栏满足 IDE 预览契约。
 
-背景：
+现状（2026-08-25 命令面切换后）：
+  graph-compile.sh 仅以 --check 调用本脚本（只校验不改写）——
+  dsh-coding-kit 1.6.1 emit 已直接满足契约（DEF-023/031/032/033 全修），
+  写回模式保留仅作 harness 面回滚配套（须配合 scripts/legacy/ 备份恢复）。
+
+背景（历史过渡层）：
   @cyning/harness / 旧 generateMermaid 默认产出：
     - 锚点注释 `// → …`（Mermaid 只认 `%%`）
     - 边 `--"label"-->`（IDE 常见预览易丢边）

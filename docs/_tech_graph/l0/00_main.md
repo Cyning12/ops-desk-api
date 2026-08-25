@@ -1,7 +1,7 @@
 ---
 graph_id: 00_main
 version: 2026-08-24
-generated_at: 2026-08-25T05:29:56Z
+generated_at: 2026-08-25T05:51:25Z
 source: 00_main.graph.yaml
 ---
 
@@ -30,7 +30,7 @@ flowchart TB
     lc_evidence_flow[">../l1/10_flow_lc_evidence.md"]
     lg_rag_flow[">../l1/10_flow_lg_rag.md"]
     llm["LLM Provider"]
-    db[PostgreSQL]
+    db["PostgreSQL"]
     struct_doc[">../l1/01_modules.md"]
 
     client -->|"GET"| health
@@ -80,10 +80,9 @@ flowchart TB
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-
-    class client,health,app,ops_router,auth,overview,issues,pulls,graph,admin_sync,chat_router,lc_evidence_router,lg_rag_router phase
-    class chat_flow,lc_evidence_flow,lg_rag_flow,struct_doc doc
-    class llm,db infra
+    class health,auth,overview,issues,pulls,graph,admin_sync,chat_router,lc_evidence_router,lg_rag_router phase
+    class app,ops_router doc
+    class client,chat_flow,lc_evidence_flow,lg_rag_flow,llm,db,struct_doc infra
 ```
 
 ## Structured Data

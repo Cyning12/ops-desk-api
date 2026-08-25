@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_auth
 version: 2026-08-25
-generated_at: 2026-08-25T05:29:57Z
+generated_at: 2026-08-25T05:51:26Z
 source: 10_flow_auth.graph.yaml
 ---
 
@@ -18,10 +18,10 @@ flowchart TB
     logout["POST /api/ops/auth/logout"]
     me["GET /api/ops/auth/me"]
     latest_session["GET /api/ops/chat/sessions/latest"]
-    session_check[get_current_user]
-    maintainer_check[require_maintainer]
+    session_check["get_current_user"]
+    maintainer_check["require_maintainer"]
     admin_sync["POST /api/ops/admin/sync"]
-    db[PostgreSQL]
+    db["PostgreSQL"]
 
     client -->|"POST username + invite_token"| login
     %% → app/ops/auth.py#L57
@@ -55,9 +55,8 @@ flowchart TB
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-
-    class client,login,logout,me,latest_session,session_check,maintainer_check,admin_sync phase
-    class db infra
+    class login,logout,me,latest_session,session_check,maintainer_check,admin_sync phase
+    class client,db infra
 ```
 
 ## Structured Data
