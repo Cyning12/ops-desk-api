@@ -52,14 +52,14 @@ jobs:
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
-          SSH_OPTS=(-o BatchMode=yes -o StrictHostKeyChecking=yes -i "$HOME/.ssh/id_ed25519")
+          SSH_OPTS=(-o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes -i "$HOME/.ssh/id_ed25519")
 
           ssh "${SSH_OPTS[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_API_PATH'"
 
           rsync -az --delete \
             --exclude '.venv' --exclude '__pycache__' --exclude '.git' \
             --exclude '.env' --exclude 'node_modules' --exclude '.pytest_cache' \
-            -e "ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i $HOME/.ssh/id_ed25519" \
+            -e "ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes -i $HOME/.ssh/id_ed25519" \
             ./ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_API_PATH/"
 
           echo "Synced api -> $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_API_PATH"
