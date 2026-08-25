@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_rag
 version: 2026-08-25
-generated_at: 2026-08-25T05:29:57Z
+generated_at: 2026-08-25T05:51:26Z
 source: 10_flow_rag.graph.yaml
 ---
 
@@ -15,8 +15,8 @@ RAG 查询侧摘要流（选项 A 独立 flow · spec modules/rag.md §3 拍板�
 flowchart TB
     caller["调用方（chat/rag_nodes · lc_evidence_chain）"]
     embed_query["query embed（bge-m3）"]
-    hybrid_recall[hybrid_recall（入口）]
-    backend_gate[search_dense_with_fallback（即时降级）]
+    hybrid_recall["hybrid_recall（入口）"]
+    backend_gate["search_dense_with_fallback（即时降级）"]
     dense_qdrant["dense · Qdrant Cosine（默认）"]
     dense_pgvector["dense · pgvector fallback"]
     fts_pg["FTS / sparse 第二路（PG）"]
@@ -25,8 +25,8 @@ flowchart TB
     rerank["rerank（可选 · CE 精排）"]
     result["RetrievedChunk[]（fused top-5）"]
     siliconflow["SiliconFlow（/embeddings · /rerank）"]
-    qdrant[Qdrant]
-    db[PostgreSQL（ops_knowledge_chunks）]
+    qdrant["Qdrant"]
+    db["PostgreSQL（ops_knowledge_chunks）"]
     main_doc[">../l0/00_main.md"]
 
     caller -->|"query"| embed_query
@@ -41,7 +41,7 @@ flowchart TB
     backend_gate -->|"[默认 qdrant · 失败再试 1 次]"| dense_qdrant
     %% → app/ops/rag/backend.py#L63
     %% → app/ops/rag/backend.py#L68
-    backend_gate -->|"[err → 即时降级 | RAG_VECTOR_BACKEND=pgvector]"| dense_pgvector
+    backend_gate -->|"[err → 即时降级 #124; RAG_VECTOR_BACKEND=pgvector]"| dense_pgvector
     %% → app/ops/rag/backend.py#L64
     %% → app/ops/rag/backend.py#L78
     dense_qdrant -->|"query_points（hnsw_ef · with_payload 仅小字段）"| qdrant
@@ -50,7 +50,7 @@ flowchart TB
     %% → app/ops/rag/retrievers/qdrant_retriever.py#L109
     hydrate -->|"SELECT ... WHERE id = ANY(:ids)"| db
     %% → app/ops/rag/retrievers/qdrant_retriever.py#L113
-    hybrid_recall -->|"第二路 [fts 默认 | sparse C 臂]"| fts_pg
+    hybrid_recall -->|"第二路 [fts 默认 #124; sparse C 臂]"| fts_pg
     %% → app/ops/rag/retrieve.py#L204
     fts_pg -->|"tsvector @@ plainto_tsquery（可选 glossary 展开）"| db
     %% → app/ops/rag/retrieve.py#L214
@@ -77,10 +77,8 @@ flowchart TB
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-
-    class caller,embed_query,hybrid_recall,backend_gate,dense_qdrant,dense_pgvector,fts_pg,hydrate,rrf_fuse,rerank,result,siliconflow phase
-    class main_doc doc
-    class qdrant,db infra
+    class embed_query,hybrid_recall,backend_gate,dense_qdrant,dense_pgvector,fts_pg,hydrate,rrf_fuse,rerank phase
+    class caller,result,siliconflow,qdrant,db,main_doc infra
 ```
 
 ## Structured Data

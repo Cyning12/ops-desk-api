@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_lc_evidence
 version: 2026-08-24
-generated_at: 2026-08-25T05:29:57Z
+generated_at: 2026-08-25T05:51:26Z
 source: 10_flow_lc_evidence.graph.yaml
 ---
 
@@ -16,12 +16,12 @@ flowchart TB
     client["用户 / 前端"]
     lc_invoke["POST /api/ops/lc-evidence/invoke（freeze lc-evidence-http-v1）"]
     chain["ainvoke_evidence_answer（LCEL · 不进入 chat/graph）"]
-    retrieve[retrieve_evidence]
+    retrieve["retrieve_evidence"]
     grade["grade_chunk + decide_grade（gate）"]
     answer["answer_question（按 gate_action 应答/拒答）"]
     rag["RAG hybrid_recall"]
     llm["LLM Provider"]
-    db[PostgreSQL]
+    db["PostgreSQL"]
     main_doc[">../l0/00_main.md"]
 
     client -->|"POST {query}（cookie auth）"| lc_invoke
@@ -36,7 +36,7 @@ flowchart TB
     %% → app/ops/lc_evidence_chain/retrieve.py#L34
     %% → app/ops/rag/retrieve.py::hybrid_recall
     retrieve -->|"vector / FTS query（经 rag）"| db
-    retrieve -->|"->"| grade
+    retrieve --> grade
     %% → app/ops/lc_evidence_chain/chain.py#L118
     grade -->|"kept evidence + meta.gate_action"| answer
     %% → app/ops/lc_evidence_chain/chain.py#L118
@@ -49,10 +49,8 @@ flowchart TB
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-
-    class client,lc_invoke,chain,retrieve,grade,answer phase
-    class main_doc doc
-    class rag,llm,db infra
+    class lc_invoke,chain,retrieve,grade,answer phase
+    class client,rag,llm,db,main_doc infra
 ```
 
 ## Structured Data

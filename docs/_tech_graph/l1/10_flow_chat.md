@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_chat
 version: 2026-08-25
-generated_at: 2026-08-25T05:29:57Z
+generated_at: 2026-08-25T05:51:26Z
 source: 10_flow_chat.graph.yaml
 ---
 
@@ -17,17 +17,17 @@ flowchart TB
     chat_stream["POST /api/ops/chat/stream"]
     chat_ws["WS /api/ops/chat/ws"]
     event_gen["ChatEventStreamer (SSE/WS 共享)"]
-    chat_service[run_chat_stream]
+    chat_service["run_chat_stream"]
     stategraph["Chat StateGraph"]
-    intent[detect_intent]
-    context[load_context]
-    retrieve[hybrid_recall]
+    intent["detect_intent"]
+    context["load_context"]
+    retrieve["hybrid_recall"]
     grade["grade_chunks + gate"]
     refuse_answer["refuse on low relevance"]
-    answer[generate_answer]
+    answer["generate_answer"]
     rag["RAG hybrid_recall"]
     llm["LLM Provider"]
-    db[PostgreSQL]
+    db["PostgreSQL"]
     main_doc[">../l0/00_main.md"]
     admin_sync["POST /api/ops/admin/sync"]
 
@@ -54,16 +54,16 @@ flowchart TB
     %% → app/ops/chat/graph.py#L37
     intent -->|"[issue_qa]"| context
     %% → app/ops/chat/graph.py#L40
-    intent -->|"[general|overview]"| retrieve
+    intent -->|"[general#124;overview]"| retrieve
     %% → app/ops/chat/graph.py#L40
     context -->|"query ops_issues"| db
-    context -->|"->"| answer
+    context --> answer
     %% → app/ops/chat/graph.py#L49
     retrieve -->|"hybrid_recall"| rag
     %% → app/ops/chat/rag_nodes.py#L64
     %% → app/ops/rag/retrieve.py::hybrid_recall
     retrieve -->|"vector / FTS query"| db
-    retrieve -->|"->"| grade
+    retrieve --> grade
     %% → app/ops/chat/graph.py#L50
     grade -->|"[refuse]"| refuse_answer
     %% → app/ops/chat/graph.py#L51
@@ -79,10 +79,9 @@ flowchart TB
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-
-    class client,chat_stream,chat_ws,event_gen,chat_service,stategraph,intent,context,retrieve,grade,refuse_answer,answer,admin_sync phase
-    class main_doc doc
-    class rag,llm,db infra
+    class chat_stream,chat_ws,event_gen,chat_service,intent,context,retrieve,grade,refuse_answer,answer,admin_sync phase
+    class stategraph doc
+    class client,rag,llm,db,main_doc infra
 ```
 
 ## Structured Data

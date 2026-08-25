@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_lg_rag
 version: 2026-08-24
-generated_at: 2026-08-25T05:29:57Z
+generated_at: 2026-08-25T05:51:26Z
 source: 10_flow_lg_rag.graph.yaml
 ---
 
@@ -18,22 +18,22 @@ flowchart TB
     basic_graph["basic 图 build_basic_agent（Phase 1 对照）"]
     router_graph["router 图 build_router_agent（Phase 2-3）"]
     sup_graph["supervisor 图 build_supervisor_agent（Phase 4）"]
-    b_rag[rag_node]
-    r_router["router_node（#数字快路径 + LLM 三分类）"]
-    r_direct[direct_answer_node]
-    r_refuse[refuse_node（固定文案）]
+    b_rag["rag_node"]
+    r_router["router_node（#35;数字快路径 + LLM 三分类）"]
+    r_direct["direct_answer_node"]
+    r_refuse["refuse_node（固定文案）"]
     r_rag["rag_node（黑盒调 lc chain）"]
     r_evaluate["evaluate_node（复用 chain gate · 零额外 LLM）"]
     r_rewrite["rewrite_node（LLM 改写 · 熔断封顶）"]
     s_supervisor["supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag）"]
-    s_dispatch[route_next_subtask（dispatch）]
+    s_dispatch["route_next_subtask（dispatch）"]
     s_rag["rag_subtask_node（复用 router 子图）"]
-    s_extract[info_extract_node]
+    s_extract["info_extract_node"]
     s_tool["tool_exec_node（Mock 注册表）"]
     s_aggregator["aggregator_node（LLM 综合）"]
     lc_chain["LC Evidence chain（黑盒 · 不展开 LCEL）"]
     llm["LLM Provider"]
-    db[PostgreSQL]
+    db["PostgreSQL"]
     main_doc[">../l0/00_main.md"]
 
     client -->|"POST {query, mode, thread_id}（cookie auth）"| lg_invoke
@@ -63,7 +63,7 @@ flowchart TB
     %% → app/ops/lg_rag/graph.py#L79
     r_router -->|"LLM 三分类（fallback=rag）"| llm
     %% → app/ops/lg_rag/nodes.py#L127
-    r_rag -->|"->"| r_evaluate
+    r_rag --> r_evaluate
     %% → app/ops/lg_rag/graph.py#L82
     r_rag -->|"ainvoke_evidence_answer（写回 chain_meta）"| lc_chain
     %% → app/ops/lg_rag/nodes.py#L160
@@ -114,10 +114,9 @@ flowchart TB
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-
-    class client,lg_invoke,basic_graph,router_graph,sup_graph,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_supervisor,s_dispatch,s_rag,s_extract,s_tool,s_aggregator,lc_chain phase
-    class main_doc doc
-    class llm,db infra
+    class lg_invoke,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_supervisor,s_dispatch,s_rag,s_extract,s_tool,s_aggregator phase
+    class basic_graph,router_graph,sup_graph doc
+    class client,lc_chain,llm,db,main_doc infra
 ```
 
 ## Structured Data

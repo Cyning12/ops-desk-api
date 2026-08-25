@@ -1,7 +1,7 @@
 ---
 graph_id: 11_flow_sync_to_chat
 version: 2026-08-25
-generated_at: 2026-08-25T05:29:57Z
+generated_at: 2026-08-25T05:51:26Z
 source: 11_flow_sync_to_chat.graph.yaml
 ---
 
@@ -19,7 +19,7 @@ flowchart LR
     pulls_endpoint["GET /api/ops/pulls"]
     graph_endpoint["GET /api/ops/graph"]
     chat_stream["POST /api/ops/chat/stream"]
-    db[PostgreSQL]
+    db["PostgreSQL"]
 
     client -->|"POST sync payload"| admin_sync
     %% → app/ops/admin/sync.py#L28
@@ -41,9 +41,8 @@ flowchart LR
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-
-    class client,admin_sync,issues_endpoint,pulls_endpoint,graph_endpoint,chat_stream phase
-    class db infra
+    class admin_sync,issues_endpoint,pulls_endpoint,graph_endpoint,chat_stream phase
+    class client,db infra
 ```
 
 ## Structured Data
