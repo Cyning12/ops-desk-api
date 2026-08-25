@@ -26,7 +26,11 @@
 
 | 关账日 | task | freeze_id / 摘要 |
 |--------|------|------------------|
-| YYYY-MM-DD | [`harness/task_<slug>_v1.md`](./harness/task_<slug>_v1.md) | … |
+| 2026-08-24 | [`task_dsh_coding_kit_upgrade_1_5_1.md`](./task_dsh_coding_kit_upgrade_1_5_1.md) | kit 1.5.1 过程轨升级 · PR #47 |
+| 2026-08-24 | [`task_dsh_kit_graph_migrate_probe.md`](./task_dsh_kit_graph_migrate_probe.md) | 迁移探针：不切命令面 + FEEDBACK · PR #47 |
+| 2026-08-25 | [`task_dsh_coding_kit_upgrade_1_5_2.md`](./task_dsh_coding_kit_upgrade_1_5_2.md) | kit 1.5.2（K1/K4 被 DEF-028/029 修复） · PR #48 |
+| 2026-08-25 | [`task_dsh_coding_kit_upgrade_1_6_1.md`](./task_dsh_coding_kit_upgrade_1_6_1.md) | kit 1.6.1（反哺项全关闭） · PR #50 |
+| 2026-08-25 | [`task_dsh_kit_graph_command_switch.md`](./task_dsh_kit_graph_command_switch.md) | 命令面正式切换 · PR #51 |
 
 ---
 
@@ -42,7 +46,16 @@
 
 | 关账日 | task | 摘要 |
 |--------|------|------|
-| YYYY-MM-DD | [`engineering/task_<slug>_v1.md`](./engineering/task_<slug>_v1.md) | … |
+| 2026-08-22 | [`task_lg_rag_phase1.md`](./task_lg_rag_phase1.md) | PLAN Phase 1（basic 图/checkpointer/Langfuse） · PR #45 |
+| 2026-08-22 | [`task_lg_rag_phase2.md`](./task_lg_rag_phase2.md) | Phase 2 Router 三路（50 PASS 8/8） · PR #45 |
+| 2026-08-22 | [`task_lg_rag_phase3.md`](./task_lg_rag_phase3.md) | Phase 3 自纠错回环（验收裁定通过） · PR #45 |
+| 2026-08-22 | [`task_lg_rag_phase4.md`](./task_lg_rag_phase4.md) | Phase 4 Multi-Agent Supervisor（50 PASS） · PR #45 |
+| 2026-08-24 | [`task_inform_graph_backfill_w1_g0_chat.md`](./task_inform_graph_backfill_w1_g0_chat.md) | 图谱 W1（G-L0 + chat 追平） · PR #46 |
+| 2026-08-24 | [`task_inform_graph_backfill_w2_bypass_flows.md`](./task_inform_graph_backfill_w2_bypass_flows.md) | 图谱 W2（旁路 flows，graphs 4→6） · PR #47 |
+| 2026-08-25 | [`task_inform_graph_backfill_w3_chat_g2.md`](./task_inform_graph_backfill_w3_chat_g2.md) | W3 chat G-L2 indexes · PR #49 |
+| 2026-08-25 | [`task_inform_graph_backfill_w4_rag_flow.md`](./task_inform_graph_backfill_w4_rag_flow.md) | W4 10_flow_rag（graphs 6→7） · PR #49 |
+| 2026-08-25 | [`task_inform_graph_backfill_w5_coverage.md`](./task_inform_graph_backfill_w5_coverage.md) | W5 anchors + coverage warn · PR #49 |
+| 2026-08-25 | [`task_inform_graph_backfill_w6_modules_trim.md`](./task_inform_graph_backfill_w6_modules_trim.md) | W6 模块表瘦身 · PR #49 |
 
 ---
 
@@ -69,6 +82,7 @@
 | 日期 | 摘要 |
 |------|------|
 | YYYY-MM-DD | 初版 Hub（cyning-harness 模板嵌入） |
+| 2026-08-25 | 补录 15 件归档（task_task_closeout_hygiene）：harness 域 5 件 + engineering 域 10 件；本仓 done/ 为平铺布局，链接用 ./task_*.md |
 
 ## 给维护者
 

@@ -1,6 +1,6 @@
 # Task：dsh-coding-kit 升级 1.6.1（minor 升级 + FEEDBACK 项修复核对）
 
-> **状态**：active（闸已签 · 00 代签授权）  
+> **状态**：completed（闸已签 · 00 代签授权；2026-08-25 随 PR #50 关账归档）  
 > **类型**：基础设施 / harness 过程轨升级（minor）  
 > **前置**：1.5.1 / 1.5.2 升级已入 master；FEEDBACK 反哺 D1–D3 / R6 / K7 / K8 在案  
 > **关联**：`docs/harness/evidence/FEEDBACK_dsh_coding_kit_1_5_2_from_ops_desk_api_20260824.md`  
@@ -95,9 +95,21 @@
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-25 |
+| 定稿 | kit 1.6.1（反哺项全关闭） |
+| 归档 | `docs/tasks/done/task_dsh_coding_kit_upgrade_1_6_1.md` |
+| PR | [#50](https://github.com/Cyning12/ops-desk-api/pull/50) MERGED |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-25 | 初版（00 起草 + 代签闸 · 维护者授权）：1.5.2→1.6.1 minor；附 FEEDBACK 项修复核对 |
 | 2026-08-25 | 30 执行回填：升级完成（manifest 1.6.1 · local 块零字节 · 幂等 PASS）；D1/D2/D3/R6/K7 全已修、K8 kit 侧固定项确认、DEF-023 未回退；五项自检全过；FEEDBACK 落盘 |
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-25 · PR #50） |

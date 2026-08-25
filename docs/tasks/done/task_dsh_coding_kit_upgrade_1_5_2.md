@@ -1,6 +1,6 @@
 # Task：dsh-coding-kit 升级 1.5.2（patch 升级 + FEEDBACK 项修复核对）
 
-> **状态**：active（闸已签 · 00 代签授权）  
+> **状态**：completed（闸已签 · 00 代签授权；2026-08-25 随 PR #48 关账归档）  
 > **类型**：基础设施 / harness 过程轨升级（patch）  
 > **前置**：`task_dsh_coding_kit_upgrade_1_5_1`（已入 master）；FEEDBACK 已反哺 D1–D3 / R6  
 > **关联**：`docs/harness/evidence/FEEDBACK_dsh_kit_1_5_1_mermaid_from_ops_desk_api_20260824.md` §6（D1 export 丢 label / D2 graph_id 命名空间 / D3 check-export 不互认 / R6 class 按 kind）  
@@ -83,9 +83,21 @@
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-25 |
+| 定稿 | kit 1.5.2（K1/K4 被 DEF-028/029 修复） |
+| 归档 | `docs/tasks/done/task_dsh_coding_kit_upgrade_1_5_2.md` |
+| PR | [#48](https://github.com/Cyning12/ops-desk-api/pull/48) MERGED |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-24 | 初版（00 起草 + 代签闸 · 维护者授权）：1.5.1→1.5.2 patch；附 FEEDBACK 项修复核对 |
 | 2026-08-25 | 30 执行回填：升级完成（manifest 1.5.2 · local 块零字节 · 幂等过）；自检五项全 PASS；D1/D2/D3/R6 全未修（证据行号见自检表）；1.5.2 增量=DEF-028/029（修 K1/K4）；升级有出入 → FEEDBACK 已落盘 `FEEDBACK_dsh_coding_kit_1_5_2_from_ops_desk_api_20260824.md`（含新缺口 K7 from_version 判据过宽 / K8 freeze_id 按日滚动）；10/30 invoke 快照补齐 |
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-25 · PR #48） |

@@ -1,6 +1,6 @@
 # Task：Inform 图谱补齐 · W1（G-L0 + chat G-L1 追平）
 
-> **状态**：active  
+> **状态**：completed（2026-08-24 随 PR #46 关账归档）  
 > **类型**：图谱 / 文档（无业务 Python 改码）  
 > **上游 SPEC**：`docs/spec/SPEC-inform-graph-backfill_v1.md`（HG-SPEC-SIGNOFF approved · 2026-08-23）  
 > **执行 spec**：`docs/spec/inform-graph-backfill/modules/chat.md` · `layers/G-L0_00_main.md`  
@@ -62,3 +62,22 @@
 
 - `docs/spec/inform-graph-backfill/01_execution_waves.md` §W1
 - `docs/harness/evidence/EVAL_tech_graph_third_party_20260730.md`
+
+---
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-24 |
+| 定稿 | 图谱 W1（G-L0 + chat 追平） |
+| 归档 | `docs/tasks/done/task_inform_graph_backfill_w1_g0_chat.md` |
+| PR | [#46](https://github.com/Cyning12/ops-desk-api/pull/46) MERGED |
+
+---
+
+## 修订
+
+| 日期 | 说明 |
+|---|---|
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-24 · PR #46） |

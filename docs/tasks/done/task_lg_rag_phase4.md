@@ -1,6 +1,6 @@
 # Task：LangGraph lg_rag Phase 4（Multi-Agent · Supervisor 协作）
 
-> **状态**：active（draft · 待人审）  
+> **状态**：completed（draft · 待人审；2026-08-22 随 PR #45 关账归档）  
 > **类型**：feature / Agent 框架落地（LangGraph 旁路 Phase 4 · PLAN 收官）  
 > **总纲**：`docs/guides/PLAN-langgraph-agent-framework_v1.md` Phase 4  
 > **Detailed Design**：`docs/guides/DESIGN_langgraph-lg-rag-phase4-multiagent_v1.md`（draft · 待签收，30 说明书）  
@@ -123,6 +123,17 @@ Mock 工具先行，真实 API 另议；并行 Send 另议。
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-22 |
+| 定稿 | Phase 4 Multi-Agent Supervisor（50 PASS） |
+| 归档 | `docs/tasks/done/task_lg_rag_phase4.md` |
+| PR | [#45](https://github.com/Cyning12/ops-desk-api/pull/45) MERGED |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
@@ -131,3 +142,4 @@ Mock 工具先行，真实 API 另议；并行 Send 另议。
 | 2026-08-21 | 维护者签收并指定身份模式：父窗固定 00（编排/验收），30/40 实际执行交子 agent |
 | 2026-08-21 | 30 子 agent 实施完成（state 两字段 + multi/ 子包 + 9 mock 单测；30 passed）；00 复检过；G-L1 更新 |
 | 2026-08-21 | 40 子 agent 真机验证 PASS（4 条复合 query + Langfuse 单树 + 全量回归）；00 50 验收 PASS；HG-GRAPH-MODULES 签 |
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-22 · PR #45） |

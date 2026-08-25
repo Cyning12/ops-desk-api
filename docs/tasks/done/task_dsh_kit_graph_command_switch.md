@@ -1,6 +1,6 @@
 # Task：graph 命令面切换（@cyning/harness → dsh-coding-kit 1.6.1）
 
-> **状态**：active（闸已签 · 含维护者「切命令面」签收）  
+> **状态**：completed（闸已签 · 含维护者「切命令面」签收；2026-08-25 随 PR #51 关账归档）  
 > **类型**：基础设施 / 图谱工具链正式迁移  
 > **执行 SPEC**：`docs/spec/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`（§2 前置 / §3 备份 / §4 矩阵 / §6 步骤）  
 > **前置**：kit 1.6.1 已入 master；DEF-023 + DEF-031/032/033 全修复（D1–D3/R6 关闭）；探针矩阵 V1/V2/V4/V5 历史 PASS  
@@ -68,8 +68,20 @@
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-25 |
+| 定稿 | 命令面正式切换 |
+| 归档 | `docs/tasks/done/task_dsh_kit_graph_command_switch.md` |
+| PR | [#51](https://github.com/Cyning12/ops-desk-api/pull/51) MERGED |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-25 | 初版（00 起草 + 代签闸 · 维护者会话直签「切命令面」）：SPEC §6 正式迁移 |
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-25 · PR #51） |

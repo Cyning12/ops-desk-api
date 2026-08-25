@@ -1,6 +1,6 @@
 # Task：dsh-coding-kit 升级 1.5.1（过程轨从 @cyning/harness 2.24.0 迁移）
 
-> **状态**：active（闸已签 · 00 代签授权）  
+> **状态**：completed（闸已签 · 00 代签授权；2026-08-24 随 PR #47 关账归档）  
 > **类型**：基础设施 / harness 过程轨升级  
 > **先例**：`task_upgrade_harness_2_20_runbook_feedback`（done · 2.24.0 钉升 + FEEDBACK 体例）  
 > **背景**：npm `@cyning/harness@2.24.0` 已 deprecate，迁移至 `dsh-coding-kit`（当前最新 1.5.1）  
@@ -92,9 +92,21 @@
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-24 |
+| 定稿 | kit 1.5.1 过程轨升级 |
+| 归档 | `docs/tasks/done/task_dsh_coding_kit_upgrade_1_5_1.md` |
+| PR | [#47](https://github.com/Cyning12/ops-desk-api/pull/47) MERGED |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-24 | 初版（00 起草 + 代签闸 · 维护者授权）：harness→kit 1.5.1 过程轨升级；命令面切换留 probe task |
 | 2026-08-24 | 30：升级执行完成。kit CLI 面探查：沿用 `.cyning-harness/` 约定；`upgrade` 只重写 manifest（不再 cp prompts/IDE）；IDE 字面迁移走独立 `refresh-ide-blocks`（默认 dry-run · --yes 有脏树 preflight · local 块永不改写）；`verify` 须 `--task` 且新增 R<n>/pre-30 invoke 硬闸（留痕豁免旗标）；kit **自带 graph 子命令面**（`graph yaml compile\|check\|export` + `ingest\|snapshot\|axioms`），graph-compile.sh 参数面同形，切换留 probe task。自检全过（见上节）；FEEDBACK + 30 invoke 落盘；未 commit |
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-24 · PR #47） |

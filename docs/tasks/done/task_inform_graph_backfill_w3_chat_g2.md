@@ -1,6 +1,6 @@
 # Task：Inform 图谱补齐 · W3（chat G-L2 indexes）
 
-> **状态**：active（闸已签 · 00 代签授权）  
+> **状态**：completed（闸已签 · 00 代签授权；2026-08-25 随 PR #49 关账归档）  
 > **类型**：图谱 / 文档（无业务 Python 改码）  
 > **范围真值**：`docs/spec/inform-graph-backfill/01_execution_waves.md` §W3 及对应模块/层 spec  
 > **分支**：`task/inform-graph-backfill-w3-w6`（W3–W6 集成分支）  
@@ -62,9 +62,21 @@
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-25 |
+| 定稿 | W3 chat G-L2 indexes |
+| 归档 | `docs/tasks/done/task_inform_graph_backfill_w3_chat_g2.md` |
+| PR | [#49](https://github.com/Cyning12/ops-desk-api/pull/49) MERGED |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-25 | 初版（00 起草 + 代签闸 · 维护者授权）：范围自 01_execution_waves.md §W3 锁定 |
 | 2026-08-25 | 30 执行完成：chat G-L2 追平（indexes + README + version bump）；验收三项全勾，自检结论见上 |
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-25 · PR #49） |

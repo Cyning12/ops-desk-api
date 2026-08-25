@@ -1,6 +1,6 @@
 # Task：Inform 图谱补齐 · W2（旁路 G-L1 flows：lc_evidence + lg_rag）
 
-> **状态**：active（闸已签 · 00 代签授权）  
+> **状态**：completed（闸已签 · 00 代签授权；2026-08-24 随 PR #47 关账归档）  
 > **类型**：图谱 / 文档（无业务 Python 改码）  
 > **上游 SPEC**：`docs/spec/SPEC-inform-graph-backfill_v1.md`（HG-SPEC-SIGNOFF approved 2026-08-23）  
 > **范围真值**：`docs/spec/inform-graph-backfill/01_execution_waves.md` §W2 · `modules/lc_evidence_chain.md` · `modules/lg_rag.md` · `layers/G-L1_flows.md`  
@@ -75,9 +75,21 @@
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-24 |
+| 定稿 | 图谱 W2（旁路 flows，graphs 4→6） |
+| 归档 | `docs/tasks/done/task_inform_graph_backfill_w2_bypass_flows.md` |
+| PR | [#47](https://github.com/Cyning12/ops-desk-api/pull/47) MERGED |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-24 | 初版（00 起草 + 代签闸 · 维护者授权）：W2 范围自 01_execution_waves.md 锁定 |
 | 2026-08-24 | 30 执行完成：新建 10_flow_lc_evidence / 10_flow_lg_rag（三拓扑同图分节）+ 编译 md；00_main 两条 ::triggers；01_modules 两行 POINTER 化；compile 绿、graph.json 4→6、app/ 零 diff；验收五项全勾，自检结论见上 |
+| 2026-08-25 | 归档（task_task_closeout_hygiene）：CLOSE 节补录 · 状态→completed · git mv 至 docs/tasks/done/（合并日 2026-08-24 · PR #47） |
