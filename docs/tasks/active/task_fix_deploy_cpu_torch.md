@@ -36,9 +36,9 @@
 
 ## 验收标准
 
-- [ ] Dockerfile：requirements 安装前先装 CPU-only torch（pytorch cpu index）；注释写明原因
-- [ ] 合并后 deploy run：build 日志无 nvidia-* 包下载，run 成功
-- [ ] 本地 `ruff check` 无关联改动；graph-compile exit 0（过闸）
+- [x] Dockerfile：requirements 安装前先装 CPU-only torch（pytorch cpu index）；注释写明原因（30 执行 2026-08-25）
+- [ ] 合并后 deploy run：build 日志无 nvidia-* 包下载，run 成功（留 00 合并后实证）
+- [x] 本地 `ruff check` 无关联改动（仅 Dockerfile，无 Python 改动）；graph-compile exit 0（过闸 · 30 自检通过）
 
 ## 风险与回退
 
@@ -52,3 +52,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-25 | 初版（00 起草 + 代签闸 · 维护者授权）：CPU-only torch 根治部署超时 |
+| 2026-08-25 | 30 执行：Dockerfile 插入 CPU torch 预装步（注释含 0.67MB/s 实证）；Dockerfile.pg-zhparser 排查无 pip/torch 不动；graph-compile exit 0；deploy 实证项留 00 合并后 |
