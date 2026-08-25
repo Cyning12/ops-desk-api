@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_chat
-version: 2026-08-23
-generated_at: 2026-08-24T18:01:50Z
+version: 2026-08-25
+generated_at: 2026-08-25T01:50:21Z
 source: 10_flow_chat.graph.yaml
 ---
 
@@ -32,9 +32,9 @@ flowchart TB
     admin_sync["POST /api/ops/admin/sync"]
 
     client -->|"POST sync payload"| admin_sync
-    %% → app/ops/admin/sync.py#L45
+    %% → app/ops/admin/sync.py#L29
     admin_sync -->|"upserts repo/issues/PRs/snapshots"| db
-    %% → app/ops/admin/sync.py#L45
+    %% → app/ops/admin/sync.py#L36
     chat_stream -->|"creates"| event_gen
     %% → app/ops/chat/router.py#L75
     client -->|"message / cancel"| chat_ws

@@ -1,0 +1,277 @@
+schema_version: "inform_graph.v3"
+graph_id: "10_flow_rag"
+title: "RAG 混合检索摘要流程（hybrid_recall）"
+description: "RAG 查询侧摘要流（选项 A 独立 flow · spec modules/rag.md §3 拍板）：query → embed（bge-m3）→ hybrid_recall → dense（Qdrant 默认 | pgvector 即时降级）/ FTS·sparse 第二路（PG）→ RRF k=60 融合 →（可选）CE rerank → RetrievedChunk[] top-5；Qdrant 命中经 PG hydrate 回表取正文。ingest 侧不展开（摘要粒度）。消费方：chat/rag_nodes.retrieve_node · lc_evidence_chain。"
+version: "2026-08-25"
+layer: "G-L1"
+primary_layer: "G-L1"
+depth: "method"
+direction: "TB"
+
+nodes:
+  - id: "caller"
+    label: "调用方（chat/rag_nodes · lc_evidence_chain）"
+    kind: external
+
+  - id: "embed_query"
+    label: "query embed（bge-m3）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/rag/embedder.py"
+        symbol: "get_query_embedder"
+        kind: method
+      - path: "app/ops/rag/embedder.py"
+        symbol: "ApiEmbedder"
+        kind: class
+
+  - id: "hybrid_recall"
+    label: "hybrid_recall（入口）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/rag/retrieve.py"
+        symbol: "hybrid_recall"
+        kind: method
+      - path: "app/ops/rag/retrieve.py"
+        symbol: "hybrid_recall_detail"
+        kind: method
+
+  - id: "backend_gate"
+    label: "search_dense_with_fallback（即时降级）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/rag/backend.py"
+        symbol: "search_dense_with_fallback"
+        kind: method
+
+  - id: "dense_qdrant"
+    label: "dense · Qdrant Cosine（默认）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/rag/retrieve.py"
+        symbol: "_semantic_search_qdrant"
+        kind: method
+
+  - id: "dense_pgvector"
+    label: "dense · pgvector fallback"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/rag/retrieve.py"
+        symbol: "_semantic_search_pg"
+        kind: method
+
+  - id: "fts_pg"
+    label: "FTS / sparse 第二路（PG）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/rag/retrieve.py"
+        symbol: "_keyword_query"
+        kind: method
+
+  - id: "hydrate"
+    label: "PG hydrate（Qdrant 命中回表）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/rag/retrievers/qdrant_retriever.py"
+        symbol: "QdrantRetriever.search"
+        kind: method
+
+  - id: "rrf_fuse"
+    label: "RRF 融合（k=60 · 两路等权）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/rag/retrieve.py"
+        symbol: "rrf_fuse"
+        kind: method
+
+  - id: "rerank"
+    label: "rerank（可选 · CE 精排）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/rag/reranker.py"
+        symbol: "rerank_chunks"
+        kind: method
+
+  - id: "result"
+    label: "RetrievedChunk[]（fused top-5）"
+    kind: external
+
+  - id: "siliconflow"
+    label: "SiliconFlow（/embeddings · /rerank）"
+    kind: external
+
+  - id: "qdrant"
+    label: "Qdrant"
+    kind: external
+
+  - id: "db"
+    label: "PostgreSQL（ops_knowledge_chunks）"
+    kind: external
+
+  - id: "main_doc"
+    label: ">../l0/00_main.md"
+    kind: external
+
+edges:
+  - from: "caller"
+    to: "embed_query"
+    label: "query"
+    anchors:
+      - path: "app/ops/chat/rag_nodes.py"
+        line: 68
+
+  - from: "embed_query"
+    to: "siliconflow"
+    label: "POST /embeddings（默认 ApiEmbedder；RAG_EMBED_BACKEND=local → 本机 ST）"
+    anchors:
+      - path: "app/ops/rag/embedder.py"
+        line: 92
+
+  - from: "embed_query"
+    to: "hybrid_recall"
+    label: "qvec"
+    anchors:
+      - path: "app/ops/chat/rag_nodes.py"
+        line: 73
+
+  - from: "hybrid_recall"
+    to: "backend_gate"
+    label: "dense 路选择"
+    anchors:
+      - path: "app/ops/rag/retrieve.py"
+        line: 200
+      - path: "app/ops/rag/backend.py"
+        line: 57
+
+  - from: "backend_gate"
+    to: "dense_qdrant"
+    label: "[默认 qdrant · 失败再试 1 次]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/rag/backend.py"
+        line: 63
+      - path: "app/ops/rag/backend.py"
+        line: 68
+
+  - from: "backend_gate"
+    to: "dense_pgvector"
+    label: "[err → 即时降级 | RAG_VECTOR_BACKEND=pgvector]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/rag/backend.py"
+        line: 64
+      - path: "app/ops/rag/backend.py"
+        line: 78
+
+  - from: "dense_qdrant"
+    to: "qdrant"
+    label: "query_points（hnsw_ef · with_payload 仅小字段）"
+    anchors:
+      - path: "app/ops/rag/retrievers/qdrant_retriever.py"
+        line: 75
+
+  - from: "dense_qdrant"
+    to: "hydrate"
+    label: "hit ids"
+    anchors:
+      - path: "app/ops/rag/retrievers/qdrant_retriever.py"
+        line: 109
+
+  - from: "hydrate"
+    to: "db"
+    label: "SELECT ... WHERE id = ANY(:ids)"
+    anchors:
+      - path: "app/ops/rag/retrievers/qdrant_retriever.py"
+        line: 113
+
+  - from: "hybrid_recall"
+    to: "fts_pg"
+    label: "第二路 [fts 默认 | sparse C 臂]"
+    anchors:
+      - path: "app/ops/rag/retrieve.py"
+        line: 204
+
+  - from: "fts_pg"
+    to: "db"
+    label: "tsvector @@ plainto_tsquery（可选 glossary 展开）"
+    anchors:
+      - path: "app/ops/rag/retrieve.py"
+        line: 214
+
+  - from: "hydrate"
+    to: "rrf_fuse"
+    label: "semantic 路（k_each）"
+    anchors:
+      - path: "app/ops/rag/retrieve.py"
+        line: 217
+
+  - from: "dense_pgvector"
+    to: "rrf_fuse"
+    label: "semantic 路（k_each）"
+    anchors:
+      - path: "app/ops/rag/retrieve.py"
+        line: 217
+
+  - from: "fts_pg"
+    to: "rrf_fuse"
+    label: "keyword 路（k_each）"
+    anchors:
+      - path: "app/ops/rag/retrieve.py"
+        line: 217
+
+  - from: "rrf_fuse"
+    to: "rerank"
+    label: "[RAG_RERANK_ENABLED → 粗排 top-M 精排]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/chat/rag_nodes.py"
+        line: 76
+
+  - from: "rrf_fuse"
+    to: "result"
+    label: "[rerank off → 粗排 top-5]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/chat/rag_nodes.py"
+        line: 78
+
+  - from: "rerank"
+    to: "siliconflow"
+    label: "POST /rerank（[err] fail-closed 回退粗排）"
+    anchors:
+      - path: "app/ops/rag/reranker.py"
+        line: 171
+      - path: "app/ops/rag/reranker.py"
+        line: 260
+
+  - from: "rerank"
+    to: "result"
+    label: "top-5（顶分地板 + 相对顶分过滤）"
+    anchors:
+      - path: "app/ops/rag/reranker.py"
+        line: 277
+      - path: "app/ops/rag/reranker.py"
+        line: 287
+
+  - from: "result"
+    to: "caller"
+    label: "RetrievedChunk[]（.fused）"
+    anchors:
+      - path: "app/ops/rag/retrieve.py"
+        line: 233
+
+  - from: "hybrid_recall"
+    to: "main_doc"
+    label: "加载"

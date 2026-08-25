@@ -2,7 +2,7 @@ schema_version: "inform_graph.v3"
 graph_id: "10_flow_auth"
 title: "Authentication Flow"
 description: "Login, logout, session validation, and iOS latest chat session flow"
-version: "2026-07-27"
+version: "2026-08-25"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "module"
@@ -51,95 +51,95 @@ edges:
     label: "POST username + invite_token"
     anchors:
       - path: "app/ops/auth.py"
-        line: 45
+        line: 57
 
   - from: "login"
     to: "db"
     label: "validate invite token; create ops_sessions"
     anchors:
       - path: "app/ops/auth.py"
-        line: 50
+        line: 67
 
   - from: "login"
     to: "client"
     label: "Set-Cookie: ops_session"
     anchors:
       - path: "app/ops/auth.py"
-        line: 92
+        line: 103
 
   - from: "client"
     to: "logout"
     label: "POST with cookie"
     anchors:
       - path: "app/ops/auth.py"
-        line: 99
+        line: 111
 
   - from: "logout"
     to: "db"
     label: "delete ops_sessions"
     anchors:
       - path: "app/ops/auth.py"
-        line: 108
+        line: 121
 
   - from: "client"
     to: "me"
     label: "GET with cookie"
     anchors:
       - path: "app/ops/auth.py"
-        line: 119
+        line: 130
 
   - from: "me"
     to: "session_check"
     label: "Depends"
     anchors:
       - path: "app/ops/deps.py"
-        line: 13
+        line: 16
 
   - from: "client"
     to: "latest_session"
     label: "GET with cookie"
     anchors:
       - path: "app/ops/chat/router.py"
-        line: 277
+        line: 103
 
   - from: "latest_session"
     to: "session_check"
     label: "Depends"
     anchors:
       - path: "app/ops/deps.py"
-        line: 13
+        line: 16
 
   - from: "latest_session"
     to: "db"
     label: "query / create ops_sessions_chat"
     anchors:
       - path: "app/ops/chat/router.py"
-        line: 285
+        line: 113
 
   - from: "client"
     to: "admin_sync"
     label: "POST with cookie"
     anchors:
       - path: "app/ops/admin/sync.py"
-        line: 20
+        line: 28
 
   - from: "admin_sync"
     to: "maintainer_check"
     label: "Depends"
     anchors:
       - path: "app/ops/deps.py"
-        line: 41
+        line: 52
 
   - from: "maintainer_check"
     to: "session_check"
     label: "Depends"
     anchors:
       - path: "app/ops/deps.py"
-        line: 33
+        line: 52
 
   - from: "session_check"
     to: "db"
     label: "query ops_sessions by token_hash"
     anchors:
       - path: "app/ops/deps.py"
-        line: 27
+        line: 30

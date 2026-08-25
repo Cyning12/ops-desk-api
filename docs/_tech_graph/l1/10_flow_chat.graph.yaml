@@ -2,7 +2,7 @@ schema_version: "inform_graph.v3"
 graph_id: "10_flow_chat"
 title: "Chat 流式对话流程"
 description: "用户通过 SSE 与后端对话的完整流程：HTTP 入口、LangGraph StateGraph 执行（含 RAG 检索链）、LLM 调用、事件归档。"
-version: "2026-08-23"
+version: "2026-08-25"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "method"
@@ -138,14 +138,14 @@ edges:
     label: "POST sync payload"
     anchors:
       - path: "app/ops/admin/sync.py"
-        line: 45
+        line: 29
 
   - from: "admin_sync"
     to: "db"
     label: "upserts repo/issues/PRs/snapshots"
     anchors:
       - path: "app/ops/admin/sync.py"
-        line: 45
+        line: 36
 
   - from: "chat_stream"
     to: "event_gen"

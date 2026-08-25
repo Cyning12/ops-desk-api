@@ -2,7 +2,7 @@ schema_version: "inform_graph.v3"
 graph_id: "11_flow_sync_to_chat"
 title: "Sync 数据到 Chat 上下文流程"
 description: "Admin sync 导入的 repo/issue/PR/graph 数据如何被只读接口和 Chat 上下文加载消费"
-version: "2026-07-27"
+version: "2026-08-25"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "module"
@@ -43,42 +43,42 @@ edges:
     label: "POST sync payload"
     anchors:
       - path: "app/ops/admin/sync.py"
-        line: 45
+        line: 28
 
   - from: "admin_sync"
     to: "db"
     label: "upserts ops_repos / ops_issues / ops_pull_requests / snapshots"
     anchors:
       - path: "app/ops/admin/service.py"
-        line: 20
+        line: 46
 
   - from: "db"
     to: "issues_endpoint"
     label: "query"
     anchors:
       - path: "app/ops/issues.py"
-        line: 25
+        line: 40
 
   - from: "db"
     to: "pulls_endpoint"
     label: "query"
     anchors:
       - path: "app/ops/pulls.py"
-        line: 25
+        line: 38
 
   - from: "db"
     to: "graph_endpoint"
     label: "query latest"
     anchors:
       - path: "app/ops/graph.py"
-        line: 16
+        line: 21
 
   - from: "db"
     to: "chat_stream"
     label: "load_issue_context"
     anchors:
       - path: "app/ops/chat/nodes.py"
-        line: 63
+        line: 99
 
   - from: "issues_endpoint"
     to: "client"

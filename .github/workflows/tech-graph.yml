@@ -31,3 +31,9 @@ jobs:
 
       - name: Compile and check tech graph
         run: ./scripts/graph-compile.sh
+
+      # W5 覆盖检查（一期 warn only）：语义覆盖可观测性，永不 fail job
+      # spec: docs/spec/inform-graph-backfill/ci/coverage_check.md
+      - name: Graph coverage check (warn only)
+        continue-on-error: true
+        run: python3 scripts/graph_coverage_check.py || true
