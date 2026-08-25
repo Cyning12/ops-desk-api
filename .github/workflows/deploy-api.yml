@@ -9,7 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60  # 2026-08-25：依赖层失效全量重装（torch 526MB+）可超 30min；keepalive 已保连接，瓶颈是总时长
     steps:
       - name: Checkout
         uses: actions/checkout@v5
