@@ -10,6 +10,13 @@ RUN sed -i 's|deb.debian.org|mirrors.cloud.tencent.com|g' /etc/apt/sources.list.
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+
+# CPU-only torch：生产 2C4G 无 GPU；默认 CUDA 版会拖入数 GB nvidia-* 轮子
+# （2026-08-25 deploy 实证 cudnn 366MB@0.67MB/s，超 60min 装不完）。
+# 先装 CPU 版后，requirements 里 sentence-transformers 的 torch>=1.11 已被满足，不再拉 CUDA 版。
+RUN pip install --no-cache-dir torch \
+    --index-url https://download.pytorch.org/whl/cpu
+
 RUN pip install --no-cache-dir -r requirements.txt \
     -i https://pypi.tuna.tsinghua.edu.cn/simple
 
