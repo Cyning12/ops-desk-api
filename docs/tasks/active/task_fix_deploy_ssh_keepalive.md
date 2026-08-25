@@ -36,12 +36,13 @@
 
 ## 验收标准
 
-- [ ] SSH_OPTS 增 keepalive 三项（yaml 语法有效）
+- [x] SSH_OPTS 增 keepalive 三项（yaml 语法有效 · python yaml.safe_load 通过；rsync `-e ssh` 同步补齐）
 - [ ] 合并后 `gh run rerun` deploy-api 通过（或失败点不再是 SSH 断连）
-- [ ] graph-compile exit 0（无关联但过闸）
+- [x] graph-compile exit 0（无关联但过闸）
 
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-25 | 初版（00 起草 + 代签闸 · 维护者授权）：SSH keepalive 修 deploy 断连 |
+| 2026-08-25 | 30 执行：SSH_OPTS 与 rsync `-e ssh` 均加 `ServerAliveInterval=30 ServerAliveCountMax=10 TCPKeepAlive=yes`；yaml 校验过；graph-compile exit 0；diff 仅限 deploy-api.yml（未 commit，待 00 统一提交） |
