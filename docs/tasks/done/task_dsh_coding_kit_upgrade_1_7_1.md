@@ -1,6 +1,6 @@
 # Task：dsh-coding-kit 升级 1.7.1（CLOSE 强绑定 dogfood + 00 条文 + 文档迁移）
 
-> **状态**：completed（验收回填 · 关账待 PR MERGED + `task close --yes`）  
+> **状态**：completed（闸已签 · 2026-08-26 随 PR #63 关账归档）  
 > **类型**：基础设施 / harness 过程轨升级（patch）+ **doc-health 试点文档迁移**  
 > **前置**：manifest 现为 `1.6.1`；kit **1.7.1 已 npm 发版**（含 1.7.0 CLOSE 闸 + Starter `00-orchestrator.md`）；本仓已有试点镜像 `docs/spec/doc-health/`  
 > **契约真值**：`dsh-coding-kit@1.7.1` CHANGELOG +（可选）本机 `Desktop/Projects/dsh-coding-kit/docs/spec/doc-health/`  
@@ -30,7 +30,7 @@
 | **invoke_retention_profile** | `default` |
 | **required_invoke_hats** | `10,30,40` |
 | **close_pr_policy** | `required` |
-| **related_pr** | |
+| **related_pr** | `#63` |
 
 ### 人工闸
 

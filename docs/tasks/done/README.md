@@ -32,7 +32,7 @@
 | 2026-08-25 | [`task_dsh_coding_kit_upgrade_1_6_1.md`](./task_dsh_coding_kit_upgrade_1_6_1.md) | kit 1.6.1（反哺项全关闭） · PR #50 |
 | 2026-08-25 | [`task_dsh_kit_graph_command_switch.md`](./task_dsh_kit_graph_command_switch.md) | 命令面正式切换 · PR #51 |
 | 2026-08-26 | [`task_tech_graph_legacy_cleanup.md`](./task_tech_graph_legacy_cleanup.md) | 清理根双写 / 01_struct stub / QUICKREF·legacy · PR #61 |
-| 2026-08-26 | [`task_dsh_coding_kit_upgrade_1_7_1.md`](./task_dsh_coding_kit_upgrade_1_7_1.md) | kit 1.7.1（CLOSE dogfood + 00 条文手补） · PR 待开 |
+| 2026-08-26 | [`task_dsh_coding_kit_upgrade_1_7_1.md`](./task_dsh_coding_kit_upgrade_1_7_1.md) | kit 1.7.1（CLOSE dogfood + 00 条文手补） · PR #63 |
 
 ---
 

@@ -8,7 +8,7 @@
 |------|-----|
 | hat_id | 30（含 40） |
 | task_slug | `dsh-coding-kit-upgrade-1-7-1` |
-| task_paths | `docs/tasks/active/task_dsh_coding_kit_upgrade_1_7_1.md` |
+| task_paths | `docs/tasks/done/task_dsh_coding_kit_upgrade_1_7_1.md` |
 | related_review_or_none | `docs/harness/reviews/task_dsh_coding_kit_upgrade_1_7_1_audit_R1_20260826.md` |
 | git_branch | `task/dsh-coding-kit-1-7-1` |
 | created_utc_or_local | 2026-08-26 |
@@ -28,7 +28,7 @@ reviews：`task_dsh_coding_kit_upgrade_1_7_1_audit_R1_20260826.md` 存在且 R1 
 
 pre-30 invoke：required=`10,30,40` · 帽 10 已先落盘 → verify 无需 `--allow-invoke-gap`。
 
-机械：`npx dsh-coding-kit@1.7.1 verify --target . --task docs/tasks/active/task_dsh_coding_kit_upgrade_1_7_1.md` → **VERIFY: PASS exit 0**
+机械：`npx dsh-coding-kit@1.7.1 verify --target . --task docs/tasks/done/task_dsh_coding_kit_upgrade_1_7_1.md` → **VERIFY: PASS exit 0**
 
 结论：**可进入 30**（升级 + 文档迁移 + CLOSE dry-run；**不** `--yes` close、**不** push）
 
