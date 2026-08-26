@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260826_V1",
-  "generated_at": "2026-08-26T03:57:06Z",
+  "generated_at": "2026-08-26T04:15:50Z",
   "graphs": [
     {
       "id": "00_main",
@@ -13,6 +13,12 @@
       "id": "10_flow_auth",
       "title": "Authentication Flow",
       "source_yaml_path": "l1/10_flow_auth.graph.yaml",
+      "layer": "G-L1"
+    },
+    {
+      "id": "10_flow_capability",
+      "title": "Capability Gateway 注册与 invoke",
+      "source_yaml_path": "l1/10_flow_capability.graph.yaml",
       "layer": "G-L1"
     },
     {
@@ -37,6 +43,12 @@
       "id": "10_flow_rag",
       "title": "RAG 混合检索摘要流程（hybrid_recall）",
       "source_yaml_path": "l1/10_flow_rag.graph.yaml",
+      "layer": "G-L1"
+    },
+    {
+      "id": "10_flow_structured_output",
+      "title": "Structured Output Gateway 管道",
+      "source_yaml_path": "l1/10_flow_structured_output.graph.yaml",
       "layer": "G-L1"
     },
     {
@@ -186,6 +198,61 @@
       "graph_id": "10_flow_auth",
       "id": "db",
       "label": "PostgreSQL"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "caller",
+      "label": "调用方（lg_rag tool_exec_node）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "register",
+      "label": "register / defaults.ensure_default_capabilities"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "list_filter",
+      "label": "list_capabilities / schemas_for_llm（Filter）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "invoke",
+      "label": "invoke(capability_id, args)"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "local_fn",
+      "label": "LocalFnAdapter"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "probes",
+      "label": "mcp / sandbox / cli probes（默认关闭）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "skill_stub",
+      "label": "skill provide/invoke stub（无完整引擎）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "result",
+      "label": "CapabilityResult（ok / output / error）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "fc_optional",
+      "label": "可选 as_tool_node（不挂 multi 主路径）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "lg_rag_doc",
+      "label": ">./10_flow_lg_rag.md"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "modules_doc",
+      "label": ">./01_modules.md"
     },
     {
       "graph_id": "10_flow_chat",
@@ -405,7 +472,17 @@
     {
       "graph_id": "10_flow_lg_rag",
       "id": "s_tool",
-      "label": "tool_exec_node（Mock 注册表）"
+      "label": "tool_exec_node（Capability Gateway）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "structured_output_gw",
+      "label": "Structured Output Gateway（>./10_flow_structured_output.md）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "capability_gw",
+      "label": "Capability Gateway（>./10_flow_capability.md）"
     },
     {
       "graph_id": "10_flow_lg_rag",
@@ -506,6 +583,61 @@
       "graph_id": "10_flow_rag",
       "id": "main_doc",
       "label": ">../l0/00_main.md"
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "id": "caller",
+      "label": "调用方（lg_rag router / supervisor / info_extract）"
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "id": "complete",
+      "label": "acomplete_structured（触发 LLM）"
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "id": "parse_only",
+      "label": "parse_only（无 LLM 管道入口）"
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "id": "extract",
+      "label": "extract_json_object（剥 fence / 抽对象）"
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "id": "repair",
+      "label": "deterministic_repair（仅结构符号）"
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "id": "validate",
+      "label": "Pydantic + ensure_keys + custom validate"
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "id": "outcome",
+      "label": "ParseOutcome / T | StructuredFailure"
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "id": "correction",
+      "label": "OUTPUT CORRECTION 注入（预算内重试）"
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "id": "llm",
+      "label": "LLM Provider"
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "id": "lg_rag_doc",
+      "label": ">./10_flow_lg_rag.md"
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "id": "modules_doc",
+      "label": ">./01_modules.md"
     },
     {
       "graph_id": "11_flow_sync_to_chat",
@@ -1105,6 +1237,176 @@
           "line": 30
         }
       ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "register",
+      "to": "list_filter",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "编目可见",
+      "anchors": [
+        {
+          "path": "app/ops/capability/gateway.py",
+          "symbol": "list_capabilities"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "list_filter",
+      "to": "fc_optional",
+      "mark": "?>",
+      "type": "branches",
+      "label": "可选 FC 暴露",
+      "anchors": [
+        {
+          "path": "app/ops/capability/adapters/langchain_tools.py",
+          "symbol": "as_structured_tools"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "caller",
+      "to": "invoke",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "tool 子任务",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "symbol": "tool_exec_node"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "invoke",
+      "to": "local_fn",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "kind=local_fn（默认）",
+      "anchors": [
+        {
+          "path": "app/ops/capability/gateway.py",
+          "symbol": "_dispatch"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "invoke",
+      "to": "probes",
+      "mark": "?>",
+      "type": "branches",
+      "label": "kind=mcp|sandbox|cli（若已 register）",
+      "anchors": [
+        {
+          "path": "app/ops/capability/probes.py",
+          "symbol": "register_p2_probes"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "invoke",
+      "to": "skill_stub",
+      "mark": "?>",
+      "type": "branches",
+      "label": "kind=skill → provide/invoke stub",
+      "anchors": [
+        {
+          "path": "app/ops/capability/gateway.py",
+          "symbol": "provide"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "local_fn",
+      "to": "result",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "ok / error",
+      "anchors": [
+        {
+          "path": "app/ops/capability/gateway.py",
+          "symbol": "invoke"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "probes",
+      "to": "result",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "mock 探针结果",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "skill_stub",
+      "to": "result",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "stub / NotImplemented → ok=False",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "result",
+      "to": "caller",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "写入 subtask_results；未知 id 不垮图",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "symbol": "tool_exec_node"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "register",
+      "to": "probes",
+      "mark": "?>",
+      "type": "branches",
+      "label": "显式 register_p2_probes(enabled=…)",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "result",
+      "to": "lg_rag_doc",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "接入面",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "caller",
+      "to": "modules_doc",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "module_id=capability",
+      "anchors": [],
       "sync": true
     },
     {
@@ -2132,6 +2434,66 @@
     },
     {
       "graph_id": "10_flow_lg_rag",
+      "from": "r_router",
+      "to": "structured_output_gw",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "parse_only / schema 校验",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/nodes.py",
+          "symbol": "_classify_route"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_supervisor",
+      "to": "structured_output_gw",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "parse SubtasksPlan",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "symbol": "supervisor_node"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_extract",
+      "to": "structured_output_gw",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "parse ExtractResult",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "symbol": "info_extract_node"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_tool",
+      "to": "capability_gw",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "capability.invoke",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "symbol": "tool_exec_node"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
       "from": "router_graph",
       "to": "main_doc",
       "mark": "->",
@@ -2452,6 +2814,210 @@
       "mark": "->",
       "type": "depends_on",
       "label": "加载",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "caller",
+      "to": "complete",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "complete_structured 路径",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/nodes.py",
+          "symbol": "_classify_route"
+        },
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "symbol": "supervisor_node"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "caller",
+      "to": "parse_only",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "已有 raw text → parse_only",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "symbol": "info_extract_node"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "complete",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "provider.complete",
+      "anchors": [
+        {
+          "path": "app/ops/structured_output/complete.py",
+          "symbol": "acomplete_structured"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "complete",
+      "to": "parse_only",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "raw → 管道",
+      "anchors": [
+        {
+          "path": "app/ops/structured_output/complete.py",
+          "symbol": "acomplete_structured"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "parse_only",
+      "to": "extract",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "step 1",
+      "anchors": [
+        {
+          "path": "app/ops/structured_output/parse.py",
+          "symbol": "parse_only"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "extract",
+      "to": "repair",
+      "mark": "?>",
+      "type": "branches",
+      "label": "parse 失败时",
+      "anchors": [
+        {
+          "path": "app/ops/structured_output/parse.py",
+          "symbol": "_try_extract_with_optional_repair"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "extract",
+      "to": "validate",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "抽出 dict",
+      "anchors": [
+        {
+          "path": "app/ops/structured_output/parse.py",
+          "symbol": "parse_only"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "repair",
+      "to": "validate",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "repair 后再抽",
+      "anchors": [
+        {
+          "path": "app/ops/structured_output/parse.py",
+          "symbol": "_try_extract_with_optional_repair"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "validate",
+      "to": "outcome",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "ok → data；fail → error（无半成功）",
+      "anchors": [
+        {
+          "path": "app/ops/structured_output/parse.py",
+          "symbol": "parse_only"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "outcome",
+      "to": "correction",
+      "mark": "?>",
+      "type": "branches",
+      "label": "fail 且预算内且非 no_retry",
+      "anchors": [
+        {
+          "path": "app/ops/structured_output/complete.py",
+          "symbol": "acomplete_structured"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "correction",
+      "to": "complete",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "完整重生成",
+      "anchors": [
+        {
+          "path": "app/ops/structured_output/complete.py",
+          "symbol": "acomplete_structured"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "outcome",
+      "to": "caller",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "成功 T 或 StructuredFailure",
+      "anchors": [
+        {
+          "path": "app/ops/structured_output/complete.py",
+          "symbol": "acomplete_structured"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "outcome",
+      "to": "lg_rag_doc",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "接入面",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_structured_output",
+      "from": "caller",
+      "to": "modules_doc",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "module_id=structured_output",
       "anchors": [],
       "sync": true
     },

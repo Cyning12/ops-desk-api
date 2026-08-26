@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_lg_rag
-version: 2026-08-24
-generated_at: 2026-08-26T03:57:05Z
+version: 2026-08-26
+generated_at: 2026-08-26T04:15:49Z
 source: 10_flow_lg_rag.graph.yaml
 ---
 
@@ -29,7 +29,9 @@ flowchart TB
     s_dispatch["route_next_subtask（dispatch）"]
     s_rag["rag_subtask_node（复用 router 子图）"]
     s_extract["info_extract_node"]
-    s_tool["tool_exec_node（Mock 注册表）"]
+    s_tool["tool_exec_node（Capability Gateway）"]
+    structured_output_gw["Structured Output Gateway（>./10_flow_structured_output.md）"]
+    capability_gw["Capability Gateway（>./10_flow_capability.md）"]
     s_aggregator["aggregator_node（LLM 综合）"]
     lc_chain["LC Evidence chain（黑盒 · 不展开 LCEL）"]
     llm["LLM Provider"]
@@ -109,6 +111,14 @@ flowchart TB
     %% → app/ops/lg_rag/multi/nodes.py#L299
     s_aggregator -->|"complete（综合 → END）"| llm
     %% → app/ops/lg_rag/multi/nodes.py#L361
+    r_router -->|"parse_only / schema 校验"| structured_output_gw
+    %% → app/ops/lg_rag/nodes.py::_classify_route
+    s_supervisor -->|"parse SubtasksPlan"| structured_output_gw
+    %% → app/ops/lg_rag/multi/nodes.py::supervisor_node
+    s_extract -->|"parse ExtractResult"| structured_output_gw
+    %% → app/ops/lg_rag/multi/nodes.py::info_extract_node
+    s_tool -->|"capability.invoke"| capability_gw
+    %% → app/ops/lg_rag/multi/nodes.py::tool_exec_node
     router_graph -->|"加载"| main_doc
 
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -116,7 +126,7 @@ flowchart TB
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
     class lg_invoke,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_supervisor,s_dispatch,s_rag,s_extract,s_tool,s_aggregator phase
     class basic_graph,router_graph,sup_graph doc
-    class client,lc_chain,llm,db,main_doc infra
+    class client,structured_output_gw,capability_gw,lc_chain,llm,db,main_doc infra
 ```
 
 ## Structured Data
@@ -141,7 +151,9 @@ flowchart TB
 | s_dispatch | route_next_subtask（dispatch） | flow |
 | s_rag | rag_subtask_node（复用 router 子图） | flow |
 | s_extract | info_extract_node | flow |
-| s_tool | tool_exec_node（Mock 注册表） | flow |
+| s_tool | tool_exec_node（Capability Gateway） | flow |
+| structured_output_gw | Structured Output Gateway（>./10_flow_structured_output.md） | external |
+| capability_gw | Capability Gateway（>./10_flow_capability.md） | external |
 | s_aggregator | aggregator_node（LLM 综合） | flow |
 | lc_chain | LC Evidence chain（黑盒 · 不展开 LCEL） | external |
 | llm | LLM Provider | external |
@@ -184,4 +196,8 @@ flowchart TB
 | s_supervisor | llm | -> | depends_on | complete（拆解） | 1 anchor(s) |
 | s_extract | llm | -> | depends_on | complete（抽取） | 1 anchor(s) |
 | s_aggregator | llm | -> | depends_on | complete（综合 → END） | 1 anchor(s) |
+| r_router | structured_output_gw | ::triggers | triggers | parse_only / schema 校验 | 1 anchor(s) |
+| s_supervisor | structured_output_gw | ::triggers | triggers | parse SubtasksPlan | 1 anchor(s) |
+| s_extract | structured_output_gw | ::triggers | triggers | parse ExtractResult | 1 anchor(s) |
+| s_tool | capability_gw | ::triggers | triggers | capability.invoke | 1 anchor(s) |
 | router_graph | main_doc | -> | depends_on | 加载 |  |

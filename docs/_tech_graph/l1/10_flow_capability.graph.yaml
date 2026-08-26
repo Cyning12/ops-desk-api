@@ -1,0 +1,188 @@
+schema_version: "inform_graph.v3"
+graph_id: "10_flow_capability"
+title: "Capability Gateway 注册与 invoke"
+description: "能力注册表 + Filter + 统一 invoke；local_fn 默认；可选 schemas_for_llm/ToolNode；mcp/sandbox/cli mock 探针与 skill stub 默认关闭。不是业界 LLM Gateway。首接入面：lg_rag tool_exec_node。"
+version: "2026-08-26"
+layer: "G-L1"
+primary_layer: "G-L1"
+depth: "method"
+direction: "TB"
+
+nodes:
+  - id: "caller"
+    label: "调用方（lg_rag tool_exec_node）"
+    kind: external
+
+  - id: "register"
+    label: "register / defaults.ensure_default_capabilities"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/gateway.py"
+        symbol: "register"
+        kind: method
+      - path: "app/ops/capability/defaults.py"
+        symbol: "ensure_default_capabilities"
+        kind: method
+
+  - id: "list_filter"
+    label: "list_capabilities / schemas_for_llm（Filter）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/gateway.py"
+        symbol: "list_capabilities"
+        kind: method
+      - path: "app/ops/capability/gateway.py"
+        symbol: "schemas_for_llm"
+        kind: method
+
+  - id: "invoke"
+    label: "invoke(capability_id, args)"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/gateway.py"
+        symbol: "invoke"
+        kind: method
+
+  - id: "local_fn"
+    label: "LocalFnAdapter"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/adapters/local_fn.py"
+        symbol: "LocalFnAdapter"
+        kind: class
+
+  - id: "probes"
+    label: "mcp / sandbox / cli probes（默认关闭）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/probes.py"
+        symbol: "register_p2_probes"
+        kind: method
+
+  - id: "skill_stub"
+    label: "skill provide/invoke stub（无完整引擎）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/gateway.py"
+        symbol: "provide"
+        kind: method
+      - path: "app/ops/capability/adapters/skill.py"
+        symbol: "SkillStubAdapter"
+        kind: class
+
+  - id: "result"
+    label: "CapabilityResult（ok / output / error）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/types.py"
+        symbol: "CapabilityResult"
+        kind: class
+
+  - id: "fc_optional"
+    label: "可选 as_tool_node（不挂 multi 主路径）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/adapters/langchain_tools.py"
+        symbol: "as_tool_node"
+        kind: method
+
+  - id: "lg_rag_doc"
+    label: ">./10_flow_lg_rag.md"
+    kind: external
+
+  - id: "modules_doc"
+    label: ">./01_modules.md"
+    kind: external
+
+edges:
+  - from: "register"
+    to: "list_filter"
+    label: "编目可见"
+    anchors:
+      - path: "app/ops/capability/gateway.py"
+        symbol: "list_capabilities"
+
+  - from: "list_filter"
+    to: "fc_optional"
+    label: "可选 FC 暴露"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/capability/adapters/langchain_tools.py"
+        symbol: "as_structured_tools"
+
+  - from: "caller"
+    to: "invoke"
+    label: "tool 子任务"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "tool_exec_node"
+
+  - from: "invoke"
+    to: "local_fn"
+    label: "kind=local_fn（默认）"
+    anchors:
+      - path: "app/ops/capability/gateway.py"
+        symbol: "_dispatch"
+
+  - from: "invoke"
+    to: "probes"
+    label: "kind=mcp|sandbox|cli（若已 register）"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/capability/probes.py"
+        symbol: "register_p2_probes"
+
+  - from: "invoke"
+    to: "skill_stub"
+    label: "kind=skill → provide/invoke stub"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/capability/gateway.py"
+        symbol: "provide"
+
+  - from: "local_fn"
+    to: "result"
+    label: "ok / error"
+    anchors:
+      - path: "app/ops/capability/gateway.py"
+        symbol: "invoke"
+
+  - from: "probes"
+    to: "result"
+    label: "mock 探针结果"
+
+  - from: "skill_stub"
+    to: "result"
+    label: "stub / NotImplemented → ok=False"
+
+  - from: "result"
+    to: "caller"
+    label: "写入 subtask_results；未知 id 不垮图"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "tool_exec_node"
+
+  - from: "register"
+    to: "probes"
+    label: "显式 register_p2_probes(enabled=…)"
+    mark: "?>"
+    type: "branches"
+
+  - from: "result"
+    to: "lg_rag_doc"
+    label: "接入面"
+
+  - from: "caller"
+    to: "modules_doc"
+    label: "module_id=capability"

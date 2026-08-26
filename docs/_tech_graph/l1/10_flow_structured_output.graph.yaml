@@ -1,0 +1,189 @@
+schema_version: "inform_graph.v3"
+graph_id: "10_flow_structured_output"
+title: "Structured Output Gateway 管道"
+description: "LLM 原始文本 → extract/parse →（可选）deterministic repair → Pydantic/ensure/validate → 失败则预算内 OUTPUT CORRECTION 重试。Host 权威；供 lg_rag 结构化节点复用。不是 Skill。"
+version: "2026-08-26"
+layer: "G-L1"
+primary_layer: "G-L1"
+depth: "method"
+direction: "TB"
+
+nodes:
+  - id: "caller"
+    label: "调用方（lg_rag router / supervisor / info_extract）"
+    kind: external
+
+  - id: "complete"
+    label: "acomplete_structured（触发 LLM）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/structured_output/complete.py"
+        symbol: "acomplete_structured"
+        kind: method
+
+  - id: "parse_only"
+    label: "parse_only（无 LLM 管道入口）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/structured_output/parse.py"
+        symbol: "parse_only"
+        kind: method
+
+  - id: "extract"
+    label: "extract_json_object（剥 fence / 抽对象）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/structured_output/extract.py"
+        symbol: "extract_json_object"
+        kind: method
+
+  - id: "repair"
+    label: "deterministic_repair（仅结构符号）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/structured_output/repair.py"
+        symbol: "deterministic_repair"
+        kind: method
+
+  - id: "validate"
+    label: "Pydantic + ensure_keys + custom validate"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/structured_output/parse.py"
+        symbol: "parse_only"
+        kind: method
+      - path: "app/ops/structured_output/parse.py"
+        symbol: "check_ensure_keys"
+        kind: method
+
+  - id: "outcome"
+    label: "ParseOutcome / T | StructuredFailure"
+    kind: flow
+    layer_hint: "G-L2"
+
+  - id: "correction"
+    label: "OUTPUT CORRECTION 注入（预算内重试）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/structured_output/complete.py"
+        symbol: "_build_correction_user_content"
+        kind: method
+
+  - id: "llm"
+    label: "LLM Provider"
+    kind: external
+
+  - id: "lg_rag_doc"
+    label: ">./10_flow_lg_rag.md"
+    kind: external
+
+  - id: "modules_doc"
+    label: ">./01_modules.md"
+    kind: external
+
+edges:
+  - from: "caller"
+    to: "complete"
+    label: "complete_structured 路径"
+    anchors:
+      - path: "app/ops/lg_rag/nodes.py"
+        symbol: "_classify_route"
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "supervisor_node"
+
+  - from: "caller"
+    to: "parse_only"
+    label: "已有 raw text → parse_only"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "info_extract_node"
+
+  - from: "complete"
+    to: "llm"
+    label: "provider.complete"
+    anchors:
+      - path: "app/ops/structured_output/complete.py"
+        symbol: "acomplete_structured"
+
+  - from: "complete"
+    to: "parse_only"
+    label: "raw → 管道"
+    anchors:
+      - path: "app/ops/structured_output/complete.py"
+        symbol: "acomplete_structured"
+
+  - from: "parse_only"
+    to: "extract"
+    label: "step 1"
+    anchors:
+      - path: "app/ops/structured_output/parse.py"
+        symbol: "parse_only"
+
+  - from: "extract"
+    to: "repair"
+    label: "parse 失败时"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/structured_output/parse.py"
+        symbol: "_try_extract_with_optional_repair"
+
+  - from: "extract"
+    to: "validate"
+    label: "抽出 dict"
+    anchors:
+      - path: "app/ops/structured_output/parse.py"
+        symbol: "parse_only"
+
+  - from: "repair"
+    to: "validate"
+    label: "repair 后再抽"
+    anchors:
+      - path: "app/ops/structured_output/parse.py"
+        symbol: "_try_extract_with_optional_repair"
+
+  - from: "validate"
+    to: "outcome"
+    label: "ok → data；fail → error（无半成功）"
+    anchors:
+      - path: "app/ops/structured_output/parse.py"
+        symbol: "parse_only"
+
+  - from: "outcome"
+    to: "correction"
+    label: "fail 且预算内且非 no_retry"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/structured_output/complete.py"
+        symbol: "acomplete_structured"
+
+  - from: "correction"
+    to: "complete"
+    label: "完整重生成"
+    mark: "::triggers"
+    type: "triggers"
+    anchors:
+      - path: "app/ops/structured_output/complete.py"
+        symbol: "acomplete_structured"
+
+  - from: "outcome"
+    to: "caller"
+    label: "成功 T 或 StructuredFailure"
+    anchors:
+      - path: "app/ops/structured_output/complete.py"
+        symbol: "acomplete_structured"
+
+  - from: "outcome"
+    to: "lg_rag_doc"
+    label: "接入面"
+
+  - from: "caller"
+    to: "modules_doc"
+    label: "module_id=structured_output"

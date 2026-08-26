@@ -40,3 +40,6 @@ pdd_escalate_to: 1
 - Chat：`docs/_tech_graph/l1/10_flow_chat.graph.yaml`
 - Auth：`docs/_tech_graph/l1/10_flow_auth.graph.yaml`
 - Sync→Chat：`docs/_tech_graph/l1/11_flow_sync_to_chat.graph.yaml`
+- LG RAG：`docs/_tech_graph/l1/10_flow_lg_rag.graph.yaml`
+- Structured Output Gateway：`docs/_tech_graph/l1/10_flow_structured_output.graph.yaml`
+- Capability Gateway：`docs/_tech_graph/l1/10_flow_capability.graph.yaml`
