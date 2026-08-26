@@ -1,8 +1,11 @@
-"""可选 LangChain StructuredTool / ToolNode 适配（Capability Gateway · P1）。
+"""可选 LangChain StructuredTool / ToolNode 桥（Capability · Mode B · 非主路径）。
 
-**可选探针**：供 ``bind_tools`` / 原生 FC 子图 smoke；**不**强制挂
-``app/ops/lg_rag/multi/graph.py`` 或 ``lg_rag`` 主路径拓扑（plan 直调
-``invoke`` 与 FC 双路径并存时以节点编排为准，本模块不改图）。
+**非可迁移内核**：依赖 ``langgraph.prebuilt.ToolNode``；须显式：
+
+    from app.ops.capability.extras.langchain import as_structured_tools, as_tool_node
+
+主路径（Mode A）请用 ``list_capabilities`` + ``invoke``；``schemas_for_llm`` 为纯数据。
+**不**强制挂 ``app/ops/lg_rag/multi/graph.py`` 或 ``lg_rag`` 主路径拓扑。
 
 无 ``args_schema``：与 ``schemas_for_llm`` 一致，**跳过**（不生成 tool）。
 """
@@ -29,7 +32,7 @@ _TYPE_MAP: dict[str, type] = {
 
 
 def _model_from_json_schema(name: str, schema: dict[str, Any]) -> type[BaseModel]:
-    """最小 JSON Schema → Pydantic（仅 object + properties；P1 smoke）。"""
+    """最小 JSON Schema → Pydantic（仅 object + properties；smoke）。"""
     props = schema.get("properties") or {}
     required = set(schema.get("required") or [])
     fields: dict[str, Any] = {}

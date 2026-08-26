@@ -1,13 +1,14 @@
-"""Capability Gateway · Registry + local_fn + schemas_for_llm + invoke / provide。
+"""Capability Gateway · 可迁移内核（Mode A：list + invoke）。
 
-SPEC：``docs/spec/agent-infra/SPEC-capability-gateway_v0.md``
+SPEC：``docs/spec/agent-infra/capability/SPEC-capability-gateway_v0.md``
 表面：``register`` / ``unregister`` / ``list_capabilities`` / ``schemas_for_llm`` /
 ``invoke`` / ``provide``（P3 skill 上下文注入）
-P1 可选：``as_structured_tools`` / ``as_tool_node``（**不**强制挂 multi 主路径）。
+**默认导出零 LG 运行时依赖**；ToolNode 桥见 ``app.ops.capability.extras.langchain``。
 P2 探针：``MockMcpAdapter`` / ``MockSandboxAdapter`` / ``MockCliAdapter``；
 默认**不**进 ``ensure_default_capabilities``；启用见 ``probes.register_p2_probes``。
 P3 skill：``SkillStubAdapter`` + ``register_skill_stub``；**非**完整引擎；
 边界见 ``docs/guides/GUIDE_capability-gateway-p3-skill-boundary_v0.md``。
+Mode A / filter 契约：``docs/guides/GUIDE_capability-portable-core-mode-a_v0.md``。
 """
 
 from app.ops.capability.adapters import (
@@ -16,8 +17,6 @@ from app.ops.capability.adapters import (
     MockMcpAdapter,
     MockSandboxAdapter,
     SkillStubAdapter,
-    as_structured_tools,
-    as_tool_node,
 )
 from app.ops.capability.defaults import ensure_default_capabilities
 from app.ops.capability.gateway import (
@@ -48,8 +47,6 @@ __all__ = [
     "MockMcpAdapter",
     "MockSandboxAdapter",
     "SkillStubAdapter",
-    "as_structured_tools",
-    "as_tool_node",
     "get_registry",
     "invoke",
     "list_capabilities",

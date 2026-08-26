@@ -12,8 +12,6 @@ from app.ops.capability import (
     CapabilityFilter,
     CapabilitySpec,
     LocalFnAdapter,
-    as_structured_tools,
-    as_tool_node,
     get_registry,
     invoke,
     list_capabilities,
@@ -29,6 +27,7 @@ from app.ops.capability.defaults import (
     mock_get_deploy_info,
     mock_get_issue_status,
 )
+from app.ops.capability.extras.langchain import as_structured_tools, as_tool_node
 from app.ops.capability.probes import (
     PROBE_CLI_ID,
     PROBE_MCP_ID,
@@ -136,6 +135,45 @@ def test_list_filter_kinds_and_tags():
     assert specs[0].capability_id == "mock_get_deploy_info"
 
 
+def test_list_filter_node_role_is_placeholder_passthrough():
+    """U2：node_role 为占位字段，单独传入不裁剪；推荐仍用 kinds/tags_any。"""
+    by_role = list_capabilities(filter=CapabilityFilter(node_role="supervisor"))
+    ids = {s.capability_id for s in by_role}
+    assert "mock_get_issue_status" in ids
+    assert "mock_get_deploy_info" in ids
+
+    # supervisor 赋能列表推荐：kinds + tags（例：仅 issue 类给规划侧）
+    planner_view = list_capabilities(
+        filter=CapabilityFilter(
+            node_role="supervisor",
+            kinds=frozenset({"local_fn"}),
+            tags_any=frozenset({"issue"}),
+        )
+    )
+    assert {s.capability_id for s in planner_view} == {"mock_get_issue_status"}
+
+    # tool_exec 侧同样用 tags/kinds 裁剪（node_role 不参与匹配）
+    tool_view = list_capabilities(
+        filter=CapabilityFilter(
+            node_role="tool_exec",
+            kinds=frozenset({"local_fn"}),
+            tags_any=frozenset({"deploy"}),
+        )
+    )
+    assert {s.capability_id for s in tool_view} == {"mock_get_deploy_info"}
+
+
+def test_default_package_export_has_no_langgraph_bridge():
+    """U1：默认 from app.ops.capability 不含 ToolNode 桥，也不拖 langgraph。"""
+    import app.ops.capability as cap
+
+    assert "as_tool_node" not in cap.__all__
+    assert "as_structured_tools" not in cap.__all__
+    assert not hasattr(cap, "as_tool_node")
+    assert not hasattr(cap, "as_structured_tools")
+    assert "langgraph" not in getattr(cap, "__dict__", {})
+
+
 def test_invoke_writes_span_metadata_on_current_span():
     """兼容 tool_exec：不另开根 span，只 update_current_span_metadata。"""
     with patch("app.ops.capability.gateway.update_current_span_metadata") as upd:
@@ -201,7 +239,7 @@ def test_schemas_for_llm_shape_and_filter():
 
 
 def test_as_structured_tools_and_tool_node_smoke():
-    """可选 adapter smoke：StructuredTool.invoke + ToolNode；不挂 multi 图。"""
+    """extras.langchain smoke：StructuredTool.invoke + ToolNode；不挂 multi 图。"""
     cid = "p1_toolnode_probe"
 
     def _echo(args: dict) -> dict:
