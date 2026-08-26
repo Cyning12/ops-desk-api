@@ -1,6 +1,6 @@
 # Task：Agent Infra · SPEC 文档分层（L0/L1/L2）
 
-> **状态**：active（闸已签 · 待 PR 合入后关账）  
+> **状态**：completed（PR [#65](https://github.com/Cyning12/ops-desk-api/pull/65) MERGED · 2026-08-26 关账）  
 > **类型**：docs-only / agent-infra 过程轨  
 > **总轨**：`agent-infra-upgrade`（波次 0 · 实现前置）  
 > **分支**：`docs/agent-infra-spec-hierarchy`  
@@ -68,11 +68,11 @@
 
 ## 验收标准
 
-- [ ] 目录树符合 `docs/spec/agent-infra/README.md` 所示分层
-- [ ] 两份根 POINTER 指向域夹 SPEC；域夹 SPEC 正文完整（非空壳）
-- [ ] `01_upgrade_roadmap` 钉死顺序 1→2→3（4 可选）可读
-- [ ] 无 `app/` / `tests/` / `docs/_tech_graph/` 业务 diff
-- [ ] PR 开出并（维护者）合入 master 后可关账
+- [x] 目录树符合 `docs/spec/agent-infra/README.md` 所示分层
+- [x] 两份根 POINTER 指向域夹 SPEC；域夹 SPEC 正文完整（非空壳）
+- [x] `01_upgrade_roadmap` 钉死顺序 1→2→3（4 可选）可读
+- [x] 无 `app/` / `tests/` / `docs/_tech_graph/` 业务 diff
+- [x] PR 开出并（维护者）合入 master 后可关账（[#65](https://github.com/Cyning12/ops-desk-api/pull/65) MERGED）
 
 ---
 
@@ -134,14 +134,34 @@ ROADMAP 与 v0 SPEC 分离，不污染已签契约。
 
 ### 自检结论
 
-> 2026-08-26 · 00 代执行 docs 落地 · **过程 PASS（待 PR merge 关账）**
+> 2026-08-26 · 00 代执行 docs 落地 · **PASS（PR #65 MERGED）**
 
-- [x] 分层目录与 POINTER 已提交
+- [x] 分层目录与 POINTER 已提交并合入 master
 - [x] task lint PASS · verify PASS
 - [x] 无 `app/` / `tests/` diff
-- [x] PR [#65](https://github.com/Cyning12/ops-desk-api/pull/65) 已开（待维护者合入）
+- [x] PR [#65](https://github.com/Cyning12/ops-desk-api/pull/65) MERGED
 
-**50 结论**：docs 波次可合入；合入后关账并开 `cap-portable-core`
+**50 结论**：PASS · 波次 0 关账；下一棒 `cap-portable-core`
+
+---
+
+### KPI
+
+Task_KPI%: 100
+
+（docs-only；PR #65 一次合入；无返工。）
+
+---
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-26 |
+| PR | [#65](https://github.com/Cyning12/ops-desk-api/pull/65) MERGED |
+| 定稿 | agent-infra L0/L1/L2 分层 + POINTER + ROADMAP |
+| 归档 | `docs/tasks/done/task_agent_infra_spec_hierarchy.md` |
+| 下一棒 | `cap-portable-core`（U1+U2） |
 
 ---
 
@@ -150,3 +170,4 @@ ROADMAP 与 v0 SPEC 分离，不污染已签契约。
 | 日期 | 说明 |
 |---|---|
 | 2026-08-26 | 10 起草；00 代签双闸；方案 A 开工 |
+| 2026-08-26 | PR #65 MERGED；00 关账 |

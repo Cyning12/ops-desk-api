@@ -69,8 +69,22 @@ v0 P1「可选 ToolNode adapter」**不撤销历史落地**，但升级后定性
 
 ---
 
+## 附录 A · U2 Filter / plan-in-state（摘要）
+
+完整条文见 [`../../../guides/GUIDE_capability-portable-core-mode-a_v0.md`](../../../guides/GUIDE_capability-portable-core-mode-a_v0.md)。
+
+| 项 | 钉死 |
+|---|---|
+| 主路径 | `list_capabilities(filter=…)` + `invoke`（Mode A） |
+| Filter | 推荐 `kinds` + `tags_any`；`node_role`/`mode` 为占位（单独不裁剪） |
+| Plan | 落在 **state**；静态 dispatch 解释；**不**默认 `StateGraph.compile` 新图 |
+| LG 桥 | `app.ops.capability.extras.langchain`（非默认导出） |
+
+---
+
 ## 5. 修订记录
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-26 | 初版：Mode A 可迁移；隔离 LG 桥；真 MCP 后置 |
+| 2026-08-26 | U1+U2 落地：默认导出去 LG；extras.langchain；附录 A + GUIDE Mode A |
