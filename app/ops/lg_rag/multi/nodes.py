@@ -14,9 +14,9 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 
 from langchain_core.messages import AIMessage
+from pydantic import ValidationError
 
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage
@@ -27,6 +27,8 @@ from app.ops.lg_rag.nodes import (
     _last_user_text,
 )
 from app.ops.lg_rag.state import LgRagState
+from app.ops.structured_output import parse_only
+from app.ops.structured_output.schemas import ExtractResult, SubtaskItem, SubtasksPlan
 from app.ops.tracing import trace_span, tracing_enabled
 
 logger = logging.getLogger(__name__)
@@ -113,54 +115,39 @@ MOCK_TOOLS = {
 # ---------------------------------------------------------------------------
 
 
-def _extract_json_object(raw: str) -> dict | None:
-    """宽容提取 LLM 输出中的 JSON 对象（容忍代码围栏与前后杂文本）。"""
-    text = (raw or "").strip()
-    if not text:
-        return None
-    text = re.sub(r"^\x60{3}(?:json)?|\x60{3}$", "", text, flags=re.MULTILINE).strip()
-    try:
-        data = json.loads(text)
-    except (json.JSONDecodeError, TypeError):
-        m = re.search(r"\{.*\}", text, flags=re.DOTALL)
-        if not m:
-            return None
-        try:
-            data = json.loads(m.group(0))
-        except (json.JSONDecodeError, TypeError):
-            return None
-    return data if isinstance(data, dict) else None
-
-
 def _parse_subtasks(raw: str) -> list[dict] | None:
     """解析 supervisor LLM 输出为子任务列表；非法/为空返回 None（走 fallback）。
 
+    选型：``supervisor_node`` 已 ``complete`` 一次，此处仅 ``parse_only``，
+    避免 ``acomplete_structured`` 双重 LLM（延迟敏感；纠偏留给后续波次）。
+
     逐项规整：缺 id 补 tN；type 不在白名单归为 rag（宁退化）；input 非空
-    字符串必填，任一项 input 缺失视整体非法；超过 cap=4 截断。
+    字符串必填（schema + strip），任一项 input 缺失/空白视整体非法；超过
+    cap=4 截断（cap 外项不参与校验，避免误 fallback）。
     """
-    data = _extract_json_object(raw)
-    if not data:
+    outcome = parse_only(raw, schema=SubtasksPlan)
+    if not outcome.ok or outcome.data is None:
         return None
-    items = data.get("subtasks")
-    if not isinstance(items, list) or not items:
-        return None
+    items = outcome.data.subtasks
     subtasks: list[dict] = []
-    for i, item in enumerate(items[:MAX_SUBTASKS]):
-        if not isinstance(item, dict):
+    for i, raw_item in enumerate(items[:MAX_SUBTASKS]):
+        try:
+            item = SubtaskItem.model_validate(raw_item)
+        except ValidationError:
             return None
-        text = str(item.get("input") or "").strip()
+        text = (item.input or "").strip()
         if not text:
             return None
-        subtask_type = str(item.get("type") or "").strip()
+        subtask_type = (item.type or "").strip()
         if subtask_type not in SUBTASK_TYPES:
             subtask_type = "rag"
         subtask = {
-            "id": str(item.get("id") or f"t{i + 1}"),
+            "id": str(item.id or f"t{i + 1}"),
             "type": subtask_type,
             "input": text,
         }
-        if subtask_type == "tool" and item.get("tool"):
-            subtask["tool"] = str(item["tool"])
+        if subtask_type == "tool" and item.tool:
+            subtask["tool"] = str(item.tool)
         subtasks.append(subtask)
     return subtasks or None
 
@@ -191,7 +178,11 @@ def _pending_subtask(state: LgRagState) -> dict | None:
 
 
 async def supervisor_node(state: LgRagState) -> dict:
-    """LLM 拆解复合问题为 ≤4 子任务；失败/非法 → fallback 单 rag 子任务。"""
+    """LLM 拆解复合问题为 ≤4 子任务；失败/非法 → fallback 单 rag 子任务。
+
+    选型：complete 一次 + ``parse_only``（见 ``_parse_subtasks``），
+    不用 ``acomplete_structured`` 以免本波双重 LLM。
+    """
     query = _last_user_text(state["messages"])
     raw = ""
     subtasks: list[dict] | None = None
@@ -220,6 +211,8 @@ async def supervisor_node(state: LgRagState) -> dict:
             "subtask_count": len(subtasks),
             "subtask_types": [s["type"] for s in subtasks],
             "supervisor_fallback": fallback,
+            # 与 supervisor_fallback 并存（SPEC §5）
+            "structured_output_fallback": fallback,
             "supervisor_raw": raw[:200],
         }
     )
@@ -288,7 +281,9 @@ def _empty_extract() -> dict:
 async def info_extract_node(state: LgRagState) -> dict:
     """信息抽取子任务：LLM 从输入文本抽 dates/versions/people JSON。
 
-    非法 JSON → 空结构 + warning，不中断（DESIGN §8）。
+    选型：complete 一次 + ``parse_only``，避免双重 LLM。
+    非法 JSON / schema 失败 → 空结构 + warning + structured_output_fallback，
+    不中断（DESIGN §8 / SPEC §5）。
     """
     subtask = _pending_subtask(state)
     if subtask is None:
@@ -308,18 +303,16 @@ async def info_extract_node(state: LgRagState) -> dict:
             logger.warning("lg_rag extract LLM 失败 id=%s err=%r", result["id"], exc)
             result["output"] = _empty_extract()
             result["error"] = repr(exc)
+            _record_span_metadata({"structured_output_fallback": True})
             return {"subtask_results": [result]}
-        data = _extract_json_object(raw)
-        if data is None:
+        outcome = parse_only(raw, schema=ExtractResult)
+        if not outcome.ok or outcome.data is None:
             logger.warning("lg_rag extract 输出非法，置空结构 raw=%r", (raw or "")[:200])
             result["output"] = _empty_extract()
+            _record_span_metadata({"structured_output_fallback": True})
         else:
-            output = _empty_extract()
-            for key in output:
-                value = data.get(key)
-                if isinstance(value, list):
-                    output[key] = [str(v) for v in value]
-            result["output"] = output
+            result["output"] = outcome.data.model_dump()
+            _record_span_metadata({"structured_output_fallback": False})
     return {"subtask_results": [result]}
 
 

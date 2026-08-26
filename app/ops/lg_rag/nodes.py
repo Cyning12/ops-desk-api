@@ -12,7 +12,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import re
@@ -24,6 +23,8 @@ from app.llm.schema import LlmMessage
 from app.ops.lc_evidence_chain.chain import ainvoke_evidence_answer
 from app.ops.lg_rag.state import LgRagState
 from app.ops.rag.grader import REFUSAL_TEXT
+from app.ops.structured_output import parse_only
+from app.ops.structured_output.schemas import RouteDecision
 from app.ops.tracing import trace_span, tracing_enabled
 
 logger = logging.getLogger(__name__)
@@ -67,22 +68,31 @@ def _last_user_text(messages: list[BaseMessage]) -> str:
 
 
 def _parse_route(raw: str) -> str | None:
-    """解析 router LLM 输出；宽容提取 JSON，白名单校验。"""
+    """解析 router LLM 输出；Gateway parse_only + 历史宽容路径。
+
+    选型：``_classify_route`` 已 ``complete`` 一次，此处仅 ``parse_only``，
+    避免 ``acomplete_structured`` 双重 LLM。
+
+    历史宽容：抽不出合法 ``{"route": ...}`` 时，仍接受文本中出现的
+    ``"rag"|"direct"|"refuse"`` 字面量（勿无故收紧致误 fallback 暴增）。
+    """
+    outcome = parse_only(raw, schema=RouteDecision)
+    if outcome.ok and outcome.data is not None:
+        return outcome.data.route
+
+    # 非 JSON / 非对象：保留改前 regex 宽容路径
     text = (raw or "").strip()
-    value = ""
-    try:
-        data = json.loads(text)
-        if isinstance(data, dict):
-            value = str(data.get("route") or "").strip()
-    except (json.JSONDecodeError, TypeError):
-        m = re.search(r'"(rag|direct|refuse)"', text)
-        if m:
-            value = m.group(1)
-    return value if value in ROUTES else None
+    m = re.search(r'"(rag|direct|refuse)"', text)
+    if m:
+        return m.group(1)
+    return None
 
 
 async def _classify_route(query: str) -> tuple[str, str, bool]:
-    """LLM 三分类。返回 (route, raw_output, used_fallback)。"""
+    """LLM 三分类。返回 (route, raw_output, used_fallback)。
+
+    complete 一次 + parse_only（见 ``_parse_route`` 选型注释）。
+    """
     provider = get_llm_provider(_ROUTER_PROVIDER)
     raw = await provider.complete(
         [
@@ -101,7 +111,7 @@ async def _classify_route(query: str) -> tuple[str, str, bool]:
 
 
 def _record_route_metadata(*, route: str, raw: str, fallback: bool) -> None:
-    """router 决策写入当前 span metadata（DESIGN §6）。"""
+    """router 决策写入当前 span metadata（DESIGN §6 / SPEC §5）。"""
     if not tracing_enabled():
         return
     try:
@@ -111,6 +121,8 @@ def _record_route_metadata(*, route: str, raw: str, fallback: bool) -> None:
             metadata={
                 "route": route,
                 "router_fallback": fallback,
+                # 与 router_fallback 并存；结构化出口失败/LLM 异常均标 true
+                "structured_output_fallback": fallback,
                 "router_raw": raw[:200],
             }
         )
