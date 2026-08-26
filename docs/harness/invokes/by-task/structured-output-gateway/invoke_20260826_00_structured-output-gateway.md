@@ -60,7 +60,7 @@ git diff -- app/ops/chat/graph.py   # 0 bytes
 - **包**：`app/ops/structured_output/`（parse_only · acomplete_structured · ensure/validate · schemas）
 - **接入**：router / supervisor / info_extract + `structured_output_fallback`
 - **文档**：`docs/guides/DESIGN_structured-output-gateway-coexistence_v0.md`
-- **下一棒**：维护者授权 → commit（排除 `app/tools/`）→ PR → 合入后四 task 归档 `docs/tasks/done/`
+- **下一棒**：PR [#58](https://github.com/Cyning12/ops-desk-api/pull/58) 已开；合入后四 task 归档 `docs/tasks/done/`；`app/tools/` 仍未跟踪（勿混入）
 
 ---
 
@@ -70,3 +70,4 @@ git diff -- app/ops/chat/graph.py   # 0 bytes
 |------|------|
 | 2026-08-26 | 维护者双 SPEC 签收；落盘 00 Prompt |
 | 2026-08-26 | 00 接棒：切分支；四切分；P0→P3 循环全绿；总轨收官 |
+| 2026-08-26 | 维护者授权：commit `edeeccc` · push · PR #58 |
