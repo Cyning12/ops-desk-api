@@ -10,7 +10,7 @@
 | slug | 路径 | 状态 | 一句话 |
 |------|------|------|--------|
 | `inform-graph-backfill` | [`inform-graph-backfill/`](./inform-graph-backfill/) | draft/执行中 | Inform 图谱补齐 |
-| `agent-infra` | [`agent-infra/`](./agent-infra/) | active | Capability / Structured Output 等 |
+| `agent-infra` | [`agent-infra/`](./agent-infra/) | active | Capability / Structured Output；L0 架构+升级总表 · L1 域夹 · L2 SPEC/ROADMAP |
 | `doc-health` | [`doc-health/`](./doc-health/) | **1.7.1 已发版** · 试点镜像 | 文档健康度 + CLOSE 强绑定 · FEEDBACK |
 
 ---
@@ -38,3 +38,4 @@
 |------|------|
 | 2026-08-26 | 建索引 + 历史债表；挂 doc-health 试点 |
 | 2026-08-26 | doc-health 对齐 kit 1.7.1；`check` 根级裸 SPEC WARN **8** 条 |
+| 2026-08-26 | agent-infra 细分文档层级（域夹 + ROADMAP）；见 [`agent-infra/README.md`](./agent-infra/README.md) |

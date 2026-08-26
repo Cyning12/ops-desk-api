@@ -21,6 +21,7 @@
 | ID | 主题 | 文档 | 暂不搞的理由 | Revisit 触发器 | 登记日 |
 |---|---|---|---|---|---|
 | DEF-001 | Langfuse SDK / 项目 v4 迁移 | [`docs/spec/SPEC-langfuse-sdk-v4-migration_v1.md`](../spec/SPEC-langfuse-sdk-v4-migration_v1.md) | Cloud 双轨至 **2026-11-16**；现 SDK 3.15 仍可用；**无需**升 Python；当前焦点在 RAG/Agent，观测非本周 P0 | ① 维护者令开工 ② **≥2026-10-01** 仍未排期则复评 ③ Migration Assistant / 生产 tracing 异常 | 2026-08-17 |
+| DEF-002 | 本地/远程分支与陈旧 task 卫生 | 总轨 `agent-infra-upgrade` 00 invoke（拟 slug `repo-branch-task-hygiene`） | 当前焦点在 agent-infra 升级实现；无效分支/task 过多但不挡本轨 | ① `agent-infra-upgrade` 波次 1–3 验收完成 ② 维护者令开工 | 2026-08-26 |
 
 ---
 
@@ -36,3 +37,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-17 | 首版；登记 DEF-001 Langfuse v4 |
+| 2026-08-26 | 登记 DEF-002：agent-infra 收官后清理分支/陈旧 task |
