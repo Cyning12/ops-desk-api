@@ -3,7 +3,7 @@ set -euo pipefail
 
 # graph-compile.sh
 # 递归编译 docs/_tech_graph/**/*.graph.yaml -> 同目录 *.md
-# graph.json 真值：shared/graph.json（根目录过渡双写）
+# graph.json 真值：shared/graph.json（根目录双写已于 tech-graph-legacy-cleanup 移除）
 #
 # 2026-08-25：命令面正式切换 @cyning/harness -> dsh-coding-kit
 #   （SPEC-harness-to-dsh-kit-graph-migrate_v0 §6；kit 1.6.1 已修
@@ -11,12 +11,10 @@ set -euo pipefail
 #   docs/harness/evidence/FEEDBACK_dsh_coding_kit_1_6_1_from_ops_desk_api_20260825.md）。
 #   normalize 过渡层降级为 check-only 护栏（只校验不改写）。
 #   graph.json 仍由本仓 graph_yaml_to_json.py 生成（kit export 与本仓 json
-#   存在 layer 字段 / freeze_id 语义 / 根目录双写差异，见 task 报告）。
+#   存在 layer 字段 / freeze_id 语义差异，见 task 报告）。
 # 回退口：GRAPH_CLI 环境变量切换 CLI（默认 dsh-coding-kit；SPEC §6.2）：
 #   GRAPH_CLI=@cyning/harness ./scripts/graph-compile.sh
-#   注意：harness emit 不满足 IDE 预览契约，完整回滚 harness 面须同时恢复
-#   scripts/legacy/*.20260825.pre-cmd-switch.bak（含 normalize 写回步）。
-# 备份：scripts/legacy/graph-compile.sh.20260825.pre-cmd-switch.bak
+#   注意：harness emit 不满足 IDE 预览契约；legacy 脚本备份已清理。
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"

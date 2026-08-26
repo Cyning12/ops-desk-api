@@ -8,7 +8,7 @@ audience: agent-30
 
 > **一句话**：ops-desk-api **一级模块** 边界真值。  
 > **何时读**：改码前确认 module_id / 依赖出边；签 `HG-GRAPH-MODULES`。  
-> **路径**：`docs/_tech_graph/l1/01_modules.md`（根 `01_struct.md` 为过渡 stub）。
+> **路径**：`docs/_tech_graph/l1/01_modules.md`（`HG-GRAPH-MODULES` 真值）。
 
 ---
 
@@ -51,7 +51,7 @@ audience: agent-30
 | human_gate_id | status | 签核人 | 日期 | 说明 |
 |---|---|---|---|---|
 | HG-GRAPH-MODULES | approved | 见 `task_graph_bootstrap` | 2026-07-16 | 模块表覆盖 ops-desk-api 一级模块；图谱 bootstrap 已完成 |
-| HG-GRAPH-MODULES | approved | 维护者（Phase α 迁路径） | 2026-07-27 | 真值迁至本文件；根 stub 保留 ≥1 Epic（C2） |
+| HG-GRAPH-MODULES | approved | 维护者（Phase α 迁路径） | 2026-07-27 | 真值迁至本文件；根 stub 已于 2026-08-26 清理（tech-graph-legacy-cleanup） |
 | HG-GRAPH-MODULES | approved | 维护者（task_lg_rag_phase1 会话签收） | 2026-08-19 | 新增 `lg_rag` 一级模块（LangGraph 旁路 Phase 1） |
 | HG-GRAPH-MODULES | approved | 维护者（task_lg_rag_phase2 会话签收） | 2026-08-19 | `lg_rag` 行更新 Phase 2 router 三路拓扑；依赖出边补 `llm`；不新增一级模块 |
 | HG-GRAPH-MODULES | approved | 维护者（task_lg_rag_phase4 会话签收 · 00 模式） | 2026-08-21 | `lg_rag` 行更新 Phase 3 回环 + Phase 4 Supervisor 拓扑；不新增一级模块 |

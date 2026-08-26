@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""递归扫描 docs/_tech_graph/**/*.graph.yaml，写出 shared/graph.json（C1）。"""
+"""递归扫描 docs/_tech_graph/**/*.graph.yaml，写出 shared/graph.json（真值）。"""
 
 from __future__ import annotations
 
@@ -80,13 +80,8 @@ def main(graph_dir: str) -> None:
     with shared_path.open("w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
 
-    # C2 过渡：根目录双写副本，兼容仍读 docs/_tech_graph/graph.json 的工具
-    root_path = root / "graph.json"
-    with root_path.open("w", encoding="utf-8") as f:
-        json.dump(out, f, ensure_ascii=False, indent=2)
-
     print(
-        f"generated {shared_path} (+ root copy): "
+        f"generated {shared_path}: "
         f"{len(graphs)} graphs, {len(nodes)} nodes, {len(edges)} edges"
     )
 

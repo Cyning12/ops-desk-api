@@ -41,7 +41,7 @@
 2. **核验人工闸**
    | 闸 | 阻塞 | 真值位置 |
    |---|---|---|
-   | `HG-GRAPH-MODULES` | 30 改码 | `docs/_tech_graph/l1/01_modules.md`（根 `01_struct.md` 为过渡 stub） |
+   | `HG-GRAPH-MODULES` | 30 改码 | `docs/_tech_graph/l1/01_modules.md` |
    | `HG-PILOT-OPSDESK-GLAYER` | 物理分层试点改码 | `docs/tasks/active/task_*.md` 人工闸表 |
    | `HG-AUDIT-R1` | 30 开工 | `docs/tasks/active/task_*.md` 人工闸表 |
 
