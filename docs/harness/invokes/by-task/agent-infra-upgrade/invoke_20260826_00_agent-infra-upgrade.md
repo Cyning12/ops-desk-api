@@ -15,7 +15,7 @@
 | 序 | 波次 ID | 子 task slug | 状态 | 分支建议 | 备注 |
 |---|---|---|---|---|---|
 | 0 | docs-hierarchy | `agent-infra-spec-hierarchy` | **CLOSE PASS**（[#65](https://github.com/Cyning12/ops-desk-api/pull/65)） | `docs/agent-infra-spec-hierarchy` | 已归档 done/ |
-| 1 | cap-portable-core | `cap-portable-core` | **派 30 中** | `task/cap-portable-core` | U1+U2；优先 |
+| 1 | cap-portable-core | `cap-portable-core` | **00 机械验收 PASS · 待 push/PR** | `task/cap-portable-core` | U1+U2；本地 `ba29598` |
 | 2 | so-schema-hygiene | `so-schema-hygiene` | 排队 | 可同 PR 穿插或紧随 | H1；不得抢先大改 SO |
 | 3 | cap-mcp-real | `cap-mcp-real` | 排队 | `task/cap-mcp-real` | 另开；CI 默认不外网 |
 | 4 | so-complete-adopt | — | **默认跳过** | — | 须维护者再授权 |
@@ -26,31 +26,38 @@
 
 ---
 
-## 验证命令（每子 task）
+## 波次 1 · 00 机械验收（2026-08-26）
 
-```text
-npx dsh-coding-kit task lint --file docs/tasks/active/task_<slug>.md
-npx dsh-coding-kit verify --target . --task docs/tasks/active/task_<slug>.md
-ruff check app/ops/capability
-pytest tests/test_capability_gateway.py tests/test_lg_rag_multi.py -q --tb=short
-./scripts/graph-compile.sh   # 仅触及图谱时
-```
+| 检查项 | 结果 |
+|---|---|
+| pytest `test_capability_gateway` + `test_lg_rag_multi` | **30 passed** |
+| ruff `app/ops/capability` + 相关 tests | **PASS** |
+| `rg langgraph app/ops/capability` | 仅 `extras/langchain.py` |
+| 默认导出无 `as_tool_node` / `as_structured_tools` | **PASS** |
+| `app/ops/chat/graph.py` vs master | **零 diff** |
+| `dsh-coding-kit verify --task …cap_portable_core` | **PASS** |
+| graph-compile | **exit 0**（时间戳噪声已丢弃） |
+| Agently | 无 |
+
+结论：**波次 1 实现可合入**；不升 SPEC v1。本地 ahead 1（`ba29598`）**未 push**。
 
 ---
 
 ## 本回合动作
 
 1. ~~波次 0 docs PR~~ **DONE** · [#65](https://github.com/Cyning12/ops-desk-api/pull/65) MERGED · CLOSE PASS  
-2. ~~rebase `task/cap-portable-core`~~ **DONE**  
-3. **进行中**：GATE_VERIFY PASS → 派 30（U1+U2）
+2. ~~rebase + 派 30~~ **DONE**  
+3. ~~00 机械验收~~ **PASS**  
+4. **阻塞/待维护者**：是否 push `task/cap-portable-core` 并开 PR；是否立即开波次 2 `so-schema-hygiene`
 
 ---
 
 ## 下一棒
 
-- 30 完成 → 00 机械验收 → 开实现 PR  
-- 然后 `so-schema-hygiene`  
+- 维护者授权 → push + 开 PR（波次 1）  
+- 然后起草/派发 `so-schema-hygiene`  
 - 收官后 `repo-branch-task-hygiene`（DEF-002）
 
 | 2026-08-26 | 00 签收开工 · 方案 A |
 | 2026-08-26 | #65 MERGED · 波次 0 CLOSE PASS · 派 30 |
+| 2026-08-26 | 30 落地 · 00 机械验收 PASS · 待 push/PR |
