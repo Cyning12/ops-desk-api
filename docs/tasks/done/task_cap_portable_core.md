@@ -1,6 +1,6 @@
 # Task：Capability · 可迁移内核（portable core）
 
-> **状态**：active（闸已签 · **#65 MERGED · 可派 30**）  
+> **状态**：completed（PR [#66](https://github.com/Cyning12/ops-desk-api/pull/66) MERGED · 2026-08-26 关账）  
 > **类型**：feature / agent-infra（升级轨波次 1）  
 > **上游 ROADMAP**：`docs/spec/agent-infra/capability/ROADMAP_portable_core_v0.md` §U1 + §U2  
 > **总轨**：`agent-infra-upgrade`  
@@ -24,6 +24,7 @@
 | **graph_delta** | `docs/_tech_graph/l1/01_modules.md` |
 | **graph_delta_note** | 仅 `capability` 行备注「可迁移内核 · Mode A」；**不**新增一级模块 |
 | **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 本波不晋升 WikiTrack；仅 G-L1 模块备注 |
 | **review_hat** | `20` |
 | **required_invoke_hats** | `10,30` |
 | **invoke_retention_profile** | `default` |
@@ -86,16 +87,16 @@ Capability Gateway P0–P3 已落地，但默认包出口仍导出 `as_tool_node
 
 ## 验收标准
 
-- [ ] `rg -n 'langgraph' app/ops/capability` **仅**命中 extras（或零）；核心模块零命中
-- [ ] `from app.ops.capability import …` 默认导出**不含** `as_tool_node` / `as_structured_tools`（或显式标 deprecated 且不 import langgraph）
-- [ ] Mode A：`list_capabilities` + `invoke` 仍为 tool_exec / 规划侧主路径
-- [ ] 未知 id → `ok=False`，不拖垮图（既有行为不回归）
-- [ ] `pytest tests/test_capability_gateway.py tests/test_lg_rag_multi.py` 绿
-- [ ] `ruff check` 触及路径绿
-- [ ] `chat/graph.py` 零 diff
-- [ ] U2：filter/plan-in-state 文档 + list+filter 单测可勾
-- [ ] G-L1 备注 + `./scripts/graph-compile.sh`（若改图谱）exit 0
-- [ ] 无 Agently；无默认 CI 外网
+- [x] `rg -n 'langgraph' app/ops/capability` **仅**命中 extras（或零）；核心模块零命中
+- [x] `from app.ops.capability import …` 默认导出**不含** `as_tool_node` / `as_structured_tools`（或显式标 deprecated 且不 import langgraph）
+- [x] Mode A：`list_capabilities` + `invoke` 仍为 tool_exec / 规划侧主路径
+- [x] 未知 id → `ok=False`，不拖垮图（既有行为不回归）
+- [x] `pytest tests/test_capability_gateway.py tests/test_lg_rag_multi.py` 绿
+- [x] `ruff check` 触及路径绿
+- [x] `chat/graph.py` 零 diff
+- [x] U2：filter/plan-in-state 文档 + list+filter 单测可勾
+- [x] G-L1 备注 + `./scripts/graph-compile.sh`（若改图谱）exit 0
+- [x] 无 Agently；无默认 CI 外网
 
 ---
 
@@ -164,7 +165,7 @@ docs #65 未合入前不派 30，避免读序路径与 master 不一致。
 
 ### 自检结论
 
-> pending · 待 #65 merge 后派 30；实现完成后由 00 机械回填
+> 2026-08-26 · 30/40 PASS · 00 机械验收 PASS · PR #66 MERGED
 
 ---
 
@@ -173,3 +174,20 @@ docs #65 未合入前不派 30，避免读序路径与 master 不一致。
 | 日期 | 说明 |
 |---|---|
 | 2026-08-26 | 10 起草 U1+U2；00 代签三闸；阻塞于 docs PR #65 |
+
+
+### KPI
+
+Task_KPI%: 100
+
+（U1+U2 一次合入 PR #66；pytest 30 passed。）
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-26 |
+| PR | [#66](https://github.com/Cyning12/ops-desk-api/pull/66) MERGED |
+| 定稿 | Mode A portable core · extras.langchain |
+| 归档 | docs/tasks/done/task_cap_portable_core.md |
+| 下一棒 | so-schema-hygiene |

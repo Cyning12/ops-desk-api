@@ -16,7 +16,7 @@
 |---|---|---|---|---|---|
 | 0 | docs-hierarchy | `agent-infra-spec-hierarchy` | **CLOSE PASS**（[#65](https://github.com/Cyning12/ops-desk-api/pull/65)） | `docs/agent-infra-spec-hierarchy` | 已归档 done/ |
 | 1 | cap-portable-core | `cap-portable-core` | **00 机械验收 PASS · 待 push/PR** | `task/cap-portable-core` | U1+U2；本地 `ba29598` |
-| 2 | so-schema-hygiene | `so-schema-hygiene` | 排队 | 可同 PR 穿插或紧随 | H1；不得抢先大改 SO |
+| 2 | so-schema-hygiene | `so-schema-hygiene` | **验收 PASS · 开 PR** | 可同 PR 穿插或紧随 | H1；不得抢先大改 SO |
 | 3 | cap-mcp-real | `cap-mcp-real` | 排队 | `task/cap-mcp-real` | 另开；CI 默认不外网 |
 | 4 | so-complete-adopt | — | **默认跳过** | — | 须维护者再授权 |
 | 收官+ | repo hygiene | `repo-branch-task-hygiene`（拟） | 登记待办 | 另开 | 全轨验收后清理分支/陈旧 task（DEF-002） |
@@ -61,3 +61,5 @@
 | 2026-08-26 | 00 签收开工 · 方案 A |
 | 2026-08-26 | #65 MERGED · 波次 0 CLOSE PASS · 派 30 |
 | 2026-08-26 | 30 落地 · 00 机械验收 PASS · 待 push/PR |
+
+| 2026-08-26 | #66 MERGED · 波次2 验收 PASS · PR 推进 |

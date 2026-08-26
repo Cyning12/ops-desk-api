@@ -1,11 +1,15 @@
-"""lg_rag 结构化节点用的 Pydantic schema（P2）。
+"""Deprecated：域 schema 已迁至 ``app.ops.lg_rag.schemas``。
 
-放在 structured_output 包内，避免与 lg_rag 节点循环 import。
+短期兼容 re-export；新代码请改从 ``app.ops.lg_rag.schemas`` 导入。
+本包顶层 ``structured_output.__all__`` 不含业务 schema。
 """
 
-from app.ops.structured_output.schemas.extract import ExtractResult
-from app.ops.structured_output.schemas.route import RouteDecision
-from app.ops.structured_output.schemas.subtasks import SubtaskItem, SubtasksPlan
+from app.ops.lg_rag.schemas import (
+    ExtractResult,
+    RouteDecision,
+    SubtaskItem,
+    SubtasksPlan,
+)
 
 __all__ = [
     "ExtractResult",

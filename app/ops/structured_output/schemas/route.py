@@ -1,17 +1,5 @@
-"""Router 意图分类 schema。"""
+"""Deprecated：请改用 ``app.ops.lg_rag.schemas.route``。"""
 
-from __future__ import annotations
+from app.ops.lg_rag.schemas.route import RouteDecision
 
-from typing import Literal
-
-from pydantic import BaseModel, ConfigDict, Field
-
-
-class RouteDecision(BaseModel):
-    """router LLM 结构化出口：三路白名单。"""
-
-    model_config = ConfigDict(extra="ignore")
-
-    route: Literal["rag", "direct", "refuse"] = Field(
-        description="意图路由：rag / direct / refuse"
-    )
+__all__ = ["RouteDecision"]
