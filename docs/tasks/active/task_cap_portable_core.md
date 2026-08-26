@@ -1,10 +1,10 @@
 # Task：Capability · 可迁移内核（portable core）
 
-> **状态**：active（闸已签 · **待 docs PR #65 merge 后派 30**）  
+> **状态**：active（闸已签 · **#65 MERGED · 可派 30**）  
 > **类型**：feature / agent-infra（升级轨波次 1）  
 > **上游 ROADMAP**：`docs/spec/agent-infra/capability/ROADMAP_portable_core_v0.md` §U1 + §U2  
 > **总轨**：`agent-infra-upgrade`  
-> **分支**：`task/cap-portable-core`（**必须从最新 master**，含 #65）  
+> **分支**：`task/cap-portable-core`（已 rebase 最新 master，含 #65）  
 > **前置**：`agent-infra-spec-hierarchy` PR [#65](https://github.com/Cyning12/ops-desk-api/pull/65) MERGED  
 > **无关**：勿与 `ops-sync-sender-migration` / `rag-answer-mixed-evidence` / `retrieval-longquery-analysis` 混改。
 
