@@ -15,7 +15,7 @@
 | 序 | 波次 ID | 子 task slug | 状态 | 分支建议 | 备注 |
 |---|---|---|---|---|---|
 | 0 | docs-hierarchy | `agent-infra-spec-hierarchy` | **进行中** | `docs/agent-infra-spec-hierarchy` | 独立 PR → master |
-| 1 | cap-portable-core | `cap-portable-core` | 排队 | `task/cap-portable-core`（自最新 master） | U1+U2；优先 |
+| 1 | cap-portable-core | `cap-portable-core` | **已起草·待 #65** | `task/cap-portable-core`（自最新 master） | U1+U2；优先 |
 | 2 | so-schema-hygiene | `so-schema-hygiene` | 排队 | 可同 PR 穿插或紧随 | H1；不得抢先大改 SO |
 | 3 | cap-mcp-real | `cap-mcp-real` | 排队 | `task/cap-mcp-real` | 另开；CI 默认不外网 |
 | 4 | so-complete-adopt | — | **默认跳过** | — | 须维护者再授权 |
@@ -62,3 +62,4 @@ pytest tests/ -q --tb=short   # 按 task test_strategy_note 裁剪
 
 | 2026-08-26 | 00 签收开工 · 方案 A · 派发计划落盘 |
 | 2026-08-26 | 波次 0 PR #65 OPEN；DEF-002 已登记 |
+| 2026-08-26 | 波次 1 task 已起草于分支 `task/cap-portable-core`（闸已签·30 待 #65） |
