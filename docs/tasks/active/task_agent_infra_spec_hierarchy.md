@@ -134,7 +134,14 @@ ROADMAP 与 v0 SPEC 分离，不污染已签契约。
 
 ### 自检结论
 
-> pending · docs PR 落地后由 00 回填（本波 docs-only，00 代执行）
+> 2026-08-26 · 00 代执行 docs 落地 · **过程 PASS（待 PR merge 关账）**
+
+- [x] 分层目录与 POINTER 已提交
+- [x] task lint PASS · verify PASS
+- [x] 无 `app/` / `tests/` diff
+- [x] PR [#65](https://github.com/Cyning12/ops-desk-api/pull/65) 已开（待维护者合入）
+
+**50 结论**：docs 波次可合入；合入后关账并开 `cap-portable-core`
 
 ---
 

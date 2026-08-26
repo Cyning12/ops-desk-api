@@ -47,16 +47,18 @@ pytest tests/ -q --tb=short   # 按 task test_strategy_note 裁剪
 
 ## 本回合动作
 
-1. 落盘波次 0 task + R1 + invokes；00 代签闸  
-2. docs-only commit → push → 开 PR（待维护者 merge）  
-3. merge 后从最新 master 开 `task/cap-portable-core` 并跑 10/20 → 派 30  
+1. ~~落盘波次 0 task + R1 + invokes；00 代签闸~~ **DONE**
+2. ~~docs-only commit → push → 开 PR~~ **DONE** → [#65](https://github.com/Cyning12/ops-desk-api/pull/65)
+3. **阻塞**：待维护者 merge #65
+4. merge 后：关账波次 0 → 从最新 master 开 `task/cap-portable-core` 并跑 10/20 → 派 30
 
 ---
 
 ## 下一棒
 
-- **立即**：波次 0 PR 合入  
-- **然后**：起草并闸过 `cap-portable-core` → 派 30（00 不改 app/tests）  
-- **收官后**：开 `repo-branch-task-hygiene`（本地+远程分支清理；无效 task 卫生）
+- **立即（维护者）**：审阅并 merge [#65](https://github.com/Cyning12/ops-desk-api/pull/65)
+- **然后（00）**：起草并闸过 `cap-portable-core` → 派 30（00 不改 app/tests）
+- **收官后**：开 `repo-branch-task-hygiene`（DEF-002）
 
 | 2026-08-26 | 00 签收开工 · 方案 A · 派发计划落盘 |
+| 2026-08-26 | 波次 0 PR #65 OPEN；DEF-002 已登记 |
