@@ -8,9 +8,9 @@
 - **生成物**：同名 `*.md` 由 `./scripts/graph-compile.sh`（当前：`npx dsh-coding-kit graph yaml compile`；默认 `GRAPH_CLI=dsh-coding-kit`，env 可切回）生成；kit 1.6.1 emit 直接满足 §0.1 契约，不再需要 post-compile 改写。
 - **禁止手写编译产物 `.md`**：改 YAML 后重跑 compile；手改会在下次 compile 被覆盖。
 - **`--check` 语义**：kit `graph yaml check` 比对 YAML 与 `shared/graph.json` 切片；另跑 `graph_mermaid_normalize.py --check`（check-only 护栏，不改写）断言 mermaid 围栏无 `//` 注释、无旧边 `--"…"-->`。
-- **export**：`shared/graph.json`（C1；根目录过渡双写）。
+- **export**：`shared/graph.json`（唯一机器轨真值；根目录双写已移除）。
 - **历史 `.ai.md` 双轨已弃用**：结构化信息集中在 YAML 源中。
-- **命令面已切换（2026-08-25）**：`@cyning/harness` → `dsh-coding-kit` 1.6.1（`docs/spec/SPEC-harness-to-dsh-kit-graph-migrate_v0.md` §6 执行完毕；回滚备份 `scripts/legacy/*.20260825.pre-cmd-switch.bak`；V3 对照材料 `docs/harness/evidence/V3_mermaid_compare_dsh_kit_1_6_1_20260825.md`）。
+- **命令面已切换（2026-08-25）**：`@cyning/harness` → `dsh-coding-kit` 1.6.1（`docs/spec/SPEC-harness-to-dsh-kit-graph-migrate_v0.md` §6 执行完毕；V3 对照材料 `docs/harness/evidence/V3_mermaid_compare_dsh_kit_1_6_1_20260825.md`）。
 
 ---
 

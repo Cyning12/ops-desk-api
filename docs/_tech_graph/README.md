@@ -10,14 +10,10 @@
 2. G-L0：[`l0/00_main.md`](./l0/00_main.md) · [`l0/POINTERS_cross_repo.md`](./l0/POINTERS_cross_repo.md)
 3. G-L1：[`l1/01_modules.md`](./l1/01_modules.md) → 按需 `l1/10_flow_*.md`
 4. G-L2：[`l2/indexes/`](./l2/indexes/)（chat 试点）
-5. 协议 / export：[`shared/`](./shared/) · **`shared/graph.json`**（C1；根 `graph.json` 为过渡双写）
+5. 协议 / export：[`shared/`](./shared/) · **`shared/graph.json`**（唯一机器轨真值）
 
 ## 编译
 
 ```bash
 ./scripts/graph-compile.sh
 ```
-
-## 过渡
-
-- 根 [`01_struct.md`](./01_struct.md) → POINTER 到 `l1/01_modules.md`（保留 ≥1 Epic）
