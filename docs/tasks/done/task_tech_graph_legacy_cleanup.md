@@ -1,6 +1,6 @@
 # Task：tech-graph / harness 过渡历史产物清理
 
-> **状态**：active  
+> **状态**：completed（PR #61 MERGED · 已归档；2026-08-26）  
 > **类型**：过程卫生 / 文档与 compile 过渡清理  
 > **背景**：Phase α C1 根 `graph.json` 双写、C2 `01_struct.md` stub、`.cyning-harness` 过时 QUICKREF/refresh 备份、`scripts/legacy` 切命令面回滚 bak 已无消费价值  
 > **分支**：`chore/tech-graph-legacy-cleanup`  
@@ -117,9 +117,19 @@
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-26 |
+| 定稿 | 停根 graph.json 双写；删 01_struct stub；清 QUICKREF/backups 与 scripts/legacy |
+| 归档 | `docs/tasks/done/task_tech_graph_legacy_cleanup.md` |
+| PR | https://github.com/Cyning12/ops-desk-api/pull/61 |
+
 ## 修订记录
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-26 | 初版（00 起草 + 维护者授权代签闸） |
 | 2026-08-26 | 30+40 完成：过渡产物清理；自检 PASS |
+| 2026-08-26 | 00 关账：PR #61 已合入 · 归档 done/ |

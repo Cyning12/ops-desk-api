@@ -31,6 +31,7 @@
 | 2026-08-25 | [`task_dsh_coding_kit_upgrade_1_5_2.md`](./task_dsh_coding_kit_upgrade_1_5_2.md) | kit 1.5.2（K1/K4 被 DEF-028/029 修复） · PR #48 |
 | 2026-08-25 | [`task_dsh_coding_kit_upgrade_1_6_1.md`](./task_dsh_coding_kit_upgrade_1_6_1.md) | kit 1.6.1（反哺项全关闭） · PR #50 |
 | 2026-08-25 | [`task_dsh_kit_graph_command_switch.md`](./task_dsh_kit_graph_command_switch.md) | 命令面正式切换 · PR #51 |
+| 2026-08-26 | [`task_tech_graph_legacy_cleanup.md`](./task_tech_graph_legacy_cleanup.md) | 清理根双写 / 01_struct stub / QUICKREF·legacy · PR #61 |
 
 ---
 
@@ -91,6 +92,7 @@
 |------|------|
 | YYYY-MM-DD | 初版 Hub（cyning-harness 模板嵌入） |
 | 2026-08-25 | 补录 15 件归档（task_task_closeout_hygiene）：harness 域 5 件 + engineering 域 10 件；本仓 done/ 为平铺布局，链接用 ./task_*.md |
+| 2026-08-26 | 补录 tech-graph-legacy-cleanup（harness 域 · PR #61） |
 
 ## 给维护者
 
