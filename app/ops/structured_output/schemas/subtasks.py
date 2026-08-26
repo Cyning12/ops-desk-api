@@ -1,30 +1,5 @@
-"""Supervisor 子任务拆解 schema。"""
+"""Deprecated：请改用 ``app.ops.lg_rag.schemas.subtasks``。"""
 
-from __future__ import annotations
+from app.ops.lg_rag.schemas.subtasks import SubtaskItem, SubtasksPlan
 
-from typing import Any
-
-from pydantic import BaseModel, ConfigDict, Field
-
-
-class SubtaskItem(BaseModel):
-    """单个子任务；type 白名单规整在节点侧（非法 → rag）。"""
-
-    model_config = ConfigDict(extra="ignore")
-
-    id: str | None = None
-    type: str | None = None
-    input: str = Field(..., min_length=1)
-    tool: str | None = None
-
-
-class SubtasksPlan(BaseModel):
-    """supervisor LLM 结构化出口。
-
-    ``subtasks`` 元素先以 ``Any`` 收下，再由节点对前 ``MAX_SUBTASKS`` 项
-    做 ``SubtaskItem`` 校验——避免 cap 外坏项把整单打成 fallback。
-    """
-
-    model_config = ConfigDict(extra="ignore")
-
-    subtasks: list[Any] = Field(..., min_length=1)
+__all__ = ["SubtaskItem", "SubtasksPlan"]

@@ -21,10 +21,10 @@ from langchain_core.messages import AIMessage, BaseMessage
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage
 from app.ops.lc_evidence_chain.chain import ainvoke_evidence_answer
+from app.ops.lg_rag.schemas import RouteDecision
 from app.ops.lg_rag.state import LgRagState
 from app.ops.rag.grader import REFUSAL_TEXT
 from app.ops.structured_output import parse_only
-from app.ops.structured_output.schemas import RouteDecision
 from app.ops.tracing import trace_span, tracing_enabled
 
 logger = logging.getLogger(__name__)

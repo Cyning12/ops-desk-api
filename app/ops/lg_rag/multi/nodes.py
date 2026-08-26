@@ -27,9 +27,9 @@ from app.ops.lg_rag.nodes import (
     _ROUTER_PROVIDER,
     _last_user_text,
 )
+from app.ops.lg_rag.schemas import ExtractResult, SubtaskItem, SubtasksPlan
 from app.ops.lg_rag.state import LgRagState
 from app.ops.structured_output import parse_only
-from app.ops.structured_output.schemas import ExtractResult, SubtaskItem, SubtasksPlan
 from app.ops.tracing import trace_span, tracing_enabled
 
 logger = logging.getLogger(__name__)
