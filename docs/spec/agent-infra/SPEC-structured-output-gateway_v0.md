@@ -182,3 +182,4 @@ complete_structured(
 |---|---|---|
 | 2026-08-26 | v0 | 初版：对照 Agently DataFlow；划清与 Skill / Capability / LangGraph 边界；P0–P3 |
 | 2026-08-26 | v0 | `HG-SPEC-SIGNOFF=approved`；状态 `active`；维护者授权 00 统筹本 SPEC 全波次 |
+| 2026-08-26 | v0 | **P0–P3 落地状态**：P0 `parse_only`+repair；P1 `complete_structured`+correction；P2 router/supervisor/extract 接入；P3 `ensure_keys`/`validate`/`no_retry`+并存策略文档 `docs/guides/DESIGN_structured-output-gateway-coexistence_v0.md` |
