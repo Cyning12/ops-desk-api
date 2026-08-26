@@ -1,6 +1,6 @@
 # Task：dsh-coding-kit 升级 1.7.1（CLOSE 强绑定 dogfood + 00 条文 + 文档迁移）
 
-> **状态**：`pending`  
+> **状态**：completed（验收回填 · 关账待 PR MERGED + `task close --yes`）  
 > **类型**：基础设施 / harness 过程轨升级（patch）+ **doc-health 试点文档迁移**  
 > **前置**：manifest 现为 `1.6.1`；kit **1.7.1 已 npm 发版**（含 1.7.0 CLOSE 闸 + Starter `00-orchestrator.md`）；本仓已有试点镜像 `docs/spec/doc-health/`  
 > **契约真值**：`dsh-coding-kit@1.7.1` CHANGELOG +（可选）本机 `Desktop/Projects/dsh-coding-kit/docs/spec/doc-health/`  
@@ -30,14 +30,14 @@
 | **invoke_retention_profile** | `default` |
 | **required_invoke_hats** | `10,30,40` |
 | **close_pr_policy** | `required` |
-| **related_pr** | （开 PR 后回填 `#N`） |
+| **related_pr** | |
 
 ### 人工闸
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 22-R1, 30 | 人签或本窗维护者授权 00 代签 |
-| HG-AUDIT-R1 | pending | 30 | 须 R1 审查文 + 人签后方可 30 |
+| HG-TASK-DRAFT | approved | 22-R1, 30 | 2026-08-26 00 代签（维护者粘贴 PROMPT_00_30_upgrade_kit_1_7_1 复制区 · 本窗授权「可签过程文档」） |
+| HG-AUDIT-R1 | approved | 30 | 2026-08-26 00 代签（轻量 R1：`docs/harness/reviews/task_dsh_coding_kit_upgrade_1_7_1_audit_R1_20260826.md`；过程轨升级 · 不改 app/） |
 
 ---
 
@@ -98,12 +98,12 @@
 
 ## 验收标准
 
-- [ ] `.cyning-harness/manifest.json` version=`1.7.1`；local 块保留（diff 证据）  
-- [ ] `docs/harness/prompts/00-orchestrator.md` 存在且含「默认行为」  
-- [ ] `check` 输出含裸 SPEC WARN（或记录「0 条」若已无裸文件）；`verify` / graph-compile / pytest 结论写入自检  
-- [ ] `task close` dry-run → **`CLOSE: READY`**（贴关键 stdout）  
-- [ ] `docs/spec/doc-health/` README + process 已对齐 1.7.1；FEEDBACK 有则落盘、无则自检写「无出入」  
-- [ ] 过程文档中误导性「dry-run=PASS」已清理（范围 B.9）；未动业务代码  
+- [x] `.cyning-harness/manifest.json` version=`1.7.1`；local 块保留（diff 证据）  
+- [x] `docs/harness/prompts/00-orchestrator.md` 存在且含「默认行为」  
+- [x] `check` 输出含裸 SPEC WARN（或记录「0 条」若已无裸文件）；`verify` / graph-compile / pytest 结论写入自检  
+- [x] `task close` dry-run → **`CLOSE: READY`**（贴关键 stdout）  
+- [x] `docs/spec/doc-health/` README + process 已对齐 1.7.1；FEEDBACK 有则落盘、无则自检写「无出入」  
+- [x] 过程文档中误导性「dry-run=PASS」已清理（范围 B.9）；未动业务代码  
 
 ---
 
@@ -133,19 +133,37 @@
 
 ### 自检结论（执行者）
 
-（30 回填）
+30 执行 · 2026-08-26 · 分支 `task/dsh-coding-kit-1-7-1` · **未动 `app/`**
+
+| # | 项 | 结果 |
+|---|----|------|
+| 1 | manifest 钉 1.7.1 | **PASS**（version=1.7.1 · from_version=1.6.1 · preset/ide 保留；首次 `upgraded_at=2026-08-26T07:48:18Z`） |
+| 2 | local 块 | **PASS**（`git diff AGENTS.md CLAUDE.md` 空；refresh dry-run `skipped_local_blocks=1` / rewrites=0） |
+| 3 | `00-orchestrator.md` | **手补 PASS**（upgrade 未落地，自 kit `assets/harness/prompts/` 复制；含「默认行为」表） |
+| 4 | `check` 裸 SPEC WARN | **8 条**（与 `docs/spec/README.md` 历史债表一致；不搬迁） |
+| 5 | `verify --task <本task>` | **PASS exit 0**（R1 + invoke 10 已就位；无需 `--allow-no-review` / `--allow-invoke-gap`） |
+| 6 | `./scripts/graph-compile.sh` | **PASS exit 0**（产物仅 `generated_at` 时间戳，已 `git checkout` 还原） |
+| 7 | pytest | **3 failed / 298 passed** = 既有基线 `test_chat_router` / `test_chat_ws` 缺表 · **无新增失败**（1.6.1 波为 3/242） |
+| 8 | CLOSE dry-run | 无 `--yes`：`close_pr_merged` BLOCK；`--allow-no-pr-merge` → **`CLOSE: READY · dsh-coding-kit-upgrade-1-7-1`**（stdout 无 `CLOSE: PASS`） |
+| 9 | B.9 过程文 | 已用 kit 1.7.1 版替换 `docs/harness/prompts/30-execute-code.md`（原 `@cyning/harness task close` 完成态口径）；未改 `done/` 历史 invoke |
+
+FEEDBACK：`docs/spec/doc-health/feedback/2026-08-26_1.7.1_upgrade-no-prompt-sync.md`
 
 ---
 
 ### KPI（00）
 
-（关账填）
+Task_KPI%: 90
+
+（扣 10：upgrade 未自动落地 00 条文，手补 + FEEDBACK；关账待 PR MERGED。）
 
 ---
 
 ### 经验总结
 
-（关账填）
+- kit 1.7.1 `upgrade` **只写 manifest**，Starter 新增文件不会进入已接入仓；验收须对照包内 `assets/harness/prompts/` 做存在性检查，缺则 `cp` 并开 FEEDBACK。
+- CLOSE 1.7.0+：无 `--yes` 只允许写 `CLOSE: READY`；`close_hub_index` 在本仓默认开，dry-run 前就要 Hub 有文件名；`close_pr_merged` 在 PR 未合入时必须 `--allow-no-pr-merge` 或等 MERGED。
+- 幂等 `upgrade --yes` 会刷新 `upgraded_at`（`from_version` 保持）；若要比对首次升级时间，先记下再还原。
 
 ---
 
@@ -155,3 +173,4 @@
 |------|------|
 | 2026-08-26 | 00 起草 1.7.0 草稿（未执行） |
 | 2026-08-26 | 抬靶 **1.7.1**（CLOSE 闸 + Starter 00）；删/取代 1.7.0 task 草稿 |
+| 2026-08-26 | 30 回填自检 · 闸代签 · 手补 00 条文 |
