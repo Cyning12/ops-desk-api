@@ -1,6 +1,6 @@
 # Task：Capability Gateway · P0（Registry + local_fn + tool_exec 接入）
 
-> **状态**：completed（P0 50 PASS · 同分支待合入；2026-08-26）  
+> **状态**：completed（PR #59 MERGED · 已归档；2026-08-26）  
 > **类型**：feature / agent-infra（Capability Gateway 首波）  
 > **上游 SPEC**：`docs/spec/agent-infra/SPEC-capability-gateway_v0.md`（active · `HG-SPEC-SIGNOFF=approved`）  
 > **前置**：structured-output-gateway P0–P3 已合入（PR #58）  
@@ -147,8 +147,8 @@ multi 单测不回归。
 |---|---|
 | 日期 | 2026-08-26 |
 | 定稿 | Registry + local_fn + tool_exec 迁 MOCK_TOOLS |
-| 归档 | 暂留 active（同分支全波次后归档） |
-| PR | 待全波次 |
+| 归档 | `docs/tasks/done/task_capability_gateway_p0.md` |
+| PR | [#59](https://github.com/Cyning12/ops-desk-api/pull/59) MERGED |
 
 ---
 
@@ -159,3 +159,5 @@ multi 单测不回归。
 | 2026-08-26 | 00 起草 P0；闸 pending |
 | 2026-08-26 | 20 R1 pass；00 代签闸 |
 | 2026-08-26 | 30/40 PASS；00 50 PASS；CLOSE |
+
+| 2026-08-26 | 归档：PR #59 MERGED · git mv → docs/tasks/done/ |

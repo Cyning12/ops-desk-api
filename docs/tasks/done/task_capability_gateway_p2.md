@@ -1,6 +1,6 @@
 # Task：Capability Gateway · P2（MCP / sandbox / cli 探针）
 
-> **状态**：completed（P2 50 PASS · 同分支待合入；2026-08-26）  
+> **状态**：completed（PR #59 MERGED · 已归档；2026-08-26）  
 > **SPEC**：§4 P2 · **前置** P1 CLOSE · **分支** `task/capability-gateway`
 
 ## Harness 元信息
@@ -57,8 +57,8 @@
 |---|---|
 | 日期 | 2026-08-26 |
 | 定稿 | MCP/sandbox/cli mock 探针（默认关闭） |
-| 归档 | 暂留 active |
-| PR | 待全波次 |
+| 归档 | `docs/tasks/done/task_capability_gateway_p2.md` |
+| PR | [#59](https://github.com/Cyning12/ops-desk-api/pull/59) MERGED |
 
 ## 修订
 
@@ -67,3 +67,5 @@
 | 2026-08-26 | 00 起草 P2 |
 | 2026-08-26 | 20 R1 pass；00 代签闸 |
 | 2026-08-26 | 30/40 PASS；00 50 CLOSE |
+
+| 2026-08-26 | 归档：PR #59 MERGED · git mv → docs/tasks/done/ |
