@@ -170,8 +170,8 @@ P0 可让 multi 委托公共 extract，但 **不**改 supervisor fallback / rout
 |---|---|
 | 日期 | 2026-08-26 |
 | 定稿 | Structured Output Gateway P0：`parse_only` + 公共 extract + multi 委托 |
-| 归档 | 暂留 `docs/tasks/active/`（同分支 P1–P3 完成后随 PR 一并归档） |
-| PR | 待全波次结束 · 维护者授权 |
+| 归档 | `docs/tasks/done/task_structured_output_gateway_p0.md` |
+| PR | [#58](https://github.com/Cyning12/ops-desk-api/pull/58) MERGED |
 
 ---
 
@@ -182,3 +182,5 @@ P0 可让 multi 委托公共 extract，但 **不**改 supervisor fallback / rout
 | 2026-08-26 | 00 起草 P0（总轨四切分之首）；闸 pending |
 | 2026-08-26 | 20 R1 pass；00 代签 HG-TASK-DRAFT + HG-AUDIT-R1 |
 | 2026-08-26 | 30/40 PASS；00 50 机械复检 PASS；CLOSE（暂留 active） |
+
+| 2026-08-26 | 归档：PR #58 MERGED · git mv → docs/tasks/done/ |

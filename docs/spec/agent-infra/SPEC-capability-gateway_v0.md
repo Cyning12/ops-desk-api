@@ -102,9 +102,12 @@ unregister(capability_id) -> bool
 list(*, filter: CapabilityFilter | None) -> list[CapabilitySpec]
 schemas_for_llm(*, filter) -> list[dict]     # 供 bind_tools / ToolNode 可选
 invoke(capability_id, args, *, ctx) -> CapabilityResult
+provide(capability_id, *, ctx) -> CapabilityResult   # P3：kind=skill 注入上下文
 ```
 
 `CapabilityResult` 建议字段：`ok` · `output` · `error` · `capability_id` · `duration_ms` · `meta`（可进 Langfuse）。
+
+`provide` vs `invoke`（`kind=skill`）：前者注入上下文，后者跑可执行步骤；P3 仅 stub（`invoke` 未实现引擎），与 `docs/skills/` 人读 Skill 划界。
 
 ### 3.3 Filter（v0 最小）
 
@@ -167,3 +170,5 @@ invoke(capability_id, args, *, ctx) -> CapabilityResult
 |---|---|---|
 | 2026-08-26 | v0 | 初版：讨论落盘；P0–P3 波次；与 Agently Action / LLM Gateway 划界 |
 | 2026-08-26 | v0 | `HG-SPEC-SIGNOFF=approved`；状态 `active`；本波优先落地队列：**后于** structured-output-gateway |
+| 2026-08-26 | v0 | structured-output PR #58 MERGED；本 SPEC **升为当前实现优先**；由 00 拆 P0–P3 task |
+| 2026-08-26 | v0 | **P0–P3 落地状态**：P0 Registry + `local_fn` + `tool_exec` 接入；P1 `schemas_for_llm` + 可选 ToolNode adapter；P2 mcp/sandbox/cli **mock 探针**（默认关闭）；P3 `kind=skill` · `provide()` 注入上下文 vs `invoke()` 可执行步骤（**stub** · 无完整引擎）+ 与 `docs/skills/` 划界（`GUIDE_capability-gateway-p3-skill-boundary_v0.md`）。分支 `task/capability-gateway` |

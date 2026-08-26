@@ -20,6 +20,7 @@ from pydantic import ValidationError
 
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage
+from app.ops.capability import invoke as capability_invoke
 from app.ops.lg_rag.graph import ainvoke_router_agent
 from app.ops.lg_rag.nodes import (
     _ROUTER_MODEL,
@@ -75,39 +76,8 @@ _AGGREGATOR_SYSTEM = (
     "不要编造子任务结果中没有的事实。"
 )
 
-# ---------------------------------------------------------------------------
-# Mock 工具注册表（DESIGN §4 · 接口预留真实工具接入）
-# ---------------------------------------------------------------------------
-
-
-def _mock_get_issue_status(payload: str) -> dict:
-    """罐头数据：issue 状态查询（真实 GitHub API 另议）。"""
-    return {
-        "tool": "mock_get_issue_status",
-        "input": payload,
-        "issue": "#128",
-        "status": "open",
-        "assignee": "cyning",
-        "updated_at": "2026-08-20",
-    }
-
-
-def _mock_get_deploy_info(payload: str) -> dict:
-    """罐头数据：部署信息查询（真实部署平台 API 另议）。"""
-    return {
-        "tool": "mock_get_deploy_info",
-        "input": payload,
-        "env": "prod",
-        "version": "v2.3.1",
-        "deployed_at": "2026-08-19",
-        "status": "healthy",
-    }
-
-
-MOCK_TOOLS = {
-    "mock_get_issue_status": _mock_get_issue_status,
-    "mock_get_deploy_info": _mock_get_deploy_info,
-}
+# Mock 工具已迁入 Capability Gateway（app.ops.capability.defaults）；
+# tool_exec_node 主路径改调 capability_invoke，不再维护裸 MOCK_TOOLS 字典。
 
 
 # ---------------------------------------------------------------------------
@@ -317,23 +287,28 @@ async def info_extract_node(state: LgRagState) -> dict:
 
 
 async def tool_exec_node(state: LgRagState) -> dict:
-    """工具子任务：Mock 注册表同步执行；未知工具 → 错误结果不中断。"""
+    """工具子任务：经 Capability Gateway invoke；未知 id → 错误结果不中断。
+
+    观测：复用 ``trace_span("tool_exec")``；Gateway 向当前 span 写
+    capability_id / kind / ok / error 截断（SPEC §5），不另开根 span。
+    """
     subtask = _pending_subtask(state)
     if subtask is None:
         return {"subtask_results": [{"type": "tool", "error": "no pending subtask"}]}
     result = _base_result(subtask)
     tool_name = str(subtask.get("tool") or "")
     with trace_span("tool_exec", run_type="tool"):
-        fn = MOCK_TOOLS.get(tool_name)
-        if fn is None:
-            logger.warning("lg_rag 未知工具 tool=%r id=%s", tool_name, result["id"])
-            result["error"] = f"未知工具: {tool_name or '(未指定)'}"
+        cap = capability_invoke(tool_name, result["input"])
+        if not cap.ok:
+            logger.warning(
+                "lg_rag 工具失败 tool=%r id=%s err=%r",
+                tool_name,
+                result["id"],
+                cap.error,
+            )
+            result["error"] = cap.error or f"未知工具: {tool_name or '(未指定)'}"
         else:
-            try:
-                result["output"] = fn(result["input"])
-            except Exception as exc:
-                logger.warning("lg_rag 工具执行失败 tool=%s err=%r", tool_name, exc)
-                result["error"] = repr(exc)
+            result["output"] = cap.output
     return {"subtask_results": [result]}
 
 
