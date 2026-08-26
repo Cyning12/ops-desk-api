@@ -142,9 +142,9 @@ flowchart TB
 
 | 项 | SPEC |
 |---|---|
-| **Capability Gateway** | [`docs/spec/agent-infra/SPEC-capability-gateway_v0.md`](../spec/agent-infra/SPEC-capability-gateway_v0.md) |
-| **Structured Output Gateway** | [`docs/spec/agent-infra/SPEC-structured-output-gateway_v0.md`](../spec/agent-infra/SPEC-structured-output-gateway_v0.md) |
-| 索引 | [`docs/spec/agent-infra/README.md`](../spec/agent-infra/README.md) |
+| **Capability Gateway** | [`docs/spec/agent-infra/capability/SPEC-capability-gateway_v0.md`](../spec/agent-infra/capability/SPEC-capability-gateway_v0.md) · [ROADMAP portable](../spec/agent-infra/capability/ROADMAP_portable_core_v0.md) |
+| **Structured Output Gateway** | [`docs/spec/agent-infra/structured-output/SPEC-structured-output-gateway_v0.md`](../spec/agent-infra/structured-output/SPEC-structured-output-gateway_v0.md) · [ROADMAP hygiene](../spec/agent-infra/structured-output/ROADMAP_kernel_hygiene_v0.md) |
+| 索引 / 升级总表 | [`docs/spec/agent-infra/README.md`](../spec/agent-infra/README.md) · [`01_upgrade_roadmap.md`](../spec/agent-infra/01_upgrade_roadmap.md) |
 
 开 task 前须 SPEC `HG-SPEC-SIGNOFF`。命名：勿与业界 **LLM Gateway** 混淆。
 

@@ -1,7 +1,7 @@
 # DESIGN：Structured Output Gateway 与 LangGraph `with_structured_output` 并存策略（v0）
 
 > **状态**：active  
-> **上游 SPEC**：`docs/spec/agent-infra/SPEC-structured-output-gateway_v0.md`  
+> **上游 SPEC**：`docs/spec/agent-infra/structured-output/SPEC-structured-output-gateway_v0.md`  
 > **对应 task**：`structured-output-gateway-p3`  
 > **硬约束**：本仓自建 Gateway 是**强制基础设施**（有契约的节点出口必须走 Host 管道）；**不是**消灭 LangGraph 原生 API，也不是互斥替换一切 LLM 调用。
 
