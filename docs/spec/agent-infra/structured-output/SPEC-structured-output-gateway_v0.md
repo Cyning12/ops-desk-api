@@ -186,3 +186,4 @@ complete_structured(
 | 2026-08-26 | v0 | `HG-SPEC-SIGNOFF=approved`；状态 `active`；维护者授权 00 统筹本 SPEC 全波次 |
 | 2026-08-26 | v0 | **P0–P3 落地状态**：P0 `parse_only`+repair；P1 `complete_structured`+correction；P2 router/supervisor/extract 接入；P3 `ensure_keys`/`validate`/`no_retry`+并存策略文档 `docs/guides/DESIGN_structured-output-gateway-coexistence_v0.md` |
 | 2026-08-26 | v0 | 迁入 `docs/spec/agent-infra/structured-output/`；P2 接入选型写明 parse_only；下一里程碑 [`ROADMAP_kernel_hygiene_v0.md`](./ROADMAP_kernel_hygiene_v0.md)；根路径留 POINTER |
+| 2026-08-26 | v0 | **H1 落地**（契约未升版）：域 schema → `app/ops/lg_rag/schemas/`（PR #67）；H2 跳过 |
