@@ -14,6 +14,7 @@
 | 2026-08-25 | [`../done/task_dsh_coding_kit_upgrade_1_5_2.md`](../done/task_dsh_coding_kit_upgrade_1_5_2.md) | kit 1.5.2（K1/K4 被 DEF-028/029 修复） · PR #48 |
 | 2026-08-25 | [`../done/task_dsh_coding_kit_upgrade_1_6_1.md`](../done/task_dsh_coding_kit_upgrade_1_6_1.md) | kit 1.6.1（反哺项全关闭） · PR #50 |
 | 2026-08-25 | [`../done/task_dsh_kit_graph_command_switch.md`](../done/task_dsh_kit_graph_command_switch.md) | 命令面正式切换 · PR #51 |
+| 2026-08-26 | [`../done/task_tech_graph_legacy_cleanup.md`](../done/task_tech_graph_legacy_cleanup.md) | 清理根双写 / 01_struct stub / QUICKREF·legacy · PR #61 |
 
 ---
 
