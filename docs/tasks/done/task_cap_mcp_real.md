@@ -1,6 +1,6 @@
 # Task：Capability · 真 MCP adapter（cap-mcp-real）
 
-> **状态**：active（闸已签 · 可派 30）  
+> **状态**：completed（PR [#68](https://github.com/Cyning12/ops-desk-api/pull/68) MERGED · 2026-08-26 关账）  
 > **类型**：feature / agent-infra（升级轨波次 3）  
 > **上游 ROADMAP**：`docs/spec/agent-infra/capability/ROADMAP_portable_core_v0.md` §U3  
 > **总轨**：`agent-infra-upgrade`  
@@ -73,12 +73,12 @@ P2 仅有 `MockMcpAdapter`（罐头）。U3 增加**真 MCP client adapter**（�
 
 ## 验收标准
 
-- [ ] 存在真 MCP client adapter；契约仍 `invoke → CapabilityResult`
-- [ ] Mock 探针保留；默认 defaults **不**注册真 client
-- [ ] FakeTransport（或等价）单测覆盖成功 + 失败；**零外网**
-- [ ] env 关闭时行为与改前兼容（既有 capability 测绿）
-- [ ] `chat/graph.py` 零 diff；无 Agently；ruff 绿
-- [ ] 文档注明默认关 / CI 不外网
+- [x] 存在真 MCP client adapter；契约仍 `invoke → CapabilityResult`
+- [x] Mock 探针保留；默认 defaults **不**注册真 client
+- [x] FakeTransport（或等价）单测覆盖成功 + 失败；**零外网**
+- [x] env 关闭时行为与改前兼容（既有 capability 测绿）
+- [x] `chat/graph.py` 零 diff；无 Agently；ruff 绿
+- [x] 文档注明默认关 / CI 不外网
 
 ---
 
@@ -152,3 +152,18 @@ env 默认 false。
 | 日期 | 说明 |
 |---|---|
 | 2026-08-26 | 10 起草 U3；00 代签；总轨自动推进 |
+
+
+### KPI
+
+Task_KPI%: 100
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-26 |
+| PR | [#68](https://github.com/Cyning12/ops-desk-api/pull/68) MERGED |
+| 定稿 | McpClientAdapter + FakeTransport；env 默认关 |
+| 归档 | docs/tasks/done/task_cap_mcp_real.md |
+| 下一棒 | 总轨收官（跳过 so-complete-adopt） |

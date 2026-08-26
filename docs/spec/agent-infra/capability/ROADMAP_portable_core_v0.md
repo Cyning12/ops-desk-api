@@ -1,7 +1,7 @@
 # ROADMAP：Capability · 可迁移内核（portable core）v0
 
 > **层级**：L2 升级路线（capability 域）  
-> **状态**：`draft`（可拆 task · **不**授权 30）  
+> **状态**：`stable`（**U1–U3 DONE** · PR #66/#68）  
 > **上游**：[`../01_upgrade_roadmap.md`](../01_upgrade_roadmap.md) 波次 `cap-portable-core`  
 > **现行契约**：[`SPEC-capability-gateway_v0.md`](./SPEC-capability-gateway_v0.md)（P0–P3 已落地，本文件在其上增量）  
 > **架构边界**：[`../00_architecture_and_boundaries.md`](../00_architecture_and_boundaries.md) §3 Mode A

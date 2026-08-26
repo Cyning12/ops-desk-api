@@ -63,6 +63,7 @@
 | 2026-08-26 | [`task_agent_infra_spec_hierarchy.md`](./task_agent_infra_spec_hierarchy.md) | Agent Infra SPEC L0/L1/L2 分层 · PR #65 |
 | 2026-08-26 | [`task_cap_portable_core.md`](./task_cap_portable_core.md) | Capability 可迁移内核 Mode A · PR #66 |
 | 2026-08-26 | [`task_so_schema_hygiene.md`](./task_so_schema_hygiene.md) | SO 域 schema 迁 lg_rag · PR #67 |
+| 2026-08-26 | [`task_cap_mcp_real.md`](./task_cap_mcp_real.md) | Capability 真 MCP adapter · PR #68 |
 | 2026-08-24 | [`task_inform_graph_backfill_w1_g0_chat.md`](./task_inform_graph_backfill_w1_g0_chat.md) | 图谱 W1（G-L0 + chat 追平） · PR #46 |
 | 2026-08-24 | [`task_inform_graph_backfill_w2_bypass_flows.md`](./task_inform_graph_backfill_w2_bypass_flows.md) | 图谱 W2（旁路 flows，graphs 4→6） · PR #47 |
 | 2026-08-25 | [`task_inform_graph_backfill_w3_chat_g2.md`](./task_inform_graph_backfill_w3_chat_g2.md) | W3 chat G-L2 indexes · PR #49 |

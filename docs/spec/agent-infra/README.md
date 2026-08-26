@@ -52,10 +52,10 @@ docs/spec/agent-infra/
 
 ## 当前资产状态
 
-| ID | 现行契约 | 状态 | 下一升级（ROADMAP） |
+| ID | 现行契约 | 状态 | 升级落地（ROADMAP） |
 |---|---|---|---|
-| `capability-gateway` | [`capability/SPEC-capability-gateway_v0.md`](./capability/SPEC-capability-gateway_v0.md) | active · P0–P3 已落地 · PR #59 | [`ROADMAP_portable_core_v0`](./capability/ROADMAP_portable_core_v0.md) · **优先** |
-| `structured-output-gateway` | [`structured-output/SPEC-structured-output-gateway_v0.md`](./structured-output/SPEC-structured-output-gateway_v0.md) | active · P0–P3 已落地 · PR #58 | [`ROADMAP_kernel_hygiene_v0`](./structured-output/ROADMAP_kernel_hygiene_v0.md) · 穿插卫生 |
+| `capability-gateway` | [`capability/SPEC-capability-gateway_v0.md`](./capability/SPEC-capability-gateway_v0.md) | active · P0–P3 + portable U1–U3 | [`ROADMAP_portable_core_v0`](./capability/ROADMAP_portable_core_v0.md) · **U1–U3 DONE**（#66/#68） |
+| `structured-output-gateway` | [`structured-output/SPEC-structured-output-gateway_v0.md`](./structured-output/SPEC-structured-output-gateway_v0.md) | active · P0–P3 + H1 卫生 | [`ROADMAP_kernel_hygiene_v0`](./structured-output/ROADMAP_kernel_hygiene_v0.md) · **H1 DONE**（#67）；H2 跳过 |
 
 ---
 
@@ -88,3 +88,4 @@ docs/spec/agent-infra/
 |---|---|
 | 2026-08-26 | 建索引；挂 capability / structured-output 两份 SPEC |
 | 2026-08-26 | **细分文档层级**：L0 架构+升级总表；L1 域夹；L2 SPEC/ROADMAP；旧 SPEC 路径改 POINTER；讨论结论写入升级路线 |
+| 2026-08-26 | **升级轨收官**：portable U1–U3 + SO H1 落地；H2/波次4 跳过；见 `01_upgrade_roadmap` |

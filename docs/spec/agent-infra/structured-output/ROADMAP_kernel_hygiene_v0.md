@@ -1,7 +1,7 @@
 # ROADMAP：Structured Output · 内核卫生（kernel hygiene）v0
 
 > **层级**：L2 升级路线（structured-output 域）  
-> **状态**：`draft`（可拆 task · **不**授权 30）  
+> **状态**：`stable`（**H1 DONE** · PR #67；H2 默认跳过）  
 > **上游**：[`../01_upgrade_roadmap.md`](../01_upgrade_roadmap.md) 波次 `so-schema-hygiene`（**后于** capability portable，可穿插）  
 > **现行契约**：[`SPEC-structured-output-gateway_v0.md`](./SPEC-structured-output-gateway_v0.md)  
 > **架构边界**：[`../00_architecture_and_boundaries.md`](../00_architecture_and_boundaries.md) §5
@@ -63,3 +63,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-26 | 初版：schema 抽离优先；acomplete 接入后置；禁止校验变可选 tool |
+| 2026-08-26 | **H1 落地**：域 schema → `app/ops/lg_rag/schemas/`（PR #67）；H2 跳过 |
