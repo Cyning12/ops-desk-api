@@ -54,6 +54,10 @@
 | 2026-08-26 | [`task_structured_output_gateway_p1.md`](./task_structured_output_gateway_p1.md) | Structured Output Gateway P1（complete_structured） · PR #58 |
 | 2026-08-26 | [`task_structured_output_gateway_p2.md`](./task_structured_output_gateway_p2.md) | Structured Output Gateway P2（lg_rag 接入） · PR #58 |
 | 2026-08-26 | [`task_structured_output_gateway_p3.md`](./task_structured_output_gateway_p3.md) | Structured Output Gateway P3（ensure/validate） · PR #58 |
+| 2026-08-26 | [`task_capability_gateway_p0.md`](./task_capability_gateway_p0.md) | Capability Gateway P0（Registry + tool_exec） · PR #59 |
+| 2026-08-26 | [`task_capability_gateway_p1.md`](./task_capability_gateway_p1.md) | Capability Gateway P1（schemas_for_llm） · PR #59 |
+| 2026-08-26 | [`task_capability_gateway_p2.md`](./task_capability_gateway_p2.md) | Capability Gateway P2（mock 探针） · PR #59 |
+| 2026-08-26 | [`task_capability_gateway_p3.md`](./task_capability_gateway_p3.md) | Capability Gateway P3（skill stub） · PR #59 |
 | 2026-08-24 | [`task_inform_graph_backfill_w1_g0_chat.md`](./task_inform_graph_backfill_w1_g0_chat.md) | 图谱 W1（G-L0 + chat 追平） · PR #46 |
 | 2026-08-24 | [`task_inform_graph_backfill_w2_bypass_flows.md`](./task_inform_graph_backfill_w2_bypass_flows.md) | 图谱 W2（旁路 flows，graphs 4→6） · PR #47 |
 | 2026-08-25 | [`task_inform_graph_backfill_w3_chat_g2.md`](./task_inform_graph_backfill_w3_chat_g2.md) | W3 chat G-L2 indexes · PR #49 |

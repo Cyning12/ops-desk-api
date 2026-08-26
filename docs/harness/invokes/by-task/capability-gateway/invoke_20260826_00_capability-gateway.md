@@ -23,6 +23,7 @@
 
 ## 下一棒
 
-commit（排除 `app/tools/` 若仍为无关草稿）→ PR → 合入后归档四 capability task
+四子 task 已归档 `docs/tasks/done/`（PR #59 MERGED · closeout）。
 
 | 2026-08-26 | 归档 structured-output · 全波次 capability P0–P3 收官 |
+| 2026-08-26 | PR #59 MERGED；四子 task git mv → done/ |

@@ -1,6 +1,6 @@
 # Task：Capability Gateway · P3（kind=skill 边界）
 
-> **状态**：completed（P3 50 PASS · 全波次待 PR；2026-08-26）  
+> **状态**：completed（PR #59 MERGED · 已归档；2026-08-26）  
 > **SPEC**：§4 P3 · **前置** P2 · **分支** `task/capability-gateway`
 
 ## Harness 元信息
@@ -58,8 +58,8 @@
 |---|---|
 | 日期 | 2026-08-26 |
 | 定稿 | skill provide/invoke stub + 边界文档 + SPEC 落地状态 |
-| 归档 | 暂留 active（PR 合入后归档） |
-| PR | 待开 |
+| 归档 | `docs/tasks/done/task_capability_gateway_p3.md` |
+| PR | [#59](https://github.com/Cyning12/ops-desk-api/pull/59) MERGED |
 
 ## 修订
 
@@ -68,3 +68,5 @@
 | 2026-08-26 | 00 起草 P3 |
 | 2026-08-26 | 20 R1 pass；00 代签闸 |
 | 2026-08-26 | 30/40 PASS；00 50 CLOSE；全波次收官 |
+
+| 2026-08-26 | 归档：PR #59 MERGED · git mv → docs/tasks/done/ |

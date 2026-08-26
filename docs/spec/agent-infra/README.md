@@ -21,7 +21,7 @@
 
 | ID | 文件 | 版本 | 状态 | 一句话 |
 |---|---|---|---|---|
-| `capability-gateway` | [SPEC-capability-gateway_v0.md](./SPEC-capability-gateway_v0.md) | v0 | active（已签 · P0–P3 本分支落地 · 待 PR） | 能力注册 / 筛选 / 统一 invoke |
+| `capability-gateway` | [SPEC-capability-gateway_v0.md](./SPEC-capability-gateway_v0.md) | v0 | active（已签 · P0–P3 已落地 · PR #59） | 能力注册 / 筛选 / 统一 invoke |
 | `structured-output-gateway` | [SPEC-structured-output-gateway_v0.md](./SPEC-structured-output-gateway_v0.md) | v0 | active（已签 · P0–P3 已落地 · PR #58） | parse → validate → repair/retry |
 
 ---
