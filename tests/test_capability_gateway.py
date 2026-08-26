@@ -412,3 +412,145 @@ def test_p3_provide_on_local_fn_ok_false():
     result = provide("mock_get_issue_status")
     assert result.ok is False
     assert "无 provide()" in (result.error or "")
+
+
+# --- U3：真 MCP client + FakeTransport（零外网）---
+
+
+def test_u3_mcp_client_not_in_defaults():
+    """OPS_CAPABILITY_MCP_ENABLED 默认 false → 真 client 不进 registry。"""
+    from app.ops.capability.adapters.mcp_client import MCP_CLIENT_CAPABILITY_ID
+
+    ids = {s.capability_id for s in list_capabilities()}
+    assert MCP_CLIENT_CAPABILITY_ID not in ids
+    assert get_registry().get(MCP_CLIENT_CAPABILITY_ID) is None
+
+
+def test_u3_mcp_client_fake_transport_success():
+    """FakeTransport tools/call 成功 → invoke ok=True（零网络）。"""
+    from app.ops.capability.adapters.mcp_client import (
+        MCP_CLIENT_CAPABILITY_ID,
+        FakeTransport,
+        McpClientAdapter,
+    )
+
+    tx = FakeTransport(result={"content": [{"type": "text", "text": "pong"}]})
+    cid = f"{MCP_CLIENT_CAPABILITY_ID}_fake_ok"
+    register(
+        CapabilitySpec(
+            capability_id=cid,
+            kind="mcp",
+            description="U3 FakeTransport 成功",
+            tags=("mcp", "u3", "test"),
+            enabled=True,
+        ),
+        McpClientAdapter(tx),
+    )
+    result = invoke(cid, {"name": "echo", "arguments": {"q": "hi"}})
+    assert result.ok is True
+    assert result.output["protocol"] == "mcp"
+    assert result.output["tool"] == "echo"
+    assert result.output["result"]["content"][0]["text"] == "pong"
+    assert tx.calls == [("echo", {"q": "hi"})]
+    assert result.meta.get("kind") == "mcp"
+    unregister(cid)
+
+
+def test_u3_mcp_client_fake_transport_error_ok_false():
+    """FakeTransport 协议失败 → ok=False。"""
+    from app.ops.capability.adapters.mcp_client import FakeTransport, McpClientAdapter
+
+    cid = "mcp_client_fake_err"
+    register(
+        CapabilitySpec(
+            capability_id=cid,
+            kind="mcp",
+            description="U3 FakeTransport 失败",
+            tags=("mcp", "u3", "test"),
+            enabled=True,
+        ),
+        McpClientAdapter(FakeTransport(error="tools/call rejected")),
+    )
+    result = invoke(cid, {"name": "echo", "arguments": {}})
+    assert result.ok is False
+    assert "tools/call rejected" in (result.error or "")
+    unregister(cid)
+
+
+def test_u3_mcp_client_fake_transport_exception_ok_false():
+    """FakeTransport 抛异常 → ok=False（不拖垮调用方）。"""
+    from app.ops.capability.adapters.mcp_client import FakeTransport, McpClientAdapter
+
+    cid = "mcp_client_fake_exc"
+    register(
+        CapabilitySpec(
+            capability_id=cid,
+            kind="mcp",
+            description="U3 FakeTransport 异常",
+            tags=("mcp", "u3", "test"),
+            enabled=True,
+        ),
+        McpClientAdapter(FakeTransport(exc=RuntimeError("transport-boom"))),
+    )
+    result = invoke(cid, {"name": "echo", "arguments": {}})
+    assert result.ok is False
+    assert "transport-boom" in (result.error or "")
+    unregister(cid)
+
+
+def test_u3_register_mcp_client_if_enabled_false_noop():
+    """显式 enabled=False → 不注册（与默认 env 关一致）。"""
+    from app.ops.capability.adapters.mcp_client import (
+        MCP_CLIENT_CAPABILITY_ID,
+        FakeTransport,
+        register_mcp_client_if_enabled,
+    )
+
+    assert (
+        register_mcp_client_if_enabled(enabled=False, transport=FakeTransport()) is None
+    )
+    assert get_registry().get(MCP_CLIENT_CAPABILITY_ID) is None
+
+
+def test_u3_register_mcp_client_with_fake_when_enabled():
+    """enabled=True + 注入 FakeTransport → 可注册并 invoke（仍零外网）。"""
+    from app.ops.capability.adapters.mcp_client import (
+        MCP_CLIENT_CAPABILITY_ID,
+        FakeTransport,
+        register_mcp_client_if_enabled,
+    )
+
+    # 避免与其它用例撞 id：先清再注册
+    unregister(MCP_CLIENT_CAPABILITY_ID)
+    assert (
+        register_mcp_client_if_enabled(
+            enabled=True,
+            transport=FakeTransport(result={"echo": 1}),
+            default_tool="echo",
+        )
+        == MCP_CLIENT_CAPABILITY_ID
+    )
+    result = invoke(MCP_CLIENT_CAPABILITY_ID, {"x": 1})
+    assert result.ok is True
+    assert result.output["tool"] == "echo"
+    assert result.output["result"] == {"echo": 1}
+    unregister(MCP_CLIENT_CAPABILITY_ID)
+
+
+@pytest.mark.integration
+@pytest.mark.skip(reason="真 MCP 外网/本机 server；默认 CI 跳过（需 -m integration + endpoint）")
+def test_u3_mcp_client_live_integration():
+    """可选真连：须 OPS_CAPABILITY_MCP_ENABLED + endpoint；不进默认 CI。"""
+    from app.config import settings
+    from app.ops.capability.adapters.mcp_client import (
+        MCP_CLIENT_CAPABILITY_ID,
+        register_mcp_client_if_enabled,
+    )
+
+    assert settings.ops_capability_mcp_enabled is True
+    assert (settings.ops_capability_mcp_endpoint or "").strip()
+    unregister(MCP_CLIENT_CAPABILITY_ID)
+    cid = register_mcp_client_if_enabled(enabled=True)
+    assert cid == MCP_CLIENT_CAPABILITY_ID
+    result = invoke(cid, {"name": settings.ops_capability_mcp_default_tool or "echo", "arguments": {}})
+    assert result.ok is True
