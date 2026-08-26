@@ -21,8 +21,8 @@
 
 | ID | 文件 | 版本 | 状态 | 一句话 |
 |---|---|---|---|---|
-| `capability-gateway` | [SPEC-capability-gateway_v0.md](./SPEC-capability-gateway_v0.md) | v0 | active（已签 · 排队） | 能力注册 / 筛选 / 统一 invoke |
-| `structured-output-gateway` | [SPEC-structured-output-gateway_v0.md](./SPEC-structured-output-gateway_v0.md) | v0 | active（已签 · **本波优先**） | parse → validate → repair/retry |
+| `capability-gateway` | [SPEC-capability-gateway_v0.md](./SPEC-capability-gateway_v0.md) | v0 | active（已签 · P0–P3 本分支落地 · 待 PR） | 能力注册 / 筛选 / 统一 invoke |
+| `structured-output-gateway` | [SPEC-structured-output-gateway_v0.md](./SPEC-structured-output-gateway_v0.md) | v0 | active（已签 · P0–P3 已落地 · PR #58） | parse → validate → repair/retry |
 
 ---
 
@@ -41,4 +41,5 @@
 |---|---|
 | 讨论小结 | `docs/discussions/2026-08-26_lg-rag-agent-capability-architecture.md` |
 | Phase 4 设计 | `docs/guides/DESIGN_langgraph-lg-rag-phase4-multiagent_v1.md` |
-| 现状工具草稿 | `app/tools/` · `app/ops/lg_rag/multi/nodes.py` `MOCK_TOOLS` |
+| 图谱前后对比（方案 B） | `docs/guides/COMPARE_tech-graph-agent-infra-gateways_v0.md` |
+| 现状工具草稿 | `app/tools/` ·（生产路径已迁 `app/ops/capability/`） |

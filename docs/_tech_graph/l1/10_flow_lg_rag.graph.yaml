@@ -2,7 +2,7 @@ schema_version: "inform_graph.v3"
 graph_id: "10_flow_lg_rag"
 title: "LG RAG 旁路三模式流程（basic / router / supervisor）"
 description: "POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（拆解→分派→聚合）。同图分节：节点 id 前缀 b_/r_/s_；rag 路径黑盒复用 lc_evidence_chain，不展开 LCEL；默认不进入 chat/graph。freeze lg-rag-http-v1。"
-version: "2026-08-24"
+version: "2026-08-26"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "method"
@@ -158,13 +158,21 @@ nodes:
         kind: method
 
   - id: "s_tool"
-    label: "tool_exec_node（Mock 注册表）"
+    label: "tool_exec_node（Capability Gateway）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
       - path: "app/ops/lg_rag/multi/nodes.py"
         symbol: "tool_exec_node"
         kind: method
+
+  - id: "structured_output_gw"
+    label: "Structured Output Gateway（>./10_flow_structured_output.md）"
+    kind: external
+
+  - id: "capability_gw"
+    label: "Capability Gateway（>./10_flow_capability.md）"
+    kind: external
 
   - id: "s_aggregator"
     label: "aggregator_node（LLM 综合）"
@@ -463,6 +471,42 @@ edges:
     anchors:
       - path: "app/ops/lg_rag/multi/nodes.py"
         line: 361
+
+  - from: "r_router"
+    to: "structured_output_gw"
+    label: "parse_only / schema 校验"
+    mark: "::triggers"
+    type: "triggers"
+    anchors:
+      - path: "app/ops/lg_rag/nodes.py"
+        symbol: "_classify_route"
+
+  - from: "s_supervisor"
+    to: "structured_output_gw"
+    label: "parse SubtasksPlan"
+    mark: "::triggers"
+    type: "triggers"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "supervisor_node"
+
+  - from: "s_extract"
+    to: "structured_output_gw"
+    label: "parse ExtractResult"
+    mark: "::triggers"
+    type: "triggers"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "info_extract_node"
+
+  - from: "s_tool"
+    to: "capability_gw"
+    label: "capability.invoke"
+    mark: "::triggers"
+    type: "triggers"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "tool_exec_node"
 
   - from: "router_graph"
     to: "main_doc"

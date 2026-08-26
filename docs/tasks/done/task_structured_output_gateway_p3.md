@@ -1,6 +1,6 @@
 # Task：Structured Output Gateway · P3（ensure / validate + 并存策略）
 
-> **状态**：completed（P3 50 PASS · 全波次待 PR；2026-08-26）  
+> **状态**：completed（P3 50 PASS · PR #58 MERGED · 已归档；2026-08-26）  
 > **类型**：feature / agent-infra（Structured Output Gateway 收官波）  
 > **上游 SPEC**：`docs/spec/agent-infra/SPEC-structured-output-gateway_v0.md` §3 / §4 P3  
 > **前置**：P0–P2 50 PASS  
@@ -141,8 +141,8 @@ SPEC 修订记录落地状态。
 |---|---|
 | 日期 | 2026-08-26 |
 | 定稿 | ensure_keys / validate / no_retry + 并存策略文档 + SPEC 落地状态 |
-| 归档 | 暂留 active（建议 PR 合并后四子 task 一并 git mv done/） |
-| PR | **未开**（维护者未授权） |
+| 归档 | `docs/tasks/done/task_structured_output_gateway_p3.md` |
+| PR | [#58](https://github.com/Cyning12/ops-desk-api/pull/58) MERGED |
 
 ---
 
@@ -153,3 +153,5 @@ SPEC 修订记录落地状态。
 | 2026-08-26 | 00 起草 P3 |
 | 2026-08-26 | 20 R1 pass；00 代签闸 |
 | 2026-08-26 | 30/40 PASS；00 50 PASS；CLOSE；全波次收官 |
+
+| 2026-08-26 | 归档：PR #58 MERGED · git mv → docs/tasks/done/ |

@@ -169,8 +169,8 @@ OUTPUT CORRECTION 注入对齐 Agently 思想；本仓自建文案即可。
 |---|---|
 | 日期 | 2026-08-26 |
 | 定稿 | `acomplete_structured` + OUTPUT CORRECTION + StructuredFailure |
-| 归档 | 暂留 active（同分支全波次后归档） |
-| PR | 待全波次 · 维护者授权 |
+| 归档 | `docs/tasks/done/task_structured_output_gateway_p1.md` |
+| PR | [#58](https://github.com/Cyning12/ops-desk-api/pull/58) MERGED |
 
 ---
 
@@ -181,3 +181,5 @@ OUTPUT CORRECTION 注入对齐 Agently 思想；本仓自建文案即可。
 | 2026-08-26 | 00 起草 P1；闸 pending |
 | 2026-08-26 | 20 R1 pass；00 代签 HG-TASK-DRAFT + HG-AUDIT-R1 |
 | 2026-08-26 | 30/40 PASS；00 50 PASS；CLOSE |
+
+| 2026-08-26 | 归档：PR #58 MERGED · git mv → docs/tasks/done/ |

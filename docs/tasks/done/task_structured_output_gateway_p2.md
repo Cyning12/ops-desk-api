@@ -165,8 +165,8 @@ Pydantic schema 放 `app/ops/structured_output/schemas/` 或 lg_rag 旁；避免
 |---|---|
 | 日期 | 2026-08-26 |
 | 定稿 | router/supervisor/info_extract 接入 Gateway + structured_output_fallback |
-| 归档 | 暂留 active |
-| PR | 待全波次 |
+| 归档 | `docs/tasks/done/task_structured_output_gateway_p2.md` |
+| PR | [#58](https://github.com/Cyning12/ops-desk-api/pull/58) MERGED |
 
 ---
 
@@ -177,3 +177,5 @@ Pydantic schema 放 `app/ops/structured_output/schemas/` 或 lg_rag 旁；避免
 | 2026-08-26 | 00 起草 P2；闸 pending |
 | 2026-08-26 | 20 R1 pass；00 代签闸 |
 | 2026-08-26 | 30/40 PASS；00 50 PASS；CLOSE |
+
+| 2026-08-26 | 归档：PR #58 MERGED · git mv → docs/tasks/done/ |
