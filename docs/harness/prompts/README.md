@@ -25,6 +25,7 @@
 
 | 文件 | hat_id | 说明 |
 |------|--------|------|
+| [`00-orchestrator.md`](./00-orchestrator.md) | 00 | 总调度 · **默认行为**（最多起草第一步；中间派子 Agent；收口 50+CLOSE） |
 | [`10-task-requirements.md`](./10-task-requirements.md) | 10-task | task 思考 · 验收/failure_paths |
 | [`10-spec-requirements.md`](./10-spec-requirements.md) | 10-spec | SPEC 思考 · R0–R5 |
 | [`20-task-audit.md`](./20-task-audit.md) | 20-task-audit | reviews/ · HG-AUDIT-R1 |
@@ -34,7 +35,7 @@
 | [`FRAGMENT_30_gate_verify_v1_zh.md`](./FRAGMENT_30_gate_verify_v1_zh.md) | — | GATE_VERIFY · pre-30 / graph 字段 |
 | [`TEMPLATE_30_gate_stop.md`](./TEMPLATE_30_gate_stop.md) | — | 30 拒开工 |
 
-Extended（00 / 50 / handoff / 链式 PROMPT）：工作区 `docs/harness/prompts/` · 见 [`SDD_HAT_FLOW_v2_zh.md`](../../docs/methodology/product/SDD_HAT_FLOW_v2_zh.md) §6。
+**00**：Starter 已含 [`00-orchestrator.md`](./00-orchestrator.md)（默认编排纪律 · **不进默认 Skills 分发**）。其余 Extended（50 / handoff / 链式 PROMPT / KPI 全文）：工作区 `docs/harness/prompts/` · 见 [`SDD_HAT_FLOW_v2_zh.md`](../../docs/methodology/product/SDD_HAT_FLOW_v2_zh.md) §6。
 
 ## Agent Skills 封装（v2.23+）
 
@@ -49,3 +50,4 @@ Extended（00 / 50 / handoff / 链式 PROMPT）：工作区 `docs/harness/prompt
 | 2026-06-21 | V2 标准流程 · 30→40 同 Agent · 50/CLOSE 打回 |
 | 2026-07-24 | V2 拆分收编：10→10-task/10-spec · 22→20-task-audit/20-spec-audit · 旧文件删除 |
 | 2026-07-29 | **v2.1**：路径 D Inform/meta · 链 SDD_HAT_FLOW §5 · GATE_VERIFY fragment 入表 |
+| 2026-08-26 | **v1.7.1**：Starter 入包 `00-orchestrator.md`（默认行为；upgrade 未自动落地，自 kit 资产补齐） |
