@@ -1,6 +1,6 @@
 # Task：Structured Output · 域 schema 卫生（schema hygiene）
 
-> **状态**：active（闸已签 · 可派 30）  
+> **状态**：completed（PR [#67](https://github.com/Cyning12/ops-desk-api/pull/67) MERGED · 2026-08-26 关账）  
 > **类型**：refactor / agent-infra（升级轨波次 2）  
 > **上游 ROADMAP**：`docs/spec/agent-infra/structured-output/ROADMAP_kernel_hygiene_v0.md` §H1  
 > **总轨**：`agent-infra-upgrade`  
@@ -72,12 +72,12 @@
 
 ## 验收标准
 
-- [ ] 业务 schema 位于 `app/ops/lg_rag/schemas/`（或 ROADMAP 允许的等价域路径）
-- [ ] SO 包公开表面不含业务 schema（或仅 deprecated re-export 且文档标明）
-- [ ] lg_rag 节点 import 指向新路径
-- [ ] `pytest`：`test_structured_output_*` + `test_lg_rag_structured_output_p2`（及回归 multi）绿
-- [ ] ruff 触及路径绿；`chat/graph.py` 零 diff
-- [ ] 无 Agently；无真 LLM
+- [x] 业务 schema 位于 `app/ops/lg_rag/schemas/`（或 ROADMAP 允许的等价域路径）
+- [x] SO 包公开表面不含业务 schema（或仅 deprecated re-export 且文档标明）
+- [x] lg_rag 节点 import 指向新路径
+- [x] `pytest`：`test_structured_output_*` + `test_lg_rag_structured_output_p2`（及回归 multi）绿
+- [x] ruff 触及路径绿；`chat/graph.py` 零 diff
+- [x] 无 Agently；无真 LLM
 
 ---
 
@@ -151,3 +151,18 @@ H1 仅搬家，不碰管道。
 | 日期 | 说明 |
 |---|---|
 | 2026-08-26 | 10 起草 H1；00 代签三闸；总轨自动推进授权 |
+
+
+### KPI
+
+Task_KPI%: 100
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-26 |
+| PR | [#67](https://github.com/Cyning12/ops-desk-api/pull/67) MERGED |
+| 定稿 | 域 schema → lg_rag/schemas；SO deprecate re-export |
+| 归档 | docs/tasks/done/task_so_schema_hygiene.md |
+| 下一棒 | cap-mcp-real |

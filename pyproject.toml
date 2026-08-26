@@ -61,6 +61,9 @@ convention = "google"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "integration: 可选真连/外网；默认 CI 不跑（须显式 -m integration）",
+]
 
 [tool.mypy]
 python_version = "3.11"

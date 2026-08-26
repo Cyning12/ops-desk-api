@@ -49,6 +49,8 @@
 | 与 mock | P2 mock 探针可保留 CI；真 client 默认关闭、env 开关 |
 | 验收 | mock 单测 + 可选集成标记；**禁止**默认 CI 打外网 |
 
+**落地（2026-08-26）**：`McpClientAdapter` + 可注入 `FakeTransport` / 可选 `HttpJsonRpcTransport`；`OPS_CAPABILITY_MCP_ENABLED` 默认关；**真 MCP · 默认关 · CI 不外网**。
+
 ---
 
 ## 3. 与 v0 SPEC §4 P1 的关系
@@ -88,3 +90,4 @@ v0 P1「可选 ToolNode adapter」**不撤销历史落地**，但升级后定性
 |---|---|
 | 2026-08-26 | 初版：Mode A 可迁移；隔离 LG 桥；真 MCP 后置 |
 | 2026-08-26 | U1+U2 落地：默认导出去 LG；extras.langchain；附录 A + GUIDE Mode A |
+| 2026-08-26 | U3 落地：真 MCP · 默认关 · CI 不外网（FakeTransport 单测） |

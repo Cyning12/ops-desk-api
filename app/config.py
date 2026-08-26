@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     # Chat WebSocket transport (unauthenticated demo; must be false in production)
     ops_chat_ws_enabled: bool = True
 
+    # Capability · 真 MCP client（U3；默认关，禁止 CI 外网）
+    ops_capability_mcp_enabled: bool = False
+    ops_capability_mcp_endpoint: str | None = None
+    ops_capability_mcp_default_tool: str | None = None
+
     # LLM
     ops_llm_provider: str = Field(default="siliconflow")
     ops_llm_model: str | None = Field(default=None)

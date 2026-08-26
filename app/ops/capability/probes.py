@@ -10,6 +10,9 @@
 
 关闭：``unregister`` 各 capability_id，或进程重启后默认即无探针。
 
+真 MCP client（U3）与本模块无关：见 ``adapters.mcp_client`` +
+``OPS_CAPABILITY_MCP_ENABLED``（默认关；CI 不外网）。
+
 可选：日后将 ``app.tools.run_code.run_bash`` 包进 cli adapter 时，仍须
 ``enabled=False`` 且**禁止**写入 defaults。
 """
