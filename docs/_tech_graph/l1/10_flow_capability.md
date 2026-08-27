@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_capability
 version: 2026-08-26
-generated_at: 2026-08-27T03:32:13Z
+generated_at: 2026-08-27T03:47:28Z
 source: 10_flow_capability.graph.yaml
 ---
 

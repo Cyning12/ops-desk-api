@@ -15,6 +15,7 @@ import copy
 import time
 from typing import Any
 
+from app.ops.capability.policy import check_invoke
 from app.ops.capability.registry import CapabilityAdapter, CapabilityRegistry
 from app.ops.capability.types import (
     CapabilityFilter,
@@ -127,7 +128,7 @@ def _dispatch(
             capability_id=cid,
             duration_ms=0.0,
         )
-        _write_span_metadata(result, kind="")
+        _write_span_metadata(result, kind="", risk_level=None)
         return result
 
     spec, adapter = entry
@@ -139,7 +140,24 @@ def _dispatch(
             duration_ms=0.0,
             meta={"blocked": "disabled"},
         )
-        _write_span_metadata(result, kind=spec.kind)
+        _write_span_metadata(result, kind=spec.kind, risk_level=spec.risk_level)
+        return result
+
+    policy = check_invoke(spec, ctx=ctx)
+    if not policy.allowed:
+        result = CapabilityResult(
+            ok=False,
+            error=policy.reason or "policy_blocked",
+            capability_id=cid,
+            duration_ms=0.0,
+            meta={"policy_blocked": True, "kind": spec.kind},
+        )
+        _write_span_metadata(
+            result,
+            kind=spec.kind,
+            risk_level=spec.risk_level,
+            policy_blocked=True,
+        )
         return result
 
     try:
@@ -153,7 +171,9 @@ def _dispatch(
                     duration_ms=(time.perf_counter() - started) * 1000.0,
                     meta={"kind": spec.kind, "mode": "provide"},
                 )
-                _write_span_metadata(result, kind=spec.kind)
+                _write_span_metadata(
+                    result, kind=spec.kind, risk_level=spec.risk_level
+                )
                 return result
             output = provide_fn(ctx=ctx)
         else:
@@ -166,7 +186,7 @@ def _dispatch(
             duration_ms=duration_ms,
             meta={"kind": spec.kind, "mode": mode},
         )
-        _write_span_metadata(result, kind=spec.kind)
+        _write_span_metadata(result, kind=spec.kind, risk_level=spec.risk_level)
         return result
     except Exception as exc:
         duration_ms = (time.perf_counter() - started) * 1000.0
@@ -177,17 +197,27 @@ def _dispatch(
             duration_ms=duration_ms,
             meta={"kind": spec.kind, "mode": mode},
         )
-        _write_span_metadata(result, kind=spec.kind)
+        _write_span_metadata(result, kind=spec.kind, risk_level=spec.risk_level)
         return result
 
 
-def _write_span_metadata(result: CapabilityResult, *, kind: str) -> None:
+def _write_span_metadata(
+    result: CapabilityResult,
+    *,
+    kind: str,
+    risk_level: str | None = None,
+    policy_blocked: bool = False,
+) -> None:
     """附加到当前 span；无父 span / 未开启 tracing 时静默。"""
     payload: dict[str, Any] = {
         "capability_id": result.capability_id,
         "kind": kind,
         "ok": result.ok,
     }
+    if risk_level is not None:
+        payload["risk_level"] = risk_level
+    if policy_blocked:
+        payload["policy_blocked"] = True
     if result.error:
         payload["error"] = result.error[:_ERROR_TRUNCATE]
     update_current_span_metadata(payload)
