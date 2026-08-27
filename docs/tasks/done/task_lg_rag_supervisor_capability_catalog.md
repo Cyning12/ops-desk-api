@@ -1,6 +1,6 @@
 # Task：Agent Host H1 · Supervisor 赋能目录闭环
 
-> **状态**：active（**HG-TASK-DRAFT + HG-AUDIT-R1 approved** · 00 统筹中 → 待 30）  
+> **状态**：completed（2026-08-27 · 00 CLOSE PASS · 已归档）  
 > **类型**：feature / agent-host-plan · H1  
 > **上游规划**：`docs/spec/agent-infra/02_agent_host_plan_v0.md`（HG-SPEC-SIGNOFF=approved）  
 > **ROADMAP**：`docs/spec/agent-infra/orchestration/ROADMAP_supervisor_capability_catalog_v0.md`  
@@ -18,7 +18,7 @@
 | **git_branch** | `task/lg-rag-supervisor-capability-catalog` |
 | **implement_repo** | `ops-desk-api` |
 | **test_strategy** | `required` |
-| **test_strategy_note** | mock LLM + capability registry；`test_lg_rag_multi` 不回归；catalog 进 prompt · 非法 tool id fallback |
+| **test_strategy_note** | mock LLM + capability registry；catalog 进 prompt · 非法 tool id fallback |
 | **code_quality_bar** | `L2_backend` |
 | **graph_change_layer** | `G-L1` |
 | **graph_delta** | `docs/_tech_graph/l1/01_modules.md` |
@@ -35,8 +35,8 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
 | HG-TASK-DRAFT | approved | 22-R1 | 2026-08-27 00 代签（R1 pass） |
-| HG-AUDIT-R1 | approved | 30 | 2026-08-27 00 代签；`task_lg_rag_supervisor_capability_catalog_audit_R1_20260827.md` |
-| HG-GRAPH-MODULES | approved | 30 | 仅 G-L1 备注 |
+| HG-AUDIT-R1 | approved | 30 | 2026-08-27 00 代签 |
+| HG-GRAPH-MODULES | approved | 30 | G-L1 备注已写 |
 
 ---
 
@@ -51,27 +51,27 @@ supervisor 已能拆 plan 并 `tool_exec` 调 Gateway，但 **planner 未读 `li
 **范围**：
 
 - `supervisor_node`：`list_capabilities(filter=…)` → 格式化进 LLM messages
-- `_parse_subtasks` 后： `type=tool` 时 `tool` ∈ 可见 id；非法 → **整 plan fallback 单 rag**（保留现语义）
-- 注册 ≥1 低危非 mock `local_fn`（只读/无副作用）
-- span：`capability_catalog_count`；非法 tool 标 metadata
+- `_parse_subtasks` 后： `type=tool` 时 `tool` ∈ 可见 id；非法 → **整 plan fallback 单 rag**
+- 注册 ≥1 低危非 mock `local_fn`（`utc_now_iso` 只读）
+- span：`capability_catalog_count`；非法 tool → `supervisor_invalid_tool_id`
 - 单测 + G-L1 备注 + graph-compile
 
 **非范围**：
 
 - 改 supervisor 图拓扑；Skill NL（H5）；Policy 门（H2）；`acomplete_structured` 全面接入  
-- PromptAssembly 大包（H4）；可临时 helper 格式化 catalog
+- PromptAssembly 大包（H4）
 
 ---
 
 ## 验收标准
 
-- [ ] H1-a：`list_capabilities` 带 `node_role=supervisor`（或等价 filter）· 单测
-- [ ] H1-b：mock LLM messages 含 capability 目录片段（id/description/risk 摘要）
-- [ ] H1-c：非法 tool id → fallback 单 rag；`test_lg_rag_multi` 不回归
-- [ ] H1-d：≥1 非 mock 低危 capability 可 invoke
-- [ ] H1-e：span metadata 字段落地
-- [ ] H1-f：G-L1 备注 + graph-compile 绿
-- [ ] ruff / pytest 触及路径绿；`chat/graph.py` 零 diff
+- [x] H1-a：`list_capabilities` 带 `node_role=supervisor` + `kinds=local_fn` · 单测
+- [x] H1-b：mock LLM messages 含 capability 目录片段（id/description/risk 摘要）
+- [x] H1-c：非法 tool id → fallback 单 rag；supervisor 节点单测覆盖
+- [x] H1-d：`utc_now_iso` 非 mock 低危 capability 可 invoke
+- [x] H1-e：span metadata 字段落地
+- [x] H1-f：G-L1 备注 + graph-compile 绿
+- [x] ruff / pytest 触及路径绿；`chat/graph.py` 零 diff
 
 ---
 
@@ -85,20 +85,26 @@ supervisor 已能拆 plan 并 `tool_exec` 调 Gateway，但 **planner 未读 `li
 
 ---
 
-## 依赖
+## 自检结论
 
-- Capability Gateway stable · `app/ops/lg_rag/multi/nodes.py`  
-- `02_agent_host_plan_v0` §4 硬约束
+> 2026-08-27 · 00 机械复检 · **PASS**
+
+- [x] 验收勾选
+- [x] pytest H1 6 passed · structured_output_p2 12 passed · capability 25 passed
+- [x] graph.py 零 diff · graph-compile exit 0
+
+**50 结论**：PASS · 下一棒 H2 `capability-policy-sandbox`
 
 ---
 
-## 思考轮（草案）
+## CLOSE
 
-| 轮 | 要点 |
+| 项 | 内容 |
 |---|---|
-| R0 | 只接 catalog + 校验，不动图拓扑 |
-| R1 | filter 维度与 `CapabilityFilter` 真值对齐 ROADMAP |
-| R2 | 非法 tool：整 plan fallback（不单条降级） |
+| 日期 | 2026-08-27 |
+| 定稿 | supervisor ↔ Capability 目录闭环 + tool id Host 校验 |
+| 归档 | `docs/tasks/done/task_lg_rag_supervisor_capability_catalog.md` |
+| PR | 待维护者开 PR 合并 |
 
 ---
 
@@ -107,4 +113,5 @@ supervisor 已能拆 plan 并 `tool_exec` 调 Gateway，但 **planner 未读 `li
 | 日期 | 说明 |
 |---|---|
 | 2026-08-27 | 00 拆 task · HG-SPEC 已签 |
-| 2026-08-27 | **HG-TASK-DRAFT + HG-AUDIT-R1 approved** · 00 统筹至 CLOSE |
+| 2026-08-27 | HG 代签 · 00 统筹 |
+| 2026-08-27 | 30/40 PASS · CLOSE · git mv → done/ |

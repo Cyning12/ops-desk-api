@@ -20,7 +20,9 @@ from pydantic import ValidationError
 
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage
+from app.ops.capability import CapabilityFilter, list_capabilities
 from app.ops.capability import invoke as capability_invoke
+from app.ops.capability.types import CapabilitySpec
 from app.ops.lg_rag.graph import ainvoke_router_agent
 from app.ops.lg_rag.nodes import (
     _ROUTER_MODEL,
@@ -44,14 +46,24 @@ _TYPE_TO_NODE = {
     "tool": "tool_exec",
 }
 
-_SUPERVISOR_SYSTEM = (
+# Supervisor planner 可见赋能：local_fn · 剔除 high risk（Mode A · GUIDE §2）
+_SUPERVISOR_CAP_FILTER = CapabilityFilter(
+    node_role="supervisor",
+    kinds=frozenset({"local_fn"}),
+    deny_high_risk=True,
+)
+
+_SUPERVISOR_SYSTEM_PREFIX = (
     "你是 Ops Desk 运维知识库助手的任务拆解器（Supervisor）。"
     "把用户的复合问题拆解为若干个子任务，只输出 JSON：\n"
     '{"subtasks": [{"id": "t1", "type": "rag|extract|tool", "input": "...", "tool": "..."}]}\n'
     "- type=rag：需要查运维知识库的问题，input 为该子问题的完整问句；\n"
     "- type=extract：需要从文本中抽取日期/版本号/人物，input 为待抽取文本；\n"
-    "- type=tool：需要调用工具查询，tool 为工具名"
-    "（可用：mock_get_issue_status / mock_get_deploy_info），input 为工具入参描述；\n"
+    "- type=tool：需要调用工具查询，tool 必须为下列 capability_id 之一，"
+    "input 为工具入参描述；\n"
+)
+
+_SUPERVISOR_SYSTEM_SUFFIX = (
     "- 子任务最多 4 个，按执行顺序排列；单一简单问题就只给一个 rag 子任务。\n"
     "只输出一个 JSON 对象，不要输出其他文字。"
 )
@@ -78,6 +90,38 @@ _AGGREGATOR_SYSTEM = (
 
 # Mock 工具已迁入 Capability Gateway（app.ops.capability.defaults）；
 # tool_exec_node 主路径改调 capability_invoke，不再维护裸 MOCK_TOOLS 字典。
+
+
+def _format_capability_catalog(specs: list[CapabilitySpec]) -> str:
+    """赋能目录摘要（id · description · risk）供 supervisor system 注入。"""
+    if not specs:
+        return "（当前无可用 local_fn 工具）"
+    lines = [
+        f"- {s.capability_id}：{s.description}（risk={s.risk_level}）"
+        for s in specs
+    ]
+    return "\n".join(lines)
+
+
+def _build_supervisor_system(catalog_block: str) -> str:
+    return (
+        f"{_SUPERVISOR_SYSTEM_PREFIX}"
+        f"可用工具（Capability 目录）：\n{catalog_block}\n"
+        f"{_SUPERVISOR_SYSTEM_SUFFIX}"
+    )
+
+
+def _subtasks_have_valid_tool_ids(
+    subtasks: list[dict], allowed_ids: frozenset[str]
+) -> bool:
+    """type=tool 子任务的 tool 必须在 planner 可见 id 集内。"""
+    for item in subtasks:
+        if str(item.get("type") or "") != "tool":
+            continue
+        tool_id = str(item.get("tool") or "").strip()
+        if not tool_id or tool_id not in allowed_ids:
+            return False
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -148,44 +192,60 @@ def _pending_subtask(state: LgRagState) -> dict | None:
 
 
 async def supervisor_node(state: LgRagState) -> dict:
-    """LLM 拆解复合问题为 ≤4 子任务；失败/非法 → fallback 单 rag 子任务。
+    """LLM 拆解复合问题为 ≤4 子任务；失败/非法/非法 tool id → fallback 单 rag。
 
+    拆 plan 前经 ``list_capabilities`` 注入赋能目录；``type=tool`` 的 id 须在可见集内。
     选型：complete 一次 + ``parse_only``（见 ``_parse_subtasks``），
     不用 ``acomplete_structured`` 以免本波双重 LLM。
     """
     query = _last_user_text(state["messages"])
+    caps = list_capabilities(filter=_SUPERVISOR_CAP_FILTER)
+    allowed_ids = frozenset(s.capability_id for s in caps)
+    system_content = _build_supervisor_system(_format_capability_catalog(caps))
     raw = ""
     subtasks: list[dict] | None = None
+    invalid_tool_id = False
     with trace_span("supervisor", run_type="chain"):
         try:
             provider = get_llm_provider(_ROUTER_PROVIDER)
             raw = await provider.complete(
                 [
-                    LlmMessage(role="system", content=_SUPERVISOR_SYSTEM),
+                    LlmMessage(role="system", content=system_content),
                     LlmMessage(role="user", content=query),
                 ],
                 model=_ROUTER_MODEL,
             )
             subtasks = _parse_subtasks(raw)
+            if subtasks is not None and not _subtasks_have_valid_tool_ids(
+                subtasks, allowed_ids
+            ):
+                invalid_tool_id = True
+                logger.warning(
+                    "lg_rag supervisor plan 含非法 tool id，fallback 单 rag raw=%r",
+                    raw[:200],
+                )
+                subtasks = None
         except Exception as exc:  # LLM 异常/超时 → 宁退化不失败
             logger.warning("lg_rag supervisor LLM 失败，fallback 单 rag err=%r", exc)
     fallback = subtasks is None
+    if fallback and raw and not invalid_tool_id:
+        logger.warning(
+            "lg_rag supervisor 输出非法，fallback 单 rag raw=%r", raw[:200]
+        )
     if fallback:
-        if raw:
-            logger.warning(
-                "lg_rag supervisor 输出非法，fallback 单 rag raw=%r", raw[:200]
-            )
         subtasks = [{"id": "t1", "type": "rag", "input": query}]
-    _record_span_metadata(
-        {
-            "subtask_count": len(subtasks),
-            "subtask_types": [s["type"] for s in subtasks],
-            "supervisor_fallback": fallback,
-            # 与 supervisor_fallback 并存（SPEC §5）
-            "structured_output_fallback": fallback,
-            "supervisor_raw": raw[:200],
-        }
-    )
+    span_meta: dict = {
+        "capability_catalog_count": len(caps),
+        "subtask_count": len(subtasks),
+        "subtask_types": [s["type"] for s in subtasks],
+        "supervisor_fallback": fallback,
+        # 与 supervisor_fallback 并存（SPEC §5）
+        "structured_output_fallback": fallback,
+        "supervisor_raw": raw[:200],
+    }
+    if invalid_tool_id:
+        span_meta["supervisor_invalid_tool_id"] = True
+    _record_span_metadata(span_meta)
     return {"subtasks": subtasks}
 
 

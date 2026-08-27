@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC
+
 from app.ops.capability.adapters.local_fn import LocalFnAdapter
 from app.ops.capability.gateway import get_registry, register
 from app.ops.capability.types import CapabilitySpec
@@ -31,6 +33,17 @@ def mock_get_deploy_info(payload: str) -> dict:
     }
 
 
+def utc_now_iso(_payload: str) -> dict:
+    """只读：返回当前 UTC ISO 时间戳（无副作用 · 不连外网）。"""
+    from datetime import datetime
+
+    return {
+        "tool": "utc_now_iso",
+        "utc": datetime.now(UTC).isoformat(),
+        "note": "只读时间查询",
+    }
+
+
 _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
     (
         CapabilitySpec(
@@ -51,6 +64,16 @@ _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
             risk_level="low",
         ),
         LocalFnAdapter(mock_get_deploy_info),
+    ),
+    (
+        CapabilitySpec(
+            capability_id="utc_now_iso",
+            kind="local_fn",
+            description="只读：返回当前 UTC ISO 时间戳",
+            tags=("readonly", "time"),
+            risk_level="low",
+        ),
+        LocalFnAdapter(utc_now_iso),
     ),
 ]
 

@@ -1,12 +1,12 @@
 # Task：Agent Host H2 · Capability Policy 与高危执行
 
-> **状态**：active（draft · **阻塞**：H1 CLOSE）  
+> **状态**：active（draft · H1 CLOSE ✓ · 可 20 审）  
 > **类型**：feature / agent-host-plan · H2  
 > **上游规划**：`docs/spec/agent-infra/02_agent_host_plan_v0.md`  
 > **ROADMAP**：`docs/spec/agent-infra/capability/ROADMAP_policy_and_sandbox_v0.md`  
 > **SPEC**：`docs/spec/agent-infra/capability/SPEC-capability-gateway_v0.md`  
 > **分支**：`task/capability-policy-sandbox`  
-> **前置 task**：`task_lg_rag_supervisor_capability_catalog` CLOSE
+> **前置 task**：`task_lg_rag_supervisor_capability_catalog` CLOSE ✓
 
 ---
 

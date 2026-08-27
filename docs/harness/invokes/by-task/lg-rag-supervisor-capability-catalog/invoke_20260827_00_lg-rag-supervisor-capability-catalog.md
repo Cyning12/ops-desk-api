@@ -32,9 +32,9 @@
 | 20 R1 | ✓ | audit R1 pass |
 | 00 代签 | ✓ | HG-TASK-DRAFT + HG-AUDIT-R1 |
 | GATE_VERIFY | ✓ PASS | verify CLI 2026-08-27 |
-| **30** | **待派** | PROMPT_30_execute.md |
-| 40 | 待 | pytest / ruff / graph-compile |
-| CLOSE | 待 | 归档 done/ · 回写 ROADMAP |
+| 30 | ✓ PASS | invoke_20260827_30_40 |
+| 40 | ✓ PASS | H1 6 + p2 12 + capability 25 |
+| **CLOSE** | **✓ PASS** | 归档 done/ · 2026-08-27 |
 
 ---
 
