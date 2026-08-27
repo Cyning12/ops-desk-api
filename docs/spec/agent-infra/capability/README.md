@@ -11,9 +11,10 @@
 | 文件 | 层级 | 说明 |
 |---|---|---|
 | [`SPEC-capability-gateway_v0.md`](./SPEC-capability-gateway_v0.md) | L2 现行契约 | P0–P3 已落地；接口与失败语义真值 |
-| [`ROADMAP_portable_core_v0.md`](./ROADMAP_portable_core_v0.md) | L2 升级 | Mode A 可迁移内核；隔离 LG 桥；真 MCP 后续 |
+| [`ROADMAP_portable_core_v0.md`](./ROADMAP_portable_core_v0.md) | L2 升级 | Mode A 可迁移 · **U1–U3 DONE** |
+| [`ROADMAP_policy_and_sandbox_v0.md`](./ROADMAP_policy_and_sandbox_v0.md) | L2 Host 轨 H2 | Policy 门 + sandbox/cli/code |
 
-上级：[`../README.md`](../README.md) · [`../00_architecture_and_boundaries.md`](../00_architecture_and_boundaries.md) · [`../01_upgrade_roadmap.md`](../01_upgrade_roadmap.md)
+上级：[`../README.md`](../README.md) · [`../02_agent_host_plan_v0.md`](../02_agent_host_plan_v0.md)
 
 ---
 

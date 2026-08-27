@@ -1,7 +1,7 @@
 ---
 graph_id: 00_main
 version: 2026-08-24
-generated_at: 2026-08-26T06:12:33Z
+generated_at: 2026-08-27T03:32:10Z
 source: 00_main.graph.yaml
 ---
 
@@ -146,7 +146,7 @@ flowchart TB
 
 ## Sub-graph Links
 
-- `Modules`: [`../l1/01_modules.md`](../l1/01_modules.md)（手写 · `HG-GRAPH-MODULES` 真值）
-- `Version`: [`../shared/02_version.md`](../shared/02_version.md)（手写 · 无 `.graph.yaml`）
-- 子图编辑源见 `docs/_tech_graph/**/*.graph.yaml`
+- `Struct`: [`01_struct.md`](01_struct.md)（手写 · 无 `.graph.yaml`）
+- `Version`: [`02_version.md`](02_version.md)（手写 · 无 `.graph.yaml`）
+- 子图编辑源见 `docs/_tech_graph/*.graph.yaml`
 

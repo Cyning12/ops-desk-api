@@ -16,3 +16,4 @@
 | 日期 | 文件 | 主题 |
 |---|---|---|
 | 2026-08-26 | [2026-08-26_lg-rag-agent-capability-architecture.md](./2026-08-26_lg-rag-agent-capability-architecture.md) | lg_rag 质量闸 / 多智能体 / 能力网关 / output-control 对照 → [agent-infra SPEC](../spec/agent-infra/) |
+| 2026-08-26 | [2026-08-26_agent-host-architecture-phase-summary.md](./2026-08-26_agent-host-architecture-phase-summary.md) | **阶段性总结** + 架构图例 → [`02_agent_host_plan_v0`](../spec/agent-infra/02_agent_host_plan_v0.md) |
