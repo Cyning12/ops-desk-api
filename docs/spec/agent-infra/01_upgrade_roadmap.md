@@ -56,3 +56,4 @@
 |---|---|
 | 2026-08-26 | 初版：Capability 可迁移优先 → SO schema 卫生 → MCP → 可选 acomplete 接入 |
 | 2026-08-26 | **收官**：波次 1–3 落地（#66/#67/#68）；波次 4 跳过；状态 → `stable` |
+| 2026-08-27 | 后继活跃排期迁至 [`02_agent_host_plan_v0.md`](./02_agent_host_plan_v0.md)（H1–H5） |
