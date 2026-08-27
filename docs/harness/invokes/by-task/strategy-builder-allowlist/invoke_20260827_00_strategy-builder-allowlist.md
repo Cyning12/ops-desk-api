@@ -45,7 +45,7 @@
 | GATE_VERIFY | ✓ PASS | verify CLI 2026-08-27 |
 | 30 | ✓ PASS | invoke_20260827_30_40 · [`30 S1 allowlist`](c27d58b5-4c3c-436b-9e4a-8fa56dedc7a9) |
 | 40 | ✓ PASS | pytest 30 · ruff 0 · graph-compile 0 · chat/graph.py 0 diff |
-| CLOSE | ✓ PASS | 归档 done/ · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) |
+| CLOSE | ✓ PASS | 归档 done/ · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** |
 
 ---
 
@@ -64,4 +64,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-27 | S0 代签 · 拆 S1 · 00 统筹启动 |
-| 2026-08-27 | 30/40 PASS · 机械验收 PASS · CLOSE |
+| 2026-08-27 | 30/40 PASS · 机械验收 PASS · CLOSE · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) MERGED |

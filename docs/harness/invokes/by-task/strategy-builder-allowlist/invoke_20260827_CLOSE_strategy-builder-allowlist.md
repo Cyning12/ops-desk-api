@@ -25,6 +25,6 @@
 
 ## PR
 
-[#78](https://github.com/Cyning12/ops-desk-api/pull/78)
+[#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** · `de20e53`
 
-| 2026-08-27 | 00 CLOSE PASS · PR #78 |
+| 2026-08-27 | 00 CLOSE PASS · PR #78 MERGED |
