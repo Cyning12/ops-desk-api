@@ -234,6 +234,16 @@ async def test_unknown_tool_at_invoke_recorded_and_continues():
     assert out2["subtask_results"][0]["output"]["version"] == "v2.3.1"
 
 
+def test_supervisor_graph_includes_strategy_builder_node():
+    """S1：supervisor 图拓扑含 strategy_builder 前置节点。"""
+    from app.ops.lg_rag.multi.graph import build_supervisor_agent
+
+    graph = build_supervisor_agent()
+    node_names = set(graph.get_graph().nodes.keys())
+    assert "strategy_builder" in node_names
+    assert "supervisor" in node_names
+
+
 def test_empty_subtasks_dispatch_goes_aggregate():
     """空 subtasks / 耗尽 → dispatch 直走 aggregate（防死循环）。"""
     assert route_next_subtask({"subtasks": [], "subtask_results": []}) == "aggregate"

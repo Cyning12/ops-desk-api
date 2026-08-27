@@ -1,8 +1,22 @@
 # ROADMAP：Strategy Builder（L2 · 可拆 task）
 
 > **层级**：L2 路线（strategy 域）  
-> **状态**：`draft`（随 [`../03_strategy_and_intent_plan_v0.md`](../03_strategy_and_intent_plan_v0.md)；**不**授权 30）  
+> **状态**：`active`（S0 签收 · 随 [`../03_strategy_and_intent_plan_v0.md`](../03_strategy_and_intent_plan_v0.md)；**不**直接授权 30）  
 > **架构边界**：[`../00_architecture_and_boundaries.md`](../00_architecture_and_boundaries.md) §4 / §4.1
+
+### 人工闸（S0）
+
+| human_gate_id | status | 说明 |
+|---|---|---|
+| **HG-SPEC-SIGNOFF** | approved | 2026-08-27 · **00 代签 · 维护者 Prompt 授权** |
+
+### 落地状态
+
+| 波次 | 状态 | 说明 |
+|---|---|---|
+| S0 | **DONE** | 03 + 本 ROADMAP 签收 · 2026-08-27 |
+| S1 | **DONE**（待 PR MERGED） | 2026-08-27 · allowlist 闭环 · `task/strategy-builder-allowlist` |
+| S2–S4 | pending | 非本棒 |
 
 ---
 
@@ -72,8 +86,10 @@ if state.allowed_capability_ids is not None:
     visible = [s for s in visible if s.capability_id in allowlist]
 ```
 
-- `None` allowlist：兼容旧行为（仅 filter）或钉死「必须经 Builder」（00 定夺；**建议 S1 起 supervisor 图强制 Builder**）。  
-- 空 allowlist：禁止 `type=tool` 或整 plan 仅 rag（00 定夺）。
+**00 定夺（S1 · 2026-08-27）**：
+
+- `None` allowlist：**不**再兼容「仅 filter」；supervisor 图路径 **强制**经 Builder 写 list（缺字段视为实现错误，测试须覆盖 Builder 前置）。  
+- 空 allowlist `[]`：禁止 `type=tool`；整 plan **fallback 单 rag**（继承 H1 非法 tool 语义，不回归）。
 
 ---
 
@@ -101,3 +117,5 @@ capabilities:
 | 日期 | 说明 |
 |---|---|
 | 2026-08-27 | 初版：对齐 03 规划 · S1–S4 交付项 |
+| 2026-08-27 | S0 签收 · 落地状态表 · 钉死 None/空 allowlist 语义 |
+| 2026-08-27 | S1 实现 00 验收 PASS（pytest 30 · graph-compile）· 待 PR MERGED |

@@ -1,10 +1,11 @@
 # Task：策略轨 + 测评轨 SPEC 落盘（docs-only）
 
-> **状态**：active（2026-08-27 · 文档维护）  
+> **状态**：completed（2026-08-27 · S0 签收 · docs-only CLOSE · 已归档）  
 > **类型**：docs / agent-infra 规划  
 > **上游**：会话结论 · [`03_strategy_and_intent_plan_v0.md`](../../spec/agent-infra/03_strategy_and_intent_plan_v0.md) · [`04_eval_and_observability_plan_v0.md`](../../spec/agent-infra/04_eval_and_observability_plan_v0.md)  
-> **分支**：`task/strategy-builder-allowlist`（S1 预备 · 含 03/04 SPEC 落盘）  
-> **范围**：仅 `docs/spec/agent-infra/**` + 本 task；**禁止**业务改码（无 30）
+> **分支**：`task/strategy-builder-allowlist`  
+> **范围**：仅 `docs/spec/agent-infra/**` + 本 task；**禁止**业务改码（无 30）  
+> **下游实现**：[`../active/task_strategy_builder_allowlist.md`](../active/task_strategy_builder_allowlist.md)
 
 ---
 
@@ -27,9 +28,10 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| HG-TASK-DRAFT | pending | — | 维护者确认 SPEC 落盘范围 |
-| HG-AUDIT-R1 | n/a | 30 | 本 task **无 30**；实现另开 S1/E1 task |
+| HG-TASK-DRAFT | approved | — | 2026-08-27 · **00 代签 · 维护者 Prompt 授权**（SPEC 落盘范围确认） |
+| HG-AUDIT-R1 | n/a | 30 | 本 task **无 30**；实现见 S1 |
 | HG-GRAPH-MODULES | n/a | — | 不改图谱 |
+| HG-SPEC-SIGNOFF | approved | — | 见 03 / strategy ROADMAP · **00 代签 · 维护者 Prompt 授权** |
 
 ---
 
@@ -47,14 +49,25 @@
 - [x] 回写：`README.md` · `00_architecture` §4.1 · `02` 下游指针 · orchestration/skill/capability README
 - [x] L0：`04_eval_and_observability_plan_v0.md` + `eval/`（Langfuse/Smith 边界 · 混合架构）
 - [x] 回写：`README` · `00` §7.1 · `03` 交叉引用
-- [ ] 维护者 S0/E0 签收后拆实现 task
+- [x] 维护者 S0 签收（00 代签）后拆实现 task `strategy-builder-allowlist`
 
 ---
 
 ## 非范围
 
 - 任何 `app/` 改码  
-- 拆 S1–S4 / E1–E4 实现 task 的完整 Harness 派发（签收后另开）
+- 拆 S1–S4 / E1–E4 实现（已另开 S1 task）
+
+---
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-27 |
+| 定稿 | 03/04 + strategy/eval 域落盘 · S0 签收 · 挂 S1 |
+| 归档 | `docs/tasks/done/task_strategy_builder_spec.md` |
+| PR | 随 S1 同分支合入 |
 
 ---
 
@@ -64,3 +77,4 @@
 |---|---|
 | 2026-08-27 | 初版 · SPEC 落盘（策略轨） |
 | 2026-08-27 | 补测评轨 04 + eval 域 |
+| 2026-08-27 | S0 代签 · CLOSE · 挂 S1 allowlist |

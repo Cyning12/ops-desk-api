@@ -2,7 +2,7 @@
 
 > **层级**：L0 规划（Gateway 升级轨收官后的 **架构 flesh** 轨）  
 > **状态**：`completed`（规划真值 · HG-SPEC-SIGNOFF **approved** · **H1–H5 全轨 CLOSE** · 2026-08-27）  
-> **下游下一轨**：[`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md)（Strategy Builder · Intent · Critic；**draft**）  
+> **下游下一轨**：[`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md)（Strategy Builder · Intent · Critic；**active** · S0 签收 · 首棒 S1 allowlist）  
 > **版本**：v0 · 2026-08-27  
 > **上游**：[`00_architecture_and_boundaries.md`](./00_architecture_and_boundaries.md) · [讨论阶段性总结](../../discussions/2026-08-26_agent-host-architecture-phase-summary.md)  
 > **前置轨**：[`01_upgrade_roadmap.md`](./01_upgrade_roadmap.md)（**stable** · Capability portable + SO 卫生 + MCP）  

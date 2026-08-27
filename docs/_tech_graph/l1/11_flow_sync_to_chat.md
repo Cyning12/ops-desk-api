@@ -1,7 +1,7 @@
 ---
 graph_id: 11_flow_sync_to_chat
 version: 2026-08-25
-generated_at: 2026-08-27T03:52:14Z
+generated_at: 2026-08-27T10:20:51Z
 source: 11_flow_sync_to_chat.graph.yaml
 ---
 

@@ -24,7 +24,7 @@ audience: agent-30
 | `lc_evidence_chain` | LangChain 旁路答问 | `app/ops/lc_evidence_chain/**` | → `rag`, `llm`, `db` | LCEL 旁路答问链，HTTP `POST /api/ops/lc-evidence/invoke`（cookie 鉴权 · freeze `lc-evidence-http-v1`），**默认不进入** `chat/graph`，被 `lg_rag` 黑盒复用；拓扑详见 [`10_flow_lc_evidence.md`](./10_flow_lc_evidence.md) |
 | `structured_output` | Structured Output Gateway | `app/ops/structured_output/**` | → `llm` | LLM 文本 → parse/repair/validate/预算纠偏；供 `lg_rag` 结构化节点复用；**域 schema 在 `lg_rag/schemas`**（SO 内核不含业务模型）；**不是** Skill；拓扑详见 [`10_flow_structured_output.md`](./10_flow_structured_output.md) |
 | `capability` | Capability Gateway | `app/ops/capability/**` | → — | 能力注册 / 筛选 / 统一 invoke（local_fn · mock 探针 · skill stub）；**invoke 前 Policy 门**（高危/sandbox/cli 默认 blocked · Host-only 策略键）；**可迁移内核 · Mode A**（`list`+`invoke`；ToolNode 桥仅 `extras.langchain`）；**真 MCP · 默认关 · CI 不外网**；拓扑详见 [`10_flow_capability.md`](./10_flow_capability.md) |
-| `lg_rag` | LangGraph 旁路单 Agent | `app/ops/lg_rag/**` | → `lc_evidence_chain`, `llm`, `structured_output`, `capability` | 旁路三模式 basic / router / supervisor，HTTP `POST /api/ops/lg-rag/invoke`（mode 分派 · freeze `lg-rag-http-v1`），黑盒复用 `ainvoke_evidence_answer`，**默认不进入** `chat/graph`；**supervisor planner 经 `list_capabilities` 读赋能目录**；结构化节点走 `structured_output` 管道 + **域 schema 在 `lg_rag/schemas`**；`tool_exec` 走 `capability`；拓扑详见 [`10_flow_lg_rag.md`](./10_flow_lg_rag.md) |
+| `lg_rag` | LangGraph 旁路单 Agent | `app/ops/lg_rag/**` | → `lc_evidence_chain`, `llm`, `structured_output`, `capability` | 旁路三模式 basic / router / supervisor，HTTP `POST /api/ops/lg-rag/invoke`（mode 分派 · freeze `lg-rag-http-v1`），黑盒复用 `ainvoke_evidence_answer`，**默认不进入** `chat/graph`；**supervisor 图 START→Strategy Builder allowlist→supervisor planner**（`list_capabilities` ∩ state allowlist）；结构化节点走 `structured_output` 管道 + **域 schema 在 `lg_rag/schemas`**；`tool_exec` 走 `capability`；拓扑详见 [`10_flow_lg_rag.md`](./10_flow_lg_rag.md) |
 | `data` | 数据视图 | `app/ops/overview.py`, `app/ops/issues.py`, `app/ops/pulls.py`, `app/ops/graph.py` | → `db` | Issue/PR/Overview 指标/Graph 快照只读查询（供 Chat / iOS 只读消费） |
 | `admin` | Admin 同步 | `app/ops/admin/sync.py`, `app/ops/admin/service.py`, `app/ops/admin/schema.py` | → `db` | 接收 GHA sync payload 并持久化到 data/chat 依赖的表 |
 | `llm` | LLM Provider | `app/llm/**` | → — | SiliconFlow / 百炼 provider 工厂；complete 路径上报 usage；grader 故障 refuse |
@@ -59,6 +59,7 @@ audience: agent-30
 | HG-GRAPH-MODULES | approved | 维护者（H1 lg-rag-supervisor-capability-catalog · 00） | 2026-08-27 | `lg_rag` 行备注：supervisor 读 Capability 目录；不新增一级模块 |
 | HG-GRAPH-MODULES | approved | 维护者（H2 capability-policy-sandbox · 00） | 2026-08-27 | `capability` 行备注：Policy 门；不新增一级模块 |
 | HG-GRAPH-MODULES | approved | 维护者（H3 chat-session-continuity · 00） | 2026-08-27 | `chat` 行备注 Session 连续性；不新增一级模块 |
+| HG-GRAPH-MODULES | approved | 维护者（S1 strategy-builder-allowlist · 00） | 2026-08-27 | `lg_rag` 行备注 Strategy Builder allowlist；不新增一级模块 |
 
 ## 关联
 

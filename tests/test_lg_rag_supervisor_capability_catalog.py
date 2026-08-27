@@ -15,6 +15,15 @@ from app.ops.lg_rag.multi.nodes import (
     _subtasks_have_valid_tool_ids,
     supervisor_node,
 )
+from app.ops.strategy import BUILDER_CAP_FILTER
+
+
+def _full_allowlist_state(messages: list) -> dict:
+    """supervisor 单测：模拟 Builder 已写入全量可见 allowlist。"""
+    ids = [
+        s.capability_id for s in list_capabilities(filter=BUILDER_CAP_FILTER)
+    ]
+    return {"messages": messages, "allowed_capability_ids": ids}
 
 
 def _span_cm():
@@ -81,7 +90,7 @@ async def test_supervisor_messages_include_capability_catalog():
         patch("app.ops.lg_rag.multi.nodes._record_span_metadata"),
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
     ):
-        await supervisor_node({"messages": [HumanMessage(content="复合问题")]})
+        await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
     assert captured
     system = captured[0][0].content
     assert "Capability 目录" in system
@@ -117,13 +126,95 @@ async def test_supervisor_invalid_tool_id_fallback_single_rag():
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
     ):
         out = await supervisor_node(
-            {"messages": [HumanMessage(content="复合问题")]}
+            _full_allowlist_state([HumanMessage(content="复合问题")])
         )
     assert out["subtasks"] == [{"id": "t1", "type": "rag", "input": "复合问题"}]
     assert recorded
     assert recorded[0]["supervisor_fallback"] is True
     assert recorded[0]["supervisor_invalid_tool_id"] is True
     assert recorded[0]["capability_catalog_count"] >= 1
+
+
+@pytest.mark.asyncio
+async def test_supervisor_empty_allowlist_fallback_single_rag():
+    """S1-c：空 allowlist → 整 plan fallback 单 rag（不调 LLM）。"""
+    recorded: list[dict] = []
+    provider = SimpleNamespace(complete=AsyncMock())
+    with (
+        patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider),
+        patch(
+            "app.ops.lg_rag.multi.nodes._record_span_metadata",
+            side_effect=lambda m: recorded.append(m),
+        ),
+        patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+    ):
+        out = await supervisor_node(
+            {"messages": [HumanMessage(content="复合问题")], "allowed_capability_ids": []}
+        )
+    assert out["subtasks"] == [{"id": "t1", "type": "rag", "input": "复合问题"}]
+    assert recorded[0]["supervisor_empty_allowlist"] is True
+    provider.complete.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_supervisor_restricted_allowlist_hides_tool_from_catalog():
+    """S1-c：窄 allowlist → system prompt 不含未授权 tool。"""
+    captured: list[list] = []
+    plan = json.dumps(
+        {"subtasks": [{"id": "t1", "type": "rag", "input": "查部署"}]},
+        ensure_ascii=False,
+    )
+
+    async def _capture_complete(messages, *, model):
+        captured.append(messages)
+        return plan
+
+    provider = SimpleNamespace(complete=_capture_complete)
+    with (
+        patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider),
+        patch("app.ops.lg_rag.multi.nodes._record_span_metadata"),
+        patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+    ):
+        await supervisor_node(
+            {
+                "messages": [HumanMessage(content="复合问题")],
+                "allowed_capability_ids": ["utc_now_iso"],
+            }
+        )
+    system = captured[0][0].content
+    assert "utc_now_iso" in system
+    assert "mock_get_issue_status" not in system
+
+
+@pytest.mark.asyncio
+async def test_supervisor_tool_not_in_allowlist_fallback_single_rag():
+    """S1-d：plan 中 tool 不在本轮可见集 → fallback 单 rag。"""
+    plan = json.dumps(
+        {
+            "subtasks": [
+                {
+                    "id": "t1",
+                    "type": "tool",
+                    "input": "查 issue",
+                    "tool": "mock_get_issue_status",
+                }
+            ]
+        },
+        ensure_ascii=False,
+    )
+    provider = SimpleNamespace(complete=AsyncMock(return_value=plan))
+    with (
+        patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider),
+        patch("app.ops.lg_rag.multi.nodes._record_span_metadata"),
+        patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+    ):
+        out = await supervisor_node(
+            {
+                "messages": [HumanMessage(content="复合问题")],
+                "allowed_capability_ids": ["utc_now_iso"],
+            }
+        )
+    assert out["subtasks"] == [{"id": "t1", "type": "rag", "input": "复合问题"}]
 
 
 @pytest.mark.asyncio
@@ -148,6 +239,8 @@ async def test_supervisor_valid_tool_plan_kept():
         patch("app.ops.lg_rag.multi.nodes._record_span_metadata"),
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
     ):
-        out = await supervisor_node({"messages": [HumanMessage(content="几点了")]})
+        out = await supervisor_node(
+            _full_allowlist_state([HumanMessage(content="几点了")])
+        )
     assert out["subtasks"][0]["type"] == "tool"
     assert out["subtasks"][0]["tool"] == "utc_now_iso"

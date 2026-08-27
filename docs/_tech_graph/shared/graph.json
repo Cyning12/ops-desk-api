@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260827_V1",
-  "generated_at": "2026-08-27T03:52:15Z",
+  "generated_at": "2026-08-27T10:20:51Z",
   "graphs": [
     {
       "id": "00_main",
@@ -448,6 +448,11 @@
       "graph_id": "10_flow_lg_rag",
       "id": "r_rewrite",
       "label": "rewrite_node（LLM 改写 · 熔断封顶）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "s_strategy_builder",
+      "label": "strategy_builder_node（S1 allowlist · Registry∩Policy）"
     },
     {
       "graph_id": "10_flow_lg_rag",
@@ -2220,14 +2225,29 @@
     {
       "graph_id": "10_flow_lg_rag",
       "from": "sup_graph",
-      "to": "s_supervisor",
+      "to": "s_strategy_builder",
       "mark": "->",
       "type": "depends_on",
-      "label": "START → supervisor",
+      "label": "START → strategy_builder",
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 52
+          "line": 54
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_strategy_builder",
+      "to": "s_supervisor",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "allowed_capability_ids",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 55
         }
       ],
       "sync": true
@@ -2473,6 +2493,36 @@
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
           "symbol": "info_extract_node"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_strategy_builder",
+      "to": "capability_gw",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "list_capabilities（Builder catalog）",
+      "anchors": [
+        {
+          "path": "app/ops/strategy/builder.py",
+          "symbol": "strategy_builder_node"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_supervisor",
+      "to": "capability_gw",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "list_capabilities ∩ allowlist",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "symbol": "supervisor_node"
         }
       ],
       "sync": true

@@ -1,10 +1,29 @@
 # ROADMAP：Strategy Builder · Intent · 再赋能闭环（L0）
 
 > **层级**：L0 Host 下一轨规划（跨 orchestration / capability / skill / prompt）  
-> **状态**：`draft`（2026-08-27 讨论结论落盘；**不**授权 30；须另开 task + 人工闸）  
+> **状态**：`active`（规划真值 · HG-SPEC-SIGNOFF **approved** · 2026-08-27；**不**直接授权 30；须另开 task + 人工闸）  
 > **上游**：[`02_agent_host_plan_v0.md`](./02_agent_host_plan_v0.md)（H1–H5 **CLOSE**）· [`00_architecture_and_boundaries.md`](./00_architecture_and_boundaries.md)  
 > **域夹**：[`strategy/`](./strategy/)  
-> **讨论来源**：2026-08-27 会话（H1 闭环解读 → Strategy Builder / Intent / YAML 目录 / Critic 再赋能）
+> **讨论来源**：2026-08-27 会话（H1 闭环解读 → Strategy Builder / Intent / YAML 目录 / Critic 再赋能）  
+> **首棒实现**：[`task_strategy_builder_allowlist`](../../tasks/done/task_strategy_builder_allowlist.md)（S1 · 00 验收 PASS）
+
+---
+
+## Harness 元信息
+
+| 字段 | 值 |
+|---|---|
+| **plan_slug** | `strategy-and-intent` |
+| **invoke_slug** | `strategy-builder-allowlist`（S1 首棒） |
+| **test_strategy** | `required`（按子波次裁剪；S1 mock LLM + registry） |
+| **graph_change_layer（建议）** | 多为 `G-L1`（`lg_rag` / 可选 `strategy` 包备注；**不**默认新增一级模块） |
+| **默认分支** | `task/strategy-builder-allowlist` |
+
+### 人工闸（SPEC / S0）
+
+| human_gate_id | status | 说明 |
+|---|---|---|
+| **HG-SPEC-SIGNOFF** | approved | 2026-08-27 · **00 代签 · 维护者 Prompt 授权**（`PROMPT_00_strategy-builder-s1`） |
 
 ---
 
@@ -162,3 +181,5 @@ YAML 管**元数据与注册清单**；执行仍走 adapter。热更新须版本
 |---|---|
 | 2026-08-27 | 初版：会话结论整合（H5 后缺口 · Strategy Builder 命名 · Intent · YAML · Critic 分流） |
 | 2026-08-27 | 交叉引用测评轨 [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md)（Critic/准确率与 Eval 正交） |
+| 2026-08-27 | **HG-SPEC-SIGNOFF=approved**（S0 · 00 代签 · 维护者 Prompt 授权）；状态 `active`；拆 S1 `strategy-builder-allowlist` |
+| 2026-08-27 | S1 allowlist 00 验收 PASS（pytest 30 · graph-compile）；task 归档 done/ |

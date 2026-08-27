@@ -15,7 +15,7 @@
 | **L0 架构** | [`00_architecture_and_boundaries.md`](./00_architecture_and_boundaries.md) | Agent / Graph / Capability / SO 边界；Mode A；静态图+动态 plan | 波次验收清单 |
 | **L0 升级总表** | [`01_upgrade_roadmap.md`](./01_upgrade_roadmap.md) | Gateway 升级轨（**stable**） | 单 SPEC 契约条文 |
 | **L0 Host 规划** | [`02_agent_host_plan_v0.md`](./02_agent_host_plan_v0.md) | Agent Host flesh 波次 H1–H5（**completed**） | 实现细节 |
-| **L0 策略轨** | [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) | Strategy Builder · Intent · Critic 再赋能（**draft**） | 实现细节 |
+| **L0 策略轨** | [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) | Strategy Builder · Intent · Critic 再赋能（**active** · S0 签收） | 实现细节 |
 | **L0 测评轨** | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | 持续观测 · 可用性/准确性/稳定性 · Langfuse 边界（**draft · 活跃**） | 实现细节 |
 | **L1 域夹** | `capability/` · `structured-output/` · `strategy/` · `eval/` 等 | 该域 README + 现行 SPEC + 域 ROADMAP | 跨域总序（回指 L0） |
 | **L2 现行契约** | `*/SPEC-*_v0.md` | 已签收、P0–P3 已落地的接口与失败语义 | 未开工升级设想 |
@@ -79,11 +79,11 @@ docs/spec/agent-infra/
 |---|---|---|---|
 | `agent-host-plan` | [`02_agent_host_plan_v0.md`](./02_agent_host_plan_v0.md) | **completed** · HG-SPEC-SIGNOFF approved | H1–H5 全轨 CLOSE · 2026-08-27 |
 
-## 策略轨（draft）
+## 策略轨（active · S0 签收）
 
 | ID | 规划 | 状态 | 首波 |
 |---|---|---|---|
-| `strategy-and-intent` | [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) | draft · 待 S0 签收 | **S1** allowlist → 见 [`strategy/ROADMAP`](./strategy/ROADMAP_strategy_builder_v0.md) |
+| `strategy-and-intent` | [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **S1** allowlist → [`strategy/ROADMAP`](./strategy/ROADMAP_strategy_builder_v0.md) · 分支 `task/strategy-builder-allowlist` |
 
 ## 测评轨（draft · 可与策略轨并行）
 
@@ -129,3 +129,4 @@ docs/spec/agent-infra/
 | 2026-08-27 | **Host flesh 初版规划**：`02_agent_host_plan_v0` + H1–H5 域 ROADMAP；00 Prompt 草案 |
 | 2026-08-27 | **策略轨落盘**：`03_strategy_and_intent_plan_v0` + `strategy/`；H1–H5 标 completed；命名边界补 Strategy Builder |
 | 2026-08-27 | **测评轨落盘**：`04_eval_and_observability_plan_v0` + `eval/`；Langfuse 默认 · 混合 harness · 非完整自建 |
+| 2026-08-27 | **策略轨 S0 签收**：03 + strategy ROADMAP `HG-SPEC-SIGNOFF=approved`；开 S1 `strategy-builder-allowlist` |
