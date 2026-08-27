@@ -25,6 +25,6 @@
 
 ## PR
 
-待 `gh pr create` 后回写编号 · 本 Prompt 已授权 merge
+[#78](https://github.com/Cyning12/ops-desk-api/pull/78)
 
-| 2026-08-27 | 00 CLOSE PASS |
+| 2026-08-27 | 00 CLOSE PASS · PR #78 |
