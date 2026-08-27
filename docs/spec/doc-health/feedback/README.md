@@ -28,3 +28,4 @@
 |------|------|
 | 2026-08-26 | 建 FEEDBACK 轨 |
 | 2026-08-26 | 登记 1.7.1 upgrade 未 sync 00 条文 |
+| 2026-08-27 | 1.8.0 | upgrade 不 sync prompts（复发） | [2026-08-27_1.8.0_upgrade-no-prompt-sync.md](./2026-08-27_1.8.0_upgrade-no-prompt-sync.md) |

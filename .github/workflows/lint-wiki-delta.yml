@@ -1,7 +1,7 @@
 # Optional · wiki_delta 扫描（升级迁移清单 · v2.19+ / 可选 --strict · v2.20+）
 #
 # 来源：@cyning/harness@2.22.0 ci/samples/lint-wiki-delta.yml.example
-# 2026-08-25：命令面切换 @cyning/harness@2.22.0 → dsh-coding-kit@1.6.1
+# 2026-08-25：命令面切换 @cyning/harness@2.22.0 → dsh-coding-kit@1.8.0
 #   （kit task lint-wiki-delta 参数面一致：--target / --scope / --strict）
 # 本仓：Python/FastAPI · 无 package.json → npx-only + package-manager-cache: false
 # 策略：字段已齐 → 默认 lint 硬失败；--strict 暂作注释（关账预检本地跑）
@@ -32,8 +32,8 @@ jobs:
           package-manager-cache: false
 
       - name: task lint-wiki-delta
-        run: npx --yes dsh-coding-kit@1.6.1 task lint-wiki-delta --target .
+        run: npx --yes dsh-coding-kit@1.8.0 task lint-wiki-delta --target .
 
       # 可选：关账预检（迁完字段后再开；半迁勿开）
       # - name: lint-wiki-delta --strict
-      #   run: npx --yes dsh-coding-kit@1.6.1 task lint-wiki-delta --target . --strict
+      #   run: npx --yes dsh-coding-kit@1.8.0 task lint-wiki-delta --target . --strict
