@@ -303,13 +303,21 @@ def test_p2_probes_register_and_invoke_mock():
     assert mcp.output["kind"] == "mcp"
     assert mcp.meta.get("kind") == "mcp"
 
-    sandbox = invoke(PROBE_SANDBOX_ID, "echo")
+    sandbox = invoke(
+        PROBE_SANDBOX_ID,
+        "echo",
+        ctx={"_host_policy": {"allow_sandbox": True}},
+    )
     assert sandbox.ok is True
     assert sandbox.output["sandbox"] == "mock"
     assert sandbox.output["exit_code"] == 0
     assert sandbox.meta.get("kind") == "sandbox"
 
-    cli = invoke(PROBE_CLI_ID, ["echo", "hi"])
+    cli = invoke(
+        PROBE_CLI_ID,
+        ["echo", "hi"],
+        ctx={"_host_policy": {"allow_cli": True}},
+    )
     assert cli.ok is True
     assert cli.output["cli"] == "mock"
     assert cli.output["stdout"] == "cli-mock-ok"
