@@ -35,7 +35,7 @@
 | GATE_VERIFY | ✓ PASS | verify CLI 2026-08-27 |
 | 30 | ✓ PASS | invoke_20260827_30_40 · [`30 S2 Intent`](5c2ad580-e0e6-4fe3-ac20-a35538c27bbd) |
 | 40 | ✓ PASS | pytest 48 · ruff 0 · graph-compile 0 · chat/graph.py 0 diff |
-| CLOSE | ✓ PASS | 归档 done/ · [#80](https://github.com/Cyning12/ops-desk-api/pull/80) |
+| CLOSE | ✓ PASS | 归档 done/ · [#80](https://github.com/Cyning12/ops-desk-api/pull/80) **MERGED** |
 
 ---
 
@@ -53,4 +53,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-27 | S2 00 统筹启动 |
-| 2026-08-27 | 30/40 PASS · 机械验收 PASS · CLOSE |
+| 2026-08-27 | 30/40 PASS · 机械验收 PASS · CLOSE · [#80](https://github.com/Cyning12/ops-desk-api/pull/80) MERGED |
