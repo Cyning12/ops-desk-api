@@ -5,7 +5,8 @@
 > **起点**：manifest `1.7.1` → 目标 `dsh-coding-kit@1.8.0`  
 > **对照**：`/tmp/kit-171/package` vs `/tmp/kit-180/package`（`npm pack`）  
 > **上游 FEEDBACK**：[`FEEDBACK_agent_host_plan_ci_20260827.md`](./FEEDBACK_agent_host_plan_ci_20260827.md) §3 **K1–K7**  
-> **执行**：本窗 · 过程轨升级；未改 `app/`；prompts 自包内 `assets/harness/prompts/` 手同步（upgrade 仍只写 manifest）
+> **执行**：本窗 · 过程轨升级；未改 `app/`；prompts 自包内 `assets/harness/prompts/` 手同步（upgrade 仍只写 manifest）  
+> **本波 PR**：[#76](https://github.com/Cyning12/ops-desk-api/pull/76) MERGED
 
 ---
 
@@ -123,3 +124,4 @@ LINT-WIKI-DELTA: FAIL · issues 1
 | 日期 | 说明 |
 |------|------|
 | 2026-08-27 | 初稿：1.8.0 升级 + agent-host K1–K7 全量核对 |
+| 2026-08-27 | PR #76 MERGED；Hub 关账卡 `task_dsh_coding_kit_upgrade_1_8_0` |

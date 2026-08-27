@@ -78,7 +78,7 @@
 
 | # | 动作 | 状态 | 说明 |
 |---|---|---|---|
-| L1 | 40 / invoke PR 前硬命令：`pytest tests -q` + `npx dsh-coding-kit@1.6.1 task lint-wiki-delta --target .` | **待** | 写入 `PROMPT_00_agent-host-plan` 或仓内 `cyning-harness-local` |
+| L1 | 40 / invoke PR 前硬命令：`pytest tests -q` + `npx dsh-coding-kit@1.8.0 task lint-wiki-delta --target .` | **待**（命令已钉 1.8.0） | 写入 `PROMPT_00` 或仓内 `cyning-harness-local` |
 | L2 | 归档 **禁止手写 done**；只走 `task close --file … --yes` | **待** | 00/CLOSE invoke 纪律 |
 | L3 | SPEC 签收拆多 task 时批量预填 `## Harness 元信息` + `wiki_delta` | **待** | 避免 #70 类连带 red |
 | L4 | 行为变更 PR 验收加「全仓 pytest + 关联旧测 grep」 | **待** | 避免 #70/#71 类 |
@@ -153,7 +153,7 @@ error='policy_blocked: sandbox_disabled'
 
 | 项 | 值 |
 |---|---|
-| kit 版本（CI） | `npx --yes dsh-coding-kit@1.6.1` |
+| kit 版本（CI） | `npx --yes dsh-coding-kit@1.8.0` |
 | CI workflows | `.github/workflows/pytest.yml` · `.github/workflows/lint-wiki-delta.yml` |
 | PR 序列 | #70 H1 · #71 H2 · #72 H3 · #73 H4 · #74 H5 · #75 收官文档 |
 | 最终 master | H1–H5 CLOSE · `02_agent_host_plan_v0.md` → completed |
@@ -183,3 +183,4 @@ npx --yes dsh-coding-kit@1.6.1 task close --file docs/tasks/active/task_<slug>.m
 |---|---|
 | 2026-08-27 | 初稿：agent-host-plan H1–H5 CI 失败复盘 + kit/本仓分层建议 |
 | 2026-08-27 | §3 K1–K7 对照 `dsh-coding-kit@1.8.0`：**全部已修**（见同目录 1.8.0 FEEDBACK） |
+| 2026-08-27 | Hub 关账：`task_dsh_coding_kit_upgrade_1_8_0` · 命令示例钉 @1.8.0 |
