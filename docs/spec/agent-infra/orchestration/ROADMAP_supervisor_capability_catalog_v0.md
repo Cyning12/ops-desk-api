@@ -1,7 +1,7 @@
 # ROADMAP：Orchestration · Supervisor 赋能目录闭环（H1）
 
 > **层级**：L2 路线（orchestration 域 · 波次 H1）  
-> **状态**：`active`（task → [`task_lg_rag_supervisor_capability_catalog.md`](../../../tasks/active/task_lg_rag_supervisor_capability_catalog.md) · 待 20 审 · **不**授权 30）  
+> **状态**：`active`（task → [`task_lg_rag_supervisor_capability_catalog.md`](../../../tasks/active/task_lg_rag_supervisor_capability_catalog.md) · **HG 已签 · 00 统筹 → 30**）  
 > **上游**：[`../02_agent_host_plan_v0.md`](../02_agent_host_plan_v0.md)  
 > **架构边界**：[`../00_architecture_and_boundaries.md`](../00_architecture_and_boundaries.md) §4
 

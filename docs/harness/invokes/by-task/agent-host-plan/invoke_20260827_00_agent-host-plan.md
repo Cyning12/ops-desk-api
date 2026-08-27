@@ -10,7 +10,7 @@
 
 | 序 | 波次 | task | 分支 | 前置 | 00 动作 |
 |---|---|---|---|---|---|
-| 1 | H1 | `task_lg_rag_supervisor_capability_catalog.md` | `task/lg-rag-supervisor-capability-catalog` | — | **当前棒**：10 已起草 → 20 审 → 闸 → 30 |
+| 1 | H1 | `task_lg_rag_supervisor_capability_catalog.md` | `task/lg-rag-supervisor-capability-catalog` | — | **当前棒**：HG 已签 · 00 统筹中 → 30 |
 | 2 | H2 | `task_capability_policy_sandbox.md` | `task/capability-policy-sandbox` | H1 CLOSE | 待 H1 关账 |
 | 3 | H3 | `task_chat_session_continuity.md` | `task/chat-session-continuity` | H2 推荐 | 待 |
 | 4 | H4 | `task_prompt_assembly_p1.md` | `task/prompt-assembly-p1` | H1 CLOSE 后可并行 | 待 |

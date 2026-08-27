@@ -94,7 +94,7 @@ lg_rag ──────┘
 
 | 波次 | task 文件 | task_slug | 分支（建议） | 前置 | 闸（起草时） |
 |---|---|---|---|---|---|
-| H1 | [`task_lg_rag_supervisor_capability_catalog.md`](../../tasks/active/task_lg_rag_supervisor_capability_catalog.md) | `lg-rag-supervisor-capability-catalog` | `task/lg-rag-supervisor-capability-catalog` | — | HG-TASK-DRAFT / HG-AUDIT-R1 **pending** |
+| H1 | [`task_lg_rag_supervisor_capability_catalog.md`](../../tasks/active/task_lg_rag_supervisor_capability_catalog.md) | `lg-rag-supervisor-capability-catalog` | `task/lg-rag-supervisor-capability-catalog` | — | HG 已签 · **00 统筹 → 30** |
 | H2 | [`task_capability_policy_sandbox.md`](../../tasks/active/task_capability_policy_sandbox.md) | `capability-policy-sandbox` | `task/capability-policy-sandbox` | H1 CLOSE | pending |
 | H3 | [`task_chat_session_continuity.md`](../../tasks/active/task_chat_session_continuity.md) | `chat-session-continuity` | `task/chat-session-continuity` | H2 推荐 | pending |
 | H4 | [`task_prompt_assembly_p1.md`](../../tasks/active/task_prompt_assembly_p1.md) | `prompt-assembly-p1` | `task/prompt-assembly-p1` | 可与 H2 并行 | pending |

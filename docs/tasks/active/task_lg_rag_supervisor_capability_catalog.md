@@ -1,6 +1,6 @@
 # Task：Agent Host H1 · Supervisor 赋能目录闭环
 
-> **状态**：active（draft · 待 20 审）  
+> **状态**：active（**HG-TASK-DRAFT + HG-AUDIT-R1 approved** · 00 统筹中 → 待 30）  
 > **类型**：feature / agent-host-plan · H1  
 > **上游规划**：`docs/spec/agent-infra/02_agent_host_plan_v0.md`（HG-SPEC-SIGNOFF=approved）  
 > **ROADMAP**：`docs/spec/agent-infra/orchestration/ROADMAP_supervisor_capability_catalog_v0.md`  
@@ -34,8 +34,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| HG-TASK-DRAFT | pending | 22-R1 | 待 20-task-audit |
-| HG-AUDIT-R1 | pending | 30 | 待 R1 书面审 |
+| HG-TASK-DRAFT | approved | 22-R1 | 2026-08-27 00 代签（R1 pass） |
+| HG-AUDIT-R1 | approved | 30 | 2026-08-27 00 代签；`task_lg_rag_supervisor_capability_catalog_audit_R1_20260827.md` |
 | HG-GRAPH-MODULES | approved | 30 | 仅 G-L1 备注 |
 
 ---
@@ -107,3 +107,4 @@ supervisor 已能拆 plan 并 `tool_exec` 调 Gateway，但 **planner 未读 `li
 | 日期 | 说明 |
 |---|---|
 | 2026-08-27 | 00 拆 task · HG-SPEC 已签 |
+| 2026-08-27 | **HG-TASK-DRAFT + HG-AUDIT-R1 approved** · 00 统筹至 CLOSE |
