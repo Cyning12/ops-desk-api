@@ -15,4 +15,4 @@
 
 ## CLOSE
 
-| PR | 待 #74 merge |
+| PR | [#74](https://github.com/Cyning12/ops-desk-api/pull/74) MERGED |
