@@ -1,7 +1,7 @@
 # FEEDBACK · agent-host-plan CI 踩坑 · from ops-desk-api
 
 > **日期**：2026-08-27  
-> **业务仓**：`ops-desk-api`（FastAPI · `dsh-coding-kit@1.6.1` · CI 已挂 `lint-wiki-delta` + `pytest tests`）  
+> **业务仓**：`ops-desk-api`（FastAPI · `dsh-coding-kit@1.8.0`（K1–K7 已核对）· CI `lint-wiki-delta` + `pytest tests`）  
 > **场景**：Agent Host 规划轨 H1–H5 连续 PR（#70–#74）+ 收官文档 #75  
 > **统筹**：00 单窗签收 SPEC → 拆 task → 派 30 → 阶段 PR + auto merge  
 > **真值对照**：`docs/harness/prompts/30-execute-code.md` · `40-self-check.md` · `ci/samples/lint-wiki-delta.yml.example` · `.github/workflows/{pytest,lint-wiki-delta}.yml`  
@@ -60,15 +60,17 @@
 
 ## 3. 产品改进建议（dsh-coding-kit / harness）
 
-| ID | 现象 | severity | 建议 |
-|---|---|---|---|
-| **K1** | `lint-wiki-delta`：字段存在于 `## Harness` 等非标准节名下，仍报 `wiki_delta_missing` | **P1** | 新增 issue code `wiki_delta_wrong_section`；summary 写「须在 `## Harness 元信息` 表格内」；可选 `--fix-hint` |
-| **K2** | `task lint --file`（10-task）起草时不拦 `wiki_delta` 缺失；直到 CI `scope: all` 才 red | **P1** | `task lint` 增 W 级：`Harness 元信息` 缺 `wiki_delta` 行 → FAIL（与 close guard 对齐） |
-| **K3** | `verify --task` 不跑 `lint-wiki-delta`；30 GATE_VERIFY 与 PR CI 双轨 | **P2** | `verify` 增 `--with-wiki-lint` 或 preset `fullstack-node-py` 默认开启；BLOCKED 时打印与 CI 相同命令 |
-| **K4** | 00 一次拆 N 个 active task 后，第一棒 PR 被「兄弟 task」连带打红 | **P2** | 00 playbook / PROMPT 增步骤：「bulk-split 后必跑 `lint-wiki-delta --target .`」；可选 `lint-wiki-delta --scope changed` 文档说明 trade-off |
-| **K5** | Agent 手写出 done task 绕过 `task close` 机械校验（节名/字段/invoke hats） | **P2** | `30-execute-code` 已禁；`task close` 成功 stdout 打印 **done 片段快照**（含 `## Harness 元信息` 模板）供 diff 对照 |
-| **K6** | `40-self-check` 写「与子仓 CI 对齐者优先」，但 task 常只列 pytest 子集 | **P2** | TASK_TEMPLATE / 40 片段增默认验收：`pytest tests -q`（与 `.github/workflows/pytest.yml` 一致）+ `lint-wiki-delta` |
-| **K7** | 行为变更类 task（Policy / supervisor 校验）无「grep 旧测默认 ok 假设」提醒 | **P3** | 20-task-audit checklist 增一条；或 `task lint` 检测 `graph_change_layer=G-L1` + 触及 `lg_rag|capability` 时 W 提示 |
+| ID | 现象 | severity | 建议 | **1.8.0 状态** |
+|---|---|---|---|---|
+| **K1** | `lint-wiki-delta`：字段存在于 `## Harness` 等非标准节名下，仍报 `wiki_delta_missing` | **P1** | 新增 issue code `wiki_delta_wrong_section`；summary 写「须在 `## Harness 元信息` 表格内」 | **已修 · 1.8.0** |
+| **K2** | `task lint --file`（10-task）起草时不拦 `wiki_delta` 缺失；直到 CI `scope: all` 才 red | **P1** | `task lint` 增 E8：缺 `wiki_delta` 行 → FAIL（与 close 对齐） | **已修 · 1.8.0** |
+| **K3** | `verify --task` 不跑 `lint-wiki-delta`；30 GATE_VERIFY 与 PR CI 双轨 | **P2** | `verify --with-wiki-lint`（opt-in；preset 默认未开） | **已修 · 1.8.0（旗标）** |
+| **K4** | 00 一次拆 N 个 active task 后，第一棒 PR 被「兄弟 task」连带打红 | **P2** | 00 playbook bulk-split 后必跑 lint-wiki-delta；10-task 预填义务 | **已修 · 1.8.0（条文）** |
+| **K5** | Agent 手写出 done task 绕过 `task close` 机械校验 | **P2** | `task close` 打印 `done_snapshot`（`## Harness 元信息`） | **已修 · 1.8.0** |
+| **K6** | `40-self-check` 与 CI 全量命令不对齐 | **P2** | TASK_TEMPLATE / 40 默认全量 CI + lint-wiki-delta | **已修 · 1.8.0（条文）** |
+| **K7** | 行为变更类 task 无「旧测 grep」提醒 | **P3** | 20-task-audit checklist（非机械闸） | **已修 · 1.8.0（checklist）** |
+
+> **核对真值**：[`FEEDBACK_dsh_coding_kit_1_8_0_from_ops_desk_api_20260827.md`](./FEEDBACK_dsh_coding_kit_1_8_0_from_ops_desk_api_20260827.md)（2026-08-27）。
 
 ---
 
@@ -76,7 +78,7 @@
 
 | # | 动作 | 状态 | 说明 |
 |---|---|---|---|
-| L1 | 40 / invoke PR 前硬命令：`pytest tests -q` + `npx dsh-coding-kit@1.6.1 task lint-wiki-delta --target .` | **待** | 写入 `PROMPT_00_agent-host-plan` 或仓内 `cyning-harness-local` |
+| L1 | 40 / invoke PR 前硬命令：`pytest tests -q` + `npx dsh-coding-kit@1.8.0 task lint-wiki-delta --target .` | **待**（命令已钉 1.8.0） | 写入 `PROMPT_00` 或仓内 `cyning-harness-local` |
 | L2 | 归档 **禁止手写 done**；只走 `task close --file … --yes` | **待** | 00/CLOSE invoke 纪律 |
 | L3 | SPEC 签收拆多 task 时批量预填 `## Harness 元信息` + `wiki_delta` | **待** | 避免 #70 类连带 red |
 | L4 | 行为变更 PR 验收加「全仓 pytest + 关联旧测 grep」 | **待** | 避免 #70/#71 类 |
@@ -151,7 +153,7 @@ error='policy_blocked: sandbox_disabled'
 
 | 项 | 值 |
 |---|---|
-| kit 版本（CI） | `npx --yes dsh-coding-kit@1.6.1` |
+| kit 版本（CI） | `npx --yes dsh-coding-kit@1.8.0` |
 | CI workflows | `.github/workflows/pytest.yml` · `.github/workflows/lint-wiki-delta.yml` |
 | PR 序列 | #70 H1 · #71 H2 · #72 H3 · #73 H4 · #74 H5 · #75 收官文档 |
 | 最终 master | H1–H5 CLOSE · `02_agent_host_plan_v0.md` → completed |
@@ -170,7 +172,7 @@ npx --yes dsh-coding-kit@1.6.1 task close --file docs/tasks/active/task_<slug>.m
 
 ## 9. 可选 BACKFILL 指针
 
-- 产品维护者可选用本文件 §3 **K1–K7** 回填 `dsh-coding-kit` CHANGELOG / RUNBOOK / `lint-wiki-delta` 诊断码表。  
+- §3 **K1–K7** 已于 **1.8.0** 落地；产品侧可关账本 FEEDBACK。  
 - 本仓侧 §4 **L1–L4** 可在下一波 00 统筹或 harness upgrade task 中合入（**非** agent-host 轨阻塞项）。
 
 ---
@@ -180,3 +182,5 @@ npx --yes dsh-coding-kit@1.6.1 task close --file docs/tasks/active/task_<slug>.m
 | 日期 | 说明 |
 |---|---|
 | 2026-08-27 | 初稿：agent-host-plan H1–H5 CI 失败复盘 + kit/本仓分层建议 |
+| 2026-08-27 | §3 K1–K7 对照 `dsh-coding-kit@1.8.0`：**全部已修**（见同目录 1.8.0 FEEDBACK） |
+| 2026-08-27 | Hub 关账：`task_dsh_coding_kit_upgrade_1_8_0` · 命令示例钉 @1.8.0 |

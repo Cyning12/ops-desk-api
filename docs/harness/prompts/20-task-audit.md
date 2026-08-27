@@ -2,7 +2,7 @@
 name: harness-20-task-audit
 description: 书面审查 Harness task 文件（R 轮）：对照 SPEC 核对范围/非范围/验收/failure_paths/思考轮，结论落盘 docs/harness/reviews/ 审查文。当 task 草稿完成、进入 HG-AUDIT-R1 人签之前使用。不用于：改 task 实质内容（退回 10-task）；审 SPEC（用 harness-20-spec-audit）；代签 human_gate（仅人）。
 license: MIT
-compatibility: Requires npx @cyning/harness CLI（task lint / verify --task）· docs/harness/reviews/ 目录约定
+compatibility: Requires npx dsh-coding-kit CLI（task lint / verify --task）· docs/harness/reviews/ 目录约定
 metadata:
   hat_id: "20-task-audit"
   track: starter
@@ -12,7 +12,7 @@ metadata:
 
 > **hat_id（V2）**：**20-task-audit** = task 书面审核（**30 之前**）。  
 > **对应**：**10-task** · **不**审 SPEC。  
-> **姊妹帽**：SPEC 书面审 **[`20-spec-audit.md`](./20-spec-audit.md)**（对应 10-spec · HG-SPEC-SIGNOFF）。  
+> **姊妹帽**：SPEC 书面审 **[`harness-20-spec-audit/SKILL.md`](../../skills/harness-20-spec-audit/SKILL.md)**（对应 10-spec · HG-SPEC-SIGNOFF）。  
 > **完整版 POINTER**（Ink 工作区）：`docs/harness/prompts/20-task-audit.md`  
 > **本文件**：嵌入用户仓 `docs/harness/prompts/` 的 **精简真值**（自 `22-task-audit.md` 改名 · V2 拆分）。
 
@@ -23,6 +23,7 @@ metadata:
 ## 只做什么
 
 - 对照验收、`failure_paths`、`test_strategy`、必读列表
+- **行为变更类 task**（改默认值 / 校验 / 策略门 / fallback 语义）：验收标准须含「**旧测 grep 影响面**」项，缺则**退回 10-task** 补列（checklist 提醒 · 不进 `task lint` 机械闸）
 - **阶段 C**：若 task §4 含思考轮 → **思考轮审查**（控制表 · 回填闭合 · early_stop 理由/风险）
 - **思考审查不通过** → 审查文 **「退回 10-task」**；下一棒 **10-task**，**禁止**附 30 Prompt
 - **必须** 写 `task_<slug>_audit_R<n>_YYYYMMDD.md`
@@ -82,6 +83,7 @@ metadata:
 |------|------|
 | 2026-07-24 | V2 拆分收编：自 `22-task-audit.md` 改名为 `20-task-audit.md`（来源：工作区 `20-task-audit.md` · 2026-06-21 v3 + 原包内人工闸联动节保留） |
 | 2026-07-26 | v2.12：澄清 20 invoke 仅在 required 集合含 20 时强制；默认靠 reviews |
+| 2026-08-27 | K7：checklist 增行为变更类 task「旧测 grep 影响面」提醒（非机械闸） |
 
 ## 给 Cursor
 

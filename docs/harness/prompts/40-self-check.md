@@ -2,7 +2,7 @@
 name: harness-40-self-check
 description: 与 30 同上下文的执行者自检闭环：逐条对照 task 验收标准标记 pass/fail、真跑验证命令并摘要退出码、回填「自检结论（执行者）」。当 30 实现完成后、交 50/CLOSE 之前使用。不用于：凭记忆声称测过（须真跑）；修改 tasks/reviews/invokes 留档；独立修复（不通过则回 30 改码重跑）。
 license: MIT
-compatibility: Requires npx @cyning/harness CLI（verify / task close）
+compatibility: Requires npx dsh-coding-kit CLI（verify / task close）
 metadata:
   hat_id: "40"
   track: starter-experimental
@@ -23,6 +23,7 @@ metadata:
 
 - **逐条**对照 task **验收标准**，标记 pass / fail  
 - **必须**运行 task 所列 **验证命令**（与子仓 CI 对齐者优先），摘要 **退出码与关键输出**  
+- task 未列全量测试命令时：按本仓 `.github/workflows/` 真值**补齐全量命令**（含 lint-wiki-delta 预检）**再自检**，不得只跑 task 所列子集  
 - fail 时定位：命令、文件路径、错误摘要、是否可重试  
 - **必须**回填 task 正文 **`### 自检结论（执行者）`**（命令列表、退出码、验收表摘要、已知未测项）
 
@@ -61,3 +62,4 @@ metadata:
 |------|------|
 | 2026-06-21 | 30 同 Agent 闭环 · 50/CLOSE 打回规则 |
 | 2026-07-28 | v2.18 · wiki_delta / 晋升指针关账前自检 |
+| 2026-08-27 | K6：task 未列全量命令时按 `.github/workflows/` 真值补齐再自检 |

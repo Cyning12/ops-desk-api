@@ -18,7 +18,8 @@
 
 | 日期 | 文件 | kit 版本 | 主题 | 状态 |
 |------|------|----------|------|------|
-| 2026-08-26 | [`2026-08-26_1.7.1_upgrade-no-prompt-sync.md`](./2026-08-26_1.7.1_upgrade-no-prompt-sync.md) | 1.7.1 | upgrade 不落地 `00-orchestrator.md`；幂等刷新 `upgraded_at` | open |
+| 2026-08-26 | [`2026-08-26_1.7.1_upgrade-no-prompt-sync.md`](./2026-08-26_1.7.1_upgrade-no-prompt-sync.md) | 1.7.1 | upgrade 不落地 `00-orchestrator.md`；幂等刷新 `upgraded_at` | superseded（见 1.8.0 复发） |
+| 2026-08-27 | [`2026-08-27_1.8.0_upgrade-no-prompt-sync.md`](./2026-08-27_1.8.0_upgrade-no-prompt-sync.md) | 1.8.0 | upgrade 仍不 sync `assets/harness/prompts/`（复发） | open |
 
 ---
 
@@ -28,3 +29,5 @@
 |------|------|
 | 2026-08-26 | 建 FEEDBACK 轨 |
 | 2026-08-26 | 登记 1.7.1 upgrade 未 sync 00 条文 |
+| 2026-08-27 | 登记 1.8.0 upgrade-no-prompt-sync 复发；修正本表误写入修订记录的行 |
+| 2026-08-27 | Hub 关账：`task_dsh_coding_kit_upgrade_1_8_0` · PR #76 |
