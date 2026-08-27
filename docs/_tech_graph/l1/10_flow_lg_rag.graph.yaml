@@ -1,8 +1,8 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_lg_rag"
 title: "LG RAG 旁路三模式流程（basic / router / supervisor）"
-description: "POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（拆解→分派→聚合）。同图分节：节点 id 前缀 b_/r_/s_；rag 路径黑盒复用 lc_evidence_chain，不展开 LCEL；默认不进入 chat/graph。freeze lg-rag-http-v1。"
-version: "2026-08-26"
+description: "POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（Intent→Builder→拆解→分派→聚合）。同图分节：节点 id 前缀 b_/r_/s_；rag 路径黑盒复用 lc_evidence_chain，不展开 LCEL；默认不进入 chat/graph。freeze lg-rag-http-v1。"
+version: "2026-08-27"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "method"
@@ -119,6 +119,15 @@ nodes:
         kind: method
       - path: "app/ops/lg_rag/nodes.py"
         symbol: "route_after_rewrite"
+        kind: method
+
+  - id: "s_intent"
+    label: "intent_node（S2 IntentV1 · acomplete_structured）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/strategy/intent.py"
+        symbol: "intent_node"
         kind: method
 
   - id: "s_strategy_builder"
@@ -371,25 +380,32 @@ edges:
         line: 230
 
   - from: "sup_graph"
-    to: "s_strategy_builder"
-    label: "START → strategy_builder"
+    to: "s_intent"
+    label: "START → intent_node"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 54
+        line: 59
+
+  - from: "s_intent"
+    to: "s_strategy_builder"
+    label: "intent dict"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 60
 
   - from: "s_strategy_builder"
     to: "s_supervisor"
     label: "allowed_capability_ids"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 55
+        line: 61
 
   - from: "s_supervisor"
     to: "s_dispatch"
     label: "subtasks（≤4）"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 53
+        line: 62
 
   - from: "s_dispatch"
     to: "s_rag"
@@ -398,7 +414,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 35
+        line: 37
       - path: "app/ops/lg_rag/multi/nodes.py"
         line: 238
 
@@ -409,7 +425,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 36
+        line: 38
       - path: "app/ops/lg_rag/multi/nodes.py"
         line: 238
 
@@ -420,7 +436,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 37
+        line: 39
       - path: "app/ops/lg_rag/multi/nodes.py"
         line: 238
 
@@ -431,7 +447,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 38
+        line: 40
       - path: "app/ops/lg_rag/multi/nodes.py"
         line: 237
 
@@ -440,21 +456,21 @@ edges:
     label: "回 dispatch（追加一条结果）"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 55
+        line: 64
 
   - from: "s_extract"
     to: "s_dispatch"
     label: "回 dispatch（追加一条结果）"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 55
+        line: 64
 
   - from: "s_tool"
     to: "s_dispatch"
     label: "回 dispatch（追加一条结果）"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 55
+        line: 64
 
   - from: "s_rag"
     to: "router_graph"
@@ -514,6 +530,22 @@ edges:
     anchors:
       - path: "app/ops/lg_rag/multi/nodes.py"
         symbol: "info_extract_node"
+
+  - from: "s_intent"
+    to: "structured_output_gw"
+    label: "acomplete_structured（max_retries=1）"
+    mark: "::triggers"
+    type: "triggers"
+    anchors:
+      - path: "app/ops/strategy/intent.py"
+        symbol: "intent_node"
+
+  - from: "s_intent"
+    to: "llm"
+    label: "complete（细意图）"
+    anchors:
+      - path: "app/ops/strategy/intent.py"
+        symbol: "intent_node"
 
   - from: "s_strategy_builder"
     to: "capability_gw"

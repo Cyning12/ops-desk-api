@@ -76,7 +76,7 @@ Agent 运行时 ≈  compiled StateGraph（编排壳）
 ### 4.1 Strategy Builder · Intent · 再赋能（H1–H5 之后）
 
 > 详规：[`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) · [`strategy/`](./strategy/)  
-> **现状**：S1 已落地规则/配置 Strategy Builder（state allowlist · supervisor ∩）；尚无细 Intent（S2）与 Critic→rebind（S4）。
+> **现状**：S1 allowlist + S2 细 Intent（supervisor 图 `intent_node`）已落地；尚无 Critic→rebind（S4）与 YAML catalog（S3）。
 
 目标分层（仍 Mode A · 静态图）：
 
@@ -153,3 +153,4 @@ Strategy Builder 与 Policy **不互相替代**（裁可见集 ≠ 执行硬闸�
 | 2026-08-27 | §4.1：Strategy Builder / Intent / Critic 再赋能；与 H1–H5 缺口对齐 |
 | 2026-08-27 | §6.1：Eval/Observability 与 Langfuse 边界；挂 04 |
 | 2026-08-27 | §4.1 现状：S1 allowlist Builder 已落地；S2/S4 仍缺口 |
+| 2026-08-27 | §4.1 现状：S2 Intent 已落地；S3/S4 仍缺口 |

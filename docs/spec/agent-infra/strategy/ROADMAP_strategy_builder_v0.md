@@ -16,7 +16,8 @@
 |---|---|---|
 | S0 | **DONE** | 03 + 本 ROADMAP 签收 · 2026-08-27 |
 | S1 | **DONE** | 2026-08-27 · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** · allowlist 闭环 |
-| S2–S4 | pending | 非本棒 |
+| S2 | **DONE**（待 PR MERGED） | 2026-08-27 · Intent schema + 节点 · `task/intent-schema-v1` |
+| S3–S4 | pending | 非本棒 |
 
 ---
 
@@ -112,10 +113,43 @@ capabilities:
 
 ---
 
-## 6. 修订记录
+## 6. 00 定夺（S2 · Intent · 2026-08-27）
+
+维护者会话「按 S1 的 00 身份继续开始 S2」。
+
+| 项 | 定夺 |
+|---|---|
+| 挂点 | **仅 supervisor 图**：`START → intent_node → strategy_builder → supervisor → …`（节点 id 不能为 `intent`：LangGraph 禁止与 state key 同名） |
+| router 图 | **不改拓扑**；`rag\|direct\|refuse` 仍为 mode=router 外层安全闸 |
+| Schema | `IntentV1`：`domain`（`ops_kb\|general\|unknown`）· `needs_tool` · `needs_skill` · `is_composite` · `risk_hint`（`low\|medium\|high`）· `summary` |
+| 落点 | schema：`app/ops/lg_rag/schemas/intent.py`；节点：`app/ops/strategy/intent.py`；state：`LgRagState.intent: dict` |
+| SO | **新节点**走 `acomplete_structured`（`max_retries=1`）；失败 **不**拒整图：写保守 fallback intent（`domain=unknown` · `needs_tool=False` · `needs_skill=False` · `is_composite=False` · `risk_hint=low` · `summary=""`）+ span `intent_fallback` / `structured_output_fallback` |
+| Prompt | H4 槽 `lg_rag.intent.system`；禁止把业务三路 prompt 塞进 Intent 节点硬编码 |
+| Builder 消费 | `needs_tool=False` → 空 capability allowlist（沿用 S1 空表 fallback 单 rag）；`needs_tool=True` → 仍 ⊆ Registry∩Policy（S1 候选求交）；`needs_skill=True` 本波 **仍写空** `allowed_skill_ids`（不实现 Skill 引擎）；`risk_hint` **不得**绕过 Policy |
+| 图谱 | G-L1 仅 `lg_rag` 备注 + `10_flow_lg_rag` 增 `s_intent`；**不**新增一级模块 |
+
+---
+
+## 7. 附录 · 细 Intent 与粗 router 并存（S2-b）
+
+| 图 | 职责 | S2 是否改 |
+|---|---|---|
+| **router**（mode=`router`） | 外层安全闸：`rag` / `direct` / `refuse` | **否**（拓扑与 `RouteDecision` 保持） |
+| **supervisor**（mode=`supervisor`） | 细 Intent → Builder allowlist → Work Planner | **是**（插 `intent` 节点） |
+| **basic** | 对照单 rag | **否** |
+
+原则：一个 prompt **不**兼做安全三路与策略输入。Intent 失败走保守 fallback，**不**映射为 router 的 `refuse`（refuse 只存在于 router 图）。
+
+详规可与本附录并列：实现时可落 `docs/guides/GUIDE_intent-vs-router-coexistence_v0.md`（与本表一致即可）。
+
+---
+
+## 8. 修订记录
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-27 | 初版：对齐 03 规划 · S1–S4 交付项 |
 | 2026-08-27 | S0 签收 · 落地状态表 · 钉死 None/空 allowlist 语义 |
 | 2026-08-27 | S1 实现 00 验收 PASS · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** |
+| 2026-08-27 | S2 开工：00 定夺挂点 / SO / Builder 消费 · 并存附录 |
+| 2026-08-27 | S2 00 验收 PASS（pytest 48 · graph-compile）；图节点 id=`intent_node` |
