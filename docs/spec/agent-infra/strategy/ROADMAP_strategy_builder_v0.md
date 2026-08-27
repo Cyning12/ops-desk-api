@@ -15,7 +15,7 @@
 | 波次 | 状态 | 说明 |
 |---|---|---|
 | S0 | **DONE** | 03 + 本 ROADMAP 签收 · 2026-08-27 |
-| S1 | **DONE** | 2026-08-27 · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) · allowlist 闭环 |
+| S1 | **DONE** | 2026-08-27 · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** · allowlist 闭环 |
 | S2–S4 | pending | 非本棒 |
 
 ---
@@ -118,4 +118,4 @@ capabilities:
 |---|---|
 | 2026-08-27 | 初版：对齐 03 规划 · S1–S4 交付项 |
 | 2026-08-27 | S0 签收 · 落地状态表 · 钉死 None/空 allowlist 语义 |
-| 2026-08-27 | S1 实现 00 验收 PASS（pytest 30 · graph-compile）· [#78](https://github.com/Cyning12/ops-desk-api/pull/78) |
+| 2026-08-27 | S1 实现 00 验收 PASS · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** |

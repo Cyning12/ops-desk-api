@@ -133,7 +133,7 @@ chat/graph.py git diff 空
 | 日期 | 2026-08-27 |
 | 定稿 | Strategy Builder allowlist：state + 规则 Builder + supervisor ∩ + tool id 相对可见集 |
 | 归档 | `docs/tasks/done/task_strategy_builder_allowlist.md` |
-| PR | [#78](https://github.com/Cyning12/ops-desk-api/pull/78) |
+| PR | [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** |
 
 ---
 
@@ -143,3 +143,4 @@ chat/graph.py git diff 空
 |---|---|
 | 2026-08-27 | 00 拆 S1 task · S0 已签 · R1 pass · HG 代签 |
 | 2026-08-27 | 30/40 PASS · 00 机械验收 PASS · CLOSE |
+| 2026-08-27 | [#78](https://github.com/Cyning12/ops-desk-api/pull/78) MERGED |

@@ -182,4 +182,4 @@ YAML 管**元数据与注册清单**；执行仍走 adapter。热更新须版本
 | 2026-08-27 | 初版：会话结论整合（H5 后缺口 · Strategy Builder 命名 · Intent · YAML · Critic 分流） |
 | 2026-08-27 | 交叉引用测评轨 [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md)（Critic/准确率与 Eval 正交） |
 | 2026-08-27 | **HG-SPEC-SIGNOFF=approved**（S0 · 00 代签 · 维护者 Prompt 授权）；状态 `active`；拆 S1 `strategy-builder-allowlist` |
-| 2026-08-27 | S1 allowlist 00 验收 PASS（pytest 30 · graph-compile）；task 归档 done/ |
+| 2026-08-27 | S1 allowlist 00 验收 PASS；[#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** |
