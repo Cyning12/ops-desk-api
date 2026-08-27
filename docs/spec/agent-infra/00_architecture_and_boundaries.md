@@ -73,6 +73,32 @@ Agent 运行时 ≈  compiled StateGraph（编排壳）
             +  Planner 节点（读赋能列表 → 写 plan → 继续或结束）
 ```
 
+### 4.1 Strategy Builder · Intent · 再赋能（H1–H5 之后）
+
+> 详规：[`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) · [`strategy/`](./strategy/)  
+> **现状**：H1 工作 planner 已读目录；**尚无**按意图裁可见集的 Builder，也无 Critic→rebind。
+
+目标分层（仍 Mode A · 静态图）：
+
+```text
+Intent（细 schema）→ Strategy Builder（写 allowlist 入 state）
+    → Work Planner / supervisor（只读可见集拆 plan）
+    → workers → Critic
+         │                │
+         └─ 同 catalog ───┘
+         └─ 能力缺口 → 回 Builder（rebind）
+```
+
+| 层 | 职责 |
+|---|---|
+| **Strategy Builder** | 本轮可见 capability/skill + 预算策略 → state；**不是**更大权限的 supervisor |
+| **Policy** | Host 硬闸；Builder 不可改键 |
+| **Work Planner** | 赋能集内拆 plan（现 `supervisor_node`） |
+| **Critic** | 质量/能力缺口分流；先窄后宽 |
+
+- 全量目录可由 **YAML/manifest** 动态加载注册；Builder **只裁剪、不注册**。  
+- Intent：现 `router` 三路可作外层闸；更灵活靠 **LLM + SO 细意图**，业务耦合迁出硬编码 prompt。
+
 ---
 
 ## 5. Structured Output 触发方式
@@ -95,15 +121,27 @@ Agent 运行时 ≈  compiled StateGraph（编排壳）
 ## 6. 正交与组合
 
 ```text
-supervisor 拆 plan（Structured Output 校验 plan）
+（可选）Strategy Builder 写 allowlist
+        │
+supervisor 拆 plan（Structured Output 校验 plan · tool id ∈ 可见集）
         │
         ▼
-tool_exec → Capability.invoke
+tool_exec → Capability.invoke（再经 Policy）
 rag_sub   → lc_evidence（黑盒）
 extract   → Structured Output 校验抽取结果
 ```
 
-先结构化 plan，再 invoke 能力——允许；两网关**不互相替代**。
+先结构化 plan，再 invoke 能力——允许；两网关**不互相替代**。  
+Strategy Builder 与 Policy **不互相替代**（裁可见集 ≠ 执行硬闸）。
+
+### 6.1 观测与测评（正交）
+
+> 详规：[`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md)
+
+- **运行时事实** → Langfuse traces / metadata（已有 `app/ops/tracing.py`）。  
+- **判定** → 仓内 Eval harness（金标、确定性评估器）+ Langfuse Scores / Datasets / Experiments。  
+- SO Gateway **不做**业务答案质量分；准确性测评属 Eval / Critic / grader。  
+- 默认**不**双开 LangSmith；基础设施可用性用 Prometheus/日志互补。
 
 ---
 
@@ -112,3 +150,5 @@ extract   → Structured Output 校验抽取结果
 | 日期 | 说明 |
 |---|---|
 | 2026-08-26 | 初版：会话讨论结论落盘（Mode A、静态图+plan、SO 触发与纠偏边界） |
+| 2026-08-27 | §4.1：Strategy Builder / Intent / Critic 再赋能；与 H1–H5 缺口对齐 |
+| 2026-08-27 | §6.1：Eval/Observability 与 Langfuse 边界；挂 04 |

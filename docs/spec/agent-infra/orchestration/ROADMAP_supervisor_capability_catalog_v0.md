@@ -3,7 +3,8 @@
 > **层级**：L2 路线（orchestration 域 · 波次 H1）  
 > **状态**：`done`（H1 CLOSE · 2026-08-27 → [`task_lg_rag_supervisor_capability_catalog.md`](../../../tasks/done/task_lg_rag_supervisor_capability_catalog.md)）  
 > **上游**：[`../02_agent_host_plan_v0.md`](../02_agent_host_plan_v0.md)  
-> **架构边界**：[`../00_architecture_and_boundaries.md`](../00_architecture_and_boundaries.md) §4
+> **下游**：[`../03_strategy_and_intent_plan_v0.md`](../03_strategy_and_intent_plan_v0.md)（Strategy Builder 裁可见集；本 H1 为 Work Planner 读目录）  
+> **架构边界**：[`../00_architecture_and_boundaries.md`](../00_architecture_and_boundaries.md) §4 / §4.1
 
 ---
 
@@ -47,3 +48,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-27 | 初版 H1 条文 |
+| 2026-08-27 | 挂下游 Strategy Builder 轨（03） |

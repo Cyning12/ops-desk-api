@@ -2,6 +2,7 @@
 
 > **层级**：L0 规划（Gateway 升级轨收官后的 **架构 flesh** 轨）  
 > **状态**：`completed`（规划真值 · HG-SPEC-SIGNOFF **approved** · **H1–H5 全轨 CLOSE** · 2026-08-27）  
+> **下游下一轨**：[`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md)（Strategy Builder · Intent · Critic；**draft**）  
 > **版本**：v0 · 2026-08-27  
 > **上游**：[`00_architecture_and_boundaries.md`](./00_architecture_and_boundaries.md) · [讨论阶段性总结](../../discussions/2026-08-26_agent-host-architecture-phase-summary.md)  
 > **前置轨**：[`01_upgrade_roadmap.md`](./01_upgrade_roadmap.md)（**stable** · Capability portable + SO 卫生 + MCP）  
@@ -153,7 +154,8 @@ docs/spec/agent-infra/
     capability/ROADMAP_policy_*       # L1 延续 · H2
 ```
 
-`01_upgrade_roadmap.md` 保持 **stable** 归档；**活跃排期以本文件为准**。
+`01_upgrade_roadmap.md` 保持 **stable** 归档；本文件 H1–H5 **completed**。  
+**活跃排期**改见 [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md)。
 
 ---
 
@@ -161,7 +163,8 @@ docs/spec/agent-infra/
 
 - Prompt：[`PROMPT_00_agent-host-plan.md`](../../harness/invokes/by-task/_prompts/PROMPT_00_agent-host-plan.md)  
 - 派发记录：[`invoke_20260827_00_agent-host-plan.md`](../../harness/invokes/by-task/agent-host-plan/invoke_20260827_00_agent-host-plan.md)  
-- **当前棒**：**agent-host-plan H1–H5 全部 CLOSE**（2026-08-27）
+- **当前棒**：**agent-host-plan H1–H5 全部 CLOSE**（2026-08-27）  
+- **下一轨**：[`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) · [`strategy/`](./strategy/)
 
 ---
 
@@ -172,3 +175,4 @@ docs/spec/agent-infra/
 | 2026-08-27 | 初版：Gateway 轨收官后 Agent Host flesh 五波次规划 |
 | 2026-08-27 | **HG-SPEC-SIGNOFF=approved**；拆 H1–H5 active task + 00 invoke |
 | 2026-08-27 | **H1–H5 全轨 CLOSE**；00 invoke CLOSE；规划状态 → completed |
+| 2026-08-27 | 挂下游 `03_strategy_and_intent_plan`（Strategy Builder 轨） |
