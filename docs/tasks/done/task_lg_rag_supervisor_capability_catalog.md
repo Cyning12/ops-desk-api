@@ -104,7 +104,7 @@ supervisor 已能拆 plan 并 `tool_exec` 调 Gateway，但 **planner 未读 `li
 | 日期 | 2026-08-27 |
 | 定稿 | supervisor ↔ Capability 目录闭环 + tool id Host 校验 |
 | 归档 | `docs/tasks/done/task_lg_rag_supervisor_capability_catalog.md` |
-| PR | 待维护者开 PR 合并 |
+| PR | [#70](https://github.com/Cyning12/ops-desk-api/pull/70) MERGED |
 
 ---
 

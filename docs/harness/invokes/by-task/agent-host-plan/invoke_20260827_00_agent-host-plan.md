@@ -11,7 +11,7 @@
 | 序 | 波次 | task | 分支 | 前置 | 00 动作 |
 |---|---|---|---|---|---|
 | 1 | H1 | `task_lg_rag_supervisor_capability_catalog.md` | `task/lg-rag-supervisor-capability-catalog` | — | **CLOSE** ✓ 2026-08-27 |
-| 2 | H2 | `task_capability_policy_sandbox.md` | `task/capability-policy-sandbox` | H1 CLOSE ✓ | **当前棒** |
+| 2 | H2 | `task_capability_policy_sandbox.md` | `task/capability-policy-sandbox` | H1 #70 ✓ | **当前棒**：HG 已签 · 00 → 30 |
 | 3 | H3 | `task_chat_session_continuity.md` | `task/chat-session-continuity` | H2 推荐 | 待 |
 | 4 | H4 | `task_prompt_assembly_p1.md` | `task/prompt-assembly-p1` | H1 CLOSE 后可并行 | 待 |
 | 5 | H5 | `task_skill_registry_p0.md` | `task/skill-registry-p0` | H4 CLOSE | 待 |

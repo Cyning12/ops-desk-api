@@ -1,7 +1,7 @@
 # ROADMAP：Capability · Policy 与高危执行（H2）
 
 > **层级**：L2 路线（capability 域 · 波次 H2）  
-> **状态**：`active`（task → [`task_capability_policy_sandbox.md`](../../../tasks/active/task_capability_policy_sandbox.md) · 阻塞 H1 CLOSE）
+> **状态**：`active`（task → [`task_capability_policy_sandbox.md`](../../../tasks/active/task_capability_policy_sandbox.md) · **HG 已签 · 00 统筹 → 30**）
 > **上游**：[`../02_agent_host_plan_v0.md`](../02_agent_host_plan_v0.md) · H1 完成后  
 > **现行契约**：[`SPEC-capability-gateway_v0.md`](./SPEC-capability-gateway_v0.md)
 

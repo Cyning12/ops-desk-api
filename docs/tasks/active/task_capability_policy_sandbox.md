@@ -1,6 +1,6 @@
 # Task：Agent Host H2 · Capability Policy 与高危执行
 
-> **状态**：active（draft · H1 CLOSE ✓ · 可 20 审）  
+> **状态**：active（**HG-TASK-DRAFT + HG-AUDIT-R1 approved** · 00 统筹中 → 待 30）  
 > **类型**：feature / agent-host-plan · H2  
 > **上游规划**：`docs/spec/agent-infra/02_agent_host_plan_v0.md`  
 > **ROADMAP**：`docs/spec/agent-infra/capability/ROADMAP_policy_and_sandbox_v0.md`  
@@ -30,8 +30,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| HG-TASK-DRAFT | pending | 22-R1 | H1 关账后再 20 审 |
-| HG-AUDIT-R1 | pending | 30 | |
+| HG-TASK-DRAFT | approved | 22-R1 | 2026-08-27 00 代签（R1 pass） |
+| HG-AUDIT-R1 | approved | 30 | 2026-08-27 00 代签；`task_capability_policy_sandbox_audit_R1_20260827.md` |
 | HG-GRAPH-MODULES | approved | 30 | 仅备注 |
 
 ---
@@ -75,3 +75,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-27 | 00 拆 task · 依赖 H1 |
+| 2026-08-27 | **HG 代签** · H1 PR #70 merge 后 00 统筹启动 |
