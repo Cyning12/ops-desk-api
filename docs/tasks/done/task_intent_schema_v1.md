@@ -137,7 +137,7 @@ router 图：START→router 边仍在（不删不改）
 | 日期 | 2026-08-27 |
 | 定稿 | IntentV1 + intent_node + Builder 读 needs_tool；router 并存 |
 | 归档 | `docs/tasks/done/task_intent_schema_v1.md` |
-| PR | 待开（本分支） |
+| PR | [#80](https://github.com/Cyning12/ops-desk-api/pull/80) |
 
 ---
 

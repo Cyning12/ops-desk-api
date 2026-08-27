@@ -16,7 +16,7 @@
 |---|---|---|
 | S0 | **DONE** | 03 + 本 ROADMAP 签收 · 2026-08-27 |
 | S1 | **DONE** | 2026-08-27 · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** · allowlist 闭环 |
-| S2 | **DONE**（待 PR MERGED） | 2026-08-27 · Intent schema + 节点 · `task/intent-schema-v1` |
+| S2 | **DONE** | 2026-08-27 · [#80](https://github.com/Cyning12/ops-desk-api/pull/80) · Intent schema + 节点 |
 | S3–S4 | pending | 非本棒 |
 
 ---
