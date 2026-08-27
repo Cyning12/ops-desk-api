@@ -18,6 +18,8 @@ class ChatState(TypedDict):
     graph_context: dict | None
     intent: str
     answer: str
+    # H3 · Session 连续性：压缩后的历史轮次（注入 LLM messages）
+    history_turns: list[dict]
     # R-3 检索链：retrieve → grade → gate
     retrieved: list  # RetrievedChunk 列表（hybrid_recall 输出）
     gate_action: str  # refuse | answer_partial | answer（契约 Q4）

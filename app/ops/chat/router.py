@@ -26,6 +26,7 @@ from app.ops.chat.streaming import (
     resolve_chat_session as _resolve_chat_session,
 )
 from app.ops.deps import get_current_user
+from app.ops.session import compress_window, load_session_turns
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -59,6 +60,9 @@ async def chat_stream(
         run_model,
     )
 
+    raw_history = await load_session_turns(chat_session_id, limit=20)
+    history_turns = compress_window(raw_history, max_full_turns=6, group_size=2)
+
     state = ChatState(
         query=req.message,
         session_id=chat_session_id,
@@ -69,6 +73,7 @@ async def chat_stream(
         graph_context=None,
         intent="",
         answer="",
+        history_turns=history_turns,
         events=[],
     )
 

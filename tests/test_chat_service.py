@@ -16,6 +16,7 @@ def _make_state() -> ChatState:
         graph_context=None,
         intent="",
         answer="",
+        history_turns=[],
         events=[],
     )
 
