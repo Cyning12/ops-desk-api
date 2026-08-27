@@ -97,7 +97,8 @@ lg_rag ──────┘
 | H1 | [`task_lg_rag_supervisor_capability_catalog.md`](../../tasks/done/task_lg_rag_supervisor_capability_catalog.md) | `lg-rag-supervisor-capability-catalog` | `task/lg-rag-supervisor-capability-catalog` | — | **CLOSE** ✓ |
 | H2 | [`task_capability_policy_sandbox.md`](../../tasks/done/task_capability_policy_sandbox.md) | `capability-policy-sandbox` | — | **CLOSE** ✓ |
 | H3 | [`task_chat_session_continuity.md`](../../tasks/done/task_chat_session_continuity.md) | `chat-session-continuity` | H2 ✓ | **CLOSE** ✓ |
-| H4 | [`task_prompt_assembly_p1.md`](../../tasks/active/task_prompt_assembly_p1.md) | `prompt-assembly-p1` | — | **当前棒** |
+| H4 | [`task_prompt_assembly_p1.md`](../../tasks/done/task_prompt_assembly_p1.md) | `prompt-assembly-p1` | — | **CLOSE** ✓ |
+| H5 | [`task_skill_registry_p0.md`](../../tasks/active/task_skill_registry_p0.md) | `skill-registry-p0` | H4 ✓ | **当前棒** |
 | H3 | [`task_chat_session_continuity.md`](../../tasks/active/task_chat_session_continuity.md) | `chat-session-continuity` | `task/chat-session-continuity` | H2 推荐 | pending |
 | H4 | [`task_prompt_assembly_p1.md`](../../tasks/active/task_prompt_assembly_p1.md) | `prompt-assembly-p1` | `task/prompt-assembly-p1` | 可与 H2 并行 | pending |
 | H5 | [`task_skill_registry_p0.md`](../../tasks/active/task_skill_registry_p0.md) | `skill-registry-p0` | `task/skill-registry-p0` | H4 CLOSE | pending |
