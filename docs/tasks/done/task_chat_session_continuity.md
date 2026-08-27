@@ -1,6 +1,10 @@
 # Task：Agent Host H3 · Chat Session 连续性
 
-> **状态**：completed（2026-08-27 · CLOSE · PR 待 #72）
+> **状态**：completed（2026-08-27 · CLOSE · PR #72）
+
+## Harness
+
+| **wiki_delta** | `n/a` |
 
 ## 验收
 
