@@ -47,7 +47,7 @@ _TYPE_TO_NODE = {
     "tool": "tool_exec",
 }
 
-# Supervisor planner 可见赋能：local_fn · 剔除 high risk（Mode A · GUIDE §2）
+# Supervisor planner filter：与 Builder 同 Policy 裁剪（S1：再 ∩ state allowlist）
 _SUPERVISOR_CAP_FILTER = CapabilityFilter(
     node_role="supervisor",
     kinds=frozenset({"local_fn"}),
@@ -96,10 +96,27 @@ def _build_supervisor_system(catalog_block: str) -> str:
     )
 
 
+def _resolve_supervisor_visible_caps(state: LgRagState) -> tuple[list[CapabilitySpec], frozenset[str]]:
+    """本轮 supervisor 可见 catalog = filter ∩ state allowlist（S1-c）。"""
+    allowlist_raw = state.get("allowed_capability_ids")
+    if allowlist_raw is None:
+        logger.warning(
+            "lg_rag supervisor: allowed_capability_ids 缺失（须经 Builder），"
+            "fallback 单 rag"
+        )
+        return [], frozenset()
+    allowlist = frozenset(str(cid) for cid in allowlist_raw)
+    caps = list_capabilities(filter=_SUPERVISOR_CAP_FILTER)
+    if not allowlist:
+        return [], frozenset()
+    visible = [s for s in caps if s.capability_id in allowlist]
+    return visible, frozenset(s.capability_id for s in visible)
+
+
 def _subtasks_have_valid_tool_ids(
     subtasks: list[dict], allowed_ids: frozenset[str]
 ) -> bool:
-    """type=tool 子任务的 tool 必须在 planner 可见 id 集内。"""
+    """type=tool 子任务的 tool 须在本轮可见 id 集内（S1-d · 继承 H1）。"""
     for item in subtasks:
         if str(item.get("type") or "") != "tool":
             continue
@@ -179,13 +196,25 @@ def _pending_subtask(state: LgRagState) -> dict | None:
 async def supervisor_node(state: LgRagState) -> dict:
     """LLM 拆解复合问题为 ≤4 子任务；失败/非法/非法 tool id → fallback 单 rag。
 
-    拆 plan 前经 ``list_capabilities`` 注入赋能目录；``type=tool`` 的 id 须在可见集内。
+    可见集 = ``list_capabilities(filter)`` ∩ ``state.allowed_capability_ids``（S1）；
+    空 allowlist / 缺字段 → 整 plan fallback 单 rag；``type=tool`` id 须在本轮可见集内。
     选型：complete 一次 + ``parse_only``（见 ``_parse_subtasks``），
     不用 ``acomplete_structured`` 以免本波双重 LLM。
     """
     query = _last_user_text(state["messages"])
-    caps = list_capabilities(filter=_SUPERVISOR_CAP_FILTER)
-    allowed_ids = frozenset(s.capability_id for s in caps)
+    caps, allowed_ids = _resolve_supervisor_visible_caps(state)
+    if state.get("allowed_capability_ids") is None or not allowed_ids:
+        span_meta: dict = {
+            "capability_catalog_count": 0,
+            "subtask_count": 1,
+            "subtask_types": ["rag"],
+            "supervisor_fallback": True,
+            "structured_output_fallback": True,
+            "supervisor_empty_allowlist": True,
+            "supervisor_raw": "",
+        }
+        _record_span_metadata(span_meta)
+        return {"subtasks": [{"id": "t1", "type": "rag", "input": query}]}
     system_content = _build_supervisor_system(_format_capability_catalog(caps))
     raw = ""
     subtasks: list[dict] | None = None

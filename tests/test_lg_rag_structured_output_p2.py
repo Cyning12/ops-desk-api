@@ -12,12 +12,21 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from langchain_core.messages import HumanMessage
 
+from app.ops.capability import list_capabilities
 from app.ops.lg_rag.multi.nodes import (
     _parse_subtasks,
     info_extract_node,
     supervisor_node,
 )
 from app.ops.lg_rag.nodes import _parse_route, _record_route_metadata
+from app.ops.strategy import BUILDER_CAP_FILTER
+
+
+def _full_allowlist_state(messages: list) -> dict:
+    ids = [
+        s.capability_id for s in list_capabilities(filter=BUILDER_CAP_FILTER)
+    ]
+    return {"messages": messages, "allowed_capability_ids": ids}
 
 
 def _span_cm():
@@ -117,7 +126,7 @@ async def test_supervisor_fallback_metadata_flag():
         ),
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
     ):
-        out = await supervisor_node({"messages": [HumanMessage(content="复合问题")]})
+        out = await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
     assert out["subtasks"] == [{"id": "t1", "type": "rag", "input": "复合问题"}]
     assert recorded
     assert recorded[0]["supervisor_fallback"] is True

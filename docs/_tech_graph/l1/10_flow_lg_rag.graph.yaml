@@ -121,6 +121,15 @@ nodes:
         symbol: "route_after_rewrite"
         kind: method
 
+  - id: "s_strategy_builder"
+    label: "strategy_builder_node（S1 allowlist · Registry∩Policy）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/strategy/builder.py"
+        symbol: "strategy_builder_node"
+        kind: method
+
   - id: "s_supervisor"
     label: "supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag）"
     kind: flow
@@ -362,11 +371,18 @@ edges:
         line: 230
 
   - from: "sup_graph"
-    to: "s_supervisor"
-    label: "START → supervisor"
+    to: "s_strategy_builder"
+    label: "START → strategy_builder"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 52
+        line: 54
+
+  - from: "s_strategy_builder"
+    to: "s_supervisor"
+    label: "allowed_capability_ids"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 55
 
   - from: "s_supervisor"
     to: "s_dispatch"
@@ -498,6 +514,24 @@ edges:
     anchors:
       - path: "app/ops/lg_rag/multi/nodes.py"
         symbol: "info_extract_node"
+
+  - from: "s_strategy_builder"
+    to: "capability_gw"
+    label: "list_capabilities（Builder catalog）"
+    mark: "::triggers"
+    type: "triggers"
+    anchors:
+      - path: "app/ops/strategy/builder.py"
+        symbol: "strategy_builder_node"
+
+  - from: "s_supervisor"
+    to: "capability_gw"
+    label: "list_capabilities ∩ allowlist"
+    mark: "::triggers"
+    type: "triggers"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "supervisor_node"
 
   - from: "s_tool"
     to: "capability_gw"

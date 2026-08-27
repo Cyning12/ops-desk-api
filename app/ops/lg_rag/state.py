@@ -39,6 +39,10 @@ class LgRagState(MessagesState):
     subtask_results（Phase 4）：各子任务结果，Annotated add reducer 追加；
         与子任务按序一一对应（dispatch 以 len(subtask_results) 作推进索引）。
         中间结果只进本字段，不进 messages（避免消息膨胀）。
+    allowed_capability_ids（S1）：Strategy Builder 写入的本轮 capability 白名单；
+        supervisor 可见集 = list_capabilities(filter) ∩ 本字段；空 list → fallback 单 rag。
+        supervisor 图路径强制经 Builder 前置，缺字段视为实现错误。
+    allowed_skill_ids（S1 · 可选）：本轮 skill 白名单；首版 Builder 写空 list。
     """
 
     route: str
@@ -47,3 +51,5 @@ class LgRagState(MessagesState):
     chain_meta: dict
     subtasks: list[dict]
     subtask_results: Annotated[list[dict], add]
+    allowed_capability_ids: list[str]
+    allowed_skill_ids: list[str]
