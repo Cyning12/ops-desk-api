@@ -160,6 +160,7 @@ async def chat_ws(websocket: WebSocket) -> None:
                     graph_context=None,
                     intent="",
                     answer="",
+                    history_turns=[],
                     events=[],
                 )
                 active_streamer = ChatEventStreamer(state, run_id, run_model)

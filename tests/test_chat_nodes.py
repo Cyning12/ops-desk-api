@@ -22,6 +22,7 @@ def _make_state(**overrides) -> ChatState:
         "graph_context": None,
         "intent": "",
         "answer": "",
+        "history_turns": [],
         "events": [],
     }
     defaults.update(overrides)

@@ -137,6 +137,15 @@ def _build_messages(state: ChatState) -> list[LlmMessage]:
     """
     messages: list[LlmMessage] = [LlmMessage(role="system", content=_SYSTEM_PROMPT)]
 
+    for turn in state.get("history_turns") or []:
+        role = str(turn.get("role") or "user")
+        content = str(turn.get("content") or "").strip()
+        if not content:
+            continue
+        if role not in ("user", "assistant", "system"):
+            role = "user"
+        messages.append(LlmMessage(role=role, content=content))
+
     issue_context = state.get("issue_context") or []
     if issue_context:
         issue = issue_context[0]
