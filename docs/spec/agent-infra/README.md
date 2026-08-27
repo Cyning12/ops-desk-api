@@ -83,7 +83,7 @@ docs/spec/agent-infra/
 
 | ID | 规划 | 状态 | 首波 |
 |---|---|---|---|
-| `strategy-and-intent` | [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **S1 DONE** [#78](https://github.com/Cyning12/ops-desk-api/pull/78) MERGED · 下一波 S2 Intent |
+| `strategy-and-intent` | [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **S2 DONE** [#80](https://github.com/Cyning12/ops-desk-api/pull/80) MERGED · 下一波 S3 catalog-manifest |
 
 ## 测评轨（draft · 可与策略轨并行）
 
@@ -131,3 +131,4 @@ docs/spec/agent-infra/
 | 2026-08-27 | **测评轨落盘**：`04_eval_and_observability_plan_v0` + `eval/`；Langfuse 默认 · 混合 harness · 非完整自建 |
 | 2026-08-27 | **策略轨 S0 签收**：03 + strategy ROADMAP `HG-SPEC-SIGNOFF=approved`；开 S1 `strategy-builder-allowlist` |
 | 2026-08-27 | **S1 MERGED**：[#78](https://github.com/Cyning12/ops-desk-api/pull/78) allowlist 闭环 |
+| 2026-08-27 | **S2 MERGED**：[#80](https://github.com/Cyning12/ops-desk-api/pull/80) Intent schema v1 |

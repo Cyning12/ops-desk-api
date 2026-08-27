@@ -16,7 +16,7 @@
 |---|---|---|
 | S0 | **DONE** | 03 + 本 ROADMAP 签收 · 2026-08-27 |
 | S1 | **DONE** | 2026-08-27 · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** · allowlist 闭环 |
-| S2 | **DONE** | 2026-08-27 · [#80](https://github.com/Cyning12/ops-desk-api/pull/80) · Intent schema + 节点 |
+| S2 | **DONE** | 2026-08-27 · [#80](https://github.com/Cyning12/ops-desk-api/pull/80) **MERGED** · Intent schema + 节点 |
 | S3–S4 | pending | 非本棒 |
 
 ---
@@ -152,4 +152,4 @@ capabilities:
 | 2026-08-27 | S0 签收 · 落地状态表 · 钉死 None/空 allowlist 语义 |
 | 2026-08-27 | S1 实现 00 验收 PASS · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** |
 | 2026-08-27 | S2 开工：00 定夺挂点 / SO / Builder 消费 · 并存附录 |
-| 2026-08-27 | S2 00 验收 PASS（pytest 48 · graph-compile）；图节点 id=`intent_node` |
+| 2026-08-27 | S2 00 验收 PASS（pytest 48 · graph-compile）；[#80](https://github.com/Cyning12/ops-desk-api/pull/80) **MERGED** |
