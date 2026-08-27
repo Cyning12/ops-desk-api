@@ -1,7 +1,7 @@
 # Agent Host · 初版 SPEC 规划（v0）
 
 > **层级**：L0 规划（Gateway 升级轨收官后的 **架构 flesh** 轨）  
-> **状态**：`active`（规划真值 · HG-SPEC-SIGNOFF **approved** · task 已拆 · **H1 起可 20 审**）  
+> **状态**：`completed`（规划真值 · HG-SPEC-SIGNOFF **approved** · **H1–H5 全轨 CLOSE** · 2026-08-27）  
 > **版本**：v0 · 2026-08-27  
 > **上游**：[`00_architecture_and_boundaries.md`](./00_architecture_and_boundaries.md) · [讨论阶段性总结](../../discussions/2026-08-26_agent-host-architecture-phase-summary.md)  
 > **前置轨**：[`01_upgrade_roadmap.md`](./01_upgrade_roadmap.md)（**stable** · Capability portable + SO 卫生 + MCP）  
@@ -99,9 +99,6 @@ lg_rag ──────┘
 | H3 | [`task_chat_session_continuity.md`](../../tasks/done/task_chat_session_continuity.md) | `chat-session-continuity` | H2 ✓ | **CLOSE** ✓ |
 | H4 | [`task_prompt_assembly_p1.md`](../../tasks/done/task_prompt_assembly_p1.md) | `prompt-assembly-p1` | — | **CLOSE** ✓ |
 | H5 | [`task_skill_registry_p0.md`](../../tasks/done/task_skill_registry_p0.md) | `skill-registry-p0` | H4 ✓ | **CLOSE** ✓ · agent-host-plan **收官** |
-| H3 | [`task_chat_session_continuity.md`](../../tasks/active/task_chat_session_continuity.md) | `chat-session-continuity` | `task/chat-session-continuity` | H2 推荐 | pending |
-| H4 | [`task_prompt_assembly_p1.md`](../../tasks/active/task_prompt_assembly_p1.md) | `prompt-assembly-p1` | `task/prompt-assembly-p1` | 可与 H2 并行 | pending |
-| H5 | [`task_skill_registry_p0.md`](../../tasks/active/task_skill_registry_p0.md) | `skill-registry-p0` | `task/skill-registry-p0` | H4 CLOSE | pending |
 
 00 invoke：[`docs/harness/invokes/by-task/agent-host-plan/invoke_20260827_00_agent-host-plan.md`](../../harness/invokes/by-task/agent-host-plan/invoke_20260827_00_agent-host-plan.md)
 
@@ -174,3 +171,4 @@ docs/spec/agent-infra/
 |---|---|
 | 2026-08-27 | 初版：Gateway 轨收官后 Agent Host flesh 五波次规划 |
 | 2026-08-27 | **HG-SPEC-SIGNOFF=approved**；拆 H1–H5 active task + 00 invoke |
+| 2026-08-27 | **H1–H5 全轨 CLOSE**；00 invoke CLOSE；规划状态 → completed |
