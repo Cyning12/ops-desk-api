@@ -20,6 +20,7 @@
 | **test_strategy_note** | manifest/索引单测；match stub；provide 集成 mock；不执行 SKILL.md 解释器 |
 | **code_quality_bar** | `L2_backend` |
 | **graph_change_layer** | `G-L1`（可选 capability/lg_rag 备注） |
+| **wiki_delta** | `n/a` |
 | **review_hat** | `20` |
 | **required_invoke_hats** | `10,30` |
 | **orchestration** | agent-host-plan 第五棒 = H5 |

@@ -19,6 +19,7 @@
 | **test_strategy_note** | `render()` 单测；迁移 1–2 节点 off 硬编码；行为不回归 |
 | **code_quality_bar** | `L2_backend` |
 | **graph_change_layer** | `n/a`（或 G-L1 备注 `prompt` 模块 POINTER · 00 定夺） |
+| **wiki_delta** | `n/a` |
 | **review_hat** | `20` |
 | **required_invoke_hats** | `10,30` |
 | **orchestration** | agent-host-plan 第四棒 = H4 |

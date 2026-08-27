@@ -182,8 +182,8 @@ async def test_extract_invalid_json_falls_back_empty():
 
 
 @pytest.mark.asyncio
-async def test_unknown_tool_recorded_and_continues():
-    """未知工具 → 错误结果记录不中断，aggregator 照常综合。"""
+async def test_invalid_tool_id_in_plan_fallback_single_rag():
+    """H1：plan 含非法 tool id → supervisor 整 plan fallback 单 rag（不进入 tool_exec）。"""
     supervisor_out = _subtasks_json(
         [
             {"id": "t1", "type": "tool", "input": "查点什么", "tool": "no_such_tool"},
@@ -195,14 +195,43 @@ async def test_unknown_tool_recorded_and_continues():
             },
         ]
     )
+    router = _provider('{"route": "direct"}')
+    chain = AsyncMock(return_value=_result("direct 答案"))
     multi = _provider(supervisor_out, _AGGREGATED)
-    with patch(_MULTI_PROVIDER_PATCH, return_value=multi):
+    with (
+        patch(_MULTI_PROVIDER_PATCH, return_value=multi),
+        patch(_ROUTER_PROVIDER_PATCH, return_value=router),
+        patch(_CHAIN_PATCH, new=chain),
+    ):
         out = await _run(_build())
-    results = out["subtask_results"]
-    assert len(results) == 2
-    assert "未知工具" in results[0]["error"]
-    assert results[1]["output"]["version"] == "v2.3.1"
+    assert len(out["subtasks"]) == 1
+    assert out["subtasks"][0]["type"] == "rag"
+    assert len(out["subtask_results"]) == 1
     assert out["messages"][-1].content == _AGGREGATED
+
+
+@pytest.mark.asyncio
+async def test_unknown_tool_at_invoke_recorded_and_continues():
+    """tool_exec：invoke 未知 id → 错误结果记录；合法 tool 子任务照常（绕过 supervisor）。"""
+    from app.ops.lg_rag.multi.nodes import tool_exec_node
+
+    state_unknown = {
+        "subtasks": [
+            {"id": "t1", "type": "tool", "input": "查什么", "tool": "no_such_tool"},
+        ],
+        "subtask_results": [],
+    }
+    out1 = await tool_exec_node(state_unknown)
+    assert "未知工具" in out1["subtask_results"][0]["error"]
+
+    state_valid = {
+        "subtasks": [
+            {"id": "t2", "type": "tool", "input": "查部署", "tool": "mock_get_deploy_info"},
+        ],
+        "subtask_results": [],
+    }
+    out2 = await tool_exec_node(state_valid)
+    assert out2["subtask_results"][0]["output"]["version"] == "v2.3.1"
 
 
 def test_empty_subtasks_dispatch_goes_aggregate():

@@ -21,6 +21,7 @@
 | **code_quality_bar** | `L2_backend` |
 | **graph_change_layer** | `G-L1` |
 | **graph_delta_note** | `capability` / `lg_rag` 备注 policy 门；不新增一级模块 |
+| **wiki_delta** | `n/a` |
 | **review_hat** | `20` |
 | **required_invoke_hats** | `10,30` |
 | **orchestration** | agent-host-plan 第二棒 = H2 |

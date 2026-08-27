@@ -20,6 +20,7 @@
 | **code_quality_bar** | `L2_backend` |
 | **graph_change_layer** | `G-L1`（若触 chat flow 备注） |
 | **graph_delta_note** | 可选 `10_flow_chat` 备注 Session 连续性；**不**改 chat graph 节点拓扑 |
+| **wiki_delta** | `n/a` |
 | **review_hat** | `20` |
 | **required_invoke_hats** | `10,30` |
 | **orchestration** | agent-host-plan 第三棒 = H3 |
