@@ -3,7 +3,7 @@
 说明书：docs/guides/DESIGN_langgraph-lg-rag-phase4-multiagent_v1.md §1。
 
 拓扑：
-START → strategy_builder（S1 allowlist）→ supervisor（LLM 拆解 ≤4 子任务）→ dispatch 条件边
+START → intent_node（S2 细意图）→ strategy_builder（S1 allowlist）→ supervisor（LLM 拆解 ≤4 子任务）→ dispatch 条件边
   ├─ type=rag     → rag_subtask（内部调 router 图子图）→ 回 dispatch
   ├─ type=extract → info_extract（LLM 实体抽取）→ 回 dispatch
   ├─ type=tool    → tool_exec（Mock 工具注册表）→ 回 dispatch
@@ -30,6 +30,7 @@ from app.ops.lg_rag.multi.nodes import (
 )
 from app.ops.lg_rag.state import LgRagState
 from app.ops.strategy.builder import strategy_builder_node
+from app.ops.strategy.intent import intent_node
 
 # dispatch 条件边映射：三专业 agent 或耗尽进 aggregator
 _DISPATCH_MAP = {
@@ -43,15 +44,20 @@ _AGENT_NODES = ("rag_subtask", "info_extract", "tool_exec")
 
 
 def build_supervisor_agent(*, checkpointer: Any | None = None):
-    """START → strategy_builder → supervisor → dispatch 顺序 fan-out → aggregator → END。"""
+    """START → intent_node → strategy_builder → supervisor → dispatch 顺序 fan-out → aggregator → END。
+
+    节点 id 用 ``intent_node``：LangGraph 禁止与 state key ``intent`` 同名。
+    """
     builder = StateGraph(LgRagState)
+    builder.add_node("intent_node", intent_node)
     builder.add_node("strategy_builder", strategy_builder_node)
     builder.add_node("supervisor", supervisor_node)
     builder.add_node("rag_subtask", rag_subtask_node)
     builder.add_node("info_extract", info_extract_node)
     builder.add_node("tool_exec", tool_exec_node)
     builder.add_node("aggregator", aggregator_node)
-    builder.add_edge(START, "strategy_builder")
+    builder.add_edge(START, "intent_node")
+    builder.add_edge("intent_node", "strategy_builder")
     builder.add_edge("strategy_builder", "supervisor")
     builder.add_conditional_edges("supervisor", route_next_subtask, _DISPATCH_MAP)
     for name in _AGENT_NODES:

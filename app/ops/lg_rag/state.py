@@ -43,6 +43,8 @@ class LgRagState(MessagesState):
         supervisor 可见集 = list_capabilities(filter) ∩ 本字段；空 list → fallback 单 rag。
         supervisor 图路径强制经 Builder 前置，缺字段视为实现错误。
     allowed_skill_ids（S1 · 可选）：本轮 skill 白名单；首版 Builder 写空 list。
+    intent（S2）：Intent 节点写入的细意图 dict（IntentV1）；Builder 读 needs_tool 等。
+        失败时为保守 fallback（unknown / 全 False / low / 空摘要）。
     """
 
     route: str
@@ -53,3 +55,4 @@ class LgRagState(MessagesState):
     subtask_results: Annotated[list[dict], add]
     allowed_capability_ids: list[str]
     allowed_skill_ids: list[str]
+    intent: dict

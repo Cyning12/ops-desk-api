@@ -103,3 +103,90 @@ async def test_strategy_builder_restricted_config():
         assert out["allowed_capability_ids"] == ["utc_now_iso"]
     finally:
         strategy_config.CANDIDATE_CAPABILITY_IDS = None
+
+
+@pytest.mark.asyncio
+async def test_builder_needs_tool_false_empty_allowlist():
+    """S2：needs_tool=False → 空 capability allowlist。"""
+    with (
+        patch("app.ops.strategy.builder._record_builder_span"),
+        patch("app.ops.strategy.builder.trace_span", return_value=_span_cm()),
+    ):
+        out = await strategy_builder_node(
+            {
+                "messages": [HumanMessage(content="q")],
+                "intent": {
+                    "domain": "general",
+                    "needs_tool": False,
+                    "needs_skill": False,
+                    "is_composite": False,
+                    "risk_hint": "low",
+                    "summary": "",
+                },
+            }
+        )
+    assert out["allowed_capability_ids"] == []
+    assert out["allowed_skill_ids"] == []
+
+
+@pytest.mark.asyncio
+async def test_builder_needs_tool_true_intersects_policy():
+    """S2：needs_tool=True → 非空且 ⊆ Policy 可见；非法 id 剔除。"""
+    visible = frozenset(
+        s.capability_id
+        for s in list_capabilities(filter=BUILDER_CAP_FILTER)
+    )
+    with (
+        patch(
+            "app.ops.strategy.builder.get_candidate_capability_ids",
+            return_value=["utc_now_iso", "bogus_tool"],
+        ),
+        patch("app.ops.strategy.builder._record_builder_span"),
+        patch("app.ops.strategy.builder.trace_span", return_value=_span_cm()),
+    ):
+        out = await strategy_builder_node(
+            {
+                "messages": [HumanMessage(content="q")],
+                "intent": {
+                    "domain": "ops_kb",
+                    "needs_tool": True,
+                    "needs_skill": True,
+                    "is_composite": False,
+                    "risk_hint": "high",
+                    "summary": "查时间",
+                },
+            }
+        )
+    allowed = out["allowed_capability_ids"]
+    assert "utc_now_iso" in allowed
+    assert "bogus_tool" not in allowed
+    assert set(allowed) <= visible
+    assert out["allowed_skill_ids"] == []
+
+
+@pytest.mark.asyncio
+async def test_builder_risk_hint_high_does_not_bypass_policy():
+    """S2：risk_hint=high 不得把非法/高危 id 放进 allowlist。"""
+    with (
+        patch(
+            "app.ops.strategy.builder.get_candidate_capability_ids",
+            return_value=["utc_now_iso", "dangerous_unregistered"],
+        ),
+        patch("app.ops.strategy.builder._record_builder_span"),
+        patch("app.ops.strategy.builder.trace_span", return_value=_span_cm()),
+    ):
+        out = await strategy_builder_node(
+            {
+                "messages": [HumanMessage(content="q")],
+                "intent": {
+                    "domain": "ops_kb",
+                    "needs_tool": True,
+                    "needs_skill": False,
+                    "is_composite": False,
+                    "risk_hint": "high",
+                    "summary": "",
+                },
+            }
+        )
+    assert "dangerous_unregistered" not in out["allowed_capability_ids"]
+    assert "utc_now_iso" in out["allowed_capability_ids"]

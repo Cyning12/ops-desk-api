@@ -21,10 +21,20 @@ from langgraph.checkpoint.memory import InMemorySaver
 
 from app.ops.lc_evidence_chain.types import ChainResult
 from app.ops.lg_rag.multi.nodes import route_next_subtask
+from app.ops.lg_rag.schemas import IntentV1
 
 _MULTI_PROVIDER_PATCH = "app.ops.lg_rag.multi.nodes.get_llm_provider"
 _ROUTER_PROVIDER_PATCH = "app.ops.lg_rag.nodes.get_llm_provider"
 _CHAIN_PATCH = "app.ops.lg_rag.nodes.ainvoke_evidence_answer"
+_INTENT_COMPLETE_PATCH = "app.ops.strategy.intent.acomplete_structured"
+_INTENT_OK = IntentV1(
+    domain="ops_kb",
+    needs_tool=True,
+    needs_skill=False,
+    is_composite=True,
+    risk_hint="low",
+    summary="复合运维查询",
+)
 _QUERY = "超时问题查一下，顺带抽取发版信息，再看看 issue 状态"
 _AGGREGATED = "## 综合结论\n已覆盖全部子任务。"
 
@@ -53,10 +63,11 @@ def _build():
 
 
 async def _run(graph, query: str = _QUERY, thread_id: str = "t-p4"):
-    return await graph.ainvoke(
-        {"messages": [HumanMessage(content=query)]},
-        {"configurable": {"thread_id": thread_id}},
-    )
+    with patch(_INTENT_COMPLETE_PATCH, new=AsyncMock(return_value=_INTENT_OK)):
+        return await graph.ainvoke(
+            {"messages": [HumanMessage(content=query)]},
+            {"configurable": {"thread_id": thread_id}},
+        )
 
 
 @pytest.mark.asyncio
@@ -240,6 +251,7 @@ def test_supervisor_graph_includes_strategy_builder_node():
 
     graph = build_supervisor_agent()
     node_names = set(graph.get_graph().nodes.keys())
+    assert "intent_node" in node_names
     assert "strategy_builder" in node_names
     assert "supervisor" in node_names
 

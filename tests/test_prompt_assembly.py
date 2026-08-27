@@ -14,6 +14,13 @@ def test_get_template_version():
     assert "Supervisor" in tmpl.body
 
 
+def test_get_intent_template():
+    tmpl = get_template("lg_rag.intent.system")
+    assert tmpl.version == "v1"
+    assert "Intent" in tmpl.body
+    assert "rag/direct/refuse" in tmpl.body
+
+
 def test_render_supervisor_with_catalog():
     text = render(
         "lg_rag.supervisor.system",

@@ -1,13 +1,13 @@
 ---
 graph_id: 10_flow_lg_rag
-version: 2026-08-26
-generated_at: 2026-08-27T10:20:51Z
+version: 2026-08-27
+generated_at: 2026-08-27T13:03:40Z
 source: 10_flow_lg_rag.graph.yaml
 ---
 
 # LG RAG 旁路三模式流程（basic / router / supervisor）
 
-POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（拆解→分派→聚合）。同图分节：节点 id 前缀 b_/r_/s_；rag 路径黑盒复用 lc_evidence_chain，不展开 LCEL；默认不进入 chat/graph。freeze lg-rag-http-v1。
+POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（Intent→Builder→拆解→分派→聚合）。同图分节：节点 id 前缀 b_/r_/s_；rag 路径黑盒复用 lc_evidence_chain，不展开 LCEL；默认不进入 chat/graph。freeze lg-rag-http-v1。
 
 ## Mermaid
 
@@ -25,6 +25,7 @@ flowchart TB
     r_rag["rag_node（黑盒调 lc chain）"]
     r_evaluate["evaluate_node（复用 chain gate · 零额外 LLM）"]
     r_rewrite["rewrite_node（LLM 改写 · 熔断封顶）"]
+    s_intent["intent_node（S2 IntentV1 · acomplete_structured）"]
     s_strategy_builder["strategy_builder_node（S1 allowlist · Registry∩Policy）"]
     s_supervisor["supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag）"]
     s_dispatch["route_next_subtask（dispatch）"]
@@ -81,30 +82,32 @@ flowchart TB
     %% → app/ops/lg_rag/nodes.py#L269
     r_rewrite -->|"complete"| llm
     %% → app/ops/lg_rag/nodes.py#L230
-    sup_graph -->|"START → strategy_builder"| s_strategy_builder
-    %% → app/ops/lg_rag/multi/graph.py#L54
+    sup_graph -->|"START → intent_node"| s_intent
+    %% → app/ops/lg_rag/multi/graph.py#L59
+    s_intent -->|"intent dict"| s_strategy_builder
+    %% → app/ops/lg_rag/multi/graph.py#L60
     s_strategy_builder -->|"allowed_capability_ids"| s_supervisor
-    %% → app/ops/lg_rag/multi/graph.py#L55
+    %% → app/ops/lg_rag/multi/graph.py#L61
     s_supervisor -->|"subtasks（≤4）"| s_dispatch
-    %% → app/ops/lg_rag/multi/graph.py#L53
+    %% → app/ops/lg_rag/multi/graph.py#L62
     s_dispatch -->|"[type=rag]"| s_rag
-    %% → app/ops/lg_rag/multi/graph.py#L35
-    %% → app/ops/lg_rag/multi/nodes.py#L238
-    s_dispatch -->|"[type=extract]"| s_extract
-    %% → app/ops/lg_rag/multi/graph.py#L36
-    %% → app/ops/lg_rag/multi/nodes.py#L238
-    s_dispatch -->|"[type=tool]"| s_tool
     %% → app/ops/lg_rag/multi/graph.py#L37
     %% → app/ops/lg_rag/multi/nodes.py#L238
-    s_dispatch -->|"[耗尽/空 → aggregate]"| s_aggregator
+    s_dispatch -->|"[type=extract]"| s_extract
     %% → app/ops/lg_rag/multi/graph.py#L38
+    %% → app/ops/lg_rag/multi/nodes.py#L238
+    s_dispatch -->|"[type=tool]"| s_tool
+    %% → app/ops/lg_rag/multi/graph.py#L39
+    %% → app/ops/lg_rag/multi/nodes.py#L238
+    s_dispatch -->|"[耗尽/空 → aggregate]"| s_aggregator
+    %% → app/ops/lg_rag/multi/graph.py#L40
     %% → app/ops/lg_rag/multi/nodes.py#L237
     s_rag -->|"回 dispatch（追加一条结果）"| s_dispatch
-    %% → app/ops/lg_rag/multi/graph.py#L55
+    %% → app/ops/lg_rag/multi/graph.py#L64
     s_extract -->|"回 dispatch（追加一条结果）"| s_dispatch
-    %% → app/ops/lg_rag/multi/graph.py#L55
+    %% → app/ops/lg_rag/multi/graph.py#L64
     s_tool -->|"回 dispatch（追加一条结果）"| s_dispatch
-    %% → app/ops/lg_rag/multi/graph.py#L55
+    %% → app/ops/lg_rag/multi/graph.py#L64
     s_rag -->|"ainvoke_router_agent（复用 router 子图）"| router_graph
     %% → app/ops/lg_rag/multi/nodes.py#L266
     %% → app/ops/lg_rag/graph.py::ainvoke_router_agent
@@ -120,6 +123,10 @@ flowchart TB
     %% → app/ops/lg_rag/multi/nodes.py::supervisor_node
     s_extract -->|"parse ExtractResult"| structured_output_gw
     %% → app/ops/lg_rag/multi/nodes.py::info_extract_node
+    s_intent -->|"acomplete_structured（max_retries=1）"| structured_output_gw
+    %% → app/ops/strategy/intent.py::intent_node
+    s_intent -->|"complete（细意图）"| llm
+    %% → app/ops/strategy/intent.py::intent_node
     s_strategy_builder -->|"list_capabilities（Builder catalog）"| capability_gw
     %% → app/ops/strategy/builder.py::strategy_builder_node
     s_supervisor -->|"list_capabilities ∩ allowlist"| capability_gw
@@ -131,7 +138,7 @@ flowchart TB
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-    class lg_invoke,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_strategy_builder,s_supervisor,s_dispatch,s_rag,s_extract,s_tool,s_aggregator phase
+    class lg_invoke,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_intent,s_strategy_builder,s_supervisor,s_dispatch,s_rag,s_extract,s_tool,s_aggregator phase
     class basic_graph,router_graph,sup_graph doc
     class client,structured_output_gw,capability_gw,lc_chain,llm,db,main_doc infra
 ```
@@ -154,6 +161,7 @@ flowchart TB
 | r_rag | rag_node（黑盒调 lc chain） | flow |
 | r_evaluate | evaluate_node（复用 chain gate · 零额外 LLM） | flow |
 | r_rewrite | rewrite_node（LLM 改写 · 熔断封顶） | flow |
+| s_intent | intent_node（S2 IntentV1 · acomplete_structured） | flow |
 | s_strategy_builder | strategy_builder_node（S1 allowlist · Registry∩Policy） | flow |
 | s_supervisor | supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag） | flow |
 | s_dispatch | route_next_subtask（dispatch） | flow |
@@ -191,7 +199,8 @@ flowchart TB
 | r_rewrite | r_rag | ?> | branches | [有新 query → 重试 rag；熔断置空 → END] | 2 anchor(s) |
 | r_direct | llm | -> | depends_on | complete | 1 anchor(s) |
 | r_rewrite | llm | -> | depends_on | complete | 1 anchor(s) |
-| sup_graph | s_strategy_builder | -> | depends_on | START → strategy_builder | 1 anchor(s) |
+| sup_graph | s_intent | -> | depends_on | START → intent_node | 1 anchor(s) |
+| s_intent | s_strategy_builder | -> | depends_on | intent dict | 1 anchor(s) |
 | s_strategy_builder | s_supervisor | -> | depends_on | allowed_capability_ids | 1 anchor(s) |
 | s_supervisor | s_dispatch | -> | depends_on | subtasks（≤4） | 1 anchor(s) |
 | s_dispatch | s_rag | ?> | branches | [type=rag] | 2 anchor(s) |
@@ -208,6 +217,8 @@ flowchart TB
 | r_router | structured_output_gw | ::triggers | triggers | parse_only / schema 校验 | 1 anchor(s) |
 | s_supervisor | structured_output_gw | ::triggers | triggers | parse SubtasksPlan | 1 anchor(s) |
 | s_extract | structured_output_gw | ::triggers | triggers | parse ExtractResult | 1 anchor(s) |
+| s_intent | structured_output_gw | ::triggers | triggers | acomplete_structured（max_retries=1） | 1 anchor(s) |
+| s_intent | llm | -> | depends_on | complete（细意图） | 1 anchor(s) |
 | s_strategy_builder | capability_gw | ::triggers | triggers | list_capabilities（Builder catalog） | 1 anchor(s) |
 | s_supervisor | capability_gw | ::triggers | triggers | list_capabilities ∩ allowlist | 1 anchor(s) |
 | s_tool | capability_gw | ::triggers | triggers | capability.invoke | 1 anchor(s) |

@@ -68,14 +68,26 @@ def _record_builder_span(metadata: dict) -> None:
 
 
 async def strategy_builder_node(state: LgRagState) -> dict:
-    """写本轮 ``allowed_capability_ids``（及空 ``allowed_skill_ids``）。"""
+    """写本轮 ``allowed_capability_ids``（及空 ``allowed_skill_ids``）。
+
+    S2：读 ``state.intent``。
+    - ``needs_tool is False`` → 空 capability allowlist（supervisor fallback 单 rag）
+    - ``needs_tool is True`` 或缺 intent → 仍 ⊆ Registry∩Policy（S1 求交）
+    - ``needs_skill`` 本波仍写空 ``allowed_skill_ids``
+    - ``risk_hint`` 不得绕过 Policy（始终 deny_high_risk）
+    """
     with trace_span("strategy_builder", run_type="chain"):
         visible = get_policy_visible_catalog()
         visible_ids = frozenset(s.capability_id for s in visible)
-        candidates = get_candidate_capability_ids()
-        allowed, stripped = build_allowlist_from_candidates(
-            candidates, visible_ids=visible_ids
-        )
+        intent = state.get("intent") or {}
+        needs_tool = intent.get("needs_tool")
+        if needs_tool is False:
+            allowed, stripped = [], []
+        else:
+            candidates = get_candidate_capability_ids()
+            allowed, stripped = build_allowlist_from_candidates(
+                candidates, visible_ids=visible_ids
+            )
         span_meta: dict = {
             "module": "strategy_builder",
             "strategy_builder_catalog_count": len(visible),
@@ -83,6 +95,9 @@ async def strategy_builder_node(state: LgRagState) -> dict:
         }
         if stripped:
             span_meta["strategy_builder_stripped_ids"] = stripped
+        if intent:
+            span_meta["intent_needs_tool"] = needs_tool
+            span_meta["intent_risk_hint"] = intent.get("risk_hint")
         _record_builder_span(span_meta)
         return {
             "allowed_capability_ids": allowed,

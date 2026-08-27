@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260827_V1",
-  "generated_at": "2026-08-27T10:20:51Z",
+  "generated_at": "2026-08-27T13:03:40Z",
   "graphs": [
     {
       "id": "00_main",
@@ -448,6 +448,11 @@
       "graph_id": "10_flow_lg_rag",
       "id": "r_rewrite",
       "label": "rewrite_node（LLM 改写 · 熔断封顶）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "s_intent",
+      "label": "intent_node（S2 IntentV1 · acomplete_structured）"
     },
     {
       "graph_id": "10_flow_lg_rag",
@@ -2225,14 +2230,29 @@
     {
       "graph_id": "10_flow_lg_rag",
       "from": "sup_graph",
-      "to": "s_strategy_builder",
+      "to": "s_intent",
       "mark": "->",
       "type": "depends_on",
-      "label": "START → strategy_builder",
+      "label": "START → intent_node",
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 54
+          "line": 59
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_intent",
+      "to": "s_strategy_builder",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "intent dict",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 60
         }
       ],
       "sync": true
@@ -2247,7 +2267,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 55
+          "line": 61
         }
       ],
       "sync": true
@@ -2262,7 +2282,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 53
+          "line": 62
         }
       ],
       "sync": true
@@ -2277,7 +2297,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 35
+          "line": 37
         },
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
@@ -2296,7 +2316,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 36
+          "line": 38
         },
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
@@ -2315,7 +2335,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 37
+          "line": 39
         },
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
@@ -2334,7 +2354,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 38
+          "line": 40
         },
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
@@ -2353,7 +2373,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 55
+          "line": 64
         }
       ],
       "sync": true
@@ -2368,7 +2388,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 55
+          "line": 64
         }
       ],
       "sync": true
@@ -2383,7 +2403,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 55
+          "line": 64
         }
       ],
       "sync": true
@@ -2493,6 +2513,36 @@
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
           "symbol": "info_extract_node"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_intent",
+      "to": "structured_output_gw",
+      "mark": "::triggers",
+      "type": "triggers",
+      "label": "acomplete_structured（max_retries=1）",
+      "anchors": [
+        {
+          "path": "app/ops/strategy/intent.py",
+          "symbol": "intent_node"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_intent",
+      "to": "llm",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "complete（细意图）",
+      "anchors": [
+        {
+          "path": "app/ops/strategy/intent.py",
+          "symbol": "intent_node"
         }
       ],
       "sync": true
