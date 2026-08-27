@@ -1,7 +1,7 @@
 # ROADMAP：Skill · Registry 与 NL 匹配（H5）
 
 > **层级**：L2 路线（skill 域 · 波次 H5）  
-> **状态**：`active`（task → [`task_skill_registry_p0.md`](../../../tasks/active/task_skill_registry_p0.md) · 阻塞 H4 CLOSE）
+> **状态**：`done`（H5 CLOSE · agent-host-plan 收官）
 > **上游**：[`../02_agent_host_plan_v0.md`](../02_agent_host_plan_v0.md) · 建议 H4 后
 
 ---
