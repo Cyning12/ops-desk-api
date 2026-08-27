@@ -1,8 +1,8 @@
 # Task：Agent Host H3 · Chat Session 连续性
 
-> **状态**：completed（2026-08-27 · CLOSE · PR #72）
+> **状态**：completed（2026-08-27 · PR #72 MERGED）
 
-## Harness
+## Harness 元信息
 
 | **wiki_delta** | `n/a` |
 
@@ -16,4 +16,4 @@
 
 ## CLOSE
 
-| PR | 待 merge |
+| PR | [#72](https://github.com/Cyning12/ops-desk-api/pull/72) MERGED |
