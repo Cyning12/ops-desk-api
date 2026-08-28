@@ -11,7 +11,7 @@
 
 | 文件 | 说明 |
 |---|---|
-| [`ROADMAP_eval_observability_v0.md`](./ROADMAP_eval_observability_v0.md) | SLI 字典 · Dataset/Experiment · CI 门禁 · E1–E4 |
+| [`ROADMAP_eval_observability_v0.md`](./ROADMAP_eval_observability_v0.md) | SLI 字典（E1 真值）· Dataset/Experiment · CI 门禁 · E1–E5 |
 
 上级：[`../04_eval_and_observability_plan_v0.md`](../04_eval_and_observability_plan_v0.md) · [`../00_architecture_and_boundaries.md`](../00_architecture_and_boundaries.md)
 
