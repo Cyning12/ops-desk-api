@@ -15,12 +15,16 @@ Ink 账号在 jp 区：https://jp.cloud.langfuse.com）。
 - `trace_span(name, run_type=..., **metadata)`：with 块生成 span
 - `update_current_span_metadata({...})`：给当前 observation 附加结构化 metadata
 - `update_current_generation_usage(usage)`：同步 LLM usage 到当前 generation
+- `score_current_trace(name, value, ...)`：抽样写 score；关 tracing / 采样 miss / 异常 → no-op
 - `flush_traces()`：短脚本/评测结束前 flush（服务进程由 SDK 后台批量上报，无需调）
+
+线上抽样：``OPS_EVAL_SCORE_SAMPLE_RATE``（0.0–1.0，默认 ``0`` = 不打分）。
 """
 from __future__ import annotations
 
 import logging
 import os
+import random
 import re
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
@@ -230,6 +234,55 @@ def update_current_generation_usage(usage: Any) -> None:
         )
     except Exception:
         return
+
+
+def eval_score_sample_rate() -> float:
+    """线上 score 采样率：``OPS_EVAL_SCORE_SAMPLE_RATE``，默认 0；非法 → 0 + warning。"""
+    raw = _env("OPS_EVAL_SCORE_SAMPLE_RATE")
+    if not raw:
+        return 0.0
+    try:
+        rate = float(raw)
+    except ValueError:
+        logger.warning(
+            "invalid OPS_EVAL_SCORE_SAMPLE_RATE=%r; treat as 0",
+            raw,
+        )
+        return 0.0
+    if rate < 0.0 or rate > 1.0:
+        logger.warning(
+            "OPS_EVAL_SCORE_SAMPLE_RATE=%r out of [0,1]; treat as 0",
+            raw,
+        )
+        return 0.0
+    return rate
+
+
+def _should_sample_eval_score() -> bool:
+    """按采样率决定是否写分；rate≤0 永不写，≥1 总写。"""
+    rate = eval_score_sample_rate()
+    if rate <= 0.0:
+        return False
+    if rate >= 1.0:
+        return True
+    return random.random() < rate
+
+
+def score_current_trace(name: str, value: Any, **kwargs: Any) -> None:
+    """写当前 trace 的 score；tracing 关 / 采样 miss / SDK 失败 → 静默 no-op。
+
+    Score 名须符合 ROADMAP §3.2（如 ``stab.fallback``）。热路径禁止 LLM-as-judge。
+    """
+    if not tracing_enabled():
+        return
+    if not _should_sample_eval_score():
+        return
+    try:
+        from langfuse import get_client
+
+        get_client().score_current_trace(name=name, value=value, **kwargs)
+    except Exception:
+        logger.debug("langfuse score_current_trace failed", exc_info=True)
 
 
 def flush_traces() -> None:
