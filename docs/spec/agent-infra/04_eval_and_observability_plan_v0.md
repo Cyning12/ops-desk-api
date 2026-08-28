@@ -6,7 +6,7 @@
 > **域夹**：[`eval/`](./eval/)  
 > **E1 字典真值**：[`eval/ROADMAP_eval_observability_v0.md`](./eval/ROADMAP_eval_observability_v0.md) §3  
 > **实现现状**：`app/ops/tracing.py`（Langfuse · env 开关；**langsmith 支路未启用**）  
-> **本波落地**：E2 实现由 30 · [`task_eval_goldenset_lg_rag`](../../tasks/active/task_eval_goldenset_lg_rag.md)；00 **不写码**
+> **本波落地**：E3 由 30 · [`task_eval_langfuse_experiment_ci`](../../tasks/active/task_eval_langfuse_experiment_ci.md)；00 **不写码**
 
 ---
 
@@ -277,8 +277,8 @@ L5 可选：云端 Prompt
 |---|---|---|---|
 | **E0** | `eval-spec-signoff` | 本文件 + `eval/ROADMAP` 签收 | **DONE** · 2026-08-28 |
 | **E1** | `sli-score-dictionary` | metadata/score/`module` 键字典 | **DONE** · 真值在 ROADMAP §3 |
-| **E2** | `goldenset-lg-rag-v0` | 最小金标 + **按模块切片**目录 | **本波 task** `eval-goldenset-lg-rag`（30 实现 · 00 不写码） |
-| **E3** | `langfuse-dataset-experiment` | Dataset/Experiment + **模块 CI job** | 待 E2 · **勿绑进 E2** |
+| **E2** | `goldenset-lg-rag-v0` | 最小金标 + **按模块切片**目录 | **DONE** · PR #93 |
+| **E3** | `langfuse-dataset-experiment` | Dataset/Experiment + **模块 CI job** | **本波 task** `eval-langfuse-experiment-ci`（30 · mock CI · 00 不写码） |
 | **E4** | `online-sample-scores` | 抽样 score + Annotation 回流 | 待 E1（字典已有）· **勿绑进 E2** |
 | **E5** | `token-cost-ledger` | usage 全路径补齐 · 价表 · 费用聚合/导出 | 待 E1 · **勿绑进 E2** |
 
@@ -312,3 +312,4 @@ L5 可选：云端 Prompt
 | 2026-08-28 | 过程文档二次签收；颗粒度 E2–E5 分 task；钉 00 不实现 |
 | 2026-08-28 | E2 开工：独立 task `eval-goldenset-lg-rag`；00 不实现 |
 | 2026-08-28 | 00 后续编排见 eval ROADMAP §4.1；E3 起须 E2 合入后另开；00 不落地 |
+| 2026-08-28 | E3 开工：`eval-langfuse-experiment-ci` |
