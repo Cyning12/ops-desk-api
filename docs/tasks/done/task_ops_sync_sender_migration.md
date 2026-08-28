@@ -1,11 +1,11 @@
 # Task：Ops sync sender 迁移（GHA 改 POST /api/ops/admin/sync）
 
-> **状态**：active（方案已定稿 · 待 30 实现）  
+> **状态**：completed（2026-08-28 · 00 机械验收 PASS · PR #88）  
 > **类型**：技术债 / 基础设施（数据链断尾根治）  
 > **关联**：`app/ops/admin/sync.py`（接收端 2026-07-17 已实现）· 旧仓 `ai-ink-brain-api-python/.github/workflows/ops_sync_kimi_code.yml` · workspace `docs/02-backend-analysis/00-current-state.md` §8.1  
 > **分支**：`task/ops-sync-sender-migration`  
-> **编排**：capability lookup 已 CLOSE（#87）。本 task **仍 active**。Eval E0/E1 须等本 task CLOSE。  
-> **00**：本波 **禁止** 改 `app/` / `tests/` 业务码；只统筹、签闸、派 30。
+> **编排**：capability lookup 已 CLOSE（#87）。本 task CLOSE 后 Eval E0/E1 可开（生产 secrets 同验仍为维护者）。  
+> **00**：本波 **未** 改 `app/` / `tests/` 业务码；30 实现，00 统筹 / 验收 / PR。
 
 ---
 
@@ -121,16 +121,16 @@
 
 ## 验收标准
 
-- [ ] GitHub issue fixture → `IssueIn` 字段对齐（含 labels/author/assignees/`github_issue_id`）
-- [ ] GitHub PR fixture → `PullRequestIn`（含 draft/merged_at/`github_pr_id`）
-- [ ] sender 组装完整 `SyncPayload`（repo + sync_run）；scan/graph 缺失不报错
-- [ ] POST mock：Bearer 头正确；失败非 2xx 退出码非 0
-- [ ] 接收端：cookie maintainer 仍 202；正确 Bearer 仍 202；错误/空 token 配置下 Bearer 401；无凭证 401
-- [ ] 本仓存在 `.github/workflows/ops_sync_kimi_code.yml`；无 Supabase env
-- [ ] `.env.example` 含 `OPS_ADMIN_SYNC_TOKEN` 注释
-- [ ] G-L1 `admin` 备注 + `11_flow_sync_to_chat` GHA 节点 + graph-compile
-- [ ] 旧路径 deprecated 说明（task 或短文档 / workflow 注释）
-- [ ] ruff / pytest 触及路径绿（无外网）
+- [x] GitHub issue fixture → `IssueIn` 字段对齐（含 labels/author/assignees/`github_issue_id`）
+- [x] GitHub PR fixture → `PullRequestIn`（含 draft/merged_at/`github_pr_id`）
+- [x] sender 组装完整 `SyncPayload`（repo + sync_run）；scan/graph 缺失不报错
+- [x] POST mock：Bearer 头正确；失败非 2xx 退出码非 0
+- [x] 接收端：cookie maintainer 仍 202；正确 Bearer 仍 202；错误/空 token 配置下 Bearer 401；无凭证 401
+- [x] 本仓存在 `.github/workflows/ops_sync_kimi_code.yml`；无 Supabase env
+- [x] `.env.example` 含 `OPS_ADMIN_SYNC_TOKEN` 注释
+- [x] G-L1 `admin` 备注 + `11_flow_sync_to_chat` GHA 节点 + graph-compile
+- [x] 旧路径 deprecated 说明（task 或短文档 / workflow 注释）
+- [x] ruff / pytest 触及路径绿（无外网）
 - [ ] 生产同验：合入后维护者 secrets + `workflow_dispatch`（不挡 CLOSE）
 
 ---
@@ -154,3 +154,27 @@
 | 2026-08-08 | 初版（AI 起草 · 待 HG-TASK-DRAFT 人审）：源自 RAG 前置查证发现的数据链断尾 |
 | 2026-08-28 | RAG 两草案迁 deferred；本 task 仍为数据链 active |
 | 2026-08-28 | **方案定稿**：迁移旧 runner；机读 Bearer；48h 增量；00 不实现；闸代签 |
+| 2026-08-28 | 30/40 PASS · 00 机械验收 · PR #88 |
+
+---
+
+## 自检结论
+
+> 2026-08-28 · 00 机械复检 · **PASS**
+
+- [x] pytest `test_admin_sync.py` + `test_admin_sync_sender.py` **20 passed**
+- [x] ruff 0 · graph-compile `11_flow_sync_to_chat` OK
+- [x] 00 未改 `app/`/`tests/`；sender 不直连 PG
+
+**50 结论**：PASS · 生产 secrets + `workflow_dispatch` 留给维护者；**Eval E0/E1 现可开**（sync + capability 均 CLOSE）
+
+---
+
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-28 |
+| 定稿 | 本仓 GHA sender → Bearer POST `/api/ops/admin/sync`；cookie 保留 |
+| 归档 | `docs/tasks/done/task_ops_sync_sender_migration.md` |
+| PR | [#88](https://github.com/Cyning12/ops-desk-api/pull/88) |

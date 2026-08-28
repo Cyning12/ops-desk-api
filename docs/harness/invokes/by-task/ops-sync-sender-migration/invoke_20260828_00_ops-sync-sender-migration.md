@@ -34,9 +34,9 @@
 | R1 | ✓ |
 | 00 代签 | ✓ |
 | GATE_VERIFY | ✓ | VERIFY: PASS |
-| 30 | ✓ | 子代理 36d62dff · 未 commit |
+| 30 | ✓ | 子代理 [30](36d62dff-5205-40e1-b432-0d0479dad573) |
 | 40 机械 | ✓ | ruff 绿 · pytest 20 passed · graph-compile OK |
-| CLOSE | pending | 验收通过后 PR |
+| CLOSE | ✓ | PR [#88](https://github.com/Cyning12/ops-desk-api/pull/88) |
 
 ---
 
@@ -45,3 +45,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-28 | 本波开工 sync；迁移旧 runner；00 不实现 |
+| 2026-08-28 | 00 CLOSE PASS · PR #88 |
