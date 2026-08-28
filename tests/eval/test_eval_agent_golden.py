@@ -7,11 +7,9 @@ from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import langchain
 import pytest
 import yaml
 from langchain_core.messages import AIMessage, HumanMessage
-from langgraph.checkpoint.memory import InMemorySaver
 
 from app.ops.lc_evidence_chain.types import ChainResult
 from app.ops.lg_rag.nodes import ROUTES
@@ -146,9 +144,12 @@ async def test_eval_agent_supervisor_golden(case: dict[str, Any]) -> None:
 
 @pytest.mark.asyncio
 async def test_eval_agent_e2e_golden() -> None:
-    """恰好 1 条：mock 全链到 END。"""
+    """恰好 1 条：mock 全链到 END。CI 无 langchain 元包则 skip（勿挡收集）。"""
+    langchain = pytest.importorskip("langchain")
     if not hasattr(langchain, "debug"):
         langchain.debug = False  # 本地包缺此属性，ainvoke 会 AttributeError
+    from langgraph.checkpoint.memory import InMemorySaver
+
     cases = _load_cases("e2e")
     assert len(cases) == 1
     case = cases[0]

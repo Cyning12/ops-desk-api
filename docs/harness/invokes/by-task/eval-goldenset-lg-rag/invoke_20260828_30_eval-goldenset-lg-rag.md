@@ -52,4 +52,12 @@ $ git diff --stat -- app/
 
 未做：`module=` span；E3 Dataset/CI；E4 score；E5 价表；LLM-as-judge。
 
+## CI 红因与修复（2026-08-28）
+
+- **红因**：GHA `.venv/bin/pytest tests` 收集期 `tests/eval/test_eval_agent_golden.py` 模块级 `import langchain` → `ModuleNotFoundError`（CI 只装 `requirements.txt`，无 `langchain` 元包；`langchain-core` / `langgraph` 有）。run：https://github.com/Cyning12/ops-desk-api/actions/runs/33154714621/job/98794626977
+- **修复**：去掉模块级 import；e2e 内 `pytest.importorskip("langchain")` + debug 补丁。无元包时 skip e2e，grader/其余 golden 仍收集并绿。未把 langchain 加进 CI 依赖。
+- 复验：`pytest tests -q --tb=short -k eval_agent` → **17 passed** / exit 0；`python -c "import tests.eval.test_eval_agent_golden"` 无 langchain 元包亦可 import。
+- `app/` 仍零 diff。
+
 | 2026-08-28 | 30 PASS · 报 00 |
+| 2026-08-28 | 30 修 CI 收集期 `import langchain` · 报 00 |
