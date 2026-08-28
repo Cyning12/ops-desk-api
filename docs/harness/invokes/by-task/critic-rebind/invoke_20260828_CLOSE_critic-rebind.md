@@ -26,6 +26,6 @@
 
 ## PR
 
-待开（本 commit 后 `gh pr create`）
+[#84](https://github.com/Cyning12/ops-desk-api/pull/84)
 
-| 2026-08-28 | 00 CLOSE PASS |
+| 2026-08-28 | 00 CLOSE PASS · PR #84 |

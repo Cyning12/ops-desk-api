@@ -188,4 +188,4 @@ YAML 管**元数据与注册清单**；执行仍走 adapter。热更新须版本
 | 2026-08-27 | S1 allowlist 00 验收 PASS；[#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** |
 | 2026-08-27 | S2 Intent 00 验收 PASS；[#80](https://github.com/Cyning12/ops-desk-api/pull/80) **MERGED** |
 | 2026-08-28 | S3 catalog manifest 00 验收 PASS；[#82](https://github.com/Cyning12/ops-desk-api/pull/82) **MERGED** |
-| 2026-08-28 | S4 Critic rebind 开工：invoke_slug → `critic-rebind` |
+| 2026-08-28 | S4 Critic rebind 00 验收 PASS；[#84](https://github.com/Cyning12/ops-desk-api/pull/84) |

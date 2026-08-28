@@ -130,7 +130,7 @@ chat/graph.py 0 diff
 | 日期 | 2026-08-28 |
 | 定稿 | supervisor 图 aggregator→critic_node；规则 stub；预算 1+1；reducer None=清空 |
 | 归档 | `docs/tasks/done/task_critic_rebind.md` |
-| PR | 待开 |
+| PR | [#84](https://github.com/Cyning12/ops-desk-api/pull/84) |
 
 ---
 
@@ -140,3 +140,4 @@ chat/graph.py 0 diff
 |---|---|
 | 2026-08-28 | 00 拆 S4 task · R1 pass · HG 代签 |
 | 2026-08-28 | 30/40 PASS · 00 机械验收 PASS · CLOSE |
+| 2026-08-28 | [#84](https://github.com/Cyning12/ops-desk-api/pull/84) 已开 |

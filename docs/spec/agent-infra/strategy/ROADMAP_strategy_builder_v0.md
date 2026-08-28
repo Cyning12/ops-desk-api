@@ -18,7 +18,7 @@
 | S1 | **DONE** | 2026-08-27 · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** · allowlist 闭环 |
 | S2 | **DONE** | 2026-08-27 · [#80](https://github.com/Cyning12/ops-desk-api/pull/80) **MERGED** · Intent schema + 节点 |
 | S3 | **DONE** | 2026-08-28 · [#82](https://github.com/Cyning12/ops-desk-api/pull/82) **MERGED** · catalog manifest |
-| S4 | 00 验收 PASS | `task/critic-rebind` · S4-a–c · 待 PR |
+| S4 | 00 验收 PASS | `task/critic-rebind` · S4-a–c · [#84](https://github.com/Cyning12/ops-desk-api/pull/84) |
 
 ---
 
@@ -198,4 +198,4 @@ span：`critic_outcome` · `inner_retry_count` · `rebinding_count`（`strategy_
 | 2026-08-28 | S3 开工：00 定夺 loader / adapter 白名单 / 热加载边界 |
 | 2026-08-28 | S3 00 验收 PASS（pytest 63 · graph-compile）；[#82](https://github.com/Cyning12/ops-desk-api/pull/82) **MERGED** |
 | 2026-08-28 | S4 开工：00 定夺 critic stub / 预算 / 回环重置 |
-| 2026-08-28 | S4 00 验收 PASS（pytest 29 · graph-compile） |
+| 2026-08-28 | S4 00 验收 PASS（pytest 29 · graph-compile）；[#84](https://github.com/Cyning12/ops-desk-api/pull/84) |
