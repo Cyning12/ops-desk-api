@@ -4,5 +4,4 @@
 
 | task | 说明 |
 |---|---|
-| [`task_eval_goldenset_lg_rag.md`](./task_eval_goldenset_lg_rag.md) | Eval E2 · 待 **30** · 00 不落地；E3+ 未开 active |
-
+| [`task_eval_langfuse_experiment_ci.md`](./task_eval_langfuse_experiment_ci.md) | Eval E3 · Dataset/Experiment mock · **00 不落地 · 待 30** |

@@ -1,6 +1,6 @@
 # Task：Eval E2 · lg_rag 模块金标最小集
 
-> **状态**：in_progress（2026-08-28 · 00 起草 · 维护者令开始 E2）  
+> **状态**：completed（2026-08-28 · 30 pytest 17 passed · PR #93 MERGED）  
 > **类型**：测评 / 金标 harness  
 > **上游**：`docs/spec/agent-infra/04_eval_and_observability_plan_v0.md` · `eval/ROADMAP_eval_observability_v0.md`（E0+E1 **DONE** · PR #92）  
 > **分支**：`task/eval-goldenset-lg-rag`  
@@ -79,13 +79,13 @@ E0/E1 已签字典。E2 把「改哪测哪」落成 **可本地 pytest 的最小
 
 ## 验收标准
 
-- [ ] `evals/agent/golden/router/` · `strategy_builder/` · `supervisor/` · `e2e/` 均有最小 fixture（条数见上表）
-- [ ] 确定性评估器：route 枚举相等；allowlist 集合相等；非法 tool id 判定失败；plan 过 schema
-- [ ] `pytest tests -q --tb=short -k eval_agent`（或 `pytest tests/eval -q --tb=short`）绿；**不**打真 LLM
-- [ ] `evals/golden/queries_v1.yaml` 与 `evals/golden/run_eval.py` **零业务 diff**
-- [ ] `app/ops/chat/graph.py` 零 diff；默认 `app/` 零 diff（若 30 必须动节点，须先停并问 00）
-- [ ] `npx --yes dsh-coding-kit task lint-wiki-delta --target .` 通过
-- [ ] 未新增 GitHub Actions workflow（E3）
+- [x] `evals/agent/golden/router/` · `strategy_builder/` · `supervisor/` · `e2e/` 均有最小 fixture（条数见上表）
+- [x] 确定性评估器：route 枚举相等；allowlist 集合相等；非法 tool id 判定失败；plan 过 schema
+- [x] `pytest tests -q --tb=short -k eval_agent`（或 `pytest tests/eval -q --tb=short`）绿；**不**打真 LLM
+- [x] `evals/golden/queries_v1.yaml` 与 `evals/golden/run_eval.py` **零业务 diff**
+- [x] `app/ops/chat/graph.py` 零 diff；默认 `app/` 零 diff（若 30 必须动节点，须先停并问 00）
+- [x] `npx --yes dsh-coding-kit task lint-wiki-delta --target .` 通过
+- [x] 未新增 GitHub Actions workflow（E3）
 
 ---
 
@@ -158,8 +158,20 @@ E2 是 Agent 模块金标，不是检索 `queries_v1`。
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-28 |
+| PR | [#93](https://github.com/Cyning12/ops-desk-api/pull/93) **MERGED** |
+| 归档 | `docs/tasks/done/task_eval_goldenset_lg_rag.md` |
+| 下一棒 | E3 `eval-langfuse-experiment-ci` |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-28 | 00 起草 E2；维护者令开始；闸代签；00 不实现 |
+| 2026-08-28 | 30 落地 · CI 绿 · #93 MERGED · 归档 |

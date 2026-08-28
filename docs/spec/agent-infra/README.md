@@ -89,7 +89,7 @@ docs/spec/agent-infra/
 
 | ID | 规划 | 状态 | 首波 |
 |---|---|---|---|
-| `eval-and-observability` | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **E0+E1 DONE** · **E2 开工** `eval-goldenset-lg-rag`（30 实现 · 00 不写码） |
+| `eval-and-observability` | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **E0–E2 DONE** · **E3 开工** `eval-langfuse-experiment-ci` |
 
 ---
 
@@ -136,3 +136,4 @@ docs/spec/agent-infra/
 | 2026-08-28 | **测评轨 E0 签收**：04 + eval ROADMAP；E1 字典对照源码；下一棒 E2 |
 | 2026-08-28 | 过程文档二次签收；E2–E5 分 task；00 不实现 |
 | 2026-08-28 | E2 开工：`eval-goldenset-lg-rag` |
+| 2026-08-28 | E2 MERGED · E3 开工：`eval-langfuse-experiment-ci` |

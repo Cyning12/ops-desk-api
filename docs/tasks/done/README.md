@@ -70,7 +70,7 @@
 | 2026-08-25 | [`task_inform_graph_backfill_w3_chat_g2.md`](./task_inform_graph_backfill_w3_chat_g2.md) | W3 chat G-L2 indexes · PR #49 |
 | 2026-08-25 | [`task_inform_graph_backfill_w4_rag_flow.md`](./task_inform_graph_backfill_w4_rag_flow.md) | W4 10_flow_rag（graphs 6→7） · PR #49 |
 | 2026-08-25 | [`task_inform_graph_backfill_w5_coverage.md`](./task_inform_graph_backfill_w5_coverage.md) | W5 anchors + coverage warn · PR #49 |
-| 2026-08-25 | [`task_inform_graph_backfill_w6_modules_trim.md`](./task_inform_graph_backfill_w6_modules_trim.md) | W6 模块表瘦身 · PR #49 |
+| 2026-08-28 | [`task_eval_goldenset_lg_rag.md`](./task_eval_goldenset_lg_rag.md) | Eval E2 模块金标最小集 · PR #93 |
 
 ---
 

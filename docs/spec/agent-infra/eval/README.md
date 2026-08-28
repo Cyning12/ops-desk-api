@@ -2,7 +2,7 @@
 
 > **track**：`agent-infra` / eval  
 > **规划轨**：[`../04_eval_and_observability_plan_v0.md`](../04_eval_and_observability_plan_v0.md)  
-> **实现落点（建议）**：E2 金标 `evals/agent/golden/` + `tests/eval/`（**30**）；`app/ops/tracing.py` 沿用（本波默认不改）  
+> **实现落点（建议）**：E2 金标 `evals/agent/golden/` + `tests/eval/`；E3 Dataset/Experiment 见 GUIDE；`app/ops/tracing.py` 沿用（本波默认不改）  
 > **控制面**：Langfuse（默认）；LangSmith 非默认
 
 ---
@@ -12,6 +12,7 @@
 | 文件 | 说明 |
 |---|---|
 | [`ROADMAP_eval_observability_v0.md`](./ROADMAP_eval_observability_v0.md) | SLI 字典（E1 真值）· Dataset/Experiment · CI 门禁 · E1–E5 |
+| [`GUIDE_langfuse_dataset_experiment_v0.md`](./GUIDE_langfuse_dataset_experiment_v0.md) | E3：git SoT · Dataset 名 · dry-run / `--push` · CI 不连云 |
 
 上级：[`../04_eval_and_observability_plan_v0.md`](../04_eval_and_observability_plan_v0.md) · [`../00_architecture_and_boundaries.md`](../00_architecture_and_boundaries.md)
 
