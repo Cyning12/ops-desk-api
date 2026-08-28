@@ -15,6 +15,8 @@ schemas_for_llm(filter=…)     → OpenAI 风格 schema（纯数据 · 无 LG�
 invoke(id, args, ctx=…)       → CapabilityResult（未知 id → ok=False）
 ```
 
+目录可由 Host `load_capability_manifest`（YAML/JSON）register；Builder 只读 `list_capabilities`，不解析 YAML。契约见 [`../spec/agent-infra/strategy/ROADMAP_strategy_builder_v0.md`](../spec/agent-infra/strategy/ROADMAP_strategy_builder_v0.md) §8。禁止每请求加载；显式 `reload_capability_manifest` 仅测试/运维。
+
 默认包 `from app.ops.capability import …` **零 langgraph**。  
 可选 FC / ToolNode（Mode B）须显式：
 
@@ -94,3 +96,4 @@ result = invoke("mock_get_issue_status", "查 #128", ctx={"node_role": "tool_exe
 | 日期 | 说明 |
 |---|---|
 | 2026-08-26 | 初版：U2 filter 推荐 + plan-in-state；配合 portable-core U1 |
+| 2026-08-28 | S3：一行指针回 ROADMAP §8（manifest 加载 · Builder 不解析 YAML） |

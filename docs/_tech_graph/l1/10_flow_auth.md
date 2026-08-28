@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_auth
 version: 2026-08-25
-generated_at: 2026-08-27T13:03:40Z
+generated_at: 2026-08-28T00:45:37Z
 source: 10_flow_auth.graph.yaml
 ---
 

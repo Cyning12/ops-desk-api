@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260827_V1",
-  "generated_at": "2026-08-27T13:03:40Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260828_V1",
+  "generated_at": "2026-08-28T00:45:37Z",
   "graphs": [
     {
       "id": "00_main",
@@ -203,6 +203,11 @@
       "graph_id": "10_flow_capability",
       "id": "caller",
       "label": "调用方（lg_rag tool_exec_node）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "load_manifest",
+      "label": "load_capability_manifest（YAML/JSON → register）"
     },
     {
       "graph_id": "10_flow_capability",
@@ -1245,6 +1250,21 @@
         {
           "path": "app/ops/deps.py",
           "line": 30
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "load_manifest",
+      "to": "register",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "Host register（仅 local_fn）",
+      "anchors": [
+        {
+          "path": "app/ops/capability/manifest.py",
+          "symbol": "load_capability_manifest"
         }
       ],
       "sync": true

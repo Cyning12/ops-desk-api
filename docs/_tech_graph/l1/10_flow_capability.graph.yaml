@@ -1,8 +1,8 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_capability"
 title: "Capability Gateway 注册与 invoke"
-description: "能力注册表 + Filter + 统一 invoke；local_fn 默认；可选 schemas_for_llm/ToolNode；mcp/sandbox/cli mock 探针与 skill stub 默认关闭。不是业界 LLM Gateway。首接入面：lg_rag tool_exec_node。"
-version: "2026-08-26"
+description: "能力注册表 + Filter + 统一 invoke；YAML/JSON manifest 加载 register（仅 local_fn）；local_fn 默认；可选 schemas_for_llm/ToolNode；mcp/sandbox/cli mock 探针与 skill stub 默认关闭。不是业界 LLM Gateway。首接入面：lg_rag tool_exec_node。"
+version: "2026-08-28"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "method"
@@ -12,6 +12,15 @@ nodes:
   - id: "caller"
     label: "调用方（lg_rag tool_exec_node）"
     kind: external
+
+  - id: "load_manifest"
+    label: "load_capability_manifest（YAML/JSON → register）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/manifest.py"
+        symbol: "load_capability_manifest"
+        kind: method
 
   - id: "register"
     label: "register / defaults.ensure_default_capabilities"
@@ -103,6 +112,13 @@ nodes:
     kind: external
 
 edges:
+  - from: "load_manifest"
+    to: "register"
+    label: "Host register（仅 local_fn）"
+    anchors:
+      - path: "app/ops/capability/manifest.py"
+        symbol: "load_capability_manifest"
+
   - from: "register"
     to: "list_filter"
     label: "编目可见"

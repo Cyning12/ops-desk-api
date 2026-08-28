@@ -17,7 +17,8 @@
 | S0 | **DONE** | 03 + 本 ROADMAP 签收 · 2026-08-27 |
 | S1 | **DONE** | 2026-08-27 · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** · allowlist 闭环 |
 | S2 | **DONE** | 2026-08-27 · [#80](https://github.com/Cyning12/ops-desk-api/pull/80) **MERGED** · Intent schema + 节点 |
-| S3–S4 | pending | 非本棒 |
+| S3 | **DONE**（待 PR MERGED） | 2026-08-28 · catalog manifest · `task/catalog-manifest-yaml` |
+| S4 | pending | 非本棒 |
 
 ---
 
@@ -144,7 +145,27 @@ capabilities:
 
 ---
 
-## 8. 修订记录
+## 8. 00 定夺（S3 · Catalog manifest · 2026-08-28）
+
+维护者会话「继续 S3」。
+
+| 项 | 定夺 |
+|---|---|
+| 职责 | Host 加载 YAML/JSON → `register`；Builder **只读** `list_capabilities`，不解析 manifest |
+| 落点 | `app/ops/capability/manifest.py`（Host 路径）；内置 `app/ops/capability/manifests/builtin.v1.yaml` |
+| 格式 | YAML + JSON；`yaml.safe_load`（仓内已有 pyyaml）；无密钥字段 |
+| kind | **仅 `local_fn`**（MCP/sandbox/cli/skill **不**走本波 manifest） |
+| adapter 白名单 | 形如 `local_fn:<module>:<attr>`；**仅**前缀 `app.ops.capability.defaults`；禁止任意模块 import / eval |
+| `enabled: false` | 跳过，不 register |
+| defaults 迁移 | builtin YAML 为三枚默认能力**目录真值**；`ensure_default_capabilities` **优先** load builtin（幂等 skip 已注册）；文件缺失才回退 `_DEFAULT_SPECS` 硬编码 |
+| 热加载 | **禁止**每请求加载。S3-b：load 结果带 `version` + `capability_manifest_count`（模块级 metadata / span）；可提供 **显式** `reload_capability_manifest` 供测试/运维，不挂 HTTP 路径 |
+| 图谱 | G-L1 **`capability` 行备注** + `10_flow_capability` 增 load 节点；**不**改 supervisor/router/chat 图拓扑；不新增一级模块 |
+
+非法 adapter / 未知 kind / 缺 id → 该条拒绝并记录；不中断其余合法条目（或整文件失败——**00：整文件失败更安全**，避免半套目录；单测覆盖）。
+
+---
+
+## 9. 修订记录
 
 | 日期 | 说明 |
 |---|---|
@@ -153,3 +174,5 @@ capabilities:
 | 2026-08-27 | S1 实现 00 验收 PASS · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** |
 | 2026-08-27 | S2 开工：00 定夺挂点 / SO / Builder 消费 · 并存附录 |
 | 2026-08-27 | S2 00 验收 PASS（pytest 48 · graph-compile）；[#80](https://github.com/Cyning12/ops-desk-api/pull/80) **MERGED** |
+| 2026-08-28 | S3 开工：00 定夺 loader / adapter 白名单 / 热加载边界 |
+| 2026-08-28 | S3 00 验收 PASS（pytest 63 · graph-compile） |

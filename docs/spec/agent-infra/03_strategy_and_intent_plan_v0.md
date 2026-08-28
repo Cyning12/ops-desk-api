@@ -6,7 +6,8 @@
 > **域夹**：[`strategy/`](./strategy/)  
 > **讨论来源**：2026-08-27 会话（H1 闭环解读 → Strategy Builder / Intent / YAML 目录 / Critic 再赋能）  
 > **首棒实现**：[`task_strategy_builder_allowlist`](../../tasks/done/task_strategy_builder_allowlist.md)（S1 · #78 MERGED）  
-> **次棒实现**：[`task_intent_schema_v1`](../../tasks/done/task_intent_schema_v1.md)（S2 · 00 验收 PASS）
+> **次棒实现**：[`task_intent_schema_v1`](../../tasks/done/task_intent_schema_v1.md)（S2 · #80 MERGED）  
+> **三棒实现**：[`task_catalog_manifest_yaml`](../../tasks/done/task_catalog_manifest_yaml.md)（S3 · 00 验收 PASS）
 
 ---
 
@@ -15,10 +16,10 @@
 | 字段 | 值 |
 |---|---|
 | **plan_slug** | `strategy-and-intent` |
-| **invoke_slug** | `intent-schema-v1`（S2 进行中；S1 `strategy-builder-allowlist` #78 MERGED） |
-| **test_strategy** | `required`（按子波次裁剪；S2 mock LLM + SO） |
-| **graph_change_layer（建议）** | 多为 `G-L1`（`lg_rag` / 可选 `strategy` 包备注；**不**默认新增一级模块） |
-| **默认分支** | `task/intent-schema-v1` |
+| **invoke_slug** | `catalog-manifest-yaml`（S3 进行中；S2 `intent-schema-v1` #80 MERGED） |
+| **test_strategy** | `required`（按子波次裁剪；S3 fixture YAML/JSON） |
+| **graph_change_layer（建议）** | 多为 `G-L1`（`capability` 备注；**不**默认新增一级模块） |
+| **默认分支** | `task/catalog-manifest-yaml` |
 
 ### 人工闸（SPEC / S0）
 
@@ -185,3 +186,4 @@ YAML 管**元数据与注册清单**；执行仍走 adapter。热更新须版本
 | 2026-08-27 | **HG-SPEC-SIGNOFF=approved**（S0 · 00 代签 · 维护者 Prompt 授权）；状态 `active`；拆 S1 `strategy-builder-allowlist` |
 | 2026-08-27 | S1 allowlist 00 验收 PASS；[#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** |
 | 2026-08-27 | S2 Intent 00 验收 PASS；[#80](https://github.com/Cyning12/ops-desk-api/pull/80) **MERGED** |
+| 2026-08-28 | S3 catalog manifest 00 验收 PASS |
