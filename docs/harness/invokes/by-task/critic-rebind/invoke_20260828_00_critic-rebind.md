@@ -36,6 +36,7 @@
 | 30 | ✓ | 30/40 invoke 落盘 |
 | 00 机械验收 | ✓ | pytest 29 · ruff · graph-compile · chat/graph.py 0 |
 | CLOSE | ✓ | 归档 `docs/tasks/done/task_critic_rebind.md` |
+| PR MERGED | ✓ | [#84](https://github.com/Cyning12/ops-desk-api/pull/84) |
 
 ---
 
@@ -52,4 +53,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-28 | S4 00 统筹启动 |
-| 2026-08-28 | 00 机械验收 PASS · CLOSE · PR #84 |
+| 2026-08-28 | 00 机械验收 PASS · CLOSE · PR #84 **MERGED** |
