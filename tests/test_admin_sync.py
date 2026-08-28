@@ -164,6 +164,22 @@ async def test_sync_cookie_works_when_bearer_configured(
     await _cleanup_repo(response.json()["repo_id"])
 
 
+@pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
+async def test_sync_accepts_github_ids_beyond_int32(
+    client: AsyncClient,
+    override_auth_maintainer,
+    sample_sync_payload,
+    clean_sync_data,
+) -> None:
+    """GitHub issue/PR id 超过 int32 时不得 500（生产 kimi-code id=5275397263）。"""
+    payload = sample_sync_payload
+    payload["issues"][0]["github_issue_id"] = 5_275_397_263
+    payload["pull_requests"][0]["github_pr_id"] = 5_275_397_264
+    response = await client.post("/api/ops/admin/sync", json=payload)
+    assert response.status_code == 202, response.text
+    await _cleanup_repo(response.json()["repo_id"])
+
+
 async def _cleanup_repo(repo_id: str) -> None:
     """Delete a repo and all cascading children."""
     async with AsyncSessionLocal() as db:

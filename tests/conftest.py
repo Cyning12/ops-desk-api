@@ -57,6 +57,7 @@ DB_AVAILABLE = _setup_test_database()
 
 import pytest  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 
 from app.db.base import Base  # noqa: E402
 from app.db.models import OpsInviteToken, OpsRepo, OpsSession, OpsSessionChat, OpsUser  # noqa: E402
@@ -87,6 +88,16 @@ async def _create_test_schema():
     if DB_AVAILABLE:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            # create_all 不改已有列类型；本地 opsdesk_test 可能仍是 Integer
+            await conn.execute(
+                text("ALTER TABLE ops_issues ALTER COLUMN github_issue_id TYPE BIGINT")
+            )
+            await conn.execute(
+                text("ALTER TABLE ops_pull_requests ALTER COLUMN github_pr_id TYPE BIGINT")
+            )
+            await conn.execute(
+                text("ALTER TABLE ops_repos ALTER COLUMN github_repo_id TYPE BIGINT")
+            )
         await engine.dispose()
     yield
 

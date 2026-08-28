@@ -2,6 +2,7 @@
 from datetime import datetime
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     ForeignKey,
     Integer,
@@ -86,7 +87,8 @@ class OpsRepo(Base):
     full_name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     default_branch: Mapped[str | None] = mapped_column(String, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    github_repo_id: Mapped[int | None] = mapped_column(Integer, unique=True, nullable=True)
+    # GitHub node id 超过 int32；ORM Integer 会让 asyncpg 按 int32 绑定
+    github_repo_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
     updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
 
@@ -103,7 +105,7 @@ class OpsIssue(Base):
     repo_id: Mapped[str] = mapped_column(
         UUID(as_uuid=True), ForeignKey("ops_repos.id", ondelete="CASCADE"), nullable=False
     )
-    github_issue_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    github_issue_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     number: Mapped[int] = mapped_column(Integer, nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     body: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -134,7 +136,7 @@ class OpsPullRequest(Base):
     repo_id: Mapped[str] = mapped_column(
         UUID(as_uuid=True), ForeignKey("ops_repos.id", ondelete="CASCADE"), nullable=False
     )
-    github_pr_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    github_pr_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     number: Mapped[int] = mapped_column(Integer, nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     body: Mapped[str | None] = mapped_column(Text, nullable=True)
