@@ -79,13 +79,13 @@ E2 金标只在 git。E3 把「git → Langfuse Dataset 名」钉死，并提供
 
 ## 验收标准
 
-- [ ] GUIDE 落盘（eval 域夹或 `docs/guides/`，README 有链）
-- [ ] runner dry-run：对至少 `router` 金标算出 `acc.route_match`，无网络
-- [ ] `--push` 路径有 mock 单测；无 key 时 dry-run 仍绿
-- [ ] pytest 绿：`pytest tests -q --tb=short -k eval_experiment`（或 30 写明等价 `-k`）
-- [ ] 未新增依赖真 Langfuse secret 的 workflow
-- [ ] `app/` 与 `chat/graph.py` 零 diff（默认）
-- [ ] `npx --yes dsh-coding-kit task lint-wiki-delta --target .` 通过
+- [x] GUIDE 落盘（eval 域夹或 `docs/guides/`，README 有链）
+- [x] runner dry-run：对至少 `router` 金标算出 `acc.route_match`，无网络
+- [x] `--push` 路径有 mock 单测；无 key 时 dry-run 仍绿
+- [x] pytest 绿：`pytest tests -q --tb=short -k eval_experiment`（或 30 写明等价 `-k`）
+- [x] 未新增依赖真 Langfuse secret 的 workflow
+- [x] `app/` 与 `chat/graph.py` 零 diff（默认）
+- [x] `npx --yes dsh-coding-kit task lint-wiki-delta --target .` 通过
 
 ---
 
@@ -152,7 +152,8 @@ CI = 现有 pytest；不加 Langfuse secret job。
 
 ### 自检结论（执行者）
 
-（30 回填）
+30 PASS（2026-08-28）：GUIDE + `evals/agent/run_experiment.py` + `tests/eval/test_eval_experiment.py`。
+`pytest -k eval_experiment` 7 passed；`pytest -k eval_agent` 17 passed。`app/` 零 diff。未加 GHA secret。
 
 ---
 
@@ -161,3 +162,4 @@ CI = 现有 pytest；不加 Langfuse secret job。
 | 日期 | 说明 |
 |---|---|
 | 2026-08-28 | 00 起草 E3；维护者令开 E3；闸代签；00 不实现 |
+| 2026-08-28 | 30 落地 GUIDE + runner + mock 测 |
