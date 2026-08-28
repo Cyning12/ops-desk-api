@@ -12,7 +12,7 @@ import pytest
 
 from app.ops.admin.sender.github_client import GitHubClient, GitHubSyncError
 from app.ops.admin.sender.mapper import build_sync_payload, map_issue, map_pull_request
-from app.ops.admin.sender.post import post_sync_payload
+from app.ops.admin.sender.post import DEFAULT_POST_TIMEOUT, post_sync_payload
 from app.ops.admin.sender.runner import run_sync
 from app.ops.admin.sender.snapshots import load_graph_snapshot, load_scan_snapshot
 
@@ -166,6 +166,32 @@ def test_fetch_pull_requests_filters_updated_at() -> None:
     assert [row["number"] for row in rows] == [2]
 
 
+def test_fetch_pull_requests_stops_pagination_after_stale_row() -> None:
+    """updated desc：本页已出现 since 之前的行则不再请求下一页。"""
+    newer = {**PR_FIXTURE, "id": 2, "number": 2, "updated_at": "2026-08-11T00:00:00Z"}
+    older = {**PR_FIXTURE, "id": 1, "number": 1, "updated_at": "2026-08-09T00:00:00Z"}
+    pages: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        page = int(request.url.params.get("page", "1"))
+        pages.append(page)
+        if page >= 2:
+            return httpx.Response(500, text="should not paginate")
+        return httpx.Response(200, json=[newer, older] + [{}] * 98)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    gh = GitHubClient(token="t", http_client=client)
+    since = datetime(2026, 8, 10, tzinfo=UTC)
+    rows = gh.fetch_pull_requests(since)
+    assert [row["number"] for row in rows] == [2]
+    assert pages == [1]
+
+
+def test_default_post_timeout_allows_slow_write() -> None:
+    assert DEFAULT_POST_TIMEOUT.write == 180.0
+    assert DEFAULT_POST_TIMEOUT.read == 180.0
+
+
 def test_github_401_fail_fast(monkeypatch: pytest.MonkeyPatch) -> None:
     sleeps: list[float] = []
     monkeypatch.setattr("app.ops.admin.sender.github_client.time.sleep", sleeps.append)
@@ -260,6 +286,7 @@ def test_run_sync_ok_without_scan_graph(tmp_path: Path) -> None:
         return httpx.Response(202, json={"ok": True})
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
+    err = io.StringIO()
     code = run_sync(
         sync_type="incremental",
         github=_FakeGitHub(),
@@ -268,9 +295,10 @@ def test_run_sync_ok_without_scan_graph(tmp_path: Path) -> None:
         graph_path=str(tmp_path / "nope.json"),
         api_base_url="https://api.example",
         admin_token="tok",
-        err=io.StringIO(),
+        err=err,
     )
     assert code == 0
+    assert "POST sync bytes=" in err.getvalue()
     body = captured["body"]
     assert body["scan_snapshot"] is None
     assert body["graph_snapshot"] is None

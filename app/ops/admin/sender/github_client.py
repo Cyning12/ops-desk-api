@@ -148,26 +148,42 @@ class GitHubClient:
         return [row for row in raw if "pull_request" not in row]
 
     def fetch_pull_requests(self, since: datetime | None) -> list[dict[str, Any]]:
-        """拉取 PR；GitHub pulls 无 since，按 updated_at 客户端过滤。"""
+        """拉取 PR；GitHub pulls 无 since，按 updated_at 客户端过滤。
+
+        已按 updated desc 排序：遇到第一条不新于 since 即可停分页，避免增量仍拉全量 PR。
+        """
         path = f"/repos/{self.owner}/{self.name}/pulls"
-        raw = self._paginate(
-            path, params={"state": "all", "sort": "updated", "direction": "desc"}
-        )
+        params: dict[str, Any] = {"state": "all", "sort": "updated", "direction": "desc"}
         if since is None:
-            return raw
+            return self._paginate(path, params=params)
+
         since_ts = since.timestamp()
-        filtered: list[dict[str, Any]] = []
-        for row in raw:
-            updated_raw = row.get("updated_at")
-            if not updated_raw:
-                continue
-            try:
-                updated = datetime.fromisoformat(str(updated_raw).replace("Z", "+00:00"))
-            except ValueError:
-                continue
-            if updated.timestamp() > since_ts:
-                filtered.append(row)
-        return filtered
+        items: list[dict[str, Any]] = []
+        page = 1
+        while True:
+            batch = self._request_json(
+                "GET", path, params={**params, "page": page, "per_page": 100}
+            )
+            if not isinstance(batch, list) or not batch:
+                break
+            stop = False
+            for row in batch:
+                if not isinstance(row, dict):
+                    continue
+                updated = self.parse_github_ts(
+                    str(row["updated_at"]) if row.get("updated_at") else None
+                )
+                if updated is None:
+                    continue
+                if updated.timestamp() > since_ts:
+                    items.append(row)
+                else:
+                    stop = True
+                    break
+            if stop or len(batch) < 100:
+                break
+            page += 1
+        return items
 
     @staticmethod
     def parse_github_ts(value: str | None) -> datetime | None:
