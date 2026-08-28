@@ -1,7 +1,7 @@
 # ROADMAP：Eval · Observability（持续观测与测评）
 
 > **层级**：L0 规划（跨 tracing / lg_rag / capability / strategy）  
-> **状态**：`active`（2026-08-28 **E0 签收** · HG-SPEC-SIGNOFF approved；**不**直接授权 30 改 `app/`）  
+> **状态**：`active`（2026-08-28 **E0 签收** · HG-SPEC-SIGNOFF approved；**不**直接授权 30 改 `app/`；**00 不实现**）  
 > **上游**：[`00_architecture_and_boundaries.md`](./00_architecture_and_boundaries.md) · [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md)（S1–S4 **DONE**）  
 > **域夹**：[`eval/`](./eval/)  
 > **E1 字典真值**：[`eval/ROADMAP_eval_observability_v0.md`](./eval/ROADMAP_eval_observability_v0.md) §3  
@@ -199,12 +199,12 @@ L5 可选：云端 Prompt
 | **C. 热路径薄封装** | **是**（建议 `tracing.py` + 1～2 调用点） | 持续自动：如 `supervisor_fallback`→ Boolean score |
 | **D. Langfuse Evaluators**（平台跑） | 配置为主；trace 已够即可 | L1d；先 A/C 再上 |
 
-**推荐最小闭环（本周可做）**：
+**推荐最小闭环（后续 30 task，非本波、非 00）**：
 
 1. UI（A）：对几条已有 lg_rag/supervisor trace 手动打 `avail.success` / 备注。  
 2. 钉 E1 字典里 **2～3 个 score 名**（勿先发明一堆）。  
-3. 可选 spike（C）：`tracing` 增加 `score_current_trace(name, value, …)` no-op 包装；在 `supervisor_node` 结束时对 `supervisor_fallback` 写 Boolean——立刻在 Scores 页看到自动分。  
-4. Dataset/Experiment 放到模块金标有了之后（随 S1 或 E2）。
+3. 可选 spike（C）：`tracing` 增加 `score_current_trace(name, value, …)` no-op 包装——属 **E3/E4**，须另开 task；**00 不写**。  
+4. Dataset/Experiment 放到模块金标有了之后（**E3**，前置 E2）。
 
 **不必**一上来大改 Agent；Scores ≠ 新业务功能，是观测面增量。
 
@@ -217,8 +217,8 @@ L5 可选：云端 Prompt
 | **暂缓** | 完整 Intent S2、Critic S4、Cost E5、云端 Prompts | 有 S1 + 最小 Scores 后再开 |
 | **不建议** | 先停 Agent 升级、只学满 Langfuse 全模块 | 缺少真实变更，Experiment 对比无意义 |
 
-**结论**：策略轨 **S1–S4 已合入**。测评主线从 **E0/E1（本波文档）** 进入 **E2 模块金标**。Scores 热路径封装放到有字典之后的 E3/E4，**本波不改** `tracing.py`。  
-**不建议**：把 DEF-003/004 RAG 草案或 Langfuse SDK v4（DEF-001）捆进 Eval 收尾。
+**结论**：策略轨 **S1–S4 已合入**。测评主线从 **E0/E1（本波文档）** 进入 **E2 模块金标**（**另开 task**；00 **不**在本窗实现）。Scores 热路径封装放到 E3/E4，**本波不改** `tracing.py`。  
+**不建议**：把 DEF-003/004 RAG 草案或 Langfuse SDK v4（DEF-001）捆进 Eval 收尾；**禁止**一次做完 E2–E5。
 
 ---
 
@@ -277,13 +277,13 @@ L5 可选：云端 Prompt
 |---|---|---|---|
 | **E0** | `eval-spec-signoff` | 本文件 + `eval/ROADMAP` 签收 | **DONE** · 2026-08-28 |
 | **E1** | `sli-score-dictionary` | metadata/score/`module` 键字典 | **DONE** · 真值在 ROADMAP §3 |
-| **E2** | `goldenset-lg-rag-v0` | 最小金标 + **按模块切片**目录 | 下一棒 |
-| **E3** | `langfuse-dataset-experiment` | Dataset/Experiment + **模块 CI job** | 待 E2 |
-| **E4** | `online-sample-scores` | 抽样 score + Annotation 回流 | 待 E1（字典已有） |
-| **E5** | `token-cost-ledger` | usage 全路径补齐 · 价表 · 费用聚合/导出 | 待 E1 |
+| **E2** | `goldenset-lg-rag-v0` | 最小金标 + **按模块切片**目录 | 待另开 **独立** task（本窗 00 不起草/不实现） |
+| **E3** | `langfuse-dataset-experiment` | Dataset/Experiment + **模块 CI job** | 待 E2 · **勿绑进 E2** |
+| **E4** | `online-sample-scores` | 抽样 score + Annotation 回流 | 待 E1（字典已有）· **勿绑进 E2** |
+| **E5** | `token-cost-ledger` | usage 全路径补齐 · 价表 · 费用聚合/导出 | 待 E1 · **勿绑进 E2** |
 
 详规：[`eval/ROADMAP_eval_observability_v0.md`](./eval/ROADMAP_eval_observability_v0.md)。  
-策略轨已收官。**E2** 起须另开 task + 人工闸；本文件仍 **不**直接授权 30 改码。
+策略轨已收官。**E2** 起须另开 task + 人工闸；本文件仍 **不**直接授权 30 改码。**00 不实现。**
 
 ---
 
@@ -294,7 +294,8 @@ L5 可选：云端 Prompt
 3. 金标与阈值进 git（或 Dataset version 钉死）；实验可复现。  
 4. 评测失败不污染主请求路径（异步/旁路）；CI 门禁另通道。  
 5. 费用以 usage×价表为准；禁止用 LLM「估个价」当账本。  
-6. 本文件**不直接授权 30** 改 `app/`；E2+ 须另开 task。
+6. 本文件**不直接授权 30** 改 `app/`；E2+ 须另开 task。  
+7. **00 只签收/统筹，不实现** task（含不在签收窗内写金标、改 tracing、开 Dataset runner）。
 
 ---
 
@@ -308,3 +309,4 @@ L5 可选：云端 Prompt
 | 2026-08-27 | §2.7 推荐学习/启用路线 L0–L5 |
 | 2026-08-27 | §2.8 Scores 起步；§2.9 与 03/S1 并行策略 |
 | 2026-08-28 | **E0 签收**：HG-SPEC-SIGNOFF approved；§2.9 改为 S 轨已收官、下一棒 E2；E1 字典见 ROADMAP §3 |
+| 2026-08-28 | 过程文档二次签收；颗粒度 E2–E5 分 task；钉 00 不实现 |

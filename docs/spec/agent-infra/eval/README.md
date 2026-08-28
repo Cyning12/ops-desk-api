@@ -2,7 +2,7 @@
 
 > **track**：`agent-infra` / eval  
 > **规划轨**：[`../04_eval_and_observability_plan_v0.md`](../04_eval_and_observability_plan_v0.md)  
-> **实现落点（建议）**：`app/ops/tracing.py`（沿用）· `app/ops/eval/` 或 `tests/eval/`（00 定夺）  
+> **实现落点（建议）**：`app/ops/tracing.py`（沿用）· `app/ops/eval/` 或 `tests/eval/`（**后续 30 定夺**；00 **不实现**）  
 > **控制面**：Langfuse（默认）；LangSmith 非默认
 
 ---

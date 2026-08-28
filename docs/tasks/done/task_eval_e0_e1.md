@@ -26,16 +26,16 @@
 | **required_invoke_hats** | `10` |
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | 无 |
-| **orchestration** | E0 签收 + E1 字典同一 PR；运维备忘另 commit 同 PR |
+| **orchestration** | E0 签收 + E1 字典同一 PR；运维备忘另 commit 同 PR；**00 不实现**；E2+ 各开独立 task |
 
 ### 人工闸
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| HG-TASK-DRAFT | approved | 22-R1 | 2026-08-28 · **00 代签 · 维护者令签收 spec 并统筹 E0+E1** |
-| HG-AUDIT-R1 | approved | 30 | 2026-08-28 · **00 代签** · 见 `docs/harness/reviews/task_eval_e0_e1_audit_R1_20260828.md`（本波无 30） |
-| HG-SPEC-SIGNOFF | approved | 00 | 2026-08-28 · 04 + eval ROADMAP · **00 代签 · 维护者令** |
-| HG-GRAPH-MODULES | approved | — | 不改图谱 · **00 代签** |
+| HG-TASK-DRAFT | approved | 22-R1 | 2026-08-28 · **00 代签 · 维护者令签收 spec 并统筹 E0+E1** · **二次签收过程文档** |
+| HG-AUDIT-R1 | approved | 30 | 2026-08-28 · **00 代签** · 见 R1 审查文（本波无 30）· **二次签收** |
+| HG-SPEC-SIGNOFF | approved | 00 | 2026-08-28 · 04 + eval ROADMAP · **00 代签 · 维护者令** · **二次签收** |
+| HG-GRAPH-MODULES | approved | — | 不改图谱 · **00 代签** · **二次签收** |
 
 ---
 
@@ -62,9 +62,13 @@
 
 ---
 
-## 下一棒
+## 下一棒（颗粒度）
 
-`eval-goldenset-lg-rag`（E2）：`golden/router` · `golden/strategy_builder` · 1 条 E2E；可顺带补 `module=`。
+合入后 **新会话** 由 00 起草 **独立** 10-task `eval-goldenset-lg-rag`（**仅 E2**）：`golden/router` · `golden/strategy_builder` · 1 条 E2E；可顺带补 `module=`。
+
+**本窗不做**：不起草该 task、不派 30、不改 `app/`。
+
+**禁止**把 E3 Dataset/CI、E4 线上抽样、E5 费用账本绑进 E2 同一实现单。
 
 ---
 
@@ -83,3 +87,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-28 | 00 统筹 E0+E1 文档收官 |
+| 2026-08-28 | 维护者二次签收过程文档；钉颗粒度；00 不实现 |
