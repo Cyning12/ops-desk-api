@@ -11,7 +11,7 @@ import httpx
 
 from app.ops.admin.sender.github_client import GitHubClient, GitHubSyncError
 from app.ops.admin.sender.mapper import build_sync_payload
-from app.ops.admin.sender.post import post_sync_payload
+from app.ops.admin.sender.post import payload_body_bytes, post_sync_payload
 from app.ops.admin.sender.snapshots import load_graph_snapshot, load_scan_snapshot
 
 INCREMENTAL_OVERLAP = timedelta(hours=48)
@@ -65,6 +65,11 @@ def run_sync(
             since=since,
             scan_snapshot=scan,
             graph_snapshot=graph,
+        )
+        body_len = len(payload_body_bytes(payload))
+        print(
+            f"POST sync bytes={body_len} issues={len(issues)} prs={len(pulls)}",
+            file=log,
         )
         resp = post_sync_payload(
             base_url=base_url,
