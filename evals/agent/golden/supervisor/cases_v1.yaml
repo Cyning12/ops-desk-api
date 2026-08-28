@@ -1,0 +1,27 @@
+# E2 · supervisor 金标最小集
+# 评估 plan 结构：subtask_types（由 subtasks[].type 推导）与 supervisor_fallback
+# type 白名单对照 app.ops.lg_rag.multi.nodes.SUBTASK_TYPES：rag | extract | tool
+version: 2026-08-28
+module: supervisor
+cases:
+  - id: supervisor_valid_rag_plan
+    query: "超时问题怎么排查"
+    setup:
+      allowed_capability_ids:
+        - utc_now_iso
+    mock:
+      llm_complete: '{"subtasks": [{"id": "t1", "type": "rag", "input": "超时问题怎么排查"}]}'
+    expect:
+      subtask_types:
+        - rag
+      supervisor_fallback: false
+  - id: supervisor_empty_allowlist_fallback
+    query: "复合问题"
+    setup:
+      allowed_capability_ids: []
+    mock:
+      llm_complete: null
+    expect:
+      subtask_types:
+        - rag
+      supervisor_fallback: true

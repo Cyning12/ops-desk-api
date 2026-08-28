@@ -124,8 +124,8 @@
 
 | slug | 覆盖 | 前置 | 谁做 | 状态 |
 |---|---|---|---|---|
-| `eval-e0-e1` | E0 签收 + E1 字典 | — | **仅 00 文档**（可同单：无 30） | **本波 · CLOSE** |
-| `eval-goldenset-lg-rag` | **仅 E2**：模块金标目录 + 最小集；可选顺带 `module=` | E1 | 新会话 10→30；**本窗不起草** | 下一棒 |
+| `eval-e0-e1` | E0 签收 + E1 字典 | — | **仅 00 文档**（可同单：无 30） | **DONE** · PR #92 |
+| `eval-goldenset-lg-rag` | **仅 E2**：模块金标目录 + 最小集；`module=` 本波默认不做 | E1 | **30 实现**；00 不写 fixture | **本波** |
 | `eval-langfuse-experiment-ci` | **仅 E3** | E2 | 另 task | 禁绑进 E2 |
 | `eval-online-sample-scores` | **仅 E4** | E1；建议 E3 | 另 task | 禁绑进 E2 |
 | `eval-token-cost-ledger` | **仅 E5** | E1 | 另 task | 禁绑进 E2 |
@@ -133,6 +133,20 @@
 `test_strategy`：E0+E1 = `none`；E2+ = `required`。`graph_change_layer`：多为 `n/a` 或 G-L1 备注观测键。
 
 **E2 明确不含**：Langfuse Dataset 同步、CI Experiment job、热路径 `score_current_trace`、价表。
+
+### 4.1 00 后续编排（不落地）
+
+> 维护者 2026-08-28：00 继续统筹后续 · **禁止本窗实现**任何 E2–E5 代码/fixture。  
+> **禁止**在 E2 未 CLOSE 时把 E3/E4/E5 写入 `docs/tasks/active/`。
+
+| 顺序 | 何时 | 00 做什么 | 00 不做什么 |
+|---|---|---|---|
+| **现在** | E2 task 已开 · PR [#93](https://github.com/Cyning12/ops-desk-api/pull/93) | 盯 30；机械收 pytest；**fixture 未绿不 merge** | 不写 `evals/agent/`；不改 `app/`；不合空壳 PR |
+| **E2 CLOSE 后** | 30 绿 + PR 合入 | 新会话起草 **仅 E3** `eval-langfuse-experiment-ci`（10+闸+PROMPT_30） | 不顺手写 Dataset runner；不开 E4/E5 active |
+| **E3 CLOSE 后** | Dataset/CI 最小闭环在 | 起草 **仅 E4** `eval-online-sample-scores` | 不绑 E5 |
+| **其后** | E1 字典已有 | 起草 **仅 E5** `eval-token-cost-ledger` | 不与 E4 同一 30 单 |
+
+可复制下一棒 00：`docs/harness/invokes/by-task/_prompts/PROMPT_00_eval-after-e2.md`（**E2 合入后再粘贴**）。
 
 ---
 
@@ -144,3 +158,5 @@
 | 2026-08-27 | 模块切片 · Annotation · E5 token/计费 · score 成本键 |
 | 2026-08-28 | **E1 签收**：§3 对照源码标已埋/缺口；E1-b 定夺本波不改 `app/`；建议 task 增 `eval-e0-e1` |
 | 2026-08-28 | **颗粒度**：E2–E5 各一 task；00 不实现；本窗不起草 E2 |
+| 2026-08-28 | **E2 开工**：task `eval-goldenset-lg-rag`；金标根 `evals/agent/`；00 不实现 |
+| 2026-08-28 | **§4.1 后续编排**：E3→E4→E5 分波；E2 未绿不合 PR；00 不落地 |
