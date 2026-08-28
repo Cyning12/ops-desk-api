@@ -4,4 +4,4 @@
 
 | task | 说明 |
 |---|---|
-| [`task_eval_langfuse_experiment_ci.md`](./task_eval_langfuse_experiment_ci.md) | Eval E3 · Dataset/Experiment mock · **00 不落地 · 待 30** |
+| [`task_eval_online_sample_scores.md`](./task_eval_online_sample_scores.md) | Eval E4 · 抽样 score · **00 不落地 · 待 30** |

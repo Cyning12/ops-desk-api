@@ -1,6 +1,6 @@
 # Task：Eval E3 · Langfuse Dataset / Experiment（mock 可 CI）
 
-> **状态**：in_progress（2026-08-28 · 00 起草 · 维护者令开 E3）  
+> **状态**：completed（2026-08-28 · 30 mock runner · PR #94 MERGED）  
 > **类型**：测评 / 控制面接入  
 > **上游**：`docs/spec/agent-infra/04_eval_and_observability_plan_v0.md` · `eval/ROADMAP` §4.1  
 > **前置**：E2 [#93](https://github.com/Cyning12/ops-desk-api/pull/93) MERGED · 金标在 `evals/agent/golden/`  
@@ -157,9 +157,21 @@ CI = 现有 pytest；不加 Langfuse secret job。
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-28 |
+| PR | [#94](https://github.com/Cyning12/ops-desk-api/pull/94) **MERGED** |
+| 归档 | `docs/tasks/done/task_eval_langfuse_experiment_ci.md` |
+| 下一棒 | E4 `eval-online-sample-scores` |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-28 | 00 起草 E3；维护者令开 E3；闸代签；00 不实现 |
 | 2026-08-28 | 30 落地 GUIDE + runner + mock 测 |
+| 2026-08-28 | #94 MERGED · 归档 · 开 E4 |
