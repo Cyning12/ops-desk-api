@@ -154,7 +154,7 @@ E2 是 Agent 模块金标，不是检索 `queries_v1`。
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+30 E2 完成：四切片金标 + 确定性评估器；`pytest tests -q --tb=short -k eval_agent` → 17 passed / exit 0；`app/` 零 diff；`module=` 未做。
 
 ---
 

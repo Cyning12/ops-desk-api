@@ -1,0 +1,23 @@
+# E2 · e2e 恰好 1 条：mock 全链（intent → builder → supervisor → rag_subtask → aggregator → critic）到 END
+# 不连真 LLM / 真库 / Langfuse
+version: 2026-08-28
+module: e2e
+cases:
+  - id: e2e_supervisor_rag_to_end
+    query: "超时问题查一下"
+    mock:
+      intent:
+        domain: ops_kb
+        needs_tool: true
+        needs_skill: false
+        is_composite: true
+        risk_hint: low
+        summary: 复合运维查询
+      supervisor_plan: '{"subtasks": [{"id": "t1", "type": "rag", "input": "超时问题怎么排查"}]}'
+      router_route: '{"route": "rag"}'
+      aggregator: "## 综合结论\n已覆盖检索子任务。"
+    expect:
+      reached_end: true
+      critic_outcome: pass
+      subtask_types:
+        - rag
