@@ -33,6 +33,9 @@ pgdata/
 # Logs
 *.log
 
+# Node（仅钉 dsh-coding-kit；运行时仍是 Python）
+node_modules/
+
 # Harness 本机路径（npx 缓存绝对路径；见 RUNBOOK §1.3 · v2.21+）
 .cyning-harness/local.json
 # refresh-ide-blocks 本地备份（勿入库）

@@ -27,7 +27,7 @@ Ops Desk 四仓库：
 在子项目根目录执行：
 
 ```bash
-npx @cyning/harness init --preset harness-only --ide cursor,claude,agents --yes
+npx dsh-coding-kit init --preset harness-only --ide cursor,claude,agents --yes
 ```
 
 ### 1.2 创建项目级 settings.json 放开 npx 权限
@@ -38,7 +38,7 @@ npx @cyning/harness init --preset harness-only --ide cursor,claude,agents --yes
 {
   "permissions": {
     "allow": [
-      "Bash(npx @cyning/harness *)"
+      "Bash(npx dsh-coding-kit *)"
     ]
   }
 }
@@ -142,7 +142,7 @@ jobs:
 ```json
 {
   "permissions": {
-    "allow": ["Bash(npx @cyning/harness *)"]
+    "allow": ["Bash(npx dsh-coding-kit *)"]
   },
   "hooks": {
     "PostToolUse": [
