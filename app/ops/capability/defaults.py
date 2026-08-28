@@ -1,4 +1,4 @@
-"""默认 local_fn 能力：原 ``MOCK_TOOLS`` 两枚 mock（罐头数据，不连外网）。"""
+"""默认 local_fn 能力：两枚 mock + utc_now_iso + 本库 issue/PR lookup。"""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from datetime import UTC
 
 from app.ops.capability.adapters.local_fn import LocalFnAdapter
 from app.ops.capability.gateway import get_registry, register
+from app.ops.capability.lookups import get_issue_by_number, get_pr_by_number
 from app.ops.capability.types import CapabilitySpec
 
 
@@ -74,6 +75,26 @@ _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
             risk_level="low",
         ),
         LocalFnAdapter(utc_now_iso),
+    ),
+    (
+        CapabilitySpec(
+            capability_id="get_issue_by_number",
+            kind="local_fn",
+            description="本库只读：按 number 查 Issue 摘要（无 raw_payload）",
+            tags=("lookup", "issue", "readonly"),
+            risk_level="low",
+        ),
+        LocalFnAdapter(get_issue_by_number),
+    ),
+    (
+        CapabilitySpec(
+            capability_id="get_pr_by_number",
+            kind="local_fn",
+            description="本库只读：按 number 查 PR 摘要（无 raw_payload）",
+            tags=("lookup", "pr", "readonly"),
+            risk_level="low",
+        ),
+        LocalFnAdapter(get_pr_by_number),
     ),
 ]
 

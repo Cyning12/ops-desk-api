@@ -150,7 +150,10 @@ def test_list_filter_node_role_is_placeholder_passthrough():
             tags_any=frozenset({"issue"}),
         )
     )
-    assert {s.capability_id for s in planner_view} == {"mock_get_issue_status"}
+    assert {s.capability_id for s in planner_view} == {
+        "mock_get_issue_status",
+        "get_issue_by_number",
+    }
 
     # tool_exec 侧同样用 tags/kinds 裁剪（node_role 不参与匹配）
     tool_view = list_capabilities(

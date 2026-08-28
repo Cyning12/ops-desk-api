@@ -1,7 +1,7 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_capability"
 title: "Capability Gateway 注册与 invoke"
-description: "能力注册表 + Filter + 统一 invoke；YAML/JSON manifest 加载 register（仅 local_fn）；local_fn 默认；可选 schemas_for_llm/ToolNode；mcp/sandbox/cli mock 探针与 skill stub 默认关闭。不是业界 LLM Gateway。首接入面：lg_rag tool_exec_node。"
+description: "能力注册表 + Filter + 统一 invoke/ainvoke；YAML/JSON manifest 加载 register（仅 local_fn · defaults/lookups 前缀）；local_fn 默认含本库 issue/PR 只读 lookup；可选 schemas_for_llm/ToolNode；mcp/sandbox/cli mock 探针与 skill stub 默认关闭。不是业界 LLM Gateway。首接入面：lg_rag tool_exec_node。"
 version: "2026-08-28"
 layer: "G-L1"
 primary_layer: "G-L1"
@@ -47,12 +47,27 @@ nodes:
         kind: method
 
   - id: "invoke"
-    label: "invoke(capability_id, args)"
+    label: "invoke / ainvoke(capability_id, args)"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
       - path: "app/ops/capability/gateway.py"
         symbol: "invoke"
+        kind: method
+      - path: "app/ops/capability/gateway.py"
+        symbol: "ainvoke"
+        kind: method
+
+  - id: "pg_lookup"
+    label: "lookups.get_issue/pr_by_number（本库 PG 只读）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/lookups.py"
+        symbol: "get_issue_by_number"
+        kind: method
+      - path: "app/ops/capability/lookups.py"
+        symbol: "get_pr_by_number"
         kind: method
 
   - id: "local_fn"
@@ -148,6 +163,8 @@ edges:
     anchors:
       - path: "app/ops/capability/gateway.py"
         symbol: "_dispatch"
+      - path: "app/ops/capability/gateway.py"
+        symbol: "_adispatch"
 
   - from: "invoke"
     to: "probes"
@@ -166,6 +183,22 @@ edges:
     anchors:
       - path: "app/ops/capability/gateway.py"
         symbol: "provide"
+
+  - from: "local_fn"
+    to: "pg_lookup"
+    label: "async lookup（P-13 ainvoke）"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/capability/lookups.py"
+        symbol: "get_issue_by_number"
+
+  - from: "pg_lookup"
+    to: "result"
+    label: "摘要字段（无 raw_payload）"
+    anchors:
+      - path: "app/ops/capability/lookups.py"
+        symbol: "get_issue_by_number"
 
   - from: "local_fn"
     to: "result"

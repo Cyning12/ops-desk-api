@@ -1,4 +1,4 @@
-"""Capability Gateway 表面：register / unregister / list / schemas_for_llm / invoke / provide。
+"""Capability Gateway 表面：register / unregister / list / schemas_for_llm / invoke / ainvoke / provide。
 
 P0：Registry + invoke；P1：``schemas_for_llm``（供 bind_tools / ToolNode **可选**）。
 P3：``provide``（``kind=skill`` 注入上下文预留；与 ``invoke`` 可执行步骤区分）。
@@ -12,6 +12,7 @@ P3：``provide``（``kind=skill`` 注入上下文预留；与 ``invoke`` 可执�
 from __future__ import annotations
 
 import copy
+import inspect
 import time
 from typing import Any
 
@@ -97,6 +98,19 @@ def invoke(
     return _dispatch(capability_id, mode="invoke", args=args, ctx=ctx)
 
 
+async def ainvoke(
+    capability_id: str,
+    args: Any = None,
+    *,
+    ctx: dict[str, Any] | None = None,
+) -> CapabilityResult:
+    """异步调用（P-13）：adapter 有 ``ainvoke`` 或返回 coroutine 则 await；否则走 sync ``invoke``。
+
+    未知 id / adapter 异常 → ``ok=False``，语义与 ``invoke`` 一致。
+    """
+    return await _adispatch(capability_id, mode="invoke", args=args, ctx=ctx)
+
+
 def provide(
     capability_id: str,
     *,
@@ -110,17 +124,15 @@ def provide(
     return _dispatch(capability_id, mode="provide", args=None, ctx=ctx)
 
 
-def _dispatch(
+def _prepare_call(
     capability_id: str,
     *,
-    mode: str,
-    args: Any,
     ctx: dict[str, Any] | None,
-) -> CapabilityResult:
-    """内部：lookup + enabled 检查 + invoke/provide 分派。"""
+) -> tuple[CapabilitySpec, Any, float] | CapabilityResult:
+    """lookup + enabled + Policy；失败返回 CapabilityResult。"""
     cid = capability_id or ""
-    entry = _registry.get(cid)
     started = time.perf_counter()
+    entry = _registry.get(cid)
     if entry is None:
         result = CapabilityResult(
             ok=False,
@@ -159,46 +171,146 @@ def _dispatch(
             policy_blocked=True,
         )
         return result
+    return spec, adapter, started
 
+
+def _ok_result(
+    *,
+    spec: CapabilitySpec,
+    cid: str,
+    mode: str,
+    output: Any,
+    started: float,
+) -> CapabilityResult:
+    duration_ms = (time.perf_counter() - started) * 1000.0
+    result = CapabilityResult(
+        ok=True,
+        output=output,
+        capability_id=cid,
+        duration_ms=duration_ms,
+        meta={"kind": spec.kind, "mode": mode},
+    )
+    _write_span_metadata(result, kind=spec.kind, risk_level=spec.risk_level)
+    return result
+
+
+def _err_result(
+    *,
+    spec: CapabilitySpec,
+    cid: str,
+    mode: str,
+    started: float,
+    exc: BaseException,
+) -> CapabilityResult:
+    duration_ms = (time.perf_counter() - started) * 1000.0
+    result = CapabilityResult(
+        ok=False,
+        error=repr(exc),
+        capability_id=cid,
+        duration_ms=duration_ms,
+        meta={"kind": spec.kind, "mode": mode},
+    )
+    _write_span_metadata(result, kind=spec.kind, risk_level=spec.risk_level)
+    return result
+
+
+def _missing_provide_result(
+    *, spec: CapabilitySpec, cid: str, started: float
+) -> CapabilityResult:
+    result = CapabilityResult(
+        ok=False,
+        error=f"adapter 无 provide(): {cid} (kind={spec.kind})",
+        capability_id=cid,
+        duration_ms=(time.perf_counter() - started) * 1000.0,
+        meta={"kind": spec.kind, "mode": "provide"},
+    )
+    _write_span_metadata(result, kind=spec.kind, risk_level=spec.risk_level)
+    return result
+
+
+def _dispatch(
+    capability_id: str,
+    *,
+    mode: str,
+    args: Any,
+    ctx: dict[str, Any] | None,
+) -> CapabilityResult:
+    """内部：lookup + enabled 检查 + invoke/provide 分派。"""
+    prepared = _prepare_call(capability_id, ctx=ctx)
+    if isinstance(prepared, CapabilityResult):
+        return prepared
+    spec, adapter, started = prepared
+    cid = capability_id or ""
     try:
         if mode == "provide":
             provide_fn = getattr(adapter, "provide", None)
             if not callable(provide_fn):
-                result = CapabilityResult(
-                    ok=False,
-                    error=f"adapter 无 provide(): {cid} (kind={spec.kind})",
-                    capability_id=cid,
-                    duration_ms=(time.perf_counter() - started) * 1000.0,
-                    meta={"kind": spec.kind, "mode": "provide"},
-                )
-                _write_span_metadata(
-                    result, kind=spec.kind, risk_level=spec.risk_level
-                )
-                return result
+                return _missing_provide_result(spec=spec, cid=cid, started=started)
             output = provide_fn(ctx=ctx)
         else:
             output = adapter.invoke(args, ctx=ctx)
-        duration_ms = (time.perf_counter() - started) * 1000.0
-        result = CapabilityResult(
-            ok=True,
-            output=output,
-            capability_id=cid,
-            duration_ms=duration_ms,
-            meta={"kind": spec.kind, "mode": mode},
+        return _ok_result(
+            spec=spec, cid=cid, mode=mode, output=output, started=started
         )
-        _write_span_metadata(result, kind=spec.kind, risk_level=spec.risk_level)
-        return result
     except Exception as exc:
-        duration_ms = (time.perf_counter() - started) * 1000.0
-        result = CapabilityResult(
-            ok=False,
-            error=repr(exc),
-            capability_id=cid,
-            duration_ms=duration_ms,
-            meta={"kind": spec.kind, "mode": mode},
+        return _err_result(spec=spec, cid=cid, mode=mode, started=started, exc=exc)
+
+
+async def _call_adapter_async(
+    adapter: Any,
+    *,
+    mode: str,
+    args: Any,
+    ctx: dict[str, Any] | None,
+) -> Any:
+    """adapter.ainvoke 或 coroutine fn 则 await；否则走 sync invoke。"""
+    if mode == "provide":
+        provide_fn = getattr(adapter, "provide", None)
+        if not callable(provide_fn):
+            raise TypeError("adapter 无 provide()")
+        output = provide_fn(ctx=ctx)
+        if inspect.isawaitable(output):
+            return await output
+        return output
+
+    ainvoke_fn = getattr(adapter, "ainvoke", None)
+    if callable(ainvoke_fn):
+        output = ainvoke_fn(args, ctx=ctx)
+        if inspect.isawaitable(output):
+            return await output
+        return output
+    output = adapter.invoke(args, ctx=ctx)
+    if inspect.isawaitable(output):
+        return await output
+    return output
+
+
+async def _adispatch(
+    capability_id: str,
+    *,
+    mode: str,
+    args: Any,
+    ctx: dict[str, Any] | None,
+) -> CapabilityResult:
+    """异步分派：coroutine adapter 则 await，否则兼容 sync invoke。"""
+    prepared = _prepare_call(capability_id, ctx=ctx)
+    if isinstance(prepared, CapabilityResult):
+        return prepared
+    spec, adapter, started = prepared
+    cid = capability_id or ""
+    try:
+        if mode == "provide":
+            provide_fn = getattr(adapter, "provide", None)
+            if not callable(provide_fn):
+                return _missing_provide_result(spec=spec, cid=cid, started=started)
+        output = await _call_adapter_async(
+            adapter, mode=mode, args=args, ctx=ctx
         )
-        _write_span_metadata(result, kind=spec.kind, risk_level=spec.risk_level)
-        return result
+        return _ok_result(
+            spec=spec, cid=cid, mode=mode, output=output, started=started
+        )
+    except Exception as exc:
+        return _err_result(spec=spec, cid=cid, mode=mode, started=started, exc=exc)
 
 
 def _write_span_metadata(

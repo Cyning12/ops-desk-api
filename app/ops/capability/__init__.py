@@ -2,7 +2,7 @@
 
 SPEC：``docs/spec/agent-infra/capability/SPEC-capability-gateway_v0.md``
 表面：``register`` / ``unregister`` / ``list_capabilities`` / ``schemas_for_llm`` /
-``invoke`` / ``provide``（P3 skill 上下文注入）
+``invoke`` / ``ainvoke`` / ``provide``（P3 skill 上下文注入）
 **默认导出零 LG 运行时依赖**；ToolNode 桥见 ``app.ops.capability.extras.langchain``。
 P2 探针：``MockMcpAdapter`` / ``MockSandboxAdapter`` / ``MockCliAdapter``；
 默认**不**进 ``ensure_default_capabilities``；启用见 ``probes.register_p2_probes``。
@@ -24,6 +24,7 @@ from app.ops.capability.adapters import (
 )
 from app.ops.capability.defaults import ensure_default_capabilities
 from app.ops.capability.gateway import (
+    ainvoke,
     get_registry,
     invoke,
     list_capabilities,
@@ -55,6 +56,7 @@ __all__ = [
     "MockMcpAdapter",
     "MockSandboxAdapter",
     "SkillStubAdapter",
+    "ainvoke",
     "get_registry",
     "invoke",
     "list_capabilities",
