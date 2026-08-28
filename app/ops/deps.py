@@ -1,6 +1,8 @@
 """Ops Desk auth dependencies."""
 from __future__ import annotations
 
+import inspect
+import secrets
 from datetime import datetime
 
 from fastapi import Depends, HTTPException, Request, status
@@ -59,5 +61,54 @@ async def require_maintainer(user: OpsUser = Depends(get_current_user)) -> OpsUs
     return user
 
 
+def _extract_bearer(request: Request) -> str | None:
+    raw = request.headers.get("Authorization")
+    if not raw:
+        return None
+    scheme, _, token = raw.partition(" ")
+    if scheme.lower() != "bearer":
+        return None
+    return token.strip()
+
+
+async def _resolve_cookie_user(request: Request, db: AsyncSession) -> OpsUser:
+    """走 cookie 用户解析，并尊重 FastAPI dependency_overrides（现有单测）。"""
+    override = request.app.dependency_overrides.get(get_current_user)
+    target = override or get_current_user
+    result = target(request, db)
+    if inspect.isawaitable(result):
+        return await result
+    return result
+
+
+async def require_admin_sync(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> OpsUser | None:
+    """Admin sync：Bearer 机读 或 cookie maintainer。
+
+    OPS_ADMIN_SYNC_TOKEN 为空则 Bearer 路径禁用（带 Bearer 一律 401）。
+    禁止把 token 写入日志。
+    """
+    presented = _extract_bearer(request)
+    if presented is not None:
+        configured = (settings.ops_admin_sync_token or "").strip()
+        if configured and secrets.compare_digest(presented, configured):
+            return None
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
+    user = await _resolve_cookie_user(request, db)
+    if user.role != "maintainer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Maintainer role required",
+        )
+    return user
+
+
 CurrentUser = Depends(get_current_user)
 MaintainerUser = Depends(require_maintainer)
+AdminSyncAuth = Depends(require_admin_sync)
