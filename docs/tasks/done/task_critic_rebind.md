@@ -1,6 +1,6 @@
 # Task：Strategy Builder S4 · Critic rebind
 
-> **状态**：completed（2026-08-28 · 00 机械验收 PASS）  
+> **状态**：completed（2026-08-28 · [#84](https://github.com/Cyning12/ops-desk-api/pull/84) **MERGED**）  
 > **类型**：feature / strategy-and-intent · S4  
 > **上游规划**：`docs/spec/agent-infra/03_strategy_and_intent_plan_v0.md` §2 / §4  
 > **ROADMAP**：`docs/spec/agent-infra/strategy/ROADMAP_strategy_builder_v0.md` §2 S4-a–c · §9  
@@ -130,7 +130,7 @@ chat/graph.py 0 diff
 | 日期 | 2026-08-28 |
 | 定稿 | supervisor 图 aggregator→critic_node；规则 stub；预算 1+1；reducer None=清空 |
 | 归档 | `docs/tasks/done/task_critic_rebind.md` |
-| PR | [#84](https://github.com/Cyning12/ops-desk-api/pull/84) |
+| PR | [#84](https://github.com/Cyning12/ops-desk-api/pull/84) **MERGED** |
 
 ---
 
@@ -140,4 +140,4 @@ chat/graph.py 0 diff
 |---|---|
 | 2026-08-28 | 00 拆 S4 task · R1 pass · HG 代签 |
 | 2026-08-28 | 30/40 PASS · 00 机械验收 PASS · CLOSE |
-| 2026-08-28 | [#84](https://github.com/Cyning12/ops-desk-api/pull/84) 已开 |
+| 2026-08-28 | [#84](https://github.com/Cyning12/ops-desk-api/pull/84) **MERGED** |

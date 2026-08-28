@@ -8,7 +8,7 @@
 > **首棒实现**：[`task_strategy_builder_allowlist`](../../tasks/done/task_strategy_builder_allowlist.md)（S1 · #78 MERGED）  
 > **次棒实现**：[`task_intent_schema_v1`](../../tasks/done/task_intent_schema_v1.md)（S2 · #80 MERGED）  
 > **三棒实现**：[`task_catalog_manifest_yaml`](../../tasks/done/task_catalog_manifest_yaml.md)（S3 · #82 MERGED）  
-> **四棒实现**：[`task_critic_rebind`](../../tasks/done/task_critic_rebind.md)（S4 · 00 验收 PASS）
+> **四棒实现**：[`task_critic_rebind`](../../tasks/done/task_critic_rebind.md)（S4 · #84 MERGED）
 
 ---
 
@@ -17,10 +17,10 @@
 | 字段 | 值 |
 |---|---|
 | **plan_slug** | `strategy-and-intent` |
-| **invoke_slug** | `critic-rebind`（S4 进行中；S3 `catalog-manifest-yaml` #82 MERGED） |
+| **invoke_slug** | `critic-rebind`（S4 [#84](https://github.com/Cyning12/ops-desk-api/pull/84) **MERGED**；S1–S4 实现闭环） |
 | **test_strategy** | `required`（按子波次裁剪；S4 规则 stub + 预算熔断） |
 | **graph_change_layer（建议）** | 多为 `G-L1`（`lg_rag` 备注；**不**默认新增一级模块） |
-| **默认分支** | `task/critic-rebind` |
+| **默认分支** | （S4 已合入 master） |
 
 ### 人工闸（SPEC / S0）
 
@@ -188,4 +188,4 @@ YAML 管**元数据与注册清单**；执行仍走 adapter。热更新须版本
 | 2026-08-27 | S1 allowlist 00 验收 PASS；[#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** |
 | 2026-08-27 | S2 Intent 00 验收 PASS；[#80](https://github.com/Cyning12/ops-desk-api/pull/80) **MERGED** |
 | 2026-08-28 | S3 catalog manifest 00 验收 PASS；[#82](https://github.com/Cyning12/ops-desk-api/pull/82) **MERGED** |
-| 2026-08-28 | S4 Critic rebind 00 验收 PASS；[#84](https://github.com/Cyning12/ops-desk-api/pull/84) |
+| 2026-08-28 | S4 Critic rebind 00 验收 PASS；[#84](https://github.com/Cyning12/ops-desk-api/pull/84) **MERGED** |
