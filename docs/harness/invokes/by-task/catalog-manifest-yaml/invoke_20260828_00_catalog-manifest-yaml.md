@@ -35,7 +35,7 @@
 | GATE_VERIFY | ✓ PASS | verify CLI 2026-08-28 |
 | 30 | ✓ PASS | invoke_20260828_30_40 · [`30 S3 manifest`](0356d448-6179-4d54-80cf-c926e1061801) |
 | 40 | ✓ PASS | pytest 63 · ruff 0 · graph-compile 0 · 图拓扑 0 diff |
-| CLOSE | ✓ PASS | 归档 done/ · PR 待开 |
+| CLOSE | ✓ PASS | 归档 done/ · [#82](https://github.com/Cyning12/ops-desk-api/pull/82) |
 
 ---
 

@@ -24,6 +24,6 @@
 
 ## PR
 
-待 `gh pr create` 后回写编号
+[#82](https://github.com/Cyning12/ops-desk-api/pull/82)
 
-| 2026-08-28 | 00 CLOSE PASS |
+| 2026-08-28 | 00 CLOSE PASS · PR #82 |
