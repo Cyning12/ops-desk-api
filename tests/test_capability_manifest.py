@@ -23,7 +23,13 @@ from app.ops.capability.manifest import (
     reload_capability_manifest,
 )
 
-_BUILTIN_IDS = ("mock_get_issue_status", "mock_get_deploy_info", "utc_now_iso")
+_BUILTIN_IDS = (
+    "mock_get_issue_status",
+    "mock_get_deploy_info",
+    "utc_now_iso",
+    "get_issue_by_number",
+    "get_pr_by_number",
+)
 
 
 @pytest.fixture(autouse=True)
@@ -39,7 +45,7 @@ def _write_yaml(path: Path, body: str) -> Path:
 
 
 def test_builtin_yaml_aligns_with_default_specs():
-    """S3-a：builtin 三枚与 utc_now_iso 等 _DEFAULT_SPECS 对齐。"""
+    """S3-a：builtin 五枚与 utc_now_iso / lookup 等 _DEFAULT_SPECS 对齐。"""
     assert BUILTIN_MANIFEST_PATH.is_file()
     get_registry().clear()
     result = load_capability_manifest(BUILTIN_MANIFEST_PATH)
@@ -59,7 +65,7 @@ def test_builtin_yaml_aligns_with_default_specs():
     assert now.ok is True
     assert now.output["tool"] == utc_now_iso("")["tool"]
     assert result.version == 1
-    assert result.capability_manifest_count == 3
+    assert result.capability_manifest_count == 5
 
 
 def test_load_yaml_and_json_register_declared_ids(tmp_path: Path):
@@ -324,3 +330,49 @@ def test_no_http_hook_in_capability_package():
     assert "reload_capability_manifest" in (
         cap_root / "manifest.py"
     ).read_text(encoding="utf-8")
+
+
+def test_lookups_adapter_prefix_allowed(tmp_path: Path):
+    """lookups 前缀可注册；其它模块前缀仍整文件失败。"""
+    ok_path = _write_yaml(
+        tmp_path / "lookups.yaml",
+        """
+version: 1
+capabilities:
+  - id: extra_issue_lookup
+    kind: local_fn
+    description: lookups prefix
+    tags: [lookup, fixture]
+    risk_level: low
+    enabled: true
+    adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
+""",
+    )
+    result = load_capability_manifest(ok_path)
+    ids = {s.capability_id for s in list_capabilities()}
+    assert "extra_issue_lookup" in ids
+    assert "extra_issue_lookup" in result.registered_ids
+
+    before = {s.capability_id for s in list_capabilities()}
+    bad_path = _write_yaml(
+        tmp_path / "session.yaml",
+        """
+version: 1
+capabilities:
+  - id: would_register
+    kind: local_fn
+    description: valid-looking
+    enabled: true
+    adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
+  - id: evil_session
+    kind: local_fn
+    description: illegal module
+    enabled: true
+    adapter: local_fn:app.db.session:AsyncSessionLocal
+""",
+    )
+    with pytest.raises(ManifestError, match="非法 adapter"):
+        load_capability_manifest(bad_path)
+    assert {s.capability_id for s in list_capabilities()} == before
+    assert "evil_session" not in before
+    assert "would_register" not in {s.capability_id for s in list_capabilities()}

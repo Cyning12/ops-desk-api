@@ -1,13 +1,16 @@
 """Capability catalog manifest 加载（S3 · Host 路径）。
 
 YAML/JSON → ``register``；Builder **不**解析本模块。
-仅 ``kind=local_fn``；adapter 仅 ``local_fn:app.ops.capability.defaults:<attr>``。
+仅 ``kind=local_fn``；adapter 仅
+``local_fn:app.ops.capability.defaults:<attr>`` 与
+``local_fn:app.ops.capability.lookups:<attr>``。
 非法条目 → **整文件失败**（校验完成前不 register）。
 禁止每请求 / HTTP 钩子；显式 ``reload_capability_manifest`` 供测试/运维。
 """
 
 from __future__ import annotations
 
+import importlib
 import json
 import logging
 from dataclasses import dataclass
@@ -26,7 +29,14 @@ BUILTIN_MANIFEST_PATH = (
 )
 
 ALLOWED_KIND = "local_fn"
-ADAPTER_PREFIX = "local_fn:app.ops.capability.defaults:"
+ADAPTER_PREFIX_DEFAULTS = "local_fn:app.ops.capability.defaults:"
+ADAPTER_PREFIX_LOOKUPS = "local_fn:app.ops.capability.lookups:"
+ADAPTER_PREFIXES = (ADAPTER_PREFIX_DEFAULTS, ADAPTER_PREFIX_LOOKUPS)
+ADAPTER_PREFIX = ADAPTER_PREFIX_DEFAULTS  # 兼容旧名：defaults 前缀
+_PREFIX_TO_MODULE = {
+    ADAPTER_PREFIX_DEFAULTS: "app.ops.capability.defaults",
+    ADAPTER_PREFIX_LOOKUPS: "app.ops.capability.lookups",
+}
 
 # 密钥形字段：loader 拒绝进仓形状；亦不读 env 密钥。
 _SECRET_KEYS = frozenset(
@@ -224,16 +234,21 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
 
 
 def _resolve_local_fn_adapter(ref: str, *, loc: str):
-    """仅允许 defaults 模块上的公开可调用属性；禁止任意 import / eval。"""
-    if not ref.startswith(ADAPTER_PREFIX):
+    """仅允许 defaults / lookups 模块上的公开可调用属性；禁止任意 import / eval。"""
+    matched: tuple[str, str] | None = None
+    for prefix, mod_name in _PREFIX_TO_MODULE.items():
+        if ref.startswith(prefix):
+            matched = (prefix, mod_name)
+            break
+    if matched is None:
         raise ManifestError(f"{loc} 非法 adapter: {ref or '(空)'}")
-    attr = ref[len(ADAPTER_PREFIX) :]
+    prefix, mod_name = matched
+    attr = ref[len(prefix) :]
     if not attr.isidentifier() or attr.startswith("_"):
         raise ManifestError(f"{loc} 非法 adapter attr: {attr or '(空)'}")
-    # 延迟 import，避免与 defaults.ensure 循环依赖
-    import app.ops.capability.defaults as defaults_mod
-
-    fn = getattr(defaults_mod, attr, None)
+    # 延迟 import 目标模块，避免与 defaults.ensure 循环依赖
+    mod = importlib.import_module(mod_name)
+    fn = getattr(mod, attr, None)
     if not callable(fn):
         raise ManifestError(f"{loc} adapter 属性不可调用或不存在: {attr}")
     return fn

@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260828_V1",
-  "generated_at": "2026-08-28T01:06:21Z",
+  "generated_at": "2026-08-28T02:18:30Z",
   "graphs": [
     {
       "id": "00_main",
@@ -222,7 +222,12 @@
     {
       "graph_id": "10_flow_capability",
       "id": "invoke",
-      "label": "invoke(capability_id, args)"
+      "label": "invoke / ainvoke(capability_id, args)"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "pg_lookup",
+      "label": "lookups.get_issue/pr_by_number（本库 PG 只读）"
     },
     {
       "graph_id": "10_flow_capability",
@@ -1335,6 +1340,10 @@
         {
           "path": "app/ops/capability/gateway.py",
           "symbol": "_dispatch"
+        },
+        {
+          "path": "app/ops/capability/gateway.py",
+          "symbol": "_adispatch"
         }
       ],
       "sync": true
@@ -1365,6 +1374,36 @@
         {
           "path": "app/ops/capability/gateway.py",
           "symbol": "provide"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "local_fn",
+      "to": "pg_lookup",
+      "mark": "?>",
+      "type": "branches",
+      "label": "async lookup（P-13 ainvoke）",
+      "anchors": [
+        {
+          "path": "app/ops/capability/lookups.py",
+          "symbol": "get_issue_by_number"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "pg_lookup",
+      "to": "result",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "摘要字段（无 raw_payload）",
+      "anchors": [
+        {
+          "path": "app/ops/capability/lookups.py",
+          "symbol": "get_issue_by_number"
         }
       ],
       "sync": true

@@ -1,4 +1,4 @@
-# 内置 capability 目录（S3 · 三枚默认 local_fn · 对齐 defaults.py）
+# 内置 capability 目录（S3 · 五枚默认 local_fn · 对齐 defaults.py）
 # 无密钥字段；仅 Host load_capability_manifest 解析。
 version: 1
 capabilities:
@@ -23,3 +23,17 @@ capabilities:
     risk_level: low
     enabled: true
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
+  - id: get_issue_by_number
+    kind: local_fn
+    description: 本库只读：按 number 查 Issue 摘要（无 raw_payload）
+    tags: [lookup, issue, readonly]
+    risk_level: low
+    enabled: true
+    adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
+  - id: get_pr_by_number
+    kind: local_fn
+    description: 本库只读：按 number 查 PR 摘要（无 raw_payload）
+    tags: [lookup, pr, readonly]
+    risk_level: low
+    enabled: true
+    adapter: local_fn:app.ops.capability.lookups:get_pr_by_number

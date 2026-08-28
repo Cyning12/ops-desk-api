@@ -21,7 +21,7 @@ from pydantic import ValidationError
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage
 from app.ops.capability import CapabilityFilter, list_capabilities
-from app.ops.capability import invoke as capability_invoke
+from app.ops.capability import ainvoke as capability_ainvoke
 from app.ops.capability.types import CapabilitySpec
 from app.ops.lg_rag.graph import ainvoke_router_agent
 from app.ops.lg_rag.nodes import (
@@ -74,8 +74,8 @@ _AGGREGATOR_SYSTEM = (
     "不要编造子任务结果中没有的事实。"
 )
 
-# Mock 工具已迁入 Capability Gateway（app.ops.capability.defaults）；
-# tool_exec_node 主路径改调 capability_invoke，不再维护裸 MOCK_TOOLS 字典。
+# Mock / lookup 已迁入 Capability Gateway（defaults + lookups）；
+# tool_exec_node 主路径 await ainvoke（P-13，禁止在 async 节点同步打 PG）。
 
 
 def _format_capability_catalog(specs: list[CapabilitySpec]) -> str:
@@ -361,7 +361,7 @@ async def info_extract_node(state: LgRagState) -> dict:
 
 
 async def tool_exec_node(state: LgRagState) -> dict:
-    """工具子任务：经 Capability Gateway invoke；未知 id → 错误结果不中断。
+    """工具子任务：经 Capability Gateway ainvoke；未知 id → 错误结果不中断。
 
     观测：复用 ``trace_span("tool_exec")``；Gateway 向当前 span 写
     capability_id / kind / ok / error 截断（SPEC §5），不另开根 span。
@@ -372,7 +372,7 @@ async def tool_exec_node(state: LgRagState) -> dict:
     result = _base_result(subtask)
     tool_name = str(subtask.get("tool") or "")
     with trace_span("tool_exec", run_type="tool"):
-        cap = capability_invoke(tool_name, result["input"])
+        cap = await capability_ainvoke(tool_name, result["input"])
         if not cap.ok:
             logger.warning(
                 "lg_rag 工具失败 tool=%r id=%s err=%r",
