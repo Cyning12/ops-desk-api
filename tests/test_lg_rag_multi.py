@@ -207,9 +207,12 @@ async def test_invalid_tool_id_in_plan_fallback_single_rag():
             },
         ]
     )
-    router = _provider('{"route": "direct"}')
+    # route=direct：rag 子图要 router.complete 两次（分类 + direct_answer）。
+    # 只给 1 次时 direct_answer StopAsyncIteration → 记 error → critic retry_planner。
+    # 给 2 次则本轮无 error（critic pass）；仍预留第二轮 multi，避免回归再炸。
+    router = _provider('{"route": "direct"}', '{"route": "direct"}')
     chain = AsyncMock(return_value=_result("direct 答案"))
-    multi = _provider(supervisor_out, _AGGREGATED)
+    multi = _provider(supervisor_out, _AGGREGATED, supervisor_out, _AGGREGATED)
     with (
         patch(_MULTI_PROVIDER_PATCH, return_value=multi),
         patch(_ROUTER_PROVIDER_PATCH, return_value=router),
@@ -220,6 +223,7 @@ async def test_invalid_tool_id_in_plan_fallback_single_rag():
     assert out["subtasks"][0]["type"] == "rag"
     assert len(out["subtask_results"]) == 1
     assert out["messages"][-1].content == _AGGREGATED
+    assert out["critic_verdict"]["outcome"] == "pass"
 
 
 @pytest.mark.asyncio
