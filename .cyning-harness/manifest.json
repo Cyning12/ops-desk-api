@@ -1,11 +1,11 @@
 {
-  "version": "1.8.0",
+  "version": "1.9.1",
   "preset": "fullstack-node-py",
   "ide": [
     "cursor",
     "claude",
     "agents"
   ],
-  "from_version": "1.7.1",
-  "upgraded_at": "2026-08-27T09:43:09Z"
+  "from_version": "1.8.0",
+  "upgraded_at": "2026-08-28T07:07:23Z"
 }
