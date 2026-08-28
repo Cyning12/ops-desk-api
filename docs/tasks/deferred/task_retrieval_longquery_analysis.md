@@ -1,7 +1,7 @@
 # Task：检索层长自然语言 query 零命中（针对性分析 · 非修复）
 
-> **状态**：active（draft · 待人审）  
-> **类型**：技术债 / 检索质量 · **分析型 task（只诊断与出报告，不改码）**  
+> **状态**：deferred（2026-08-28 · 维护者令：迁出 active · 见 `docs/tasks/PRIORITY_DEFERRED.md` DEF-004）  
+> **类型**：技术债 / 检索质量 · **分析型（只诊断与出报告，不改码）**  
 > **来源**：lg_rag Phase 3 40 验收中 G37 诊断（2026-08-21）  
 > **关联**：`app/ops/rag/`（hybrid_recall / FTS / dense）· `evals/golden/queries_v1.yaml`  
 > **实现仓**：本仓  
@@ -64,3 +64,4 @@ Phase 3 漏召回 eval 中 G37 三轮均未改善，深挖确认**检索层对�
 | 日期 | 说明 |
 |---|---|
 | 2026-08-21 | 初版（AI 起草 · 待人审）：源自 lg_rag Phase 3 G37 诊断；维护者指示「先简易 task，专门分析不修复」 |
+| 2026-08-28 | 维护者令迁出 active → DEF-004 |

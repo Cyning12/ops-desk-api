@@ -3,7 +3,7 @@
 > **状态**：active（draft · 待人审）  
 > **类型**：技术债 / 基础设施（数据链断尾根治）  
 > **关联**：`app/ops/admin/sync.py`（接收端 2026-07-17 已实现）· 旧仓 `ai-ink-brain-api-python/.github/workflows/ops_sync_kimi_code.yml` · workspace `docs/02-backend-analysis/00-current-state.md` §8.1  
-> **合入**：走 PR（禁直推 master）
+> **编排**：2026-08-28 两条 RAG 已迁 `docs/tasks/deferred/`（DEF-003/004）。本 task **仍 active**；与下一棒 `ops-pg-lookup-capabilities` **分 PR、勿混改**。Eval E0/E1 须等本 task 与 capability 均 CLOSE。
 
 ---
 
@@ -72,3 +72,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-08 | 初版（AI 起草 · 待 HG-TASK-DRAFT 人审）：源自 RAG 前置查证发现的数据链断尾 |
+| 2026-08-28 | RAG 两草案迁 deferred；本 task 仍为数据链 active |
