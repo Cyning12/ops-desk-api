@@ -7,10 +7,14 @@ START → intent_node（S2 细意图）→ strategy_builder（S1 allowlist）→
   ├─ type=rag     → rag_subtask（内部调 router 图子图）→ 回 dispatch
   ├─ type=extract → info_extract（LLM 实体抽取）→ 回 dispatch
   ├─ type=tool    → tool_exec（Mock 工具注册表）→ 回 dispatch
-  └─ 耗尽/空 subtasks → aggregator（LLM 综合）→ END
+  └─ 耗尽/空 subtasks → aggregator（LLM 综合）→ critic_node（S4 规则 stub）
+       ├─ pass / end → END
+       ├─ retry_planner → supervisor（同 catalog / 已有 allowlist）
+       └─ rebind → strategy_builder（结构闭环，不扩权）
 
 tracing 注入复用 app.ops.lg_rag.graph._ainvoke_with_tracing（不复制）；
 默认 InMemorySaver；三图并存（basic / router / supervisor）互不破坏。
+禁止每请求 compile；禁止 intent→② 回环。
 """
 
 from __future__ import annotations
@@ -30,6 +34,7 @@ from app.ops.lg_rag.multi.nodes import (
 )
 from app.ops.lg_rag.state import LgRagState
 from app.ops.strategy.builder import strategy_builder_node
+from app.ops.strategy.critic import critic_node, route_after_critic
 from app.ops.strategy.intent import intent_node
 
 # dispatch 条件边映射：三专业 agent 或耗尽进 aggregator
@@ -40,13 +45,21 @@ _DISPATCH_MAP = {
     "aggregate": "aggregator",
 }
 
+# Critic 条件边：pass/end → END；retry 同 catalog；rebind 回 Builder
+_CRITIC_MAP = {
+    "pass": END,
+    "retry_planner": "supervisor",
+    "rebind": "strategy_builder",
+    "end": END,
+}
+
 _AGENT_NODES = ("rag_subtask", "info_extract", "tool_exec")
 
 
 def build_supervisor_agent(*, checkpointer: Any | None = None):
-    """START → intent_node → strategy_builder → supervisor → dispatch 顺序 fan-out → aggregator → END。
+    """START → intent_node → strategy_builder → supervisor → dispatch → aggregator → critic_node。
 
-    节点 id 用 ``intent_node``：LangGraph 禁止与 state key ``intent`` 同名。
+    节点 id 用 ``intent_node`` / ``critic_node``：LangGraph 禁止与 state key 同名。
     """
     builder = StateGraph(LgRagState)
     builder.add_node("intent_node", intent_node)
@@ -56,13 +69,15 @@ def build_supervisor_agent(*, checkpointer: Any | None = None):
     builder.add_node("info_extract", info_extract_node)
     builder.add_node("tool_exec", tool_exec_node)
     builder.add_node("aggregator", aggregator_node)
+    builder.add_node("critic_node", critic_node)
     builder.add_edge(START, "intent_node")
     builder.add_edge("intent_node", "strategy_builder")
     builder.add_edge("strategy_builder", "supervisor")
     builder.add_conditional_edges("supervisor", route_next_subtask, _DISPATCH_MAP)
     for name in _AGENT_NODES:
         builder.add_conditional_edges(name, route_next_subtask, _DISPATCH_MAP)
-    builder.add_edge("aggregator", END)
+    builder.add_edge("aggregator", "critic_node")
+    builder.add_conditional_edges("critic_node", route_after_critic, _CRITIC_MAP)
     return _compile(builder, checkpointer)
 
 

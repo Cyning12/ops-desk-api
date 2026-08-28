@@ -13,10 +13,18 @@ Router / rewrite / evaluate 等扩展字段留待 Phase 2/3 再引入，
 
 from __future__ import annotations
 
-from operator import add
 from typing import Annotated
 
 from langgraph.graph import MessagesState
+
+
+def merge_subtask_results(
+    existing: list[dict] | None, new: list[dict] | None
+) -> list[dict]:
+    """``None`` 清空（Critic 回环重置）；否则追加（worker 返回 ``[result]``）。"""
+    if new is None:
+        return []
+    return (existing or []) + list(new)
 
 
 class LgRagState(MessagesState):
@@ -36,15 +44,19 @@ class LgRagState(MessagesState):
     subtasks（Phase 4）：supervisor_node 拆解产出的子任务列表
         [{"id","type","input","tool"?}]；无 reducer，节点写回即覆盖。
         老 checkpoint 无此键：仅 supervisor 图入口写入，router/basic 图不受影响。
-    subtask_results（Phase 4）：各子任务结果，Annotated add reducer 追加；
-        与子任务按序一一对应（dispatch 以 len(subtask_results) 作推进索引）。
-        中间结果只进本字段，不进 messages（避免消息膨胀）。
+    subtask_results（Phase 4 / S4）：各子任务结果；自定义 reducer：
+        new is None → []（Critic 回环清空）；否则 (existing or []) + list(new)
+        （worker 返回 [result] 的 append 语义）。与子任务按序一一对应
+        （dispatch 以 len(subtask_results) 作推进索引）。中间结果不进 messages。
     allowed_capability_ids（S1）：Strategy Builder 写入的本轮 capability 白名单；
         supervisor 可见集 = list_capabilities(filter) ∩ 本字段；空 list → fallback 单 rag。
         supervisor 图路径强制经 Builder 前置，缺字段视为实现错误。
     allowed_skill_ids（S1 · 可选）：本轮 skill 白名单；首版 Builder 写空 list。
     intent（S2）：Intent 节点写入的细意图 dict（IntentV1）；Builder 读 needs_tool 等。
         失败时为保守 fallback（unknown / 全 False / low / 空摘要）。
+    critic_verdict（S4）：critic_node 写入的判定 dict（至少含 outcome）；无 reducer。
+    inner_retry_count（S4）：同 catalog 重拆次数；无 reducer；缺省 0；上限 1。
+    rebinding_count（S4）：回 Builder 次数；无 reducer；缺省 0；上限 1。
     """
 
     route: str
@@ -52,7 +64,10 @@ class LgRagState(MessagesState):
     current_query: str
     chain_meta: dict
     subtasks: list[dict]
-    subtask_results: Annotated[list[dict], add]
+    subtask_results: Annotated[list[dict], merge_subtask_results]
     allowed_capability_ids: list[str]
     allowed_skill_ids: list[str]
     intent: dict
+    critic_verdict: dict
+    inner_retry_count: int
+    rebinding_count: int

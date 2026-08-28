@@ -2,9 +2,9 @@
 
 说明书：docs/guides/DESIGN_langgraph-lg-rag-phase4-multiagent_v1.md
 
-拓扑：START → supervisor（LLM 拆解 ≤4 子任务）→ dispatch 条件边
-→ rag_subtask / info_extract / tool_exec（顺序 fan-out，回 dispatch）
-→ 耗尽 → aggregator（LLM 综合）→ END。
+拓扑：START → intent_node → strategy_builder → supervisor（LLM 拆解 ≤4 子任务）
+→ dispatch 条件边 → rag_subtask / info_extract / tool_exec（顺序 fan-out，回 dispatch）
+→ 耗尽 → aggregator（LLM 综合）→ critic_node（S4 规则 stub）→ 条件边 END / supervisor / Builder。
 """
 
 from app.ops.lg_rag.multi.graph import (
