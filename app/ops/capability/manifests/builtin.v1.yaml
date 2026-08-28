@@ -1,0 +1,25 @@
+# 内置 capability 目录（S3 · 三枚默认 local_fn · 对齐 defaults.py）
+# 无密钥字段；仅 Host load_capability_manifest 解析。
+version: 1
+capabilities:
+  - id: mock_get_issue_status
+    kind: local_fn
+    description: Mock：查询 issue 状态（罐头数据）
+    tags: [mock, issue]
+    risk_level: low
+    enabled: true
+    adapter: local_fn:app.ops.capability.defaults:mock_get_issue_status
+  - id: mock_get_deploy_info
+    kind: local_fn
+    description: Mock：查询部署信息（罐头数据）
+    tags: [mock, deploy]
+    risk_level: low
+    enabled: true
+    adapter: local_fn:app.ops.capability.defaults:mock_get_deploy_info
+  - id: utc_now_iso
+    kind: local_fn
+    description: 只读：返回当前 UTC ISO 时间戳
+    tags: [readonly, time]
+    risk_level: low
+    enabled: true
+    adapter: local_fn:app.ops.capability.defaults:utc_now_iso

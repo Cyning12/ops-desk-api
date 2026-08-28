@@ -79,7 +79,16 @@ _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
 
 
 def ensure_default_capabilities() -> None:
-    """幂等注册默认 mock；已存在则跳过（兼容测试 clear 后重调）。"""
+    """幂等注册默认 mock；优先 builtin YAML，缺文件回退硬编码。"""
+    # 延迟 import：manifest 解析 adapter 时回指本模块
+    from app.ops.capability.manifest import (
+        BUILTIN_MANIFEST_PATH,
+        load_capability_manifest,
+    )
+
+    if BUILTIN_MANIFEST_PATH.is_file():
+        load_capability_manifest(BUILTIN_MANIFEST_PATH)
+        return
     registry = get_registry()
     for spec, adapter in _DEFAULT_SPECS:
         if registry.get(spec.capability_id) is None:
