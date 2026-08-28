@@ -17,6 +17,6 @@
 
 ## PR
 
-合入后回写编号。
+https://github.com/Cyning12/ops-desk-api/pull/92
 
 | 2026-08-28 | 00 CLOSE · 文档轨 |
