@@ -89,7 +89,7 @@ docs/spec/agent-infra/
 
 | ID | 规划 | 状态 | 首波 |
 |---|---|---|---|
-| `eval-and-observability` | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **E0+E1 DONE** · 字典见 [`eval/ROADMAP`](./eval/ROADMAP_eval_observability_v0.md) §3；E2 **另开独立 task**（00 本窗不实现） |
+| `eval-and-observability` | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **E0+E1 DONE** · **E2 开工** `eval-goldenset-lg-rag`（30 实现 · 00 不写码） |
 
 ---
 
@@ -135,3 +135,4 @@ docs/spec/agent-infra/
 | 2026-08-28 | **S3 MERGED**：[#82](https://github.com/Cyning12/ops-desk-api/pull/82) catalog manifest |
 | 2026-08-28 | **测评轨 E0 签收**：04 + eval ROADMAP；E1 字典对照源码；下一棒 E2 |
 | 2026-08-28 | 过程文档二次签收；E2–E5 分 task；00 不实现 |
+| 2026-08-28 | E2 开工：`eval-goldenset-lg-rag` |

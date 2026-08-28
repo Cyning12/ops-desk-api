@@ -124,8 +124,8 @@
 
 | slug | 覆盖 | 前置 | 谁做 | 状态 |
 |---|---|---|---|---|
-| `eval-e0-e1` | E0 签收 + E1 字典 | — | **仅 00 文档**（可同单：无 30） | **本波 · CLOSE** |
-| `eval-goldenset-lg-rag` | **仅 E2**：模块金标目录 + 最小集；可选顺带 `module=` | E1 | 新会话 10→30；**本窗不起草** | 下一棒 |
+| `eval-e0-e1` | E0 签收 + E1 字典 | — | **仅 00 文档**（可同单：无 30） | **DONE** · PR #92 |
+| `eval-goldenset-lg-rag` | **仅 E2**：模块金标目录 + 最小集；`module=` 本波默认不做 | E1 | **30 实现**；00 不写 fixture | **本波** |
 | `eval-langfuse-experiment-ci` | **仅 E3** | E2 | 另 task | 禁绑进 E2 |
 | `eval-online-sample-scores` | **仅 E4** | E1；建议 E3 | 另 task | 禁绑进 E2 |
 | `eval-token-cost-ledger` | **仅 E5** | E1 | 另 task | 禁绑进 E2 |
@@ -144,3 +144,4 @@
 | 2026-08-27 | 模块切片 · Annotation · E5 token/计费 · score 成本键 |
 | 2026-08-28 | **E1 签收**：§3 对照源码标已埋/缺口；E1-b 定夺本波不改 `app/`；建议 task 增 `eval-e0-e1` |
 | 2026-08-28 | **颗粒度**：E2–E5 各一 task；00 不实现；本窗不起草 E2 |
+| 2026-08-28 | **E2 开工**：task `eval-goldenset-lg-rag`；金标根 `evals/agent/`；00 不实现 |

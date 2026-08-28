@@ -277,7 +277,7 @@ L5 可选：云端 Prompt
 |---|---|---|---|
 | **E0** | `eval-spec-signoff` | 本文件 + `eval/ROADMAP` 签收 | **DONE** · 2026-08-28 |
 | **E1** | `sli-score-dictionary` | metadata/score/`module` 键字典 | **DONE** · 真值在 ROADMAP §3 |
-| **E2** | `goldenset-lg-rag-v0` | 最小金标 + **按模块切片**目录 | 待另开 **独立** task（本窗 00 不起草/不实现） |
+| **E2** | `goldenset-lg-rag-v0` | 最小金标 + **按模块切片**目录 | **本波 task** `eval-goldenset-lg-rag`（30 实现 · 00 不写码） |
 | **E3** | `langfuse-dataset-experiment` | Dataset/Experiment + **模块 CI job** | 待 E2 · **勿绑进 E2** |
 | **E4** | `online-sample-scores` | 抽样 score + Annotation 回流 | 待 E1（字典已有）· **勿绑进 E2** |
 | **E5** | `token-cost-ledger` | usage 全路径补齐 · 价表 · 费用聚合/导出 | 待 E1 · **勿绑进 E2** |
@@ -310,3 +310,4 @@ L5 可选：云端 Prompt
 | 2026-08-27 | §2.8 Scores 起步；§2.9 与 03/S1 并行策略 |
 | 2026-08-28 | **E0 签收**：HG-SPEC-SIGNOFF approved；§2.9 改为 S 轨已收官、下一棒 E2；E1 字典见 ROADMAP §3 |
 | 2026-08-28 | 过程文档二次签收；颗粒度 E2–E5 分 task；钉 00 不实现 |
+| 2026-08-28 | E2 开工：独立 task `eval-goldenset-lg-rag`；00 不实现 |
