@@ -1,6 +1,6 @@
 # Task：Grader 混档证据（exact + relevant）作答约束 · 探讨与方案选型
 
-> **状态**：active（draft · 待人审 · **探讨型，30 前须维护者选型**）  
+> **状态**：deferred（2026-08-28 · 维护者令：迁出 active · 见 `docs/tasks/PRIORITY_DEFERRED.md` DEF-003）  
 > **类型**：RAG 质量 / 契约补洞 · **设计 + 小样验证，默认不直接改生产默认行为**  
 > **来源**：lc_evidence_chain / Chat RAG 链路对话梳理（2026-08-23）  
 > **关联代码**：`app/ops/lc_evidence_chain/{grader,answer,chain}.py` · `app/ops/rag/grader.py` · `app/ops/chat/{rag_nodes,nodes}.py`  
@@ -194,3 +194,4 @@ user 依据块:
 | 日期 | 说明 |
 |---|---|
 | 2026-08-23 | 初版（探讨型 task）：混档 exact+relevant 风险 · 方案 A/B/C/D · 待 HG-TASK-DRAFT |
+| 2026-08-28 | 维护者令迁出 active → DEF-003 |
