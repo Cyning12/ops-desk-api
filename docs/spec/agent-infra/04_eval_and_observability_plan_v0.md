@@ -6,7 +6,7 @@
 > **域夹**：[`eval/`](./eval/)  
 > **E1 字典真值**：[`eval/ROADMAP_eval_observability_v0.md`](./eval/ROADMAP_eval_observability_v0.md) §3  
 > **实现现状**：`app/ops/tracing.py`（Langfuse · env 开关；**langsmith 支路未启用**）  
-> **本波落地**：[`task_eval_e0_e1`](../../tasks/done/task_eval_e0_e1.md)
+> **本波落地**：E2 实现由 30 · [`task_eval_goldenset_lg_rag`](../../tasks/active/task_eval_goldenset_lg_rag.md)；00 **不写码**
 
 ---
 
@@ -311,3 +311,4 @@ L5 可选：云端 Prompt
 | 2026-08-28 | **E0 签收**：HG-SPEC-SIGNOFF approved；§2.9 改为 S 轨已收官、下一棒 E2；E1 字典见 ROADMAP §3 |
 | 2026-08-28 | 过程文档二次签收；颗粒度 E2–E5 分 task；钉 00 不实现 |
 | 2026-08-28 | E2 开工：独立 task `eval-goldenset-lg-rag`；00 不实现 |
+| 2026-08-28 | 00 后续编排见 eval ROADMAP §4.1；E3 起须 E2 合入后另开；00 不落地 |

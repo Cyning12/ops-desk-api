@@ -36,6 +36,13 @@ verify：`npx dsh-coding-kit verify --target . --task docs/tasks/active/task_eva
 
 ## 下一棒
 
-新窗口 hat **30**：粘贴 `PROMPT_30_execute.md`。00 收 pytest 报告后再 CLOSE。
+| 谁 | 何时 | 做什么 |
+|---|---|---|
+| **30** | 新窗口 · 现在 | 粘贴 `PROMPT_30_execute.md` · 写 fixture |
+| **00** | 30 pytest 绿后 | 机械验收 → CLOSE → 才允许 merge [#93](https://github.com/Cyning12/ops-desk-api/pull/93) |
+| **00** | E2 **合入后** | 新会话粘贴 `_prompts/PROMPT_00_eval-after-e2.md` · **仅拆 E3** |
+
+本窗与后续 00 窗：**不落地**（不写 `evals/agent/`、不改 `app/`、不起草 E3/E4/E5 active task）。
 
 | 2026-08-28 | 00 起草并代签 · 派 30 · 本人不实现 |
+| 2026-08-28 | 维护者令：继续 00 统筹后续 · 钉 §4.1 · 仍不落地 |
