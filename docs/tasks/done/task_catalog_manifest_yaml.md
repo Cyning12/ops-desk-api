@@ -135,7 +135,7 @@ chat/graph.py 与 multi/graph.py 拓扑 0 diff
 | 日期 | 2026-08-28 |
 | 定稿 | Host YAML/JSON manifest → register；builtin 优先；adapter 白名单 |
 | 归档 | `docs/tasks/done/task_catalog_manifest_yaml.md` |
-| PR | [#82](https://github.com/Cyning12/ops-desk-api/pull/82) |
+| PR | [#82](https://github.com/Cyning12/ops-desk-api/pull/82) **MERGED** |
 
 ---
 
@@ -145,3 +145,4 @@ chat/graph.py 与 multi/graph.py 拓扑 0 diff
 |---|---|
 | 2026-08-28 | 00 拆 S3 task · R1 pass · HG 代签 |
 | 2026-08-28 | 30/40 PASS · 00 机械验收 PASS · CLOSE |
+| 2026-08-28 | [#82](https://github.com/Cyning12/ops-desk-api/pull/82) MERGED |
