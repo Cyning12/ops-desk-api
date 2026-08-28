@@ -16,7 +16,7 @@
 | **L0 升级总表** | [`01_upgrade_roadmap.md`](./01_upgrade_roadmap.md) | Gateway 升级轨（**stable**） | 单 SPEC 契约条文 |
 | **L0 Host 规划** | [`02_agent_host_plan_v0.md`](./02_agent_host_plan_v0.md) | Agent Host flesh 波次 H1–H5（**completed**） | 实现细节 |
 | **L0 策略轨** | [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) | Strategy Builder · Intent · Critic 再赋能（**active** · S0 签收） | 实现细节 |
-| **L0 测评轨** | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | 持续观测 · 可用性/准确性/稳定性 · Langfuse 边界（**draft · 活跃**） | 实现细节 |
+| **L0 测评轨** | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | 持续观测 · 可用性/准确性/稳定性 · Langfuse 边界（**active · E0 签收**） | 实现细节 |
 | **L1 域夹** | `capability/` · `structured-output/` · `strategy/` · `eval/` 等 | 该域 README + 现行 SPEC + 域 ROADMAP | 跨域总序（回指 L0） |
 | **L2 现行契约** | `*/SPEC-*_v0.md` | 已签收、P0–P3 已落地的接口与失败语义 | 未开工升级设想 |
 | **L2 升级路线** | `*/ROADMAP_*_v0.md` | 下一波可拆 task 的升级规格 | 直接授权 30 |
@@ -85,11 +85,11 @@ docs/spec/agent-infra/
 |---|---|---|---|
 | `strategy-and-intent` | [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **S4 DONE** [#84](https://github.com/Cyning12/ops-desk-api/pull/84) MERGED · S1–S4 实现闭环 |
 
-## 测评轨（draft · 可与策略轨并行）
+## 测评轨（active · E0 签收）
 
 | ID | 规划 | 状态 | 首波 |
 |---|---|---|---|
-| `eval-and-observability` | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | draft · 待 E0 签收 | **E1** SLI 字典 → 见 [`eval/ROADMAP`](./eval/ROADMAP_eval_observability_v0.md) |
+| `eval-and-observability` | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **E0+E1 DONE** · 字典见 [`eval/ROADMAP`](./eval/ROADMAP_eval_observability_v0.md) §3；E2 **另开独立 task**（00 本窗不实现） |
 
 ---
 
@@ -133,3 +133,5 @@ docs/spec/agent-infra/
 | 2026-08-27 | **S1 MERGED**：[#78](https://github.com/Cyning12/ops-desk-api/pull/78) allowlist 闭环 |
 | 2026-08-27 | **S2 MERGED**：[#80](https://github.com/Cyning12/ops-desk-api/pull/80) Intent schema v1 |
 | 2026-08-28 | **S3 MERGED**：[#82](https://github.com/Cyning12/ops-desk-api/pull/82) catalog manifest |
+| 2026-08-28 | **测评轨 E0 签收**：04 + eval ROADMAP；E1 字典对照源码；下一棒 E2 |
+| 2026-08-28 | 过程文档二次签收；E2–E5 分 task；00 不实现 |
