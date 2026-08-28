@@ -83,7 +83,7 @@ docs/spec/agent-infra/
 
 | ID | 规划 | 状态 | 首波 |
 |---|---|---|---|
-| `strategy-and-intent` | [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **S3 DONE** [#82](https://github.com/Cyning12/ops-desk-api/pull/82) MERGED · 下一波 S4 Critic |
+| `strategy-and-intent` | [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **S3 DONE** [#82](https://github.com/Cyning12/ops-desk-api/pull/82) MERGED · **S4 进行中** `critic-rebind` |
 
 ## 测评轨（draft · 可与策略轨并行）
 

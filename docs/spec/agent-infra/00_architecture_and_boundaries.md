@@ -76,7 +76,7 @@ Agent 运行时 ≈  compiled StateGraph（编排壳）
 ### 4.1 Strategy Builder · Intent · 再赋能（H1–H5 之后）
 
 > 详规：[`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) · [`strategy/`](./strategy/)  
-> **现状**：S1 allowlist + S2 Intent + S3 catalog manifest 已落地；尚无 Critic→rebind（S4）。
+> **现状**：S1 allowlist + S2 Intent + S3 catalog manifest 已落地；S4 Critic→rebind **进行中**（`task/critic-rebind`）。
 
 目标分层（仍 Mode A · 静态图）：
 
@@ -155,3 +155,4 @@ Strategy Builder 与 Policy **不互相替代**（裁可见集 ≠ 执行硬闸�
 | 2026-08-27 | §4.1 现状：S1 allowlist Builder 已落地；S2/S4 仍缺口 |
 | 2026-08-27 | §4.1 现状：S2 Intent 已落地；S3/S4 仍缺口 |
 | 2026-08-28 | §4.1 现状：S3 catalog manifest 已落地；S4 仍缺口 |
+| 2026-08-28 | §4.1 现状：S4 Critic rebind 开工（`task/critic-rebind`） |

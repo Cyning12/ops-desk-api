@@ -1,13 +1,13 @@
 ---
 graph_id: 10_flow_lg_rag
-version: 2026-08-27
-generated_at: 2026-08-28T00:45:37Z
+version: 2026-08-28
+generated_at: 2026-08-28T01:06:21Z
 source: 10_flow_lg_rag.graph.yaml
 ---
 
-# LG RAG 旁路三模式流程（basic / router / supervisor）
+# LG RAG 旁路三模式流程（basic / router / supervisor · Critic）
 
-POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（Intent→Builder→拆解→分派→聚合）。同图分节：节点 id 前缀 b_/r_/s_；rag 路径黑盒复用 lc_evidence_chain，不展开 LCEL；默认不进入 chat/graph。freeze lg-rag-http-v1。
+POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（Intent→Builder→拆解→分派→聚合→Critic 条件边）。同图分节：节点 id 前缀 b_/r_/s_；rag 路径黑盒复用 lc_evidence_chain，不展开 LCEL；默认不进入 chat/graph。freeze lg-rag-http-v1。
 
 ## Mermaid
 
@@ -35,6 +35,8 @@ flowchart TB
     structured_output_gw["Structured Output Gateway（>./10_flow_structured_output.md）"]
     capability_gw["Capability Gateway（>./10_flow_capability.md）"]
     s_aggregator["aggregator_node（LLM 综合）"]
+    s_critic["critic_node（S4 规则 stub · 预算 1+1）"]
+    s_end["END（pass / 预算耗尽）"]
     lc_chain["LC Evidence chain（黑盒 · 不展开 LCEL）"]
     llm["LLM Provider"]
     db["PostgreSQL"]
@@ -83,31 +85,42 @@ flowchart TB
     r_rewrite -->|"complete"| llm
     %% → app/ops/lg_rag/nodes.py#L230
     sup_graph -->|"START → intent_node"| s_intent
-    %% → app/ops/lg_rag/multi/graph.py#L59
+    %% → app/ops/lg_rag/multi/graph.py#L73
     s_intent -->|"intent dict"| s_strategy_builder
-    %% → app/ops/lg_rag/multi/graph.py#L60
+    %% → app/ops/lg_rag/multi/graph.py#L74
     s_strategy_builder -->|"allowed_capability_ids"| s_supervisor
-    %% → app/ops/lg_rag/multi/graph.py#L61
+    %% → app/ops/lg_rag/multi/graph.py#L75
     s_supervisor -->|"subtasks（≤4）"| s_dispatch
-    %% → app/ops/lg_rag/multi/graph.py#L62
+    %% → app/ops/lg_rag/multi/graph.py#L76
     s_dispatch -->|"[type=rag]"| s_rag
-    %% → app/ops/lg_rag/multi/graph.py#L37
+    %% → app/ops/lg_rag/multi/graph.py#L42
     %% → app/ops/lg_rag/multi/nodes.py#L238
     s_dispatch -->|"[type=extract]"| s_extract
-    %% → app/ops/lg_rag/multi/graph.py#L38
+    %% → app/ops/lg_rag/multi/graph.py#L43
     %% → app/ops/lg_rag/multi/nodes.py#L238
     s_dispatch -->|"[type=tool]"| s_tool
-    %% → app/ops/lg_rag/multi/graph.py#L39
+    %% → app/ops/lg_rag/multi/graph.py#L44
     %% → app/ops/lg_rag/multi/nodes.py#L238
     s_dispatch -->|"[耗尽/空 → aggregate]"| s_aggregator
-    %% → app/ops/lg_rag/multi/graph.py#L40
+    %% → app/ops/lg_rag/multi/graph.py#L45
     %% → app/ops/lg_rag/multi/nodes.py#L237
     s_rag -->|"回 dispatch（追加一条结果）"| s_dispatch
-    %% → app/ops/lg_rag/multi/graph.py#L64
+    %% → app/ops/lg_rag/multi/graph.py#L78
     s_extract -->|"回 dispatch（追加一条结果）"| s_dispatch
-    %% → app/ops/lg_rag/multi/graph.py#L64
+    %% → app/ops/lg_rag/multi/graph.py#L78
     s_tool -->|"回 dispatch（追加一条结果）"| s_dispatch
-    %% → app/ops/lg_rag/multi/graph.py#L64
+    %% → app/ops/lg_rag/multi/graph.py#L78
+    s_aggregator -->|"综合后进入 Critic"| s_critic
+    %% → app/ops/lg_rag/multi/graph.py#L79
+    s_critic -->|"[pass#124;end → END]"| s_end
+    %% → app/ops/lg_rag/multi/graph.py#L80
+    %% → app/ops/strategy/critic.py::route_after_critic
+    s_critic -->|"[retry_planner → supervisor]"| s_supervisor
+    %% → app/ops/lg_rag/multi/graph.py#L51
+    %% → app/ops/strategy/critic.py::route_after_critic
+    s_critic -->|"[rebind → strategy_builder]"| s_strategy_builder
+    %% → app/ops/lg_rag/multi/graph.py#L52
+    %% → app/ops/strategy/critic.py::route_after_critic
     s_rag -->|"ainvoke_router_agent（复用 router 子图）"| router_graph
     %% → app/ops/lg_rag/multi/nodes.py#L266
     %% → app/ops/lg_rag/graph.py::ainvoke_router_agent
@@ -115,7 +128,7 @@ flowchart TB
     %% → app/ops/lg_rag/multi/nodes.py#L200
     s_extract -->|"complete（抽取）"| llm
     %% → app/ops/lg_rag/multi/nodes.py#L299
-    s_aggregator -->|"complete（综合 → END）"| llm
+    s_aggregator -->|"complete（综合 → critic）"| llm
     %% → app/ops/lg_rag/multi/nodes.py#L361
     r_router -->|"parse_only / schema 校验"| structured_output_gw
     %% → app/ops/lg_rag/nodes.py::_classify_route
@@ -138,9 +151,9 @@ flowchart TB
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-    class lg_invoke,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_intent,s_strategy_builder,s_supervisor,s_dispatch,s_rag,s_extract,s_tool,s_aggregator phase
+    class lg_invoke,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_intent,s_strategy_builder,s_supervisor,s_dispatch,s_rag,s_extract,s_tool,s_aggregator,s_critic phase
     class basic_graph,router_graph,sup_graph doc
-    class client,structured_output_gw,capability_gw,lc_chain,llm,db,main_doc infra
+    class client,structured_output_gw,capability_gw,s_end,lc_chain,llm,db,main_doc infra
 ```
 
 ## Structured Data
@@ -171,6 +184,8 @@ flowchart TB
 | structured_output_gw | Structured Output Gateway（>./10_flow_structured_output.md） | external |
 | capability_gw | Capability Gateway（>./10_flow_capability.md） | external |
 | s_aggregator | aggregator_node（LLM 综合） | flow |
+| s_critic | critic_node（S4 规则 stub · 预算 1+1） | flow |
+| s_end | END（pass / 预算耗尽） | external |
 | lc_chain | LC Evidence chain（黑盒 · 不展开 LCEL） | external |
 | llm | LLM Provider | external |
 | db | PostgreSQL | external |
@@ -210,10 +225,14 @@ flowchart TB
 | s_rag | s_dispatch | -> | depends_on | 回 dispatch（追加一条结果） | 1 anchor(s) |
 | s_extract | s_dispatch | -> | depends_on | 回 dispatch（追加一条结果） | 1 anchor(s) |
 | s_tool | s_dispatch | -> | depends_on | 回 dispatch（追加一条结果） | 1 anchor(s) |
+| s_aggregator | s_critic | -> | depends_on | 综合后进入 Critic | 1 anchor(s) |
+| s_critic | s_end | ?> | branches | [pass\|end → END] | 2 anchor(s) |
+| s_critic | s_supervisor | ?> | branches | [retry_planner → supervisor] | 2 anchor(s) |
+| s_critic | s_strategy_builder | ?> | branches | [rebind → strategy_builder] | 2 anchor(s) |
 | s_rag | router_graph | ::triggers | triggers | ainvoke_router_agent（复用 router 子图） | 2 anchor(s) |
 | s_supervisor | llm | -> | depends_on | complete（拆解） | 1 anchor(s) |
 | s_extract | llm | -> | depends_on | complete（抽取） | 1 anchor(s) |
-| s_aggregator | llm | -> | depends_on | complete（综合 → END） | 1 anchor(s) |
+| s_aggregator | llm | -> | depends_on | complete（综合 → critic） | 1 anchor(s) |
 | r_router | structured_output_gw | ::triggers | triggers | parse_only / schema 校验 | 1 anchor(s) |
 | s_supervisor | structured_output_gw | ::triggers | triggers | parse SubtasksPlan | 1 anchor(s) |
 | s_extract | structured_output_gw | ::triggers | triggers | parse ExtractResult | 1 anchor(s) |

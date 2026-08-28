@@ -1,8 +1,8 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_lg_rag"
-title: "LG RAG 旁路三模式流程（basic / router / supervisor）"
-description: "POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（Intent→Builder→拆解→分派→聚合）。同图分节：节点 id 前缀 b_/r_/s_；rag 路径黑盒复用 lc_evidence_chain，不展开 LCEL；默认不进入 chat/graph。freeze lg-rag-http-v1。"
-version: "2026-08-27"
+title: "LG RAG 旁路三模式流程（basic / router / supervisor · Critic）"
+description: "POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（Intent→Builder→拆解→分派→聚合→Critic 条件边）。同图分节：节点 id 前缀 b_/r_/s_；rag 路径黑盒复用 lc_evidence_chain，不展开 LCEL；默认不进入 chat/graph。freeze lg-rag-http-v1。"
+version: "2026-08-28"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "method"
@@ -201,6 +201,22 @@ nodes:
         symbol: "aggregator_node"
         kind: method
 
+  - id: "s_critic"
+    label: "critic_node（S4 规则 stub · 预算 1+1）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/strategy/critic.py"
+        symbol: "critic_node"
+        kind: method
+      - path: "app/ops/strategy/critic.py"
+        symbol: "route_after_critic"
+        kind: method
+
+  - id: "s_end"
+    label: "END（pass / 预算耗尽）"
+    kind: external
+
   - id: "lc_chain"
     label: "LC Evidence chain（黑盒 · 不展开 LCEL）"
     kind: external
@@ -384,28 +400,28 @@ edges:
     label: "START → intent_node"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 59
+        line: 73
 
   - from: "s_intent"
     to: "s_strategy_builder"
     label: "intent dict"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 60
+        line: 74
 
   - from: "s_strategy_builder"
     to: "s_supervisor"
     label: "allowed_capability_ids"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 61
+        line: 75
 
   - from: "s_supervisor"
     to: "s_dispatch"
     label: "subtasks（≤4）"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 62
+        line: 76
 
   - from: "s_dispatch"
     to: "s_rag"
@@ -414,7 +430,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 37
+        line: 42
       - path: "app/ops/lg_rag/multi/nodes.py"
         line: 238
 
@@ -425,7 +441,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 38
+        line: 43
       - path: "app/ops/lg_rag/multi/nodes.py"
         line: 238
 
@@ -436,7 +452,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 39
+        line: 44
       - path: "app/ops/lg_rag/multi/nodes.py"
         line: 238
 
@@ -447,7 +463,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 40
+        line: 45
       - path: "app/ops/lg_rag/multi/nodes.py"
         line: 237
 
@@ -456,21 +472,61 @@ edges:
     label: "回 dispatch（追加一条结果）"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 64
+        line: 78
 
   - from: "s_extract"
     to: "s_dispatch"
     label: "回 dispatch（追加一条结果）"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 64
+        line: 78
 
   - from: "s_tool"
     to: "s_dispatch"
     label: "回 dispatch（追加一条结果）"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 64
+        line: 78
+
+  - from: "s_aggregator"
+    to: "s_critic"
+    label: "综合后进入 Critic"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 79
+
+  - from: "s_critic"
+    to: "s_end"
+    label: "[pass|end → END]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 80
+      - path: "app/ops/strategy/critic.py"
+        symbol: "route_after_critic"
+
+  - from: "s_critic"
+    to: "s_supervisor"
+    label: "[retry_planner → supervisor]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 51
+      - path: "app/ops/strategy/critic.py"
+        symbol: "route_after_critic"
+
+  - from: "s_critic"
+    to: "s_strategy_builder"
+    label: "[rebind → strategy_builder]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/multi/graph.py"
+        line: 52
+      - path: "app/ops/strategy/critic.py"
+        symbol: "route_after_critic"
 
   - from: "s_rag"
     to: "router_graph"
@@ -499,7 +555,7 @@ edges:
 
   - from: "s_aggregator"
     to: "llm"
-    label: "complete（综合 → END）"
+    label: "complete（综合 → critic）"
     anchors:
       - path: "app/ops/lg_rag/multi/nodes.py"
         line: 361

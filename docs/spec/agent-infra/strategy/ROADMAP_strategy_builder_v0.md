@@ -18,7 +18,7 @@
 | S1 | **DONE** | 2026-08-27 · [#78](https://github.com/Cyning12/ops-desk-api/pull/78) **MERGED** · allowlist 闭环 |
 | S2 | **DONE** | 2026-08-27 · [#80](https://github.com/Cyning12/ops-desk-api/pull/80) **MERGED** · Intent schema + 节点 |
 | S3 | **DONE** | 2026-08-28 · [#82](https://github.com/Cyning12/ops-desk-api/pull/82) **MERGED** · catalog manifest |
-| S4 | pending | 非本棒 |
+| S4 | 00 验收 PASS | `task/critic-rebind` · S4-a–c · 待 PR |
 
 ---
 
@@ -165,7 +165,28 @@ capabilities:
 
 ---
 
-## 9. 修订记录
+## 9. 00 定夺（S4 · Critic rebind · 2026-08-28）
+
+维护者会话「继续 S4」。
+
+| 项 | 定夺 |
+|---|---|
+| 挂点 | **仅 supervisor 图**：`aggregator → critic_node` 条件边（替换 `aggregator → END`） |
+| 节点 id | `critic_node`（避让 state key）；state：`critic_verdict: dict` · `inner_retry_count: int` · `rebinding_count: int` |
+| 判定 | **规则 stub**（无 LLM）；不实现 intent→② 回环 |
+| verdict | `pass` → END；`retry_planner` → supervisor（同 catalog）；`rebind` → strategy_builder；`end` → END |
+| 预算 | `MAX_INNER_RETRIES=1` · `MAX_REBINDING=1`；超预算强制 `end`（单测无死循环） |
+| 重置 | 回环时覆盖 `subtasks=[]`；`subtask_results` 自定义 reducer：`None` = 清空，否则 append（否则 `add` 无法重拆 plan） |
+| 规则 | 无 `error` → pass；有 error 且空 allowlist → rebind（未超预算）；有 error 且非空 allowlist → retry_planner；已超预算 → end |
+| rebind 语义 | **结构闭环**（再跑 Builder）；本波 **不**自动扩权绕过 Policy |
+| Prompt/SO | 本波不强制 LLM Critic；可留 `CriticVerdict` schema 供后波 |
+| 图谱 | G-L1 `lg_rag` 备注 + `10_flow_lg_rag` 增 `s_critic`；不新增一级模块；**不**改 chat/router/basic 拓扑 |
+
+span：`critic_outcome` · `inner_retry_count` · `rebinding_count`（`strategy_builder_catalog_count` 已有）。
+
+---
+
+## 10. 修订记录
 
 | 日期 | 说明 |
 |---|---|
@@ -176,3 +197,5 @@ capabilities:
 | 2026-08-27 | S2 00 验收 PASS（pytest 48 · graph-compile）；[#80](https://github.com/Cyning12/ops-desk-api/pull/80) **MERGED** |
 | 2026-08-28 | S3 开工：00 定夺 loader / adapter 白名单 / 热加载边界 |
 | 2026-08-28 | S3 00 验收 PASS（pytest 63 · graph-compile）；[#82](https://github.com/Cyning12/ops-desk-api/pull/82) **MERGED** |
+| 2026-08-28 | S4 开工：00 定夺 critic stub / 预算 / 回环重置 |
+| 2026-08-28 | S4 00 验收 PASS（pytest 29 · graph-compile） |

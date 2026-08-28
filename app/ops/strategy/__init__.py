@@ -10,10 +10,13 @@ from app.ops.strategy.builder import (
     strategy_builder_node,
 )
 from app.ops.strategy.config import get_candidate_capability_ids
+from app.ops.strategy.critic import critic_node, decide_critic_verdict
 
 __all__ = [
     "BUILDER_CAP_FILTER",
     "build_allowlist_from_candidates",
+    "critic_node",
+    "decide_critic_verdict",
     "get_candidate_capability_ids",
     "get_policy_visible_ids",
     "strategy_builder_node",

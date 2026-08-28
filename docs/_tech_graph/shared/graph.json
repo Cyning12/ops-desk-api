@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260828_V1",
-  "generated_at": "2026-08-28T00:45:37Z",
+  "generated_at": "2026-08-28T01:06:21Z",
   "graphs": [
     {
       "id": "00_main",
@@ -35,7 +35,7 @@
     },
     {
       "id": "10_flow_lg_rag",
-      "title": "LG RAG 旁路三模式流程（basic / router / supervisor）",
+      "title": "LG RAG 旁路三模式流程（basic / router / supervisor · Critic）",
       "source_yaml_path": "l1/10_flow_lg_rag.graph.yaml",
       "layer": "G-L1"
     },
@@ -503,6 +503,16 @@
       "graph_id": "10_flow_lg_rag",
       "id": "s_aggregator",
       "label": "aggregator_node（LLM 综合）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "s_critic",
+      "label": "critic_node（S4 规则 stub · 预算 1+1）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "s_end",
+      "label": "END（pass / 预算耗尽）"
     },
     {
       "graph_id": "10_flow_lg_rag",
@@ -2257,7 +2267,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 59
+          "line": 73
         }
       ],
       "sync": true
@@ -2272,7 +2282,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 60
+          "line": 74
         }
       ],
       "sync": true
@@ -2287,7 +2297,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 61
+          "line": 75
         }
       ],
       "sync": true
@@ -2302,7 +2312,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 62
+          "line": 76
         }
       ],
       "sync": true
@@ -2317,7 +2327,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 37
+          "line": 42
         },
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
@@ -2336,7 +2346,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 38
+          "line": 43
         },
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
@@ -2355,7 +2365,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 39
+          "line": 44
         },
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
@@ -2374,7 +2384,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 40
+          "line": 45
         },
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
@@ -2393,7 +2403,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 64
+          "line": 78
         }
       ],
       "sync": true
@@ -2408,7 +2418,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 64
+          "line": 78
         }
       ],
       "sync": true
@@ -2423,7 +2433,79 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 64
+          "line": 78
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_aggregator",
+      "to": "s_critic",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "综合后进入 Critic",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 79
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_critic",
+      "to": "s_end",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[pass|end → END]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 80
+        },
+        {
+          "path": "app/ops/strategy/critic.py",
+          "symbol": "route_after_critic"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_critic",
+      "to": "s_supervisor",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[retry_planner → supervisor]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 51
+        },
+        {
+          "path": "app/ops/strategy/critic.py",
+          "symbol": "route_after_critic"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_critic",
+      "to": "s_strategy_builder",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[rebind → strategy_builder]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/graph.py",
+          "line": 52
+        },
+        {
+          "path": "app/ops/strategy/critic.py",
+          "symbol": "route_after_critic"
         }
       ],
       "sync": true
@@ -2483,7 +2565,7 @@
       "to": "llm",
       "mark": "->",
       "type": "depends_on",
-      "label": "complete（综合 → END）",
+      "label": "complete（综合 → critic）",
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
