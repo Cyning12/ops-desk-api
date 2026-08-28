@@ -16,6 +16,6 @@
 
 ## PR
 
-待开
+[#87](https://github.com/Cyning12/ops-desk-api/pull/87)
 
-| 2026-08-28 | 00 CLOSE PASS |
+| 2026-08-28 | 00 CLOSE PASS · PR #87 |

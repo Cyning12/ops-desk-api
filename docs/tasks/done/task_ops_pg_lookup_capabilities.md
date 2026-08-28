@@ -132,7 +132,7 @@ chat/graph.py 与 multi/graph.py 拓扑 0 diff
 | 日期 | 2026-08-28 |
 | 定稿 | 本库 get_issue_by_number / get_pr_by_number；Gateway ainvoke；保留 mock |
 | 归档 | `docs/tasks/done/task_ops_pg_lookup_capabilities.md` |
-| PR | 待开 |
+| PR | [#87](https://github.com/Cyning12/ops-desk-api/pull/87) |
 
 ---
 
@@ -141,3 +141,4 @@ chat/graph.py 与 multi/graph.py 拓扑 0 diff
 | 日期 | 说明 |
 |---|---|
 | 2026-08-28 | 00 拆 task · R1 pass · HG 代签 · 本波只做 lookup 不加 MCP |
+| 2026-08-28 | 30/40 PASS · 00 机械验收 · PR #87 |
