@@ -33,7 +33,7 @@ from app.ops.lg_rag.schemas import ExtractResult, SubtaskItem, SubtasksPlan
 from app.ops.lg_rag.state import LgRagState
 from app.ops.prompts import render
 from app.ops.structured_output import parse_only
-from app.ops.tracing import trace_span, tracing_enabled
+from app.ops.tracing import score_current_trace, trace_span, tracing_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -170,14 +170,16 @@ def _parse_subtasks(raw: str) -> list[dict] | None:
 
 def _record_span_metadata(metadata: dict) -> None:
     """决策写入当前 span metadata（DESIGN §6；观测失败不挡主流程）。"""
-    if not tracing_enabled():
-        return
-    try:
-        from langfuse import get_client
+    if tracing_enabled():
+        try:
+            from langfuse import get_client
 
-        get_client().update_current_span(metadata=metadata)
-    except Exception:
-        pass
+            get_client().update_current_span(metadata=metadata)
+        except Exception:
+            pass
+    # E4：仅 supervisor_fallback=True 写 stab.fallback=1（采样门控在 score 内）
+    if metadata.get("supervisor_fallback") is True:
+        score_current_trace("stab.fallback", 1)
 
 
 def _pending_subtask(state: LgRagState) -> dict | None:

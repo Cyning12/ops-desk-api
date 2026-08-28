@@ -78,14 +78,14 @@ E1 字典已有 score 名；E3 只做离线 Experiment。E4 把 **规则分**接
 
 ## 验收标准
 
-- [ ] `tracing.score_current_trace` 存在；tracing 关时零 SDK 调用
-- [ ] `OPS_EVAL_SCORE_SAMPLE_RATE=0` 时 supervisor fallback **不**打分；rate=1 + mock tracing 时写 `stab.fallback`
-- [ ] 至少一处 `supervisor_fallback` → `stab.fallback` 调用点
-- [ ] GUIDE 落盘并链到 `eval/README.md`
-- [ ] `pytest tests -q --tb=short -k 'eval_sample or score_current'`（或 30 写明等价）绿
-- [ ] `pytest tests -q --tb=short -k 'eval_agent or eval_experiment'` 不回归
-- [ ] `chat/graph.py` 零 diff；无新 GHA secret workflow
-- [ ] `npx --yes dsh-coding-kit task lint-wiki-delta --target .` 通过
+- [x] `tracing.score_current_trace` 存在；tracing 关时零 SDK 调用
+- [x] `OPS_EVAL_SCORE_SAMPLE_RATE=0` 时 supervisor fallback **不**打分；rate=1 + mock tracing 时写 `stab.fallback`
+- [x] 至少一处 `supervisor_fallback` → `stab.fallback` 调用点
+- [x] GUIDE 落盘并链到 `eval/README.md`
+- [x] `pytest tests -q --tb=short -k 'eval_sample or score_current'`（或 30 写明等价）绿
+- [x] `pytest tests -q --tb=short -k 'eval_agent or eval_experiment'` 不回归
+- [x] `chat/graph.py` 零 diff；无新 GHA secret workflow
+- [x] `npx --yes dsh-coding-kit task lint-wiki-delta --target .` 通过
 
 ---
 
@@ -153,7 +153,7 @@ Annotation = GUIDE，不调 Queue API。
 
 ### 自检结论（执行者）
 
-（30 回填）
+30 PASS · 2026-08-28：`score_current_trace` + `stab.fallback` 调用点 + GUIDE；pytest `-k eval_sample` 8 passed；回归 eval_agent/eval_experiment 24 passed；未碰 `chat/graph.py` / E5 / judge。
 
 ---
 
