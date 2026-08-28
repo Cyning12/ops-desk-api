@@ -11,7 +11,7 @@ from app.db.models import OpsUser
 from app.db.session import get_db
 from app.ops.admin.schema import SyncPayload, SyncSummaryOut
 from app.ops.admin.service import process_sync_payload
-from app.ops.deps import MaintainerUser
+from app.ops.deps import AdminSyncAuth
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin/sync", tags=["admin"])
@@ -29,7 +29,7 @@ class MinimalSyncPayload(BaseModel):
 async def receive_sync(
     payload: SyncPayload,
     db: AsyncSession = Depends(get_db),
-    user: OpsUser = MaintainerUser,
+    _user: OpsUser | None = AdminSyncAuth,
 ) -> SyncSummaryOut:
     """Receive sync payload and persist to PostgreSQL."""
     try:

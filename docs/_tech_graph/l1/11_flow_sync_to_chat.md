@@ -1,19 +1,20 @@
 ---
 graph_id: 11_flow_sync_to_chat
-version: 2026-08-25
-generated_at: 2026-08-28T02:18:29Z
+version: 2026-08-28
+generated_at: 2026-08-28T03:26:27Z
 source: 11_flow_sync_to_chat.graph.yaml
 ---
 
 # Sync 数据到 Chat 上下文流程
 
-Admin sync 导入的 repo/issue/PR/graph 数据如何被只读接口和 Chat 上下文加载消费
+GHA sender 组装 SyncPayload，经 admin sync 导入 repo/issue/PR/graph，再被只读接口和 Chat 上下文加载消费
 
 ## Mermaid
 
 ```mermaid
 flowchart LR
     client["用户 / iOS"]
+    gha_sender["GHA ops-sync-kimi-code"]
     admin_sync["POST /api/ops/admin/sync"]
     issues_endpoint["GET /api/ops/issues"]
     pulls_endpoint["GET /api/ops/pulls"]
@@ -23,6 +24,9 @@ flowchart LR
 
     client -->|"POST sync payload"| admin_sync
     %% → app/ops/admin/sync.py#L28
+    gha_sender -->|"POST SyncPayload Bearer"| admin_sync
+    %% → app/ops/admin/sender/post.py#L12
+    %% → .github/workflows/ops_sync_kimi_code.yml#L1
     admin_sync -->|"upserts ops_repos / ops_issues / ops_pull_requests / snapshots"| db
     %% → app/ops/admin/service.py#L46
     db -->|"query"| issues_endpoint
@@ -42,7 +46,7 @@ flowchart LR
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
     class admin_sync,issues_endpoint,pulls_endpoint,graph_endpoint,chat_stream phase
-    class client,db infra
+    class client,gha_sender,db infra
 ```
 
 ## Structured Data
@@ -52,6 +56,7 @@ flowchart LR
 | ID | Label | Kind |
 |----|-------|------|
 | client | 用户 / iOS | external |
+| gha_sender | GHA ops-sync-kimi-code | external |
 | admin_sync | POST /api/ops/admin/sync | flow |
 | issues_endpoint | GET /api/ops/issues | flow |
 | pulls_endpoint | GET /api/ops/pulls | flow |
@@ -64,6 +69,7 @@ flowchart LR
 | From | To | Mark | Type | Label | Anchors |
 |------|----|------|------|-------|---------|
 | client | admin_sync | -> | depends_on | POST sync payload | 1 anchor(s) |
+| gha_sender | admin_sync | -> | depends_on | POST SyncPayload Bearer | 2 anchor(s) |
 | admin_sync | db | -> | depends_on | upserts ops_repos / ops_issues / ops_pull_requests / snapshots | 1 anchor(s) |
 | db | issues_endpoint | -> | depends_on | query | 1 anchor(s) |
 | db | pulls_endpoint | -> | depends_on | query | 1 anchor(s) |

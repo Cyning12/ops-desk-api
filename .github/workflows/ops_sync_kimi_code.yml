@@ -1,0 +1,91 @@
+# Ops Desk · MoonshotAI/kimi-code 日同步（本仓 sender → POST /api/ops/admin/sync）
+#
+# 本仓为新路径。旧路径 deprecated（直写 Supabase，维护者事后在旧仓关 cron）：
+#   ai-ink-brain-api-python/.github/workflows/ops_sync_kimi_code.yml
+name: ops-sync-kimi-code
+
+on:
+  schedule:
+    # 每日 UTC 02:00（约北京时间 10:00）
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      sync_mode:
+        description: "incremental = utcnow-48h overlap；full = since 为空"
+        required: false
+        default: incremental
+        type: choice
+        options:
+          - incremental
+          - full
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      OPS_API_BASE_URL: ${{ secrets.OPS_API_BASE_URL }}
+      OPS_ADMIN_SYNC_TOKEN: ${{ secrets.OPS_ADMIN_SYNC_TOKEN }}
+      SYNC_MODE: ${{ github.event.inputs.sync_mode || 'incremental' }}
+      OPS_SCAN_INDEX_PATH: workspace/docs/harness/guides/ISSUE_SCAN_kimi_code_open_c2_v1_zh.md
+      WORKSPACE_REPO_TOKEN: ${{ secrets.WORKSPACE_REPO_TOKEN }}
+      KIMI_META_REPO_TOKEN: ${{ secrets.KIMI_META_REPO_TOKEN }}
+      OPS_GRAPH_JSON_PATH: workspace/kimi-code-meta/docs/_tech_graph/graph.json
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Checkout workspace ISSUE_SCAN
+        if: ${{ env.WORKSPACE_REPO_TOKEN != '' }}
+        uses: actions/checkout@v5
+        with:
+          repository: Cyning12/cyning-ink-workspace
+          ref: main
+          path: workspace
+          token: ${{ secrets.WORKSPACE_REPO_TOKEN }}
+          sparse-checkout: |
+            docs/harness/guides/
+          sparse-checkout-cone-mode: false
+
+      - name: Warn missing workspace token
+        if: ${{ env.WORKSPACE_REPO_TOKEN == '' }}
+        run: |
+          echo "::warning::WORKSPACE_REPO_TOKEN not configured; ISSUE_SCAN ingest will be skipped."
+
+      - name: Checkout kimi-code graph (Cyning12/kimi-code @ cyning/meta)
+        if: ${{ env.KIMI_META_REPO_TOKEN != '' }}
+        uses: actions/checkout@v5
+        with:
+          repository: Cyning12/kimi-code
+          ref: cyning/meta
+          path: workspace/kimi-code-meta
+          token: ${{ secrets.KIMI_META_REPO_TOKEN }}
+          sparse-checkout: |
+            docs/_tech_graph/graph.json
+            docs/_tech_graph/graph_module_flow_map.yaml
+            .cyning-harness/manifest.json
+          sparse-checkout-cone-mode: false
+
+      - name: Warn missing kimi-meta token
+        if: ${{ env.KIMI_META_REPO_TOKEN == '' }}
+        run: |
+          echo "::warning::KIMI_META_REPO_TOKEN not configured; graph ingest will be skipped."
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install sender deps
+        # sender 只 POST SyncPayload，不装本仓完整 requirements（含 torch）
+        run: pip install "httpx>=0.27,<1" "pydantic>=2"
+
+      - name: Run kimi-code sync
+        run: python scripts/ops_sync_kimi_code.py

@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260828_V1",
-  "generated_at": "2026-08-28T02:18:30Z",
+  "generated_at": "2026-08-28T03:26:27Z",
   "graphs": [
     {
       "id": "00_main",
@@ -673,6 +673,11 @@
       "graph_id": "11_flow_sync_to_chat",
       "id": "client",
       "label": "用户 / iOS"
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "id": "gha_sender",
+      "label": "GHA ops-sync-kimi-code"
     },
     {
       "graph_id": "11_flow_sync_to_chat",
@@ -3273,6 +3278,25 @@
         {
           "path": "app/ops/admin/sync.py",
           "line": 28
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "11_flow_sync_to_chat",
+      "from": "gha_sender",
+      "to": "admin_sync",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "POST SyncPayload Bearer",
+      "anchors": [
+        {
+          "path": "app/ops/admin/sender/post.py",
+          "line": 12
+        },
+        {
+          "path": ".github/workflows/ops_sync_kimi_code.yml",
+          "line": 1
         }
       ],
       "sync": true

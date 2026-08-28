@@ -26,7 +26,7 @@ audience: agent-30
 | `capability` | Capability Gateway | `app/ops/capability/**` | → — | 能力注册 / 筛选 / 统一 invoke（local_fn · mock 探针 · skill stub）；**YAML/JSON manifest 加载 register**（仅 local_fn · 显式 reload · 禁止每请求）；**invoke 前 Policy 门**（高危/sandbox/cli 默认 blocked · Host-only 策略键）；**可迁移内核 · Mode A**（`list`+`invoke`；ToolNode 桥仅 `extras.langchain`）；**真 MCP · 默认关 · CI 不外网**；**本库 issue/PR 只读 lookup**（`get_issue_by_number` / `get_pr_by_number` · `ainvoke` · 禁止 MCP/GitHub 热路径）；拓扑详见 [`10_flow_capability.md`](./10_flow_capability.md) |
 | `lg_rag` | LangGraph 旁路单 Agent | `app/ops/lg_rag/**` | → `lc_evidence_chain`, `llm`, `structured_output`, `capability` | 旁路三模式 basic / router / supervisor，HTTP `POST /api/ops/lg-rag/invoke`（mode 分派 · freeze `lg-rag-http-v1`），黑盒复用 `ainvoke_evidence_answer`，**默认不进入** `chat/graph`；**supervisor 图 START→Intent→Strategy Builder allowlist→supervisor planner→…→aggregator→critic_node 条件边**（pass/end→END · retry_planner→supervisor · rebind→Builder；预算 1+1）；结构化节点走 `structured_output` 管道 + **域 schema 在 `lg_rag/schemas`**；`tool_exec` 走 `capability`；拓扑详见 [`10_flow_lg_rag.md`](./10_flow_lg_rag.md) |
 | `data` | 数据视图 | `app/ops/overview.py`, `app/ops/issues.py`, `app/ops/pulls.py`, `app/ops/graph.py` | → `db` | Issue/PR/Overview 指标/Graph 快照只读查询（供 Chat / iOS 只读消费） |
-| `admin` | Admin 同步 | `app/ops/admin/sync.py`, `app/ops/admin/service.py`, `app/ops/admin/schema.py` | → `db` | 接收 GHA sync payload 并持久化到 data/chat 依赖的表 |
+| `admin` | Admin 同步 | `app/ops/admin/**` | → `db` | 接收 GHA sync payload 并持久化到 data/chat 依赖的表；本仓 GHA sender + Bearer 机读 token（cookie maintainer 仍可用） |
 | `llm` | LLM Provider | `app/llm/**` | → — | SiliconFlow / 百炼 provider 工厂；complete 路径上报 usage；grader 故障 refuse |
 | `db` | 数据库与 ORM | `app/db/**`, `alembic/**` | —（被依赖） | SQLAlchemy models、session、migrations |
 
@@ -64,6 +64,7 @@ audience: agent-30
 | HG-GRAPH-MODULES | approved | 维护者（S3 catalog-manifest-yaml · 00 代签） | 2026-08-28 | `capability` 行备注：manifest 加载；不新增一级模块 |
 | HG-GRAPH-MODULES | approved | 维护者（S4 critic-rebind · 00 代签） | 2026-08-28 | `lg_rag` 行备注：supervisor 图 Critic 条件边；不新增一级模块 |
 | HG-GRAPH-MODULES | approved | 维护者（ops-pg-lookup-capabilities · 00 代签） | 2026-08-28 | `capability` 行备注：本库 issue/PR 只读 lookup；不新增一级模块 |
+| HG-GRAPH-MODULES | approved | 维护者（ops-sync-sender-migration · 00 代签） | 2026-08-28 | `admin` 行备注：本仓 GHA sender + Bearer 机读 token；`11_flow_sync_to_chat` 增 GHA 节点；不新增一级模块 |
 
 ## 关联
 

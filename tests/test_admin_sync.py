@@ -97,6 +97,73 @@ async def test_sync_upsert_is_idempotent(
     await _cleanup_repo(repo_id)
 
 
+@pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
+async def test_sync_accepts_bearer_token(
+    client: AsyncClient,
+    sample_sync_payload,
+    clean_sync_data,
+    monkeypatch,
+) -> None:
+    """正确 Bearer 与 cookie 一样返回 202。"""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "ops_admin_sync_token", "test-sync-token")
+    response = await client.post(
+        "/api/ops/admin/sync",
+        json=sample_sync_payload,
+        headers={"Authorization": "Bearer test-sync-token"},
+    )
+    assert response.status_code == 202
+    data = response.json()
+    assert data["ok"] is True
+    await _cleanup_repo(data["repo_id"])
+
+
+async def test_sync_rejects_wrong_bearer(client: AsyncClient, monkeypatch) -> None:
+    """错误 Bearer → 401。"""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "ops_admin_sync_token", "correct-token")
+    response = await client.post(
+        "/api/ops/admin/sync",
+        json={},
+        headers={"Authorization": "Bearer wrong-token"},
+    )
+    assert response.status_code == 401
+
+
+async def test_sync_rejects_bearer_when_token_unconfigured(
+    client: AsyncClient, monkeypatch
+) -> None:
+    """未配置 token 时带 Bearer → 401。"""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "ops_admin_sync_token", "")
+    response = await client.post(
+        "/api/ops/admin/sync",
+        json={},
+        headers={"Authorization": "Bearer any-token"},
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
+async def test_sync_cookie_works_when_bearer_configured(
+    client: AsyncClient,
+    override_auth_maintainer,
+    sample_sync_payload,
+    clean_sync_data,
+    monkeypatch,
+) -> None:
+    """配置了机读 token 时，cookie maintainer 仍可用。"""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "ops_admin_sync_token", "test-sync-token")
+    response = await client.post("/api/ops/admin/sync", json=sample_sync_payload)
+    assert response.status_code == 202
+    await _cleanup_repo(response.json()["repo_id"])
+
+
 async def _cleanup_repo(repo_id: str) -> None:
     """Delete a repo and all cascading children."""
     async with AsyncSessionLocal() as db:

@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     session_cookie_httponly: bool = True
     session_cookie_samesite: str = "lax"
 
+    # Admin sync 机读 Bearer；空字符串则禁用 Bearer 路径（仅 cookie maintainer）
+    ops_admin_sync_token: str = Field(default="")
+
     # CORS
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
