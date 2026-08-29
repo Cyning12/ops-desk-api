@@ -76,14 +76,14 @@ Langfuse 可展示 token；商务价与聚合须在 Host。E5 落：**usage 路�
 
 ## 验收标准
 
-- [ ] usage 审计清单落盘（GUIDE 或同夹 AUDIT 节）
-- [ ] `price_table_v1.yaml`（或等价）含 ≥1 个已知模型价行 + 生效日
-- [ ] 导出脚本：fixture usage → CSV/stdout；缺价表键 → 明确错误或 `price_missing` 行（语义钉死在 GUIDE）
-- [ ] pytest：`-k eval_cost`（或等价）绿；不连外网
-- [ ] GUIDE 链到 `eval/README.md`
-- [ ] `chat/graph.py` 零 diff；无新 GHA Langfuse secret job
-- [ ] 回归：`-k 'eval_agent or eval_experiment or eval_sample'` 不红
-- [ ] `npx --yes dsh-coding-kit task lint-wiki-delta --target .` 通过
+- [x] usage 审计清单落盘（GUIDE 或同夹 AUDIT 节）
+- [x] `price_table_v1.yaml`（或等价）含 ≥1 个已知模型价行 + 生效日
+- [x] 导出脚本：fixture usage → CSV/stdout；缺价表键 → 明确错误或 `price_missing` 行（语义钉死在 GUIDE）
+- [x] pytest：`-k eval_cost`（或等价）绿；不连外网
+- [x] GUIDE 链到 `eval/README.md`
+- [x] `chat/graph.py` 零 diff；无新 GHA Langfuse secret job
+- [x] 回归：`-k 'eval_agent or eval_experiment or eval_sample'` 不红
+- [x] `npx --yes dsh-coding-kit task lint-wiki-delta --target .` 通过
 
 ---
 
@@ -151,7 +151,7 @@ chat/graph.py git diff 空
 
 ### 自检结论（执行者）
 
-（30 回填）
+30 PASS · 2026-08-29：GUIDE 审计清单 + `price_table_v1.yaml` + `export_cost.py` + fixture；pytest `-k eval_cost` 8 passed；回归 eval_agent/eval_experiment/eval_sample 32 passed；未改 `app/` / `chat/graph.py`；无 LLM 估费、无新 GHA secret。
 
 ---
 

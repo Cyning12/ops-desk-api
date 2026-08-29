@@ -1,0 +1,35 @@
+[
+  {
+    "id": "ok-sf",
+    "provider": "siliconflow",
+    "model": "deepseek-ai/DeepSeek-V4-Pro",
+    "input_tokens": 1000,
+    "output_tokens": 500,
+    "date": "2026-08-01",
+    "module": "e2e"
+  },
+  {
+    "id": "ok-bailian",
+    "provider": "bailian",
+    "model": "deepseek-v4-pro",
+    "input_tokens": 2000,
+    "output_tokens": 800,
+    "date": "2026-08-15",
+    "module": "supervisor"
+  },
+  {
+    "id": "price-miss",
+    "provider": "siliconflow",
+    "model": "unknown-model-xyz",
+    "input_tokens": 100,
+    "output_tokens": 50,
+    "date": "2026-08-01"
+  },
+  {
+    "id": "usage-miss",
+    "provider": "siliconflow",
+    "model": "deepseek-ai/DeepSeek-V4-Pro",
+    "date": "2026-08-01",
+    "module": "router"
+  }
+]
