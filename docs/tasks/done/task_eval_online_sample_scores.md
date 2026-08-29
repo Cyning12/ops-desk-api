@@ -1,6 +1,6 @@
 # Task：Eval E4 · 线上抽样 score + Annotation 回流
 
-> **状态**：in_progress（2026-08-28 · 00 起草 · 维护者令开 E4）  
+> **状态**：completed（2026-08-28 · PR #95 MERGED）  
 > **类型**：测评 / 热路径薄封装 + 流程文档  
 > **上游**：`docs/spec/agent-infra/04_eval_and_observability_plan_v0.md` · `eval/ROADMAP` §3.2 / §4.1  
 > **前置**：E3 [#94](https://github.com/Cyning12/ops-desk-api/pull/94) MERGED  
@@ -157,8 +157,20 @@ Annotation = GUIDE，不调 Queue API。
 
 ---
 
+## CLOSE
+
+| 项 | 内容 |
+|---|---|
+| 日期 | 2026-08-28 |
+| PR | [#95](https://github.com/Cyning12/ops-desk-api/pull/95) **MERGED** |
+| 归档 | `docs/tasks/done/task_eval_online_sample_scores.md` |
+| 下一棒 | E5 `eval-token-cost-ledger` |
+
+---
+
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-28 | 00 起草 E4；维护者令开 E4；闸代签；00 不实现 |
+| 2026-08-28 | #95 MERGED · 归档 · 开 E5 |

@@ -127,8 +127,8 @@
 | `eval-e0-e1` | E0 签收 + E1 字典 | — | **仅 00 文档**（可同单：无 30） | **DONE** · PR #92 |
 | `eval-goldenset-lg-rag` | **仅 E2**：模块金标目录 + 最小集；`module=` 本波默认不做 | E1 | **30 实现**；00 不写 fixture | **DONE** · PR #93 |
 | `eval-langfuse-experiment-ci` | **仅 E3**：Dataset 映射 + mock Experiment | E2 | **30 实现**；00 不写 runner | **DONE** · PR #94 |
-| `eval-online-sample-scores` | **仅 E4**：抽样 score + Annotation GUIDE | E3 | **30 实现**；00 不写码 | **本波** |
-| `eval-token-cost-ledger` | **仅 E5** | E1 | 另 task | 禁绑进 E4 |
+| `eval-online-sample-scores` | **仅 E4**：抽样 score + Annotation GUIDE | E3 | **30 实现**；00 不写码 | **DONE** · PR #95 |
+| `eval-token-cost-ledger` | **仅 E5**：usage 审计 + 价表 + 导出 | E4 | **30 实现**；00 不写码 | **本波** |
 
 `test_strategy`：E0+E1 = `none`；E2+ = `required`。`graph_change_layer`：多为 `n/a` 或 G-L1 备注观测键。
 
@@ -141,8 +141,8 @@
 
 | 顺序 | 何时 | 00 做什么 | 00 不做什么 |
 |---|---|---|---|
-| **现在** | E3 **DONE** · 开 E4 | 派 30：`score_current_trace` + `stab.fallback` + GUIDE | 00 不写码；不开 E5 active |
-| **E4 CLOSE 后** | 抽样封装在 | 起草 **仅 E5** | 不绑其它 |
+| **现在** | E4 **DONE** · 开 E5 | 派 30：价表 + 导出 + usage 审计 GUIDE | 00 不写码 |
+| **E5 CLOSE 后** | Eval 轨 E0–E5 收官 | 回写 04/ROADMAP 状态；无强制下一棒 | — |
 
 可复制下一棒 00（E3 合入后拆 E4）：届时另写 Prompt；本文件 E2 后 Prompt 已用过。
 
@@ -160,3 +160,4 @@
 | 2026-08-28 | **§4.1 后续编排**：E3→E4→E5 分波；E2 未绿不合 PR；00 不落地 |
 | 2026-08-28 | **E3 开工**：`eval-langfuse-experiment-ci`；E2 归档 #93 |
 | 2026-08-28 | **E4 开工**：`eval-online-sample-scores`；E3 归档 #94 |
+| 2026-08-29 | **E5 开工**：`eval-token-cost-ledger`；E4 归档 #95 |

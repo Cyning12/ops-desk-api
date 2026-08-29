@@ -72,6 +72,7 @@
 | 2026-08-25 | [`task_inform_graph_backfill_w5_coverage.md`](./task_inform_graph_backfill_w5_coverage.md) | W5 anchors + coverage warn · PR #49 |
 | 2026-08-28 | [`task_eval_goldenset_lg_rag.md`](./task_eval_goldenset_lg_rag.md) | Eval E2 模块金标最小集 · PR #93 |
 | 2026-08-28 | [`task_eval_langfuse_experiment_ci.md`](./task_eval_langfuse_experiment_ci.md) | Eval E3 Dataset/Experiment mock · PR #94 |
+| 2026-08-28 | [`task_eval_online_sample_scores.md`](./task_eval_online_sample_scores.md) | Eval E4 线上抽样 score · PR #95 |
 
 ---
 

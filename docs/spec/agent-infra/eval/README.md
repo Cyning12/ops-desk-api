@@ -14,6 +14,7 @@
 | [`ROADMAP_eval_observability_v0.md`](./ROADMAP_eval_observability_v0.md) | SLI 字典（E1 真值）· Dataset/Experiment · CI 门禁 · E1–E5 |
 | [`GUIDE_langfuse_dataset_experiment_v0.md`](./GUIDE_langfuse_dataset_experiment_v0.md) | E3：git SoT · Dataset 名 · dry-run / `--push` · CI 不连云 |
 | [`GUIDE_online_sample_annotation_v0.md`](./GUIDE_online_sample_annotation_v0.md) | E4：`OPS_EVAL_SCORE_SAMPLE_RATE` · `stab.fallback` · Annotation Queue 回流（无 Queue API） |
+| [`GUIDE_token_cost_ledger_v0.md`](./GUIDE_token_cost_ledger_v0.md) | E5：usage 审计 · Host 价表 · `export_cost.py` · `price_missing` / `usage_missing` |
 
 上级：[`../04_eval_and_observability_plan_v0.md`](../04_eval_and_observability_plan_v0.md) · [`../00_architecture_and_boundaries.md`](../00_architecture_and_boundaries.md)
 
