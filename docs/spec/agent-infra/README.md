@@ -89,7 +89,7 @@ docs/spec/agent-infra/
 
 | ID | 规划 | 状态 | 首波 |
 |---|---|---|---|
-| `eval-and-observability` | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **E0–E3 DONE** · **E4 开工** `eval-online-sample-scores` |
+| `eval-and-observability` | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **E0–E4 DONE** · **E5 开工** `eval-token-cost-ledger` |
 
 ---
 
@@ -138,3 +138,4 @@ docs/spec/agent-infra/
 | 2026-08-28 | E2 开工：`eval-goldenset-lg-rag` |
 | 2026-08-28 | E2 MERGED · E3 开工：`eval-langfuse-experiment-ci` |
 | 2026-08-28 | E3 MERGED · E4 开工：`eval-online-sample-scores` |
+| 2026-08-29 | E4 MERGED · E5 开工：`eval-token-cost-ledger` |
