@@ -207,7 +207,7 @@
 | 2026-08-30 | **HG-SPEC-SIGNOFF=approved**（T0 · 00 代签 · 维护者令「签收」）；状态 `active`；下一棒 00 拆 T2（验收含 Obs-I/O） |
 | 2026-08-30 | **T2 冻结**：`POST /api/ops/lg-rag/stream` · `lg-rag-sse-v1`；Obs-I/O 随 T2 实现 |
 | 2026-08-31 | **§9 G-L2**：本系列凡改 `10_flow_lg_rag` 节点须同步分域 indexes 全量 `implementedBy`；禁止并入 chat yaml |
-| 2026-08-31 | **§10**：前端接入与联调时机建议 |
+| 2026-08-31 | **§10–§11**：分阶段联调注意事项 · 跨仓发版 · web task/checklist 指针 |
 
 ---
 
@@ -243,17 +243,119 @@
 | Obs-I/O | 默认不新增 flow 节点；若 `tracing` 挂进 flow `implementedBy` 再补 |
 ---
 
-## 10. 前端接入与联调时机（建议 · 2026-08-31）
+## 10. 前端接入与联调（分阶段 · 2026-08-31）
 
-> 仓：`ops-desk-web`（及可选 iOS）。契约真值：`lg-rag-sse-v1` · `POST /api/ops/lg-rag/stream`。
+> **跨仓真值**：本文件 §10–§11 · api [`task_lg_rag_sse_stream_updates`](../../tasks/active/task_lg_rag_sse_stream_updates.md) · web [`task_web_lg_rag_sse_t2_joint`](../../../ops-desk-web/docs/tasks/active/task_web_lg_rag_sse_t2_joint.md) · 人工清单 [`CHECKLIST_lg_rag_sse_joint_release_v1.md`](../../../ops-desk-web/docs/checklists/CHECKLIST_lg_rag_sse_joint_release_v1.md)  
+> **发版策略**：api / web **各开 PR、禁止自动 merge**；**联调 checklist 全勾**后 **同日发版**（见 §11）。
 
-| 阶段 | 何时开前端 | 联调内容 | 不必等 |
+### 10.0 总原则
+
+| 项 | 钉死 |
+|---|---|
+| 契约 | `lg-rag-sse-v1` · `POST /api/ops/lg-rag/stream` · 事件 §4.2（**不**兼容 chat `thinking` 全集） |
+| Chat 弃用 | 产品主线弃用 `/ops/chat/stream`；web **T2 即切主 Chat 到 lg-rag SSE**（invoke 页保留调试）；api **T6** 再删路由/文档 |
+| 联调环境 | cookie 鉴权 · 同域或 dev proxy · api 须含 T2 合入 commit |
+| 谁改码 | **web 00 统筹 → web 30 改码**；api 本会话仅 Spec/task，不在 web 仓改 Vue |
+
+---
+
+### 10.1 T2 · SSE updates（当前波 · 必联调）
+
+| 维度 | 内容 |
+|---|---|
+| **前置** | api PR（`/stream` + Obs-I/O）**合入前可联调分支**；web task 已 active |
+| **api 提供** | `POST /api/ops/lg-rag/stream` · body `{query, mode?, thread_id?}` · 默认 `mode=supervisor` · SSE 帧序 `run.start`→进度→`answer`→`done`/`error` |
+| **web 交付** | `useLgRagSse`（或等价）· **ChatView 改走 `/stream`** · **废弃主路径 `useOpsChatSse`**（可保留文件供对照/单测，主 UI 不再调用）· `/lg-rag` invoke 页不动 |
+| **联调项** | ① 登录 cookie ② `run.start` 含 `thread_id`/`mode` ③ 至少一帧 `node.progress`/`subtask.progress` ④ `answer` 整段 ⑤ `done` ⑥ 401→登录 ⑦ 422 表单预检 ⑧ 长问 supervisor 超时（client timeout ≥300s 对齐 invoke 页） |
+| **通过标准** | §11 人工 checklist T2 段全勾 · web `pnpm lint/test/build` 绿 · api 相关 pytest 绿 |
+| **常见坑** | 仍走 chat/stream；忽略 `event:` 行只读 body；未 `credentials:'include'`；把 `route=refuse` 当 HTTP 错误；半帧 JSON 未缓冲 |
+
+---
+
+### 10.2 T3 · Session 连续性
+
+| 维度 | 内容 |
+|---|---|
+| **前置** | T2 联调已通过 · api T3 task 合入 |
+| **api 提供** | `thread_id`/session 与历史注入 · 窗口策略 · 与 ops session 对齐（**不**要求兼容 chat latest 语义） |
+| **web 交付** | Chat 发送带稳定 `thread_id` · 刷新/重进会话行为 · 可选展示 session 元数据 |
+| **联调项** | 同 thread 续问上下文 · 新 thread 隔离 · 超长历史压缩后仍 SSE 正常 |
+| **通过标准** | §11 T3 段 · 多轮 3+ 轮人工冒烟 |
+| **常见坑** | 每问新 uuid 导致无法多轮 · 仍依赖 chat `session_id` 字段语义 |
+
+---
+
+### 10.3 T4 · 断联 / replay
+
+| 维度 | 内容 |
+|---|---|
+| **前置** | T2 稳定 · T4 api 契约冻结 |
+| **api 提供** | `seq`/`cursor` replay 或 resume 端点/帧（以 T4 task 为准） |
+| **web 交付** | 断网/刷新后恢复策略 UI · 可选「从 cursor 续看」 |
+| **联调项** | 中途断连后行为符合 api 钉死（T2=跑完不收齐；T4=可 replay） · 重复 `seq` 不重复渲染 |
+| **通过标准** | §11 T4 段 · 模拟 DevTools offline |
+| **常见坑** | 前端重复 append 同一 `answer` · 未存 `run_id`/`seq` |
+
+---
+
+### 10.4 T5 · Token 流（终答 delta）
+
+| 维度 | 内容 |
+|---|---|
+| **前置** | T2 节点进度已稳定 |
+| **api 提供** | `answer` 多帧 delta（aggregator 等） |
+| **web 交付** | Chat 区打字机 · 与 T2 整段 `answer` 兼容（首帧/增量协议见 T5 freeze） |
+| **联调项** | 增量拼接无乱码 · `done` 后停止追加 · 与 `node.progress` 并存不串台 |
+| **通过标准** | §11 T5 段 |
+| **常见坑** | T2 整段与 T5 delta 混用未分支 |
+
+---
+
+### 10.5 T6 · 弃用 chat（api 清扫 · web 已在 T2 切流）
+
+| 维度 | 内容 |
+|---|---|
+| **前置** | T2–T5 产品可用 · 维护者定下线窗口 |
+| **api** | 标记/移除 `/ops/chat/stream`（或 410）· 文档 · 图谱 |
+| **web** | 删 `useOpsChatSse` 死代码 · 移除 chat stream API 常量 · 更新 README |
+| **联调项** | 全站无 chat stream 请求 · 监控无 404 洪流 |
+| **通过标准** | §11 T6 段 · iOS 若仍用 chat 须另仓 task |
+
+---
+
+## 11. 跨仓发版与人工 checklist（维护者 · 2026-08-31）
+
+> **执行副本（勾选用）**：[`ops-desk-web/docs/checklists/CHECKLIST_lg_rag_sse_joint_release_v1.md`](../../../ops-desk-web/docs/checklists/CHECKLIST_lg_rag_sse_joint_release_v1.md)
+
+### 11.1 PR 与 merge 纪律
+
+| 仓 | 分支（建议） | PR | merge |
 |---|---|---|---|
-| **可开工（推荐最早）** | **T2 PR 合入 master 后** | 新 composable 吃 SSE：`run.start` / `node.progress` / `subtask.progress` / `answer` / `done`/`error`；调试台或旁路页；**feature flag**，默认仍走 chat | T3–T6 |
-| **产品向多轮** | T3 Session 可用后 | `thread_id` / session 与历史注入对齐 | T5 token 流 |
-| **断线体验** | T4 契约+实现后 | cursor / replay | — |
-| **打字机终答** | T5 后 | aggregator（等）delta 帧 | — |
-| **切主路径** | T6 | 下线/隐藏 chat stream；文档与默认入口改 lg-rag | 前端可先双栈并存 |
+| `ops-desk-api` | `task/lg-rag-sse-stream-updates` | 开 PR → **勿 auto-merge** | checklist 全勾 + 联调通过后与 web **同日** |
+| `ops-desk-web` | `task/web-lg-rag-sse-t2` | 开 PR → **勿 auto-merge** | 依赖 api 可联调（分支或 master） |
 
-**建议**：T2 合入后立刻开 **web 旁路联调 task**（不阻塞 api T3）；主 Chat UI 全量切换等到至少 T3（有会话）再排，避免无 session 的半成品体验。  
-**跨仓**：api freeze 已钉；web 另开 task，契约以 `05` §4.2 + 本仓 `/stream` 实现为准，**不**要求兼容 chat 事件全集。
+### 11.2 发版顺序（联调通过后）
+
+1. 维护者签 checklist（§11.3 摘要或 web 完整版）  
+2. merge **api** PR → 部署 api（或 staging 已验证则 prod）  
+3. merge **web** PR → 部署 web  
+4. 生产冒烟：登录 → Chat 发问 → 网络面板 **仅** `/ops/lg-rag/stream` · 见进度与终答  
+5. 记录 invoke CLOSE · task 归档  
+
+### 11.3 Checklist 摘要（真值在 web 文件）
+
+**T2 联调（发版闸门）**
+
+- [ ] api `/stream` 200 + SSE 帧序正确  
+- [ ] web Chat **不再**请求 `/ops/chat/stream`  
+- [ ] `node.progress` / `subtask.progress` / `answer` / `done` UI 可见  
+- [ ] 401/422/500 表现符合 task failure_paths  
+- [ ] 维护者签「联调通过」  
+
+**T3–T6**：见 web checklist 对应节（后续发版，不阻塞 T2 首次联合发版 unless 维护者另定）。
+
+### 11.4 修订
+
+| 日期 | 说明 |
+|---|---|
+| 2026-08-31 | 初版：分阶段联调注意事项 + 跨仓发版纪律 + checklist 指针 |

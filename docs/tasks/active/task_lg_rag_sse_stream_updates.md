@@ -88,4 +88,7 @@
 
 | 项 | 值 |
 |---|---|
-| PR | （待开） |
+| PR | api · **勿 auto-merge** · 与 web 联调通过后同日发版 |
+| web task | [`ops-desk-web/docs/tasks/active/task_web_lg_rag_sse_t2_joint.md`](../../../ops-desk-web/docs/tasks/active/task_web_lg_rag_sse_t2_joint.md) · **00 统筹 · 本仓不改 web 码** |
+| 人工 checklist | [`ops-desk-web/docs/checklists/CHECKLIST_lg_rag_sse_joint_release_v1.md`](../../../ops-desk-web/docs/checklists/CHECKLIST_lg_rag_sse_joint_release_v1.md) |
+| Spec | api `05` §10–§11 |
