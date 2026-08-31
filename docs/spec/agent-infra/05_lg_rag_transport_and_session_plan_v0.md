@@ -133,11 +133,17 @@
 | `answer` | `aggregator` | 最终答案（T2 可整段；T5 可多帧 delta） |
 | `done` | `system` | 正常结束 |
 | `error` | `system` | 失败；`retryable` 布尔 |
-| `cursor`（可选 · T4） | `system` | 供 replay 的游标提示 |
+| `cursor`（可选 · T4） | `system` | 供 replay 的游标提示（**可选** `event_type`；本波 SoT 见下行顶层字段） |
+
+**T4 顶层 `cursor` 字段（freeze `lg-rag-sse-v1` 扩展 · 2026-08-31）**
+
+- 每帧 SSE `data` JSON **可选顶层** `cursor = "{run_id}:{seq}"`（与 `run_id`/`seq` 并列）。  
+- **不强制**每帧另发 `event_type=cursor`；表内 `cursor` 行仍为可选提示。  
+- 客户端续看：`POST /api/ops/lg-rag/replay`，body `{run_id, after_seq}` 或 `{cursor}`（解析后重放 `seq > after_seq`）。  
+- 事件落盘表：`ops_lg_rag_run_events`（独立于 chat `ops_run_events`）。
 
 **非范围（T1）**
 
-- 不定 replay 存储 schema（T4）。  
 - 不定 WS 双通道（可后置）。
 
 **T2 冻结（2026-08-30）**
@@ -145,6 +151,11 @@
 - HTTP 路径：`POST /api/ops/lg-rag/stream`  
 - freeze_id：`lg-rag-sse-v1`  
 - 默认 `mode=supervisor`；`stream_mode=updates`；断连=服务端尽量跑完、无 replay
+
+**T4 冻结补充（2026-08-31）**
+
+- 同 freeze_id：`lg-rag-sse-v1`（顶层可选 `cursor` + `POST /lg-rag/replay`；不 silent 扩必选 `event_type`）  
+- 断连仍「尽量跑完」、无 cancel；replay 仅已落盘帧
 
 **验收（文档）**
 
@@ -210,6 +221,7 @@
 | 2026-08-31 | **§10–§11**：分阶段联调注意事项 · 跨仓发版 · web task/checklist 指针 |
 | 2026-08-31 | **T2 CLOSE**：§10 指针改 done/ · web slug `task_web_lg_rag_sse_t2` · 发版策略改为后续波纪律 |
 | 2026-08-31 | **T3 实现回写 §10.2**：`thread_id` SoT · 独立表 · 窗口压缩 6/2 注入 `_ainvoke/_astream` · 跨用户 404 |
+| 2026-08-31 | **T4 实现回写 §4.2/§10.3**：顶层可选 `cursor` · `ops_lg_rag_run_events` · `POST /lg-rag/replay` · 断连仍跑完 |
 
 ---
 
@@ -292,11 +304,11 @@
 | 维度 | 内容 |
 |---|---|
 | **前置** | T2 稳定 · T4 api 契约冻结 |
-| **api 提供** | `seq`/`cursor` replay 或 resume 端点/帧（以 T4 task 为准） |
-| **web 交付** | 断网/刷新后恢复策略 UI · 可选「从 cursor 续看」 |
+| **api 提供（2026-08-31 已实现）** | live `POST /lg-rag/stream` 每帧可选顶层 `cursor="{run_id}:{seq}"`；事件尽量落盘 `ops_lg_rag_run_events`。**新** `POST /api/ops/lg-rag/replay`：body `{run_id, after_seq}` 或 `{cursor}` → SSE 重放该 run 且 `seq > after_seq`（形状同 live）。须登录；未知/跨用户 `run_id` → **404**；非法 cursor → 422。断连服务端仍「尽量跑完」图（**无** cancel）。落盘失败不阻断已发 SSE；replay 仅已提交帧。freeze 仍 **`lg-rag-sse-v1`**（不强制 `event_type=cursor`）。**不** import chat/session。 |
+| **web 交付** | 断网/刷新后恢复策略 UI · 可选「从 cursor 续看」（另开 web task；本波可 api-only 先合） |
 | **联调项** | 中途断连后行为符合 api 钉死（T2=跑完不收齐；T4=可 replay） · 重复 `seq` 不重复渲染 |
 | **通过标准** | §11 T4 段 · 模拟 DevTools offline |
-| **常见坑** | 前端重复 append 同一 `answer` · 未存 `run_id`/`seq` |
+| **常见坑** | 前端重复 append 同一 `answer` · 未存 `run_id`/`seq` / `cursor` |
 
 ---
 

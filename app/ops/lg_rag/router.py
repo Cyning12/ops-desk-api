@@ -1,8 +1,8 @@
-"""LangGraph 旁路 HTTP：POST /api/ops/lg-rag/invoke · POST /api/ops/lg-rag/stream。
+"""LangGraph 旁路 HTTP：invoke · stream · replay。
 
 freeze：
 - invoke · lg-rag-http-v1
-- stream · lg-rag-sse-v1（T2 · 默认 mode=supervisor · updates 帧）
+- stream / replay · lg-rag-sse-v1（T2/T4 · 默认 mode=supervisor · updates 帧 · 可选 cursor）
 
 薄包装 lg_rag 三个 ainvoke / astream 入口；
 {ok,data} 外壳、cookie 鉴权、异常 500 外壳、flush_traces 体例对齐
@@ -14,6 +14,7 @@ env LG_RAG_HTTP_CHECKPOINTER=postgres 时走 apostgres_saver(setup=True)
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 import uuid
@@ -33,6 +34,8 @@ from app.ops.lg_rag import (
     ainvoke_supervisor_agent,
 )
 from app.ops.lg_rag.checkpointer import apostgres_saver
+from app.ops.lg_rag.event_store import LgRagRunNotFoundError, load_events_after
+from app.ops.lg_rag.sse_replay import InvalidCursorError, resolve_replay_target
 from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
 from app.ops.lg_rag.thread_store import (
     LgRagThreadForbiddenError,
@@ -68,6 +71,14 @@ class StreamRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=QUERY_MAX_LENGTH)
     mode: Mode = "supervisor"
     thread_id: str | None = Field(default=None, max_length=THREAD_ID_MAX_LENGTH)
+
+
+class ReplayRequest(BaseModel):
+    """断联续看：``{run_id, after_seq}`` 或 ``{cursor}``（freeze lg-rag-sse-v1）。"""
+
+    run_id: str | None = Field(default=None, max_length=64)
+    after_seq: int | None = Field(default=None, ge=0)
+    cursor: str | None = Field(default=None, max_length=96)
 
 
 class ChainMetaOut(BaseModel):
@@ -243,6 +254,50 @@ async def stream_lg_rag(
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
             "X-Ops-Lg-Rag-Thread-Id": thread_id,
+            "X-Ops-Lg-Rag-Run-Id": run_id,
+        },
+    )
+
+
+@router.post("/replay")
+async def replay_lg_rag(
+    body: ReplayRequest,
+    user: OpsUser = CurrentUser,
+) -> StreamingResponse:
+    """SSE 重放已落盘帧（seq > after_seq）；须登录。未知/跨用户 run_id → 404。"""
+    try:
+        run_id, after_seq = resolve_replay_target(
+            run_id=body.run_id,
+            after_seq=body.after_seq,
+            cursor=body.cursor,
+        )
+    except InvalidCursorError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc) or "invalid cursor",
+        ) from None
+
+    try:
+        events = await load_events_after(run_id, str(user.id), after_seq)
+    except LgRagRunNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Run not found",
+        ) from None
+
+    async def event_gen() -> AsyncIterator[str]:
+        for ev in events:
+            yield (
+                f"event: {ev['event_type']}\n"
+                f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
+            )
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
             "X-Ops-Lg-Rag-Run-Id": run_id,
         },
     )

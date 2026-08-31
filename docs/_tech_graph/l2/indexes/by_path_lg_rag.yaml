@@ -26,12 +26,44 @@ by_path:
     - node_id: lg_stream
       symbol: _prepare_thread
       kind: method
+    - node_id: lg_replay
+      symbol: replay_lg_rag
+      kind: method
   "app/ops/lg_rag/sse_stream.py":
     - node_id: lg_stream
       symbol: iter_lg_rag_sse
       kind: method
     - node_id: lg_stream
       symbol: map_node_update
+      kind: method
+  "app/ops/lg_rag/sse_replay.py":
+    - node_id: lg_stream
+      symbol: format_sse_event
+      kind: method
+    - node_id: lg_stream
+      symbol: make_cursor
+      kind: method
+    - node_id: lg_replay
+      symbol: resolve_replay_target
+      kind: method
+    - node_id: lg_replay
+      symbol: parse_cursor
+      kind: method
+    - node_id: lg_replay
+      symbol: replay_events
+      kind: method
+    - node_id: lg_replay
+      symbol: format_sse_event
+      kind: method
+  "app/ops/lg_rag/event_store.py":
+    - node_id: lg_stream
+      symbol: persist_run_event
+      kind: method
+    - node_id: lg_replay
+      symbol: load_events_after
+      kind: method
+    - node_id: lg_replay
+      symbol: assert_run_owned
       kind: method
   "app/ops/lg_rag/continuity.py":
     - node_id: lg_stream

@@ -89,6 +89,8 @@ async def test_stream_supervisor_event_order(
     assert start["payload"]["mode"] == "supervisor"
     assert events[0]["seq"] == 1
     assert events[-1]["seq"] == len(events)
+    for ev in events:
+        assert ev.get("cursor") == f"{ev['run_id']}:{ev['seq']}"
 
 
 async def test_map_node_update_helpers() -> None:

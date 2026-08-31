@@ -26,6 +26,10 @@ by_symbol:
     path: app/ops/lg_rag/router.py
     node_id: lg_stream
     kind: method
+  replay_lg_rag:
+    path: app/ops/lg_rag/router.py
+    node_id: lg_replay
+    kind: method
   iter_lg_rag_sse:
     path: app/ops/lg_rag/sse_stream.py
     node_id: lg_stream
@@ -33,6 +37,39 @@ by_symbol:
   map_node_update:
     path: app/ops/lg_rag/sse_stream.py
     node_id: lg_stream
+    kind: method
+  format_sse_event:
+    path: app/ops/lg_rag/sse_replay.py
+    node_id: lg_stream
+    kind: method
+    also_node_ids: [lg_replay]
+  make_cursor:
+    path: app/ops/lg_rag/sse_replay.py
+    node_id: lg_stream
+    kind: method
+  resolve_replay_target:
+    path: app/ops/lg_rag/sse_replay.py
+    node_id: lg_replay
+    kind: method
+  parse_cursor:
+    path: app/ops/lg_rag/sse_replay.py
+    node_id: lg_replay
+    kind: method
+  replay_events:
+    path: app/ops/lg_rag/sse_replay.py
+    node_id: lg_replay
+    kind: method
+  persist_run_event:
+    path: app/ops/lg_rag/event_store.py
+    node_id: lg_stream
+    kind: method
+  load_events_after:
+    path: app/ops/lg_rag/event_store.py
+    node_id: lg_replay
+    kind: method
+  assert_run_owned:
+    path: app/ops/lg_rag/event_store.py
+    node_id: lg_replay
     kind: method
   build_basic_agent:
     path: app/ops/lg_rag/graph.py
