@@ -3,6 +3,6 @@
   "private": true,
   "description": "Harness kit pin only; Python runtime is pyproject.toml / requirements.txt",
   "devDependencies": {
-    "dsh-coding-kit": "1.9.1"
+    "dsh-coding-kit": "1.10.0"
   }
 }

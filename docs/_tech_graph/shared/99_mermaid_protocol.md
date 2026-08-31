@@ -5,7 +5,7 @@
 ## 0. YAML-first 工作流
 
 - **唯一人工编辑源**：`docs/_tech_graph/**/*.graph.yaml`（如 `l0/00_main.graph.yaml`、`l1/10_flow_*.graph.yaml`）。
-- **生成物**：同名 `*.md` 由 `./scripts/graph-compile.sh`（当前：`npx dsh-coding-kit graph yaml compile`；默认 `GRAPH_CLI=dsh-coding-kit`，env 可切回）生成；kit 1.6.1 emit 直接满足 §0.1 契约，不再需要 post-compile 改写。
+- **生成物**：同名 `*.md` 由 `./scripts/graph-compile.sh`（当前：`npx dsh-coding-kit graph yaml compile`；默认 `GRAPH_CLI=dsh-coding-kit`，env 可切回）生成；kit 1.6.1 emit 直接满足 §0.1 契约，不再需要 post-compile 改写。frontmatter / `graph.json` 的 `generated_at` 自 kit **≥1.9.2** 起为 yaml 源内容戳 `sha256-<16hex>`（同字节重编译 / export 幂等），不是 wall-clock。
 - **禁止手写编译产物 `.md`**：改 YAML 后重跑 compile；手改会在下次 compile 被覆盖。
 - **`--check` 语义**：kit `graph yaml check` 比对 YAML 与 `shared/graph.json` 切片；另跑 `graph_mermaid_normalize.py --check`（check-only 护栏，不改写）断言 mermaid 围栏无 `//` 注释、无旧边 `--"…"-->`。
 - **export**：`shared/graph.json`（唯一机器轨真值；根目录双写已移除）。
@@ -134,4 +134,5 @@ edges:
 | 2026-06-30 | v3：YAML-first，删除 `.ai.md` 双轨，新增 YAML → Mermaid 映射 |
 | 2026-08-24 | §0/§0.1：post-compile normalize + IDE 契约；§1.2 示例改 `-->|"…"|`；挂迁移预留 SPEC |
 | 2026-08-25 | §0：命令面切至 dsh-coding-kit 1.6.1（emit 治根）；normalize 降级 check-only 护栏 |
+| 2026-08-31 | §0：`generated_at` 改为 yaml 源内容戳（kit ≥1.9.2 幂等；本仓钉 1.10.0） |
 | YYYY-MM-DD | 嵌入用户仓时填写首次版本 |
