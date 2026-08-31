@@ -1,6 +1,6 @@
 # Task：dsh-coding-kit 升级 1.10.0（sync prompts + re-anchor 条文）
 
-> **状态**：in_progress（2026-08-31 · 维护者令「重新更新，现在应该是 1.10.0」）  
+> **状态**：completed（2026-08-31 CLOSE · PR [#98](https://github.com/Cyning12/ops-desk-api/pull/98) MERGED）  
 > **类型**：基础设施 / harness 过程轨升级（minor）  
 > **前置**：manifest / package 钉 `1.9.1`；npm 最新 **`1.10.0`**  
 > **分支**：`task/dsh-coding-kit-1-10-0`  
@@ -28,7 +28,7 @@
 | **invoke_retention_profile** | `minimal` |
 | **required_invoke_hats** | `30` |
 | **close_pr_policy** | `required` |
-| **related_pr** | （开 PR 后回填） |
+| **related_pr** | `#98` |
 
 ### 人工闸
 
@@ -66,7 +66,7 @@
 - 不 `npm publish`；不擅自 `gh pr merge`  
 - 不以 `--force` 覆盖带 `HG-GRAPH-MODULES` 的本地补丁
 
-## 验收
+## 验收标准
 
 - [x] manifest `1.10.0` · `from_version=1.9.1`
 - [x] `package.json` / CI 钉 `1.10.0`
@@ -85,7 +85,7 @@
 | graph-compile 仅时间戳/戳形态 diff | 接受并入库（内容戳为预期） |
 | 兄弟 active task 挡 wiki lint | 本波不默认 `--with-wiki-lint` |
 
-### 自检结论（执行者）
+### 自检结论
 
 | 命令 | 退出码 |
 |------|--------|
@@ -94,6 +94,15 @@
 | `graph-compile.sh` | 0 |
 | `sync prompts --yes` | 0（written=2 · conflict 手合） |
 
+### KPI
+
+Task_KPI%: 100 · kit 钉 1.10.0 · re-anchor / 00-delegate 已 sync · HG-GRAPH-MODULES 行保留 · skills 落 `.dsh/` 不入库
+
 ## CLOSE
 
-PR MERGED 后 `task close --yes` + Hub 行。
+| 项 | 值 |
+|------|-----|
+| PR | [#98](https://github.com/Cyning12/ops-desk-api/pull/98) **MERGED** 2026-08-31 |
+| 启用核对 | `check` 已是最新 1.10.0 · `sync prompts` dry-run：re-anchor / 00-delegate 在 skip；conflict 仅仓内 HG-GRAPH-MODULES 手合件（GATE_VERIFY / STOP / 10-spec / 20-spec-audit）· skills：`.dsh/skills` 含 `harness-00-delegate-only` / `harness-hat-reanchor`（`.gitignore` · 不入库） |
+| Hub | 本文件 + `docs/tasks/done/README.md` harness 域行 |
+| 归档 | 2026-08-31 · 00 关账 · 维护者 Prompt 授权 |

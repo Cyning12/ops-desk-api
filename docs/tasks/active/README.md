@@ -4,6 +4,6 @@
 
 | task | 说明 |
 |---|---|
-| [`task_lg_rag_sse_stream_updates.md`](./task_lg_rag_sse_stream_updates.md) | **T2** lg-rag `/stream` + Obs Generation I/O · 待 PR 合入后 CLOSE |
+| （空） | T2 / kit 1.10.0 已 CLOSE · T3 `lg-rag-session-continuity` 下一棒起草 |
 
-> 已归档：[`../done/task_eval_token_cost_ledger.md`](../done/task_eval_token_cost_ledger.md)（E5 · #96）· [`../done/task_lg_rag_sse_t0_t1_spec.md`](../done/task_lg_rag_sse_t0_t1_spec.md)（T0 Spec）
+> 已归档：[`../done/task_lg_rag_sse_stream_updates.md`](../done/task_lg_rag_sse_stream_updates.md)（T2 · #97）· [`../done/task_dsh_coding_kit_upgrade_1_10_0.md`](../done/task_dsh_coding_kit_upgrade_1_10_0.md)（kit 1.10.0 · #98）

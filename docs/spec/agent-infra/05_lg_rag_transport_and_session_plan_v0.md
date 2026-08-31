@@ -208,6 +208,7 @@
 | 2026-08-30 | **T2 冻结**：`POST /api/ops/lg-rag/stream` · `lg-rag-sse-v1`；Obs-I/O 随 T2 实现 |
 | 2026-08-31 | **§9 G-L2**：本系列凡改 `10_flow_lg_rag` 节点须同步分域 indexes 全量 `implementedBy`；禁止并入 chat yaml |
 | 2026-08-31 | **§10–§11**：分阶段联调注意事项 · 跨仓发版 · web task/checklist 指针 |
+| 2026-08-31 | **T2 CLOSE**：§10 指针改 done/ · web slug `task_web_lg_rag_sse_t2` · 发版策略改为后续波纪律 |
 
 ---
 
@@ -245,8 +246,8 @@
 
 ## 10. 前端接入与联调（分阶段 · 2026-08-31）
 
-> **跨仓真值**：本文件 §10–§11 · api [`task_lg_rag_sse_stream_updates`](../../tasks/active/task_lg_rag_sse_stream_updates.md) · web [`task_web_lg_rag_sse_t2_joint`](../../../ops-desk-web/docs/tasks/active/task_web_lg_rag_sse_t2_joint.md) · 人工清单 [`CHECKLIST_lg_rag_sse_joint_release_v1.md`](../../../ops-desk-web/docs/checklists/CHECKLIST_lg_rag_sse_joint_release_v1.md)  
-> **发版策略**：api / web **各开 PR、禁止自动 merge**；**联调 checklist 全勾**后 **同日发版**（见 §11）。
+> **跨仓真值**：本文件 §10–§11 · api [`task_lg_rag_sse_stream_updates`](../../tasks/done/task_lg_rag_sse_stream_updates.md)（**CLOSED** · api [#97](https://github.com/Cyning12/ops-desk-api/pull/97) MERGED） · web [`task_web_lg_rag_sse_t2`](../../../ops-desk-web/docs/tasks/done/task_web_lg_rag_sse_t2.md)（**CLOSED** · web [#23](https://github.com/Cyning12/ops-desk-web/pull/23) MERGED） · 人工清单 [`CHECKLIST_lg_rag_sse_joint_release_v1.md`](../../../ops-desk-web/docs/checklists/CHECKLIST_lg_rag_sse_joint_release_v1.md)  
+> **发版策略（后续波）**：api / web **各开 PR、禁止自动 merge**；**联调 checklist 对应波次全勾**后 **同日发版**（见 §11）。T2 已于 2026-08-31 合入。
 
 ### 10.0 总原则
 
@@ -259,7 +260,7 @@
 
 ---
 
-### 10.1 T2 · SSE updates（当前波 · 必联调）
+### 10.1 T2 · SSE updates（**已合入** · api #97 · web #23 · 2026-08-31）
 
 | 维度 | 内容 |
 |---|---|

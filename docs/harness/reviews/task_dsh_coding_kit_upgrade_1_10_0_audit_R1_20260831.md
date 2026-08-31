@@ -1,7 +1,7 @@
 # Task Audit R1：dsh-coding-kit-upgrade-1-10-0
 
 > **hat_id**：20-task-audit  
-> **task**：`docs/tasks/active/task_dsh_coding_kit_upgrade_1_10_0.md`  
+> **task**：`docs/tasks/done/task_dsh_coding_kit_upgrade_1_10_0.md`  
 > **日期**：2026-08-31 · 审查人：00 统筹（兼 20 · 维护者本窗授权「重新更新到 1.10.0」）
 
 ## 结论摘要
