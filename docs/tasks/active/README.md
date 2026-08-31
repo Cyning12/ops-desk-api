@@ -4,6 +4,6 @@
 
 | task | 说明 |
 |---|---|
-| （空） | T2 / kit 1.10.0 已 CLOSE · T3 `lg-rag-session-continuity` 下一棒起草 |
+| [`task_lg_rag_session_continuity.md`](./task_lg_rag_session_continuity.md) | **T3** lg-rag Session 连续性（thread / 历史注入 / 窗口压缩） |
 
 > 已归档：[`../done/task_lg_rag_sse_stream_updates.md`](../done/task_lg_rag_sse_stream_updates.md)（T2 · #97）· [`../done/task_dsh_coding_kit_upgrade_1_10_0.md`](../done/task_dsh_coding_kit_upgrade_1_10_0.md)（kit 1.10.0 · #98）
