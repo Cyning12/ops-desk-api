@@ -1,13 +1,13 @@
 ---
 graph_id: 10_flow_lg_rag
-version: 2026-08-28
-generated_at: 2026-08-28T02:18:29Z
+version: 2026-08-30
+generated_at: 2026-08-30T11:37:35Z
 source: 10_flow_lg_rag.graph.yaml
 ---
 
 # LG RAG 旁路三模式流程（basic / router / supervisor · Critic）
 
-POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（Intent→Builder→拆解→分派→聚合→Critic 条件边）。同图分节：节点 id 前缀 b_/r_/s_；rag 路径黑盒复用 lc_evidence_chain，不展开 LCEL；默认不进入 chat/graph。freeze lg-rag-http-v1。
+POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates）。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。
 
 ## Mermaid
 
@@ -15,6 +15,7 @@ POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）
 flowchart TB
     client["用户 / 前端"]
     lg_invoke["POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）"]
+    lg_stream["POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1）"]
     basic_graph["basic 图 build_basic_agent（Phase 1 对照）"]
     router_graph["router 图 build_router_agent（Phase 2-3）"]
     sup_graph["supervisor 图 build_supervisor_agent（Phase 4）"]
@@ -43,7 +44,13 @@ flowchart TB
     main_doc[">../l0/00_main.md"]
 
     client -->|"POST {query, mode, thread_id}（cookie auth）"| lg_invoke
-    %% → app/ops/lg_rag/router.py#L130
+    %% → app/ops/lg_rag/router.py#L143
+    client -->|"POST SSE {query, mode=supervisor 默认}（cookie auth）"| lg_stream
+    %% → app/ops/lg_rag/router.py#L175
+    lg_stream -->|"[默认 mode=supervisor · astream updates]"| sup_graph
+    %% → app/ops/lg_rag/sse_stream.py#L1
+    lg_stream -->|"text/event-stream（run.start…answer…done）"| client
+    %% → app/ops/lg_rag/sse_stream.py#L1
     lg_invoke -->|"[mode=basic]"| basic_graph
     %% → app/ops/lg_rag/router.py#L118
     lg_invoke -->|"[mode=router（默认）]"| router_graph
@@ -151,7 +158,7 @@ flowchart TB
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-    class lg_invoke,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_intent,s_strategy_builder,s_supervisor,s_dispatch,s_rag,s_extract,s_tool,s_aggregator,s_critic phase
+    class lg_invoke,lg_stream,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_intent,s_strategy_builder,s_supervisor,s_dispatch,s_rag,s_extract,s_tool,s_aggregator,s_critic phase
     class basic_graph,router_graph,sup_graph doc
     class client,structured_output_gw,capability_gw,s_end,lc_chain,llm,db,main_doc infra
 ```
@@ -164,6 +171,7 @@ flowchart TB
 |----|-------|------|
 | client | 用户 / 前端 | external |
 | lg_invoke | POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1） | flow |
+| lg_stream | POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1） | flow |
 | basic_graph | basic 图 build_basic_agent（Phase 1 对照） | struct |
 | router_graph | router 图 build_router_agent（Phase 2-3） | struct |
 | sup_graph | supervisor 图 build_supervisor_agent（Phase 4） | struct |
@@ -196,6 +204,9 @@ flowchart TB
 | From | To | Mark | Type | Label | Anchors |
 |------|----|------|------|-------|---------|
 | client | lg_invoke | -> | depends_on | POST {query, mode, thread_id}（cookie auth） | 1 anchor(s) |
+| client | lg_stream | -> | depends_on | POST SSE {query, mode=supervisor 默认}（cookie auth） | 1 anchor(s) |
+| lg_stream | sup_graph | ?> | branches | [默认 mode=supervisor · astream updates] | 1 anchor(s) |
+| lg_stream | client | -> | depends_on | text/event-stream（run.start…answer…done） | 1 anchor(s) |
 | lg_invoke | basic_graph | ?> | branches | [mode=basic] | 1 anchor(s) |
 | lg_invoke | router_graph | ?> | branches | [mode=router（默认）] | 1 anchor(s) |
 | lg_invoke | sup_graph | ?> | branches | [mode=supervisor] | 1 anchor(s) |

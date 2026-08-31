@@ -1,5 +1,6 @@
 # chat 域 symbol → path 倒排（G-L2）
 # 源：l1/10_flow_chat.graph.yaml implementedBy
+# 范围：仅 chat。lg_rag 见 by_symbol_lg_rag.yaml（禁止混入本文件）
 
 version: "2026-08-25"
 graph_id: "10_flow_chat"

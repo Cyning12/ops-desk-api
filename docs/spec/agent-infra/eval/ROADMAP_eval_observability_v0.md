@@ -161,3 +161,4 @@
 | 2026-08-28 | **E3 开工**：`eval-langfuse-experiment-ci`；E2 归档 #93 |
 | 2026-08-28 | **E4 开工**：`eval-online-sample-scores`；E3 归档 #94 |
 | 2026-08-29 | **E5 开工**：`eval-token-cost-ledger`；E4 归档 #95 |
+| 2026-08-30 | **交叉引用**：Generation 内容 I/O 优先级见 L0 [`../05_lg_rag_transport_and_session_plan_v0.md`](../05_lg_rag_transport_and_session_plan_v0.md) §3；**不**在 Eval 轨单开 Obs-I/O task |

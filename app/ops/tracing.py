@@ -15,10 +15,12 @@ Ink 账号在 jp 区：https://jp.cloud.langfuse.com）。
 - `trace_span(name, run_type=..., **metadata)`：with 块生成 span
 - `update_current_span_metadata({...})`：给当前 observation 附加结构化 metadata
 - `update_current_generation_usage(usage)`：同步 LLM usage 到当前 generation
+- `update_current_generation_io(input=..., output=...)`：截断正文 I/O（complete 边界）
 - `score_current_trace(name, value, ...)`：抽样写 score；关 tracing / 采样 miss / 异常 → no-op
 - `flush_traces()`：短脚本/评测结束前 flush（服务进程由 SDK 后台批量上报，无需调）
 
 线上抽样：``OPS_EVAL_SCORE_SAMPLE_RATE``（0.0–1.0，默认 ``0`` = 不打分）。
+I/O 截断：``OPS_LANGFUSE_IO_TRUNCATE``（字符，默认 ``4000``）。
 """
 from __future__ import annotations
 
@@ -233,6 +235,59 @@ def update_current_generation_usage(usage: Any) -> None:
             }
         )
     except Exception:
+        return
+
+
+# Generation 正文 I/O 默认截断（字符）；可用 env 覆盖
+_DEFAULT_IO_TRUNCATE = 4000
+
+
+def generation_io_truncate_chars() -> int:
+    """``OPS_LANGFUSE_IO_TRUNCATE``；非法或 ≤0 → 默认 4000。"""
+    raw = _env("OPS_LANGFUSE_IO_TRUNCATE")
+    if not raw:
+        return _DEFAULT_IO_TRUNCATE
+    try:
+        n = int(raw)
+    except ValueError:
+        return _DEFAULT_IO_TRUNCATE
+    return n if n > 0 else _DEFAULT_IO_TRUNCATE
+
+
+def _truncate_io_text(text: str, max_chars: int) -> str:
+    if len(text) <= max_chars:
+        return text
+    return text[: max_chars - 1] + "…"
+
+
+def update_current_generation_io(
+    *,
+    input: Any = None,
+    output: Any = None,
+    truncate: int | None = None,
+) -> None:
+    """将截断后的 prompt/completion 写入当前 generation；失败 no-op。
+
+    钉死在 complete 边界（非 SSE payload）。无当前 generation 时静默。
+    """
+    if not tracing_enabled():
+        return
+    max_chars = truncate if truncate is not None else generation_io_truncate_chars()
+    kwargs: dict[str, Any] = {}
+    try:
+        if input is not None:
+            raw = input if isinstance(input, str) else str(input)
+            kwargs["input"] = _truncate_io_text(raw, max_chars)
+        if output is not None:
+            raw = output if isinstance(output, str) else str(output)
+            kwargs["output"] = _truncate_io_text(raw, max_chars)
+        if not kwargs:
+            return
+        from langfuse import get_client
+
+        get_client().update_current_generation(**kwargs)
+    except Exception:
+        logger.debug("langfuse update_current_generation_io failed", exc_info=True)
         return
 
 

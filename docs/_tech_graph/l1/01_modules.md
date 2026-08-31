@@ -2,7 +2,7 @@
 
 <!-- pdd
 level_present: 0+1
-deeper: ../l2/indexes/by_path.yaml
+deeper: ../l2/indexes/
 audience: agent-30
 -->
 
@@ -24,7 +24,7 @@ audience: agent-30
 | `lc_evidence_chain` | LangChain 旁路答问 | `app/ops/lc_evidence_chain/**` | → `rag`, `llm`, `db` | LCEL 旁路答问链，HTTP `POST /api/ops/lc-evidence/invoke`（cookie 鉴权 · freeze `lc-evidence-http-v1`），**默认不进入** `chat/graph`，被 `lg_rag` 黑盒复用；拓扑详见 [`10_flow_lc_evidence.md`](./10_flow_lc_evidence.md) |
 | `structured_output` | Structured Output Gateway | `app/ops/structured_output/**` | → `llm` | LLM 文本 → parse/repair/validate/预算纠偏；供 `lg_rag` 结构化节点复用；**域 schema 在 `lg_rag/schemas`**（SO 内核不含业务模型）；**不是** Skill；拓扑详见 [`10_flow_structured_output.md`](./10_flow_structured_output.md) |
 | `capability` | Capability Gateway | `app/ops/capability/**` | → — | 能力注册 / 筛选 / 统一 invoke（local_fn · mock 探针 · skill stub）；**YAML/JSON manifest 加载 register**（仅 local_fn · 显式 reload · 禁止每请求）；**invoke 前 Policy 门**（高危/sandbox/cli 默认 blocked · Host-only 策略键）；**可迁移内核 · Mode A**（`list`+`invoke`；ToolNode 桥仅 `extras.langchain`）；**真 MCP · 默认关 · CI 不外网**；**本库 issue/PR 只读 lookup**（`get_issue_by_number` / `get_pr_by_number` · `ainvoke` · 禁止 MCP/GitHub 热路径）；拓扑详见 [`10_flow_capability.md`](./10_flow_capability.md) |
-| `lg_rag` | LangGraph 旁路单 Agent | `app/ops/lg_rag/**` | → `lc_evidence_chain`, `llm`, `structured_output`, `capability` | 旁路三模式 basic / router / supervisor，HTTP `POST /api/ops/lg-rag/invoke`（mode 分派 · freeze `lg-rag-http-v1`），黑盒复用 `ainvoke_evidence_answer`，**默认不进入** `chat/graph`；**supervisor 图 START→Intent→Strategy Builder allowlist→supervisor planner→…→aggregator→critic_node 条件边**（pass/end→END · retry_planner→supervisor · rebind→Builder；预算 1+1）；结构化节点走 `structured_output` 管道 + **域 schema 在 `lg_rag/schemas`**；`tool_exec` 走 `capability`；拓扑详见 [`10_flow_lg_rag.md`](./10_flow_lg_rag.md) |
+| `lg_rag` | LangGraph 旁路单 Agent | `app/ops/lg_rag/**` | → `lc_evidence_chain`, `llm`, `structured_output`, `capability` | 旁路三模式 basic / router / supervisor；HTTP `POST /api/ops/lg-rag/invoke`（freeze `lg-rag-http-v1`）与 **`POST /api/ops/lg-rag/stream`**（SSE updates · freeze `lg-rag-sse-v1` · 默认 mode=supervisor）；黑盒复用 `ainvoke_evidence_answer`，**默认不进入** `chat/graph`；**supervisor 图 START→Intent→Strategy Builder allowlist→supervisor planner→…→aggregator→critic_node 条件边**（pass/end→END · retry_planner→supervisor · rebind→Builder；预算 1+1）；结构化节点走 `structured_output` 管道 + **域 schema 在 `lg_rag/schemas`**；`tool_exec` 走 `capability`；拓扑详见 [`10_flow_lg_rag.md`](./10_flow_lg_rag.md) |
 | `data` | 数据视图 | `app/ops/overview.py`, `app/ops/issues.py`, `app/ops/pulls.py`, `app/ops/graph.py` | → `db` | Issue/PR/Overview 指标/Graph 快照只读查询（供 Chat / iOS 只读消费） |
 | `admin` | Admin 同步 | `app/ops/admin/**` | → `db` | 接收 GHA sync payload 并持久化到 data/chat 依赖的表；本仓 GHA sender + Bearer 机读 token（cookie maintainer 仍可用） |
 | `llm` | LLM Provider | `app/llm/**` | → — | SiliconFlow / 百炼 provider 工厂；complete 路径上报 usage；grader 故障 refuse |
@@ -65,6 +65,7 @@ audience: agent-30
 | HG-GRAPH-MODULES | approved | 维护者（S4 critic-rebind · 00 代签） | 2026-08-28 | `lg_rag` 行备注：supervisor 图 Critic 条件边；不新增一级模块 |
 | HG-GRAPH-MODULES | approved | 维护者（ops-pg-lookup-capabilities · 00 代签） | 2026-08-28 | `capability` 行备注：本库 issue/PR 只读 lookup；不新增一级模块 |
 | HG-GRAPH-MODULES | approved | 维护者（ops-sync-sender-migration · 00 代签） | 2026-08-28 | `admin` 行备注：本仓 GHA sender + Bearer 机读 token；`11_flow_sync_to_chat` 增 GHA 节点；不新增一级模块 |
+| HG-GRAPH-MODULES | approved | 维护者（lg-rag-sse-stream-updates · 00 代签 · 「开工」） | 2026-08-30 | `lg_rag` 行备注：`POST /lg-rag/stream` · freeze `lg-rag-sse-v1`；**G-L2** 第二试点分文件 `by_path_lg_rag.yaml`（不与 chat 混排）；不新增一级模块 |
 
 ## 关联
 
@@ -74,5 +75,5 @@ audience: agent-30
 - LG RAG 旁路流程（G-L1）：[`10_flow_lg_rag.md`](./10_flow_lg_rag.md) · 源 [`10_flow_lg_rag.graph.yaml`](./10_flow_lg_rag.graph.yaml)
 - Structured Output Gateway（G-L1）：[`10_flow_structured_output.md`](./10_flow_structured_output.md) · 源 [`10_flow_structured_output.graph.yaml`](./10_flow_structured_output.graph.yaml)
 - Capability Gateway（G-L1）：[`10_flow_capability.md`](./10_flow_capability.md) · 源 [`10_flow_capability.graph.yaml`](./10_flow_capability.graph.yaml)
-- 方法倒排（G-L2）：[`../l2/indexes/by_path.yaml`](../l2/indexes/by_path.yaml)
+- 方法倒排（G-L2）：[`../l2/indexes/`](../l2/indexes/)（chat · [`by_path.yaml`](../l2/indexes/by_path.yaml)；lg_rag · [`by_path_lg_rag.yaml`](../l2/indexes/by_path_lg_rag.yaml)）
 - Mermaid 约定：[`../shared/99_mermaid_protocol.md`](../shared/99_mermaid_protocol.md)

@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from contextlib import nullcontext
 from typing import Any
 
@@ -119,40 +120,65 @@ def _trace_config(*, thread_id: str | None = None) -> dict | None:
     }
 
 
-async def _ainvoke_with_tracing(
-    graph: Any, query: str, *, thread_id: str
-) -> dict[str, Any]:
-    """共享 ainvoke 外壳：thread_id 截断 + Langfuse config/span/属性传播。"""
-    config: dict = {"configurable": {"thread_id": thread_id[:255]}}
+def _run_config(thread_id: str) -> dict[str, Any]:
+    """thread_id + 可选 Langfuse callbacks。"""
+    config: dict[str, Any] = {"configurable": {"thread_id": thread_id[:255]}}
     if tc := _trace_config(thread_id=thread_id):
-        # 合并 callbacks / metadata / run_name；勿丢掉 thread_id
         config = {**tc, "configurable": config["configurable"]}
+    return config
+
+
+def _tracing_contexts(thread_id: str):
+    """根 span + propagate_attributes；返回 (span_cm, attr_cm)。"""
     span_cm = (
         trace_span(_RUN_NAME, run_type="chain", tags=[_TAG])
         if tracing_enabled()
         else nullcontext()
     )
-    with span_cm:
+    if tracing_enabled():
+        try:
+            from langfuse import propagate_attributes
+
+            attr_cm = propagate_attributes(
+                trace_name=_RUN_NAME, session_id=thread_id, tags=[_TAG]
+            )
+        except Exception:  # SDK 可选；失败不挡主流程
+            attr_cm = nullcontext()
+    else:
+        attr_cm = nullcontext()
+    return span_cm, attr_cm
+
+
+async def _ainvoke_with_tracing(
+    graph: Any, query: str, *, thread_id: str
+) -> dict[str, Any]:
+    """共享 ainvoke 外壳：thread_id 截断 + Langfuse config/span/属性传播。"""
+    config = _run_config(thread_id)
+    span_cm, attr_cm = _tracing_contexts(thread_id)
+    with span_cm, attr_cm:
         # 官方推荐的 trace 级属性传播：trace_name/session/tags 写到当前 span
         # 并随上下文传播给所有子 span。内层 LCEL 的 CallbackHandler 在其根
         # run 会 update_trace(name="lc-evidence-chain")，后置
         # update_current_trace 实测抢不回命名，故用 propagate_attributes。
-        if tracing_enabled():
-            try:
-                from langfuse import propagate_attributes
+        return await graph.ainvoke(
+            {"messages": [HumanMessage(content=query)]},
+            config,
+        )
 
-                attr_cm = propagate_attributes(
-                    trace_name=_RUN_NAME, session_id=thread_id, tags=[_TAG]
-                )
-            except Exception:  # SDK 可选；失败不挡主流程
-                attr_cm = nullcontext()
-        else:
-            attr_cm = nullcontext()
-        with attr_cm:
-            return await graph.ainvoke(
-                {"messages": [HumanMessage(content=query)]},
-                config,
-            )
+
+async def _astream_with_tracing(
+    graph: Any, query: str, *, thread_id: str
+) -> AsyncIterator[dict[str, Any]]:
+    """共享 astream(updates) 外壳；yield 每个节点 update dict。"""
+    config = _run_config(thread_id)
+    span_cm, attr_cm = _tracing_contexts(thread_id)
+    with span_cm, attr_cm:
+        async for update in graph.astream(
+            {"messages": [HumanMessage(content=query)]},
+            config,
+            stream_mode="updates",
+        ):
+            yield update
 
 
 async def ainvoke_basic_agent(
@@ -166,6 +192,18 @@ async def ainvoke_basic_agent(
     return await _ainvoke_with_tracing(graph, query, thread_id=thread_id)
 
 
+async def astream_basic_agent(
+    query: str,
+    *,
+    thread_id: str = "lg-rag-smoke",
+    checkpointer: Any | None = None,
+) -> AsyncIterator[dict[str, Any]]:
+    """Phase 1 basic · astream(updates)。"""
+    graph = build_basic_agent(checkpointer=checkpointer)
+    async for update in _astream_with_tracing(graph, query, thread_id=thread_id):
+        yield update
+
+
 async def ainvoke_router_agent(
     query: str,
     *,
@@ -175,3 +213,15 @@ async def ainvoke_router_agent(
     """Phase 2 三路路由图；同 thread_id 可经 checkpointer 续写 messages。"""
     graph = build_router_agent(checkpointer=checkpointer)
     return await _ainvoke_with_tracing(graph, query, thread_id=thread_id)
+
+
+async def astream_router_agent(
+    query: str,
+    *,
+    thread_id: str = "lg-rag-smoke",
+    checkpointer: Any | None = None,
+) -> AsyncIterator[dict[str, Any]]:
+    """Phase 2 router · astream(updates)。"""
+    graph = build_router_agent(checkpointer=checkpointer)
+    async for update in _astream_with_tracing(graph, query, thread_id=thread_id):
+        yield update

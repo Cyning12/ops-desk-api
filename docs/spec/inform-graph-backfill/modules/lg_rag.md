@@ -13,11 +13,12 @@
 
 | 文件 | 职责 |
 |------|------|
-| `graph.py` | basic + router 图 · `ainvoke_basic_agent` / `ainvoke_router_agent` |
-| `multi/graph.py` | supervisor 图 · `ainvoke_supervisor_agent` |
+| `graph.py` | basic + router 图 · `ainvoke_*` / `astream_*` |
+| `multi/graph.py` | supervisor 图 · `ainvoke_supervisor_agent` / `astream_supervisor_agent` |
 | `nodes.py` | router/rag/direct/refuse/evaluate/rewrite |
 | `multi/nodes.py` | supervisor / subtask / aggregator |
-| `router.py` | HTTP `POST /api/ops/lg-rag/invoke` · freeze `lg-rag-http-v1` |
+| `router.py` | HTTP `POST /invoke`（`lg-rag-http-v1`）· `POST /stream`（`lg-rag-sse-v1`） |
+| `sse_stream.py` | SSE updates → T1 事件帧 |
 | `checkpointer.py` | InMemory / AsyncPostgres saver |
 | `state.py` | `LgRagState` |
 
@@ -27,10 +28,10 @@
 
 | 资产 | 状态 |
 |------|------|
-| `01_modules` 行 | ✅ 但 **超长备注**（Phase1–4 全文） |
-| G-L0 | ❌ 未挂路由 |
-| `10_flow_lg_rag` | ❌ |
-| G-L2 | ❌ |
+| `01_modules` 行 | ✅ |
+| G-L0 | ✅ 挂路由 |
+| `10_flow_lg_rag` | ✅ |
+| G-L2 | ✅ 分文件 `by_path_lg_rag.yaml` / `by_symbol_lg_rag.yaml` · **全** `implementedBy`（`05` §9） |
 
 ---
 
@@ -38,10 +39,10 @@
 
 | 优先级 | 文件 | 动作 |
 |--------|------|------|
-| P0 | `l1/10_flow_lg_rag.graph.yaml` | **新建**（见 `layers/G-L1_flows.md` §4） |
-| P0 | `l0/00_main.graph.yaml` | lg_rag_router → flow `::triggers` |
-| P1 | `l1/01_modules.md` | 行改为短摘要 + link `10_flow_lg_rag.md`（W6） |
-| P2 | `l2/indexes/*` | 仅当维护者拍板第二 G-L2 试点（见 `layers/G-L2_indexes.md`） |
+| P0 | `l1/10_flow_lg_rag.graph.yaml` | **已有**；随 Spec 改节点同步 |
+| P0 | `l0/00_main.graph.yaml` | lg_rag_router → flow `::triggers`（已有） |
+| P1 | `l1/01_modules.md` | 短摘要 + link（持续） |
+| P2 | `l2/indexes/*_lg_rag.yaml` | **已开** · 与 `05` §9 绑定 · **禁止**并入 chat indexes |
 
 ---
 

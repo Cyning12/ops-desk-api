@@ -9,7 +9,7 @@
 |------|-----|------|
 | `l0/` | G-L0 | `00_main.*` · `POINTERS_cross_repo.md` |
 | `l1/` | G-L1 | `01_modules.md` · `10_flow_*` / `11_flow_*` |
-| `l2/` | G-L2 | `indexes/by_path.yaml` · `by_symbol.yaml` |
+| `l2/` | G-L2 | `indexes/`：**分域** `by_path*.yaml` · `by_symbol*.yaml`（chat / lg_rag；禁止单文件全仓汇总） |
 | `shared/` | 跨层 | `99_*` · `02_version.md` · **`graph.json`**（C1） |
 
 ## 变更策略（摘要）

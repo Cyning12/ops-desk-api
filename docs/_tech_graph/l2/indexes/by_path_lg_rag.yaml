@@ -1,0 +1,114 @@
+# lg_rag 域 path → 节点倒排（G-L2 · 第二试点 · 分文件，不与 chat 混排）
+# 源：l1/10_flow_lg_rag.graph.yaml 全部 implementedBy
+# 系列约束：docs/spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md §9
+# 加载纪律：按 path 命中本文件；禁止并入 by_path.yaml（chat）
+
+version: "2026-08-31"
+graph_id: "10_flow_lg_rag"
+layer: "G-L2"
+pilot: "lg_rag-full-flow"
+note: "传输 Spec 系列要求 flow 上全部带 implementedBy 的节点进本文件；共享 symbol（如 rag_node）可对应多 node_id"
+
+by_path:
+  "app/ops/lg_rag/router.py":
+    - node_id: lg_invoke
+      symbol: invoke_lg_rag
+      kind: method
+    - node_id: lg_invoke
+      symbol: _dispatch
+      kind: method
+    - node_id: lg_stream
+      symbol: stream_lg_rag
+      kind: method
+  "app/ops/lg_rag/sse_stream.py":
+    - node_id: lg_stream
+      symbol: iter_lg_rag_sse
+      kind: method
+    - node_id: lg_stream
+      symbol: map_node_update
+      kind: method
+  "app/ops/lg_rag/graph.py":
+    - node_id: basic_graph
+      symbol: build_basic_agent
+      kind: method
+    - node_id: router_graph
+      symbol: build_router_agent
+      kind: method
+    - node_id: lg_stream
+      symbol: _astream_with_tracing
+      kind: method
+    - node_id: lg_stream
+      symbol: astream_basic_agent
+      kind: method
+    - node_id: lg_stream
+      symbol: astream_router_agent
+      kind: method
+  "app/ops/lg_rag/multi/graph.py":
+    - node_id: sup_graph
+      symbol: build_supervisor_agent
+      kind: method
+    - node_id: lg_stream
+      symbol: astream_supervisor_agent
+      kind: method
+  "app/ops/lg_rag/nodes.py":
+    - node_id: b_rag
+      symbol: rag_node
+      kind: method
+    - node_id: r_router
+      symbol: router_node
+      kind: method
+    - node_id: r_direct
+      symbol: direct_answer_node
+      kind: method
+    - node_id: r_refuse
+      symbol: refuse_node
+      kind: method
+    - node_id: r_rag
+      symbol: rag_node
+      kind: method
+    - node_id: r_evaluate
+      symbol: evaluate_node
+      kind: method
+    - node_id: r_evaluate
+      symbol: route_by_quality
+      kind: method
+    - node_id: r_rewrite
+      symbol: rewrite_node
+      kind: method
+    - node_id: r_rewrite
+      symbol: route_after_rewrite
+      kind: method
+  "app/ops/lg_rag/multi/nodes.py":
+    - node_id: s_supervisor
+      symbol: supervisor_node
+      kind: method
+    - node_id: s_dispatch
+      symbol: route_next_subtask
+      kind: method
+    - node_id: s_rag
+      symbol: rag_subtask_node
+      kind: method
+    - node_id: s_extract
+      symbol: info_extract_node
+      kind: method
+    - node_id: s_tool
+      symbol: tool_exec_node
+      kind: method
+    - node_id: s_aggregator
+      symbol: aggregator_node
+      kind: method
+  "app/ops/strategy/intent.py":
+    - node_id: s_intent
+      symbol: intent_node
+      kind: method
+  "app/ops/strategy/builder.py":
+    - node_id: s_strategy_builder
+      symbol: strategy_builder_node
+      kind: method
+  "app/ops/strategy/critic.py":
+    - node_id: s_critic
+      symbol: critic_node
+      kind: method
+    - node_id: s_critic
+      symbol: route_after_critic
+      kind: method
