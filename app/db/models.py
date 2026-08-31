@@ -307,3 +307,27 @@ class OpsLgRagTurn(Base):
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
 
     thread: Mapped["OpsLgRagThread"] = relationship(back_populates="turns")
+
+
+class OpsLgRagRunEvent(Base):
+    """lg-rag SSE 事件落盘（T4 replay）；独立于 ops_run_events。"""
+
+    __tablename__ = "ops_lg_rag_run_events"
+    __table_args__ = (
+        UniqueConstraint("run_id", "seq", name="uq_ops_lg_rag_run_events_run_seq"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    run_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    seq: Mapped[int] = mapped_column(Integer, nullable=False)
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ops_users.id", ondelete="CASCADE"), nullable=False
+    )
+    thread_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    ts_ms: Mapped[int] = mapped_column(Integer, nullable=False)
+    agent_role: Mapped[str] = mapped_column(String(64), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)

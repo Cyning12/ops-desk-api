@@ -1,6 +1,7 @@
 """lg-rag SSE：astream(updates) → T1 事件帧（freeze lg-rag-sse-v1）。
 
-断连语义（T2）：服务端尽量跑完图；不保证客户端收齐；无 cancel/replay（T4）。
+断连语义（T2/T4）：服务端尽量跑完图；不保证客户端收齐；无 cancel。
+T4：每帧可选顶层 cursor；事件尽量落盘供 POST /lg-rag/replay。
 """
 from __future__ import annotations
 
@@ -13,6 +14,7 @@ from typing import Any
 
 from langchain_core.messages import AIMessage
 
+from app.ops.lg_rag.sse_replay import format_sse_event, make_cursor
 from app.ops.lg_rag.thread_store import persist_thread_turns
 from app.ops.tracing import flush_traces, tracing_enabled
 
@@ -125,6 +127,7 @@ async def iter_lg_rag_sse(
     user_id: str | None = None,
 ) -> AsyncIterator[str]:
     """产出 SSE 字符串帧；异常时发 error 帧后结束。"""
+    from app.ops.lg_rag.event_store import persist_run_event
     from app.ops.lg_rag.graph import astream_basic_agent, astream_router_agent
     from app.ops.lg_rag.multi.graph import astream_supervisor_agent
 
@@ -133,10 +136,10 @@ async def iter_lg_rag_sse(
     seq = 0
     last_answer = ""
 
-    def emit(event_type: str, agent_role: str, payload: dict[str, Any]) -> str:
+    async def emit(event_type: str, agent_role: str, payload: dict[str, Any]) -> str:
         nonlocal seq
         seq += 1
-        return _sse_frame(
+        event = format_sse_event(
             {
                 "run_id": rid,
                 "seq": seq,
@@ -146,8 +149,28 @@ async def iter_lg_rag_sse(
                 "payload": payload,
             }
         )
+        # format_sse_event 已写 cursor；兜底保证字段存在
+        if not event.get("cursor"):
+            event["cursor"] = make_cursor(rid, seq)
+        if user_id:
+            try:
+                await persist_run_event(
+                    run_id=rid,
+                    seq=seq,
+                    user_id=user_id,
+                    thread_id=thread_id,
+                    ts_ms=int(event.get("ts_ms") or 0),
+                    agent_role=agent_role,
+                    event_type=event_type,
+                    payload=payload,
+                )
+            except Exception:
+                logger.exception(
+                    "lg-rag event persist failed run_id=%s seq=%s", rid, seq
+                )
+        return _sse_frame(event)
 
-    yield emit(
+    yield await emit(
         "run.start",
         "system",
         {"run_id": rid, "thread_id": thread_id, "mode": mode},
@@ -175,13 +198,13 @@ async def iter_lg_rag_sse(
                     content = payload.get("content")
                     if isinstance(content, str) and content:
                         last_answer = content
-                yield emit(event_type, role, payload)
+                yield await emit(event_type, role, payload)
         # router/basic 可能无 aggregator：用末帧预览不够时仍发 done；
         # 若全程无 answer，补一帧空 answer 便于客户端统一收口（可选）
         if not saw_answer and mode != "supervisor":
             # basic/router：最后进度里可能已有 answer_preview；仍发空 answer 占位
-            yield emit("answer", "system", {"content": "", "note": "no_aggregator"})
-        yield emit(
+            yield await emit("answer", "system", {"content": "", "note": "no_aggregator"})
+        yield await emit(
             "done",
             "system",
             {
@@ -199,7 +222,7 @@ async def iter_lg_rag_sse(
                 )
     except Exception as exc:
         logger.exception("lg-rag stream failed run_id=%s", rid)
-        yield emit(
+        yield await emit(
             "error",
             "system",
             {

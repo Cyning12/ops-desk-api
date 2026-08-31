@@ -1,7 +1,7 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_lg_rag"
 title: "LG RAG 旁路三模式流程（basic / router / supervisor · Critic）"
-description: "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。"
+description: "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。"
 version: "2026-08-31"
 layer: "G-L1"
 primary_layer: "G-L1"
@@ -44,7 +44,7 @@ nodes:
         kind: method
 
   - id: "lg_stream"
-    label: "POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1）"
+    label: "POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · cursor）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
@@ -78,6 +78,15 @@ nodes:
       - path: "app/ops/lg_rag/continuity.py"
         symbol: "compress_window"
         kind: method
+      - path: "app/ops/lg_rag/event_store.py"
+        symbol: "persist_run_event"
+        kind: method
+      - path: "app/ops/lg_rag/sse_replay.py"
+        symbol: "format_sse_event"
+        kind: method
+      - path: "app/ops/lg_rag/sse_replay.py"
+        symbol: "make_cursor"
+        kind: method
       - path: "app/ops/lg_rag/thread_store.py"
         symbol: "resolve_thread_for_user"
         kind: method
@@ -86,6 +95,33 @@ nodes:
         kind: method
       - path: "app/ops/lg_rag/thread_store.py"
         symbol: "persist_thread_turns"
+        kind: method
+
+  - id: "lg_replay"
+    label: "POST /api/ops/lg-rag/replay（T4 · after_seq/cursor）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/router.py"
+        symbol: "replay_lg_rag"
+        kind: method
+      - path: "app/ops/lg_rag/event_store.py"
+        symbol: "load_events_after"
+        kind: method
+      - path: "app/ops/lg_rag/event_store.py"
+        symbol: "assert_run_owned"
+        kind: method
+      - path: "app/ops/lg_rag/sse_replay.py"
+        symbol: "resolve_replay_target"
+        kind: method
+      - path: "app/ops/lg_rag/sse_replay.py"
+        symbol: "parse_cursor"
+        kind: method
+      - path: "app/ops/lg_rag/sse_replay.py"
+        symbol: "replay_events"
+        kind: method
+      - path: "app/ops/lg_rag/sse_replay.py"
+        symbol: "format_sse_event"
         kind: method
 
   - id: "basic_graph"
@@ -311,6 +347,13 @@ edges:
       - path: "app/ops/lg_rag/router.py"
         line: 219
 
+  - from: "client"
+    to: "lg_replay"
+    label: "POST SSE replay {run_id, after_seq|cursor}"
+    anchors:
+      - path: "app/ops/lg_rag/router.py"
+        line: 1
+
   - from: "lg_stream"
     to: "sup_graph"
     label: "[默认 mode=supervisor · astream updates]"
@@ -322,9 +365,23 @@ edges:
 
   - from: "lg_stream"
     to: "client"
-    label: "text/event-stream（run.start…answer…done）"
+    label: "text/event-stream（run.start…answer…done · cursor）"
     anchors:
       - path: "app/ops/lg_rag/sse_stream.py"
+        line: 1
+
+  - from: "lg_replay"
+    to: "client"
+    label: "text/event-stream（seq > after_seq）"
+    anchors:
+      - path: "app/ops/lg_rag/router.py"
+        line: 1
+
+  - from: "lg_replay"
+    to: "db"
+    label: "ops_lg_rag_run_events（read）"
+    anchors:
+      - path: "app/ops/lg_rag/event_store.py"
         line: 1
 
   - from: "lg_invoke"
@@ -363,7 +420,7 @@ edges:
 
   - from: "lg_stream"
     to: "db"
-    label: "ops_lg_rag_threads / turns（thread_id SoT）"
+    label: "ops_lg_rag_threads / turns · ops_lg_rag_run_events"
     anchors:
       - path: "app/ops/lg_rag/thread_store.py"
         line: 1

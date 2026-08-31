@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260831_V1",
-  "generated_at": "2026-08-31T07:25:04Z",
+  "generated_at": "2026-08-31T11:49:02Z",
   "graphs": [
     {
       "id": "00_main",
@@ -412,7 +412,12 @@
     {
       "graph_id": "10_flow_lg_rag",
       "id": "lg_stream",
-      "label": "POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1）"
+      "label": "POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · cursor）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "lg_replay",
+      "label": "POST /api/ops/lg-rag/replay（T4 · after_seq/cursor）"
     },
     {
       "graph_id": "10_flow_lg_rag",
@@ -2037,6 +2042,21 @@
     },
     {
       "graph_id": "10_flow_lg_rag",
+      "from": "client",
+      "to": "lg_replay",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "POST SSE replay {run_id, after_seq|cursor}",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/router.py",
+          "line": 1
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
       "from": "lg_stream",
       "to": "sup_graph",
       "mark": "?>",
@@ -2056,10 +2076,40 @@
       "to": "client",
       "mark": "->",
       "type": "depends_on",
-      "label": "text/event-stream（run.start…answer…done）",
+      "label": "text/event-stream（run.start…answer…done · cursor）",
       "anchors": [
         {
           "path": "app/ops/lg_rag/sse_stream.py",
+          "line": 1
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "lg_replay",
+      "to": "client",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "text/event-stream（seq > after_seq）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/router.py",
+          "line": 1
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "lg_replay",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "ops_lg_rag_run_events（read）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/event_store.py",
           "line": 1
         }
       ],
@@ -2131,7 +2181,7 @@
       "to": "db",
       "mark": "->",
       "type": "depends_on",
-      "label": "ops_lg_rag_threads / turns（thread_id SoT）",
+      "label": "ops_lg_rag_threads / turns · ops_lg_rag_run_events",
       "anchors": [
         {
           "path": "app/ops/lg_rag/thread_store.py",
