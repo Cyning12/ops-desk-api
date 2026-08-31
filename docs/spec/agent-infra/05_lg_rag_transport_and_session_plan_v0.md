@@ -241,3 +241,19 @@
 | T5 token 流 | stream 符号变更 → 补 indexes |
 | T6 弃用 chat | 文档为主；若删 lg_rag 边/节点 → 同步删 indexes 条目 |
 | Obs-I/O | 默认不新增 flow 节点；若 `tracing` 挂进 flow `implementedBy` 再补 |
+---
+
+## 10. 前端接入与联调时机（建议 · 2026-08-31）
+
+> 仓：`ops-desk-web`（及可选 iOS）。契约真值：`lg-rag-sse-v1` · `POST /api/ops/lg-rag/stream`。
+
+| 阶段 | 何时开前端 | 联调内容 | 不必等 |
+|---|---|---|---|
+| **可开工（推荐最早）** | **T2 PR 合入 master 后** | 新 composable 吃 SSE：`run.start` / `node.progress` / `subtask.progress` / `answer` / `done`/`error`；调试台或旁路页；**feature flag**，默认仍走 chat | T3–T6 |
+| **产品向多轮** | T3 Session 可用后 | `thread_id` / session 与历史注入对齐 | T5 token 流 |
+| **断线体验** | T4 契约+实现后 | cursor / replay | — |
+| **打字机终答** | T5 后 | aggregator（等）delta 帧 | — |
+| **切主路径** | T6 | 下线/隐藏 chat stream；文档与默认入口改 lg-rag | 前端可先双栈并存 |
+
+**建议**：T2 合入后立刻开 **web 旁路联调 task**（不阻塞 api T3）；主 Chat UI 全量切换等到至少 T3（有会话）再排，避免无 session 的半成品体验。  
+**跨仓**：api freeze 已钉；web 另开 task，契约以 `05` §4.2 + 本仓 `/stream` 实现为准，**不**要求兼容 chat 事件全集。
