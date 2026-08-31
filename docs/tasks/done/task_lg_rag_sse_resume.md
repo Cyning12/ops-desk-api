@@ -1,9 +1,9 @@
 # Task：lg-rag T4 · 断联 / replay（L-c · seq/cursor）
 
-> **状态**：active  
+> **状态**：completed（2026-08-31 CLOSE · PR [#103](https://github.com/Cyning12/ops-desk-api/pull/103) MERGED）  
 > **类型**：传输 / SSE resume  
 > **上游**：[`05_lg_rag_transport_and_session_plan_v0.md`](../../spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md) §4.2 · §4.3 · §9 · §10.3 · [`session/ROADMAP_lg_rag_session_continuity_v0.md`](../../spec/agent-infra/session/ROADMAP_lg_rag_session_continuity_v0.md) **仅 L-c**  
-> **前置**：T2 CLOSE · [`task_lg_rag_sse_stream_updates`](../done/task_lg_rag_sse_stream_updates.md) · [#97](https://github.com/Cyning12/ops-desk-api/pull/97)；T3 CLOSE · [`task_lg_rag_session_continuity`](../done/task_lg_rag_session_continuity.md) · [#100](https://github.com/Cyning12/ops-desk-api/pull/100)  
+> **前置**：T2 CLOSE · [`task_lg_rag_sse_stream_updates`](./task_lg_rag_sse_stream_updates.md) · [#97](https://github.com/Cyning12/ops-desk-api/pull/97)；T3 CLOSE · [`task_lg_rag_session_continuity`](./task_lg_rag_session_continuity.md) · [#100](https://github.com/Cyning12/ops-desk-api/pull/100)  
 > **分支**：`task/lg-rag-sse-resume`  
 > **帽子**：00 起草闸；**10** 补全；**20** 审；**30+40** 实现。  
 > **参考（勿兼容 / 勿 import）**：`app/ops/session/sse_replay.py` · `tests/test_session_continuity.py`（H3 思想）  
@@ -31,6 +31,7 @@
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | `lg-rag-sse-v1`（扩展：帧内可选 `cursor` + replay HTTP；不 silent 扩；回写 05） |
 | **close_pr_policy** | `required` |
+| **related_pr** | `#103` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | T4 仅 L-c；L-a/L-b/L-d 已合入 #100 勿重开；web T3/T4 不阻塞 api-only 先合 |
 
@@ -57,7 +58,7 @@
 | **断连服务端** | **仍「尽量跑完图」**（相对 T2 **不**引入 cancel）。T4 变更=事件可落盘 + 客户端可 replay 补齐；**不保证**断连瞬间客户端收齐 live 帧 |
 | **鉴权 / 归属** | replay 须登录；`run_id` 须归属当前用户；未知 / 跨用户 → **404**（对齐 T3 不泄露） |
 | **重复 seq** | replay 只返回 `seq > after_seq`；契约声明客户端对同 `run_id+seq` **去重不重复渲染**（api mock 测断言不重复下发已收 seq） |
-| **合入** | **可 api-only 先合**；与进行中的 web T3 `thread_id` **不互堵**。本 PR **勿 auto-merge**。web「断网恢复 / 存 cursor」另 task（00 可出 Prompt，本仓不改 Vue） |
+| **合入** | **可 api-only 先合**；与 web T3 `thread_id` **不互堵**。已 MERGED：[#103](https://github.com/Cyning12/ops-desk-api/pull/103)（2026-08-31）。web「断网恢复 / 存 cursor」另 task（00 已出 Prompt `PROMPT_web_00_lg_rag_t4_cursor`，本仓不改 Vue） |
 | **模块** | 不新增一级模块；`01_modules.md` 只改 `lg_rag` 备注 |
 
 ---
@@ -152,6 +153,7 @@
 | 2026-08-31 | **10-task**：lint PASS（W4）；补 `### 自检结论`；收紧非范围（L-a/b/d 勿重开 · 禁 event_type=cursor 强制 · 禁 chat 表/依赖）；旧测路径钉死 `test_lg_rag_session_continuity.py` |
 | 2026-08-31 | **20** R1 pass · **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
 | 2026-08-31 | **30+40**：实现 L-c（表/cursor/replay）；验收勾选；见 invoke `invoke_20260831_30_40_*` |
+| 2026-08-31 | **00 CLOSE**：PR [#103](https://github.com/Cyning12/ops-desk-api/pull/103) MERGED；deploy `1e7912a` success（compose startup `alembic upgrade head` → `ops_lg_rag_run_events` 到 head）；归档 done/ · Hub 补登 · CLOSE invoke 留档 |
 
 ### 自检结论（执行者）
 
@@ -169,3 +171,27 @@
 - `chat/graph.py` 零 diff；`lg_rag` 无 chat/session import  
 - 已知未测：真 LLM 流；图仍在写时的竞态完整一致（failure_paths 已声明仅已落盘帧）  
 - 不 CLOSE（留给 00）
+
+---
+
+## 关账（CLOSE）
+
+| 项 | 值 |
+|---|---|
+| PR | [#103](https://github.com/Cyning12/ops-desk-api/pull/103) **MERGED** 2026-08-31 |
+| 生产 | deploy-api `1e7912a` success（2026-08-31 12:13Z）· compose startup `alembic upgrade head` → `ops_lg_rag_run_events` 到 head |
+| web | T3 `thread_id` / T4 cursor Prompt 已落盘 `_prompts/`（`PROMPT_web_00_lg_rag_t3_thread_id` · `PROMPT_web_00_lg_rag_t4_cursor`）；web 研发不挡本仓 CLOSE |
+| 归档 | 2026-08-31 · 00 关账 · 维护者 Prompt 授权 |
+
+### 自检结论（关账）
+
+> 2026-08-31 · 00 关账复检 · **PASS**（实现已合入 #103；本窗不重跑业务测）
+
+- [x] 验收标准全勾（合入前 30/40 已绿 · 34 passed）
+- [x] PR #103 MERGED · CI 绿 · deploy success
+- [x] invoke 帽集合 10/00/30 齐全 · R1 审查文存在 · CLOSE invoke 留档
+- [x] Hub `done/README.md` 索引行补登 · active/README 指针移除
+
+### KPI
+
+Task_KPI%: 100 · D1 范围钉死仅 L-c · D2 闸齐（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 代签落盘）· D3 过程档齐（invoke / R1 审查 / web Prompt）· D4 图谱 G-L1/G-L2 已随 #103 · D5 关账补登 2026-08-31
