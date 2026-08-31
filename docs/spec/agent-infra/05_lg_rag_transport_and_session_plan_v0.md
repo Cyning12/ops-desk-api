@@ -209,6 +209,7 @@
 | 2026-08-31 | **§9 G-L2**：本系列凡改 `10_flow_lg_rag` 节点须同步分域 indexes 全量 `implementedBy`；禁止并入 chat yaml |
 | 2026-08-31 | **§10–§11**：分阶段联调注意事项 · 跨仓发版 · web task/checklist 指针 |
 | 2026-08-31 | **T2 CLOSE**：§10 指针改 done/ · web slug `task_web_lg_rag_sse_t2` · 发版策略改为后续波纪律 |
+| 2026-08-31 | **T3 实现回写 §10.2**：`thread_id` SoT · 独立表 · 窗口压缩 6/2 注入 `_ainvoke/_astream` · 跨用户 404 |
 
 ---
 
@@ -278,8 +279,8 @@
 | 维度 | 内容 |
 |---|---|
 | **前置** | T2 联调已通过 · api T3 task 合入 |
-| **api 提供** | `thread_id`/session 与历史注入 · 窗口策略 · 与 ops session 对齐（**不**要求兼容 chat latest 语义） |
-| **web 交付** | Chat 发送带稳定 `thread_id` · 刷新/重进会话行为 · 可选展示 session 元数据 |
+| **api 提供（2026-08-31 已实现）** | SoT = `thread_id`（**不**以 chat `session_id` / `GET /chat/sessions/latest` 为 SoT）。独立表 `ops_lg_rag_threads` + `ops_lg_rag_turns`。`POST /lg-rag/stream` 与 `/invoke` 加载归属当前用户的历史，窗口压缩（默认 `max_full_turns=6` · `group_size=2`，纯函数 `app/ops/lg_rag/continuity.py`）后装配进 `_ainvoke/_astream` 的 `messages`（历史 + 本轮 query）。缺 `thread_id`：服务端生成并设响应头 `X-Ops-Lg-Rag-Thread-Id`（stream 200）。跨用户 `thread_id` → **404**（不注入他用户历史）。超长 → 422。未登录 → 401。stream `done` 后尽量落盘本轮 user/assistant，失败只打日志。checkpointer 非跨请求产品 SoT。freeze 仍 **`lg-rag-sse-v1`**，**不**新增 `event_type`。 |
+| **web 交付** | Chat 发送带稳定 `thread_id` · 刷新/重进会话行为 · 可选展示 session 元数据（另开 web task；本波可 api-only 先合） |
 | **联调项** | 同 thread 续问上下文 · 新 thread 隔离 · 超长历史压缩后仍 SSE 正常 |
 | **通过标准** | §11 T3 段 · 多轮 3+ 轮人工冒烟 |
 | **常见坑** | 每问新 uuid 导致无法多轮 · 仍依赖 chat `session_id` 字段语义 |

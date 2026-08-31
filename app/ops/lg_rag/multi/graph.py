@@ -87,10 +87,13 @@ async def ainvoke_supervisor_agent(
     *,
     thread_id: str = "lg-rag-supervisor-smoke",
     checkpointer: Any | None = None,
+    history_turns: list[dict] | None = None,
 ) -> dict[str, Any]:
     """Phase 4 Supervisor 图；同 thread_id 可经 checkpointer 续写 messages。"""
     graph = build_supervisor_agent(checkpointer=checkpointer)
-    return await _ainvoke_with_tracing(graph, query, thread_id=thread_id)
+    return await _ainvoke_with_tracing(
+        graph, query, thread_id=thread_id, history_turns=history_turns
+    )
 
 
 async def astream_supervisor_agent(
@@ -98,8 +101,11 @@ async def astream_supervisor_agent(
     *,
     thread_id: str = "lg-rag-supervisor-smoke",
     checkpointer: Any | None = None,
+    history_turns: list[dict] | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Phase 4 Supervisor · astream(updates)。"""
     graph = build_supervisor_agent(checkpointer=checkpointer)
-    async for update in _astream_with_tracing(graph, query, thread_id=thread_id):
+    async for update in _astream_with_tracing(
+        graph, query, thread_id=thread_id, history_turns=history_turns
+    ):
         yield update

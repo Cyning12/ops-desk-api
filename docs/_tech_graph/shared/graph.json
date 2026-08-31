@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260831_V1",
-  "generated_at": "2026-08-31T06:19:35Z",
+  "generated_at": "2026-08-31T07:25:04Z",
   "graphs": [
     {
       "id": "00_main",
@@ -2015,7 +2015,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/router.py",
-          "line": 143
+          "line": 176
         }
       ],
       "sync": true
@@ -2030,7 +2030,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/router.py",
-          "line": 175
+          "line": 219
         }
       ],
       "sync": true
@@ -2075,7 +2075,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/router.py",
-          "line": 118
+          "line": 141
         }
       ],
       "sync": true
@@ -2090,7 +2090,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/router.py",
-          "line": 122
+          "line": 145
         }
       ],
       "sync": true
@@ -2105,7 +2105,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/router.py",
-          "line": 120
+          "line": 143
         }
       ],
       "sync": true
@@ -2120,7 +2120,22 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/router.py",
-          "line": 152
+          "line": 208
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "lg_stream",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "ops_lg_rag_threads / turns（thread_id SoT）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/thread_store.py",
+          "line": 1
         }
       ],
       "sync": true
@@ -2131,11 +2146,11 @@
       "to": "db",
       "mark": "->",
       "type": "depends_on",
-      "label": "optional PG checkpointer（env LG_RAG_HTTP_CHECKPOINTER）",
+      "label": "ops_lg_rag_threads / turns；optional PG checkpointer",
       "anchors": [
         {
           "path": "app/ops/lg_rag/router.py",
-          "line": 125
+          "line": 151
         }
       ],
       "sync": true

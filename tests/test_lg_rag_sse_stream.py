@@ -13,7 +13,7 @@ _PATH = "/api/ops/lg-rag/stream"
 
 
 async def _fake_supervisor_stream(
-    query: str, *, thread_id: str = "t", checkpointer: Any = None
+    query: str, *, thread_id: str = "t", checkpointer: Any = None, **_kwargs
 ) -> AsyncIterator[dict[str, Any]]:
     yield {"intent_node": {"intent": {"domain": "kb", "needs_tool": False}}}
     yield {"strategy_builder": {"allowed_capability_ids": []}}

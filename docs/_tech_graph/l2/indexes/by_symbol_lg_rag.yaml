@@ -17,6 +17,11 @@ by_symbol:
     path: app/ops/lg_rag/router.py
     node_id: lg_invoke
     kind: method
+  _prepare_thread:
+    path: app/ops/lg_rag/router.py
+    node_id: lg_invoke
+    kind: method
+    also_node_ids: [lg_stream]
   stream_lg_rag:
     path: app/ops/lg_rag/router.py
     node_id: lg_stream
@@ -57,6 +62,31 @@ by_symbol:
     path: app/ops/lg_rag/multi/graph.py
     node_id: lg_stream
     kind: method
+  assemble_graph_messages:
+    path: app/ops/lg_rag/continuity.py
+    node_id: lg_stream
+    kind: method
+    also_node_ids: [lg_invoke]
+  compress_window:
+    path: app/ops/lg_rag/continuity.py
+    node_id: lg_stream
+    kind: method
+    also_node_ids: [lg_invoke]
+  resolve_thread_for_user:
+    path: app/ops/lg_rag/thread_store.py
+    node_id: lg_stream
+    kind: method
+    also_node_ids: [lg_invoke]
+  load_thread_turns:
+    path: app/ops/lg_rag/thread_store.py
+    node_id: lg_stream
+    kind: method
+    also_node_ids: [lg_invoke]
+  persist_thread_turns:
+    path: app/ops/lg_rag/thread_store.py
+    node_id: lg_stream
+    kind: method
+    also_node_ids: [lg_invoke]
   rag_node:
     path: app/ops/lg_rag/nodes.py
     node_id: r_rag

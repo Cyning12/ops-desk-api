@@ -13,7 +13,7 @@ from typing import Any
 
 from langchain_core.messages import AIMessage
 
-from app.ops.chat.sse import make_sse_event
+from app.ops.lg_rag.thread_store import persist_thread_turns
 from app.ops.tracing import flush_traces, tracing_enabled
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,14 @@ def _truncate(text: str, max_len: int) -> str:
     if len(text) <= max_len:
         return text
     return text[: max_len - 1] + "…"
+
+
+def _sse_frame(event: dict[str, Any]) -> str:
+    """SSE 帧外形对齐既有 chat 格式（event + data JSON）；不新增 event_type。"""
+    return (
+        f"event: {event['event_type']}\n"
+        f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+    )
 
 
 def _summarize_payload(node_output: Any) -> dict[str, Any]:
@@ -113,6 +121,8 @@ async def iter_lg_rag_sse(
     thread_id: str,
     run_id: str | None = None,
     astream_fn: Callable[..., AsyncIterator[dict[str, Any]]] | None = None,
+    history_turns: list[dict] | None = None,
+    user_id: str | None = None,
 ) -> AsyncIterator[str]:
     """产出 SSE 字符串帧；异常时发 error 帧后结束。"""
     from app.ops.lg_rag.graph import astream_basic_agent, astream_router_agent
@@ -121,11 +131,12 @@ async def iter_lg_rag_sse(
     rid = run_id or uuid.uuid4().hex
     started = time.perf_counter()
     seq = 0
+    last_answer = ""
 
     def emit(event_type: str, agent_role: str, payload: dict[str, Any]) -> str:
         nonlocal seq
         seq += 1
-        return make_sse_event(
+        return _sse_frame(
             {
                 "run_id": rid,
                 "seq": seq,
@@ -152,13 +163,18 @@ async def iter_lg_rag_sse(
 
     saw_answer = False
     try:
-        async for update in astream_fn(query, thread_id=thread_id):
+        async for update in astream_fn(
+            query, thread_id=thread_id, history_turns=history_turns or []
+        ):
             if not isinstance(update, dict):
                 continue
             for node_name, node_output in update.items():
                 event_type, role, payload = map_node_update(node_name, node_output)
                 if event_type == "answer":
                     saw_answer = True
+                    content = payload.get("content")
+                    if isinstance(content, str) and content:
+                        last_answer = content
                 yield emit(event_type, role, payload)
         # router/basic 可能无 aggregator：用末帧预览不够时仍发 done；
         # 若全程无 answer，补一帧空 answer 便于客户端统一收口（可选）
@@ -174,6 +190,13 @@ async def iter_lg_rag_sse(
                 "latency_ms": int((time.perf_counter() - started) * 1000),
             },
         )
+        if user_id:
+            try:
+                await persist_thread_turns(thread_id, user_id, query, last_answer)
+            except Exception:
+                logger.exception(
+                    "lg-rag persist after done failed thread_id=%s", thread_id
+                )
     except Exception as exc:
         logger.exception("lg-rag stream failed run_id=%s", rid)
         yield emit(

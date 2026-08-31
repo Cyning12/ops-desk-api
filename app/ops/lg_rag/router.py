@@ -20,7 +20,7 @@ import uuid
 from collections.abc import AsyncIterator
 from typing import Any, Literal
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import AIMessage
 from pydantic import BaseModel, Field
@@ -34,6 +34,12 @@ from app.ops.lg_rag import (
 )
 from app.ops.lg_rag.checkpointer import apostgres_saver
 from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
+from app.ops.lg_rag.thread_store import (
+    LgRagThreadForbiddenError,
+    load_thread_turns,
+    persist_thread_turns,
+    resolve_thread_for_user,
+)
 from app.ops.tracing import flush_traces, tracing_enabled
 
 logger = logging.getLogger(__name__)
@@ -125,7 +131,12 @@ def _use_postgres_checkpointer() -> bool:
     return os.getenv("LG_RAG_HTTP_CHECKPOINTER", "").strip().lower() == "postgres"
 
 
-async def _dispatch(mode: Mode, query: str, thread_id: str) -> dict[str, Any]:
+async def _dispatch(
+    mode: Mode,
+    query: str,
+    thread_id: str,
+    history_turns: list[dict] | None = None,
+) -> dict[str, Any]:
     """mode → 对应 ainvoke 入口；env 开关决定是否包 PG checkpointer。"""
     if mode == "basic":
         entry = ainvoke_basic_agent
@@ -133,21 +144,48 @@ async def _dispatch(mode: Mode, query: str, thread_id: str) -> dict[str, Any]:
         entry = ainvoke_supervisor_agent
     else:
         entry = ainvoke_router_agent
+    kwargs: dict[str, Any] = {
+        "thread_id": thread_id,
+        "history_turns": history_turns or [],
+    }
     if _use_postgres_checkpointer():
         async with apostgres_saver(setup=True) as saver:
-            return await entry(query, thread_id=thread_id, checkpointer=saver)
-    return await entry(query, thread_id=thread_id)
+            return await entry(query, checkpointer=saver, **kwargs)
+    return await entry(query, **kwargs)
+
+
+async def _prepare_thread(thread_id: str, user_id: str) -> list[dict]:
+    """归属校验 + 加载历史；跨用户 404；加载失败按无历史。"""
+    try:
+        owned = await resolve_thread_for_user(thread_id, user_id)
+    except LgRagThreadForbiddenError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Thread not found",
+        ) from None
+    if not owned:
+        return []
+    try:
+        return await load_thread_turns(thread_id)
+    except Exception:
+        logger.exception("lg-rag load turns failed thread_id=%s", thread_id)
+        return []
 
 
 @router.post("/invoke")
 async def invoke_lg_rag(
     body: InvokeRequest,
-    _user: OpsUser = CurrentUser,
+    user: OpsUser = CurrentUser,
 ) -> JSONResponse:
     """同步调用 lg_rag 旁路图；须登录。"""
     thread_id = (body.thread_id or uuid.uuid4().hex)[:THREAD_ID_MAX_LENGTH]
+    history_turns = await _prepare_thread(thread_id, str(user.id))
     try:
-        state = await _dispatch(body.mode, body.query, thread_id)
+        state = await _dispatch(
+            body.mode, body.query, thread_id, history_turns=history_turns
+        )
+    except HTTPException:
+        raise
     except Exception:
         logger.exception("lg-rag invoke failed")
         if tracing_enabled():
@@ -159,6 +197,12 @@ async def invoke_lg_rag(
                 "error": {"code": _FAIL_CODE, "message": _FAIL_MESSAGE},
             },
         )
+    try:
+        await persist_thread_turns(
+            thread_id, str(user.id), body.query, _extract_answer(state.get("messages"))
+        )
+    except Exception:
+        logger.exception("lg-rag invoke persist failed thread_id=%s", thread_id)
     if tracing_enabled():
         flush_traces()
     return JSONResponse(
@@ -174,10 +218,11 @@ async def invoke_lg_rag(
 @router.post("/stream")
 async def stream_lg_rag(
     body: StreamRequest,
-    _user: OpsUser = CurrentUser,
+    user: OpsUser = CurrentUser,
 ) -> StreamingResponse:
     """SSE 流式旁路（freeze lg-rag-sse-v1）；须登录。默认 mode=supervisor。"""
     thread_id = (body.thread_id or uuid.uuid4().hex)[:THREAD_ID_MAX_LENGTH]
+    history_turns = await _prepare_thread(thread_id, str(user.id))
     run_id = uuid.uuid4().hex
 
     async def event_gen() -> AsyncIterator[str]:
@@ -186,6 +231,8 @@ async def stream_lg_rag(
             mode=body.mode,
             thread_id=thread_id,
             run_id=run_id,
+            history_turns=history_turns,
+            user_id=str(user.id),
         ):
             yield chunk
 
