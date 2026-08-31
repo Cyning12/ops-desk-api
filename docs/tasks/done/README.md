@@ -34,6 +34,7 @@
 | 2026-08-26 | [`task_tech_graph_legacy_cleanup.md`](./task_tech_graph_legacy_cleanup.md) | 清理根双写 / 01_struct stub / QUICKREF·legacy · PR #61 |
 | 2026-08-26 | [`task_dsh_coding_kit_upgrade_1_7_1.md`](./task_dsh_coding_kit_upgrade_1_7_1.md) | kit 1.7.1（CLOSE dogfood + 00 条文手补） · PR #63 |
 | 2026-08-27 | [`task_dsh_coding_kit_upgrade_1_8_0.md`](./task_dsh_coding_kit_upgrade_1_8_0.md) | kit 1.8.0（K1–K7 核对 + prompts 手同步） · PR #76 |
+| 2026-08-31 | [`task_dsh_coding_kit_upgrade_1_10_0.md`](./task_dsh_coding_kit_upgrade_1_10_0.md) | kit 1.10.0（sync prompts + re-anchor / 00-delegate） · PR #98 |
 
 ---
 
@@ -73,6 +74,9 @@
 | 2026-08-28 | [`task_eval_goldenset_lg_rag.md`](./task_eval_goldenset_lg_rag.md) | Eval E2 模块金标最小集 · PR #93 |
 | 2026-08-28 | [`task_eval_langfuse_experiment_ci.md`](./task_eval_langfuse_experiment_ci.md) | Eval E3 Dataset/Experiment mock · PR #94 |
 | 2026-08-28 | [`task_eval_online_sample_scores.md`](./task_eval_online_sample_scores.md) | Eval E4 线上抽样 score · PR #95 |
+| 2026-08-29 | [`task_eval_token_cost_ledger.md`](./task_eval_token_cost_ledger.md) | Eval E5 Token/费用账本 · PR #96（2026-08-31 Hub 补登） |
+| 2026-08-30 | [`task_lg_rag_sse_t0_t1_spec.md`](./task_lg_rag_sse_t0_t1_spec.md) | T0+T1 Spec 签收 · docs-only |
+| 2026-08-31 | [`task_lg_rag_sse_stream_updates.md`](./task_lg_rag_sse_stream_updates.md) | T2 lg-rag `/stream` + Obs I/O · PR #97 |
 
 ---
 
@@ -101,6 +105,7 @@
 | YYYY-MM-DD | 初版 Hub（cyning-harness 模板嵌入） |
 | 2026-08-25 | 补录 15 件归档（task_task_closeout_hygiene）：harness 域 5 件 + engineering 域 10 件；本仓 done/ 为平铺布局，链接用 ./task_*.md |
 | 2026-08-26 | 补录 tech-graph-legacy-cleanup（harness 域 · PR #61） |
+| 2026-08-31 | CLOSE T2 `#97` + kit 1.10.0 `#98`；Hub 补登 E5 / T0-T1 Spec |
 
 ## 给维护者
 

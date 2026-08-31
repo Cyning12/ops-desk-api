@@ -8,7 +8,7 @@
 |------|-----|
 | hat_id | 30（含 40） |
 | task_slug | `dsh-coding-kit-upgrade-1-10-0` |
-| task_paths | `docs/tasks/active/task_dsh_coding_kit_upgrade_1_10_0.md` |
+| task_paths | `docs/tasks/done/task_dsh_coding_kit_upgrade_1_10_0.md` |
 | related_review_or_none | `docs/harness/reviews/task_dsh_coding_kit_upgrade_1_10_0_audit_R1_20260831.md` |
 | git_branch | `task/dsh-coding-kit-1-10-0` |
 | created_utc_or_local | 2026-08-31 |
