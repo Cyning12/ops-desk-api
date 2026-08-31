@@ -19,11 +19,12 @@ tracing 注入复用 app.ops.lg_rag.graph._ainvoke_with_tracing（不复制）�
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 
-from app.ops.lg_rag.graph import _ainvoke_with_tracing, _compile
+from app.ops.lg_rag.graph import _ainvoke_with_tracing, _astream_with_tracing, _compile
 from app.ops.lg_rag.multi.nodes import (
     aggregator_node,
     info_extract_node,
@@ -90,3 +91,15 @@ async def ainvoke_supervisor_agent(
     """Phase 4 Supervisor 图；同 thread_id 可经 checkpointer 续写 messages。"""
     graph = build_supervisor_agent(checkpointer=checkpointer)
     return await _ainvoke_with_tracing(graph, query, thread_id=thread_id)
+
+
+async def astream_supervisor_agent(
+    query: str,
+    *,
+    thread_id: str = "lg-rag-supervisor-smoke",
+    checkpointer: Any | None = None,
+) -> AsyncIterator[dict[str, Any]]:
+    """Phase 4 Supervisor · astream(updates)。"""
+    graph = build_supervisor_agent(checkpointer=checkpointer)
+    async for update in _astream_with_tracing(graph, query, thread_id=thread_id):
+        yield update

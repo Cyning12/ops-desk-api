@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_structured_output
 version: 2026-08-26
-generated_at: 2026-08-28T02:18:29Z
+generated_at: 2026-08-30T11:37:35Z
 source: 10_flow_structured_output.graph.yaml
 ---
 

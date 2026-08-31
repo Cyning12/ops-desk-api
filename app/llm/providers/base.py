@@ -28,7 +28,7 @@ class BaseProviderImpl(BaseProvider):
         messages: Iterable[LlmMessage],
         model: str | None = None,
     ) -> str:
-        """聚合 complete_stream：拼正文，usage 末帧副作用上报。"""
+        """聚合 complete_stream：拼正文，usage / I/O 末帧副作用上报。"""
         parts: list[str] = []
         usage_meta: object | None = None
         async for chunk in self.complete_stream(messages, model=model):
@@ -39,9 +39,11 @@ class BaseProviderImpl(BaseProvider):
             if meta.get("event_type") == "model.fallback":
                 continue
             parts.append(chunk.content)
+        text = "".join(parts)
         if usage_meta is not None:
             self._report_complete_usage(usage_meta)
-        return "".join(parts)
+        self._report_complete_io(messages, text)
+        return text
 
     @staticmethod
     def _report_complete_usage(usage_meta: object) -> None:
@@ -60,6 +62,20 @@ class BaseProviderImpl(BaseProvider):
                     completion_tokens=usage_meta.get("completion_tokens") or 0,
                 )
             )
+        except Exception:
+            return
+
+    @staticmethod
+    def _report_complete_io(messages: Iterable[LlmMessage], output: str) -> None:
+        """complete 边界写截断 Input/Output；失败不挡主答。"""
+        try:
+            from app.ops.tracing import tracing_enabled, update_current_generation_io
+
+            if not tracing_enabled():
+                return
+            # 紧凑文本：role: content 行，避免巨型 JSON
+            lines = [f"{m.role}: {m.content}" for m in messages]
+            update_current_generation_io(input="\n".join(lines), output=output or "")
         except Exception:
             return
 

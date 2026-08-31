@@ -1,24 +1,27 @@
-"""LangGraph 旁路 HTTP：POST /api/ops/lg-rag/invoke。
+"""LangGraph 旁路 HTTP：POST /api/ops/lg-rag/invoke · POST /api/ops/lg-rag/stream。
 
-freeze 契约：lg-rag-http-v1（真值 docs/tasks/active/task_lg_rag_http.md）。
+freeze：
+- invoke · lg-rag-http-v1
+- stream · lg-rag-sse-v1（T2 · 默认 mode=supervisor · updates 帧）
 
-薄包装 lg_rag 三个 ainvoke 入口（basic / router / supervisor）；
+薄包装 lg_rag 三个 ainvoke / astream 入口；
 {ok,data} 外壳、cookie 鉴权、异常 500 外壳、flush_traces 体例对齐
 lc_evidence_chain/router.py 先例。
 
 Checkpointer：默认不传（入口默认 InMemorySaver，进程内同 thread_id 续写）；
 env LG_RAG_HTTP_CHECKPOINTER=postgres 时走 apostgres_saver(setup=True)
-（每请求构建，幂等建表；生产默认不开）。
+（每请求构建，幂等建表；生产默认不开）。stream 本波不挂 PG（与 invoke 可后续对齐）。
 """
 from __future__ import annotations
 
 import logging
 import os
 import uuid
+from collections.abc import AsyncIterator
 from typing import Any, Literal
 
 from fastapi import APIRouter, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import AIMessage
 from pydantic import BaseModel, Field
 
@@ -30,6 +33,7 @@ from app.ops.lg_rag import (
     ainvoke_supervisor_agent,
 )
 from app.ops.lg_rag.checkpointer import apostgres_saver
+from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
 from app.ops.tracing import flush_traces, tracing_enabled
 
 logger = logging.getLogger(__name__)
@@ -49,6 +53,14 @@ class InvokeRequest(BaseModel):
 
     query: str = Field(..., min_length=1, max_length=QUERY_MAX_LENGTH)
     mode: Mode = "router"
+    thread_id: str | None = Field(default=None, max_length=THREAD_ID_MAX_LENGTH)
+
+
+class StreamRequest(BaseModel):
+    """旁路 SSE 请求体（freeze lg-rag-sse-v1）。默认 supervisor 主线。"""
+
+    query: str = Field(..., min_length=1, max_length=QUERY_MAX_LENGTH)
+    mode: Mode = "supervisor"
     thread_id: str | None = Field(default=None, max_length=THREAD_ID_MAX_LENGTH)
 
 
@@ -156,4 +168,34 @@ async def invoke_lg_rag(
                 state, mode=body.mode, thread_id=thread_id
             ).model_dump(),
         }
+    )
+
+
+@router.post("/stream")
+async def stream_lg_rag(
+    body: StreamRequest,
+    _user: OpsUser = CurrentUser,
+) -> StreamingResponse:
+    """SSE 流式旁路（freeze lg-rag-sse-v1）；须登录。默认 mode=supervisor。"""
+    thread_id = (body.thread_id or uuid.uuid4().hex)[:THREAD_ID_MAX_LENGTH]
+    run_id = uuid.uuid4().hex
+
+    async def event_gen() -> AsyncIterator[str]:
+        async for chunk in iter_lg_rag_sse(
+            query=body.query,
+            mode=body.mode,
+            thread_id=thread_id,
+            run_id=run_id,
+        ):
+            yield chunk
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "X-Ops-Lg-Rag-Thread-Id": thread_id,
+            "X-Ops-Lg-Rag-Run-Id": run_id,
+        },
     )

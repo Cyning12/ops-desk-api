@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260828_V1",
-  "generated_at": "2026-08-28T03:26:27Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260830_V1",
+  "generated_at": "2026-08-30T11:37:36Z",
   "graphs": [
     {
       "id": "00_main",
@@ -408,6 +408,11 @@
       "graph_id": "10_flow_lg_rag",
       "id": "lg_invoke",
       "label": "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "lg_stream",
+      "label": "POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1）"
     },
     {
       "graph_id": "10_flow_lg_rag",
@@ -2010,7 +2015,52 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/router.py",
-          "line": 130
+          "line": 143
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "client",
+      "to": "lg_stream",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "POST SSE {query, mode=supervisor 默认}（cookie auth）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/router.py",
+          "line": 175
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "lg_stream",
+      "to": "sup_graph",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[默认 mode=supervisor · astream updates]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/sse_stream.py",
+          "line": 1
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "lg_stream",
+      "to": "client",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "text/event-stream（run.start…answer…done）",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/sse_stream.py",
+          "line": 1
         }
       ],
       "sync": true

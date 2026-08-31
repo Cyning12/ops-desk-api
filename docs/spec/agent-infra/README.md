@@ -17,7 +17,8 @@
 | **L0 Host 规划** | [`02_agent_host_plan_v0.md`](./02_agent_host_plan_v0.md) | Agent Host flesh 波次 H1–H5（**completed**） | 实现细节 |
 | **L0 策略轨** | [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) | Strategy Builder · Intent · Critic 再赋能（**active** · S0 签收） | 实现细节 |
 | **L0 测评轨** | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | 持续观测 · 可用性/准确性/稳定性 · Langfuse 边界（**active · E0 签收**） | 实现细节 |
-| **L1 域夹** | `capability/` · `structured-output/` · `strategy/` · `eval/` 等 | 该域 README + 现行 SPEC + 域 ROADMAP | 跨域总序（回指 L0） |
+| **L0 传输/会话轨** | [`05_lg_rag_transport_and_session_plan_v0.md`](./05_lg_rag_transport_and_session_plan_v0.md) | lg-rag SSE 主线 · Session · Obs-I/O 优先级（**active · T0 签收**） | 实现细节 |
+| **L1 域夹** | `capability/` · `structured-output/` · `strategy/` · `eval/` · `session/` 等 | 该域 README + 现行 SPEC + 域 ROADMAP | 跨域总序（回指 L0） |
 | **L2 现行契约** | `*/SPEC-*_v0.md` | 已签收、P0–P3 已落地的接口与失败语义 | 未开工升级设想 |
 | **L2 升级路线** | `*/ROADMAP_*_v0.md` | 下一波可拆 task 的升级规格 | 直接授权 30 |
 
@@ -28,9 +29,10 @@ docs/spec/agent-infra/
 ├── 01_upgrade_roadmap.md                  # L0 Gateway 升级（stable）
 ├── 02_agent_host_plan_v0.md               # L0 Host flesh（H1–H5 · completed）
 ├── 03_strategy_and_intent_plan_v0.md      # L0 策略轨（Strategy Builder · draft）
-├── 04_eval_and_observability_plan_v0.md    # L0 测评轨（Eval · draft）
+├── 04_eval_and_observability_plan_v0.md    # L0 测评轨（Eval）
+├── 05_lg_rag_transport_and_session_plan_v0.md  # L0 传输/会话（lg-rag SSE · draft）
 ├── orchestration/                         # L1 · H1
-├── session/                               # L1 · H3
+├── session/                               # L1 · Session（主线 lg-rag；H3 chat 归档参考）
 ├── prompt/                                # L1 · H4
 ├── skill/                                 # L1 · H5
 ├── strategy/                              # L1 · Strategy Builder
@@ -47,7 +49,7 @@ docs/spec/agent-infra/
 └── SPEC-structured-output-gateway_v0.md   # POINTER（兼容旧链）
 ```
 
-**推荐读序（维护者 / 00）**：本 README → `00_architecture` → `01`（归档）→ `02`（H1–H5 归档）→ **`03` 策略** · **`04` 测评**（可并行）→ 域 ROADMAP → 开 task。
+**推荐读序（维护者 / 00）**：本 README → `00_architecture` → `01`（归档）→ `02`（H1–H5 归档）→ **`03` 策略** · **`04` 测评** · **`05` 传输/会话**（可并行关注）→ 域 ROADMAP → 开 task。
 
 ---
 
@@ -89,7 +91,13 @@ docs/spec/agent-infra/
 
 | ID | 规划 | 状态 | 首波 |
 |---|---|---|---|
-| `eval-and-observability` | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **E0–E4 DONE** · **E5 开工** `eval-token-cost-ledger` |
+| `eval-and-observability` | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **E0–E5 DONE**（E5 [#96](https://github.com/Cyning12/ops-desk-api/pull/96)）；内容 I/O 见 **`05` §3**（挂 T2） |
+
+## 传输/会话轨（active · T0 签收）
+
+| ID | 规划 | 状态 | 首波 |
+|---|---|---|---|
+| `lg-rag-transport-session` | [`05_lg_rag_transport_and_session_plan_v0.md`](./05_lg_rag_transport_and_session_plan_v0.md) | **active** · HG-SPEC-SIGNOFF **approved** | T0+T1 已签；T2 实现中；**§9 G-L2** 全节点 indexes 义务 |
 
 ---
 
@@ -99,7 +107,7 @@ docs/spec/agent-infra/
 2. **ROADMAP**：可拆 task 的升级规格；**不**直接授权 30；落地后把「已完成」波次回写 ROADMAP + 必要时升 SPEC `_v1`。  
 3. **破坏性变更**：新文件 `_vN`，本 README 换链；旧路径可留 POINTER。  
 4. 与 Agently 对照只作思想对齐，禁止拖进运行时依赖。  
-5. 首批接入面仍优先 `lg_rag`；**不**默认改 `chat/graph.py`。
+5. 产品传输主线见 **`05`（lg-rag SSE）**；新契约 **不**以兼容 `chat/graph` / `/chat/stream` 为验收条件（chat 弃用通道）。
 
 ---
 
@@ -111,6 +119,7 @@ docs/spec/agent-infra/
 | **Host flesh 规划（H1–H5 · 归档）** | [`02_agent_host_plan_v0.md`](./02_agent_host_plan_v0.md) |
 | **策略轨（Strategy Builder）** | [`03_strategy_and_intent_plan_v0.md`](./03_strategy_and_intent_plan_v0.md) |
 | **测评轨（Eval · Langfuse）** | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) |
+| **传输/会话轨（lg-rag SSE）** | [`05_lg_rag_transport_and_session_plan_v0.md`](./05_lg_rag_transport_and_session_plan_v0.md) |
 | Phase 4 设计 | `docs/guides/DESIGN_langgraph-lg-rag-phase4-multiagent_v1.md` |
 | SO 与原生 API 并存 | `docs/guides/DESIGN_structured-output-gateway-coexistence_v0.md` |
 | Capability skill 划界 | `docs/guides/GUIDE_capability-gateway-p3-skill-boundary_v0.md`（若存在） |
@@ -139,3 +148,6 @@ docs/spec/agent-infra/
 | 2026-08-28 | E2 MERGED · E3 开工：`eval-langfuse-experiment-ci` |
 | 2026-08-28 | E3 MERGED · E4 开工：`eval-online-sample-scores` |
 | 2026-08-29 | E4 MERGED · E5 开工：`eval-token-cost-ledger` |
+| 2026-08-30 | **传输/会话轨落盘**：`05` + lg-rag Session ROADMAP；H3 chat ROADMAP 归档参考；Obs-I/O 不单开 task |
+| 2026-08-30 | **传输轨 T0 签收**：`05` HG-SPEC-SIGNOFF approved；可拆 T2 |
+| 2026-08-31 | `05` §9：本系列全 `implementedBy` 须同步 lg_rag G-L2 分域 indexes |

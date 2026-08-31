@@ -103,6 +103,35 @@ class TestSiliconFlowProvider:
         assert captured[0].prompt_tokens == 11
         assert captured[0].completion_tokens == 7
 
+    async def test_complete_reports_io_when_tracing_on(self, monkeypatch):
+        lines = [
+            'data: {"choices":[{"delta":{"content":"Out"}}]}',
+            'data: {"choices":[],"usage":{"prompt_tokens":1,"completion_tokens":1}}',
+            "data: [DONE]",
+        ]
+        monkeypatch.setattr(httpx, "AsyncClient", _fake_client_factory(200, lines))
+        monkeypatch.setattr("app.ops.tracing.tracing_enabled", lambda: True)
+        monkeypatch.setattr(
+            "app.ops.tracing.update_current_generation_usage", lambda usage: None
+        )
+        io_captured: list = []
+
+        def _capture_io(*, input=None, output=None, truncate=None):
+            io_captured.append({"input": input, "output": output})
+
+        monkeypatch.setattr(
+            "app.ops.tracing.update_current_generation_io",
+            _capture_io,
+        )
+
+        provider = SiliconFlowProvider(api_key="test-key")
+        answer = await provider.complete([LlmMessage(role="user", content="hi")])
+
+        assert answer == "Out"
+        assert len(io_captured) == 1
+        assert "user: hi" in (io_captured[0]["input"] or "")
+        assert io_captured[0]["output"] == "Out"
+
     async def test_complete_usage_silent_when_tracing_off(self, monkeypatch):
         lines = [
             'data: {"choices":[{"delta":{"content":"One"}}]}',
@@ -117,12 +146,18 @@ class TestSiliconFlowProvider:
             "app.ops.tracing.update_current_generation_usage",
             lambda usage: captured.append(usage),
         )
+        io_captured: list = []
+        monkeypatch.setattr(
+            "app.ops.tracing.update_current_generation_io",
+            lambda **kwargs: io_captured.append(kwargs),
+        )
 
         provider = SiliconFlowProvider(api_key="test-key")
         answer = await provider.complete([LlmMessage(role="user", content="hi")])
 
         assert answer == "OneTwo"
         assert captured == []
+        assert io_captured == []
 
     async def test_complete_stream_ignores_empty_chunks(self, monkeypatch):
         lines = [

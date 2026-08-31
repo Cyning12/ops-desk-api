@@ -1,8 +1,8 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_lg_rag"
 title: "LG RAG 旁路三模式流程（basic / router / supervisor · Critic）"
-description: "POST /api/ops/lg-rag/invoke 按 mode 分派三图：basic（START→rag→END）/ router（三路 + evaluate⇄rewrite 回环 ≤2）/ supervisor（Intent→Builder→拆解→分派→聚合→Critic 条件边）。同图分节：节点 id 前缀 b_/r_/s_；rag 路径黑盒复用 lc_evidence_chain，不展开 LCEL；默认不进入 chat/graph。freeze lg-rag-http-v1。"
-version: "2026-08-28"
+description: "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates）。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。"
+version: "2026-08-30"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "method"
@@ -23,6 +23,33 @@ nodes:
         kind: method
       - path: "app/ops/lg_rag/router.py"
         symbol: "_dispatch"
+        kind: method
+
+  - id: "lg_stream"
+    label: "POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/router.py"
+        symbol: "stream_lg_rag"
+        kind: method
+      - path: "app/ops/lg_rag/sse_stream.py"
+        symbol: "iter_lg_rag_sse"
+        kind: method
+      - path: "app/ops/lg_rag/sse_stream.py"
+        symbol: "map_node_update"
+        kind: method
+      - path: "app/ops/lg_rag/graph.py"
+        symbol: "_astream_with_tracing"
+        kind: method
+      - path: "app/ops/lg_rag/graph.py"
+        symbol: "astream_basic_agent"
+        kind: method
+      - path: "app/ops/lg_rag/graph.py"
+        symbol: "astream_router_agent"
+        kind: method
+      - path: "app/ops/lg_rag/multi/graph.py"
+        symbol: "astream_supervisor_agent"
         kind: method
 
   - id: "basic_graph"
@@ -239,7 +266,30 @@ edges:
     label: "POST {query, mode, thread_id}（cookie auth）"
     anchors:
       - path: "app/ops/lg_rag/router.py"
-        line: 130
+        line: 143
+
+  - from: "client"
+    to: "lg_stream"
+    label: "POST SSE {query, mode=supervisor 默认}（cookie auth）"
+    anchors:
+      - path: "app/ops/lg_rag/router.py"
+        line: 175
+
+  - from: "lg_stream"
+    to: "sup_graph"
+    label: "[默认 mode=supervisor · astream updates]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/sse_stream.py"
+        line: 1
+
+  - from: "lg_stream"
+    to: "client"
+    label: "text/event-stream（run.start…answer…done）"
+    anchors:
+      - path: "app/ops/lg_rag/sse_stream.py"
+        line: 1
 
   - from: "lg_invoke"
     to: "basic_graph"

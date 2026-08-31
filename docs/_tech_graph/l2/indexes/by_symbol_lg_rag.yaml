@@ -1,0 +1,132 @@
+# lg_rag 域 symbol → path 倒排（G-L2 · 第二试点 · 分文件，不与 chat 混排）
+# 源：l1/10_flow_lg_rag.graph.yaml 全部 implementedBy
+# 系列约束：docs/spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md §9
+# 共享 symbol：by_symbol 取主 node_id，also_node_ids 列其余（如 rag_node）
+
+version: "2026-08-31"
+graph_id: "10_flow_lg_rag"
+layer: "G-L2"
+pilot: "lg_rag-full-flow"
+
+by_symbol:
+  invoke_lg_rag:
+    path: app/ops/lg_rag/router.py
+    node_id: lg_invoke
+    kind: method
+  _dispatch:
+    path: app/ops/lg_rag/router.py
+    node_id: lg_invoke
+    kind: method
+  stream_lg_rag:
+    path: app/ops/lg_rag/router.py
+    node_id: lg_stream
+    kind: method
+  iter_lg_rag_sse:
+    path: app/ops/lg_rag/sse_stream.py
+    node_id: lg_stream
+    kind: method
+  map_node_update:
+    path: app/ops/lg_rag/sse_stream.py
+    node_id: lg_stream
+    kind: method
+  build_basic_agent:
+    path: app/ops/lg_rag/graph.py
+    node_id: basic_graph
+    kind: method
+  build_router_agent:
+    path: app/ops/lg_rag/graph.py
+    node_id: router_graph
+    kind: method
+  _astream_with_tracing:
+    path: app/ops/lg_rag/graph.py
+    node_id: lg_stream
+    kind: method
+  astream_basic_agent:
+    path: app/ops/lg_rag/graph.py
+    node_id: lg_stream
+    kind: method
+  astream_router_agent:
+    path: app/ops/lg_rag/graph.py
+    node_id: lg_stream
+    kind: method
+  build_supervisor_agent:
+    path: app/ops/lg_rag/multi/graph.py
+    node_id: sup_graph
+    kind: method
+  astream_supervisor_agent:
+    path: app/ops/lg_rag/multi/graph.py
+    node_id: lg_stream
+    kind: method
+  rag_node:
+    path: app/ops/lg_rag/nodes.py
+    node_id: r_rag
+    kind: method
+    also_node_ids: [b_rag]
+  router_node:
+    path: app/ops/lg_rag/nodes.py
+    node_id: r_router
+    kind: method
+  direct_answer_node:
+    path: app/ops/lg_rag/nodes.py
+    node_id: r_direct
+    kind: method
+  refuse_node:
+    path: app/ops/lg_rag/nodes.py
+    node_id: r_refuse
+    kind: method
+  evaluate_node:
+    path: app/ops/lg_rag/nodes.py
+    node_id: r_evaluate
+    kind: method
+  route_by_quality:
+    path: app/ops/lg_rag/nodes.py
+    node_id: r_evaluate
+    kind: method
+  rewrite_node:
+    path: app/ops/lg_rag/nodes.py
+    node_id: r_rewrite
+    kind: method
+  route_after_rewrite:
+    path: app/ops/lg_rag/nodes.py
+    node_id: r_rewrite
+    kind: method
+  supervisor_node:
+    path: app/ops/lg_rag/multi/nodes.py
+    node_id: s_supervisor
+    kind: method
+  route_next_subtask:
+    path: app/ops/lg_rag/multi/nodes.py
+    node_id: s_dispatch
+    kind: method
+  rag_subtask_node:
+    path: app/ops/lg_rag/multi/nodes.py
+    node_id: s_rag
+    kind: method
+  info_extract_node:
+    path: app/ops/lg_rag/multi/nodes.py
+    node_id: s_extract
+    kind: method
+  tool_exec_node:
+    path: app/ops/lg_rag/multi/nodes.py
+    node_id: s_tool
+    kind: method
+  aggregator_node:
+    path: app/ops/lg_rag/multi/nodes.py
+    node_id: s_aggregator
+    kind: method
+  intent_node:
+    path: app/ops/strategy/intent.py
+    node_id: s_intent
+    kind: method
+  strategy_builder_node:
+    path: app/ops/strategy/builder.py
+    node_id: s_strategy_builder
+    kind: method
+  critic_node:
+    path: app/ops/strategy/critic.py
+    node_id: s_critic
+    kind: method
+  route_after_critic:
+    path: app/ops/strategy/critic.py
+    node_id: s_critic
+    kind: method

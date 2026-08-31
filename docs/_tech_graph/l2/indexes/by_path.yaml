@@ -1,6 +1,7 @@
 # chat 域 path → 节点倒排（G-L2）
 # 源：l1/10_flow_chat.graph.yaml implementedBy
 # 生成策略：手维启动；后续可 --check
+# 范围：仅 chat。lg_rag 见 by_path_lg_rag.yaml（禁止混入本文件）
 
 version: "2026-08-25"
 graph_id: "10_flow_chat"
