@@ -221,6 +221,7 @@
 | 2026-08-31 | **§10–§11**：分阶段联调注意事项 · 跨仓发版 · web task/checklist 指针 |
 | 2026-08-31 | **T2 CLOSE**：§10 指针改 done/ · web slug `task_web_lg_rag_sse_t2` · 发版策略改为后续波纪律 |
 | 2026-08-31 | **T3 实现回写 §10.2**：`thread_id` SoT · 独立表 · 窗口压缩 6/2 注入 `_ainvoke/_astream` · 跨用户 404 |
+| 2026-08-31 | **§10.4**：链 [`WAVE_READINESS_lg_rag_sse_v0.md`](./WAVE_READINESS_lg_rag_sse_v0.md)（web T4 CLOSE 后查 T5 就绪） |
 | 2026-08-31 | **T4 实现回写 §4.2/§10.3**：顶层可选 `cursor` · `ops_lg_rag_run_events` · `POST /lg-rag/replay` · 断连仍跑完 |
 
 ---
@@ -314,9 +315,11 @@
 
 ### 10.4 T5 · Token 流（终答 delta）
 
+> **跨仓就绪闸（web T4 CLOSE 后必查）**：[`WAVE_READINESS_lg_rag_sse_v0.md`](./WAVE_READINESS_lg_rag_sse_v0.md) §1（从 T4 → 能否开 T5）。
+
 | 维度 | 内容 |
 |---|---|
-| **前置** | T2 节点进度已稳定 |
+| **前置** | T2 节点进度已稳定 · 建议 web T4 cursor/replay 已可用（见 WAVE_READINESS） |
 | **api 提供** | `answer` 多帧 delta（aggregator 等） |
 | **web 交付** | Chat 区打字机 · 与 T2 整段 `answer` 兼容（首帧/增量协议见 T5 freeze） |
 | **联调项** | 增量拼接无乱码 · `done` 后停止追加 · 与 `node.progress` 并存不串台 |
