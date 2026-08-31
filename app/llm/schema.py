@@ -1,4 +1,6 @@
 """LLM provider shared schemas."""
+from __future__ import annotations
+
 from collections.abc import AsyncIterator, Iterable
 from dataclasses import dataclass
 
@@ -13,10 +15,52 @@ class LlmMessage:
 
 @dataclass
 class LlmUsage:
-    """Token usage."""
+    """Token usage。
+
+    ``cached_input_tokens``：缓存命中 input（SiliconFlow:
+    ``prompt_cache_hit_tokens`` / ``prompt_tokens_details.cached_tokens``）。
+    ``prompt_tokens`` 与官方一致，通常 **含** 缓存部分。
+    """
 
     prompt_tokens: int
     completion_tokens: int
+    cached_input_tokens: int = 0
+
+    @classmethod
+    def from_provider_usage(cls, usage_meta: object) -> LlmUsage | None:
+        """从 OpenAI 兼容 usage 对象构造；非法则 None。"""
+        if not isinstance(usage_meta, dict):
+            return None
+        try:
+            prompt = int(usage_meta.get("prompt_tokens") or 0)
+            completion = int(usage_meta.get("completion_tokens") or 0)
+        except (TypeError, ValueError):
+            return None
+        if prompt < 0 or completion < 0:
+            return None
+
+        cached = 0
+        hit = usage_meta.get("prompt_cache_hit_tokens")
+        if hit is not None:
+            try:
+                cached = int(hit)
+            except (TypeError, ValueError):
+                cached = 0
+        else:
+            details = usage_meta.get("prompt_tokens_details")
+            if isinstance(details, dict) and details.get("cached_tokens") is not None:
+                try:
+                    cached = int(details.get("cached_tokens") or 0)
+                except (TypeError, ValueError):
+                    cached = 0
+        if cached < 0:
+            cached = 0
+
+        return cls(
+            prompt_tokens=prompt,
+            completion_tokens=completion,
+            cached_input_tokens=cached,
+        )
 
 
 @dataclass

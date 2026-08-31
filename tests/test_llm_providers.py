@@ -102,6 +102,33 @@ class TestSiliconFlowProvider:
         assert len(captured) == 1
         assert captured[0].prompt_tokens == 11
         assert captured[0].completion_tokens == 7
+        assert captured[0].cached_input_tokens == 0
+
+    async def test_complete_reports_cached_tokens(self, monkeypatch):
+        lines = [
+            'data: {"choices":[{"delta":{"content":"x"}}]}',
+            (
+                'data: {"choices":[],"usage":{"prompt_tokens":100,"completion_tokens":5,'
+                '"prompt_cache_hit_tokens":80,"prompt_cache_miss_tokens":20,'
+                '"prompt_tokens_details":{"cached_tokens":80}}}'
+            ),
+            "data: [DONE]",
+        ]
+        monkeypatch.setattr(httpx, "AsyncClient", _fake_client_factory(200, lines))
+        monkeypatch.setattr("app.ops.tracing.tracing_enabled", lambda: True)
+        captured: list = []
+        monkeypatch.setattr(
+            "app.ops.tracing.update_current_generation_usage",
+            lambda usage: captured.append(usage),
+        )
+
+        provider = SiliconFlowProvider(api_key="test-key")
+        await provider.complete([LlmMessage(role="user", content="hi")])
+
+        assert len(captured) == 1
+        assert captured[0].prompt_tokens == 100
+        assert captured[0].cached_input_tokens == 80
+        assert captured[0].completion_tokens == 5
 
     async def test_complete_reports_io_when_tracing_on(self, monkeypatch):
         lines = [

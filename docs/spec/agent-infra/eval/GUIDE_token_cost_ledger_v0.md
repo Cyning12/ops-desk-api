@@ -41,6 +41,7 @@ Dashboard「费用列」：优先看 Langfuse 在已配单价后的 generation c
 ## 3. Usage 审计清单（`update_current_generation_usage`）
 
 入口：`app/ops/tracing.py` · `update_current_generation_usage` → Langfuse `update_current_generation(usage_details)`。  
+上报键：`input`（prompt−cache，exclusive）· `output` · `cached-input-tokens`（SiliconFlow：`prompt_cache_hit_tokens` / `prompt_tokens_details.cached_tokens`）。  
 tracing 关 / SDK 失败 → 静默 no-op。
 
 ### 3.1 已上报

@@ -204,12 +204,9 @@ async def answer_node(state: ChatState) -> dict:
             async for chunk in provider.complete_stream(messages, model=model):
                 # include_usage 末帧：上报 token 用量到 generation（观测基线）
                 if chunk.meta and chunk.meta.get("usage"):
-                    update_current_generation_usage(
-                        LlmUsage(
-                            prompt_tokens=chunk.meta["usage"].get("prompt_tokens") or 0,
-                            completion_tokens=chunk.meta["usage"].get("completion_tokens") or 0,
-                        )
-                    )
+                    parsed = LlmUsage.from_provider_usage(chunk.meta["usage"])
+                    if parsed is not None:
+                        update_current_generation_usage(parsed)
                     continue
                 # Provider 可能在流中插入 fallback 元事件，与正文 chunk 分流
                 if chunk.meta and chunk.meta.get("event_type") == "model.fallback":
