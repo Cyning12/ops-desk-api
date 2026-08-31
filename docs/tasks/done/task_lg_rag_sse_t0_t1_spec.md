@@ -18,6 +18,7 @@
 | **implement_repo** | `ops-desk-api` |
 | **test_strategy** | `n/a` |
 | **graph_change_layer** | `none` |
+| **wiki_delta** | `n/a` |
 | **review_hat** | `20` |
 | **required_invoke_hats** | `00` |
 | **orchestration** | L0 `05` + session ROADMAP；**Obs-I/O 不单开 task** |

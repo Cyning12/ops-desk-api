@@ -19,6 +19,7 @@
 | **implement_repo** | `ops-desk-api` |
 | **test_strategy** | `required` |
 | **graph_change_layer** | `none` |
+| **wiki_delta** | `n/a` |
 | **review_hat** | `20` |
 | **required_invoke_hats** | `10,00,30` |
 | **orchestration** | Eval 轨 E5 收官 |
