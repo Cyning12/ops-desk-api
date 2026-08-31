@@ -222,5 +222,5 @@ class TestListModels:
         assert response.status_code == 200
         data = response.json()
         assert data["provider"] == "siliconflow"
-        assert data["default_model"] == "deepseek-ai/DeepSeek-V4-Pro"
-        assert any(m["id"] == "deepseek-ai/DeepSeek-V4-Pro" for m in data["models"])
+        assert data["default_model"] == "deepseek-ai/DeepSeek-V4-Flash"
+        assert any(m["id"] == "deepseek-ai/DeepSeek-V4-Flash" for m in data["models"])

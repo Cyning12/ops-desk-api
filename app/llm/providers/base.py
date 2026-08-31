@@ -48,7 +48,8 @@ class BaseProviderImpl(BaseProvider):
     @staticmethod
     def _report_complete_usage(usage_meta: object) -> None:
         """把 usage 报到当前 generation；tracing 关或失败则静默。"""
-        if not isinstance(usage_meta, dict):
+        parsed = LlmUsage.from_provider_usage(usage_meta)
+        if parsed is None:
             return
         try:
             # 函数内 lazy import：llm 不硬依赖 ops，图谱出边保持「—」
@@ -56,12 +57,7 @@ class BaseProviderImpl(BaseProvider):
 
             if not tracing_enabled():
                 return
-            update_current_generation_usage(
-                LlmUsage(
-                    prompt_tokens=usage_meta.get("prompt_tokens") or 0,
-                    completion_tokens=usage_meta.get("completion_tokens") or 0,
-                )
-            )
+            update_current_generation_usage(parsed)
         except Exception:
             return
 

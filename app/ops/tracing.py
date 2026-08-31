@@ -222,16 +222,30 @@ def update_current_span_metadata(metadata: dict[str, Any]) -> None:
 
 
 def update_current_generation_usage(usage: Any) -> None:
-    """将 LLM usage 同步到当前 generation；未开启或失败时静默跳过。"""
+    """将 LLM usage 同步到当前 generation；未开启或失败时静默跳过。
+
+    Langfuse ``usage_details`` 键：
+    - ``input``：非缓存 input（exclusive；= prompt − cached）
+    - ``output``：completion
+    - ``cached-input-tokens``：缓存命中（对齐 SiliconFlow 账单后缀）
+    """
     if not tracing_enabled():
         return
     try:
         from langfuse import get_client
 
+        prompt = int(getattr(usage, "prompt_tokens", 0) or 0)
+        output = int(getattr(usage, "completion_tokens", 0) or 0)
+        cached = int(getattr(usage, "cached_input_tokens", 0) or 0)
+        if cached < 0:
+            cached = 0
+        # exclusive-bucket：input 不含已计入 cache 的部分
+        input_tokens = max(0, prompt - cached)
         get_client().update_current_generation(
             usage_details={
-                "input": int(usage.prompt_tokens or 0),
-                "output": int(usage.completion_tokens or 0),
+                "input": input_tokens,
+                "output": output,
+                "cached-input-tokens": cached,
             }
         )
     except Exception:

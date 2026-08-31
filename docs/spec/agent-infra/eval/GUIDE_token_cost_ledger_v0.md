@@ -12,8 +12,12 @@
 | 层 | 职责 | 真值 |
 |---|---|---|
 | **Langfuse** | generation usage 展示；可在 UI 配 model 单价做 **粗估** | 观测 / Dashboard；**非**商务账单 |
-| **Host 价表** | `provider` + `model` + input/output 单价 + 币种 + `effective_from` | git 本仓 `price_table_v1.yaml` |
+| **Host 价表** | `provider` + `model` + input/output/cache 单价 + 币种 + `effective_from` | git 本仓 `price_table_v1.yaml` |
 | **对齐方式** | 键一致：`provider` / `model` 与 `OPS_LLM_PROVIDER`、`OPS_LLM_MODEL`（及 catalog 默认）同名；Langfuse UI 单价应抄 Host 价表同一行，避免双源漂移 | 改价先改 git 价表，再手工同步 Langfuse Model prices（若启用） |
+
+Host 单价字段：`input_per_1m`（必填）；`output_per_1m` / `cached-input-tokens_per_1m` **缺省按 0**（rerank 等无 completion 价、无 cache 价时补 0）。  
+导出 usage：`input_tokens` / `output_tokens` 必填；`cached_input_tokens` 可选（缺则 0）。  
+`cost = input×input价 + cached×cache价 + output×output价`（每 1M）。
 
 Dashboard「费用列」：优先看 Langfuse 在已配单价后的 generation cost；**对账 / 导出 / 折扣**一律以本 GUIDE 脚本 × Host 价表为准。  
 人工：从 Langfuse 导出 usage CSV/JSON → 映射为 fixture 字段 → `python evals/agent/cost/export_cost.py --usage …`。本波 **不** 新增 GHA 拉云 usage。
@@ -29,7 +33,7 @@ Dashboard「费用列」：优先看 Langfuse 在已配单价后的 generation c
 | `price_missing` | provider+model 无生效价行 | **空** | **1** |
 | （加载失败） | 价表/JSON 结构或生效日非法 | — | **2**（stderr） |
 
-单价单位：每 **1M** tokens（`input_per_1m` / `output_per_1m`）。  
+单价单位：每 **1M** tokens（`input_per_1m` / `output_per_1m` / `cached-input-tokens_per_1m`）。  
 生效：取 `effective_from ≤ usage.date`（无 date 则用运行日）的最新一行。
 
 ---
@@ -37,6 +41,7 @@ Dashboard「费用列」：优先看 Langfuse 在已配单价后的 generation c
 ## 3. Usage 审计清单（`update_current_generation_usage`）
 
 入口：`app/ops/tracing.py` · `update_current_generation_usage` → Langfuse `update_current_generation(usage_details)`。  
+上报键：`input`（prompt−cache，exclusive）· `output` · `cached-input-tokens`（SiliconFlow：`prompt_cache_hit_tokens` / `prompt_tokens_details.cached_tokens`）。  
 tracing 关 / SDK 失败 → 静默 no-op。
 
 ### 3.1 已上报

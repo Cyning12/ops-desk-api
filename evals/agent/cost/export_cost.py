@@ -32,6 +32,9 @@ STATUS_OK = "ok"
 STATUS_PRICE_MISSING = "price_missing"
 STATUS_USAGE_MISSING = "usage_missing"
 
+# 价表 cache 单价键（维护者官网核对用连字符名）
+CACHE_PRICE_KEYS = ("cached-input-tokens_per_1m", "cached_input_per_1m")
+
 CSV_FIELDS = [
     "id",
     "provider",
@@ -39,6 +42,7 @@ CSV_FIELDS = [
     "module",
     "date",
     "input_tokens",
+    "cached_input_tokens",
     "output_tokens",
     "currency",
     "cost_est",
@@ -54,6 +58,7 @@ class PriceRow:
     model: str
     input_per_1m: Decimal
     output_per_1m: Decimal
+    cached_input_per_1m: Decimal
     currency: str
     effective_from: date
 
@@ -81,6 +86,14 @@ def _as_decimal(raw: Any, *, field: str) -> Decimal:
     return value
 
 
+def _optional_decimal(item: dict[str, Any], *keys: str, field: str) -> Decimal:
+    """取首个存在的键；皆缺 → 0。"""
+    for key in keys:
+        if key in item and item[key] is not None and item[key] != "":
+            return _as_decimal(item[key], field=field)
+    return Decimal("0")
+
+
 def load_price_table(path: Path | str) -> list[PriceRow]:
     """加载价表；结构/单价/生效日非法 → ValueError。"""
     try:
@@ -104,9 +117,14 @@ def load_price_table(path: Path | str) -> list[PriceRow]:
             PriceRow(
                 provider=provider,
                 model=model,
-                input_per_1m=_as_decimal(item.get("input_per_1m"), field=f"rows[{i}].input_per_1m"),
-                output_per_1m=_as_decimal(
-                    item.get("output_per_1m"), field=f"rows[{i}].output_per_1m"
+                input_per_1m=_as_decimal(
+                    item.get("input_per_1m"), field=f"rows[{i}].input_per_1m"
+                ),
+                output_per_1m=_optional_decimal(
+                    item, "output_per_1m", field=f"rows[{i}].output_per_1m"
+                ),
+                cached_input_per_1m=_optional_decimal(
+                    item, *CACHE_PRICE_KEYS, field=f"rows[{i}].cached-input-tokens_per_1m"
                 ),
                 currency=str(item.get("currency") or "CNY").strip(),
                 effective_from=_parse_date(
@@ -150,17 +168,28 @@ def _lookup_price(
     return max(candidates, key=lambda r: r.effective_from)
 
 
+def _nonneg_int(record: dict[str, Any], key: str) -> int | None:
+    """键存在且可解析为非负整数 → 值；键缺失 → None；非法 → 哨兵用 -1 表示 usage_missing。"""
+    if key not in record or record[key] is None:
+        return None
+    try:
+        value = int(record[key])
+    except (TypeError, ValueError):
+        return -1
+    if value < 0:
+        return -1
+    return value
+
+
 def _tokens_present(record: dict[str, Any]) -> bool:
-    """input/output tokens 均存在且可解析为非负整数。"""
+    """input/output 均存在且非负；cached_input_tokens 可选（缺则按 0）。"""
     for key in ("input_tokens", "output_tokens"):
-        if key not in record or record[key] is None:
+        parsed = _nonneg_int(record, key)
+        if parsed is None or parsed < 0:
             return False
-        try:
-            if int(record[key]) < 0:
-                return False
-        except (TypeError, ValueError):
-            return False
-    return True
+    cached = _nonneg_int(record, "cached_input_tokens")
+    # cached 缺失 → None（按 0）；非法负值 / 非整数 → -1
+    return cached is None or cached >= 0
 
 
 def compute_cost_rows(
@@ -189,6 +218,7 @@ def compute_cost_rows(
             "module": module,
             "date": on.isoformat(),
             "input_tokens": "",
+            "cached_input_tokens": "",
             "output_tokens": "",
             "currency": "",
             "cost_est": "",
@@ -202,7 +232,10 @@ def compute_cost_rows(
 
         input_tokens = int(rec["input_tokens"])
         output_tokens = int(rec["output_tokens"])
+        cached_raw = _nonneg_int(rec, "cached_input_tokens")
+        cached_tokens = 0 if cached_raw is None else cached_raw
         base["input_tokens"] = input_tokens
+        base["cached_input_tokens"] = cached_tokens
         base["output_tokens"] = output_tokens
 
         price = _lookup_price(table, provider=provider, model=model, on=on)
@@ -211,9 +244,11 @@ def compute_cost_rows(
             results.append(base)
             continue
 
-        cost = (Decimal(input_tokens) / million) * price.input_per_1m + (
-            Decimal(output_tokens) / million
-        ) * price.output_per_1m
+        cost = (
+            (Decimal(input_tokens) / million) * price.input_per_1m
+            + (Decimal(cached_tokens) / million) * price.cached_input_per_1m
+            + (Decimal(output_tokens) / million) * price.output_per_1m
+        )
         base["currency"] = price.currency
         # 固定小数，避免科学计数；禁止 LLM 估价
         base["cost_est"] = format(cost.quantize(Decimal("0.000001")), "f")

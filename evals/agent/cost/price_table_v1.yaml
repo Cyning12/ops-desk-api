@@ -1,23 +1,48 @@
 # E5 Host 价表 v1 · 键 = provider + model
 # 单价：每 1M tokens；下列为占位价（非商务承诺 / 非实时行情）
 # 与 Langfuse model 单价对齐：见 docs/spec/agent-infra/eval/GUIDE_token_cost_ledger_v0.md
+# 缺省字段：output_per_1m / cached-input-tokens_per_1m 未写时按 0（rerank 等无 completion 价）
 version: 1
 unit: per_1m_tokens
 rows:
   - provider: siliconflow
     model: deepseek-ai/DeepSeek-V4-Pro
-    input_per_1m: 4.0
-    output_per_1m: 16.0
+    cached-input-tokens_per_1m: 1.0
+    input_per_1m: 12.0
+    output_per_1m: 24.0
+    currency: CNY
+    effective_from: "2026-01-01"
+  - provider: siliconflow
+    model: deepseek-ai/DeepSeek-V4-Flash
+    cached-input-tokens_per_1m: 0.02
+    input_per_1m: 1.0
+    output_per_1m: 2.0
+    currency: CNY
+    effective_from: "2026-01-01"
+  - provider: siliconflow
+    model: Qwen/Qwen3.6-27B
+    cached-input-tokens_per_1m: 0
+    input_per_1m: 3.0
+    output_per_1m: 18.0
+    currency: CNY
+    effective_from: "2026-01-01"
+  - provider: siliconflow
+    model: BAAI/bge-reranker-v2-m3
+    cached-input-tokens_per_1m: 0
+    input_per_1m: 0.07
+    output_per_1m: 0
     currency: CNY
     effective_from: "2026-01-01"
   - provider: bailian
     model: deepseek-v4-pro
+    cached-input-tokens_per_1m: 0
     input_per_1m: 2.0
     output_per_1m: 8.0
     currency: CNY
     effective_from: "2026-01-01"
   - provider: bailian
     model: qwen-plus
+    cached-input-tokens_per_1m: 0
     input_per_1m: 0.8
     output_per_1m: 2.0
     currency: CNY

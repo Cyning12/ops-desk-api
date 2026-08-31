@@ -20,8 +20,8 @@ from app.ops.tracing import trace_span, update_current_span_metadata
 
 logger = logging.getLogger(__name__)
 
-GRADER_PROVIDER = os.getenv("RAG_GRADER_PROVIDER", "bailian")
-GRADER_MODEL = os.getenv("RAG_GRADER_MODEL", "qwen3.7-flash")
+GRADER_PROVIDER = os.getenv("RAG_GRADER_PROVIDER", "siliconflow")
+GRADER_MODEL = os.getenv("RAG_GRADER_MODEL", "Qwen/Qwen3.6-27B")
 
 
 async def grade_chunk(query: str, evidence: list[EvidenceItem]) -> list[Grade]:

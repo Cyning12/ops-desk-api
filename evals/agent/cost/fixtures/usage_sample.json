@@ -9,6 +9,16 @@
     "module": "e2e"
   },
   {
+    "id": "ok-sf-cache",
+    "provider": "siliconflow",
+    "model": "deepseek-ai/DeepSeek-V4-Pro",
+    "input_tokens": 1000,
+    "cached_input_tokens": 500,
+    "output_tokens": 100,
+    "date": "2026-08-01",
+    "module": "e2e"
+  },
+  {
     "id": "ok-bailian",
     "provider": "bailian",
     "model": "deepseek-v4-pro",
