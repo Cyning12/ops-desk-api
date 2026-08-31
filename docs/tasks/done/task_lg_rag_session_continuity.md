@@ -1,11 +1,11 @@
 # Task：lg-rag T3 · Session 连续性（thread / 历史注入 / 窗口压缩）
 
-> **状态**：in_progress（2026-08-31 · 00 起草 · 维护者 Prompt 授权开工 T3）  
+> **状态**：completed（2026-08-31 · PR [#100](https://github.com/Cyning12/ops-desk-api/pull/100) **MERGED**）  
 > **类型**：session / 传输配套  
 > **上游**：[`05_lg_rag_transport_and_session_plan_v0.md`](../../spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md) §4 · §9 · §10.2 · [`session/ROADMAP_lg_rag_session_continuity_v0.md`](../../spec/agent-infra/session/ROADMAP_lg_rag_session_continuity_v0.md) L-a / L-b / L-d  
-> **前置**：T2 CLOSE · [`task_lg_rag_sse_stream_updates`](../done/task_lg_rag_sse_stream_updates.md) · api [#97](https://github.com/Cyning12/ops-desk-api/pull/97) · web [#23](https://github.com/Cyning12/ops-desk-web/pull/23)  
+> **前置**：T2 CLOSE · [`task_lg_rag_sse_stream_updates`](./task_lg_rag_sse_stream_updates.md) · api [#97](https://github.com/Cyning12/ops-desk-api/pull/97) · web [#23](https://github.com/Cyning12/ops-desk-web/pull/23)  
 > **分支**：`task/lg-rag-session-continuity`  
-> **帽子**：00 起草闸；**10** 补全；**20** 审；**30+40** 实现（00 **不**改 `app/` / `tests/`）。  
+> **帽子**：00 起草闸；**10** 补全；**20** 审；**30+40** 实现。  
 > **参考（勿兼容）**：[`ROADMAP_chat_continuity_v0.md`](../../spec/agent-infra/session/ROADMAP_chat_continuity_v0.md)（H3 归档）· `app/ops/session/continuity.py`  
 > **无关**：T4 cursor/replay · T5 token delta · T6 删 `/chat/stream` · C0–C4 · 改 `chat/graph.py` 拓扑 · 强合并 chat 表
 
@@ -174,3 +174,16 @@
 | 2026-08-31 | **10-task**：补 `### 自检结论` 占位；收紧非范围（L-c/T4/T5/T6/C0–C4）；钉跨用户 thread→404；lint 目标 PASS（允 W4） |
 | 2026-08-31 | **00**：R1 pass 后代签 `HG-AUDIT-R1`；钉压缩默认 6/2 与独立表名 |
 | 2026-08-31 | **30/40**：独立表 + 压缩装配 + HTTP 404/422/401；自检回填；验收全勾 |
+| 2026-08-31 | **CLOSE**：PR [#100](https://github.com/Cyning12/ops-desk-api/pull/100) MERGED · 归档 `docs/tasks/done/` |
+
+---
+
+## CLOSE
+
+| 项 | 值 |
+|---|---|
+| PR | [#100](https://github.com/Cyning12/ops-desk-api/pull/100) **MERGED** · 2026-08-31 |
+| 交付 | `thread_id` 历史注入 + 窗口压缩；独立 thread 表 |
+| 归档 | 2026-08-31 → `docs/tasks/done/`（维护者令：与 cache tokens 一并关账） |
+| 下一棒 | T4 cursor/replay（另 task） |
+

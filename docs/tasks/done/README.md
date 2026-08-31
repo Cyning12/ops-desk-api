@@ -77,7 +77,9 @@
 | 2026-08-29 | [`task_eval_token_cost_ledger.md`](./task_eval_token_cost_ledger.md) | Eval E5 Token/费用账本 · PR #96（2026-08-31 Hub 补登） |
 | 2026-08-30 | [`task_lg_rag_sse_t0_t1_spec.md`](./task_lg_rag_sse_t0_t1_spec.md) | T0+T1 Spec 签收 · docs-only |
 | 2026-08-31 | [`task_lg_rag_sse_stream_updates.md`](./task_lg_rag_sse_stream_updates.md) | T2 lg-rag `/stream` + Obs I/O · PR #97 |
-| 2026-08-31 | [`task_siliconflow_default_catalog_cost.md`](./task_siliconflow_default_catalog_cost.md) | SiliconFlow catalog/grader 默认 + Host 价表 cache export |
+| 2026-08-31 | [`task_lg_rag_session_continuity.md`](./task_lg_rag_session_continuity.md) | T3 Session 连续性（thread_id） · PR #100 |
+| 2026-08-31 | [`task_siliconflow_default_catalog_cost.md`](./task_siliconflow_default_catalog_cost.md) | SiliconFlow catalog/grader 默认 + Host 价表 cache export · PR #101 |
+| 2026-08-31 | [`task_langfuse_cached_input_tokens.md`](./task_langfuse_cached_input_tokens.md) | Langfuse 上报 `cached-input-tokens` · PR #101 |
 
 ---
 

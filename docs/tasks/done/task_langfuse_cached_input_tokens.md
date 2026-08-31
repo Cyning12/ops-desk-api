@@ -1,10 +1,10 @@
 # Task：Langfuse 上报 `cached-input-tokens`
 
-> **状态**：in_progress（2026-08-31 · 维护者令：归档 SF catalog 后开本波落地）  
+> **状态**：completed（2026-08-31 · PR [#101](https://github.com/Cyning12/ops-desk-api/pull/101) **MERGED**）  
 > **类型**：observability / tracing  
-> **上游**：[`task_siliconflow_default_catalog_cost`](../done/task_siliconflow_default_catalog_cost.md)（已归档）· SiliconFlow usage `prompt_cache_hit_tokens` / `prompt_tokens_details.cached_tokens`  
+> **上游**：[`task_siliconflow_default_catalog_cost`](./task_siliconflow_default_catalog_cost.md)（已归档）· SiliconFlow usage `prompt_cache_hit_tokens` / `prompt_tokens_details.cached_tokens`  
 > **分支**：`task/langfuse-cached-input-tokens`  
-> **帽子**：10 / 20 R1 / 30。  
+> **帽子**：10 / 20 R1 / 30 已交付。  
 > **无关**：改 Host 价表数值；删 Bailian；Langfuse SDK v4；改 chat/graph 拓扑；Batch 推理通道。
 
 ---
@@ -68,3 +68,15 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-31 | 维护者令开；自 SF catalog CLOSE 后开分支 |
+| 2026-08-31 | 30 交付 · PR #101 MERGED · 归档 |
+
+---
+
+## CLOSE
+
+| 项 | 值 |
+|---|---|
+| PR | [#101](https://github.com/Cyning12/ops-desk-api/pull/101) **MERGED** · 2026-08-31 |
+| 交付 | `LlmUsage.from_provider_usage` · Langfuse `cached-input-tokens` exclusive-bucket |
+| 归档 | 2026-08-31 → `docs/tasks/done/` |
+
