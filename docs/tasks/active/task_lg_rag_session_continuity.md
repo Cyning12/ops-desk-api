@@ -139,7 +139,7 @@
 
 | 项 | 值 |
 |---|---|
-| PR | 开 PR 后回填 · **勿 auto-merge** · 可 api-only 先合（见上节） |
+| PR | [#100](https://github.com/Cyning12/ops-desk-api/pull/100) · **勿 auto-merge** · 可 api-only 先合（见上节） |
 | web task | 另开；本仓不改 web 码 |
 | Spec | `05` §10.2 回写 |
 
