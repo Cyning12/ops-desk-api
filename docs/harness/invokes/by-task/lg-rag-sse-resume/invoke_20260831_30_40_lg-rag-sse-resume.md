@@ -64,7 +64,7 @@ task_slug：lg-rag-sse-resume
 | 实现 | `ops_lg_rag_run_events` + Alembic；live 帧顶层 `cursor`；`POST /lg-rag/replay`；断连仍跑完、无 cancel |
 | 测试 | `.venv/bin/pytest` resume+stream+session_continuity×2 → **34 passed**；`ruff check` PASS；`./scripts/graph-compile.sh` exit 0；`lint-wiki-delta` PASS |
 | chat 依赖 | `app/ops/chat/graph.py` **零 diff**；`app/ops/lg_rag/**` **无** import chat/session |
-| PR | （开 PR 后填 URL） |
+| PR | https://github.com/Cyning12/ops-desk-api/pull/103 · **勿 auto-merge** |
 
 关键路径：
 - `app/ops/lg_rag/sse_replay.py` · `event_store.py` · `sse_stream.py` · `router.py`
