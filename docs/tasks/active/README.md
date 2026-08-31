@@ -4,7 +4,6 @@
 
 | task | 说明 |
 |---|---|
-| [`task_eval_token_cost_ledger.md`](./task_eval_token_cost_ledger.md) | Eval E5 · 价表/费用账本（实现多已合入 master · 待 CLOSE/PR 收尾确认） |
-| [`task_lg_rag_sse_stream_updates.md`](./task_lg_rag_sse_stream_updates.md) | **T2** lg-rag `/stream` + Obs Generation I/O · 维护者令开工 |
+| [`task_lg_rag_sse_stream_updates.md`](./task_lg_rag_sse_stream_updates.md) | **T2** lg-rag `/stream` + Obs Generation I/O · 待 PR 合入后 CLOSE |
 
-> Spec 签收已归档：[`../done/task_lg_rag_sse_t0_t1_spec.md`](../done/task_lg_rag_sse_t0_t1_spec.md)
+> 已归档：[`../done/task_eval_token_cost_ledger.md`](../done/task_eval_token_cost_ledger.md)（E5 · #96）· [`../done/task_lg_rag_sse_t0_t1_spec.md`](../done/task_lg_rag_sse_t0_t1_spec.md)（T0 Spec）

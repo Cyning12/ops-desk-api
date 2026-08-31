@@ -207,6 +207,7 @@
 | 2026-08-30 | **HG-SPEC-SIGNOFF=approved**（T0 · 00 代签 · 维护者令「签收」）；状态 `active`；下一棒 00 拆 T2（验收含 Obs-I/O） |
 | 2026-08-30 | **T2 冻结**：`POST /api/ops/lg-rag/stream` · `lg-rag-sse-v1`；Obs-I/O 随 T2 实现 |
 | 2026-08-31 | **§9 G-L2**：本系列凡改 `10_flow_lg_rag` 节点须同步分域 indexes 全量 `implementedBy`；禁止并入 chat yaml |
+| 2026-08-31 | **§10**：前端接入与联调时机建议 |
 
 ---
 

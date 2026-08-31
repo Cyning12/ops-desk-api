@@ -91,7 +91,7 @@ docs/spec/agent-infra/
 
 | ID | 规划 | 状态 | 首波 |
 |---|---|---|---|
-| `eval-and-observability` | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **E0–E5**（实现见 Eval tasks）；内容 I/O 优先级见 **`05` §3**（不单开 Obs task） |
+| `eval-and-observability` | [`04_eval_and_observability_plan_v0.md`](./04_eval_and_observability_plan_v0.md) | **active** · HG-SPEC-SIGNOFF approved | **E0–E5 DONE**（E5 [#96](https://github.com/Cyning12/ops-desk-api/pull/96)）；内容 I/O 见 **`05` §3**（挂 T2） |
 
 ## 传输/会话轨（active · T0 签收）
 
