@@ -46,7 +46,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://ops:${DB_PASSWORD:-ops_password}@db:5432/opsdesk
       OPS_LLM_PROVIDER: ${OPS_LLM_PROVIDER:-siliconflow}
       SILICONFLOW_API_KEY: ${SILICONFLOW_API_KEY}
-      OPS_LLM_MODEL: ${OPS_LLM_MODEL:-Qwen/Qwen2.5-72B-Instruct}
+      OPS_LLM_MODEL: ${OPS_LLM_MODEL:-deepseek-ai/DeepSeek-V4-Flash}
       BAILIAN_API_KEY: ${BAILIAN_API_KEY}
       BAILIAN_BASE_URL: ${BAILIAN_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
       BAILIAN_MODEL: ${BAILIAN_MODEL:-qwen-plus}

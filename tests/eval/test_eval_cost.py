@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -30,6 +31,11 @@ def test_eval_cost_load_default_price_table():
     assert len(rows) >= 1
     keys = {(r.provider, r.model) for r in rows}
     assert ("siliconflow", "deepseek-ai/DeepSeek-V4-Pro") in keys
+    assert ("siliconflow", "BAAI/bge-reranker-v2-m3") in keys
+    pro = next(r for r in rows if r.model == "deepseek-ai/DeepSeek-V4-Pro")
+    assert pro.cached_input_per_1m == Decimal("1.0")
+    rerank = next(r for r in rows if r.model == "BAAI/bge-reranker-v2-m3")
+    assert rerank.output_per_1m == Decimal("0")
 
 
 def test_eval_cost_compute_ok_and_flags():
@@ -42,8 +48,15 @@ def test_eval_cost_compute_ok_and_flags():
     assert ok["status"] == STATUS_OK
     assert ok["currency"] == "CNY"
     assert ok["cost_est"] != ""
-    # 1000/1e6*4 + 500/1e6*16 = 0.004 + 0.008 = 0.012
-    assert float(ok["cost_est"]) == pytest.approx(0.012)
+    # 1000/1e6*12 + 500/1e6*24 = 0.012 + 0.012 = 0.024
+    assert float(ok["cost_est"]) == pytest.approx(0.024)
+    assert ok["cached_input_tokens"] == 0
+
+    cached = by_id["ok-sf-cache"]
+    assert cached["status"] == STATUS_OK
+    # 1000*12/1e6 + 500*1/1e6 + 100*24/1e6 = 0.012 + 0.0005 + 0.0024 = 0.0149
+    assert float(cached["cost_est"]) == pytest.approx(0.0149)
+    assert cached["cached_input_tokens"] == 500
 
     assert by_id["price-miss"]["status"] == STATUS_PRICE_MISSING
     assert by_id["price-miss"]["cost_est"] == ""
@@ -86,6 +99,30 @@ def test_eval_cost_usage_missing_tokens_no_fake_price():
     assert exit_code_for(out) == 0
 
 
+def test_eval_cost_optional_output_defaults_zero(tmp_path: Path):
+    path = tmp_path / "t.yaml"
+    path.write_text(
+        yaml.dump(
+            {
+                "version": 1,
+                "rows": [
+                    {
+                        "provider": "siliconflow",
+                        "model": "rerank-only",
+                        "input_per_1m": 0.07,
+                        "currency": "CNY",
+                        "effective_from": "2026-01-01",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    rows = load_price_table(path)
+    assert rows[0].output_per_1m == Decimal("0")
+    assert rows[0].cached_input_per_1m == Decimal("0")
+
+
 def test_eval_cost_invalid_price_table_raises(tmp_path: Path):
     bad = tmp_path / "bad.yaml"
     bad.write_text(
@@ -126,6 +163,7 @@ def test_eval_cost_cli_writes_csv(tmp_path: Path):
     assert code == 1
     text = out.read_text(encoding="utf-8")
     assert "status" in text
+    assert "cached_input_tokens" in text
     assert STATUS_PRICE_MISSING in text
     assert STATUS_USAGE_MISSING in text
 

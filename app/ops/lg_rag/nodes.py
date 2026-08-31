@@ -31,10 +31,10 @@ logger = logging.getLogger(__name__)
 
 # 与 grader 同档小模型（DESIGN §4）；可用 LG_RAG_ROUTER_* 独立覆盖
 _ROUTER_PROVIDER = os.getenv("LG_RAG_ROUTER_PROVIDER") or os.getenv(
-    "RAG_GRADER_PROVIDER", "bailian"
+    "RAG_GRADER_PROVIDER", "siliconflow"
 )
 _ROUTER_MODEL = os.getenv("LG_RAG_ROUTER_MODEL") or os.getenv(
-    "RAG_GRADER_MODEL", "qwen3.7-flash"
+    "RAG_GRADER_MODEL", "Qwen/Qwen3.6-27B"
 )
 
 ROUTES = ("rag", "direct", "refuse")

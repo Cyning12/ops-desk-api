@@ -266,7 +266,7 @@ class TestSiliconFlowProvider:
         async for _ in provider.complete_stream([LlmMessage(role="user", content="hi")]):
             pass
 
-        assert captured["body"]["model"] == "deepseek-ai/DeepSeek-V4-Pro"
+        assert captured["body"]["model"] == "deepseek-ai/DeepSeek-V4-Flash"
 
 
 class TestBailianProvider:
