@@ -274,3 +274,36 @@ class OpsRunEvent(Base):
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
 
     run: Mapped["OpsRun"] = relationship(back_populates="events")
+
+
+class OpsLgRagThread(Base):
+    """lg-rag 会话 SoT（thread_id）；独立于 ops_sessions_chat。"""
+
+    __tablename__ = "ops_lg_rag_threads"
+
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ops_users.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+    updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
+
+    turns: Mapped[list["OpsLgRagTurn"]] = relationship(back_populates="thread")
+
+
+class OpsLgRagTurn(Base):
+    """lg-rag 一轮消息（user / assistant / system 摘要）。"""
+
+    __tablename__ = "ops_lg_rag_turns"
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    thread_id: Mapped[str] = mapped_column(
+        String(255), ForeignKey("ops_lg_rag_threads.id", ondelete="CASCADE"), nullable=False
+    )
+    role: Mapped[str] = mapped_column(String(32), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+
+    thread: Mapped["OpsLgRagThread"] = relationship(back_populates="turns")

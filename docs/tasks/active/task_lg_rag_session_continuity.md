@@ -88,16 +88,16 @@
 
 ## 验收标准
 
-- [ ] 同 `thread_id` 第二次 `/lg-rag/stream`（或装配函数）注入的 `messages` **含**上一轮 user/assistant（mock DB / 纯函数，不连真 LLM）  
-- [ ] 不同 `thread_id` **不**串历史  
-- [ ] 窗口压缩：超过 `max_full_turns` 时头部分组摘要、尾部全量；过短 noop；失败截断尾部  
-- [ ] 缺 `thread_id` 仍 200 stream 且响应头带回生成的 id  
-- [ ] 鉴权 401；非法 `thread_id`（超长等）422；跨用户 `thread_id` **404**（不注入他用户历史）  
-- [ ] **旧测 grep 影响面**：`tests/test_lg_rag_sse_stream.py` 帧序仍绿；`tests/test_session_continuity.py`（chat H3）零破坏；`chat/graph.py` 零 diff  
-- [ ] 不 import `app.ops.session` / `app.ops.chat` 于 `app/ops/lg_rag/**`  
-- [ ] `05` §10.2 回写实现句；G-L1 `lg_rag` 备注；若增 `implementedBy` 则 G-L2 indexes 同步  
-- [ ] `ruff check app tests` 触及路径绿；相关 pytest 绿；`./scripts/graph-compile.sh` exit 0  
-- [ ] `npx --yes dsh-coding-kit task lint-wiki-delta --target .` 通过
+- [x] 同 `thread_id` 第二次 `/lg-rag/stream`（或装配函数）注入的 `messages` **含**上一轮 user/assistant（mock DB / 纯函数，不连真 LLM）  
+- [x] 不同 `thread_id` **不**串历史  
+- [x] 窗口压缩：超过 `max_full_turns` 时头部分组摘要、尾部全量；过短 noop；失败截断尾部  
+- [x] 缺 `thread_id` 仍 200 stream 且响应头带回生成的 id  
+- [x] 鉴权 401；非法 `thread_id`（超长等）422；跨用户 `thread_id` **404**（不注入他用户历史）  
+- [x] **旧测 grep 影响面**：`tests/test_lg_rag_sse_stream.py` 帧序仍绿；`tests/test_session_continuity.py`（chat H3）零破坏；`chat/graph.py` 零 diff  
+- [x] 不 import `app.ops.session` / `app.ops.chat` 于 `app/ops/lg_rag/**`  
+- [x] `05` §10.2 回写实现句；G-L1 `lg_rag` 备注；若增 `implementedBy` 则 G-L2 indexes 同步  
+- [x] `ruff check app tests` 触及路径绿；相关 pytest 绿；`./scripts/graph-compile.sh` exit 0  
+- [x] `npx --yes dsh-coding-kit task lint-wiki-delta --target .` 通过
 
 ---
 
@@ -147,7 +147,20 @@
 
 ### 自检结论
 
-> **占位** · 待 **30/40** 回填实跑结果（相关 pytest / `ruff check app tests` / `./scripts/graph-compile.sh`）。本帽 **10-task** **不**伪造测试结论。
+> **30/40** · 2026-08-31 · 分支 `task/lg-rag-session-continuity`（基于 `212402d`）
+
+| 命令 | cwd | 退出码 |
+|---|---|---|
+| `npx dsh-coding-kit@1.10.0 verify --target . --task docs/tasks/active/task_lg_rag_session_continuity.md` | 仓根 | **0** · `VERIFY: PASS` |
+| `.venv/bin/pytest tests/test_lg_rag_*.py tests/test_session_continuity.py` | 仓根 | **0** · 87 passed |
+| `.venv/bin/ruff check app/ops/lg_rag app/db/models.py tests/test_lg_rag_session_continuity.py tests/test_lg_rag_sse_stream.py` | 仓根 | **0** |
+| `.venv/bin/ruff check app tests` | 仓根 | **1**（既有 `app/ops/rag/tokenizer.py` UP035 · `tests/test_rag_chunker.py` I001；**非本波路径**） |
+| `./scripts/graph-compile.sh` | 仓根 | **0** |
+| `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` | 仓根 | **0** · `LINT-WIKI-DELTA: PASS` |
+
+`app/ops/chat/graph.py`：`git diff` 空（零 diff）。`lg_rag/**` 无 `app.ops.chat` / `app.ops.session` import（T2 `make_sse_event` 已内联为 `_sse_frame`）。
+
+**未测**：真 LLM · 真 PG 落盘 round-trip · T4 replay/cursor · web 带稳定 `thread_id`。
 
 思考轮由 SPEC（`05` + session ROADMAP）承载；本文件 **不**预置 R0–R5（lint W4 合法）。
 
@@ -160,3 +173,4 @@
 | 2026-08-31 | 00 起草 · 维护者 Prompt 授权 T3 · 闸 HG-TASK-DRAFT / HG-GRAPH-MODULES 代签 |
 | 2026-08-31 | **10-task**：补 `### 自检结论` 占位；收紧非范围（L-c/T4/T5/T6/C0–C4）；钉跨用户 thread→404；lint 目标 PASS（允 W4） |
 | 2026-08-31 | **00**：R1 pass 后代签 `HG-AUDIT-R1`；钉压缩默认 6/2 与独立表名 |
+| 2026-08-31 | **30/40**：独立表 + 压缩装配 + HTTP 404/422/401；自检回填；验收全勾 |

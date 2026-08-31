@@ -1,8 +1,8 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_lg_rag"
 title: "LG RAG 旁路三模式流程（basic / router / supervisor · Critic）"
-description: "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates）。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。"
-version: "2026-08-30"
+description: "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。"
+version: "2026-08-31"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "method"
@@ -24,6 +24,24 @@ nodes:
       - path: "app/ops/lg_rag/router.py"
         symbol: "_dispatch"
         kind: method
+      - path: "app/ops/lg_rag/router.py"
+        symbol: "_prepare_thread"
+        kind: method
+      - path: "app/ops/lg_rag/continuity.py"
+        symbol: "assemble_graph_messages"
+        kind: method
+      - path: "app/ops/lg_rag/continuity.py"
+        symbol: "compress_window"
+        kind: method
+      - path: "app/ops/lg_rag/thread_store.py"
+        symbol: "resolve_thread_for_user"
+        kind: method
+      - path: "app/ops/lg_rag/thread_store.py"
+        symbol: "load_thread_turns"
+        kind: method
+      - path: "app/ops/lg_rag/thread_store.py"
+        symbol: "persist_thread_turns"
+        kind: method
 
   - id: "lg_stream"
     label: "POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1）"
@@ -32,6 +50,9 @@ nodes:
     implementedBy:
       - path: "app/ops/lg_rag/router.py"
         symbol: "stream_lg_rag"
+        kind: method
+      - path: "app/ops/lg_rag/router.py"
+        symbol: "_prepare_thread"
         kind: method
       - path: "app/ops/lg_rag/sse_stream.py"
         symbol: "iter_lg_rag_sse"
@@ -50,6 +71,21 @@ nodes:
         kind: method
       - path: "app/ops/lg_rag/multi/graph.py"
         symbol: "astream_supervisor_agent"
+        kind: method
+      - path: "app/ops/lg_rag/continuity.py"
+        symbol: "assemble_graph_messages"
+        kind: method
+      - path: "app/ops/lg_rag/continuity.py"
+        symbol: "compress_window"
+        kind: method
+      - path: "app/ops/lg_rag/thread_store.py"
+        symbol: "resolve_thread_for_user"
+        kind: method
+      - path: "app/ops/lg_rag/thread_store.py"
+        symbol: "load_thread_turns"
+        kind: method
+      - path: "app/ops/lg_rag/thread_store.py"
+        symbol: "persist_thread_turns"
         kind: method
 
   - id: "basic_graph"
@@ -266,14 +302,14 @@ edges:
     label: "POST {query, mode, thread_id}（cookie auth）"
     anchors:
       - path: "app/ops/lg_rag/router.py"
-        line: 143
+        line: 176
 
   - from: "client"
     to: "lg_stream"
     label: "POST SSE {query, mode=supervisor 默认}（cookie auth）"
     anchors:
       - path: "app/ops/lg_rag/router.py"
-        line: 175
+        line: 219
 
   - from: "lg_stream"
     to: "sup_graph"
@@ -298,7 +334,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/router.py"
-        line: 118
+        line: 141
 
   - from: "lg_invoke"
     to: "router_graph"
@@ -307,7 +343,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/router.py"
-        line: 122
+        line: 145
 
   - from: "lg_invoke"
     to: "sup_graph"
@@ -316,21 +352,28 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/router.py"
-        line: 120
+        line: 143
 
   - from: "lg_invoke"
     to: "client"
     label: "200 {ok,data}"
     anchors:
       - path: "app/ops/lg_rag/router.py"
-        line: 152
+        line: 208
+
+  - from: "lg_stream"
+    to: "db"
+    label: "ops_lg_rag_threads / turns（thread_id SoT）"
+    anchors:
+      - path: "app/ops/lg_rag/thread_store.py"
+        line: 1
 
   - from: "lg_invoke"
     to: "db"
-    label: "optional PG checkpointer（env LG_RAG_HTTP_CHECKPOINTER）"
+    label: "ops_lg_rag_threads / turns；optional PG checkpointer"
     anchors:
       - path: "app/ops/lg_rag/router.py"
-        line: 125
+        line: 151
 
   - from: "basic_graph"
     to: "b_rag"

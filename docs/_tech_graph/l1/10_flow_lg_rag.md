@@ -1,13 +1,13 @@
 ---
 graph_id: 10_flow_lg_rag
-version: 2026-08-30
-generated_at: sha256-f863756caaa5f53a
+version: 2026-08-31
+generated_at: sha256-ff560bc16cdc17b3
 source: 10_flow_lg_rag.graph.yaml
 ---
 
 # LG RAG 旁路三模式流程（basic / router / supervisor · Critic）
 
-POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates）。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。
+POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。
 
 ## Mermaid
 
@@ -44,23 +44,25 @@ flowchart TB
     main_doc[">../l0/00_main.md"]
 
     client -->|"POST {query, mode, thread_id}（cookie auth）"| lg_invoke
-    %% → app/ops/lg_rag/router.py#L143
+    %% → app/ops/lg_rag/router.py#L176
     client -->|"POST SSE {query, mode=supervisor 默认}（cookie auth）"| lg_stream
-    %% → app/ops/lg_rag/router.py#L175
+    %% → app/ops/lg_rag/router.py#L219
     lg_stream -->|"[默认 mode=supervisor · astream updates]"| sup_graph
     %% → app/ops/lg_rag/sse_stream.py#L1
     lg_stream -->|"text/event-stream（run.start…answer…done）"| client
     %% → app/ops/lg_rag/sse_stream.py#L1
     lg_invoke -->|"[mode=basic]"| basic_graph
-    %% → app/ops/lg_rag/router.py#L118
+    %% → app/ops/lg_rag/router.py#L141
     lg_invoke -->|"[mode=router（默认）]"| router_graph
-    %% → app/ops/lg_rag/router.py#L122
+    %% → app/ops/lg_rag/router.py#L145
     lg_invoke -->|"[mode=supervisor]"| sup_graph
-    %% → app/ops/lg_rag/router.py#L120
+    %% → app/ops/lg_rag/router.py#L143
     lg_invoke -->|"200 {ok,data}"| client
-    %% → app/ops/lg_rag/router.py#L152
-    lg_invoke -->|"optional PG checkpointer（env LG_RAG_HTTP_CHECKPOINTER）"| db
-    %% → app/ops/lg_rag/router.py#L125
+    %% → app/ops/lg_rag/router.py#L208
+    lg_stream -->|"ops_lg_rag_threads / turns（thread_id SoT）"| db
+    %% → app/ops/lg_rag/thread_store.py#L1
+    lg_invoke -->|"ops_lg_rag_threads / turns；optional PG checkpointer"| db
+    %% → app/ops/lg_rag/router.py#L151
     basic_graph -->|"START → rag → END"| b_rag
     %% → app/ops/lg_rag/graph.py#L58
     b_rag -->|"ainvoke_evidence_answer"| lc_chain
@@ -211,7 +213,8 @@ flowchart TB
 | lg_invoke | router_graph | ?> | branches | [mode=router（默认）] | 1 anchor(s) |
 | lg_invoke | sup_graph | ?> | branches | [mode=supervisor] | 1 anchor(s) |
 | lg_invoke | client | -> | depends_on | 200 {ok,data} | 1 anchor(s) |
-| lg_invoke | db | -> | depends_on | optional PG checkpointer（env LG_RAG_HTTP_CHECKPOINTER） | 1 anchor(s) |
+| lg_stream | db | -> | depends_on | ops_lg_rag_threads / turns（thread_id SoT） | 1 anchor(s) |
+| lg_invoke | db | -> | depends_on | ops_lg_rag_threads / turns；optional PG checkpointer | 1 anchor(s) |
 | basic_graph | b_rag | -> | depends_on | START → rag → END | 1 anchor(s) |
 | b_rag | lc_chain | ::triggers | triggers | ainvoke_evidence_answer | 2 anchor(s) |
 | router_graph | r_router | -> | depends_on | START → router | 1 anchor(s) |

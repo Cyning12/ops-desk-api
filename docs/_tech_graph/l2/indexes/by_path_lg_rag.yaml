@@ -17,8 +17,14 @@ by_path:
     - node_id: lg_invoke
       symbol: _dispatch
       kind: method
+    - node_id: lg_invoke
+      symbol: _prepare_thread
+      kind: method
     - node_id: lg_stream
       symbol: stream_lg_rag
+      kind: method
+    - node_id: lg_stream
+      symbol: _prepare_thread
       kind: method
   "app/ops/lg_rag/sse_stream.py":
     - node_id: lg_stream
@@ -26,6 +32,38 @@ by_path:
       kind: method
     - node_id: lg_stream
       symbol: map_node_update
+      kind: method
+  "app/ops/lg_rag/continuity.py":
+    - node_id: lg_stream
+      symbol: assemble_graph_messages
+      kind: method
+    - node_id: lg_invoke
+      symbol: assemble_graph_messages
+      kind: method
+    - node_id: lg_stream
+      symbol: compress_window
+      kind: method
+    - node_id: lg_invoke
+      symbol: compress_window
+      kind: method
+  "app/ops/lg_rag/thread_store.py":
+    - node_id: lg_stream
+      symbol: resolve_thread_for_user
+      kind: method
+    - node_id: lg_invoke
+      symbol: resolve_thread_for_user
+      kind: method
+    - node_id: lg_stream
+      symbol: load_thread_turns
+      kind: method
+    - node_id: lg_invoke
+      symbol: load_thread_turns
+      kind: method
+    - node_id: lg_stream
+      symbol: persist_thread_turns
+      kind: method
+    - node_id: lg_invoke
+      symbol: persist_thread_turns
       kind: method
   "app/ops/lg_rag/graph.py":
     - node_id: basic_graph
