@@ -1,7 +1,8 @@
 # 模板：30 拒开工 · 人工闸 STOP
 
 > **用途**：`HG-AUDIT-R1` 或其它 blocks **30** 的闸为 `pending` 时，**首输出**须为本形状；**禁止**改业务码、禁止落 30 invoke。  
-> **复制**：Agent 按此填空；维护者演练拒开工时可对照。
+> **复制**：Agent 按此填空；维护者演练拒开工时可对照。  
+> **仓内定制**：表含 `HG-GRAPH-MODULES`（ops-desk-api · 勿被 kit sync `--force` 冲掉）。
 
 ---
 
@@ -15,7 +16,7 @@
 
 **冲突**：task 表 `pending` 且声称 `approved` → **拒开工**（不得采信聊天）。
 
-**pre-30 invoke（v2.14+）**：`verify` 报 `missing pre-30 invoke hats` → **拒开工**（用户「开工」不能豁免；维护者可用 `--allow-invoke-gap` 留痕放行）。
+**pre-30 invoke（v2.14+ 硬闸 · 本包已接线）**：`verify` 报 `missing pre-30 invoke hats` → **拒开工**——本包已接线（src/cli.ts cmdVerify · checkPre30InvokeHats · PRD_DEF-003 阶段二 T5 · test/cli-verify-invoke-hats.test.ts 钉死 · `--allow-invoke-gap` 豁免留痕）；人工闸表核对口径不变。
 
 **结论**：**拒开工** — task 表真值未满足 30 条件。
 
