@@ -1,9 +1,9 @@
 # Task：Host C2 · comms Prompt Pack（PromptAssembly pack=comms）
 
-> **状态**：active  
+> **状态**：completed（2026-09-01 CLOSE · PR [#116](https://github.com/Cyning12/ops-desk-api/pull/116) MERGED）  
 > **类型**：Prompt 工程 / Host 沟通轨实现  
 > **上游**：[`06_host_comms_boundary_spec_v0.md`](../../spec/agent-infra/06_host_comms_boundary_spec_v0.md)（**signed** · #111）§4（意图路由）· §5（产物路径）· §6（闸纪律）· §9（session 隔离）· §10（C2 行）  
-> **前置**：C1 CLOSE · [`task_host_harness_cli_capability`](../done/task_host_harness_cli_capability.md) · [#114](https://github.com/Cyning12/ops-desk-api/pull/114)；H4 方向 ✓ · kit ≥1.10 FRAGMENT 已 sync 仓内（`docs/harness/prompts/FRAGMENT_00_delegate_only_v1_zh.md` · `FRAGMENT_hat_reanchor_v1_zh.md`）  
+> **前置**：C1 CLOSE · [`task_host_harness_cli_capability`](./task_host_harness_cli_capability.md) · [#114](https://github.com/Cyning12/ops-desk-api/pull/114)；H4 方向 ✓ · kit ≥1.10 FRAGMENT 已 sync 仓内（`docs/harness/prompts/FRAGMENT_00_delegate_only_v1_zh.md` · `FRAGMENT_hat_reanchor_v1_zh.md`）  
 > **分支**：`task/host-comms-prompt-pack`  
 > **帽子**：00 起草闸；**10** 补全；**20** 审；**30+40** 实现。  
 > **无关**：C1 已完成项返工 · C3 受控写盘 · C4 UI · 改 product pack / 业务 Chat·lg-rag 行为 · 新增 HTTP 路由 · 真 LLM 联调
@@ -30,6 +30,7 @@
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | `n/a`（不改 lg-rag-sse-v1；pack 契约由本 task 30 自检记录） |
 | **close_pr_policy** | `required` |
+| **related_pr** | `#116` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | C 轨串行：C0 ✓ → C1 ✓ → **C2** → C3；C4 跨仓 web 可后与 C3 尾并行 |
 
@@ -178,7 +179,23 @@
 | 2026-09-01 | **10-task**：现网核对全一致（render/templates API 形态 ✓ · FRAGMENT 两文件存在 ✓）；模块归属开放钉钉死为 `01_modules.md` `lg_rag` 行（L27）备注；补验收钩 2 条（pack 元信息字段+product 渲染签名不变 · `route_intent` 严格二值回退 product）；补 `### 自检结论`（W4 合法：思考轮由 SPEC 06 §15 承载）；invoke 落盘；00 定夺实质零改 · HG-AUDIT-R1 保持 pending · 下一棒 20-task-audit |
 | 2026-09-01 | **20** R1 **pass**（内容零阻塞；非阻塞 4 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
 | 2026-09-01 | **30+40**：实现 `app/ops/prompts/packs.py`（`render_pack("comms")` 运行时读 FRAGMENT 真值 + `route_intent` 规则判定器 + pack 元信息）· 新测 `tests/test_prompt_packs.py` 44 用例 · 图谱 lg_rag 行备注+人签记录 · 验收 9 条全勾 · 自检全绿（pytest 543 passed · graph-compile/lint-wiki-delta/verify exit 0）· R1 非阻塞 4 条逐项处置（跨 session 交还**未做**留 C3/C4）· invoke 落盘 · **不 CLOSE（留给 00）** |
+| 2026-09-01 | **00 CLOSE**：PR [#116](https://github.com/Cyning12/ops-desk-api/pull/116) MERGED（CI 三绿）；无 Alembic；00 独立复跑 543 passed / ruff 净 / router 零 diff；归档 done/ · Hub 补登 · CLOSE invoke 留档 |
 
 ---
 
-**不 CLOSE（留给 00）**
+30+40 已交付；00 关账复检：独立复跑 pytest CI 等价 **543 passed / 39 skipped** · ruff 触及路径净 · router.py 零 diff · PR #116 CI 三绿后 squash MERGED。
+
+---
+
+## 关账（CLOSE）
+
+| 项 | 值 |
+|---|---|
+| PR | [#116](https://github.com/Cyning12/ops-desk-api/pull/116) **MERGED** 2026-09-01 |
+| 交付 | `app/ops/prompts/packs.py`（`render_pack("comms")` 运行时读 FRAGMENT 真值 + `route_intent` 规则判定器）+ 44 纯函数用例 |
+| 生产 | 无 Alembic；无新路由；product 侧零影响（纯函数层 · 未接线） |
+| 归档 | 2026-09-01 · 00 关账 · 维护者 Prompt 授权 |
+
+### KPI
+
+Task_KPI%: 100 · D1 范围钉死纯函数层无路由 · D2 闸齐（三代签 + 20 R1 pass）· D3 过程档齐（invoke 10/00/30_40 + R1 审查）· D4 图谱 lg_rag 行备注已随 #116 · D5 关账补登 2026-09-01

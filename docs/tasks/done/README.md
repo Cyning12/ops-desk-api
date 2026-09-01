@@ -85,6 +85,7 @@
 | 2026-09-01 | [`task_lg_rag_deprecate_chat_stream.md`](./task_lg_rag_deprecate_chat_stream.md) | T6 `/chat/stream` 410 下线（保留 models/sessions.latest/WS · 不删码） · PR #108 |
 | 2026-09-01 | [`task_host_comms_boundary_spec.md`](./task_host_comms_boundary_spec.md) | C0 Host 沟通边界 SPEC 06 签收（docs-only） · PR #111 |
 | 2026-09-01 | [`task_host_harness_cli_capability.md`](./task_host_harness_cli_capability.md) | C1 harness CLI 白名单 Capability（verify/task_lint · Policy 默认关） · PR #114 |
+| 2026-09-01 | [`task_host_comms_prompt_pack.md`](./task_host_comms_prompt_pack.md) | C2 comms Prompt Pack + route_intent（纯函数层 · 无路由） · PR #116 |
 
 ---
 
@@ -119,6 +120,7 @@
 | 2026-09-01 | CLOSE T6 `#108`（lg-rag-deprecate-chat-stream 归档 done/ · Hub 补登） |
 | 2026-09-01 | CLOSE C0 `#111`（host-comms-boundary-spec 归档 done/ · Hub 补登） |
 | 2026-09-01 | CLOSE C1 `#114`（host-harness-cli-capability 归档 done/ · Hub 补登） |
+| 2026-09-01 | CLOSE C2 `#116`（host-comms-prompt-pack 归档 done/ · Hub 补登） |
 
 ## 给维护者
 
