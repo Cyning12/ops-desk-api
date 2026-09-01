@@ -38,7 +38,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
 | HG-TASK-DRAFT | approved | 22-R1 | 2026-09-01 · **00 代签 · 维护者 Prompt 授权** |
-| HG-AUDIT-R1 | pending | 30 | 待 **20-task-audit** R1 落盘后 00 代签 |
+| HG-AUDIT-R1 | approved | 30 | 2026-09-01 · **00 代签 · 维护者 Prompt 授权** · 见 `docs/harness/reviews/task_host_harness_cli_capability_audit_R1_20260901.md`（R1 pass · 内容零阻塞） |
 | HG-GRAPH-MODULES | approved | — | 不新增一级模块（capability 已存在）· **00 代签** · 仅备注/flow |
 
 ---
@@ -156,3 +156,4 @@
 |---|---|
 | 2026-09-01 | **00**：C0 CLOSE（#111/#112）后起草 C1；钉 slug=`host-harness-cli-capability`；全集=verify+task_lint 必做 / status 可选；命令向量硬编码 · 禁 shell=True · 参数白名单；env 钉 `DSH_CODING_KIT_VERSION` 缺失即不可用；Policy 默认关 |
 | 2026-09-01 | **10-task**：现网核对修正 2 处（`CapabilityResult.data`→`output`；manifest 仅 local_fn → 注册走代码路径 `gateway.register` · builtin.v1.yaml 不适用）；补验收钩 2 条（注册可见性 · Policy 门先于 adapter / cli+high 双键）；补 `### 自检结论`（W4 合法：思考轮由 SPEC 06 §15 承载）；invoke 落盘；00 定夺实质零改 · HG-AUDIT-R1 保持 pending · 下一棒 20-task-audit |
+| 2026-09-01 | **20** R1 **pass**（内容零阻塞；非阻塞 5 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
