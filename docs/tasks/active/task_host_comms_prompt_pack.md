@@ -80,15 +80,15 @@
 
 ## 验收标准
 
-- [ ] `render_pack("comms")` 输出含：FRAGMENT_00_delegate_only 与 FRAGMENT_hat_reanchor 内容（子串断言）· task 字段清单 · 「永不签发 human_gate」禁令条文（断言）  
-- [ ] FRAGMENT 内容与仓内 `docs/harness/prompts/` 真值一致（测试读真值文件对比 · 防拷贝漂移）  
-- [ ] `route_intent`：参数化用例——「帮我开个 task/立项/写个 SPEC」→ comms；普通业务问句 → product；空/模糊 → product（回退）  
-- [ ] pack 元信息含 `name="comms"` · `session_scope="comms"` · `version`；product 侧渲染零变化（既有 `render()`/`get_template()` 签名与行为不变 · 旧测绿）  
-- [ ] `route_intent` 返回值严格二值字面量 `"comms" | "product"`（无第三值；异常/None 输入 → product）  
-- [ ] 无新增 HTTP 路由（`router.py` 零 diff）；不 import `app.ops.session`/chat 流路径  
-- [ ] `01_modules.md` 备注；若增 `implementedBy` → G-L2 indexes 同步  
-- [ ] `ruff check` 触及路径绿；pytest 相关绿；`./scripts/graph-compile.sh` exit 0  
-- [ ] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` 通过
+- [x] `render_pack("comms")` 输出含：FRAGMENT_00_delegate_only 与 FRAGMENT_hat_reanchor 内容（子串断言）· task 字段清单 · 「永不签发 human_gate」禁令条文（断言）  
+- [x] FRAGMENT 内容与仓内 `docs/harness/prompts/` 真值一致（测试读真值文件对比 · 防拷贝漂移）  
+- [x] `route_intent`：参数化用例——「帮我开个 task/立项/写个 SPEC」→ comms；普通业务问句 → product；空/模糊 → product（回退）  
+- [x] pack 元信息含 `name="comms"` · `session_scope="comms"` · `version`；product 侧渲染零变化（既有 `render()`/`get_template()` 签名与行为不变 · 旧测绿）  
+- [x] `route_intent` 返回值严格二值字面量 `"comms" | "product"`（无第三值；异常/None 输入 → product）  
+- [x] 无新增 HTTP 路由（`router.py` 零 diff）；不 import `app.ops.session`/chat 流路径  
+- [x] `01_modules.md` 备注；若增 `implementedBy` → G-L2 indexes 同步（未增 implementedBy → 无需同步）  
+- [x] `ruff check` 触及路径绿；pytest 相关绿；`./scripts/graph-compile.sh` exit 0  
+- [x] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` 通过
 
 ---
 
@@ -138,6 +138,38 @@
 
 ---
 
+### 自检结论（执行者）
+
+> **30+40** · 2026-09-01 · 分支 `task/host-comms-prompt-pack` · GATE_VERIFY PASS（三闸 approved · verify 开工前/收尾各一次均 exit 0）
+
+**实现摘要**
+
+- 新增 `app/ops/prompts/packs.py`：`render_pack("comms", *, slots=None, base_dir=None) -> PromptPack`（独立装配函数 · 不改 `render()`；slots 沿用 `<!-- slot:name -->` 机制 · 传入时须含 `REQUIRED_SLOTS=("task_slug","hat_id")` 缺则 `PromptPackError` 点名缺哪个槽位）· `route_intent(text) -> Literal["comms","product"]` · 元信息 `name="comms"`/`session_scope="comms"`/`version="v1"`/`capabilities=("harness.verify","harness.task_lint")`（仅声明不调用）
+- **FRAGMENT 注入形态（30 定）**：**运行时读仓内真值文件**（`docs/harness/prompts/FRAGMENT_*.md` · 仓根由 `packs.py` 相对解析 `parents[3]` · `base_dir` 参数可覆盖供测试）。理由：真值文件即单一 SoT，运行时读=注入内容逐字即真值，**物理上不可能拷贝漂移**；仓内无构建期步骤可承载「内嵌生成」，若内嵌反而引入第二份拷贝。部署形态风险（`docs/` 不在 `app/` 包内）由 failure_paths 行 2 兜底：文件缺失/为空 → `PromptPackError` 明确报错不静默降级（测试以 `tmp_path` 断言）；且本波为纯函数层无部署接线（无新路由），路径基准问题留 C3/C4 接线时复核
+- **关键词词表（30 定）**：SPEC §4 例示作种子——`立项 / 开task / 开 task / 开个task / 开个 task / 起草task / 起草 task / 写spec / 写 spec / 写个spec / 写个 spec / 起草spec / 起草 spec / 拆波次 / 走harness / 走 harness / harness流程 / harness 流程`（匹配前 `strip().lower()`）；词表外业务措辞一律回退 product（如「这个 spec 字段含义」→ product 有断言）
+- product 侧零影响：`render.py`/`templates.py` 零 diff · `__init__.py` 仅追加导出 · `router.py` 零 diff（git status 核实）· `packs.py` 不 import `app.ops.session`/`app.ops.chat`（AST 断言锁定）
+- R1 非阻塞 4 条处置：① FRAGMENT 形态=运行时读（上文）② 词表已钉并记录（上文）③ **跨 session 交还本波未做**（留 C3/C4 · 无顺手实现）④ `render_pack` 为独立装配函数，仅复用 slot 注释机制，验收条 4 钩住 product 零影响（`test_product_render_unchanged` + 旧测 8 用例绿）
+
+**自检命令（逐条退出码 · pytest 用 CI 等价口径）**
+
+| 命令 | 退出码 | 结果 |
+|---|---|---|
+| `npx --yes dsh-coding-kit@1.10.0 verify --target . --task docs/tasks/active/task_host_comms_prompt_pack.md` | 0 | VERIFY: PASS（开工前 + 收尾各一次） |
+| `ruff check app/ops/prompts/ tests/test_prompt_packs.py`（触及路径） | 0 | All checks passed |
+| `ruff check app tests`（全量参考） | 1 | 2 处**既有**问题（`app/ops/rag/tokenizer.py` UP035 · `tests/test_rag_chunker.py` I001 · git stash 核实 HEAD 既有 · 非本波触及 · 按 P-07 不顺手改） |
+| `DATABASE_URL=postgresql+asyncpg://127.0.0.1:1/invalid .venv/bin/python -m pytest tests -q` | 0 | **543 passed · 39 skipped**（新测 44 用例 + 旧测 `test_prompt_assembly.py` 8 用例零破坏） |
+| `./scripts/graph-compile.sh` | 0 | 9 graphs OK（生成物 `shared/graph.json` 仅 `generated_at` 刷新） |
+| `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` | 0 | PASS |
+| `npx --yes dsh-coding-kit@1.10.0 task lint --file docs/tasks/active/task_host_comms_prompt_pack.md` | 0 | PASS（W4 合法豁免 · 思考轮由 SPEC 06 §15 承载） |
+
+**测试清单**：`tests/test_prompt_packs.py`（新增 44 用例：槽位填充/FRAGMENT 子串/真值逐字一致/禁令条文/task 字段清单/对话策略/缺文件·空文件·缺槽位报错/未知 pack/slots 追加/元信息/route_intent 参数化 comms 9 + product 7 + 回退 7 + 严格二值/纯函数可重入/product 渲染不变/AST import 边界）；`tests/test_prompt_assembly.py`（旧 8 用例 · 零破坏）
+
+**已知未测项**：真 LLM 消费 pack system（task 非范围 · 本波纯函数层）；`base_dir` 缺省解析在部署/打包环境的路径有效性（无部署接线 · failure_paths 行 2 报错语义已测）；意图误判的运行时跨 session 交还（R1 非阻塞 ③ · 留 C3/C4）；`harness.*` capability 真调用（仅声明 · Policy 默认关保持）
+
+**禁区核对**：未切分支/未 push/未开 PR · 未签任何 human_gate · 未做跨 session 交还 · 未改 product 行为 · 无新 HTTP 路由
+
+---
+
 ## 修订记录
 
 | 日期 | 说明 |
@@ -145,3 +177,8 @@
 | 2026-09-01 | **00**：C1 CLOSE（#114/#115）后起草 C2；钉 slug=`host-comms-prompt-pack`；纯函数层（无新路由）；槽位链=kit FRAGMENT 真值+task 字段清单+对话策略+禁令条文；意图路由规则判定器（默认/回退 product）；分 session 元信息标记 |
 | 2026-09-01 | **10-task**：现网核对全一致（render/templates API 形态 ✓ · FRAGMENT 两文件存在 ✓）；模块归属开放钉钉死为 `01_modules.md` `lg_rag` 行（L27）备注；补验收钩 2 条（pack 元信息字段+product 渲染签名不变 · `route_intent` 严格二值回退 product）；补 `### 自检结论`（W4 合法：思考轮由 SPEC 06 §15 承载）；invoke 落盘；00 定夺实质零改 · HG-AUDIT-R1 保持 pending · 下一棒 20-task-audit |
 | 2026-09-01 | **20** R1 **pass**（内容零阻塞；非阻塞 4 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
+| 2026-09-01 | **30+40**：实现 `app/ops/prompts/packs.py`（`render_pack("comms")` 运行时读 FRAGMENT 真值 + `route_intent` 规则判定器 + pack 元信息）· 新测 `tests/test_prompt_packs.py` 44 用例 · 图谱 lg_rag 行备注+人签记录 · 验收 9 条全勾 · 自检全绿（pytest 543 passed · graph-compile/lint-wiki-delta/verify exit 0）· R1 非阻塞 4 条逐项处置（跨 session 交还**未做**留 C3/C4）· invoke 落盘 · **不 CLOSE（留给 00）** |
+
+---
+
+**不 CLOSE（留给 00）**
