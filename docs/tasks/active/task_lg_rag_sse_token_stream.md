@@ -38,7 +38,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
 | HG-TASK-DRAFT | approved | 22-R1 | 2026-08-31 · **00 代签 · 维护者 Prompt 授权** |
-| HG-AUDIT-R1 | pending | 30 | 待 **20-task-audit** R1 落盘后 00 代签 |
+| HG-AUDIT-R1 | approved | 30 | 2026-08-31 · **00 代签 · 维护者 Prompt 授权** · 见 `docs/harness/reviews/task_lg_rag_sse_token_stream_audit_R1_20260831.md`（R1 pass · 内容零阻塞） |
 | HG-GRAPH-MODULES | approved | — | 不新增一级模块 · **00 代签** · 仅 `lg_rag` 行/flow 备注；stream 符号变更同步 G-L2 indexes |
 
 ---
@@ -144,3 +144,4 @@
 |---|---|
 | 2026-08-31 | **00**：T4 CLOSE（#103/#104）后起草 T5；钉 slug=`lg-rag-sse-token-stream`；协议=delta 多帧 + 终帧 `final`（T2 兼容 · 不新增 event_type）；覆盖=aggregator 必做 / direct_answer 同协议或降级；freeze 扩展 `lg-rag-sse-v1` |
 | 2026-08-31 | **10-task**：lint PASS（W4 · 思考轮 SPEC 承载）；补 `### 自检结论`；补 direct_answer 同协议/降级验收钩；00 定夺未做实质改动 |
+| 2026-08-31 | **20** R1 **pass**（内容零阻塞；非阻塞风险 5 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
