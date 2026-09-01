@@ -38,7 +38,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
 | HG-TASK-DRAFT | approved | 22-R1 | 2026-08-31 · **00 代签 · 维护者 Prompt 授权** |
-| HG-AUDIT-R1 | pending | 30 | 待 **20-task-audit** R1 落盘后 00 代签 |
+| HG-AUDIT-R1 | approved | 30 | 2026-08-31 · **00 代签 · 维护者 Prompt 授权** · 见 `docs/harness/reviews/task_lg_rag_deprecate_chat_stream_audit_R1_20260831.md`（R1 pass · 内容零阻塞） |
 | HG-GRAPH-MODULES | approved | — | 不新增/不删一级模块 · **00 代签** · 仅 chat 行/flow 备注 |
 
 ---
@@ -142,3 +142,4 @@
 |---|---|
 | 2026-08-31 | **00**：T5 CLOSE（#105/#106）后起草 T6；钉 slug=`lg-rag-deprecate-chat-stream`；处置=`/chat/stream` 410（非 404 · 非删码）；保留 models/sessions.latest/WS；iOS 另仓；维护者 Prompt 授权下线窗口 |
 | 2026-08-31 | **10-task**：lint PASS（W4 · 思考轮 SPEC 承载）；事实核对现网一致零修正（router L34/L97/L108 · 测试 L127/147/158/204 · WS L79）；补 `### 自检结论`；验收补 `Deprecation` 头/body 字段形态建议 · 鉴权次序建议 · grep 检索词 · sessions/latest（test_auth.py）与 WS（test_chat_ws.py）旧测落点 · chat flow 图存在钉明；00 定夺钉死项 **零实质改动**；HG-AUDIT-R1 未动 |
+| 2026-08-31 | **20** R1 **pass**（内容零阻塞；非阻塞 5 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
