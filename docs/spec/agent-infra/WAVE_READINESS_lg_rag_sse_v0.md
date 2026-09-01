@@ -50,10 +50,14 @@
 
 | # | 条件 | 查哪里 | 勾选 |
 |---|---|---|---|
-| 1 | api+web T5 CLOSE（或维护者豁免「无打字机也清 chat」） | 两仓 done/ | [ ] |
-| 2 | 05 §10.5 · 维护者下线窗口 | 05 / 本表结论行 | [ ] |
+| 1 | api+web T5 CLOSE（或维护者豁免「无打字机也清 chat」） | 两仓 done/ | [x]（api `task_lg_rag_sse_token_stream` #105 · web `task_web_lg_rag_sse_t5` #28 · 均 2026-08-31 CLOSE） |
+| 2 | 05 §10.5 · 维护者下线窗口 | 05 / 本表结论行 | [ ]（§10.5 可读 · **维护者下线窗口未定** · web-00 2026-08-31 核） |
 
 结论行：同上表格式，波次改为 T6。
+
+| 日期 | 操作者 | 下一棒 | 备注 |
+|---|---|---|---|
+| 2026-08-31 | web-00 | **T6 待维护者下线窗口**（行 2 未勾）；api 00 串行轨 T6 task 起草中可继续；web 侧 T6（删 `useOpsChatSse` 死代码 + 移除 chat stream 常量）待命，api 00 已出 `PROMPT_web_00_t6_cleanup`（若已落盘） | web T5 CLOSE：PR #28 · 联调 A–E 脚本化实证（api master `99ea8c5` · 357 帧 delta/replay 一致）；HG-JOINT-DEBUG 凭 invoke_40 证据签收 |
 
 ---
 
