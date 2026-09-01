@@ -25,11 +25,11 @@
 
 | # | 条件 | 查哪里 | 勾选 |
 |---|---|---|---|
-| 1 | api T4 已合入 master（cursor + `POST /lg-rag/replay`） | api `docs/tasks/done/task_lg_rag_sse_resume.md` · `gh pr` MERGED | [ ] |
-| 2 | web T4 已 CLOSE（存 cursor · replay · 同 seq 不重复渲染） | web `docs/tasks/done/task_web_lg_rag_sse_*`（实际 slug） | [ ] |
-| 3 | web T3 稳定 `thread_id` 已可用，或 T5 明示「可单 run 打字机、不依赖多轮」 | web T3 done/ 或本行写豁免 | [ ] |
-| 4 | 05 §10.4 可读；api 侧 T5 契约已有草案或 active/done task（freeze / delta 语义） | 05 §10.4 · api `task_*token*` / `*delta*` 或 00 串行 Prompt 中 T5 节 | [ ] |
-| 5 | 联调环境：api 部署含 T4（及若已合则含 T5）；cookie 同域 | 现网/本地 Network | [ ] |
+| 1 | api T4 已合入 master（cursor + `POST /lg-rag/replay`） | api `docs/tasks/done/task_lg_rag_sse_resume.md` · `gh pr` MERGED | [x]（PR #103 MERGED · task done/ · web-00 2026-08-31 核） |
+| 2 | web T4 已 CLOSE（存 cursor · replay · 同 seq 不重复渲染） | web `docs/tasks/done/task_web_lg_rag_sse_*`（实际 slug） | [x]（web `task_web_lg_rag_sse_t4` · PR #26 MERGED · 2026-08-31 CLOSE） |
+| 3 | web T3 稳定 `thread_id` 已可用，或 T5 明示「可单 run 打字机、不依赖多轮」 | web T3 done/ 或本行写豁免 | [x]（web PR #25 MERGED · thread_id 持久化已上线） |
+| 4 | 05 §10.4 可读；api 侧 T5 契约已有草案或 active/done task（freeze / delta 语义） | 05 §10.4 · api `task_*token*` / `*delta*` 或 00 串行 Prompt 中 T5 节 | [x]（api T5 `task_lg_rag_sse_token_stream` done/ · PR #105 MERGED · §10.4 已回写：delta 追加 + 终帧 content/final 替换 · freeze 仍 lg-rag-sse-v1） |
+| 5 | 联调环境：api 部署含 T4（及若已合则含 T5）；cookie 同域 | 现网/本地 Network | [x]（本地 api master 含 #103/#104/#105 · 127.0.0.1:8000 · cookie 同域 dev proxy；生产部署状态未核） |
 
 **T5 可开工判定**
 
@@ -42,6 +42,7 @@
 |---|---|---|---|
 | YYYY-MM-DD | web-00 / api-00 | 可开工 T5 / 阻塞—… | |
 | 2026-08-31 | api-00 | **可开工 T5（api 串行）** | api T4 #103 + 关账 #104 已 CLOSE；web T3/T4 研发中 **不挡** api T5（§1 为 web 闸）；web T5 打字机须 web-00 另跑本闸 |
+| 2026-08-31 | web-00 | **可开工 web T5（打字机）** | 行 1–5 全勾：web T4 CLOSE（PR #26 · invoke_40 联调 A–K 实证）· T3 thread_id 已上线（PR #25）· api T5 已合（PR #105 · §10.4 回写）；按 `PROMPT_web_00_lg_rag_t5_typewriter` 起草 web task。**api 侧遗留**（web T4 联调实证 · 不挡 T5）：客户端断开即取消 SSE generator，断开后帧（含 done）不再落盘——建议 api 另 task 评估 |
 
 ---
 
