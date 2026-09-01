@@ -87,6 +87,7 @@
 | 2026-09-01 | [`task_host_harness_cli_capability.md`](./task_host_harness_cli_capability.md) | C1 harness CLI 白名单 Capability（verify/task_lint · Policy 默认关） · PR #114 |
 | 2026-09-01 | [`task_host_comms_prompt_pack.md`](./task_host_comms_prompt_pack.md) | C2 comms Prompt Pack + route_intent（纯函数层 · 无路由） · PR #116 |
 | 2026-09-01 | [`task_host_comms_task_writer.md`](./task_host_comms_task_writer.md) | C3 受控 task 写盘（allowlist · dry-run · 人确认 · 禁代签机械挡） · PR #118 |
+| 2026-09-01 | [`task_host_obs_comms_ui.md`](./task_host_obs_comms_ui.md) | C4 obs-comms 契约 v0 + web Prompt（api 无码） · PR #120 |
 
 ---
 
@@ -123,6 +124,7 @@
 | 2026-09-01 | CLOSE C1 `#114`（host-harness-cli-capability 归档 done/ · Hub 补登） |
 | 2026-09-01 | CLOSE C2 `#116`（host-comms-prompt-pack 归档 done/ · Hub 补登） |
 | 2026-09-01 | CLOSE C3 `#118`（host-comms-task-writer 归档 done/ · Hub 补登） |
+| 2026-09-01 | CLOSE C4 `#120`（host-obs-comms-ui 归档 done/ · Hub 补登）· **串行波次 T4–C4 全 CLOSE** |
 
 ## 给维护者
 
