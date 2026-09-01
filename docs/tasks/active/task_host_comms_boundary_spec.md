@@ -110,8 +110,52 @@
 
 ---
 
+---
+
+### 自检结论
+
+> **10-spec** · 2026-09-01 · 分支 `task/host-comms-boundary-spec` · docs-only · 无 30 · HG-SPEC-SIGNOFF 保持 **pending**（本帽不签发）
+
+**SPEC 章节清单核对**（`docs/spec/agent-infra/06_host_comms_boundary_spec_v0.md`）
+
+- [x] §1 背景（H1–H5 CLOSE · 草稿「暂缓 C0」前提已达成：T6 #108 · web T5 #109）
+- [x] §2 范围 · §3 非范围（含 **永久禁令 A 通用 shell Capability · B 模型代签 human_gate**）
+- [x] §4 意图路由（默认 product · 显式进 comms · 误判回退 product）
+- [x] §5 产物路径 · §6 闸纪律（禁代签 · 闸真值在 task 表 · 与 00 过程代签区分）
+- [x] §7 Capability 白名单（`harness.verify`/`task_lint`/`status` · Policy 默认关 · env 钉 `DSH_CODING_KIT_VERSION`）
+- [x] §8 Skills≠verify 明文 · §9 session 隔离（分 thread · 共用 Gateway · 不共用 system）
+- [x] §10 C1–C4 波次表（slug/形态/依赖 · 顺序钉死 C1→C2→C3 · C4 可与 C3 尾并行仅 web）
+- [x] §11 待拍板建议钉（写盘=api 仓 `docs/tasks/` · `/obs` 作 comms UI 主入口 · 随 HG-SPEC-SIGNOFF 签收）
+- [x] §12 风险表 · §13 failure_paths · §14 验收 · §15 思考轮 R0–R5（early_stop=no + residual_risks）
+- [x] §16 freeze 声明（不改 `lg-rag-sse-v1` 任何字段 · 05 不回写）· §17 修订记录
+
+**00 定夺落 SPEC 逐项核对**
+
+| 00 定夺项 | SPEC 落点 | 结果 |
+|---|---|---|
+| slug=`host-comms-boundary-spec` | 头部 + Harness 元信息 | ✅ |
+| SPEC 落点 06（接 02/05 序列） | 文件 `06_host_comms_boundary_spec_v0.md` | ✅ |
+| 草稿为素材 · 真值以 SPEC 为准 | §1 · §12 风险表 | ✅ |
+| 意图路由默认 product · 显式进 comms · 回退 product | §4 | ✅ |
+| 产物路径仅 `docs/tasks/` + invoke 草稿 · 禁写 `app/` | §5 | ✅ |
+| 禁代签 · 闸真值在 task 表 · 与 00 过程代签区分 | §3 禁令 B · §6 | ✅ |
+| 白名单仅 `harness.*` · Policy 默认关 · env 钉 `DSH_CODING_KIT_VERSION` | §7（§3 禁令 A 禁通用 shell） | ✅ |
+| Skills≠verify · C1 CLI Capability 必做 | §8 | ✅ |
+| comms/product 分 session · 共用 Gateway 不共用 system | §9 | ✅ |
+| C1–C4 波次表 · 顺序 C1→C2→C3 · C4 并行仅 web | §10 | ✅ |
+| 待拍板建议钉（写盘=api 仓 docs/tasks · `/obs` 主入口） | §11 | ✅ |
+
+**lint 与禁区**
+
+- [x] `npx dsh-coding-kit@1.10.0 task lint --file docs/tasks/active/task_host_comms_boundary_spec.md` → **PASS**（exit 0 · W4：无思考轮节 · 由 SPEC §15 承载合法）
+- [x] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` → **PASS**（scope=all · scanned=99 · issues=0）
+- [x] `app/` · `tests/` 零改动；05/02/00 SPEC 正文未动；`lg-rag-sse-v1` 字段零改；人工闸状态未改（HG-SPEC-SIGNOFF 仍 pending）
+- [x] invoke 落盘：`docs/harness/invokes/by-task/host-comms-boundary-spec/invoke_20260901_10_spec_host-comms-boundary-spec.md`（hat_id=10-spec）
+- 下一棒：**20-spec-audit** → 00 代签 HG-SPEC-SIGNOFF → 00 起草 C1 task
+
 ## 修订记录
 
 | 日期 | 说明 |
 |---|---|
 | 2026-09-01 | **00**：T6 CLOSE（#108/#110）后起草 C0；钉 slug=`host-comms-boundary-spec`；SPEC 落点=06；docs-only 无 30；草稿「暂缓 C0」前提已达成（T6 + web T5 CLOSE）· 维护者 Prompt 授权开 C 轨 |
+| 2026-09-01 | **10-spec**：SPEC 06 初稿落盘（draft · 章节齐全 · R0–R5 回填 · 00 定夺逐项落入 · 永久禁令 A/B · freeze 声明 05 不回写）；补 `### 自检结论`；invoke 落盘；HG-SPEC-SIGNOFF 保持 pending · 下一棒 20-spec-audit |
