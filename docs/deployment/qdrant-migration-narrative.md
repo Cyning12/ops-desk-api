@@ -182,7 +182,7 @@ SPEC 起草 / 20-audit / 人签 v1.1
     curl -s http://127.0.0.1:8000/health
     # 期望：qdrant / http://qdrant:6333 / {"status":"ok"}
 
-业务验收（待前端）：网站提问时 `logs -f api` 应出现 `POST .../chat/stream`，且**无**刷屏 `qdrant fallback to pgvector`。  
+业务验收（待前端）：网站提问时 `logs -f api` 应出现 `POST .../chat/stream`（2026-08-31 T6 起为 `POST .../lg-rag/stream`；chat/stream 已 410），且**无**刷屏 `qdrant fallback to pgvector`。  
 说明：Qdrant **成功路径默认不打 INFO**，不能只靠「没有 qdrant 字样」判断。
 
 ### 9.4 回滚

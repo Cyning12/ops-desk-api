@@ -2,7 +2,9 @@
 
 > **适用对象**：`ops-desk-ios` v1 Chat 模块  
 > **后端版本**：`task/auth-session-db-cookie`  
-> **更新日期**：2026-07-17
+> **更新日期**：2026-08-31（T6 弃用注记）
+
+> ⚠️ **2026-08-31 · T6 下线**：`POST /api/ops/chat/stream` 已 **410 Gone**（JSON 迁移指针 + `Deprecation` 头）。产品问答传输主线为 `POST /api/ops/lg-rag/stream`（lg-rag SSE · freeze `lg-rag-sse-v1`）。iOS 迁移另仓 task；本文 chat stream 章节仅作历史契约保留，见 §4。
 
 ---
 
@@ -31,7 +33,7 @@
 | 1 | POST | `/api/ops/auth/login` | 用户名 + 邀请密钥登录，设置 HttpOnly cookie |
 | 2 | GET | `/api/ops/auth/me` | 确认登录状态 |
 | 3 | GET | `/api/ops/chat/sessions/latest` | 获取最新 chat session，无则自动创建 |
-| 4 | POST | `/api/ops/chat/stream` | SSE 流式对话 |
+| 4 | POST | `/api/ops/chat/stream` | ~~SSE 流式对话~~ **已 410 下线（T6）** → 迁移 `POST /api/ops/lg-rag/stream` |
 | 5 | POST | `/api/ops/auth/logout` | 登出，清除 cookie |
 
 ---
@@ -113,13 +115,27 @@ Cookie: ops_session=...
 
 **说明**
 
-- `id` 即后续调用 `/api/ops/chat/stream` 时所需的 `session_id`。
+- `id` 原即后续调用 `/api/ops/chat/stream` 时所需的 `session_id`（该端点已于 2026-08-31 410 下线；lg-rag 会话以 `thread_id` 为 SoT）。
 - 首次调用会新建 session；后续调用返回最近更新的 session。
 - 若需未来支持多 session 列表，可新增 `GET /api/ops/chat/sessions`。
 
 ---
 
-## 4. SSE 流式对话
+## 4. SSE 流式对话（已 410 下线 · 历史契约保留）
+
+> **2026-08-31 · T6**：本端点已下线，固定返回 **410 Gone**（未登录仍 401）：
+>
+> ```json
+> {
+>   "detail": {
+>     "error": "chat_stream_deprecated",
+>     "migrate_to": "/api/ops/lg-rag/stream",
+>     "message": "POST /api/ops/chat/stream 已于 2026-08-31 下线（lg-rag T6）。请迁移到 POST /api/ops/lg-rag/stream（lg-rag SSE · freeze lg-rag-sse-v1）。"
+>   }
+> }
+> ```
+>
+> 响应头含 `Deprecation: true` 与 `Link: </api/ops/lg-rag/stream>; rel="successor-version"`。以下为下线前契约，仅供识别旧行为。
 
 ```http
 POST /api/ops/chat/stream HTTP/1.1
@@ -180,6 +196,7 @@ Cookie: ops_session=...
 | 401 | 未登录、session 过期、invite token 无效 |
 | 403 | 已登录但非 maintainer 访问 admin/sync（iOS 一般不需要） |
 | 404 | chat session 不存在（ `/chat/sessions/latest` 不会返回 404，会自动创建） |
+| 410 | `POST /api/ops/chat/stream` 已下线（T6）；body 含 `migrate_to` 迁移指针，迁 `POST /api/ops/lg-rag/stream` |
 
 ---
 
@@ -196,7 +213,7 @@ GET /api/ops/chat/sessions/latest  ──┐
   │                                  │
   ▼                                  │
 POST /api/ops/chat/stream  ◄─────────┘  (用户发送消息)
-  │
+  │  ⚠️ 已 410 下线（T6）→ 迁 POST /api/ops/lg-rag/stream（thread_id 续会话）
   ▼
 消费 SSE 事件并渲染
 ```
@@ -220,7 +237,7 @@ curl -b /tmp/cookies.txt http://localhost:8000/api/ops/auth/me
 # 4. 获取最新 chat session
 export SESSION_ID=$(curl -s -b /tmp/cookies.txt http://localhost:8000/api/ops/chat/sessions/latest | jq -r '.id')
 
-# 5. 流式对话
+# 5. 流式对话（⚠️ 已 410 下线（T6）；示例仅演示旧调用形态，新链路见 lg-rag stream 文档）
 curl -b /tmp/cookies.txt -X POST http://localhost:8000/api/ops/chat/stream \
   -H "Content-Type: application/json" \
   -d '{"message":"你好","session_id":"'$SESSION_ID'"}'
@@ -263,7 +280,7 @@ run.start → thinking* → tool_result* → answer* → done
 
 ### 与 SSE 的差异
 
-| 维度 | SSE `/chat/stream` | WS `/chat/ws` |
+| 维度 | SSE `/chat/stream`（已 410 下线 · T6） | WS `/chat/ws` |
 |---|---|---|
 | 方向 | 单向（server→client） | 双向 |
 | 取消生成 | 不支持 | `{"type":"cancel"}` |

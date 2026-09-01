@@ -19,7 +19,7 @@ audience: agent-30
 | `entry` | 入口与配置 | `app/main.py`, `app/config.py` | → `api`, `db` | FastAPI 实例、CORS、环境变量 |
 | `api` | API 路由注册 | `app/ops/router.py`, `app/ops/*/router.py` | → `service`, `auth`, `db` | HTTP 入口、SSE 流封装 |
 | `auth` | 鉴权模块 | `app/ops/auth.py`, `app/ops/deps.py`, `app/ops/security.py` | → `db` | 登录、登出、session cookie、invite token 验证、角色保护 |
-| `chat` | Chat 业务 | `app/ops/chat/**` · `app/ops/session/**` | → `llm`, `db`, `rag` | LangGraph StateGraph、SSE/WS 双传输；**Session 连续性**（历史加载 · 窗口压缩 · SSE replay 契约）；拓扑详见 [`10_flow_chat.md`](./10_flow_chat.md) |
+| `chat` | Chat 业务 | `app/ops/chat/**` · `app/ops/session/**` | → `llm`, `db`, `rag` | LangGraph StateGraph、SSE/WS 双传输；**Session 连续性**（历史加载 · 窗口压缩 · SSE replay 契约）；**T6（2026-08-31）**：`POST /api/ops/chat/stream` 已 **410** 下线（迁移 `POST /api/ops/lg-rag/stream` · 不删 chat 代码/图/表 · models/sessions.latest/WS 保留）；拓扑详见 [`10_flow_chat.md`](./10_flow_chat.md) |
 | `rag` | RAG 检索与入库 | `app/ops/rag/**` | → `db` | 混合召回（dense + FTS/sparse）与 ingest（影子写+DLQ）；查询 embed 默认 SiliconFlow HTTP（`RAG_EMBED_BACKEND`）；拓扑详见 [`10_flow_rag.md`](./10_flow_rag.md) |
 | `lc_evidence_chain` | LangChain 旁路答问 | `app/ops/lc_evidence_chain/**` | → `rag`, `llm`, `db` | LCEL 旁路答问链，HTTP `POST /api/ops/lc-evidence/invoke`（cookie 鉴权 · freeze `lc-evidence-http-v1`），**默认不进入** `chat/graph`，被 `lg_rag` 黑盒复用；拓扑详见 [`10_flow_lc_evidence.md`](./10_flow_lc_evidence.md) |
 | `structured_output` | Structured Output Gateway | `app/ops/structured_output/**` | → `llm` | LLM 文本 → parse/repair/validate/预算纠偏；供 `lg_rag` 结构化节点复用；**域 schema 在 `lg_rag/schemas`**（SO 内核不含业务模型）；**不是** Skill；拓扑详见 [`10_flow_structured_output.md`](./10_flow_structured_output.md) |
@@ -69,6 +69,7 @@ audience: agent-30
 | HG-GRAPH-MODULES | approved | 维护者（lg-rag-session-continuity · 00 代签） | 2026-08-31 | `lg_rag` 行备注：`thread_id` 历史加载 + 窗口压缩注入；独立表；不新增一级模块 |
 | HG-GRAPH-MODULES | approved | 维护者（lg-rag-sse-resume · 00 代签） | 2026-08-31 | `lg_rag` 行备注：SSE `cursor` + `ops_lg_rag_run_events` + `POST /lg-rag/replay`；不新增一级模块 |
 | HG-GRAPH-MODULES | approved | 维护者（lg-rag-sse-token-stream · 00 代签） | 2026-08-31 | `lg_rag` 行备注：终答 `answer` 多帧 delta + 终帧 `final`（token sink 桥）；不新增一级模块 |
+| HG-GRAPH-MODULES | approved | 维护者（lg-rag-deprecate-chat-stream · 00 代签） | 2026-08-31 | `chat` 行备注：`/chat/stream` 已 410（T6）；`10_flow_chat` 加 deprecated 备注；不删节点/边/indexes；不新增一级模块 |
 
 ## 关联
 

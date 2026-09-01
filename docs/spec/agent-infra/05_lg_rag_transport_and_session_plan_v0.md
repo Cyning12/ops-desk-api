@@ -341,6 +341,7 @@
 |---|---|
 | **前置** | T2–T5 产品可用 · 维护者定下线窗口 |
 | **api** | 标记/移除 `/ops/chat/stream`（或 410）· 文档 · 图谱 |
+| **api 实现（2026-08-31 · T6 已落地）** | `POST /api/ops/chat/stream` → **410 Gone**：JSON body `{"error": "chat_stream_deprecated", "migrate_to": "/api/ops/lg-rag/stream", "message": <人读迁移说明>}` + `Deprecation: true` + `Link: </api/ops/lg-rag/stream>; rel="successor-version"`；保留 `Depends(get_current_user)`（未登录仍 401，匿名探针不见迁移指针）。**不删 chat 代码/图/表**；保留端点 `GET /chat/models` · `GET /chat/sessions/latest` · WS `/chat/ws`（demo · 未鉴权）行为不变。task `lg-rag-deprecate-chat-stream` |
 | **web** | 删 `useOpsChatSse` 死代码 · 移除 chat stream API 常量 · 更新 README |
 | **联调项** | 全站无 chat stream 请求 · 监控无 404 洪流 |
 | **通过标准** | §11 T6 段 · iOS 若仍用 chat 须另仓 task |
@@ -383,3 +384,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-31 | 初版：分阶段联调注意事项 + 跨仓发版纪律 + checklist 指针 |
+| 2026-08-31 | §10.5 回写 T6 api 实现句：`/chat/stream` → 410（迁移指针 + Deprecation 头）· 保留 models/sessions.latest/WS · 不删 chat 代码（task `lg-rag-deprecate-chat-stream`） |
