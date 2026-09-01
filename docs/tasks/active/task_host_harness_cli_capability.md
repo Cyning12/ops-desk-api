@@ -82,19 +82,19 @@
 
 ## 验收标准
 
-- [ ] `harness.verify`：mock subprocess 下解析 fixture `--json` 输出 → `CapabilityResult.output` 正确透传（断言关键字段）  
-- [ ] `harness.task_lint`：`task lint` 与 `lint-wiki-delta` 两子操作 mock 断言  
-- [ ] Policy 默认关 → `policy_blocked`；Host 策略通道开 → 放行（mock 断言两种路径）  
-- [ ] env `DSH_CODING_KIT_VERSION` 缺失 → `capability_unavailable` 类错误（非静默跑漂版）  
-- [ ] 参数白名单：`task_path` 逃逸（`../` · 绝对路径 · shell 元字符）→ 拒绝（断言）  
-- [ ] 超时 → 错误返回不挂起（mock 模拟）  
-- [ ] 命令向量硬编码 `npx --yes dsh-coding-kit@<env pin>`；无 shell=True（grep 断言或代码审查条）  
-- [ ] `harness.status` 若做：mock 断言；若不做：非范围注明（C4 开工时补）  
-- [ ] `01_modules.md` capability 行备注；若增 `implementedBy` → G-L2 `by_path`/`by_symbol` 同步  
-- [ ] `ruff check` 触及路径绿；`pytest` 相关绿（含 capability 旧测零破坏）；`./scripts/graph-compile.sh` exit 0  
-- [ ] 注册机制：`gateway.register` 后 `list_capabilities` 可见（`enabled=True`）；单测 `clear()` 隔离防重复 id ValueError  
-- [ ] Policy 门先于 adapter：默认关时 adapter `invoke` **零调用**（mock 计数断言）；若 adapter `kind="cli"`（建议）：开启须 `allow_high_risk` **且** `allow_cli` 双键（env `OPS_CAPABILITY_ALLOW_HIGH_RISK` / `OPS_CAPABILITY_ALLOW_CLI` 或 `ctx._host_policy` 对应键；check_invoke 先查 high_risk 再查 cli）  
-- [ ] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` 通过
+- [x] `harness.verify`：mock subprocess 下解析 fixture `--json` 输出 → `CapabilityResult.output` 正确透传（`test_verify_success_json_passthrough_via_ctx` 断言 output==fixture 及关键字段）  
+- [x] `harness.task_lint`：`task lint` 与 `lint-wiki-delta` 两子操作 mock 断言（`test_task_lint_success_via_env_open` / `test_lint_wiki_delta_success`）  
+- [x] Policy 默认关 → `policy_blocked`；Host 策略通道开 → 放行（ctx `_host_policy` 与 env `OPS_CAPABILITY_ALLOW_*` 双通道均测）  
+- [x] env `DSH_CODING_KIT_VERSION` 缺失 → `capability_unavailable` 类错误（含非法 pin 值用例；零子进程调用）  
+- [x] 参数白名单：`task_path` 逃逸（`../` · 绝对路径 · shell 元字符 · 反斜杠 · 空格 · 出 `docs/tasks/` 前缀）→ `invalid_args` 拒绝且不执行（13 参数化用例）  
+- [x] 超时 → `cli_failed: timeout` 错误返回不挂起（adapter 直测 + gateway 路径；proc.kill 断言）  
+- [x] 命令向量硬编码 `npx --yes dsh-coding-kit@<env pin>`（argv 逐元素断言）；无 shell=True（`test_no_shell_mode_in_source` grep 断言 + kwargs 无 shell 键断言）  
+- [x] `harness.status`：**不做 · C4 开工时补**（SPEC 06 §7 可选；自检结论显式注明）  
+- [x] `01_modules.md` capability 行备注 + 人签记录行 + `10_flow_capability` 描述备注；**未增 `implementedBy`** → G-L2 `by_path`/`by_symbol` 无需同步  
+- [x] `ruff check` 触及路径绿（全量 `app tests` 亦绿）；`pytest` CI 等价 496 passed 39 skipped（capability 旧测 57 passed 零破坏）；`./scripts/graph-compile.sh` exit 0  
+- [x] 注册机制：`register_harness_cli_capabilities()` 走 `gateway.register` 后 `list_capabilities` 可见（`enabled=True`）；幂等重复注册返回空不 ValueError；测试 `clear()` 隔离  
+- [x] Policy 门先于 adapter：默认关时 subprocess **零调用**（mock 计数断言）；adapter `kind="cli"` 字面钉死（断言）；开启须 `allow_high_risk` **且** `allow_cli` 双键（单键各测均 blocked）  
+- [x] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` 通过（exit 0 · PASS）
 
 ---
 
@@ -150,6 +150,44 @@
 
 ---
 
+### 自检结论（执行者）
+
+> **30+40** · 2026-09-01 · 分支 `task/host-harness-cli-capability` · 三闸 approved（开工前 GATE_VERIFY + 收尾复跑 verify 均 PASS）
+
+**自检命令（逐条退出码 · 全绿）**
+
+| 命令 | 退出码 | 结果 |
+|---|---|---|
+| `npx dsh-coding-kit@1.10.0 verify --target . --task docs/tasks/active/task_host_harness_cli_capability.md` | 0 | **VERIFY: PASS**（开工前 + 收尾复跑） |
+| `.venv/bin/ruff check app/ops/capability/harness_cli.py tests/test_capability_harness_cli.py`（+ 全量 `ruff check app tests`） | 0 | All checks passed |
+| `DATABASE_URL=postgresql+asyncpg://127.0.0.1:1/invalid .venv/bin/pytest tests -q`（CI 等价口径） | 0 | **496 passed · 39 skipped**（含新测 32；capability 旧测 57 passed 7 skipped 零破坏；本机 PG 不可达 → test_chat_ws 2 个 pre-existing 失败按 CI 语义 skip，未复现不纠缠） |
+| `./scripts/graph-compile.sh` | 0 | 9 graphs OK · mermaid normalize OK |
+| `npx --yes dsh-coding-kit@1.10.0 task lint --file docs/tasks/active/task_host_harness_cli_capability.md` | 0 | LINT: PASS（W4 合法豁免 · SPEC 06 §15 承载） |
+| `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` | 0 | PASS（scanned 100 · issues 0） |
+
+**R1 非阻塞 5 条逐项处置**
+
+| # | 处置 |
+|---|---|
+| ① 自检表行号小差 | 以字段名为准：`CapabilityResult.output`（无 `data`）已对齐现网契约 |
+| ② 超时/截断数值 | 30 定：`TIMEOUT_SECONDS = 120.0`（≤180s 上限内）· `MAX_STREAM_BYTES = 64 KiB`（stdout/stderr 各自）；断言落 `test_timeout_and_truncation_constants` + `test_stdout_truncation` |
+| ③ adapter `kind` 字面 | 钉死 `"cli"`（docstring 注明漏接风险）；断言 `spec.kind == "cli"` + `HarnessCliAdapter.kind == "cli"`（`test_register_visible_enabled_and_kind_literal_cli`） |
+| ④ status 不做 | **显式注明**：`harness.status` 本波**不做**（SPEC §7 可选）· C4 开工时补；验收条 8 按「不做」分支勾选 |
+| ⑤ 逃逸错误前缀族 | 定 `invalid_args:`（与 `policy_blocked:` / `cli_failed:` 同族）；错误族全集：`policy_blocked:*`（gateway）· `capability_unavailable:*` · `cli_failed: timeout` · `cli_failed: exit_code=N` · `cli_failed: invalid_json` · `invalid_args:*`（`HarnessCliError`） |
+
+**关键实现事实**
+
+- 新模块 `app/ops/capability/harness_cli.py`：`HarnessCliAdapter`（kind="cli" · `asyncio.create_subprocess_exec` 逐 argv · 禁 shell）+ 命令向量三形态硬编码（`verify --target . --task <path> --json` / `task lint --file <path>` / `task lint-wiki-delta --target .`）+ `_validate_task_path` 白名单 + `_kit_pin` env 钉版 + `register_harness_cli_capabilities()` 幂等注册（代码路径 `gateway.register`；**不**挂 `ensure_default_capabilities`/probes 默认目录——保业务默认目录仅 local_fn · capability 旧测零破坏，锚点 `test_not_in_default_registry`）
+- 新测试 `tests/test_capability_harness_cli.py`：32 用例全 mock subprocess（CI/本地不真跑 npx、不装 npm、不断网）
+- 图谱：`01_modules.md` capability 行备注 + 人签记录行；`10_flow_capability.graph.yaml` description 备注 + version→2026-09-01（生成物 md / shared/graph.json 随 graph-compile 刷新）；未增 implementedBy → G-L2 indexes 无需同步
+- Capability 入出参契约（本 task 自检记录 · SPEC 06 §16 不预冻）：verify 入 `{"task_path"}` 出=透传 parsed JSON dict；task_lint 入 `{"op"[, "task_path"]}` 出 `{"op","passed","exit_code","stdout","stderr"}`
+- 禁区核对：未改 `adapters/cli.py` mock-only 语义（零 diff）；未接产品 lg-rag/Chat 主路径；Policy 默认未改开；无通用 shell 通道；未切分支/未 push/未开 PR
+- 已知未测项：真 npx 执行（task 钉死仅 mock）；`harness.status`（不做 · C4 补）；业务侧接线（C4 obs 显式调 `register_harness_cli_capabilities()`）
+
+**不 CLOSE（留给 00）。**
+
+---
+
 ## 修订记录
 
 | 日期 | 说明 |
@@ -157,3 +195,4 @@
 | 2026-09-01 | **00**：C0 CLOSE（#111/#112）后起草 C1；钉 slug=`host-harness-cli-capability`；全集=verify+task_lint 必做 / status 可选；命令向量硬编码 · 禁 shell=True · 参数白名单；env 钉 `DSH_CODING_KIT_VERSION` 缺失即不可用；Policy 默认关 |
 | 2026-09-01 | **10-task**：现网核对修正 2 处（`CapabilityResult.data`→`output`；manifest 仅 local_fn → 注册走代码路径 `gateway.register` · builtin.v1.yaml 不适用）；补验收钩 2 条（注册可见性 · Policy 门先于 adapter / cli+high 双键）；补 `### 自检结论`（W4 合法：思考轮由 SPEC 06 §15 承载）；invoke 落盘；00 定夺实质零改 · HG-AUDIT-R1 保持 pending · 下一棒 20-task-audit |
 | 2026-09-01 | **20** R1 **pass**（内容零阻塞；非阻塞 5 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
+| 2026-09-01 | **30+40**：实现 `app/ops/capability/harness_cli.py`（`harness.verify` / `harness.task_lint` 白名单 CLI Capability · 禁 shell · env 钉版 · 参数白名单 · 超时 120s/截断 64KiB）+ `tests/test_capability_harness_cli.py` 32 用例（全 mock subprocess）；注册走代码路径 `register_harness_cli_capabilities()`（不进业务默认目录）；`harness.status` 不做（C4 开工时补）；图谱 capability 行 + `10_flow_capability` 描述备注；R1 非阻塞 5 条逐项处置；验收 13 条勾选 · 自检全绿（verify/ruff/pytest 496/graph-compile/lint-wiki-delta）；invoke 落盘；**不 CLOSE（留给 00）** |

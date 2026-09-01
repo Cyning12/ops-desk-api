@@ -1,13 +1,13 @@
 ---
 graph_id: 10_flow_capability
-version: 2026-08-28
-generated_at: sha256-13a0d9ca2e5a6e9c
+version: 2026-09-01
+generated_at: sha256-73ab61cef748b30e
 source: 10_flow_capability.graph.yaml
 ---
 
 # Capability Gateway 注册与 invoke
 
-能力注册表 + Filter + 统一 invoke/ainvoke；YAML/JSON manifest 加载 register（仅 local_fn · defaults/lookups 前缀）；local_fn 默认含本库 issue/PR 只读 lookup；可选 schemas_for_llm/ToolNode；mcp/sandbox/cli mock 探针与 skill stub 默认关闭。不是业界 LLM Gateway。首接入面：lg_rag tool_exec_node。
+能力注册表 + Filter + 统一 invoke/ainvoke；YAML/JSON manifest 加载 register（仅 local_fn · defaults/lookups 前缀）；local_fn 默认含本库 issue/PR 只读 lookup；可选 schemas_for_llm/ToolNode；mcp/sandbox/cli mock 探针与 skill stub 默认关闭。不是业界 LLM Gateway。首接入面：lg_rag tool_exec_node。C1（2026-09-01）：harness.verify / harness.task_lint 白名单 CLI Capability（harness_cli.py · 代码路径 gateway.register · 显式 register_harness_cli_capabilities() · Policy 默认关 · 不进默认目录；harness.status 可选未做）。
 
 ## Mermaid
 
