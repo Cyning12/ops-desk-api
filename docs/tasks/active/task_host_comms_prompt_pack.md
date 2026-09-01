@@ -38,7 +38,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
 | HG-TASK-DRAFT | approved | 22-R1 | 2026-09-01 · **00 代签 · 维护者 Prompt 授权** |
-| HG-AUDIT-R1 | pending | 30 | 待 **20-task-audit** R1 落盘后 00 代签 |
+| HG-AUDIT-R1 | approved | 30 | 2026-09-01 · **00 代签 · 维护者 Prompt 授权** · 见 `docs/harness/reviews/task_host_comms_prompt_pack_audit_R1_20260901.md`（R1 pass · 内容零阻塞） |
 | HG-GRAPH-MODULES | approved | — | 不新增一级模块 · **00 代签** · 仅备注 |
 
 ---
@@ -144,3 +144,4 @@
 |---|---|
 | 2026-09-01 | **00**：C1 CLOSE（#114/#115）后起草 C2；钉 slug=`host-comms-prompt-pack`；纯函数层（无新路由）；槽位链=kit FRAGMENT 真值+task 字段清单+对话策略+禁令条文；意图路由规则判定器（默认/回退 product）；分 session 元信息标记 |
 | 2026-09-01 | **10-task**：现网核对全一致（render/templates API 形态 ✓ · FRAGMENT 两文件存在 ✓）；模块归属开放钉钉死为 `01_modules.md` `lg_rag` 行（L27）备注；补验收钩 2 条（pack 元信息字段+product 渲染签名不变 · `route_intent` 严格二值回退 product）；补 `### 自检结论`（W4 合法：思考轮由 SPEC 06 §15 承载）；invoke 落盘；00 定夺实质零改 · HG-AUDIT-R1 保持 pending · 下一棒 20-task-audit |
+| 2026-09-01 | **20** R1 **pass**（内容零阻塞；非阻塞 4 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
