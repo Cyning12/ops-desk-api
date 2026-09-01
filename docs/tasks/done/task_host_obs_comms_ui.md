@@ -1,9 +1,9 @@
 # Task：Host C4 · /obs 沟通入口（api 契约 + web Prompt）
 
-> **状态**：active  
+> **状态**：completed（2026-09-01 CLOSE · PR [#120](https://github.com/Cyning12/ops-desk-api/pull/120) MERGED）  
 > **类型**：契约 / 跨仓编排（**api 侧无码** · docs-only）  
 > **上游**：[`06_host_comms_boundary_spec_v0.md`](../../spec/agent-infra/06_host_comms_boundary_spec_v0.md)（**signed** · #111）§9 · §10（C4 行）· §11（/obs 主入口建议钉 · 已随签收生效）  
-> **前置**：C3 CLOSE · [`task_host_comms_task_writer`](../done/task_host_comms_task_writer.md) · [#118](https://github.com/Cyning12/ops-desk-api/pull/118)；web `/obs` 契约类型已在 `ops-desk-web/src/api/obs.ts`（对齐 kit obs_status.v1 / obs_timeline.v1 · 现 fixture 加载）  
+> **前置**：C3 CLOSE · [`task_host_comms_task_writer`](./task_host_comms_task_writer.md) · [#118](https://github.com/Cyning12/ops-desk-api/pull/118)；web `/obs` 契约类型已在 `ops-desk-web/src/api/obs.ts`（对齐 kit obs_status.v1 / obs_timeline.v1 · 现 fixture 加载）  
 > **分支**：`task/host-obs-comms-ui`  
 > **帽子**：00 起草闸；**10** 补全；**20** 审；本波 **无 30**（api 无码）。  
 > **无关**：C1–C3 返工 · web Vue 实现（另 task · 本仓出 Prompt）· 真 status 数据源实现（另议 · 本波只钉契约）· 改产品 lg-rag/Chat
@@ -24,11 +24,13 @@
 | **graph_delta** | `none` |
 | **graph_delta_note** | 契约文档 · 不动图谱（真源实现波再同步） |
 | **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 行为真值在契约 `host_comms_obs_contract_v0.md` + SPEC 06 + 本 task；不晋升 coding_wiki |
 | **review_hat** | `20` |
 | **required_invoke_hats** | `10,00` |
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | `n/a`（不改 lg-rag-sse-v1；obs 契约新立 `obs-comms-v0` 文档级 · 未实现不冻结行为） |
 | **close_pr_policy** | `required` |
+| **related_pr** | `#120` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | C 轨末波：C1 ✓ → C2 ✓ → C3 ✓ → **C4**；web 实现另 task（本 Prompt 跨仓并行允许项） |
 
@@ -138,3 +140,20 @@
 | 2026-09-01 | **00**：C3 CLOSE（#118/#119）后起草 C4；钉 api 无码（契约+Prompt）；契约落点 `host_comms_obs_contract_v0.md`；status 对齐 web ObsStatus/kit obs_status.v1；数据源决策点 A/B 不选定；发起沟通=显式+人确认 |
 | 2026-09-01 | **10-task**：00 定夺逐项核对全命中零修正；起草契约 `docs/spec/agent-infra/host_comms_obs_contract_v0.md`（字段表逐字段对齐 web ObsStatus/ObsTimeline · 唯一偏离 `ingest` 收窄 `object\|null` · 示例 ready/blocked · 决策点 A/B 不选定 · 发起沟通语义 · 依赖注记）；web Prompt 落盘 `_prompts/PROMPT_web_00_c4_obs_comms_ui.md`（fixture→真源切换点 · 发起沟通入口 · 红线）；补 `### 自检结论`；invoke 落盘；app/tests/web 仓零改动 · 闸状态未动 · 下一棒 20-task-audit |
 | 2026-09-01 | **20** R1 **pass**（零内容阻塞；非阻塞 4 条知情：字段计数措辞 · C1 status 依赖落差契约 §8 已处置 · timeline 示例真源波补 · verify_preview 文案自律）· 本波无 30 · 00 验收勾选收口 |
+| 2026-09-01 | **00 CLOSE**：PR [#120](https://github.com/Cyning12/ops-desk-api/pull/120) MERGED（CI 三绿）；api 无码（契约+Prompt）· app/tests 零 diff；归档 done/ · Hub 补登 · CLOSE invoke 留档；**C 轨全波次完成** |
+
+---
+
+## 关账（CLOSE）
+
+| 项 | 值 |
+|---|---|
+| PR | [#120](https://github.com/Cyning12/ops-desk-api/pull/120) **MERGED** 2026-09-01 |
+| 交付 | 契约 `host_comms_obs_contract_v0.md`（obs-comms-v0）· web Prompt `PROMPT_web_00_c4_obs_comms_ui.md` · R1 审查文 |
+| 形态 | api 无码 · `app/`/`tests/` 零 diff · 无 30 |
+| 遗留（另 task） | 真源端点实现（决策点 A/B 待 00 拍板）· `harness.status` 补做 · web /obs 实现（Prompt 已落盘 · 跨仓） |
+| 归档 | 2026-09-01 · 00 关账 · 维护者 Prompt 授权 |
+
+### KPI
+
+Task_KPI%: 100 · D1 范围钉死 api 仅契约+Prompt · D2 过程闸齐（HG-TASK-DRAFT 代签 + 20 R1 pass · 无 30 合法）· D3 过程档齐（invoke 10/00 + R1 审查 + web Prompt）· D4 无图谱变更（none 钉死）· D5 关账补登 2026-09-01 · **C 轨 C0–C4 全 CLOSE**
