@@ -84,17 +84,17 @@
 
 ## 验收标准
 
-- [ ] `POST /api/ops/chat/stream` → **410**；JSON body 含迁移指针（`/api/ops/lg-rag/stream`）；响应含 `Deprecation` 头（测试断言）  
+- [x] `POST /api/ops/chat/stream` → **410**；JSON body 含迁移指针（`/api/ops/lg-rag/stream`）；响应含 `Deprecation` 头（测试断言）  
   - 形态建议（不钉死 · 30 落地时定）：`Deprecation: true`（RFC 8594；可附 `Sunset` 或 `Link: </api/ops/lg-rag/stream>; rel="successor-version"`）；body 建议 FastAPI `HTTPException(410, detail={...})` dict 形态，字段名建议 `{"error": "chat_stream_deprecated", "migrate_to": "/api/ops/lg-rag/stream", "message": <人读迁移说明>}`  
   - 鉴权次序建议：410 端点函数 **保留** `Depends(get_current_user)` → 未登录仍 **401**（匿名探针不见迁移指针，语义不变）；若 30 改无条件 410 须在自检写明理由  
-- [ ] `GET /chat/models` · `GET /chat/sessions/latest` 行为不变（旧测绿：`test_chat_router.py::TestListModels` · `tests/test_auth.py` L161+ sessions/latest 用例）；WS `app/ops/chat/ws.py` 与 `tests/test_chat_ws.py` 零 diff  
-- [ ] `tests/test_chat_router.py` 四个 stream 用例（`test_stream_success` L123 · `test_stream_requires_auth` L143 · `test_stream_invalid_session` L155 · `test_stream_existing_session_ok` L166）改写为 410 断言并绿（requires_auth 按上条鉴权次序定 401 或 410）；`test_chat_service.py` 不动且绿  
-- [ ] **旧测 grep 影响面**：lg-rag 五文件（token_stream / sse_stream / sse_resume / lg_rag_session_continuity / session_continuity）零改动绿；`app/ops/lg_rag/**` 零 diff  
-- [ ] README / docs 无引导使用 `/chat/stream` 的活引用（grep 检索词：`/chat/stream` · `chat/stream` · `useOpsChatSse`；清单列进自检；done/ 历史归档与 05/旧任务史陈述属历史记录 **不改**，仅改引导新用法的活引用，重点 `docs/ios/api-auth-chat.md` · `docs/deployment/rag-frontend-api-plan.md` · `docs/deployment/qdrant-*.md` · `docs/guides/*.md`；README.md 现网无引用，10-task 已核）  
-- [ ] 05 §10.5 回写实现句（410 · 日期 · 保留端点清单）；`01_modules.md` chat 行备注；`10_flow_chat.graph.yaml` / `10_flow_chat.md` 加 deprecated 备注（图存在 · 已核）；**不删** G-L2 indexes 条目  
-- [ ] `app/ops/chat/graph.py` 等 chat 源码 **零删除**（仅 router.py stream 端点函数改 410）  
-- [ ] `ruff check` 触及路径绿；`pytest tests` 全绿；`./scripts/graph-compile.sh` exit 0  
-- [ ] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` 通过
+- [x] `GET /chat/models` · `GET /chat/sessions/latest` 行为不变（旧测绿：`test_chat_router.py::TestListModels` · `tests/test_auth.py` L161+ sessions/latest 用例）；WS `app/ops/chat/ws.py` 与 `tests/test_chat_ws.py` 零 diff  
+- [x] `tests/test_chat_router.py` 四个 stream 用例（`test_stream_success` L123 · `test_stream_requires_auth` L143 · `test_stream_invalid_session` L155 · `test_stream_existing_session_ok` L166）改写为 410 断言并绿（requires_auth 按上条鉴权次序定 401 或 410）；`test_chat_service.py` 不动且绿  
+- [x] **旧测 grep 影响面**：lg-rag 五文件（token_stream / sse_stream / sse_resume / lg_rag_session_continuity / session_continuity）零改动绿；`app/ops/lg_rag/**` 零 diff  
+- [x] README / docs 无引导使用 `/chat/stream` 的活引用（grep 检索词：`/chat/stream` · `chat/stream` · `useOpsChatSse`；清单列进自检；done/ 历史归档与 05/旧任务史陈述属历史记录 **不改**，仅改引导新用法的活引用，重点 `docs/ios/api-auth-chat.md` · `docs/deployment/rag-frontend-api-plan.md` · `docs/deployment/qdrant-*.md` · `docs/guides/*.md`；README.md 现网无引用，10-task 已核）  
+- [x] 05 §10.5 回写实现句（410 · 日期 · 保留端点清单）；`01_modules.md` chat 行备注；`10_flow_chat.graph.yaml` / `10_flow_chat.md` 加 deprecated 备注（图存在 · 已核）；**不删** G-L2 indexes 条目  
+- [x] `app/ops/chat/graph.py` 等 chat 源码 **零删除**（仅 router.py stream 端点函数改 410）  
+- [x] `ruff check` 触及路径绿；`pytest tests` 全绿（**CI 等价全绿 exit 0**；本机带 PG 余 2 个 **pre-existing** 环境失败 · 干净树 A/B 实证非本次回归 · 见自检结论执行者表）；`./scripts/graph-compile.sh` exit 0  
+- [x] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` 通过
 
 ---
 
@@ -136,6 +136,57 @@
 
 ---
 
+### 自检结论（执行者 · 30+40）
+
+> **30+40** · 2026-08-31 · 分支 `task/lg-rag-deprecate-chat-stream` · GATE_VERIFY PASS（三闸 approved · verify exit 0）后开工。
+
+| 自检命令 | 退出码 | 结果 |
+|---|---|---|
+| `npx dsh-coding-kit@1.10.0 verify --target . --task docs/tasks/active/task_lg_rag_deprecate_chat_stream.md` | **0** | VERIFY: PASS（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved） |
+| `.venv/bin/ruff check app/ops/chat/router.py tests/test_chat_router.py`（触及路径） | **0** | All checks passed |
+| `.venv/bin/pytest tests -q`（全量 · 本机带 PG） | **1** | 500 passed · 1 skipped · **2 failed（pre-existing 环境项 · 非本次回归 · 证据见下）** |
+| `DATABASE_URL=<不可达> .venv/bin/pytest tests -q`（**CI 等价** · 无 PG） | **0** | **464 passed · 39 skipped · 全绿**（CI 语义：`.github/workflows/pytest.yml` 无 postgres service → DB 用例 skip） |
+| `./scripts/graph-compile.sh` | **0** | 9 graphs compile/check OK · mermaid normalize OK |
+| `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` | **0** | LINT-WIKI-DELTA: PASS（scanned 98 · issues 0） |
+| `git diff master -- app/ops/lg_rag` | **空（0 行）** | lg-rag 零 diff |
+
+**pre-existing 失败证据（A/B · 非本次回归）**：`git stash`（干净树 3b510f7）→ `pytest tests/test_chat_ws.py` 同 2 失败 → `git stash pop` 后复跑一致。失败用例 `test_ws_message_streams_events` / `test_ws_second_message_while_active_rejected`：本机同时存在 PG + 带生产数据的 qdrant + embedder，RAG 链真实执行，WS 用例旧期望序列（`thinking×2 → answer×2` · 2026-07 chat-websocket 时代）不含 R-3 后新增的 `tool_result`（retrieve/grade）帧；`tests/test_chat_ws.py` 本 task 钉死 **零 diff**（00 定夺），修旧期望不在本 task 范围。环境修复尝试（向 opsdesk_test 补建 `ops_knowledge_chunks`）已 **回滚**，本机库恢复开工前状态。
+
+**ruff 全量补充**：`ruff check app tests` 余 2 个 **pre-existing** 错误（`app/ops/rag/tokenizer.py` UP035 · `tests/test_rag_chunker.py` I001），均非触及路径、干净树即红；触及路径全绿。
+
+**410 最终形态**（30 落地定 · 对照验收条 1 形态建议全采纳）：
+
+- 鉴权次序：**保留 `Depends(get_current_user)`** → 未登录仍 **401**（先于 410，匿名探针不见迁移指针）
+- body：`{"detail": {"error": "chat_stream_deprecated", "migrate_to": "/api/ops/lg-rag/stream", "message": "POST /api/ops/chat/stream 已于 2026-08-31 下线（lg-rag T6）。请迁移到 POST /api/ops/lg-rag/stream（lg-rag SSE · freeze lg-rag-sse-v1）。"}}`
+- 响应头：`Deprecation: true`（RFC 8594）+ `Link: </api/ops/lg-rag/stream>; rel="successor-version"`
+
+**grep 清扫清单分类**（检索词 `/chat/stream` · `chat/stream` · `useOpsChatSse`）：
+
+| 命中 | 分类 | 处置 |
+|---|---|---|
+| `docs/ios/api-auth-chat.md`（6 处 + 时序/curl/错误码） | **活引用**（iOS 联调引导） | **已改**：顶部 410 横幅 + 概览表/§4/错误码/时序/curl/对比表注记，迁移指针 → lg-rag stream；iOS 迁移另仓 task |
+| `docs/deployment/rag-frontend-api-plan.md`（L15/27/51/200/220） | **活引用**（前端路径引导） | **已改**：顶部 T6 注 + 关键行改指 `/lg-rag/stream`；L170「不替代 chat/stream」非目标陈述与 L236 文件指针保留 |
+| `docs/deployment/qdrant-server-upgrade.md` L265 · `qdrant-migration-narrative.md` L185 | **活引用**（运维验收看板语句） | **已改**：加注「2026-08-31 T6 起为 `POST .../lg-rag/stream`」 |
+| `docs/guides/DESIGN_...phase2` L112 · `IMPL_...phase1` L450 · `PLAN-...framework` L17 | 历史陈述（旧设计约束/状态记录，非引导用法） | 不改 |
+| `docs/spec/agent-infra/README.md` L110 · `session/README.md` L17（R1 非阻塞 3 点名） | 边界陈述（「不以兼容 chat/stream 为验收」· 非引导用法） | 不改 |
+| `docs/spec/agent-infra/05` §4.1/§9/§10.5 计划行/§11 · 旧 SPEC（lc-evidence 两篇） | SPEC 旧陈述 / 历史计划 | 不改（§10.5 另加「api 实现」回写行） |
+| `docs/tasks/done/**` · `docs/harness/{reviews,invokes,evidence}/**` | 历史归档 | 不改 |
+| `docs/_tech_graph`（10_flow_chat 两文件 · 11_flow_sync_to_chat · graph.json · l2 indexes） | 拓扑记录 | 10_flow_chat 已加 deprecated 备注（不删节点/边/indexes）；11_flow 节点仍在服务拓扑，不动 |
+| `tests/test_chat_router.py`（4 处 URL） | 410 断言用例 | 已改写为 410 断言 |
+| README.md | 无引用（10-task 已核 · 复跑确认） | — |
+
+**R1 非阻塞 5 条处置**：
+
+1. 行号双口径 → 以**用例名**为准改写，四用例名全保留（`test_stream_success/requires_auth/invalid_session/existing_session_ok`）
+2. import 连带清理 → 已做：router.py 移除 9 项失效 import（uuid / AsyncGenerator / Request / StreamingResponse / AsyncSessionLocal / ChatStreamRequest / make_sse_event / ChatState / ChatEventStreamer / _create_run_record / _resolve_chat_session / compress_window+load_session_turns）；测试文件同步移除失效 import（json / BaseProviderImpl / LlmChunk / engine）与随之失效的 helper（_parse_sse / FakeProvider / fake_provider / no_persist / _db_available / DB_AVAILABLE / _reset_engine）——**文件内清理，零文件/模块删除**
+3. 边角命中分类 → 上表（spec/agent-infra 两篇 README 均判边界陈述，不改）
+4. `test_stream_existing_session_ok` 回归意图 → docstring 保留一行说明（原 uuid 404 回归对象随端点弃用不复存在，R1 非阻塞 4）
+5. WS demo 未鉴权 → 不在本 task 范围（ws.py 自述 + `OPS_CHAT_WS_ENABLED` 闸均不动）；后续真鉴权 follow-up 提醒已知悉
+
+**已知未测项**：真 LLM / 真客户端联调（task 钉死不连真 LLM）；iOS 迁移（另仓）；web 删 `useOpsChatSse`（另 task · Prompt 已落盘 `_prompts/PROMPT_web_00_t6_remove_chat_sse.md`）；本机带 PG 环境下 2 个 WS 旧测期望过时（pre-existing · 建议另 task 对齐 R-3 事件面或按 CI 语义 skip）。
+
+---
+
 ## 修订记录
 
 | 日期 | 说明 |
@@ -143,3 +194,8 @@
 | 2026-08-31 | **00**：T5 CLOSE（#105/#106）后起草 T6；钉 slug=`lg-rag-deprecate-chat-stream`；处置=`/chat/stream` 410（非 404 · 非删码）；保留 models/sessions.latest/WS；iOS 另仓；维护者 Prompt 授权下线窗口 |
 | 2026-08-31 | **10-task**：lint PASS（W4 · 思考轮 SPEC 承载）；事实核对现网一致零修正（router L34/L97/L108 · 测试 L127/147/158/204 · WS L79）；补 `### 自检结论`；验收补 `Deprecation` 头/body 字段形态建议 · 鉴权次序建议 · grep 检索词 · sessions/latest（test_auth.py）与 WS（test_chat_ws.py）旧测落点 · chat flow 图存在钉明；00 定夺钉死项 **零实质改动**；HG-AUDIT-R1 未动 |
 | 2026-08-31 | **20** R1 **pass**（内容零阻塞；非阻塞 5 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
+| 2026-08-31 | **30+40**：`/chat/stream` → 410（`error/migrate_to/message` + `Deprecation: true` + `Link` successor-version · 保留 `Depends(get_current_user)` → 未登录仍 401）；四 stream 用例改 410 断言（用例名保留 · R1 非阻塞 4 回归意图入 docstring）；import 连带清理（R1 非阻塞 2）；05 §10.5 回写实现句 + §11.4 修订；iOS/deployment 活引用清扫（边角命中分类落自检表 · R1 非阻塞 3）；图谱 chat 行 + `10_flow_chat` deprecated 备注 + 人签记录（不删节点/边/indexes）；自检六命令：verify 0 · ruff 触及路径 0 · pytest CI 等价 0（本机带 PG 2 pre-existing 环境失败 · A/B 实证）· graph-compile 0 · lint-wiki-delta 0 · lg_rag diff 空；验收 9 条勾选；**不 CLOSE（留给 00）** |
+
+---
+
+> **30+40 交付完毕 · 不 CLOSE（留给 00）**：验收 9 条已勾（pytest 条附 CI 等价绿 + 本机 pre-existing 环境失败证据）；invoke `docs/harness/invokes/by-task/lg-rag-deprecate-chat-stream/invoke_20260831_30_40_lg-rag-deprecate-chat-stream.md`；本 PR **勿 auto-merge**（00 定夺 · 05 §11.1）。
