@@ -75,12 +75,12 @@
 
 ## 验收标准
 
-- [ ] 契约文档存在且章节齐全（字段表对齐 web ObsStatus/ObsTimeline · 示例 JSON · 数据源决策点 A/B · 发起沟通语义 · 依赖注记）  
-- [ ] 契约与 web `src/api/obs.ts` 类型逐字段核对一致（不一致处写明偏离与理由）  
-- [ ] web Prompt 落盘 `_prompts/PROMPT_web_00_c4_obs_comms_ui.md`（含红线：浏览器禁 npx · 人确认 · 分 session）  
-- [ ] `docs/harness/reviews/` 落 20 R1 审查文且 **pass**  
-- [ ] `app/` · `tests/` **零改动**（diff 为空）  
-- [ ] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` 通过
+- [x] 契约文档存在且章节齐全（字段表对齐 web ObsStatus/ObsTimeline · 示例 JSON · 数据源决策点 A/B · 发起沟通语义 · 依赖注记）  
+- [x] 契约与 web `src/api/obs.ts` 类型逐字段核对一致（不一致处写明偏离与理由）  
+- [x] web Prompt 落盘 `_prompts/PROMPT_web_00_c4_obs_comms_ui.md`（含红线：浏览器禁 npx · 人确认 · 分 session）  
+- [x] `docs/harness/reviews/` 落 20 R1 审查文且 **pass**  
+- [x] `app/` · `tests/` **零改动**（diff 为空）  
+- [x] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` 通过
 
 ---
 
@@ -137,3 +137,4 @@
 |---|---|
 | 2026-09-01 | **00**：C3 CLOSE（#118/#119）后起草 C4；钉 api 无码（契约+Prompt）；契约落点 `host_comms_obs_contract_v0.md`；status 对齐 web ObsStatus/kit obs_status.v1；数据源决策点 A/B 不选定；发起沟通=显式+人确认 |
 | 2026-09-01 | **10-task**：00 定夺逐项核对全命中零修正；起草契约 `docs/spec/agent-infra/host_comms_obs_contract_v0.md`（字段表逐字段对齐 web ObsStatus/ObsTimeline · 唯一偏离 `ingest` 收窄 `object\|null` · 示例 ready/blocked · 决策点 A/B 不选定 · 发起沟通语义 · 依赖注记）；web Prompt 落盘 `_prompts/PROMPT_web_00_c4_obs_comms_ui.md`（fixture→真源切换点 · 发起沟通入口 · 红线）；补 `### 自检结论`；invoke 落盘；app/tests/web 仓零改动 · 闸状态未动 · 下一棒 20-task-audit |
+| 2026-09-01 | **20** R1 **pass**（零内容阻塞；非阻塞 4 条知情：字段计数措辞 · C1 status 依赖落差契约 §8 已处置 · timeline 示例真源波补 · verify_preview 文案自律）· 本波无 30 · 00 验收勾选收口 |
