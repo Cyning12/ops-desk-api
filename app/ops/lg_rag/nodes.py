@@ -21,6 +21,7 @@ from langchain_core.messages import AIMessage, BaseMessage
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage
 from app.ops.lc_evidence_chain.chain import ainvoke_evidence_answer
+from app.ops.lg_rag.answer_stream import complete_answer_streaming
 from app.ops.lg_rag.schemas import RouteDecision
 from app.ops.lg_rag.state import LgRagState
 from app.ops.rag.grader import REFUSAL_TEXT
@@ -274,16 +275,23 @@ def route_after_rewrite(state: LgRagState) -> str:
 
 
 async def direct_answer_node(state: LgRagState) -> dict:
-    """闲聊直答：LLM 一两句话，不检索不读库（DESIGN §5）。"""
+    """闲聊直答：LLM 一两句话，不检索不读库（DESIGN §5）。
+
+    T5：同 provider（SiliconFlow / Bailian 均有 ``complete_stream``）流式
+    可得 → 与 aggregator 同协议（delta + final 帧）；无 sink（invoke 等非
+    SSE 路径）或流式异常时 ``complete_answer_streaming`` 内降级整段。
+    """
     query = _last_user_text(state["messages"])
     provider = get_llm_provider(_ROUTER_PROVIDER)
     with trace_span("direct_answer", run_type="chain"):
-        text = await provider.complete(
+        text = await complete_answer_streaming(
+            provider,
             [
                 LlmMessage(role="system", content=_DIRECT_SYSTEM),
                 LlmMessage(role="user", content=query),
             ],
             model=_ROUTER_MODEL,
+            node="direct_answer",
         )
     answer = (text or "").strip() or "你好，我是 Ops Desk 运维知识库助手，有运维问题可以问我。"
     return {"messages": [AIMessage(content=answer)]}

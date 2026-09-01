@@ -38,6 +38,14 @@ by_symbol:
     path: app/ops/lg_rag/sse_stream.py
     node_id: lg_stream
     kind: method
+  complete_answer_streaming:
+    path: app/ops/lg_rag/answer_stream.py
+    node_id: lg_stream
+    kind: method
+  set_answer_token_sink:
+    path: app/ops/lg_rag/answer_stream.py
+    node_id: lg_stream
+    kind: method
   format_sse_event:
     path: app/ops/lg_rag/sse_replay.py
     node_id: lg_stream

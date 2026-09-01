@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260831_V1",
-  "generated_at": "2026-08-31T11:49:02Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260901_V1",
+  "generated_at": "2026-09-01T01:51:21Z",
   "graphs": [
     {
       "id": "00_main",
@@ -2076,7 +2076,7 @@
       "to": "client",
       "mark": "->",
       "type": "depends_on",
-      "label": "text/event-stream（run.start…answer…done · cursor）",
+      "label": "text/event-stream（run.start…answer delta×N→answer final…done · cursor）",
       "anchors": [
         {
           "path": "app/ops/lg_rag/sse_stream.py",
@@ -2392,7 +2392,7 @@
       "to": "llm",
       "mark": "->",
       "type": "depends_on",
-      "label": "complete",
+      "label": "complete_answer_streaming（delta 桥 → SSE；降级 complete）",
       "anchors": [
         {
           "path": "app/ops/lg_rag/nodes.py",
@@ -2724,7 +2724,7 @@
       "to": "llm",
       "mark": "->",
       "type": "depends_on",
-      "label": "complete（综合 → critic）",
+      "label": "complete_answer_streaming（delta 桥 → SSE；降级 complete）",
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/nodes.py",

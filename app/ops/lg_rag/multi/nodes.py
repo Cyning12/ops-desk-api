@@ -23,6 +23,7 @@ from app.llm.schema import LlmMessage
 from app.ops.capability import CapabilityFilter, list_capabilities
 from app.ops.capability import ainvoke as capability_ainvoke
 from app.ops.capability.types import CapabilitySpec
+from app.ops.lg_rag.answer_stream import complete_answer_streaming
 from app.ops.lg_rag.graph import ainvoke_router_agent
 from app.ops.lg_rag.nodes import (
     _ROUTER_MODEL,
@@ -404,7 +405,10 @@ async def aggregator_node(state: LgRagState) -> dict:
     payload = json.dumps(results, ensure_ascii=False, default=str)
     provider = get_llm_provider(_ROUTER_PROVIDER)
     with trace_span("aggregator", run_type="chain"):
-        text = await provider.complete(
+        # T5：SSE 路径经 token sink 逐 chunk 上屏（answer delta 帧）；
+        # 无 sink / 流式异常时桥内降级整段 complete（T2 行为）+ 日志。
+        text = await complete_answer_streaming(
+            provider,
             [
                 LlmMessage(role="system", content=_AGGREGATOR_SYSTEM),
                 LlmMessage(
@@ -413,6 +417,7 @@ async def aggregator_node(state: LgRagState) -> dict:
                 ),
             ],
             model=_ROUTER_MODEL,
+            node="aggregator",
         )
     answer = (text or "").strip()
     if not answer:
