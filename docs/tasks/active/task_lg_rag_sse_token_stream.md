@@ -86,6 +86,7 @@
 ## 验收标准
 
 - [ ] aggregator LLM token chunk → 多帧 `answer` `{"delta": ...}`；按 `seq` 有序；**拼接 == 终帧 `content`**（mock 断言）  
+- [ ] router `direct_answer`：同一 provider 流式可得 → 与 aggregator **同协议**（delta + final 帧）；否则保留整段 `answer`，并在 30 自检写明降级理由（00 定夺「覆盖」行）  
 - [ ] 终帧 `answer` `{"content": ..., "final": true}` 保持 T2 兼容（仅看 `content` 的旧客户端行为不变；mock 断言帧外形）  
 - [ ] delta 帧与 `node.progress`/`subtask.progress` 并存；全程 `seq` 单调；不串台（帧序断言）  
 - [ ] delta/终帧落盘 `ops_lg_rag_run_events`；`POST /lg-rag/replay` 重放含 delta 帧、形状与 live 一致  
@@ -123,8 +124,23 @@
 
 ---
 
+### 自检结论
+
+> **10-task** · 2026-08-31 · 分支 `task/lg-rag-sse-token-stream` · 思考轮由 SPEC（`05` §4.2/§9/§10.4 + `WAVE_READINESS` §1）承载；本文件 **不**预置 R0–R5（lint W4 合法）。
+
+- [x] slug=`lg-rag-sse-token-stream`；范围 **仅 T5 answer token delta**；非范围钉死 T6/C0–C4/重开 T3·T4/改 `chat/graph.py`/新增 event_type/新 freeze id/新依赖边/cancel/token 化 progress/非终答 LLM 上屏/32_000 截断语义
+- [x] 00 定夺保留（未做实质改动）：SoT 不改 · `answer` 单 event_type（delta 多帧 + 终帧 `final` · T2 兼容）· aggregator 必做 / direct_answer 同协议或降级 · 无新依赖边 · 落盘/replay 含 delta · seq 单调不串台 · freeze 扩展 `lg-rag-sse-v1` · 可 api-only 先合 · 不新增一级模块
+- [x] 验收含旧测 grep 影响面（`test_lg_rag_sse_stream` · `test_lg_rag_sse_resume` · `test_lg_rag_session_continuity` · `test_session_continuity` 绿 · `chat/graph.py` 零 diff）；补 direct_answer 同协议/降级验收钩
+- [x] 验收 / failure_paths / 非范围 / 必读 / `wiki_delta` / invoke 留档字段齐全
+- [x] `npx dsh-coding-kit@1.10.0 task lint --file docs/tasks/active/task_lg_rag_sse_token_stream.md` → **PASS**（exit 0 · W4）
+- [x] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` → **PASS**
+- [x] HG-AUDIT-R1 **仍 pending**（本帽不签发）· 可交 **20-task-audit**
+
+---
+
 ## 修订记录
 
 | 日期 | 说明 |
 |---|---|
 | 2026-08-31 | **00**：T4 CLOSE（#103/#104）后起草 T5；钉 slug=`lg-rag-sse-token-stream`；协议=delta 多帧 + 终帧 `final`（T2 兼容 · 不新增 event_type）；覆盖=aggregator 必做 / direct_answer 同协议或降级；freeze 扩展 `lg-rag-sse-v1` |
+| 2026-08-31 | **10-task**：lint PASS（W4 · 思考轮 SPEC 承载）；补 `### 自检结论`；补 direct_answer 同协议/降级验收钩；00 定夺未做实质改动 |
