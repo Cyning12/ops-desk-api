@@ -86,6 +86,7 @@
 | 2026-09-01 | [`task_host_comms_boundary_spec.md`](./task_host_comms_boundary_spec.md) | C0 Host 沟通边界 SPEC 06 签收（docs-only） · PR #111 |
 | 2026-09-01 | [`task_host_harness_cli_capability.md`](./task_host_harness_cli_capability.md) | C1 harness CLI 白名单 Capability（verify/task_lint · Policy 默认关） · PR #114 |
 | 2026-09-01 | [`task_host_comms_prompt_pack.md`](./task_host_comms_prompt_pack.md) | C2 comms Prompt Pack + route_intent（纯函数层 · 无路由） · PR #116 |
+| 2026-09-01 | [`task_host_comms_task_writer.md`](./task_host_comms_task_writer.md) | C3 受控 task 写盘（allowlist · dry-run · 人确认 · 禁代签机械挡） · PR #118 |
 
 ---
 
@@ -121,6 +122,7 @@
 | 2026-09-01 | CLOSE C0 `#111`（host-comms-boundary-spec 归档 done/ · Hub 补登） |
 | 2026-09-01 | CLOSE C1 `#114`（host-harness-cli-capability 归档 done/ · Hub 补登） |
 | 2026-09-01 | CLOSE C2 `#116`（host-comms-prompt-pack 归档 done/ · Hub 补登） |
+| 2026-09-01 | CLOSE C3 `#118`（host-comms-task-writer 归档 done/ · Hub 补登） |
 
 ## 给维护者
 

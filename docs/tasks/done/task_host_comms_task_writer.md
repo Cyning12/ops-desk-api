@@ -1,9 +1,9 @@
 # Task：Host C3 · 受控 task 写盘（task writer）
 
-> **状态**：active  
+> **状态**：completed（2026-09-01 CLOSE · PR [#118](https://github.com/Cyning12/ops-desk-api/pull/118) MERGED）  
 > **类型**：Host 沟通轨实现 / 受控写盘  
 > **上游**：[`06_host_comms_boundary_spec_v0.md`](../../spec/agent-infra/06_host_comms_boundary_spec_v0.md)（**signed** · #111）§5（产物路径）· §6（闸纪律 · C3 前置人确认）· §10（C3 行）  
-> **前置**：C1 CLOSE · [`task_host_harness_cli_capability`](../done/task_host_harness_cli_capability.md) · [#114](https://github.com/Cyning12/ops-desk-api/pull/114)；C2 CLOSE · [`task_host_comms_prompt_pack`](../done/task_host_comms_prompt_pack.md) · [#116](https://github.com/Cyning12/ops-desk-api/pull/116)  
+> **前置**：C1 CLOSE · [`task_host_harness_cli_capability`](./task_host_harness_cli_capability.md) · [#114](https://github.com/Cyning12/ops-desk-api/pull/114)；C2 CLOSE · [`task_host_comms_prompt_pack`](./task_host_comms_prompt_pack.md) · [#116](https://github.com/Cyning12/ops-desk-api/pull/116)  
 > **分支**：`task/host-comms-task-writer`  
 > **帽子**：00 起草闸；**10** 补全；**20** 审；**30+40** 实现。  
 > **无关**：C4 UI · 接 LLM/真 comms 会话 · Gateway 白名单变更（SPEC §7 修订才准）· 改产品 lg-rag/Chat · 真跑 npx
@@ -30,6 +30,7 @@
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | `n/a` |
 | **close_pr_policy** | `required` |
+| **related_pr** | `#118` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | C 轨串行：C0 ✓ → C1 ✓ → C2 ✓ → **C3**；C4 跨仓 web 可在本波 CLOSE 后并行（仅 web 侧） |
 
@@ -186,7 +187,23 @@
 | 2026-09-01 | **10-task**：现网核对全一致（capability 包/harness_cli.py ✓ · 图谱 capability 行 glob ✓ · draft/ 不存在 ✓ · C1/C2 done ✓ · 必读引用全在 ✓）零事实修正；补验收钩 2 条（原子写不留半截文件 · allowlist 目录可创建——已钉行为可检验化）；补 `### 自检结论`（W4 合法：思考轮由 SPEC 06 §15 承载）；invoke 落盘；00 定夺实质零改 · HG-AUDIT-R1 保持 pending · 下一棒 20-task-audit |
 | 2026-09-01 | **20** R1 **pass**（内容零阻塞；写盘层无可绕过禁代签挡/allowlist 路径确认；非阻塞 5 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
 | 2026-09-01 | **30+40**：实现 `app/ops/capability/task_writer.py`（plan/apply · allowlist realpath · dry-run 默认 · 禁代签宁严挡 · 结构自检 · overwrite 默认拒 · 原子写 · WritePlan sha256 防伪造）+ `tests/test_capability_task_writer.py` 48 用例全绿；R1 非阻塞 5 条逐项处置；图谱 capability 行备注 + 人签记录行；验收 13 条全勾；自检全绿（verify ×2 · ruff 触及路径 · pytest 591 passed 零回归 · graph-compile · lint-wiki-delta）；**不 CLOSE（留给 00）** |
+| 2026-09-01 | **00 CLOSE**：PR [#118](https://github.com/Cyning12/ops-desk-api/pull/118) MERGED（CI 三绿）；无 Alembic；00 独立复跑 591 passed / ruff 净；归档 done/ · Hub 补登 · CLOSE invoke 留档 |
 
 ---
 
-**不 CLOSE（留给 00）** · 30+40 交付完毕，CLOSE 权属 00（kpi_aggregator=CLOSE · close_pr_policy=required）。
+30+40 交付完毕。00 关账复检：独立复跑 pytest CI 等价 **591 passed / 39 skipped** · ruff 触及路径净 · PR #118 CI 三绿后 squash MERGED。
+
+---
+
+## 关账（CLOSE）
+
+| 项 | 值 |
+|---|---|
+| PR | [#118](https://github.com/Cyning12/ops-desk-api/pull/118) **MERGED** 2026-09-01 |
+| 交付 | `app/ops/capability/task_writer.py`（allowlist 三目录 · dry-run 默认 · 人确认落盘 · 禁代签机械挡 · WritePlan 防伪造 · 原子写）+ 48 用例 |
+| 生产 | 无 Alembic · 无新路由 · 纯服务未接线（业务零影响） |
+| 归档 | 2026-09-01 · 00 关账 · 维护者 Prompt 授权 |
+
+### KPI
+
+Task_KPI%: 100 · D1 范围钉死受控写盘纯服务 · D2 闸齐（三代签 + 20 R1 pass · 写盘层无绕径确认）· D3 过程档齐（invoke 10/00/30_40 + R1 审查）· D4 图谱 capability 行备注已随 #118 · D5 关账补登 2026-09-01
