@@ -103,8 +103,37 @@
 
 ---
 
+### 自检结论
+
+> **10-task** · 2026-09-01 · 分支 `task/host-obs-comms-ui` · docs-only 本帽（不改 `app/` / `tests/` · 不改 web 仓任何文件）· 人工闸状态未改（HG-TASK-DRAFT approved · HG-AUDIT-R1 n/a 保持不动）
+
+**00 定夺核对**（逐项 · 结论：**全部命中 · 零修正**）
+
+| 定夺项 | task 落点 | 结果 |
+|---|---|---|
+| api 无码（契约 + web Prompt 落 `_prompts/`） | L4/L8/L50 | ✅ |
+| 契约落点 `host_comms_obs_contract_v0.md`（id `obs-comms-v0`） | L51 | ✅ 契约已起草落盘 |
+| status 对齐 web `ObsStatus`/`ObsTimeline` · 数据源 A/B 不选定 | L52 | ✅ 契约 §2/§3 字段表 + §6 决策点（不选定） |
+| 发起沟通=显式+人确认 · 「已代签」违规 | L53 | ✅ 契约 §7 |
+| `harness.status` C1 留白依赖注记 | L54 | ✅ 契约 §8 |
+| web Prompt `PROMPT_web_00_c4_obs_comms_ui.md` | L55 | ✅ 已落盘 `_prompts/` |
+| 不新增一级模块 | L56 | ✅ `graph_change_layer=none` 一致 |
+
+**契约 ↔ web 类型逐字段核对**（基准 `ops-desk-web/src/api/obs.ts` + 四份 fixture · 只读）：ObsStatus 14 字段（含 gates/reviews/hgm 等嵌套）+ ObsTimeline 9 字段（含 events 6 子字段）**逐字段一致**；**唯一偏离** = `ObsTimeline.ingest` web `unknown` → 契约收窄 `object|null`（理由：fixture 期占位宽类型收敛以便真源生成；TS `unknown` 为超集，web 零改动兼容）· 明细见契约 §4。示例 JSON ready/blocked 与 web fixture 同形。
+
+**lint 与禁区**
+
+- [x] `npx dsh-coding-kit@1.10.0 task lint --file docs/tasks/active/task_host_obs_comms_ui.md` → **PASS**（exit 0 · W4 合法：无思考轮节 · 思考轮由 SPEC 06 §15 承载，本 task 为 SPEC 落地执行波）
+- [x] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` → **PASS**
+- [x] `app/` · `tests/` 零改动；web 仓零改动（跨仓仅只读参照）；人工闸状态未改
+- [x] invoke 落盘：`docs/harness/invokes/by-task/host-obs-comms-ui/invoke_20260901_10_task_host-obs-comms-ui.md`（hat_id=10-task）
+- 下一棒：**20-task-audit** R1 审 task/契约 → 落盘审查文（本波无 30 · HG-AUDIT-R1 n/a）
+
+---
+
 ## 修订记录
 
 | 日期 | 说明 |
 |---|---|
 | 2026-09-01 | **00**：C3 CLOSE（#118/#119）后起草 C4；钉 api 无码（契约+Prompt）；契约落点 `host_comms_obs_contract_v0.md`；status 对齐 web ObsStatus/kit obs_status.v1；数据源决策点 A/B 不选定；发起沟通=显式+人确认 |
+| 2026-09-01 | **10-task**：00 定夺逐项核对全命中零修正；起草契约 `docs/spec/agent-infra/host_comms_obs_contract_v0.md`（字段表逐字段对齐 web ObsStatus/ObsTimeline · 唯一偏离 `ingest` 收窄 `object\|null` · 示例 ready/blocked · 决策点 A/B 不选定 · 发起沟通语义 · 依赖注记）；web Prompt 落盘 `_prompts/PROMPT_web_00_c4_obs_comms_ui.md`（fixture→真源切换点 · 发起沟通入口 · 红线）；补 `### 自检结论`；invoke 落盘；app/tests/web 仓零改动 · 闸状态未动 · 下一棒 20-task-audit |
