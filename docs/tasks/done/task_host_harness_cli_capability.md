@@ -1,9 +1,9 @@
 # Task：Host C1 · harness CLI Capability（verify / task_lint）
 
-> **状态**：active  
+> **状态**：completed（2026-09-01 CLOSE · PR [#114](https://github.com/Cyning12/ops-desk-api/pull/114) MERGED）  
 > **类型**：Capability / Host 沟通轨实现  
 > **上游**：[`06_host_comms_boundary_spec_v0.md`](../../spec/agent-infra/06_host_comms_boundary_spec_v0.md)（**signed** · #111）§7/§8/§10 · [`02_agent_host_plan_v0.md`](../../spec/agent-infra/02_agent_host_plan_v0.md)（H2 ✓ CLOSE）  
-> **前置**：C0 CLOSE · [`task_host_comms_boundary_spec`](../done/task_host_comms_boundary_spec.md) · [#111](https://github.com/Cyning12/ops-desk-api/pull/111)  
+> **前置**：C0 CLOSE · [`task_host_comms_boundary_spec`](./task_host_comms_boundary_spec.md) · [#111](https://github.com/Cyning12/ops-desk-api/pull/111)  
 > **分支**：`task/host-harness-cli-capability`  
 > **帽子**：00 起草闸；**10** 补全；**20** 审；**30+40** 实现。  
 > **无关**：C2 Prompt Pack · C3 写盘 · C4 UI · 产品 lg-rag/Chat 行为 · 通用 shell Capability · Policy 默认开
@@ -30,6 +30,7 @@
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | `n/a`（不改 lg-rag-sse-v1；Capability 入出参 JSON 契约由本 task 30 自检记录 · SPEC 06 §16 不预冻） |
 | **close_pr_policy** | `required` |
+| **related_pr** | `#114` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | C 轨串行：C0 ✓ → **C1** → C2 → C3；C4 跨仓 web 可后与 C3 尾并行 |
 
@@ -196,3 +197,20 @@
 | 2026-09-01 | **10-task**：现网核对修正 2 处（`CapabilityResult.data`→`output`；manifest 仅 local_fn → 注册走代码路径 `gateway.register` · builtin.v1.yaml 不适用）；补验收钩 2 条（注册可见性 · Policy 门先于 adapter / cli+high 双键）；补 `### 自检结论`（W4 合法：思考轮由 SPEC 06 §15 承载）；invoke 落盘；00 定夺实质零改 · HG-AUDIT-R1 保持 pending · 下一棒 20-task-audit |
 | 2026-09-01 | **20** R1 **pass**（内容零阻塞；非阻塞 5 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
 | 2026-09-01 | **30+40**：实现 `app/ops/capability/harness_cli.py`（`harness.verify` / `harness.task_lint` 白名单 CLI Capability · 禁 shell · env 钉版 · 参数白名单 · 超时 120s/截断 64KiB）+ `tests/test_capability_harness_cli.py` 32 用例（全 mock subprocess）；注册走代码路径 `register_harness_cli_capabilities()`（不进业务默认目录）；`harness.status` 不做（C4 开工时补）；图谱 capability 行 + `10_flow_capability` 描述备注；R1 非阻塞 5 条逐项处置；验收 13 条勾选 · 自检全绿（verify/ruff/pytest 496/graph-compile/lint-wiki-delta）；invoke 落盘；**不 CLOSE（留给 00）** |
+| 2026-09-01 | **00 CLOSE**：PR [#114](https://github.com/Cyning12/ops-desk-api/pull/114) MERGED（CI 三绿）；无 Alembic；归档 done/ · Hub 补登 · CLOSE invoke 留档 |
+
+---
+
+## 关账（CLOSE）
+
+| 项 | 值 |
+|---|---|
+| PR | [#114](https://github.com/Cyning12/ops-desk-api/pull/114) **MERGED** 2026-09-01 |
+| 交付 | `app/ops/capability/harness_cli.py`（`harness.verify`/`harness.task_lint` 白名单）+ 32 mock 用例 · Policy 默认关 · env 钉版 |
+| 生产 | 无 Alembic；Capability 默认 `policy_blocked`（须 Host 策略通道显式开启）· 业务零影响 |
+| 00 复检 | 独立复跑：496 passed / 39 skipped · ruff 触及路径净 · graph-compile 0 · PR #114 CI 三绿 |
+| 归档 | 2026-09-01 · 00 关账 · 维护者 Prompt 授权 |
+
+### KPI
+
+Task_KPI%: 100 · D1 范围钉死仅三条白名单 Capability · D2 闸齐（三代签 + 20 R1 pass）· D3 过程档齐（invoke 10/00/30_40 + R1 审查）· D4 图谱 capability 行/flow 备注已随 #114 · D5 关账补登 2026-09-01
