@@ -2,6 +2,7 @@
 
 > **日期**：2026-08-14  
 > **状态**：planning only · **未开 task · 禁止本文件驱动 30 改码**  
+> **2026-08-31 注（T6）**：`POST /api/ops/chat/stream` 已 **410 下线**；本文凡引导走 chat/stream 的表述以 `POST /api/ops/lg-rag/stream` 为准（见 `docs/spec/agent-infra/05` §10.5）  
 > **背景**：Qdrant 切流已完成；前端 chat 尚未联调 RAG 体验  
 > **问题**：当前是否已有「给前端用的 RAG API」？若要编写，现有能力与新增步骤是什么？
 
@@ -12,7 +13,7 @@
 | 问法 | 答案 |
 |---|---|
 | 有没有**独立的** RAG HTTP API（如 `POST /rag/search`）？ | **没有** |
-| 前端能不能已经「用到 RAG」？ | **能，但只经 Chat**：`POST /api/ops/chat/stream` 内嵌 retrieve→grade→answer |
+| 前端能不能已经「用到 RAG」？ | **能**：原经 Chat `POST /api/ops/chat/stream`（已 410 · T6）；现经 `POST /api/ops/lg-rag/stream`（retrieve/grade 事件同流） |
 | 前端现在接好了吗？ | **传输层已接 SSE**；**引用卡片 / RAG 态 UI 多半未专门消费** `tool_result`（retrieve/grade） |
 | 下一步最小路径 | **优先 A：消费现有 SSE 事件**；需要调试台/纯检索 UI 再开 **B：独立检索 API** |
 
@@ -24,7 +25,7 @@
 
 ```text
 用户消息
-  → POST /api/ops/chat/stream（cookie 鉴权）
+  → POST /api/ops/chat/stream（cookie 鉴权）⚠️ 已 410 下线（T6）→ 现走 POST /api/ops/lg-rag/stream
   → LangGraph
        intent
          ├─ issue_qa → load_context（精确 issue，不走 hybrid RAG）
@@ -48,7 +49,7 @@
 向量后端：`RAG_VECTOR_BACKEND`（生产已 `qdrant`）。
 
 鉴权：与 chat 相同（session cookie）。  
-前端入口：`ops-desk-web` · `useOpsChatSse.ts` → `POST /api/ops/chat/stream`。
+前端入口（2026-08-31 前）：`ops-desk-web` · `useOpsChatSse.ts` → `POST /api/ops/chat/stream`（均已随 T2/T6 切换/下线：web 走 lg-rag SSE，chat stream 410）。
 
 ### 2.2 没有（若「RAG API」指独立接口）
 
@@ -197,7 +198,7 @@
 
 - 登录生产/本机 web  
 - 问会走 `general` 的知识题（非纯 issue 号精确问答）  
-- 界面出现引用卡片；api 日志有 `POST /chat/stream` 且无持续 `qdrant fallback`  
+- 界面出现引用卡片；api 日志有 `POST /lg-rag/stream`（原 `POST /chat/stream` 已 410 · T6）且无持续 `qdrant fallback`  
 
 ---
 
@@ -217,7 +218,7 @@
 
 **若选 A：**
 
-> 前端消费 `POST /api/ops/chat/stream` 已有 RAG `tool_result`（retrieve/grade/sources），补齐引用与检索态 UI；不新增 RAG REST。
+> 前端消费 `POST /api/ops/lg-rag/stream`（原 `POST /api/ops/chat/stream` 已 410 · T6）已有 RAG `tool_result`（retrieve/grade/sources），补齐引用与检索态 UI；不新增 RAG REST。
 
 **若选 B：**
 

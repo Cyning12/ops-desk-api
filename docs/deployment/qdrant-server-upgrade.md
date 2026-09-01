@@ -262,7 +262,7 @@ curl -fsS http://127.0.0.1:8000/health
 | `ps qdrant` | `v1.19.0` · healthy |
 | api `printenv` | `RAG_VECTOR_BACKEND=qdrant` |
 | `/health` | ok |
-| `logs -f api` | 提问时有 `POST .../chat/stream` 或 LC Evidence invoke；**无**持续 `qdrant fallback to pgvector` |
+| `logs -f api` | 提问时有 `POST .../lg-rag/stream`（原 `POST .../chat/stream` 已 410 · T6 2026-08-31）或 LC Evidence invoke；**无**持续 `qdrant fallback to pgvector` |
 | DLQ | `SELECT status, count(*) FROM ops_qdrant_dlq GROUP BY 1;` 不堆积 |
 | 版本警告 | api 日志无 `incompatible with server version 1.13.6` |
 
