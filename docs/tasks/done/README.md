@@ -81,6 +81,7 @@
 | 2026-08-31 | [`task_siliconflow_default_catalog_cost.md`](./task_siliconflow_default_catalog_cost.md) | SiliconFlow catalog/grader 默认 + Host 价表 cache export · PR #101 |
 | 2026-08-31 | [`task_langfuse_cached_input_tokens.md`](./task_langfuse_cached_input_tokens.md) | Langfuse 上报 `cached-input-tokens` · PR #101 |
 | 2026-08-31 | [`task_lg_rag_sse_resume.md`](./task_lg_rag_sse_resume.md) | T4 SSE resume（cursor + replay · `ops_lg_rag_run_events`） · PR #103 |
+| 2026-08-31 | [`task_lg_rag_sse_token_stream.md`](./task_lg_rag_sse_token_stream.md) | T5 answer token delta 流（delta 多帧 + 终帧 final） · PR #105 |
 
 ---
 
@@ -111,6 +112,7 @@
 | 2026-08-26 | 补录 tech-graph-legacy-cleanup（harness 域 · PR #61） |
 | 2026-08-31 | CLOSE T2 `#97` + kit 1.10.0 `#98`；Hub 补登 E5 / T0-T1 Spec |
 | 2026-08-31 | CLOSE T4 `#103`（lg-rag-sse-resume 归档 done/ · Hub 补登） |
+| 2026-08-31 | CLOSE T5 `#105`（lg-rag-sse-token-stream 归档 done/ · Hub 补登） |
 
 ## 给维护者
 

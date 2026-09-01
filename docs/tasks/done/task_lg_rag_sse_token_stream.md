@@ -1,9 +1,9 @@
 # Task：lg-rag T5 · Token 流（终答 answer 多帧 delta）
 
-> **状态**：active  
+> **状态**：completed（2026-08-31 CLOSE · PR [#105](https://github.com/Cyning12/ops-desk-api/pull/105) MERGED）  
 > **类型**：传输 / SSE token 流  
 > **上游**：[`05_lg_rag_transport_and_session_plan_v0.md`](../../spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md) §4.2 · §9 · §10.4 · [`WAVE_READINESS_lg_rag_sse_v0.md`](../../spec/agent-infra/WAVE_READINESS_lg_rag_sse_v0.md) §1  
-> **前置**：T4 CLOSE · [`task_lg_rag_sse_resume`](../done/task_lg_rag_sse_resume.md) · [#103](https://github.com/Cyning12/ops-desk-api/pull/103)（+ 关账 [#104](https://github.com/Cyning12/ops-desk-api/pull/104)）  
+> **前置**：T4 CLOSE · [`task_lg_rag_sse_resume`](./task_lg_rag_sse_resume.md) · [#103](https://github.com/Cyning12/ops-desk-api/pull/103)（+ 关账 [#104](https://github.com/Cyning12/ops-desk-api/pull/104)）  
 > **分支**：`task/lg-rag-sse-token-stream`  
 > **帽子**：00 起草闸；**10** 补全；**20** 审；**30+40** 实现。  
 > **无关**：T6 删 `/chat/stream` · C0–C4 · 重开 T3/T4 · 改 `chat/graph.py` 拓扑 · 本仓改 Vue
@@ -30,6 +30,7 @@
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | `lg-rag-sse-v1`（扩展：`answer` 多帧 delta + 终帧 `final` 标记；首帧/增量协议钉死；回写 05 §4.2/§10.4） |
 | **close_pr_policy** | `required` |
+| **related_pr** | `#105` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | T5 仅 answer delta；web 打字机另 task（00 出 Prompt）；可 api-only 先合；WAVE_READINESS §1 为 web 闸、不阻塞 api T5 |
 
@@ -55,7 +56,7 @@
 | **落盘 / replay** | delta 帧与终帧 **同样落盘** `ops_lg_rag_run_events`；`POST /lg-rag/replay` 形状不变（逐帧重放含 delta） |
 | **并存不串台** | 全部帧共享单调 `seq`（单 emit 循环保证）；delta 帧不与 `node.progress`/`subtask.progress` 重排 |
 | **freeze** | 沿用 **`lg-rag-sse-v1`**（扩展 `answer` 多帧 + `final` 标记；非 silent 扩）；契约写回 05 §4.2 `answer` 行 + §10.4「api 提供」列；若 20 坚持拆新 freeze id → 退回 00 改钉 |
-| **合入** | **可 api-only 先合**；与进行中的 web T3/T4 **不互堵**。本 PR **勿 auto-merge**。web 打字机另 task（00 出 Prompt `PROMPT_web_00_lg_rag_t5_typewriter`，本仓不改 Vue） |
+| **合入** | **可 api-only 先合**；与 web T3/T4 **不互堵**。已 MERGED：[#105](https://github.com/Cyning12/ops-desk-api/pull/105)（2026-08-31）。web 打字机另 task（00 已出 Prompt `PROMPT_web_00_lg_rag_t5_typewriter`，本仓不改 Vue） |
 | **模块** | 不新增一级模块；`01_modules.md` 只改 `lg_rag` 备注 |
 
 ---
@@ -147,6 +148,23 @@
 | `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` | 0 | LINT-WIKI-DELTA: PASS |
 | `git diff --stat -- app/ops/chat/graph.py` | 0 | **零 diff**（不在改动清单） |
 
+00 关账复检（2026-08-31）：独立复跑 pytest 五文件 **46 passed** · graph-compile OK · `chat/graph.py` 零 diff · PR #105 CI 三绿后 squash MERGED。
+
+---
+
+## 关账（CLOSE）
+
+| 项 | 值 |
+|---|---|
+| PR | [#105](https://github.com/Cyning12/ops-desk-api/pull/105) **MERGED** 2026-08-31 |
+| 生产 | 无新 Alembic 迁移（复用 T4 `ops_lg_rag_run_events`）；deploy-api 随 master push 自动跑 |
+| web | 打字机 Prompt 已落盘 `_prompts/PROMPT_web_00_lg_rag_t5_typewriter.md`；web T5 须 web-00 先跑 WAVE_READINESS §1 闸 |
+| 归档 | 2026-08-31 · 00 关账 · 维护者 Prompt 授权 |
+
+### KPI
+
+Task_KPI%: 100 · D1 范围钉死仅 T5 answer delta · D2 闸齐（三代签落盘 + 20 R1 pass）· D3 过程档齐（invoke 10/00/30_40 + R1 审查 + web Prompt）· D4 图谱 G-L1/G-L2 已随 #105 · D5 关账补登 2026-08-31
+
 - **direct_answer 实际处置**：**同协议达成，未降级**。router `direct_answer` 与 aggregator 同一 provider（`_ROUTER_PROVIDER` · SiliconFlow/Bailian 均实现 `complete_stream`），节点经 `complete_answer_streaming(..., node="direct_answer")` 发 delta + 终帧；mock 断言 `test_stream_router_direct_answer_same_protocol` 绿。降级路径由桥内异常兜底（failure_paths 行）而非协议降级。
 - **实现机制**：provider 流式桥接（R1 非阻塞 1 选型落地）——`astream(stream_mode="messages")` 对自定义 provider 不产 token，故走 `BaseProvider.complete_stream` + contextvar token sink；sink 在图执行 task context 内 `emit`（seq 单调 + 落盘）后帧入 `asyncio.Queue`，emit 主循环与下一 update 竞速吐帧（打字机实时）；update 边界先吐净残留 delta 再映射 updates 帧。
 - **R1 非阻塞 5 条处置**：① 选型=provider 桥接（上）② aggregator「必做」与降级合读——流式可得即必做，桥内降级整段 ③ delta 逐 chunk 落盘量随终答长度放大——接受（task 未要求聚合；chunk 粒度=provider 流原生）④ direct_answer 同协议无降级，理由已写 ⑤ 占位空 answer 帧无 `final` 标记——保持现行为（`test_stream_basic_placeholder_unchanged` 钉死）。
@@ -162,3 +180,4 @@
 | 2026-08-31 | **10-task**：lint PASS（W4 · 思考轮 SPEC 承载）；补 `### 自检结论`；补 direct_answer 同协议/降级验收钩；00 定夺未做实质改动 |
 | 2026-08-31 | **20** R1 **pass**（内容零阻塞；非阻塞风险 5 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
 | 2026-08-31 | **30+40**：T5 实现落地——`answer_stream.py` contextvar token sink 桥；sse_stream emit 循环挂 sink + answer delta/终帧 final；aggregator / direct_answer 同协议（未降级）；12 新测 + 46 全绿；ruff / verify / graph-compile / lint-wiki-delta 全 PASS；05 §4.2/§10.4 + G-L1/L2 回写。**不 CLOSE（留给 00）** |
+| 2026-08-31 | **00 CLOSE**：PR [#105](https://github.com/Cyning12/ops-desk-api/pull/105) MERGED（CI 三绿）；无新 Alembic（复用 `ops_lg_rag_run_events`）；归档 done/ · Hub 补登 · CLOSE invoke 留档 |
