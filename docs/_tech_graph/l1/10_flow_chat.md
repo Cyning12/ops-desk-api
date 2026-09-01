@@ -1,20 +1,20 @@
 ---
 graph_id: 10_flow_chat
-version: 2026-08-25
-generated_at: sha256-131558edf12112af
+version: 2026-08-31
+generated_at: sha256-1868b40f1dafb371
 source: 10_flow_chat.graph.yaml
 ---
 
 # Chat 流式对话流程
 
-用户通过 SSE 与后端对话的完整流程：HTTP 入口、LangGraph StateGraph 执行（含 RAG 检索链）、LLM 调用、事件归档。
+用户通过 SSE 与后端对话的完整流程：HTTP 入口、LangGraph StateGraph 执行（含 RAG 检索链）、LLM 调用、事件归档。deprecated（T6 · 2026-08-31）：POST /api/ops/chat/stream 已 410 下线（迁移 POST /api/ops/lg-rag/stream）；节点/边保留作历史拓扑，WS /chat/ws 与 GET /chat/models、GET /chat/sessions/latest 仍在服务。
 
 ## Mermaid
 
 ```mermaid
 flowchart TB
     client["用户 / 前端"]
-    chat_stream["POST /api/ops/chat/stream"]
+    chat_stream["POST /api/ops/chat/stream（410 · deprecated T6）"]
     chat_ws["WS /api/ops/chat/ws"]
     event_gen["ChatEventStreamer (SSE/WS 共享)"]
     chat_service["run_chat_stream"]
@@ -91,7 +91,7 @@ flowchart TB
 | ID | Label | Kind |
 |----|-------|------|
 | client | 用户 / 前端 | external |
-| chat_stream | POST /api/ops/chat/stream | flow |
+| chat_stream | POST /api/ops/chat/stream（410 · deprecated T6） | flow |
 | chat_ws | WS /api/ops/chat/ws | flow |
 | event_gen | ChatEventStreamer (SSE/WS 共享) | flow |
 | chat_service | run_chat_stream | flow |

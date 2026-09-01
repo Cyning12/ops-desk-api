@@ -1,8 +1,8 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_chat"
 title: "Chat 流式对话流程"
-description: "用户通过 SSE 与后端对话的完整流程：HTTP 入口、LangGraph StateGraph 执行（含 RAG 检索链）、LLM 调用、事件归档。"
-version: "2026-08-25"
+description: "用户通过 SSE 与后端对话的完整流程：HTTP 入口、LangGraph StateGraph 执行（含 RAG 检索链）、LLM 调用、事件归档。deprecated（T6 · 2026-08-31）：POST /api/ops/chat/stream 已 410 下线（迁移 POST /api/ops/lg-rag/stream）；节点/边保留作历史拓扑，WS /chat/ws 与 GET /chat/models、GET /chat/sessions/latest 仍在服务。"
+version: "2026-08-31"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "method"
@@ -14,7 +14,7 @@ nodes:
     kind: external
 
   - id: "chat_stream"
-    label: "POST /api/ops/chat/stream"
+    label: "POST /api/ops/chat/stream（410 · deprecated T6）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
