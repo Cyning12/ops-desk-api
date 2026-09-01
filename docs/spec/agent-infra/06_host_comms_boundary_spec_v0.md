@@ -1,7 +1,7 @@
 # SPEC：Host C0 · 沟通边界（comms vs product）
 
 > **层级**：L0 SPEC（agent-infra 轨 · 接 02/05 编号序列）  
-> **状态**：`draft`（2026-09-01 10-spec 起草；待 20-spec-audit + HG-SPEC-SIGNOFF；**不**授权 30）  
+> **状态**：`signed`（2026-09-01 · HG-SPEC-SIGNOFF **approved** · 00 代签 · 维护者 Prompt 授权 · R1 审查 [`spec_host_comms_boundary_audit_R1_20260901.md`](../../harness/reviews/spec_host_comms_boundary_audit_R1_20260901.md) pass；**不**授权 30）  
 > **上游**：[`00_architecture_and_boundaries.md`](./00_architecture_and_boundaries.md) · [`02_agent_host_plan_v0.md`](./02_agent_host_plan_v0.md)（H1–H5 已 **CLOSE** · 本 SPEC **不重开**）· 草稿 [`../../discussions/2026-08-31_host_comms_agent_kit_nesting_plan_draft.md`](../../discussions/2026-08-31_host_comms_agent_kit_nesting_plan_draft.md)（素材 · **真值以本 SPEC 为准**）  
 > **本波 task**：[`task_host_comms_boundary_spec`](../../tasks/active/task_host_comms_boundary_spec.md)（active · docs-only · 无 30）  
 > **spec_slug**：`host-comms-boundary-spec`
@@ -22,7 +22,7 @@
 | human_gate_id | status | 说明 |
 |---|---|---|
 | HG-TASK-DRAFT | approved | 2026-09-01 · 00 代签 · 维护者 Prompt 授权（见 task 表） |
-| **HG-SPEC-SIGNOFF** | **pending** | 待 **20-spec-audit** 落盘后 00 代签（docs-only SPEC 波代签授权：内容零阻塞 + 审查落盘） |
+| **HG-SPEC-SIGNOFF** | **approved** | 2026-09-01 · **00 代签 · 维护者 Prompt 授权** · R1 pass（内容零阻塞）见 `docs/harness/reviews/spec_host_comms_boundary_audit_R1_20260901.md` |
 | HG-AUDIT-R1 | n/a | 本波 **无 30**（docs-only） |
 | HG-GRAPH-MODULES | n/a | 无图谱变更 |
 
@@ -200,3 +200,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-09-01 | **10-spec 初稿**：背景（H1–H5 CLOSE · 暂缓前提达成）· 00 定夺逐项落入（意图路由默认 product · 产物路径 · 禁代签 · 白名单仅 harness.* · Skills≠verify · 分 session · C1→C2→C3 顺序 · C4 并行仅 web · 待拍板建议钉）· 永久禁令 A/B · R0–R5 回填 · freeze 声明（05 不回写） |
+| 2026-09-01 | **签收**：20-spec-audit R1 pass（内容零阻塞）· HG-SPEC-SIGNOFF approved（**00 代签 · 维护者 Prompt 授权**）· 状态 draft→signed · §11 待拍板两条建议钉随签收生效 |
