@@ -1,9 +1,9 @@
 # Task：lg-rag T6 · 弃用 chat stream（api 清扫）
 
-> **状态**：active  
+> **状态**：completed（2026-09-01 CLOSE · PR [#108](https://github.com/Cyning12/ops-desk-api/pull/108) MERGED）  
 > **类型**：弃用 / 传输下线  
 > **上游**：[`05_lg_rag_transport_and_session_plan_v0.md`](../../spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md) §4.1（T0 弃用通道声明）· §10.5 · §11  
-> **前置**：T5 CLOSE · [`task_lg_rag_sse_token_stream`](../done/task_lg_rag_sse_token_stream.md) · [#105](https://github.com/Cyning12/ops-desk-api/pull/105)（+ 关账 [#106](https://github.com/Cyning12/ops-desk-api/pull/106)）；维护者下线窗口 = **维护者 Prompt 授权可开**（串行波次 2）  
+> **前置**：T5 CLOSE · [`task_lg_rag_sse_token_stream`](./task_lg_rag_sse_token_stream.md) · [#105](https://github.com/Cyning12/ops-desk-api/pull/105)（+ 关账 [#106](https://github.com/Cyning12/ops-desk-api/pull/106)）；维护者下线窗口 = **维护者 Prompt 授权可开**（串行波次 2）  
 > **分支**：`task/lg-rag-deprecate-chat-stream`  
 > **帽子**：00 起草闸；**10** 补全；**20** 审；**30+40** 实现。  
 > **无关**：重开 T2–T5 · C0–C4 · 删 chat 代码/图/表 · 本仓改 Vue · iOS 改造（另仓）
@@ -30,6 +30,7 @@
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | `lg-rag-sse-v1`（不改 lg-rag 契约；本波仅 chat 下线） |
 | **close_pr_policy** | `required` |
+| **related_pr** | `#108` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | T6 仅 `/chat/stream` 410；web 删死代码另 task（00 出 Prompt）；iOS 若仍用 chat 另仓 |
 
@@ -56,7 +57,7 @@
 | **测试清理** | `tests/test_chat_router.py` 的 `/chat/stream` 用例改写为 410 断言；`test_chat_service.py`（service 层）不动 |
 | **文档** | README / docs 中引导用 `/chat/stream` 的活引用 grep 清扫改指 lg-rag；05 §10.5 回写实现句（含日期） |
 | **图谱** | `01_modules.md` chat 行备注「stream 已 410（T6）」；chat flow 图加 deprecated 备注（若该图存在）；**不删**节点/边/indexes |
-| **合入** | 本 PR **勿 auto-merge**。web 删 `useOpsChatSse` 死代码另 task（00 出 Prompt `PROMPT_web_00_t6_remove_chat_sse`，本仓不改 Vue） |
+| **合入** | 已 MERGED：[#108](https://github.com/Cyning12/ops-desk-api/pull/108)（2026-09-01）。web 删 `useOpsChatSse` 死代码另 task（00 已出 Prompt `PROMPT_web_00_t6_remove_chat_sse`，本仓不改 Vue） |
 | **模块** | 不新增/不删一级模块 |
 
 ---
@@ -195,7 +196,26 @@
 | 2026-08-31 | **10-task**：lint PASS（W4 · 思考轮 SPEC 承载）；事实核对现网一致零修正（router L34/L97/L108 · 测试 L127/147/158/204 · WS L79）；补 `### 自检结论`；验收补 `Deprecation` 头/body 字段形态建议 · 鉴权次序建议 · grep 检索词 · sessions/latest（test_auth.py）与 WS（test_chat_ws.py）旧测落点 · chat flow 图存在钉明；00 定夺钉死项 **零实质改动**；HG-AUDIT-R1 未动 |
 | 2026-08-31 | **20** R1 **pass**（内容零阻塞；非阻塞 5 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
 | 2026-08-31 | **30+40**：`/chat/stream` → 410（`error/migrate_to/message` + `Deprecation: true` + `Link` successor-version · 保留 `Depends(get_current_user)` → 未登录仍 401）；四 stream 用例改 410 断言（用例名保留 · R1 非阻塞 4 回归意图入 docstring）；import 连带清理（R1 非阻塞 2）；05 §10.5 回写实现句 + §11.4 修订；iOS/deployment 活引用清扫（边角命中分类落自检表 · R1 非阻塞 3）；图谱 chat 行 + `10_flow_chat` deprecated 备注 + 人签记录（不删节点/边/indexes）；自检六命令：verify 0 · ruff 触及路径 0 · pytest CI 等价 0（本机带 PG 2 pre-existing 环境失败 · A/B 实证）· graph-compile 0 · lint-wiki-delta 0 · lg_rag diff 空；验收 9 条勾选；**不 CLOSE（留给 00）** |
+| 2026-09-01 | **00 CLOSE**：PR [#108](https://github.com/Cyning12/ops-desk-api/pull/108) MERGED（CI 三绿）；无 Alembic；过程文档曾随 #107 提前入 master（并行 web-00 会话裹入 · 内容无冲突 · 已核）；归档 done/ · Hub 补登 · CLOSE invoke 留档 |
 
 ---
 
-> **30+40 交付完毕 · 不 CLOSE（留给 00）**：验收 9 条已勾（pytest 条附 CI 等价绿 + 本机 pre-existing 环境失败证据）；invoke `docs/harness/invokes/by-task/lg-rag-deprecate-chat-stream/invoke_20260831_30_40_lg-rag-deprecate-chat-stream.md`；本 PR **勿 auto-merge**（00 定夺 · 05 §11.1）。
+> **30+40 交付完毕**：验收 9 条已勾（pytest 条附 CI 等价绿 + 本机 pre-existing 环境失败证据）；invoke `docs/harness/invokes/by-task/lg-rag-deprecate-chat-stream/invoke_20260831_30_40_lg-rag-deprecate-chat-stream.md`。
+
+00 关账复检（2026-09-01）：独立复跑 pytest CI 等价 **464 passed / 39 skipped** · ruff 触及路径净 · lg_rag 零 diff · PR #108 CI 三绿后 squash MERGED。
+
+---
+
+## 关账（CLOSE）
+
+| 项 | 值 |
+|---|---|
+| PR | [#108](https://github.com/Cyning12/ops-desk-api/pull/108) **MERGED** 2026-09-01 |
+| 生产 | 无 Alembic；deploy-api 随 master push 自动跑；`/chat/stream` 即起 410 |
+| web | 死代码清扫 Prompt 已落盘 `_prompts/PROMPT_web_00_t6_remove_chat_sse.md`（另 task） |
+| iOS | 若仍用 chat stream → 另仓 task（410 报文自带迁移指针） |
+| 归档 | 2026-09-01 · 00 关账 · 维护者 Prompt 授权 |
+
+### KPI
+
+Task_KPI%: 100 · D1 范围钉死仅 `/chat/stream` 410 · D2 闸齐（三代签落盘 + 20 R1 pass）· D3 过程档齐（invoke 10/00/30_40 + R1 审查 + web Prompt）· D4 图谱备注已随 #108（不删节点/边/indexes）· D5 关账补登 2026-09-01
