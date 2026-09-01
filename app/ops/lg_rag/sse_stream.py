@@ -2,9 +2,15 @@
 
 断连语义（T2/T4）：服务端尽量跑完图；不保证客户端收齐；无 cancel。
 T4：每帧可选顶层 cursor；事件尽量落盘供 POST /lg-rag/replay。
+T5：终答 token 流 —— emit 循环经 contextvar 挂 answer token sink
+（answer_stream.complete_answer_streaming 桥），aggregator /
+direct_answer 的 LLM chunk → answer {"delta": ...} 多帧；节点 updates
+到后发终帧 {"content": <full>, "final": true}（T2 兼容）。
 """
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import json
 import logging
 import time
@@ -14,6 +20,10 @@ from typing import Any
 
 from langchain_core.messages import AIMessage
 
+from app.ops.lg_rag.answer_stream import (
+    reset_answer_token_sink,
+    set_answer_token_sink,
+)
 from app.ops.lg_rag.sse_replay import format_sse_event, make_cursor
 from app.ops.lg_rag.thread_store import persist_thread_turns
 from app.ops.tracing import flush_traces, tracing_enabled
@@ -27,6 +37,9 @@ _ROLE_ALIAS = {
 }
 _PAYLOAD_MAX = 800
 _ANSWER_MAX = 32_000
+# 终答节点（T5）：updates 帧映射为 answer 终帧（content + final）
+_ANSWER_NODES = frozenset({"aggregator", "direct_answer"})
+_STREAM_END: Any = object()  # astream 耗尽哨兵（区别于合法 update）
 
 
 def _truncate(text: str, max_len: int) -> str:
@@ -100,20 +113,33 @@ def _agent_role(node_name: str) -> str:
 
 
 def map_node_update(node_name: str, node_output: Any) -> tuple[str, str, dict[str, Any]]:
-    """返回 (event_type, agent_role, payload)。"""
+    """返回 (event_type, agent_role, payload)。
+
+    T5：aggregator / direct_answer 的 updates 帧 → ``answer`` 终帧
+    ``{"content": <full>, "final": true}``（T2 兼容：旧客户端仅看
+    ``content`` 行为不变）；token delta 帧不经本函数（sink 直发）。
+    """
     role = _agent_role(node_name)
     if node_name in _SUBTASK_NODES:
         return "subtask.progress", role, _summarize_payload(node_output)
-    if node_name == "aggregator":
+    if node_name in _ANSWER_NODES:
         answer = ""
         if isinstance(node_output, dict):
             answer = _extract_ai_text(node_output.get("messages"))
         return (
             "answer",
-            "aggregator",
-            {"content": _truncate(answer, _ANSWER_MAX)},
+            role,
+            {"content": _truncate(answer, _ANSWER_MAX), "final": True},
         )
     return "node.progress", role, _summarize_payload(node_output)
+
+
+async def _anext_or_end(agen: AsyncIterator[dict[str, Any]]) -> Any:
+    """``__anext__`` 包装：耗尽返回 ``_STREAM_END``；其余异常照常上抛。"""
+    try:
+        return await agen.__anext__()
+    except StopAsyncIteration:
+        return _STREAM_END
 
 
 async def iter_lg_rag_sse(
@@ -185,10 +211,50 @@ async def iter_lg_rag_sse(
             astream_fn = astream_supervisor_agent
 
     saw_answer = False
+    # T5 token sink：终答节点 LLM chunk 在此入队；sink 跑在图执行 task 的
+    # context（不能 yield），帧经队列交回主循环吐出。emit 内 seq 单调 +
+    # 尽量落盘，delta 帧与进度帧共享同一 seq 序列，不串台。
+    pending_frames: asyncio.Queue[str] = asyncio.Queue()
+
+    async def _answer_token_sink(role: str, chunk: str) -> None:
+        frame = await emit("answer", role, {"delta": chunk})
+        pending_frames.put_nowait(frame)
+
+    sink_handle = set_answer_token_sink(_answer_token_sink)
     try:
-        async for update in astream_fn(
+        agen = astream_fn(
             query, thread_id=thread_id, history_turns=history_turns or []
-        ):
+        )
+        while True:
+            next_task = asyncio.ensure_future(_anext_or_end(agen))
+            try:
+                # 图执行期间 delta 帧先入队；与下一 update 竞速，先到先吐，
+                # 保证长终答调用中 token 实时上屏（不等节点 updates）。
+                while not next_task.done():
+                    get_task = asyncio.ensure_future(pending_frames.get())
+                    try:
+                        await asyncio.wait(
+                            {next_task, get_task},
+                            return_when=asyncio.FIRST_COMPLETED,
+                        )
+                    finally:
+                        if not get_task.done():
+                            get_task.cancel()
+                    if get_task.done():
+                        yield get_task.result()
+                        continue
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await get_task
+                # update 边界：先吐净残留 delta（sink 早于节点返回，seq 已单调）
+                while not pending_frames.empty():
+                    yield pending_frames.get_nowait()
+                update = next_task.result()
+            finally:
+                # 生成器被 close（断连）或异常时取消挂起的 anext，防 task 泄漏
+                if not next_task.done():
+                    next_task.cancel()
+            if update is _STREAM_END:
+                break
             if not isinstance(update, dict):
                 continue
             for node_name, node_output in update.items():
@@ -221,6 +287,10 @@ async def iter_lg_rag_sse(
                     "lg-rag persist after done failed thread_id=%s", thread_id
                 )
     except Exception as exc:
+        # delta 途中图异常：已发 delta 保留（sink 已落盘），先吐净残留再发
+        # error 帧；不补 final 帧（failure_paths）。
+        while not pending_frames.empty():
+            yield pending_frames.get_nowait()
         logger.exception("lg-rag stream failed run_id=%s", rid)
         yield await emit(
             "error",
@@ -233,5 +303,6 @@ async def iter_lg_rag_sse(
             },
         )
     finally:
+        reset_answer_token_sink(sink_handle)
         if tracing_enabled():
             flush_traces()
