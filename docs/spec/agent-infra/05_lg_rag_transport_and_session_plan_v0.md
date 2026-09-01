@@ -52,10 +52,12 @@
 | **T2** | `stream-updates` | `POST /lg-rag/stream` · `astream(updates)` · 无 token 流 | 否 · 签收后另 task |
 | **T3** | `session-continuity` | thread/session · 历史注入 · 窗口策略迁到 lg-rag | 否 · 见 session ROADMAP |
 | **T4** | `disconnect-resume` | cursor / replay 或 run-resume；可先契约后实现 | 否 |
-| **T5** | `token-stream` | aggregator（等）token 级 SSE | 否 |
+| **T5** | `token-stream` | aggregator（等）token 级 SSE | 否（实现已合；契约见 §4.2 / §10.4） |
+| **T5.1** | `delta-realtime` | 终答 delta **投递时效**（pacing / anti-buffer）；不改 event_type | **是**（§10.4.1 · 2026-09-01） |
 | **T6** | `deprecate-chat` | 文档/前端切流 · chat 下线窗口 | 否 |
 
 **顺序建议**：T0/T1 签收 →（实现可穿插 Obs-I/O）→ T2 → T3/T4 → T5 → T6。  
+**T5.1**：T5 合入后的契约增量（与 T6 **正交**）；本文件钉应然，缺口修复另实现 task。  
 **禁止**：未签 T0/T1 就改现网默认路由到 supervisor，或强行兼容 chat 事件全集。
 
 详规（Session）：[`session/ROADMAP_lg_rag_session_continuity_v0.md`](./session/ROADMAP_lg_rag_session_continuity_v0.md)。
@@ -130,7 +132,7 @@
 | `run.start` | `system` | 开跑；带 `run_id` / `thread_id` |
 | `node.progress` | `intent` / `strategy_builder` / `supervisor` / … | 节点完成摘要（非全文 dump） |
 | `subtask.progress` | `rag_subtask` / `info_extract` / `tool_exec` | 子任务进度 / 结果摘要 |
-| `answer` | `aggregator` / `direct_answer` | 最终答案（**T5 已实现**：token delta 多帧 `{"delta": "<chunk>"}` 按 `seq` 有序拼接 + 终帧 `{"content": "<full>", "final": true}`；T2 兼容——旧客户端仅看 `content` 行为不变；流式降级时仅终帧整段） |
+| `answer` | `aggregator` / `direct_answer` | 最终答案（**T5 已实现**：token delta 多帧 `{"delta": "<chunk>"}` 按 `seq` 有序拼接 + 终帧 `{"content": "<full>", "final": true}`；T2 兼容——旧客户端仅看 `content` 行为不变；流式降级时仅终帧整段）。**T5.1**：`delta` 须在生成过程中持续 SSE 刷出，**不得**等 aggregator / direct_answer 节点整段结束后再批量 flush（应然；见 §10.4.1） |
 | `done` | `system` | 正常结束 |
 | `error` | `system` | 失败；`retryable` 布尔 |
 | `cursor`（可选 · T4） | `system` | 供 replay 的游标提示（**可选** `event_type`；本波 SoT 见下行顶层字段） |
@@ -162,6 +164,11 @@
 - 同 freeze_id：`lg-rag-sse-v1`（`answer` 扩多帧 delta + 终帧 `final` 标记；**不**新增 `event_type`）  
 - 客户端规则：见 `delta` 追加、见 `content` **全量替换**、`done` 后停止追加；禁止把 `content` 帧 append 到 delta 结果（§10.4 常见坑）  
 - token 归属**仅** aggregator / direct_answer 的终答 LLM（`complete_stream` + contextvar token sink）；流式不可用/异常 → 降级整段（T2 行为）+ 日志；终帧沿用 32_000 截断
+
+**T5.1 冻结补充（2026-09-01 · 投递时效 · 不新 freeze）**
+
+- 仍 **`lg-rag-sse-v1`**：不新 freeze、不新 `event_type`、不改 `delta` / `content` / `final` 键语义  
+- 跨端打字机 SoT = **SSE 上 delta 的到达时间线**（非前端定时器缓冲）；细则 §10.4.1
 
 **验收（文档）**
 
@@ -230,6 +237,9 @@
 | 2026-08-31 | **§10.4**：链 [`WAVE_READINESS_lg_rag_sse_v0.md`](./WAVE_READINESS_lg_rag_sse_v0.md)（web T4 CLOSE 后查 T5 就绪） |
 | 2026-08-31 | **T4 实现回写 §4.2/§10.3**：顶层可选 `cursor` · `ops_lg_rag_run_events` · `POST /lg-rag/replay` · 断连仍跑完 |
 | 2026-08-31 | **T5 实现回写 §4.2/§10.4**：`answer` delta 多帧 + 终帧 `final`（aggregator / direct_answer 同协议 · token sink 桥 · 降级整段）· freeze 扩展 `lg-rag-sse-v1` |
+| 2026-09-01 | **T5.1**：终答 delta 实时投递（pacing / anti-buffer）契约增量 · 动机 = 防 burst 观感 + 跨端通用（非改 event_type）· §4.2 旁注 + §10.4.1 + §11 勾选；实现另 task |
+| 2026-09-01 | **T5.1 HG-SPEC-SIGNOFF=approved**（00 代签 · 维护者令「签收」· 20 审查 pass）；**不**授权 30；实现须另开 `lg-rag-sse-delta-realtime` |
+| 2026-09-01 | **T5.1 实现回写**：`emit` 后台 persist（不阻塞 yield）· §10.4.1 实然更新 · task `lg-rag-sse-delta-realtime` |
 
 ---
 
@@ -261,6 +271,7 @@
 | T3 Session | 新 session 装配符号若挂 flow → 补 indexes |
 | T4 断联 | replay/cursor 相关 `implementedBy` → 补 indexes |
 | T5 token 流 | stream 符号变更 → 补 indexes |
+| T5.1 投递时效 | 本波 docs-only · **不**改 indexes；实现波若改 stream 符号 → 同 T5 钩 |
 | T6 弃用 chat | 文档为主；若删 lg_rag 边/节点 → 同步删 indexes 条目 |
 | Obs-I/O | 默认不新增 flow 节点；若 `tracing` 挂进 flow `implementedBy` 再补 |
 ---
@@ -327,11 +338,100 @@
 | 维度 | 内容 |
 |---|---|
 | **前置** | T2 节点进度已稳定 · 建议 web T4 cursor/replay 已可用（见 WAVE_READINESS） |
-| **api 提供（2026-08-31 已实现）** | `answer` 多帧 delta：aggregator 与 router `direct_answer` 的终答 LLM 经 `BaseProvider.complete_stream` + contextvar token sink（`app/ops/lg_rag/answer_stream.py`）逐 chunk 发 `{"delta": "<chunk>"}` 多帧（按 `seq` 有序）；节点 updates 到后发终帧 `{"content": <full>, "final": true}`（32_000 截断沿用 · T2 兼容）。全部帧共享单调 `seq`（单 emit 循环），delta 与 `node.progress`/`subtask.progress` 不串台；delta/终帧照常落盘 `ops_lg_rag_run_events`，`POST /lg-rag/replay` 逐帧重放含 delta、形状同 live。流式不支持/异常 → 降级整段 answer（T2 行为）+ 日志；basic 占位空 answer 帧不变。freeze 仍 **`lg-rag-sse-v1`**，**不**新增 `event_type`。 |
-| **web 交付** | Chat 区打字机 · 与 T2 整段 `answer` 兼容（首帧/增量协议见 T5 freeze） |
-| **联调项** | 增量拼接无乱码 · `done` 后停止追加 · 与 `node.progress` 并存不串台 |
-| **通过标准** | §11 T5 段 |
-| **常见坑** | T2 整段与 T5 delta 混用未分支 |
+| **api 提供（2026-08-31 已实现 · T5.1 2026-09-01）** | `answer` 多帧 delta：aggregator 与 router `direct_answer` 的终答 LLM 经 `BaseProvider.complete_stream` + contextvar token sink（`app/ops/lg_rag/answer_stream.py`）逐 chunk 发 `{"delta": "<chunk>"}` 多帧（按 `seq` 有序）；节点 updates 到后发终帧 `{"content": <full>, "final": true}`（32_000 截断沿用 · T2 兼容）。全部帧共享单调 `seq`（单 emit 循环），delta 与 `node.progress`/`subtask.progress` 不串台；delta/终帧照常落盘 `ops_lg_rag_run_events`（**T5.1**：persist **后台 task**，不阻塞 SSE yield），`POST /lg-rag/replay` 逐帧重放含 delta、形状同 live。流式不支持/异常 → 降级整段 answer（T2 行为）+ 日志；basic 占位空 answer 帧不变。freeze 仍 **`lg-rag-sse-v1`**，**不**新增 `event_type`。 |
+| **web 交付** | Chat 区 **正确追加 `delta`、终帧 `content` 全量替换**（T5 协议义务）。打字机观感的跨端 SoT 在 **SSE 到达时间线**（T5.1），不把前端定时器假打字机当契约 |
+| **联调项** | 增量拼接无乱码 · `done` 后停止追加 · 与 `node.progress` 并存不串台 · **T5.1**：终答阶段时间线非 burst（§11 T5.1） |
+| **通过标准** | §11 T5 段 + **T5.1 段** |
+| **常见坑** | T2 整段与 T5 delta 混用未分支；把「有很多 answer 帧」当成解析失败而忽略 burst 时间线（§10.4.1） |
+
+#### 10.4.1 T5.1 · 终答 delta 实时投递（pacing / anti-buffer）· 2026-09-01
+
+> **性质**：契约增量（**投递时效**）；不改 freeze、不新增 `event_type`、不改 `delta` / `content` / `final` 键语义。  
+> **本波**：docs-only 落盘应然；缺口修复 **另 task**（建议 slug `lg-rag-sse-delta-realtime`，可 api-only 先合）。**不**授权本文件读者改 `app/**`。
+
+##### 背景 / 动机
+
+联调（2026-09-01 · Chat `POST /api/ops/lg-rag/stream` · `mode=supervisor`）：live EventStream 已发出多帧 `event_type=answer`（payload 含 `delta`，`seq` 单调），但 UI 观感仍「一次性出全文」。supervisor 路径常有长时间 `node.progress` / `subtask.progress`（UI「处理中…」）；终答 LLM 开始后，`answer` delta 常在短时间窗口内密集到达（**burst**）——客户端即使按 T5 正确追加，肉眼仍像整段蹦出。
+
+产品裁定（维护者）：跨端通用方案 = **传输层真流式**（api 侧 delta 按生成节奏吐出 + 禁代理/框架缓冲）。**禁止**把「前端假打字机缓冲」写成契约 SoT 或默认交付。联调中偶发的业务错误（如 RAG DB 事务 aborted）与投递时效 **正交**，不扩本条 scope。
+
+##### 00 定夺（钉死 · 维护者可后改）
+
+| 项 | 钉死 |
+|---|---|
+| **SoT** | 打字机观感的跨端 SoT = **SSE 上 delta 的到达时间线**。web / iOS 正确追加即可；**不**把前端定时器缓冲当协议要求 |
+| **吐出时效** | 终答 LLM 每产生可转发的 chunk，应经现有 token sink → emit → **尽快 yield 到 `StreamingResponse`**。禁止「等 aggregator / `direct_answer` 节点整段完成后再一次性吐出全部 delta」作为**默认路径** |
+| **burst 定义（验收用）** | 在「首帧 `answer`+`delta` 至末帧 `answer`（`final` 或最后一枚 delta）」窗口内：若客户端 DevTools EventStream 时间戳显示几乎同一秒内倾泻大量 delta，而 provider 流式本身跨秒，则视为 **投递层异常或缓冲**（须排查），**不是**「客户端解析失败」的默认结论 |
+| **降级** | provider 不支持流式 / 流式异常 → 仍允许整段 `content`（T2 行为）；须日志可观测。**不得**静默把已生成的多 chunk 攒成单帧 `content` 却仍声称 T5 流式成功 |
+| **代理 / 部署** | 反代/网关须对 SSE 禁用响应缓冲（见下节检查清单）。指针：workspace `deploy/nginx/ops-desk.conf` 的 `location /api/` 已含 `proxy_buffering off` / `proxy_cache off`（须核实现网仍生效） |
+| **框架层** | FastAPI / Starlette `StreamingResponse` 路径上，业务 yield 的 SSE 帧 **不得**被应用层故意 batch 到阈值下限。**默认：不人为攒批**。若实现合并小 chunk，须明示策略、可测上限，并仍周期性 flush |
+| **freeze** | 沿用 `lg-rag-sse-v1`；不新 freeze；不新 `event_type` |
+| **与 progress 关系** | `node.progress` / `subtask.progress` 长时间占主导是 supervisor **常态**。「进度阶段无 answer」≠「delta 投递失败」。打字机 / burst **只评估终答阶段**（首枚 delta 起） |
+| **非目标（红线）** | 不把 web 假打字机缓冲写成 api 契约；不把 token 化扩展到 progress 帧（另波）；不改 replay 协议形状；不借机改 `thread_id` / `cursor` 语义 |
+| **实现波次** | 本小节 = SPEC only。缺口修复另 task（建议 `lg-rag-sse-delta-realtime` / 分支 `task/lg-rag-sse-delta-realtime`）；可 api-only 先合 |
+
+##### 框架层与攒批
+
+- **默认建议：不人为攒批**。sink 收到可转发 chunk 即 emit 一帧 `answer`+`delta`。  
+- 若未来为减帧而合并：须在本小节回写「最大攒批字节 / 最大攒批时长」，且 **仍须周期性 flush**（建议上限：≤50ms 或 ≤32 字节，以先到为准——实现 task 可微调数字，但不得改成「等节点结束」）。  
+- replay（`POST /lg-rag/replay`）按已落盘顺序紧循环重放，**不**模拟 live pacing（形状不变；时间线以落盘 `ts_ms` / `seq` 为准）。
+
+##### 代理 / 部署 · SSE 禁用缓冲检查清单
+
+路径：`POST /api/ops/lg-rag/stream` 与 `POST /api/ops/lg-rag/replay`（均为 `text/event-stream`）。
+
+| # | 检查项 | 通过口径 |
+|---|---|---|
+| 1 | api 响应头 | live/replay 已设 `Cache-Control: no-cache` · `X-Accel-Buffering: no`（现网 `router.py` 已有；实现波不得删） |
+| 2 | Nginx（或等价反代） | `location` 覆盖上述路径：`proxy_buffering off` · `proxy_cache off` · 长读超时（现模板 `proxy_read_timeout 3600s`） |
+| 3 | gzip / 压缩 | **禁止**对 `text/event-stream` 做会攒缓冲的 gzip（现模板 `gzip_types` 未含该 MIME；加类型前须评估） |
+| 4 | HTTP/2、CDN、WAF | 若中间层有「最小块 / 响应缓冲」，对本路径关闭或 bypass |
+| 5 | 本地 Vite dev proxy | `ops-desk-web/vite.config.ts` 的 `/api` 代理可能缓冲 SSE；联调 burst 须同时排除 dev proxy（直连 api 端口对照） |
+| 6 | 应用层 | 无「攒满 N 帧再 write」的默认逻辑（见上节） |
+
+真值指针（仓外 nginx 模板，本仓不复制正文）：`ops-desk-workspace/deploy/nginx/ops-desk.conf`（`location /api/`）。本仓部署叙述：`docs/tasks/done/task_deploy_prod.md`（SSE `proxy_buffering off`）。
+
+##### 常见坑
+
+- 把「EventStream 有很多 `answer` 帧」误判为前端解析错误，而忽略 **burst 时间线**  
+- 只测短 query / router 路径，漏测 supervisor 长进度 + 终答  
+- Vite dev proxy / nginx / CDN 缓冲导致「码已 yield、浏览器同秒收到」  
+- 为「减少帧数」在服务端攒 delta，破坏跨端打字机 SoT  
+- 用前端 `setTimeout` 假打字机掩盖投递问题 → iOS / 其他客户端仍差，且与 replay 时间线不一致  
+
+##### 实现候选触点（指针 · 本波不改码）
+
+| 触点 | 为何相关 |
+|---|---|
+| `app/ops/lg_rag/answer_stream.py` | token sink：chunk → emit |
+| `app/ops/lg_rag/sse_stream.py` | sink → `pending_frames` → 主循环 yield；节点边界 `while not pending_frames.empty()` 吐净残留 |
+| `app/ops/lg_rag/router.py` | `StreamingResponse` + 禁缓冲头 |
+| `app/ops/lg_rag/event_store.py` | `persist_run_event`（每帧独立 `commit`）· T5.1 起由 emit **后台 task** 调用，不阻塞 yield |
+| workspace nginx / web Vite proxy | 见上表检查项 2、5 |
+
+##### 应然 vs 实然（T5.1 实现后 · 2026-09-01）
+
+| | 结论 |
+|---|---|
+| **应然** | 终答阶段每可转发 chunk **尽快**出现在客户端 EventStream；禁止以「节点结束后批量 flush 全部 delta」为默认 |
+| **实然（T5.1 已落地）** | `emit` **先返回 SSE 帧并入队**，`persist_run_event` 经 `asyncio.create_task` 后台执行；`done`/`error`/`finally` 前 `_drain_persist` 收尾。竞速 yield 意图保留；HTTP `X-Accel-Buffering: no`；nginx 模板 `/api/` `proxy_buffering off`；**默认不攒批** |
+| **仍可能的外因** | Vite dev proxy / CDN 缓冲；provider 本身极快喷完（密帧允许 · 用慢 mock / 卡 persist 测区分） |
+
+##### 思考轮（T5.1 · 摘要）
+
+| 轮 | 结论 |
+|---|---|
+| R0 | 联调：有 delta 帧仍一次性出全文 → 问题在投递时效 / 缓冲，非缺 event_type |
+| R1 | SoT = SSE 到达时间线；禁止前端假打字机入契约 |
+| R2 | 不新 freeze / 不新 `answer.delta` event_type；沿用 T5 键 |
+| R3 | 打字机只评估终答阶段；progress 长等待是 supervisor 常态 |
+| R4 | 验收含 mock 慢 chunk + 反代检查项 + 降级可观测 |
+| R5 | SPEC 先落盘；实现另 task；**HG-SPEC-SIGNOFF=approved**（2026-09-01 · 00 代签 · 维护者令「签收」· 20 审查 pass） |
+
+| 项 | 值 |
+|---|---|
+| early_stop | no |
+| residual_risks | persist-before-yield 是否为现网 burst 主因未用慢 mock 实证；Vite/nginx 中间层因环境而异 |
 
 ---
 
@@ -377,7 +477,18 @@
 - [ ] 401/422/500 表现符合 task failure_paths  
 - [ ] 维护者签「联调通过」  
 
-**T3–T6**：见 web checklist 对应节（后续发版，不阻塞 T2 首次联合发版 unless 维护者另定）。
+**T5 / T5.1 联调（投递时效 · 2026-09-01）**
+
+> 打字机只评估 **终答阶段**。supervisor 长 `node.progress` / `subtask.progress` 无 answer ≠ delta 失败。  
+> freeze 仍 `lg-rag-sse-v1`；不新增 `event_type`。
+
+- [ ] live：`complete_stream` 可用时，EventStream 在终答阶段出现 **多帧** `answer`+`delta`，且时间戳跨越可感知间隔（非仅 `done` 前同一瞬间倾泻）。若 provider 本身极快，允许密；但须证明非「节点结束后批量 flush」（对照项：mock 慢 chunk）  
+- [ ] 人为制造慢 chunk（测试 / mock provider）时，客户端在 **节点未结束前** 即可开始见到 delta（不必等 `final`）  
+- [ ] 降级路径：仅整段 `content`，日志有明确降级信号（不得静默攒多 chunk 为单帧却声称 T5 流式成功）  
+- [ ] replay：含 `delta` 的已落盘帧仍按序可重放（形状不变；replay 不模拟 live pacing）  
+- [ ] 部署检查：反向代理对 `/api/ops/lg-rag/stream`（及 replay）SSE 禁用缓冲的检查项已文档化（§10.4.1 清单；现网 nginx / Vite 已核）  
+
+**T3–T6**：见 web checklist 对应节（后续发版，不阻塞 T2 首次联合发版 unless 维护者另定）。T5.1 与 T6 **正交**。
 
 ### 11.4 修订
 
@@ -385,3 +496,4 @@
 |---|---|
 | 2026-08-31 | 初版：分阶段联调注意事项 + 跨仓发版纪律 + checklist 指针 |
 | 2026-08-31 | §10.5 回写 T6 api 实现句：`/chat/stream` → 410（迁移指针 + Deprecation 头）· 保留 models/sessions.latest/WS · 不删 chat 代码（task `lg-rag-deprecate-chat-stream`） |
+| 2026-09-01 | §11.3 增 **T5.1** 勾选：终答 delta 时间线 / mock 慢 chunk / 降级可观测 / replay 形状 / 反代禁用缓冲 |

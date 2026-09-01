@@ -69,6 +69,7 @@
 | **本入口（书签）** | `ops-desk-api/docs/spec/agent-infra/WAVE_READINESS_lg_rag_sse_v0.md` |
 | 契约 §10.3 T4 | `…/05_lg_rag_transport_and_session_plan_v0.md` §10.3 |
 | 契约 §10.4 T5 | 同上 §10.4 |
+| 契约 §10.4.1 T5.1 | 同上 §10.4.1（终答 delta 实时投递 · 不新 freeze） |
 | 契约 §10.5 T6 | 同上 §10.5 |
 | web 联调勾选 | `ops-desk-web/docs/checklists/CHECKLIST_lg_rag_sse_joint_release_v1.md` |
 | web T4 Prompt | `ops-desk-api/docs/harness/invokes/by-task/_prompts/PROMPT_web_00_lg_rag_t4_cursor.md` |
@@ -81,3 +82,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-08-31 | 初版：约定 web T4 后查 T5 的唯一入口 |
+| 2026-09-01 | 路径表补 §10.4.1 T5.1（投递时效契约增量 · 不挡已 CLOSE 的 T5/T6；实现另 task） |

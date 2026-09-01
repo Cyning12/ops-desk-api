@@ -6,6 +6,7 @@ T5：终答 token 流 —— emit 循环经 contextvar 挂 answer token sink
 （answer_stream.complete_answer_streaming 桥），aggregator /
 direct_answer 的 LLM chunk → answer {"delta": ...} 多帧；节点 updates
 到后发终帧 {"content": <full>, "final": true}（T2 兼容）。
+T5.1：persist 后台调度，不阻塞 SSE yield / pending_frames 入队。
 """
 from __future__ import annotations
 
@@ -161,6 +162,9 @@ async def iter_lg_rag_sse(
     started = time.perf_counter()
     seq = 0
     last_answer = ""
+    # T5.1：落盘与 SSE yield 解耦——persist 失败仍不阻断已发帧（T4）；
+    # 禁止 await persist 串在入队/yield 前（否则每 chunk 被 DB commit 卡节奏）。
+    persist_tasks: set[asyncio.Task[None]] = set()
 
     async def emit(event_type: str, agent_role: str, payload: dict[str, Any]) -> str:
         nonlocal seq
@@ -178,23 +182,45 @@ async def iter_lg_rag_sse(
         # format_sse_event 已写 cursor；兜底保证字段存在
         if not event.get("cursor"):
             event["cursor"] = make_cursor(rid, seq)
+        frame = _sse_frame(event)
         if user_id:
-            try:
-                await persist_run_event(
-                    run_id=rid,
-                    seq=seq,
-                    user_id=user_id,
-                    thread_id=thread_id,
-                    ts_ms=int(event.get("ts_ms") or 0),
-                    agent_role=agent_role,
-                    event_type=event_type,
-                    payload=payload,
-                )
-            except Exception:
-                logger.exception(
-                    "lg-rag event persist failed run_id=%s seq=%s", rid, seq
-                )
-        return _sse_frame(event)
+            # 闭包钉死本帧字段，避免后续 seq 递增污染后台任务
+            p_run_id = rid
+            p_seq = seq
+            p_user_id = user_id
+            p_thread_id = thread_id
+            p_ts_ms = int(event.get("ts_ms") or 0)
+            p_agent_role = agent_role
+            p_event_type = event_type
+            p_payload = payload
+
+            async def _persist_one() -> None:
+                try:
+                    await persist_run_event(
+                        run_id=p_run_id,
+                        seq=p_seq,
+                        user_id=p_user_id,
+                        thread_id=p_thread_id,
+                        ts_ms=p_ts_ms,
+                        agent_role=p_agent_role,
+                        event_type=p_event_type,
+                        payload=p_payload,
+                    )
+                except Exception:
+                    logger.exception(
+                        "lg-rag event persist failed run_id=%s seq=%s",
+                        p_run_id,
+                        p_seq,
+                    )
+
+            task = asyncio.create_task(_persist_one())
+            persist_tasks.add(task)
+            task.add_done_callback(persist_tasks.discard)
+        return frame
+
+    async def _drain_persist() -> None:
+        if persist_tasks:
+            await asyncio.gather(*tuple(persist_tasks), return_exceptions=True)
 
     yield await emit(
         "run.start",
@@ -213,7 +239,7 @@ async def iter_lg_rag_sse(
     saw_answer = False
     # T5 token sink：终答节点 LLM chunk 在此入队；sink 跑在图执行 task 的
     # context（不能 yield），帧经队列交回主循环吐出。emit 内 seq 单调 +
-    # 尽量落盘，delta 帧与进度帧共享同一 seq 序列，不串台。
+    # 尽量落盘（T5.1 后台），delta 帧与进度帧共享同一 seq 序列，不串台。
     pending_frames: asyncio.Queue[str] = asyncio.Queue()
 
     async def _answer_token_sink(role: str, chunk: str) -> None:
@@ -279,6 +305,7 @@ async def iter_lg_rag_sse(
                 "latency_ms": int((time.perf_counter() - started) * 1000),
             },
         )
+        await _drain_persist()
         if user_id:
             try:
                 await persist_thread_turns(thread_id, user_id, query, last_answer)
@@ -287,7 +314,7 @@ async def iter_lg_rag_sse(
                     "lg-rag persist after done failed thread_id=%s", thread_id
                 )
     except Exception as exc:
-        # delta 途中图异常：已发 delta 保留（sink 已落盘），先吐净残留再发
+        # delta 途中图异常：已发 delta 保留（sink 已入队/落盘调度），先吐净残留再发
         # error 帧；不补 final 帧（failure_paths）。
         while not pending_frames.empty():
             yield pending_frames.get_nowait()
@@ -302,7 +329,9 @@ async def iter_lg_rag_sse(
                 "detail": _truncate(repr(exc), 200),
             },
         )
+        await _drain_persist()
     finally:
         reset_answer_token_sink(sink_handle)
+        await _drain_persist()
         if tracing_enabled():
             flush_traces()

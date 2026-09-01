@@ -35,6 +35,7 @@
 
 - Skills：[`../skills/README.md`](../skills/README.md)
 - SPEC 示例：[`../spec/SPEC-gha-deploy-api_v1.md`](../spec/SPEC-gha-deploy-api_v1.md)
+- lg-rag SSE 传输契约：[`../spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md`](../spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md)（§10.4 T5 delta · **§10.4.1 T5.1 投递时效**）
 
 ## 跨仓（仓外）
 

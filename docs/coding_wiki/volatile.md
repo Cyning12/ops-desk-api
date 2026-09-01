@@ -9,7 +9,8 @@
 
 ## 本波 active
 
-（关账后清空）无 active · 上一波已 CLOSE：`harness-upgrade-2-18-migrate` · `wikitrack-enable-p0` · `harness-upgrade-2.19.0`（PR #22）
+- `lg-rag-sse-delta-realtime`（**实现** · HG-AUDIT-R1 approved · 2026-09-01）：`emit` 后台 persist，不阻塞 SSE yield。真值：05 §10.4.1 + `app/ops/lg_rag/sse_stream.py`  
+- `lg-rag-sse-delta-realtime-spec`（docs-only · HG-SPEC-SIGNOFF approved）：契约落盘；待 docs PR/CLOSE
 
 ## 执行帽速链
 

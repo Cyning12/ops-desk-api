@@ -489,3 +489,136 @@ async def test_replay_unknown_run_404_unchanged(
             _REPLAY, json={"run_id": "missing", "after_seq": 0}
         )
     assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# T5.1：persist 不阻塞 delta yield
+# ---------------------------------------------------------------------------
+
+
+async def test_delta_yields_before_persist_completes() -> None:
+    """T5.1：persist 被卡住时，delta 仍须先入 SSE（节点 updates 前可见）。
+
+    若 emit 仍 await persist 再 put_nowait，本测会在 wait_for 超时失败。
+    """
+    import asyncio
+
+    from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
+
+    persist_release = asyncio.Event()
+    delta_seen = asyncio.Event()
+    persist_calls = 0
+
+    async def _blocked_persist(**_kw: Any) -> None:
+        nonlocal persist_calls
+        persist_calls += 1
+        await persist_release.wait()
+
+    async def _fake_stream(
+        query: str, *, thread_id: str = "t", checkpointer: Any = None, **_kw: Any
+    ) -> AsyncIterator[dict[str, Any]]:
+        sink = current_answer_token_sink()
+        assert sink is not None
+        await sink("aggregator", "先到")
+        # 消费者须在节点 updates 前见到 delta
+        await asyncio.wait_for(delta_seen.wait(), timeout=2.0)
+        persist_release.set()  # 放行后台 persist，避免 done 前 _drain_persist 死锁
+        yield {"aggregator": {"messages": [AIMessage(content="先到")]}}
+
+    with (
+        patch(
+            "app.ops.lg_rag.event_store.persist_run_event",
+            new=_blocked_persist,
+        ),
+        patch(
+            "app.ops.lg_rag.sse_stream.persist_thread_turns",
+            new_callable=AsyncMock,
+        ),
+    ):
+        agen = iter_lg_rag_sse(
+            query="q",
+            mode="supervisor",
+            thread_id="th-t51",
+            run_id="run-t51",
+            astream_fn=_fake_stream,
+            user_id="user-t51",
+        )
+        saw_delta = False
+        async for raw in agen:
+            for block in raw.split("\n\n"):
+                block = block.strip()
+                if not block:
+                    continue
+                data_line = None
+                for line in block.split("\n"):
+                    if line.startswith("data: "):
+                        data_line = line[len("data: ") :]
+                if not data_line:
+                    continue
+                ev = json.loads(data_line)
+                if ev.get("event_type") == "answer" and "delta" in ev.get(
+                    "payload", {}
+                ):
+                    assert ev["payload"]["delta"] == "先到"
+                    saw_delta = True
+                    delta_seen.set()
+        assert saw_delta
+
+    assert persist_calls >= 1
+
+
+async def test_slow_chunks_visible_before_aggregator_update() -> None:
+    """T5.1：慢 chunk 下多枚 delta 均在终帧 final 之前出现在消费者时间线。"""
+    import asyncio
+
+    from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
+
+    consumer: list[str] = []
+
+    async def _fake_stream(
+        query: str, *, thread_id: str = "t", checkpointer: Any = None, **_kw: Any
+    ) -> AsyncIterator[dict[str, Any]]:
+        sink = current_answer_token_sink()
+        assert sink is not None
+        await sink("aggregator", "一")
+        await asyncio.sleep(0.02)
+        await sink("aggregator", "二")
+        yield {"aggregator": {"messages": [AIMessage(content="一二")]}}
+
+    with (
+        patch(
+            "app.ops.lg_rag.event_store.persist_run_event",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "app.ops.lg_rag.sse_stream.persist_thread_turns",
+            new_callable=AsyncMock,
+        ),
+    ):
+        agen = iter_lg_rag_sse(
+            query="q",
+            mode="supervisor",
+            thread_id="th-t51b",
+            astream_fn=_fake_stream,
+            user_id="user-t51b",
+        )
+        async for raw in agen:
+            for block in raw.split("\n\n"):
+                block = block.strip()
+                if not block:
+                    continue
+                data_line = None
+                for line in block.split("\n"):
+                    if line.startswith("data: "):
+                        data_line = line[len("data: ") :]
+                if not data_line:
+                    continue
+                ev = json.loads(data_line)
+                if ev.get("event_type") == "answer" and "delta" in ev.get("payload", {}):
+                    consumer.append(f"delta:{ev['payload']['delta']}")
+                if ev.get("event_type") == "answer" and ev.get("payload", {}).get(
+                    "final"
+                ):
+                    consumer.append("final")
+
+    assert consumer == ["delta:一", "delta:二", "final"]
