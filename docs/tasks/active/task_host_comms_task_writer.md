@@ -87,6 +87,8 @@
 - [ ] 文件名：task 须 `task_<kebab-slug>.md` · invoke 须 `invoke_*.md` · kind/目录错配拒绝（断言）  
 - [ ] overwrite：目标已存在且未显式 overwrite → 拒绝；dry-run diff 含差异  
 - [ ] 不进 Gateway registry/manifest（grep/AST 断言 `task_writer` 未被 register）· SPEC §7 白名单零变更  
+- [ ] 原子写：写盘异常不留半截文件（先写临时文件再 rename 语义断言 · failure_paths 兜底）  
+- [ ] allowlist 目录可创建：`docs/tasks/draft/` 不存在时 mkdir（parents）创建；非 allowlist 目录一律不创建  
 - [ ] `01_modules.md` capability 行备注；若增 `implementedBy` → G-L2 同步  
 - [ ] `ruff check` 触及路径绿；pytest 相关绿；`./scripts/graph-compile.sh` exit 0  
 - [ ] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` 通过
@@ -116,8 +118,36 @@
 
 ---
 
+### 自检结论
+
+> **10-task** · 2026-09-01 · 分支 `task/host-comms-task-writer` · docs-only 本帽（不改 `app/` / `tests/`）· HG-AUDIT-R1 保持 **pending**（本帽不签发）
+
+**现网事实核对**（只读 `app/ops/capability/` · `docs/_tech_graph/l1/01_modules.md` · `docs/tasks/` · `docs/harness/invokes/by-task/` · SPEC 06 · 结论：现网与 task 陈述**全部一致**，零事实修正）
+
+| 核对项 | 现网事实 | 结果 |
+|---|---|---|
+| 落点包 `app/ops/capability/` | 包存在（`gateway.py` · `registry.py` · `manifest.py` · `policy.py` · `harness_cli.py` 等）；C1 风格参照 `harness_cli.py` 在（docstring 钉死项 + 纯模块常量风格） | ✅ 00 定夺落点 `app/ops/capability/task_writer.py` 可落；**纯服务不进 registry/manifest** 与 C1（`gateway.register`）形态差异已由 00 定夺明示 |
+| 图谱 capability 行 glob | `docs/_tech_graph/l1/01_modules.md` L26 `capability` 行 path glob = `app/ops/capability/**` | ✅ `task_writer.py` 落既有 glob · **不新增一级模块** · graph_delta 仅行备注属实 |
+| allowlist 三目录 | `docs/tasks/active/` ✓ 存在；`docs/tasks/draft/` **不存在**（`docs/tasks/` 仅 `_views/active/deferred/done/` + `PRIORITY_DEFERRED.md`）；`docs/harness/invokes/by-task/<slug>/` 结构在（86 个 task 目录 · 含本 slug） | ✅ 00 定夺「draft/ 不存在可创建」与现网一致；invokes 目录结构匹配 |
+| 前置 C1/C2 CLOSE | `docs/tasks/done/task_host_harness_cli_capability.md` ✓ · `docs/tasks/done/task_host_comms_prompt_pack.md` ✓ 均在 done/ | ✅ task 前置声明属实（#114 / #116） |
+| 必读列表引用 | SPEC `06_host_comms_boundary_spec_v0.md` ✓（§5/§6/§7/§10/§15 均在）· `app/ops/prompts/packs.py` ✓ · `CODING_BACKEND_L2_v1_zh.md` ✓ | ✅ 全部引用路径存在 |
+| 本 slug invoke 目录 | `docs/harness/invokes/by-task/host-comms-task-writer/invoke_20260901_00_host-comms-task-writer.md` ✓ 已落盘 | ✅ pre-30 invoke 链（00 → 10）成立 |
+
+**00 定夺范围实质**：**零改动**（slug / 落点纯服务非 Gateway Capability · 不进 registry·manifest / API 形态 plan+apply · dry-run 默认 confirmed=False / allowlist 三目录 / 文件名·slug 校验 / 禁代签机械挡 / 结构自检不真跑 npx / overwrite 默认拒 / 无 HTTP 路由 / 不新增一级模块 · 须增则退回 00 —— 全部保留）；仅补 2 条验收钩（原子写不留半截文件 · allowlist 目录可创建——均为 failure_paths/00 定夺已钉行为的可检验化，非范围变更）。
+
+**lint 与禁区**
+
+- [x] `npx dsh-coding-kit@1.10.0 task lint --file docs/tasks/active/task_host_comms_task_writer.md` → **PASS**（exit 0 · **W4 合法**：无思考轮节 · 思考轮由 SPEC 06 §15「思考轮控制（10-spec 回填）」承载，本 task 为 SPEC 落地执行波）
+- [x] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` → **PASS**
+- [x] `app/` · `tests/` 零改动；人工闸状态未改（HG-AUDIT-R1 仍 pending · HG-TASK-DRAFT / HG-GRAPH-MODULES approved 未动）
+- [x] invoke 落盘：`docs/harness/invokes/by-task/host-comms-task-writer/invoke_20260901_10_task_host-comms-task-writer.md`（hat_id=10-task）
+- 下一棒：**20-task-audit** R1 落盘 → 00 代签 HG-AUDIT-R1 → 30 开工
+
+---
+
 ## 修订记录
 
 | 日期 | 说明 |
 |---|---|
 | 2026-09-01 | **00**：C2 CLOSE（#116/#117）后起草 C3；钉 slug=`host-comms-task-writer`；落点=capability 包内纯服务（非 Gateway Capability · 避免新增一级模块/白名单变更）；allowlist 三目录 · dry-run 默认 · 人确认落盘 · 禁代签机械挡 · 不覆盖默认 |
+| 2026-09-01 | **10-task**：现网核对全一致（capability 包/harness_cli.py ✓ · 图谱 capability 行 glob ✓ · draft/ 不存在 ✓ · C1/C2 done ✓ · 必读引用全在 ✓）零事实修正；补验收钩 2 条（原子写不留半截文件 · allowlist 目录可创建——已钉行为可检验化）；补 `### 自检结论`（W4 合法：思考轮由 SPEC 06 §15 承载）；invoke 落盘；00 定夺实质零改 · HG-AUDIT-R1 保持 pending · 下一棒 20-task-audit |
