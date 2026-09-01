@@ -1,96 +1,48 @@
 """Chat SSE endpoint."""
 from __future__ import annotations
 
-import uuid
-from collections.abc import AsyncGenerator
-
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db.models import OpsSessionChat, OpsUser
-from app.db.session import AsyncSessionLocal, get_db
+from app.db.session import get_db
 from app.llm.model_catalog import get_default_model, get_models_for_provider
-from app.ops.chat.schema import ChatModelsResponse, ChatSessionOut, ChatStreamRequest
-from app.ops.chat.sse import make_sse_event
-from app.ops.chat.state import ChatState
-from app.ops.chat.streaming import (
-    ChatEventStreamer,
-)
-from app.ops.chat.streaming import (
-    create_run_record as _create_run_record,
-)
-from app.ops.chat.streaming import (
-    resolve_chat_session as _resolve_chat_session,
-)
+from app.ops.chat.schema import ChatModelsResponse, ChatSessionOut
 from app.ops.deps import get_current_user
-from app.ops.session import compress_window, load_session_turns
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+# T6 (2026-08-31): chat SSE 传输下线。chat 代码/图/表保留，仅本端点 410。
+_CHAT_STREAM_GONE_DETAIL = {
+    "error": "chat_stream_deprecated",
+    "migrate_to": "/api/ops/lg-rag/stream",
+    "message": (
+        "POST /api/ops/chat/stream 已于 2026-08-31 下线（lg-rag T6）。"
+        "请迁移到 POST /api/ops/lg-rag/stream（lg-rag SSE · freeze lg-rag-sse-v1）。"
+    ),
+}
+
+_CHAT_STREAM_GONE_HEADERS = {
+    "Deprecation": "true",
+    "Link": '</api/ops/lg-rag/stream>; rel="successor-version"',
+}
 
 
 @router.post("/stream")
 async def chat_stream(
-    request: Request,
     user: OpsUser = Depends(get_current_user),
-) -> StreamingResponse:
-    """Stream chat response via Server-Sent Events."""
-    body = await request.json()
-    req = ChatStreamRequest(**body)
-    run_id = str(uuid.uuid4())
+) -> None:
+    """Deprecated chat SSE stream (T6): always 410 Gone with a migration pointer.
 
-    run_model = req.model or settings.ops_llm_model
-
-    # Setup chat session and run record outside the SSE generator.
-    async with AsyncSessionLocal() as setup_session:
-        chat_session_id = await _resolve_chat_session(
-            setup_session,
-            req.session_id,
-            user.id,
-            req.message,
-        )
-        await setup_session.commit()
-
-    await _create_run_record(
-        run_id,
-        chat_session_id,
-        req.message,
-        run_model,
-    )
-
-    raw_history = await load_session_turns(chat_session_id, limit=20)
-    history_turns = compress_window(raw_history, max_full_turns=6, group_size=2)
-
-    state = ChatState(
-        query=req.message,
-        session_id=chat_session_id,
-        run_id=run_id,
-        model=req.model,
-        issue_context=[],
-        pr_context=[],
-        graph_context=None,
-        intent="",
-        answer="",
-        history_turns=history_turns,
-        events=[],
-    )
-
-    streamer = ChatEventStreamer(state, run_id, run_model)
-
-    async def event_generator() -> AsyncGenerator[str, None]:
-        async for event in streamer.events():
-            yield make_sse_event(event)
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",
-            "Connection": "keep-alive",
-        },
+    Auth stays in front of the 410 so anonymous probes still get 401 and never
+    see the migration pointer.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail=_CHAT_STREAM_GONE_DETAIL,
+        headers=_CHAT_STREAM_GONE_HEADERS,
     )
 
 
