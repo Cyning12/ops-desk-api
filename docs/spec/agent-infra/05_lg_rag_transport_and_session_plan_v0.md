@@ -130,7 +130,7 @@
 | `run.start` | `system` | 开跑；带 `run_id` / `thread_id` |
 | `node.progress` | `intent` / `strategy_builder` / `supervisor` / … | 节点完成摘要（非全文 dump） |
 | `subtask.progress` | `rag_subtask` / `info_extract` / `tool_exec` | 子任务进度 / 结果摘要 |
-| `answer` | `aggregator` | 最终答案（T2 可整段；T5 可多帧 delta） |
+| `answer` | `aggregator` / `direct_answer` | 最终答案（**T5 已实现**：token delta 多帧 `{"delta": "<chunk>"}` 按 `seq` 有序拼接 + 终帧 `{"content": "<full>", "final": true}`；T2 兼容——旧客户端仅看 `content` 行为不变；流式降级时仅终帧整段） |
 | `done` | `system` | 正常结束 |
 | `error` | `system` | 失败；`retryable` 布尔 |
 | `cursor`（可选 · T4） | `system` | 供 replay 的游标提示（**可选** `event_type`；本波 SoT 见下行顶层字段） |
@@ -156,6 +156,12 @@
 
 - 同 freeze_id：`lg-rag-sse-v1`（顶层可选 `cursor` + `POST /lg-rag/replay`；不 silent 扩必选 `event_type`）  
 - 断连仍「尽量跑完」、无 cancel；replay 仅已落盘帧
+
+**T5 冻结补充（2026-08-31）**
+
+- 同 freeze_id：`lg-rag-sse-v1`（`answer` 扩多帧 delta + 终帧 `final` 标记；**不**新增 `event_type`）  
+- 客户端规则：见 `delta` 追加、见 `content` **全量替换**、`done` 后停止追加；禁止把 `content` 帧 append 到 delta 结果（§10.4 常见坑）  
+- token 归属**仅** aggregator / direct_answer 的终答 LLM（`complete_stream` + contextvar token sink）；流式不可用/异常 → 降级整段（T2 行为）+ 日志；终帧沿用 32_000 截断
 
 **验收（文档）**
 
@@ -223,6 +229,7 @@
 | 2026-08-31 | **T3 实现回写 §10.2**：`thread_id` SoT · 独立表 · 窗口压缩 6/2 注入 `_ainvoke/_astream` · 跨用户 404 |
 | 2026-08-31 | **§10.4**：链 [`WAVE_READINESS_lg_rag_sse_v0.md`](./WAVE_READINESS_lg_rag_sse_v0.md)（web T4 CLOSE 后查 T5 就绪） |
 | 2026-08-31 | **T4 实现回写 §4.2/§10.3**：顶层可选 `cursor` · `ops_lg_rag_run_events` · `POST /lg-rag/replay` · 断连仍跑完 |
+| 2026-08-31 | **T5 实现回写 §4.2/§10.4**：`answer` delta 多帧 + 终帧 `final`（aggregator / direct_answer 同协议 · token sink 桥 · 降级整段）· freeze 扩展 `lg-rag-sse-v1` |
 
 ---
 
@@ -320,7 +327,7 @@
 | 维度 | 内容 |
 |---|---|
 | **前置** | T2 节点进度已稳定 · 建议 web T4 cursor/replay 已可用（见 WAVE_READINESS） |
-| **api 提供** | `answer` 多帧 delta（aggregator 等） |
+| **api 提供（2026-08-31 已实现）** | `answer` 多帧 delta：aggregator 与 router `direct_answer` 的终答 LLM 经 `BaseProvider.complete_stream` + contextvar token sink（`app/ops/lg_rag/answer_stream.py`）逐 chunk 发 `{"delta": "<chunk>"}` 多帧（按 `seq` 有序）；节点 updates 到后发终帧 `{"content": <full>, "final": true}`（32_000 截断沿用 · T2 兼容）。全部帧共享单调 `seq`（单 emit 循环），delta 与 `node.progress`/`subtask.progress` 不串台；delta/终帧照常落盘 `ops_lg_rag_run_events`，`POST /lg-rag/replay` 逐帧重放含 delta、形状同 live。流式不支持/异常 → 降级整段 answer（T2 行为）+ 日志；basic 占位空 answer 帧不变。freeze 仍 **`lg-rag-sse-v1`**，**不**新增 `event_type`。 |
 | **web 交付** | Chat 区打字机 · 与 T2 整段 `answer` 兼容（首帧/增量协议见 T5 freeze） |
 | **联调项** | 增量拼接无乱码 · `done` 后停止追加 · 与 `node.progress` 并存不串台 |
 | **通过标准** | §11 T5 段 |

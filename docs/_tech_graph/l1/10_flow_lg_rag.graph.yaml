@@ -1,7 +1,7 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_lg_rag"
 title: "LG RAG 旁路三模式流程（basic / router / supervisor · Critic）"
-description: "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。"
+description: "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。T5：终答 answer 多帧 delta（{delta}）+ 终帧 {content, final:true}（aggregator / direct_answer 经 answer_stream.py contextvar token sink 桥 complete_stream；降级整段）。"
 version: "2026-08-31"
 layer: "G-L1"
 primary_layer: "G-L1"
@@ -59,6 +59,12 @@ nodes:
         kind: method
       - path: "app/ops/lg_rag/sse_stream.py"
         symbol: "map_node_update"
+        kind: method
+      - path: "app/ops/lg_rag/answer_stream.py"
+        symbol: "complete_answer_streaming"
+        kind: method
+      - path: "app/ops/lg_rag/answer_stream.py"
+        symbol: "set_answer_token_sink"
         kind: method
       - path: "app/ops/lg_rag/graph.py"
         symbol: "_astream_with_tracing"
@@ -365,7 +371,7 @@ edges:
 
   - from: "lg_stream"
     to: "client"
-    label: "text/event-stream（run.start…answer…done · cursor）"
+    label: "text/event-stream（run.start…answer delta×N→answer final…done · cursor）"
     anchors:
       - path: "app/ops/lg_rag/sse_stream.py"
         line: 1
@@ -533,7 +539,7 @@ edges:
 
   - from: "r_direct"
     to: "llm"
-    label: "complete"
+    label: "complete_answer_streaming（delta 桥 → SSE；降级 complete）"
     anchors:
       - path: "app/ops/lg_rag/nodes.py"
         line: 269
@@ -705,7 +711,7 @@ edges:
 
   - from: "s_aggregator"
     to: "llm"
-    label: "complete（综合 → critic）"
+    label: "complete_answer_streaming（delta 桥 → SSE；降级 complete）"
     anchors:
       - path: "app/ops/lg_rag/multi/nodes.py"
         line: 361

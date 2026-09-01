@@ -36,6 +36,13 @@ by_path:
     - node_id: lg_stream
       symbol: map_node_update
       kind: method
+  "app/ops/lg_rag/answer_stream.py":
+    - node_id: lg_stream
+      symbol: complete_answer_streaming
+      kind: method
+    - node_id: lg_stream
+      symbol: set_answer_token_sink
+      kind: method
   "app/ops/lg_rag/sse_replay.py":
     - node_id: lg_stream
       symbol: format_sse_event

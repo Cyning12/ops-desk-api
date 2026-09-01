@@ -85,18 +85,18 @@
 
 ## 验收标准
 
-- [ ] aggregator LLM token chunk → 多帧 `answer` `{"delta": ...}`；按 `seq` 有序；**拼接 == 终帧 `content`**（mock 断言）  
-- [ ] router `direct_answer`：同一 provider 流式可得 → 与 aggregator **同协议**（delta + final 帧）；否则保留整段 `answer`，并在 30 自检写明降级理由（00 定夺「覆盖」行）  
-- [ ] 终帧 `answer` `{"content": ..., "final": true}` 保持 T2 兼容（仅看 `content` 的旧客户端行为不变；mock 断言帧外形）  
-- [ ] delta 帧与 `node.progress`/`subtask.progress` 并存；全程 `seq` 单调；不串台（帧序断言）  
-- [ ] delta/终帧落盘 `ops_lg_rag_run_events`；`POST /lg-rag/replay` 重放含 delta 帧、形状与 live 一致  
-- [ ] 未登录 401 · 未知/跨用户 `run_id` 404 · 非法 body 422 行为 **不变**  
-- [ ] token 流不可用时 **降级整段 `answer`**（T2 行为）+ 日志；failure_paths 覆盖  
-- [ ] **旧测 grep 影响面**：`tests/test_lg_rag_sse_stream.py` · `tests/test_lg_rag_sse_resume.py` · `tests/test_lg_rag_session_continuity.py` · `tests/test_session_continuity.py` 绿（可扩展 delta 断言）；`app/ops/chat/graph.py` **零 diff**  
-- [ ] `app/ops/lg_rag/**` **不** import `app.ops.session` / `app.ops.chat`（无新依赖边）  
-- [ ] 05 §4.2 `answer` 行 + §10.4 回写实现句；G-L1 备注/flow；G-L2 `by_path_lg_rag`/`by_symbol_lg_rag` 同步（05 §9.3 T5）  
-- [ ] `ruff check` 触及路径绿；相关 pytest 绿（含上列旧测）；`./scripts/graph-compile.sh` exit 0  
-- [ ] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` 通过
+- [x] aggregator LLM token chunk → 多帧 `answer` `{"delta": ...}`；按 `seq` 有序；**拼接 == 终帧 `content`**（mock 断言）  
+- [x] router `direct_answer`：同一 provider 流式可得 → 与 aggregator **同协议**（delta + final 帧）；否则保留整段 `answer`，并在 30 自检写明降级理由（00 定夺「覆盖」行）  
+- [x] 终帧 `answer` `{"content": ..., "final": true}` 保持 T2 兼容（仅看 `content` 的旧客户端行为不变；mock 断言帧外形）  
+- [x] delta 帧与 `node.progress`/`subtask.progress` 并存；全程 `seq` 单调；不串台（帧序断言）  
+- [x] delta/终帧落盘 `ops_lg_rag_run_events`；`POST /lg-rag/replay` 重放含 delta 帧、形状与 live 一致  
+- [x] 未登录 401 · 未知/跨用户 `run_id` 404 · 非法 body 422 行为 **不变**  
+- [x] token 流不可用时 **降级整段 `answer`**（T2 行为）+ 日志；failure_paths 覆盖  
+- [x] **旧测 grep 影响面**：`tests/test_lg_rag_sse_stream.py` · `tests/test_lg_rag_sse_resume.py` · `tests/test_lg_rag_session_continuity.py` · `tests/test_session_continuity.py` 绿（可扩展 delta 断言）；`app/ops/chat/graph.py` **零 diff**  
+- [x] `app/ops/lg_rag/**` **不** import `app.ops.session` / `app.ops.chat`（无新依赖边）  
+- [x] 05 §4.2 `answer` 行 + §10.4 回写实现句；G-L1 备注/flow；G-L2 `by_path_lg_rag`/`by_symbol_lg_rag` 同步（05 §9.3 T5）  
+- [x] `ruff check` 触及路径绿；相关 pytest 绿（含上列旧测）；`./scripts/graph-compile.sh` exit 0  
+- [x] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` 通过
 
 ---
 
@@ -136,6 +136,22 @@
 - [x] `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` → **PASS**
 - [x] HG-AUDIT-R1 **仍 pending**（本帽不签发）· 可交 **20-task-audit**
 
+### 自检结论（执行者 · 30+40 · 2026-08-31）
+
+| 自检命令 | 退出码 | 结果 |
+|---|---|---|
+| `npx dsh-coding-kit@1.10.0 verify --target . --task docs/tasks/active/task_lg_rag_sse_token_stream.md` | 0 | VERIFY: PASS（三闸 approved） |
+| `ruff check app/ops/lg_rag tests/test_lg_rag_sse_token_stream.py`（.venv） | 0 | All checks passed |
+| `.venv/bin/pytest tests/test_lg_rag_sse_token_stream.py tests/test_lg_rag_sse_stream.py tests/test_lg_rag_sse_resume.py tests/test_lg_rag_session_continuity.py tests/test_session_continuity.py -q` | 0 | **46 passed**（新增 12 + 旧 34） |
+| `./scripts/graph-compile.sh` | 0 | compile + check + normalize 全 OK（9 graphs） |
+| `npx --yes dsh-coding-kit@1.10.0 task lint-wiki-delta --target .` | 0 | LINT-WIKI-DELTA: PASS |
+| `git diff --stat -- app/ops/chat/graph.py` | 0 | **零 diff**（不在改动清单） |
+
+- **direct_answer 实际处置**：**同协议达成，未降级**。router `direct_answer` 与 aggregator 同一 provider（`_ROUTER_PROVIDER` · SiliconFlow/Bailian 均实现 `complete_stream`），节点经 `complete_answer_streaming(..., node="direct_answer")` 发 delta + 终帧；mock 断言 `test_stream_router_direct_answer_same_protocol` 绿。降级路径由桥内异常兜底（failure_paths 行）而非协议降级。
+- **实现机制**：provider 流式桥接（R1 非阻塞 1 选型落地）——`astream(stream_mode="messages")` 对自定义 provider 不产 token，故走 `BaseProvider.complete_stream` + contextvar token sink；sink 在图执行 task context 内 `emit`（seq 单调 + 落盘）后帧入 `asyncio.Queue`，emit 主循环与下一 update 竞速吐帧（打字机实时）；update 边界先吐净残留 delta 再映射 updates 帧。
+- **R1 非阻塞 5 条处置**：① 选型=provider 桥接（上）② aggregator「必做」与降级合读——流式可得即必做，桥内降级整段 ③ delta 逐 chunk 落盘量随终答长度放大——接受（task 未要求聚合；chunk 粒度=provider 流原生）④ direct_answer 同协议无降级，理由已写 ⑤ 占位空 answer 帧无 `final` 标记——保持现行为（`test_stream_basic_placeholder_unchanged` 钉死）。
+- **已知未测项**：真 LLM 联调（task 钉死不连真 LLM；留给 §11 T5 联调段）；断连中 sink 队列冲刷的生产路径（单测覆盖 mock 断流/异常降级，不覆盖 TCP 断连时序）。
+
 ---
 
 ## 修订记录
@@ -145,3 +161,4 @@
 | 2026-08-31 | **00**：T4 CLOSE（#103/#104）后起草 T5；钉 slug=`lg-rag-sse-token-stream`；协议=delta 多帧 + 终帧 `final`（T2 兼容 · 不新增 event_type）；覆盖=aggregator 必做 / direct_answer 同协议或降级；freeze 扩展 `lg-rag-sse-v1` |
 | 2026-08-31 | **10-task**：lint PASS（W4 · 思考轮 SPEC 承载）；补 `### 自检结论`；补 direct_answer 同协议/降级验收钩；00 定夺未做实质改动 |
 | 2026-08-31 | **20** R1 **pass**（内容零阻塞；非阻塞风险 5 条已录审查文）· **00** 代签 `HG-AUDIT-R1` → approved；可派 30 |
+| 2026-08-31 | **30+40**：T5 实现落地——`answer_stream.py` contextvar token sink 桥；sse_stream emit 循环挂 sink + answer delta/终帧 final；aggregator / direct_answer 同协议（未降级）；12 新测 + 46 全绿；ruff / verify / graph-compile / lint-wiki-delta 全 PASS；05 §4.2/§10.4 + G-L1/L2 回写。**不 CLOSE（留给 00）** |

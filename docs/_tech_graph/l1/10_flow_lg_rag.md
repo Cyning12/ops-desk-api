@@ -1,13 +1,13 @@
 ---
 graph_id: 10_flow_lg_rag
 version: 2026-08-31
-generated_at: sha256-4dcfa52881eeb756
+generated_at: sha256-7f3ecb452f73d9ae
 source: 10_flow_lg_rag.graph.yaml
 ---
 
 # LG RAG 旁路三模式流程（basic / router / supervisor · Critic）
 
-POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。
+POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。T5：终答 answer 多帧 delta（{delta}）+ 终帧 {content, final:true}（aggregator / direct_answer 经 answer_stream.py contextvar token sink 桥 complete_stream；降级整段）。
 
 ## Mermaid
 
@@ -52,7 +52,7 @@ flowchart TB
     %% → app/ops/lg_rag/router.py#L1
     lg_stream -->|"[默认 mode=supervisor · astream updates]"| sup_graph
     %% → app/ops/lg_rag/sse_stream.py#L1
-    lg_stream -->|"text/event-stream（run.start…answer…done · cursor）"| client
+    lg_stream -->|"text/event-stream（run.start…answer delta×N→answer final…done · cursor）"| client
     %% → app/ops/lg_rag/sse_stream.py#L1
     lg_replay -->|"text/event-stream（seq > after_seq）"| client
     %% → app/ops/lg_rag/router.py#L1
@@ -96,7 +96,7 @@ flowchart TB
     r_rewrite -->|"[有新 query → 重试 rag；熔断置空 → END]"| r_rag
     %% → app/ops/lg_rag/graph.py#L95
     %% → app/ops/lg_rag/nodes.py#L261
-    r_direct -->|"complete"| llm
+    r_direct -->|"complete_answer_streaming（delta 桥 → SSE；降级 complete）"| llm
     %% → app/ops/lg_rag/nodes.py#L269
     r_rewrite -->|"complete"| llm
     %% → app/ops/lg_rag/nodes.py#L230
@@ -144,7 +144,7 @@ flowchart TB
     %% → app/ops/lg_rag/multi/nodes.py#L200
     s_extract -->|"complete（抽取）"| llm
     %% → app/ops/lg_rag/multi/nodes.py#L299
-    s_aggregator -->|"complete（综合 → critic）"| llm
+    s_aggregator -->|"complete_answer_streaming（delta 桥 → SSE；降级 complete）"| llm
     %% → app/ops/lg_rag/multi/nodes.py#L361
     r_router -->|"parse_only / schema 校验"| structured_output_gw
     %% → app/ops/lg_rag/nodes.py::_classify_route
@@ -217,7 +217,7 @@ flowchart TB
 | client | lg_stream | -> | depends_on | POST SSE {query, mode=supervisor 默认}（cookie auth） | 1 anchor(s) |
 | client | lg_replay | -> | depends_on | POST SSE replay {run_id, after_seq\|cursor} | 1 anchor(s) |
 | lg_stream | sup_graph | ?> | branches | [默认 mode=supervisor · astream updates] | 1 anchor(s) |
-| lg_stream | client | -> | depends_on | text/event-stream（run.start…answer…done · cursor） | 1 anchor(s) |
+| lg_stream | client | -> | depends_on | text/event-stream（run.start…answer delta×N→answer final…done · cursor） | 1 anchor(s) |
 | lg_replay | client | -> | depends_on | text/event-stream（seq > after_seq） | 1 anchor(s) |
 | lg_replay | db | -> | depends_on | ops_lg_rag_run_events（read） | 1 anchor(s) |
 | lg_invoke | basic_graph | ?> | branches | [mode=basic] | 1 anchor(s) |
@@ -237,7 +237,7 @@ flowchart TB
 | r_rag | lc_chain | ::triggers | triggers | ainvoke_evidence_answer（写回 chain_meta） | 2 anchor(s) |
 | r_evaluate | r_rewrite | ?> | branches | [low 且 retry<2 → rewrite；high/medium → END] | 2 anchor(s) |
 | r_rewrite | r_rag | ?> | branches | [有新 query → 重试 rag；熔断置空 → END] | 2 anchor(s) |
-| r_direct | llm | -> | depends_on | complete | 1 anchor(s) |
+| r_direct | llm | -> | depends_on | complete_answer_streaming（delta 桥 → SSE；降级 complete） | 1 anchor(s) |
 | r_rewrite | llm | -> | depends_on | complete | 1 anchor(s) |
 | sup_graph | s_intent | -> | depends_on | START → intent_node | 1 anchor(s) |
 | s_intent | s_strategy_builder | -> | depends_on | intent dict | 1 anchor(s) |
@@ -257,7 +257,7 @@ flowchart TB
 | s_rag | router_graph | ::triggers | triggers | ainvoke_router_agent（复用 router 子图） | 2 anchor(s) |
 | s_supervisor | llm | -> | depends_on | complete（拆解） | 1 anchor(s) |
 | s_extract | llm | -> | depends_on | complete（抽取） | 1 anchor(s) |
-| s_aggregator | llm | -> | depends_on | complete（综合 → critic） | 1 anchor(s) |
+| s_aggregator | llm | -> | depends_on | complete_answer_streaming（delta 桥 → SSE；降级 complete） | 1 anchor(s) |
 | r_router | structured_output_gw | ::triggers | triggers | parse_only / schema 校验 | 1 anchor(s) |
 | s_supervisor | structured_output_gw | ::triggers | triggers | parse SubtasksPlan | 1 anchor(s) |
 | s_extract | structured_output_gw | ::triggers | triggers | parse ExtractResult | 1 anchor(s) |
