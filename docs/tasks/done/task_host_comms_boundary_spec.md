@@ -1,9 +1,9 @@
 # Task：Host C0 · 沟通边界 SPEC（comms vs product）
 
-> **状态**：active  
+> **状态**：completed（2026-09-01 CLOSE · PR [#111](https://github.com/Cyning12/ops-desk-api/pull/111) MERGED）  
 > **类型**：Spec / 边界签收（**docs-only** · 无 30）  
 > **上游**：[`2026-08-31_host_comms_agent_kit_nesting_plan_draft.md`](../../discussions/2026-08-31_host_comms_agent_kit_nesting_plan_draft.md)（随本 PR 合入 master）· [`02_agent_host_plan_v0.md`](../../spec/agent-infra/02_agent_host_plan_v0.md)（H1–H5 已 CLOSE · C 轨是沟通嵌套 kit · **不是**重开 H1–H5）  
-> **前置**：T6 CLOSE · [`task_lg_rag_deprecate_chat_stream`](../done/task_lg_rag_deprecate_chat_stream.md) · [#108](https://github.com/Cyning12/ops-desk-api/pull/108)；草稿「暂缓 C0」前提（chat→lg-rag 迁移联调）已达成（T6 #108 · web T5 CLOSE #109）；维护者 Prompt 授权开 C 轨（串行波次 3）  
+> **前置**：T6 CLOSE · [`task_lg_rag_deprecate_chat_stream`](./task_lg_rag_deprecate_chat_stream.md) · [#108](https://github.com/Cyning12/ops-desk-api/pull/108)；草稿「暂缓 C0」前提（chat→lg-rag 迁移联调）已达成（T6 #108 · web T5 CLOSE #109）；维护者 Prompt 授权开 C 轨（串行波次 3）  
 > **分支**：`task/host-comms-boundary-spec`  
 > **帽子**：00 起草闸；**10-spec** 起草 SPEC；**20-spec-audit** 审；本波 **无 30**。  
 > **无关**：C1–C4 实现 · 改 05 freeze 字段 · 改产品 Chat/lg-rag · web `/obs` 实现（C4 另议）· 重开 H1–H5
@@ -29,6 +29,7 @@
 | **required_invoke_hats** | `10,00` |
 | **invoke_retention_profile** | `default` |
 | **close_pr_policy** | `required` |
+| **related_pr** | `#111` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | C0 仅 SPEC 签收；C1–C4 后续串行（C4 可与 C3 尾并行 · 仅 web 侧） |
 
@@ -37,7 +38,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
 | HG-TASK-DRAFT | approved | — | 2026-09-01 · **00 代签 · 维护者 Prompt 授权** |
-| HG-SPEC-SIGNOFF | approved | — | 2026-09-01 · **00 代签 · 维护者 Prompt 授权** · 见 `docs/harness/reviews/spec_host_comms_boundary_audit_R1_20260901.md`（pass · 内容零阻塞） |
+| HG-SPEC-SIGNOFF | approved | — | 2026-09-01 · **00 代签 · 维护者 Prompt 授权** · 见 `docs/harness/reviews/task_host_comms_boundary_spec_audit_R1_20260901.md`（pass · 内容零阻塞） |
 | HG-AUDIT-R1 | n/a | 30 | 本波 **无 30**（docs-only） |
 | HG-GRAPH-MODULES | n/a | — | 无图谱变更 |
 
@@ -160,3 +161,19 @@
 | 2026-09-01 | **00**：T6 CLOSE（#108/#110）后起草 C0；钉 slug=`host-comms-boundary-spec`；SPEC 落点=06；docs-only 无 30；草稿「暂缓 C0」前提已达成（T6 + web T5 CLOSE）· 维护者 Prompt 授权开 C 轨 |
 | 2026-09-01 | **10-spec**：SPEC 06 初稿落盘（draft · 章节齐全 · R0–R5 回填 · 00 定夺逐项落入 · 永久禁令 A/B · freeze 声明 05 不回写）；补 `### 自检结论`；invoke 落盘；HG-SPEC-SIGNOFF 保持 pending · 下一棒 20-spec-audit |
 | 2026-09-01 | **20-spec-audit** R1 **pass**（内容零阻塞 · 非阻塞观察 3 条）· **00** 代签 `HG-SPEC-SIGNOFF` → approved（SPEC 状态行 draft→signed · 双闸表回填） |
+| 2026-09-01 | **00 CLOSE**：PR [#111](https://github.com/Cyning12/ops-desk-api/pull/111) MERGED（CI 三绿）；SPEC 06 signed 入 master · discussions 草稿随迁；归档 done/ · Hub 补登 · CLOSE invoke 留档 |
+
+---
+
+## 关账（CLOSE）
+
+| 项 | 值 |
+|---|---|
+| PR | [#111](https://github.com/Cyning12/ops-desk-api/pull/111) **MERGED** 2026-09-01 |
+| 交付 | SPEC `docs/spec/agent-infra/06_host_comms_boundary_spec_v0.md`（**signed**）· discussions 草稿入 master · R1 审查文 |
+| 形态 | docs-only · 无 30 · `app/`/`tests/` 零改动 |
+| 归档 | 2026-09-01 · 00 关账 · 维护者 Prompt 授权 |
+
+### KPI
+
+Task_KPI%: 100 · D1 范围钉死仅 C0 SPEC 边界 · D2 闸齐（HG-SPEC-SIGNOFF 代签 + R1 pass）· D3 过程档齐（invoke 00/10-spec + 审查文）· D4 无图谱变更（none 钉死）· D5 关账补登 2026-09-01

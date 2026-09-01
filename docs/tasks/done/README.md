@@ -83,6 +83,7 @@
 | 2026-08-31 | [`task_lg_rag_sse_resume.md`](./task_lg_rag_sse_resume.md) | T4 SSE resume（cursor + replay · `ops_lg_rag_run_events`） · PR #103 |
 | 2026-08-31 | [`task_lg_rag_sse_token_stream.md`](./task_lg_rag_sse_token_stream.md) | T5 answer token delta 流（delta 多帧 + 终帧 final） · PR #105 |
 | 2026-09-01 | [`task_lg_rag_deprecate_chat_stream.md`](./task_lg_rag_deprecate_chat_stream.md) | T6 `/chat/stream` 410 下线（保留 models/sessions.latest/WS · 不删码） · PR #108 |
+| 2026-09-01 | [`task_host_comms_boundary_spec.md`](./task_host_comms_boundary_spec.md) | C0 Host 沟通边界 SPEC 06 签收（docs-only） · PR #111 |
 
 ---
 
@@ -115,6 +116,7 @@
 | 2026-08-31 | CLOSE T4 `#103`（lg-rag-sse-resume 归档 done/ · Hub 补登） |
 | 2026-08-31 | CLOSE T5 `#105`（lg-rag-sse-token-stream 归档 done/ · Hub 补登） |
 | 2026-09-01 | CLOSE T6 `#108`（lg-rag-deprecate-chat-stream 归档 done/ · Hub 补登） |
+| 2026-09-01 | CLOSE C0 `#111`（host-comms-boundary-spec 归档 done/ · Hub 补登） |
 
 ## 给维护者
 
