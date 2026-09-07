@@ -1,9 +1,9 @@
 # Task：lg-rag T5.1 · 终答 delta 实时投递（pacing / anti-buffer）
 
-> **状态**：active（2026-09-01 · 维护者令「开工」）  
+> **状态**：completed（2026-09-01 CLOSE · PR [#122](https://github.com/Cyning12/ops-desk-api/pull/122) MERGED）  
 > **类型**：传输 / SSE 投递时效  
 > **上游**：[`05_lg_rag_transport_and_session_plan_v0.md`](../../spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md) **§10.4.1**（**HG-SPEC-SIGNOFF approved**）  
-> **前置**：docs-only [`task_lg_rag_sse_delta_realtime_spec`](./task_lg_rag_sse_delta_realtime_spec.md) 已签收；T5 [`task_lg_rag_sse_token_stream`](../done/task_lg_rag_sse_token_stream.md) · [#105](https://github.com/Cyning12/ops-desk-api/pull/105)  
+> **前置**：docs-only [`task_lg_rag_sse_delta_realtime_spec`](./task_lg_rag_sse_delta_realtime_spec.md) 已签收；T5 [`task_lg_rag_sse_token_stream`](./task_lg_rag_sse_token_stream.md) · [#105](https://github.com/Cyning12/ops-desk-api/pull/105)  
 > **分支**：`task/lg-rag-sse-delta-realtime`  
 > **帽子**：00 起草闸；**10** 补全；**20** 审；**30+40** 实现。  
 > **无关**：新 event_type · 新 freeze · web/iOS 假打字机 · 改 replay/thread_id/cursor 键语义 · token 化 progress
@@ -30,7 +30,7 @@
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | `lg-rag-sse-v1`（**不**新 freeze；不新 event_type；不改 delta/content/final 键） |
 | **close_pr_policy** | `required` |
-| **related_pr** | （待开） |
+| **related_pr** | `#122` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | api-only 先合；web **不**挡；SPEC 已签收 |
 
@@ -117,7 +117,15 @@
 - [x] 00 定夺：persist 不阻塞 yield · 不攒批 · 协议零变  
 - [x] `emit` → `create_task(persist)` + `_drain_persist`；2 新测  
 - [x] verify / ruff / pytest 29 / graph-compile / lint-wiki-delta PASS  
-- 下一棒：开 PR → merge → CLOSE（须维护者令）
+- 下一棒：已 CLOSE
+
+## 关账（CLOSE）
+
+| 项 | 值 |
+|---|---|
+| PR | [#122](https://github.com/Cyning12/ops-desk-api/pull/122) MERGED |
+| 归档 | `docs/tasks/done/task_lg_rag_sse_delta_realtime.md` |
+| Hub | 2026-09-07 补登 |
 
 ## 修订记录
 
@@ -127,3 +135,5 @@
 | 2026-09-01 | **10-task**：结构补全 · 自检 · 交 20 |
 | 2026-09-01 | **20** pass · **HG-AUDIT-R1=approved**（00 代签 · 维护者令「开工」）→ 派 30 |
 | 2026-09-01 | **30+40**：emit 后台 persist；2 新测 + 回归绿；05/G-L1 回写 |
+| 2026-09-01 | **00 CLOSE**：PR [#122](https://github.com/Cyning12/ops-desk-api/pull/122) MERGED |
+| 2026-09-07 | 归档 done/ · Hub 补登（随 idle-keepalive 波次卫生） |
