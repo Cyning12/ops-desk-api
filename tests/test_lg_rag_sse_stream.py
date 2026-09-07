@@ -102,12 +102,88 @@ async def test_map_node_update_helpers() -> None:
     assert et == "subtask.progress"
     assert role == "rag_subtask"
     assert "subtask_result" in payload
+    assert payload["status"] == "done"
 
     et, role, payload = map_node_update(
         "aggregator", {"messages": [AIMessage(content="答")]}
     )
     assert et == "answer"
     assert payload["content"] == "答"
+
+
+async def test_subtask_running_before_slow_node_update() -> None:
+    """§10.7：慢 rag_subtask 节点内 sleep 时，running 帧须先于 updates 完成帧可见。"""
+    import asyncio
+    from unittest.mock import AsyncMock, patch
+
+    from app.ops.lg_rag.progress_stream import emit_subtask_running
+    from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
+
+    async def _slow_rag_astream(
+        query: str, *, thread_id: str = "t", **_kwargs: Any
+    ) -> AsyncIterator[dict[str, Any]]:
+        # 模拟节点入口：重活前 emit running，再 sleep（节点未结束）
+        await emit_subtask_running(
+            agent_role="rag_subtask",
+            subtask_id="t1",
+            type="rag",
+            input_preview=query,
+        )
+        await asyncio.sleep(0.05)
+        yield {
+            "rag_subtask": {
+                "subtask_results": [{"id": "t1", "type": "rag", "output": "hit"}]
+            }
+        }
+
+    timeline: list[str] = []
+    with (
+        patch(
+            "app.ops.lg_rag.event_store.persist_run_event",
+            new_callable=AsyncMock,
+        ) as persist_mock,
+        patch(
+            "app.ops.lg_rag.sse_stream.persist_thread_turns",
+            new_callable=AsyncMock,
+        ),
+    ):
+        async for raw in iter_lg_rag_sse(
+            query="慢子任务",
+            mode="supervisor",
+            thread_id="th-sub-live",
+            user_id="u-sub-live",
+            astream_fn=_slow_rag_astream,
+        ):
+            for block in raw.split("\n\n"):
+                block = block.strip()
+                if not block or not block.startswith("event:"):
+                    continue
+                data_line = None
+                for line in block.split("\n"):
+                    if line.startswith("data: "):
+                        data_line = line[len("data: ") :]
+                if not data_line:
+                    continue
+                ev = json.loads(data_line)
+                if ev.get("event_type") != "subtask.progress":
+                    continue
+                status = (ev.get("payload") or {}).get("status")
+                if status == "running":
+                    timeline.append("running")
+                elif status == "done":
+                    timeline.append("done")
+
+    assert timeline == ["running", "done"]
+    # running 帧落盘占 seq
+    running_persists = [
+        c
+        for c in persist_mock.await_args_list
+        if c.kwargs.get("event_type") == "subtask.progress"
+        and (c.kwargs.get("payload") or {}).get("status") == "running"
+    ]
+    assert running_persists, "running 帧须走 emit→persist"
+    assert running_persists[0].kwargs["payload"]["subtask_id"] == "t1"
+    assert running_persists[0].kwargs["payload"]["type"] == "rag"
 
 
 async def test_keepalive_comment_before_slow_update() -> None:

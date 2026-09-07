@@ -64,10 +64,10 @@
 
 ## 验收标准
 
-- [ ] 慢 mock 子任务：`running` 帧在节点 `__anext__` 返回前可见  
-- [ ] 完成帧仍为 `subtask.progress` 且含摘要；推荐 `status=done`  
-- [ ] keepalive / T5 delta 测不回归  
-- [ ] ruff · pytest · graph-compile（若动 yaml）  
+- [x] 慢 mock 子任务：`running` 帧在节点 `__anext__` 返回前可见  
+- [x] 完成帧仍为 `subtask.progress` 且含摘要；推荐 `status=done`  
+- [x] keepalive / T5 delta 测不回归  
+- [x] ruff · pytest · graph-compile（若动 yaml）  
 
 ## failure_paths
 
