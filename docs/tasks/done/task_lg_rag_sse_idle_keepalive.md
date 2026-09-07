@@ -1,9 +1,9 @@
 # Task：lg-rag SSE · idle 超时语义 + comment keepalive
 
-> **状态**：active（2026-09-07 · 维护者令 Implement plan）  
+> **状态**：completed（2026-09-07 CLOSE · PR [#123](https://github.com/Cyning12/ops-desk-api/pull/123) MERGED）  
 > **类型**：传输 / SSE 保活与超时语义  
 > **上游**：[`05_lg_rag_transport_and_session_plan_v0.md`](../../spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md) **§10.6**  
-> **前置**：T5.1 CLOSE · [`task_lg_rag_sse_delta_realtime`](../done/task_lg_rag_sse_delta_realtime.md) · [#122](https://github.com/Cyning12/ops-desk-api/pull/122)  
+> **前置**：T5.1 CLOSE · [`task_lg_rag_sse_delta_realtime`](./task_lg_rag_sse_delta_realtime.md) · [#122](https://github.com/Cyning12/ops-desk-api/pull/122)  
 > **分支**：`task/lg-rag-sse-idle-keepalive`  
 > **帽子**：00 起草闸；**10** 补全；**20** 审；**30+40** 实现。  
 > **无关**：新 event_type · 新 freeze · 改 invoke 页 axios 墙钟 · Nginx · 节点内 token 级 subagent 日志
@@ -30,7 +30,7 @@
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | `lg-rag-sse-v1`（**不**新 freeze；keepalive 为 SSE comment，不进 data JSON） |
 | **close_pr_policy** | `required` |
-| **related_pr** | （待开） |
+| **related_pr** | `#123` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | api keepalive + SPEC 本仓；web idle + 子任务分区 UI 跨仓并行 |
 
@@ -94,3 +94,14 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-09-07 | **00**：维护者令 Implement plan；钉 idle 120s + comment keepalive 30s |
+| 2026-09-07 | **30+40**：sse_stream keepalive + 单测；05 §10.6；PR [#123](https://github.com/Cyning12/ops-desk-api/pull/123) MERGED |
+| 2026-09-07 | **00 CLOSE**：归档 done/ · Hub 补登 |
+
+## 关账（CLOSE）
+
+| 项 | 值 |
+|---|---|
+| PR | [#123](https://github.com/Cyning12/ops-desk-api/pull/123) MERGED |
+| 归档 | `docs/tasks/done/task_lg_rag_sse_idle_keepalive.md` |
+| Hub | 2026-09-07 补登 |
+| 下一棒 | `lg-rag-sse-subtask-live`（subtask 中途 SSE） |
