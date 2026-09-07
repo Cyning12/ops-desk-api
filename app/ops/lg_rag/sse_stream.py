@@ -7,6 +7,7 @@ T5：终答 token 流 —— emit 循环经 contextvar 挂 answer token sink
 direct_answer 的 LLM chunk → answer {"delta": ...} 多帧；节点 updates
 到后发终帧 {"content": <full>, "final": true}（T2 兼容）。
 T5.1：persist 后台调度，不阻塞 SSE yield / pending_frames 入队。
+§10.6：等待下一 update 期间周期性 SSE comment keepalive（不落盘、不占 seq）。
 """
 from __future__ import annotations
 
@@ -41,7 +42,9 @@ _ANSWER_MAX = 32_000
 # 终答节点（T5）：updates 帧映射为 answer 终帧（content + final）
 _ANSWER_NODES = frozenset({"aggregator", "direct_answer"})
 _STREAM_END: Any = object()  # astream 耗尽哨兵（区别于合法 update）
-
+# §10.6：长节点静默保活（SSE comment · 不进 data JSON / 不落盘）
+_KEEPALIVE_INTERVAL_S = 30.0
+_KEEPALIVE_FRAME = ": keepalive\n\n"
 
 def _truncate(text: str, max_len: int) -> str:
     if len(text) <= max_len:
@@ -256,21 +259,23 @@ async def iter_lg_rag_sse(
             try:
                 # 图执行期间 delta 帧先入队；与下一 update 竞速，先到先吐，
                 # 保证长终答调用中 token 实时上屏（不等节点 updates）。
+                # §10.6：等待超时则发 comment keepalive，重置客户端 idle。
                 while not next_task.done():
                     get_task = asyncio.ensure_future(pending_frames.get())
-                    try:
-                        await asyncio.wait(
-                            {next_task, get_task},
-                            return_when=asyncio.FIRST_COMPLETED,
-                        )
-                    finally:
-                        if not get_task.done():
-                            get_task.cancel()
-                    if get_task.done():
+                    done, _ = await asyncio.wait(
+                        {next_task, get_task},
+                        timeout=_KEEPALIVE_INTERVAL_S,
+                        return_when=asyncio.FIRST_COMPLETED,
+                    )
+                    if get_task in done:
                         yield get_task.result()
                         continue
+                    get_task.cancel()
                     with contextlib.suppress(asyncio.CancelledError):
                         await get_task
+                    if next_task.done():
+                        break
+                    yield _KEEPALIVE_FRAME
                 # update 边界：先吐净残留 delta（sink 早于节点返回，seq 已单调）
                 while not pending_frames.empty():
                     yield pending_frames.get_nowait()

@@ -108,3 +108,48 @@ async def test_map_node_update_helpers() -> None:
     )
     assert et == "answer"
     assert payload["content"] == "答"
+
+
+async def test_keepalive_comment_before_slow_update() -> None:
+    """§10.6：慢 __anext__ 期间须先 yield comment keepalive（不占 seq / 非 data 帧）。"""
+    import asyncio
+    from unittest.mock import AsyncMock, patch
+
+    from app.ops.lg_rag.sse_stream import _KEEPALIVE_FRAME, iter_lg_rag_sse
+
+    async def _slow_astream(
+        query: str, *, thread_id: str = "t", **_kwargs: Any
+    ) -> AsyncIterator[dict[str, Any]]:
+        await asyncio.sleep(0.12)
+        yield {"intent_node": {"intent": {"domain": "kb"}}}
+
+    frames: list[str] = []
+    with (
+        patch("app.ops.lg_rag.sse_stream._KEEPALIVE_INTERVAL_S", 0.04),
+        patch(
+            "app.ops.lg_rag.event_store.persist_run_event",
+            new_callable=AsyncMock,
+        ) as persist_mock,
+    ):
+        async for frame in iter_lg_rag_sse(
+            query="慢节点",
+            mode="supervisor",
+            thread_id="th-ka-1",
+            user_id="u-ka",
+            astream_fn=_slow_astream,
+        ):
+            frames.append(frame)
+
+    assert any(f == _KEEPALIVE_FRAME for f in frames)
+    first_keepalive = next(i for i, f in enumerate(frames) if f == _KEEPALIVE_FRAME)
+    first_data = next(i for i, f in enumerate(frames) if f.startswith("event:"))
+    # run.start 先于 keepalive；慢 update 的 keepalive 在节点 data 帧之前
+    assert first_data < first_keepalive
+    data_after_ka = [f for f in frames[first_keepalive:] if f.startswith("event:")]
+    assert data_after_ka, "keepalive 之后仍应有业务帧"
+    # comment 不落盘
+    for call in persist_mock.await_args_list:
+        kwargs = call.kwargs
+        assert kwargs.get("event_type") != "keepalive"
+        payload = kwargs.get("payload") or {}
+        assert "keepalive" not in str(payload).lower()

@@ -240,6 +240,7 @@
 | 2026-09-01 | **T5.1**：终答 delta 实时投递（pacing / anti-buffer）契约增量 · 动机 = 防 burst 观感 + 跨端通用（非改 event_type）· §4.2 旁注 + §10.4.1 + §11 勾选；实现另 task |
 | 2026-09-01 | **T5.1 HG-SPEC-SIGNOFF=approved**（00 代签 · 维护者令「签收」· 20 审查 pass）；**不**授权 30；实现须另开 `lg-rag-sse-delta-realtime` |
 | 2026-09-01 | **T5.1 实现回写**：`emit` 后台 persist（不阻塞 yield）· §10.4.1 实然更新 · task `lg-rag-sse-delta-realtime` |
+| 2026-09-07 | **§10.6**：client idle 120s + SSE comment keepalive 30s；联调项去墙钟 300s；task `lg-rag-sse-idle-keepalive` |
 
 ---
 
@@ -299,7 +300,7 @@
 | **前置** | api PR（`/stream` + Obs-I/O）**合入前可联调分支**；web task 已 active |
 | **api 提供** | `POST /api/ops/lg-rag/stream` · body `{query, mode?, thread_id?}` · 默认 `mode=supervisor` · SSE 帧序 `run.start`→进度→`answer`→`done`/`error` |
 | **web 交付** | `useLgRagSse`（或等价）· **ChatView 改走 `/stream`** · **废弃主路径 `useOpsChatSse`**（可保留文件供对照/单测，主 UI 不再调用）· `/lg-rag` invoke 页不动 |
-| **联调项** | ① 登录 cookie ② `run.start` 含 `thread_id`/`mode` ③ 至少一帧 `node.progress`/`subtask.progress` ④ `answer` 整段 ⑤ `done` ⑥ 401→登录 ⑦ 422 表单预检 ⑧ 长问 supervisor 超时（client timeout ≥300s 对齐 invoke 页） |
+| **联调项** | ① 登录 cookie ② `run.start` 含 `thread_id`/`mode` ③ 至少一帧 `node.progress`/`subtask.progress` ④ `answer` 整段 ⑤ `done` ⑥ 401→登录 ⑦ 422 表单预检 ⑧ 长问 supervisor：**client idle 超时**（默认 120s 无字节；有帧/keepalive 即重置；**非**整轮墙钟上限 · 见 §10.6） |
 | **通过标准** | §11 人工 checklist T2 段全勾 · web `pnpm lint/test/build` 绿 · api 相关 pytest 绿 |
 | **常见坑** | 仍走 chat/stream；忽略 `event:` 行只读 body；未 `credentials:'include'`；把 `route=refuse` 当 HTTP 错误；半帧 JSON 未缓冲 |
 
@@ -448,6 +449,30 @@
 
 ---
 
+### 10.6 Idle 超时 + SSE comment keepalive（2026-09-07）
+
+> **性质**：契约增量（**超时语义 + 保活**）；不改 freeze、不新增 `event_type`、不改 data JSON 键。  
+> **动机**：supervisor 合法总时长常 >5min；旧 web 墙钟 300s 误杀。单节点（`rag_subtask` / `tool_exec`）在 `astream(updates)` 边界内可静默数分钟，仅改 idle 仍会被杀 → 须服务端 keepalive。
+
+| 维度 | 钉死 |
+|---|---|
+| **客户端超时** | **idle**：默认 **120s** 无**字节**则 `kind=timeout`；任意 `reader.read()` 有数据即重置（含 SSE comment）；**不设**整轮墙钟上限 |
+| **服务端 keepalive** | 等待下一图 update（及竞速 drain delta）期间，每 **30s** yield SSE 注释行 `: keepalive\n\n` |
+| **禁止** | 用 `node.progress` / `subtask.progress` / `answer` 冒充心跳；keepalive **不**落盘 `ops_lg_rag_run_events`、**不**占 `seq` |
+| **freeze** | 仍 **`lg-rag-sse-v1`**（comment 不进 data JSON 契约） |
+| **web UI** | `subtask.progress` 单独区块展示；`node.progress` 为编排进度（实现在 web 仓） |
+| **非范围** | invoke 页 axios 非流式墙钟；Nginx（已 3600s）；节点内 token 级 subagent 日志 / 新 `node.start` |
+| **实现** | api：`sse_stream.py`；web：`useLgRagSse` idle + Chat 分区；task `lg-rag-sse-idle-keepalive` |
+
+**联调项**
+
+- [ ] 总时长 >5min、间隔 <120s 有业务帧或 keepalive → **不** timeout  
+- [ ] 故意停写且无 keepalive → ≈120s `kind=timeout`；T4 续看仍可用  
+- [ ] DevTools：可见 `: keepalive` 注释行；Network 事件列表无假 progress  
+- [ ] Chat：`subtask.progress` 仅在「子任务过程」；`node.progress` 仅在「编排进度」
+
+---
+
 ## 11. 跨仓发版与人工 checklist（维护者 · 2026-08-31）
 
 > **执行副本（勾选用）**：[`ops-desk-web/docs/checklists/CHECKLIST_lg_rag_sse_joint_release_v1.md`](../../../ops-desk-web/docs/checklists/CHECKLIST_lg_rag_sse_joint_release_v1.md)
@@ -488,7 +513,13 @@
 - [ ] replay：含 `delta` 的已落盘帧仍按序可重放（形状不变；replay 不模拟 live pacing）  
 - [ ] 部署检查：反向代理对 `/api/ops/lg-rag/stream`（及 replay）SSE 禁用缓冲的检查项已文档化（§10.4.1 清单；现网 nginx / Vite 已核）  
 
-**T3–T6**：见 web checklist 对应节（后续发版，不阻塞 T2 首次联合发版 unless 维护者另定）。T5.1 与 T6 **正交**。
+**Idle / keepalive（§10.6 · 2026-09-07）**
+
+- [ ] client **idle 120s**（有字节重置），非整轮墙钟 300s  
+- [ ] 长节点静默期 EventStream 可见 `: keepalive`；超时文案为「无响应」  
+- [ ] Chat 子任务过程与编排进度分区可见  
+
+**T3–T6**：见 web checklist 对应节（后续发版，不阻塞 T2 首次联合发版 unless 维护者另定）。T5.1 与 T6 **正交**。§10.6 与 T5.1 **正交**。
 
 ### 11.4 修订
 
@@ -497,3 +528,4 @@
 | 2026-08-31 | 初版：分阶段联调注意事项 + 跨仓发版纪律 + checklist 指针 |
 | 2026-08-31 | §10.5 回写 T6 api 实现句：`/chat/stream` → 410（迁移指针 + Deprecation 头）· 保留 models/sessions.latest/WS · 不删 chat 代码（task `lg-rag-deprecate-chat-stream`） |
 | 2026-09-01 | §11.3 增 **T5.1** 勾选：终答 delta 时间线 / mock 慢 chunk / 降级可观测 / replay 形状 / 反代禁用缓冲 |
+| 2026-09-07 | §10.6 idle 120s + comment keepalive；§10.2/§11.3 去掉墙钟 ≥300s 表述 |

@@ -1,9 +1,9 @@
 # Task：lg-rag T5.1 · 终答 delta 实时投递 SPEC（pacing / anti-buffer）
 
-> **状态**：active（2026-09-01 · docs-only · **HG-SPEC-SIGNOFF approved** · 维护者令「签收」）  
+> **状态**：completed（2026-09-01 CLOSE · SPEC 随 T5.1 实现 [#122](https://github.com/Cyning12/ops-desk-api/pull/122) 落地）  
 > **类型**：Spec 增量签收（**docs-only** · 无 30）  
 > **上游**：[`05_lg_rag_transport_and_session_plan_v0.md`](../../spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md) §4.2 · §10.4 · §11  
-> **前置**：T5 CLOSE · [`task_lg_rag_sse_token_stream`](../done/task_lg_rag_sse_token_stream.md) · [#105](https://github.com/Cyning12/ops-desk-api/pull/105)；web T5 打字机已合；联调观察（2026-09-01）「有 delta 帧仍一次性出全文」  
+> **前置**：T5 CLOSE · [`task_lg_rag_sse_token_stream`](./task_lg_rag_sse_token_stream.md) · [#105](https://github.com/Cyning12/ops-desk-api/pull/105)；web T5 打字机已合；联调观察（2026-09-01）「有 delta 帧仍一次性出全文」  
 > **分支**：`task/lg-rag-sse-delta-realtime-spec`  
 > **帽子**：00 起草闸；**10-spec** 落盘 05；**20-spec-audit** 审；本波 **无 30**。  
 > **无关**：改 `app/**` · 开实现 PR · 新 `event_type` · 新 freeze · web/iOS 假打字机 · 改 replay / `thread_id` / `cursor` 语义
