@@ -43,6 +43,13 @@ by_path:
     - node_id: lg_stream
       symbol: set_answer_token_sink
       kind: method
+  "app/ops/lg_rag/progress_stream.py":
+    - node_id: lg_stream
+      symbol: emit_subtask_running
+      kind: method
+    - node_id: lg_stream
+      symbol: set_subtask_progress_sink
+      kind: method
   "app/ops/lg_rag/sse_replay.py":
     - node_id: lg_stream
       symbol: format_sse_event

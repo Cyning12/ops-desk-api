@@ -8,6 +8,10 @@ direct_answer 的 LLM chunk → answer {"delta": ...} 多帧；节点 updates
 到后发终帧 {"content": <full>, "final": true}（T2 兼容）。
 T5.1：persist 后台调度，不阻塞 SSE yield / pending_frames 入队。
 §10.6：等待下一 update 期间周期性 SSE comment keepalive（不落盘、不占 seq）。
+§10.7：子任务 running 起步帧 —— emit 循环经 contextvar 挂 progress sink
+（progress_stream.emit_subtask_running）；rag_subtask / info_extract /
+tool_exec 入口 → subtask.progress {"status":"running",...}；节点 updates
+到后完成帧补 status=done。running 与 delta 同 pending_frames 竞速、落盘占 seq。
 """
 from __future__ import annotations
 
@@ -25,6 +29,10 @@ from langchain_core.messages import AIMessage
 from app.ops.lg_rag.answer_stream import (
     reset_answer_token_sink,
     set_answer_token_sink,
+)
+from app.ops.lg_rag.progress_stream import (
+    reset_subtask_progress_sink,
+    set_subtask_progress_sink,
 )
 from app.ops.lg_rag.sse_replay import format_sse_event, make_cursor
 from app.ops.lg_rag.thread_store import persist_thread_turns
@@ -125,7 +133,10 @@ def map_node_update(node_name: str, node_output: Any) -> tuple[str, str, dict[st
     """
     role = _agent_role(node_name)
     if node_name in _SUBTASK_NODES:
-        return "subtask.progress", role, _summarize_payload(node_output)
+        # §10.7：完成摘要保留既有键，补 status=done（旧客户端忽略未知键）
+        done_payload = _summarize_payload(node_output)
+        done_payload["status"] = "done"
+        return "subtask.progress", role, done_payload
     if node_name in _ANSWER_NODES:
         answer = ""
         if isinstance(node_output, dict):
@@ -249,7 +260,13 @@ async def iter_lg_rag_sse(
         frame = await emit("answer", role, {"delta": chunk})
         pending_frames.put_nowait(frame)
 
+    async def _subtask_progress_sink(role: str, payload: dict[str, Any]) -> None:
+        # §10.7：running 帧与 delta 同队列竞速；走 emit → 落盘占 seq
+        frame = await emit("subtask.progress", role, payload)
+        pending_frames.put_nowait(frame)
+
     sink_handle = set_answer_token_sink(_answer_token_sink)
+    progress_handle = set_subtask_progress_sink(_subtask_progress_sink)
     try:
         agen = astream_fn(
             query, thread_id=thread_id, history_turns=history_turns or []
@@ -257,8 +274,8 @@ async def iter_lg_rag_sse(
         while True:
             next_task = asyncio.ensure_future(_anext_or_end(agen))
             try:
-                # 图执行期间 delta 帧先入队；与下一 update 竞速，先到先吐，
-                # 保证长终答调用中 token 实时上屏（不等节点 updates）。
+                # 图执行期间 delta / running 帧先入队；与下一 update 竞速，先到先吐，
+                # 保证长终答 / 慢子任务中实时上屏（不等节点 updates）。
                 # §10.6：等待超时则发 comment keepalive，重置客户端 idle。
                 while not next_task.done():
                     get_task = asyncio.ensure_future(pending_frames.get())
@@ -276,7 +293,7 @@ async def iter_lg_rag_sse(
                     if next_task.done():
                         break
                     yield _KEEPALIVE_FRAME
-                # update 边界：先吐净残留 delta（sink 早于节点返回，seq 已单调）
+                # update 边界：先吐净残留（sink 早于节点返回，seq 已单调）
                 while not pending_frames.empty():
                     yield pending_frames.get_nowait()
                 update = next_task.result()
@@ -337,6 +354,7 @@ async def iter_lg_rag_sse(
         await _drain_persist()
     finally:
         reset_answer_token_sink(sink_handle)
+        reset_subtask_progress_sink(progress_handle)
         await _drain_persist()
         if tracing_enabled():
             flush_traces()

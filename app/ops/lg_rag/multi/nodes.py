@@ -30,6 +30,7 @@ from app.ops.lg_rag.nodes import (
     _ROUTER_PROVIDER,
     _last_user_text,
 )
+from app.ops.lg_rag.progress_stream import emit_subtask_running
 from app.ops.lg_rag.schemas import ExtractResult, SubtaskItem, SubtasksPlan
 from app.ops.lg_rag.state import LgRagState
 from app.ops.prompts import render
@@ -301,6 +302,13 @@ async def rag_subtask_node(state: LgRagState) -> dict:
     if subtask is None:  # 防御：dispatch 保证不会发生；追加错误结果保推进
         return {"subtask_results": [{"type": "rag", "error": "no pending subtask"}]}
     result = _base_result(subtask)
+    # §10.7：重活前发 running 起步帧（无 sink 时为空操作）
+    await emit_subtask_running(
+        agent_role="rag_subtask",
+        subtask_id=result["id"],
+        type=result["type"] or "rag",
+        input_preview=result["input"],
+    )
     with trace_span("rag_subtask", run_type="chain"):
         try:
             out = await ainvoke_router_agent(
@@ -336,6 +344,13 @@ async def info_extract_node(state: LgRagState) -> dict:
     if subtask is None:
         return {"subtask_results": [{"type": "extract", "error": "no pending subtask"}]}
     result = _base_result(subtask)
+    # §10.7：重活前发 running 起步帧（无 sink 时为空操作）
+    await emit_subtask_running(
+        agent_role="info_extract",
+        subtask_id=result["id"],
+        type=result["type"] or "extract",
+        input_preview=result["input"],
+    )
     with trace_span("info_extract", run_type="chain"):
         try:
             provider = get_llm_provider(_ROUTER_PROVIDER)
@@ -374,6 +389,13 @@ async def tool_exec_node(state: LgRagState) -> dict:
         return {"subtask_results": [{"type": "tool", "error": "no pending subtask"}]}
     result = _base_result(subtask)
     tool_name = str(subtask.get("tool") or "")
+    # §10.7：重活前发 running 起步帧（无 sink 时为空操作）
+    await emit_subtask_running(
+        agent_role="tool_exec",
+        subtask_id=result["id"],
+        type=result["type"] or "tool",
+        input_preview=result["input"],
+    )
     with trace_span("tool_exec", run_type="tool"):
         cap = await capability_ainvoke(tool_name, result["input"])
         if not cap.ok:

@@ -241,6 +241,7 @@
 | 2026-09-01 | **T5.1 HG-SPEC-SIGNOFF=approved**（00 代签 · 维护者令「签收」· 20 审查 pass）；**不**授权 30；实现须另开 `lg-rag-sse-delta-realtime` |
 | 2026-09-01 | **T5.1 实现回写**：`emit` 后台 persist（不阻塞 yield）· §10.4.1 实然更新 · task `lg-rag-sse-delta-realtime` |
 | 2026-09-07 | **§10.6**：client idle 120s + SSE comment keepalive 30s；联调项去墙钟 300s；task `lg-rag-sse-idle-keepalive` |
+| 2026-09-07 | **§10.7**：subtask `status=running` 起步帧（progress sink）· MVP；task `lg-rag-sse-subtask-live` |
 
 ---
 
@@ -470,6 +471,32 @@
 - [ ] 故意停写且无 keepalive → ≈120s `kind=timeout`；T4 续看仍可用  
 - [ ] DevTools：可见 `: keepalive` 注释行；Network 事件列表无假 progress  
 - [ ] Chat：`subtask.progress` 仅在「子任务过程」；`node.progress` 仅在「编排进度」
+
+---
+
+### 10.7 Subtask 中途可见（running 起步帧 · 2026-09-07）
+
+> **性质**：契约增量（**子任务过程时效**）；不改 freeze、**不**新增 `event_type`。  
+> **动机**：`astream(updates)` 仅在节点结束后才发 `subtask.progress`；`rag_subtask` 内整段 `ainvoke_router_agent` 可静默数分钟，UI 只见「处理中…」。  
+> **本波范围（MVP）**：进入 `rag_subtask` / `info_extract` / `tool_exec` 时 **立即** 发一帧 `subtask.progress`（`status=running`）；节点结束后的既有完成帧补 `status=done`（旧客户端忽略未知键仍可用）。  
+> **非本波**：子图内 retrieve/grade 逐步帧；子任务内 token 流；新 `event_type=node.start`。
+
+| 维度 | 钉死 |
+|---|---|
+| **event_type** | 仍 **`subtask.progress`**（与完成摘要同类型） |
+| **payload（running）** | 至少：`status: "running"` · `subtask_id`（或 `id`）· `type`（rag/extract/tool）· 可选 `input` 截断预览 · `agent_role` 顶层仍为节点名 |
+| **payload（done）** | 节点 updates 映射的既有摘要键 + `status: "done"`（可选但推荐） |
+| **投递机制** | 对齐 T5：contextvar **progress sink**（节点内 `await sink(...)` → SSE 主循环竞速 yield）；**禁止**等节点返回才发 running |
+| **落盘 / seq** | running 帧 **落盘**（与业务帧同 seq 单调）；replay 可重放 |
+| **freeze** | 仍 **`lg-rag-sse-v1`** |
+| **web** | 「子任务过程」收到 `status=running` 立即上屏（可标「执行中」）；同 `subtask_id` 的 `done` 帧更新/替换该行 |
+| **实现 task** | api `lg-rag-sse-subtask-live` · web `web-lg-rag-sse-subtask-live` |
+
+**联调项**
+
+- [ ] 慢 `rag_subtask`：节点未结束前 EventStream 已有 `subtask.progress` + `status=running`  
+- [ ] 完成后同 id 有 `status=done`（或完成摘要帧）；thinking/subtasks 分区不串台  
+- [ ] T5 delta / T5.1 / keepalive / idle 不回归  
 
 ---
 
