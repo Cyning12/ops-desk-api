@@ -9,7 +9,7 @@
 
 ## 本波 active
 
-- `lg-rag-sse-idle-keepalive`（2026-09-07 · 维护者令 Implement plan）：client **idle 120s** + api SSE comment keepalive 30s；web Chat 子任务分区。真值：05 §10.6 · `sse_stream.py` · web `useLgRagSse` / `chat` store
+（idle-keepalive CLOSE · 下一棒 `lg-rag-sse-subtask-live` 起草中）
 
 ## 执行帽速链
 

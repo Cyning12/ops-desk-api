@@ -90,6 +90,7 @@
 | 2026-09-01 | [`task_host_obs_comms_ui.md`](./task_host_obs_comms_ui.md) | C4 obs-comms 契约 v0 + web Prompt（api 无码） · PR #120 |
 | 2026-09-01 | [`task_lg_rag_sse_delta_realtime_spec.md`](./task_lg_rag_sse_delta_realtime_spec.md) | T5.1 SPEC §10.4.1 pacing / anti-buffer（docs-only） |
 | 2026-09-01 | [`task_lg_rag_sse_delta_realtime.md`](./task_lg_rag_sse_delta_realtime.md) | T5.1 终答 delta 实时投递（persist 不阻塞 yield） · PR #122 |
+| 2026-09-07 | [`task_lg_rag_sse_idle_keepalive.md`](./task_lg_rag_sse_idle_keepalive.md) | §10.6 SSE idle keepalive（comment 30s · 不落盘） · PR #123 |
 
 ---
 
@@ -127,7 +128,7 @@
 | 2026-09-01 | CLOSE C2 `#116`（host-comms-prompt-pack 归档 done/ · Hub 补登） |
 | 2026-09-01 | CLOSE C3 `#118`（host-comms-task-writer 归档 done/ · Hub 补登） |
 | 2026-09-01 | CLOSE C4 `#120`（host-obs-comms-ui 归档 done/ · Hub 补登）· **串行波次 T4–C4 全 CLOSE** |
-| 2026-09-07 | CLOSE T5.1 `#122`（lg-rag-sse-delta-realtime + spec 归档 done/ · Hub 补登） |
+| 2026-09-07 | CLOSE idle-keepalive `#123`（lg-rag-sse-idle-keepalive 归档 done/ · Hub 补登） |
 
 ## 给维护者
 
