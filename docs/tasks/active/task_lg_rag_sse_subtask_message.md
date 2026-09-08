@@ -39,7 +39,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
 | HG-TASK-DRAFT | approved | 22-R1 | 2026-09-08 · **00 代签 · 维护者授权签收后续文档** |
-| HG-AUDIT-R1 | **pending** | 30 | 待 HG-TASK-DRAFT 通过后签发；**未签不得 30 改码** |
+| HG-AUDIT-R1 | **approved** | 30 | 2026-09-08 · **00 代签 · 维护者授权签收后续文档** · R1 [pass-with-notes](../../harness/reviews/task_lg_rag_sse_subtask_message_audit_R1_20260908.md) · N1–N3 收入定夺/必读 |
 | HG-GRAPH-MODULES | approved | — | 不新增一级模块 · **00 代签**（仅 G-L1 备注 + G-L2 indexes 若增符号） |
 
 ---
@@ -57,13 +57,13 @@
 | 项 | 钉死（草案） |
 |---|---|
 | **slug** | `lg-rag-sse-subtask-message` |
-| **字段** | `payload.message`：可选 `string`；UTF-8；**截断**（建议 ≤200 字，与 preview 同类） |
+| **字段** | `payload.message`：可选 `string`；UTF-8；**截断上限钉死 200 字**（R1-N3：常量 `SUBTASK_MESSAGE_MAX_LEN = 200`，单测断言无歧义） |
 | **哪些帧** | `running` / `step` / `done` **均应尽量带**；缺映射时可用兜底短句（如「子任务进行中」/「步骤：{step}」），**禁止**空字符串冒充有内容 |
 | **生成方式** | **确定性模板**（代码内映射表）；**禁止**再调 LLM 写「思考」；**禁止**把模型 CoT / raw prompt 塞进 `message` |
 | **step 示例** | `retrieve`+`phase:start`→「开始检索…」；`retrieve`+`phase:done`+`hit_count`→「检索完成，命中 N 条」；`grade`+`gate_action`→含动作语义；`rewrite`+`current_query`→「改写查询：…」（query 截断） |
 | **running / done** | running：含 type/input 摘要的一句；done：一句结果摘要（可基于 `subtask_result` 轻量键，勿塞全文 evidence） |
 | **契约** | 05 §10.7 增补 `message` 行；freeze 仍 `lg-rag-sse-v1` |
-| **机制** | 集中在 `progress_stream`（或同目录小模块）生成后写入 payload；`emit_subtask_running` / `emit_subtask_step` / done 映射处调用 |
+| **机制** | 集中在 `progress_stream`（或同目录小模块）生成后写入 payload；`emit_subtask_running` / `emit_subtask_step` / done 映射处调用；**模板生成必须纯同步**（R1-N2：done 挂载点 `map_node_update` 为纯同步函数） |
 
 ---
 
@@ -110,7 +110,7 @@
 
 1. `AGENTS.md` · `docs/standards/CODING_BACKEND_L2_v1_zh.md`  
 2. 05 §10.7（现行 running/step/done）  
-3. `app/ops/lg_rag/progress_stream.py` · `sse_stream.py` map done · `lc_evidence_chain/step_hook.py`  
+3. `app/ops/lg_rag/progress_stream.py` · `app/ops/lg_rag/sse_stream.py` map done · `app/ops/lc_evidence_chain/step_hook.py`（R1-N1 路径修正）  
 4. 前置 task：`docs/tasks/active/task_lg_rag_sse_subtask_steps.md`（或归档后 `done/`）  
 
 ---
@@ -166,3 +166,4 @@
 |---|---|
 | 2026-09-08 | **10-task**：维护者选 B；落盘 draft · 闸 pending |
 | 2026-09-08 | **00**：维护者令统筹并授权签收后续文档；代签 HG-TASK-DRAFT / HG-GRAPH-MODULES；前置 subtask-steps CLOSE（#129）；HG-AUDIT-R1 待 20 R1 落盘后代签 |
+| 2026-09-08 | **20 R1** pass-with-notes（0 阻塞 · N1 必读路径 / N2 同步约束 / N3 截断常量 200）→ 全收入 · **00 代签 HG-AUDIT-R1** |
