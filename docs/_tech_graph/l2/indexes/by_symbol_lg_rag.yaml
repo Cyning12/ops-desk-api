@@ -58,6 +58,18 @@ by_symbol:
     path: app/ops/lg_rag/progress_stream.py
     node_id: lg_stream
     kind: method
+  build_subtask_running_message:
+    path: app/ops/lg_rag/subtask_message.py
+    node_id: lg_stream
+    kind: method
+  build_subtask_step_message:
+    path: app/ops/lg_rag/subtask_message.py
+    node_id: lg_stream
+    kind: method
+  build_subtask_done_message:
+    path: app/ops/lg_rag/subtask_message.py
+    node_id: lg_stream
+    kind: method
   format_sse_event:
     path: app/ops/lg_rag/sse_replay.py
     node_id: lg_stream
