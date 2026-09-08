@@ -1,6 +1,6 @@
 # Task：lg-rag SSE · subtask 里程碑 step + LLM 真流式
 
-> **状态**：active（2026-09-08 · 维护者确认 Implement plan）  
+> **状态**：completed（2026-09-08 CLOSE · PR [#127](https://github.com/Cyning12/ops-desk-api/pull/127) MERGED · 归档 done）  
 > **类型**：传输 / 子任务过程时效 + provider 流式  
 > **上游**：[`05_lg_rag_transport_and_session_plan_v0.md`](../../spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md) **§10.7**（step 增补）  
 > **前置**：`lg-rag-sse-subtask-live`（running/done MVP）已归档 done  
@@ -29,7 +29,7 @@
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | `lg-rag-sse-v1`（不新 freeze；不新 event_type；payload 增 `status=step`/`step`/`detail`） |
 | **close_pr_policy** | `required` |
-| **related_pr** | （待开） |
+| **related_pr** | `#127` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | api-first |
 
@@ -75,8 +75,35 @@
 | 无 sink / 无 hook | step 空操作 | — |
 | sink/hook 异常 | 打日志，不中断节点 | 是 |
 
+### 自检结论（执行者）
+
+> **帽**：30+40 · **日期**：2026-09-08 · **分支**：`task/lg-rag-sse-subtask-steps`（已合）  
+> **invoke**：`docs/harness/invokes/by-task/lg-rag-sse-subtask-steps/invoke_20260908_30_40_lg-rag-sse-subtask-steps.md`
+
+- 慢 mock：`running` 后、节点返回前可见 `status=step`（retrieve / router 节点）——pass
+- provider：误调 `aread` 不吞 chunk（回归测）——pass
+- keepalive / T5 delta / running 旧测不回归——pass
+- `ruff check app tests` · 相关 `pytest` · `graph-compile`——全绿（PR #127 CI）
+
+### KPI（00）
+
+Task_KPI%: 100 · D1 范围钉死（step 里程碑 + aread 真流式 · 不新 event_type/freeze）· D2 闸齐（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 00 代签落盘）· D3 过程档齐（invoke 10/00/30+40 + CLOSE invoke）· D4 图谱 G-L1 备注随 #127 · D5 关账补登 2026-09-08（Hub + active README + subtask_live #125 漏行同波补）
+
 ## 修订记录
 
 | 日期 | 说明 |
 |---|---|
 | 2026-09-08 | **00**：维护者确认 Implement plan；钉 step 里程碑 + aread 修复 |
+| 2026-09-08 | **00 CLOSE**：PR [#127](https://github.com/Cyning12/ops-desk-api/pull/127) MERGED；验收 4/4 全绿；归档 done/ · Hub 补登 · CLOSE invoke 留档 |
+
+---
+
+## 关账（CLOSE）
+
+| 项 | 值 |
+|---|---|
+| PR | [#127](https://github.com/Cyning12/ops-desk-api/pull/127) MERGED（2026-09-08） |
+| 验收 | running 后节点返回前可见 `status=step` · aread 误调不吞 chunk · keepalive/T5/running 旧测不回归 · ruff/pytest/graph-compile 绿 |
+| 归档 | `docs/tasks/done/task_lg_rag_sse_subtask_steps.md` |
+| Hub | 2026-09-08 补登（含 subtask_live #125 漏行同波补登） |
+| 下一棒 | `lg-rag-sse-subtask-message`（subtask.progress 可读 `message`） |
