@@ -21,6 +21,7 @@
 | 2026-08-26 | [`2026-08-26_1.7.1_upgrade-no-prompt-sync.md`](./2026-08-26_1.7.1_upgrade-no-prompt-sync.md) | 1.7.1 | upgrade 不落地 `00-orchestrator.md`；幂等刷新 `upgraded_at` | superseded（见 1.8.0 复发） |
 | 2026-08-27 | [`2026-08-27_1.8.0_upgrade-no-prompt-sync.md`](./2026-08-27_1.8.0_upgrade-no-prompt-sync.md) | 1.8.0 | upgrade 仍不 sync `assets/harness/prompts/`（复发） | superseded（见 1.10.0） |
 | 2026-08-31 | [`2026-08-31_1.10.0_sync-prompts-closed.md`](./2026-08-31_1.10.0_sync-prompts-closed.md) | 1.10.0 | 正式 `sync prompts`；关闭 upgrade-no-prompt-sync 链 | closed |
+| 2026-08-31 | [`../../harness/evidence/FEEDBACK_dsh_coding_kit_hat_identity_system_prompt_20260831.md`](../../harness/evidence/FEEDBACK_dsh_coding_kit_hat_identity_system_prompt_20260831.md) | 1.9.1 | 帽身份丢失 / 缺 System·Re-anchor；00 偶现亲自落地；Skills≠全覆盖；Host 授权 npx verify | open |
 
 ---
 
