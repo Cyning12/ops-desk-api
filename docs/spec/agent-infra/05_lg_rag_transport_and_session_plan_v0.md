@@ -475,12 +475,13 @@
 
 ---
 
-### 10.7 Subtask 中途可见（running + step 里程碑 · 2026-09-07 / 2026-09-08）
+### 10.7 Subtask 中途可见（running + step 里程碑 + 可读 message · 2026-09-07 / 2026-09-08）
 
 > **性质**：契约增量（**子任务过程时效**）；不改 freeze、**不**新增 `event_type`。  
 > **动机**：`astream(updates)` 仅在节点结束后才发 `subtask.progress`；`rag_subtask` 内 router / evidence 可静默数分钟，UI 只见「处理中…」。  
 > **MVP（2026-09-07）**：进入 `rag_subtask` / `info_extract` / `tool_exec` 时 **立即** 发一帧 `subtask.progress`（`status=running`）；节点结束后的既有完成帧补 `status=done`。  
 > **增补（2026-09-08 · `lg-rag-sse-subtask-steps`）**：`rag_subtask` 内推送 `status=step` 里程碑——router 子图节点边界 + evidence `retrieve`/`grade`/`answer` 起止（`detail.phase` = `start`|`done`）；`rag_subtask` 改 `astream_router_agent`；evidence 经 `step_hook` ContextVar（**不**造 `lc_evidence_chain→lg_rag` 反向边）。另：provider `_stream_openai_compatible` **禁止**成功路径 `aread()` 整包缓冲，保证终答 delta 真流式。  
+> **增补（2026-09-08 · `lg-rag-sse-subtask-message`）**：running / step / done 帧均带**可选 `message`**（中文短句）——api 侧 `subtask_message.py` **确定性模板**由 `step`+`detail`（及 running/done 上下文轻量键）生成；纯同步、不调 LLM、不塞 CoT / evidence 全文；统一截断 `SUBTASK_MESSAGE_MAX_LEN = 200`；未知 step / 缺 detail 走兜底短句（含 step 名），禁空串；生成异常打日志降级、帧仍发。**旧客户端忽略未知键即可，无需升级**。
 > **仍非本波**：子任务内 token 流；新 `event_type=node.start`；web 假打字机。
 
 | 维度 | 钉死 |
@@ -489,6 +490,7 @@
 | **payload（running）** | 至少：`status: "running"` · `subtask_id`（或 `id`）· `type`（rag/extract/tool）· 可选 `input` 截断预览 · `agent_role` 顶层仍为节点名 |
 | **payload（step）** | `status: "step"` · `subtask_id` · `type` · `step`（如 `router`/`rag`/`retrieve`/`grade`/`answer`）· 可选 `detail`（截断；evidence 步含 `phase`） |
 | **payload（done）** | 节点 updates 映射的既有摘要键 + `status: "done"`（可选但推荐） |
+| **payload（message）** | 三类帧均可选 `message: string`（UTF-8 · ≤200 字截断）；running 含 type/input 摘要一句；step 由 step+detail 模板映射（retrieve/grade/rewrite/answer 等，未知 step 兜底含 step 名）；done 基于 `subtask_result` 轻量键一句结果摘要；**旧客户端忽略未知键** |
 | **投递机制** | 对齐 T5：contextvar **progress sink**（节点内 `await sink(...)` → SSE 主循环竞速 yield）；evidence 步经 **step_hook** 转 emit；**禁止**等节点返回才发 running/step |
 | **落盘 / seq** | running / step 帧 **落盘**（与业务帧同 seq 单调）；replay 可重放 |
 | **freeze** | 仍 **`lg-rag-sse-v1`** |
@@ -500,6 +502,7 @@
 - [ ] 慢 `rag_subtask`：节点未结束前 EventStream 已有 `subtask.progress` + `status=running`  
 - [ ] 长等待中可见 ≥1 帧 `status=step`（retrieve/grade 或 router 节点），不只 keepalive  
 - [ ] 完成后同 id 有 `status=done`（或完成摘要帧）；thinking/subtasks 分区不串台  
+- [ ] 过程区可见中文短句：running / step / done 帧 `message` 非空可直接 `append` 上屏（web 可覆盖展示；旧客户端忽略未知键不报错）  
 - [ ] 终答 delta `ts_ms` 跨度拉开（非同 ms 倾泻）  
 - [ ] T5 delta / T5.1 / keepalive / idle 不回归  
 
@@ -561,3 +564,4 @@
 | 2026-08-31 | §10.5 回写 T6 api 实现句：`/chat/stream` → 410（迁移指针 + Deprecation 头）· 保留 models/sessions.latest/WS · 不删 chat 代码（task `lg-rag-deprecate-chat-stream`） |
 | 2026-09-01 | §11.3 增 **T5.1** 勾选：终答 delta 时间线 / mock 慢 chunk / 降级可观测 / replay 形状 / 反代禁用缓冲 |
 | 2026-09-07 | §10.6 idle 120s + comment keepalive；§10.2/§11.3 去掉墙钟 ≥300s 表述 |
+| 2026-09-08 | §10.7 增补可选 `message`（确定性模板 · ≤200 字 · 旧客户端忽略未知键；task `lg-rag-sse-subtask-message`） |

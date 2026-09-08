@@ -36,6 +36,7 @@ from app.ops.lg_rag.progress_stream import (
     set_subtask_progress_sink,
 )
 from app.ops.lg_rag.sse_replay import format_sse_event, make_cursor
+from app.ops.lg_rag.subtask_message import build_subtask_done_message
 from app.ops.lg_rag.thread_store import persist_thread_turns
 from app.ops.tracing import flush_traces, tracing_enabled
 
@@ -137,6 +138,15 @@ def map_node_update(node_name: str, node_output: Any) -> tuple[str, str, dict[st
         # §10.7：完成摘要保留既有键，补 status=done（旧客户端忽略未知键）
         done_payload = _summarize_payload(node_output)
         done_payload["status"] = "done"
+        try:  # message 为纯同步模板；生成失败打日志降级、帧仍发
+            done_payload["message"] = build_subtask_done_message(
+                subtask_result=done_payload.get("subtask_result"),
+                answer_preview=str(done_payload.get("answer_preview") or ""),
+            )
+        except Exception as exc:
+            logger.warning(
+                "lg_rag done message 生成失败 node=%s err=%r", node_name, exc
+            )
         return "subtask.progress", role, done_payload
     if node_name in _ANSWER_NODES:
         answer = ""

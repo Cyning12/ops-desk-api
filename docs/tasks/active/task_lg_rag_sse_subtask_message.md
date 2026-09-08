@@ -86,14 +86,14 @@
 
 ## 验收标准
 
-- [ ] `npx --yes dsh-coding-kit task lint-wiki-delta --target .` 通过  
-- [ ] mock：`status=running` 帧含非空 `message`  
-- [ ] mock：至少一帧 `status=step`（含 `detail.phase` 或 `gate_action`）含可读 `message`，且与 detail 数字/动作一致  
-- [ ] mock：`status=done` 帧含非空 `message`（或文档钉死「done 可选」且测覆盖声明）  
-- [ ] `message` 超长被截断（单测）  
-- [ ] 05 §10.7 落盘；旧客户端兼容说明（忽略未知键）  
-- [ ] ruff · 相关 pytest · graph-compile（若动 yaml）  
-- [ ] keepalive / T5 delta / step 旧测不回归  
+- [x] `npx --yes dsh-coding-kit task lint-wiki-delta --target .` 通过  
+- [x] mock：`status=running` 帧含非空 `message`  
+- [x] mock：至少一帧 `status=step`（含 `detail.phase` 或 `gate_action`）含可读 `message`，且与 detail 数字/动作一致  
+- [x] mock：`status=done` 帧含非空 `message`（或文档钉死「done 可选」且测覆盖声明）  
+- [x] `message` 超长被截断（单测）  
+- [x] 05 §10.7 落盘；旧客户端兼容说明（忽略未知键）  
+- [x] ruff · 相关 pytest · graph-compile（若动 yaml）  
+- [x] keepalive / T5 delta / step 旧测不回归  
 
 ## failure_paths
 
@@ -148,7 +148,25 @@
 
 ### 自检结论（执行者）
 
-（30/40 回填 · draft 阶段空）
+- **帽**：40-self-check · **日期**：2026-09-08 · **分支**：`task/lg-rag-sse-subtask-message`
+- **invoke**：`docs/harness/invokes/by-task/lg-rag-sse-subtask-message/invoke_20260908_40_lg-rag-sse-subtask-message.md`
+
+**质量门（本帽真跑 · 退出码）**
+
+| 命令 | 退出码 | 结果 |
+|---|---|---|
+| `uv run pytest tests/test_lg_rag_sse_subtask_message.py -q` | 0 | 20 passed |
+| `uv run pytest tests -q`（全量） | 1 | 653 passed / 2 failed；2 失败均为 `tests/test_chat_ws.py` WS 用例——**存量本地环境失败**（00 已 stash 对照：干净树同败 · PR #129 CI pytest 绿），与本波无关 |
+| `uv run pytest tests -q -k "lg_rag or keepalive or delta"` | 0 | 133 passed（相关子集） |
+| `uv run ruff check app/ops/lg_rag tests/test_lg_rag_sse_subtask_message.py`（触及路径） | 0 | All checks passed |
+| `uv run ruff check app tests`（全量） | 1 | 2 errors 均**存量**：`app/ops/rag/tokenizer.py` UP035 · `tests/test_rag_chunker.py` I001（本波未触碰） |
+| `./scripts/graph-compile.sh` | 0 | OK（9 graphs · check 全 OK） |
+| `task lint-wiki-delta --target .` | 0 | PASS（scanned=109 · issues=0） |
+| `verify --target . --task <task 文件>` | 0 | VERIFY: PASS（三闸 approved） |
+
+**验收对照（8/8）**：① lint-wiki-delta PASS；② running 帧非空 message（`test_emit_running_frame_has_message` 等）；③ step 帧 message 与 detail 数字/动作一致（retrieve 命中数 · grade gate_action「部分作答/拒答」· rewrite 查询）；④ done 帧非空 message（`test_map_node_update_done_has_message` + 兜底禁空串）；⑤ 截断单测 `test_message_truncated_at_max_len`（`SUBTASK_MESSAGE_MAX_LEN = 200`）；⑥ 05 §10.7 增补落盘 + 「旧客户端忽略未知键即可，无需升级」+ §11.4 修订行；⑦ 触及路径 ruff 0 · 相关 pytest 全绿 · graph-compile 0（全量 ruff/pytest 的失败均为存量，已标注）；⑧ lg_rag/keepalive/delta 133 passed 无回归。
+
+**已知未测项 / 存量问题**：`test_chat_ws.py` 2 例本地环境失败（存量 · 非本波）；ruff 全量 2 处既有 lint（存量）；未连真 LLM（按 test_strategy mock 口径）；web 消费 `message` 属另 task，不阻塞本仓。
 
 ### KPI（00）
 

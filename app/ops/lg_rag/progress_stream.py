@@ -5,6 +5,8 @@
 ``answer_stream`` 同构的 contextvar progress sink：SSE emit 循环挂 sink；
 - ``emit_subtask_running``：入口起步帧 ``status=running``；
 - ``emit_subtask_step``：中途里程碑 ``status=step`` + ``step`` + 可选 ``detail``；
+- 两帧均带可选 ``message``（``subtask_message`` 确定性模板，纯同步，
+  生成失败打日志降级、帧仍发）；
 - 无 sink（invoke / 非 SSE）：空操作；sink 异常打日志不中断节点。
 
 禁止新增 event_type；禁止 import app.ops.session / app.ops.chat。
@@ -16,6 +18,11 @@ import json
 import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
+
+from app.ops.lg_rag.subtask_message import (
+    build_subtask_running_message,
+    build_subtask_step_message,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +96,14 @@ async def emit_subtask_running(
     }
     if input_preview:
         payload["input"] = _truncate_preview(input_preview)
+    try:  # message 生成失败仅降级（帧仍发），不中断节点
+        payload["message"] = build_subtask_running_message(
+            type=type, input_preview=input_preview
+        )
+    except Exception as exc:
+        logger.warning(
+            "lg_rag running message 生成失败 id=%s err=%r", subtask_id, exc
+        )
     try:
         await sink(agent_role, payload)
     except Exception as exc:
@@ -125,6 +140,15 @@ async def emit_subtask_step(
     truncated = _truncate_detail(detail)
     if truncated is not None:
         payload["detail"] = truncated
+    try:  # message 生成失败仅降级（帧仍发），不中断节点
+        payload["message"] = build_subtask_step_message(step=step, detail=detail)
+    except Exception as exc:
+        logger.warning(
+            "lg_rag step message 生成失败 id=%s step=%s err=%r",
+            subtask_id,
+            step,
+            exc,
+        )
     try:
         await sink(agent_role, payload)
     except Exception as exc:

@@ -53,6 +53,16 @@ by_path:
     - node_id: lg_stream
       symbol: set_subtask_progress_sink
       kind: method
+  "app/ops/lg_rag/subtask_message.py":
+    - node_id: lg_stream
+      symbol: build_subtask_running_message
+      kind: method
+    - node_id: lg_stream
+      symbol: build_subtask_step_message
+      kind: method
+    - node_id: lg_stream
+      symbol: build_subtask_done_message
+      kind: method
   "app/ops/lg_rag/sse_replay.py":
     - node_id: lg_stream
       symbol: format_sse_event
