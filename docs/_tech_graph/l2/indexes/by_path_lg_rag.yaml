@@ -48,6 +48,9 @@ by_path:
       symbol: emit_subtask_running
       kind: method
     - node_id: lg_stream
+      symbol: emit_subtask_step
+      kind: method
+    - node_id: lg_stream
       symbol: set_subtask_progress_sink
       kind: method
   "app/ops/lg_rag/sse_replay.py":

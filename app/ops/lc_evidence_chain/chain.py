@@ -17,6 +17,7 @@ from langchain_core.runnables import RunnableLambda
 from app.ops.lc_evidence_chain.answer import answer_question
 from app.ops.lc_evidence_chain.grader import decide_grade, grade_chunk
 from app.ops.lc_evidence_chain.retrieve import retrieve_evidence
+from app.ops.lc_evidence_chain.step_hook import emit_chain_step
 from app.ops.lc_evidence_chain.types import ChainResult, EvidenceItem
 from app.ops.tracing import (
     ensure_langfuse_environment,
@@ -60,10 +61,15 @@ def _meta_span_update(meta: dict[str, Any]) -> None:
 
 async def _retrieve_step(inp: dict[str, Any] | str) -> dict[str, Any]:
     with trace_span("retrieve", run_type="retriever"):
+        await emit_chain_step("retrieve", {"phase": "start"})
         query = inp["query"] if isinstance(inp, dict) else str(inp)
         result = await retrieve_evidence(query)
         meta = {"hit_count": len(result.evidence)}
         _meta_span_update(meta)
+        await emit_chain_step(
+            "retrieve",
+            {"phase": "done", "hit_count": meta["hit_count"]},
+        )
         return {
             "query": result.query,
             "evidence": result.evidence,
@@ -73,11 +79,16 @@ async def _retrieve_step(inp: dict[str, Any] | str) -> dict[str, Any]:
 
 async def _grade_step(payload: dict[str, Any]) -> dict[str, Any]:
     with trace_span("grade", run_type="chain"):
+        await emit_chain_step("grade", {"phase": "start"})
         evidence: list[EvidenceItem] = list(payload.get("evidence") or [])
         meta = dict(payload.get("meta") or {})
         if not evidence:
             meta["graded"] = False
             _meta_span_update(meta)
+            await emit_chain_step(
+                "grade",
+                {"phase": "done", "graded": False, "hit_count": 0},
+            )
             return {**payload, "meta": meta}
 
         # LLM/parse_grades 仍按 chunk_id；本包 Grade 映射为 evidence_id（= EvidenceItem.id）
@@ -90,11 +101,23 @@ async def _grade_step(payload: dict[str, Any]) -> dict[str, Any]:
         meta["gate_action"] = decision.action
         meta["best_relevance"] = decision.best.value
         _meta_span_update(meta)
+        await emit_chain_step(
+            "grade",
+            {
+                "phase": "done",
+                "graded": True,
+                "grade_count": meta["grade_count"],
+                "kept_count": meta["kept_count"],
+                "gate_action": meta["gate_action"],
+                "best_relevance": meta["best_relevance"],
+            },
+        )
         return {**payload, "evidence": decision.kept, "meta": meta}
 
 
 async def _answer_step(payload: dict[str, Any]) -> dict[str, Any]:
     with trace_span("answer", run_type="chain"):
+        await emit_chain_step("answer", {"phase": "start"})
         evidence: list[EvidenceItem] = list(payload.get("evidence") or [])
         meta = dict(payload.get("meta") or {})
         gate_action = str(meta.get("gate_action") or "")
@@ -104,6 +127,14 @@ async def _answer_step(payload: dict[str, Any]) -> dict[str, Any]:
             gate_action=gate_action or None,
         )
         _meta_span_update(meta)
+        await emit_chain_step(
+            "answer",
+            {
+                "phase": "done",
+                "gate_action": gate_action or None,
+                "answer_chars": len(answer or ""),
+            },
+        )
         return {
             **payload,
             "answer": answer,

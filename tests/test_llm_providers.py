@@ -12,9 +12,14 @@ from app.llm.schema import LlmChunk, LlmMessage, LlmProviderError
 class _FakeStreamResponse:
     def __init__(self, status_code: int, lines: list[str]) -> None:
         self.status_code = status_code
-        self.lines = lines
+        self.lines = list(lines)
+        self.aread_calls = 0
 
     async def aread(self) -> bytes:
+        # 真流式路径不得在成功响应上 aread() 整包；若误调则清空 lines 以暴露回归
+        self.aread_calls += 1
+        if self.status_code < 400:
+            self.lines.clear()
         return b""
 
     async def aiter_lines(self):
@@ -32,6 +37,7 @@ class _FakeClient:
     def __init__(self, status_code: int, lines: list[str]) -> None:
         self.status_code = status_code
         self.lines = lines
+        self.last_response: _FakeStreamResponse | None = None
 
     async def __aenter__(self):
         return self
@@ -40,11 +46,20 @@ class _FakeClient:
         pass
 
     def stream(self, *args, **kwargs):
-        return _FakeStreamResponse(self.status_code, self.lines)
+        self.last_response = _FakeStreamResponse(self.status_code, self.lines)
+        return self.last_response
 
 
 def _fake_client_factory(status_code: int, lines: list[str]):
-    return lambda *args, **kwargs: _FakeClient(status_code, lines)
+    clients: list[_FakeClient] = []
+
+    def _factory(*args, **kwargs):
+        client = _FakeClient(status_code, lines)
+        clients.append(client)
+        return client
+
+    _factory.clients = clients  # type: ignore[attr-defined]
+    return _factory
 
 
 class TestSiliconFlowProvider:
@@ -54,7 +69,8 @@ class TestSiliconFlowProvider:
             'data: {"choices":[{"delta":{"content":" world"}}]}',
             "data: [DONE]",
         ]
-        monkeypatch.setattr(httpx, "AsyncClient", _fake_client_factory(200, lines))
+        factory = _fake_client_factory(200, lines)
+        monkeypatch.setattr(httpx, "AsyncClient", factory)
 
         provider = SiliconFlowProvider(api_key="test-key")
         chunks = [
@@ -66,6 +82,27 @@ class TestSiliconFlowProvider:
 
         assert [c.content for c in chunks] == ["Hello", " world"]
         assert all(isinstance(c, LlmChunk) for c in chunks)
+        # 成功流不得 aread() 整包（假响应若误调会清空 lines → chunks 为空）
+        assert factory.clients[-1].last_response is not None
+        assert factory.clients[-1].last_response.aread_calls == 0
+
+    async def test_complete_stream_rejects_aread_buffering(self, monkeypatch):
+        """回归：成功路径若调用 aread()，假响应会清空 lines → 不得仍声称流式成功。"""
+        lines = [
+            'data: {"choices":[{"delta":{"content":"X"}}]}',
+            "data: [DONE]",
+        ]
+        factory = _fake_client_factory(200, lines)
+        monkeypatch.setattr(httpx, "AsyncClient", factory)
+        provider = SiliconFlowProvider(api_key="test-key")
+        chunks = [
+            c
+            async for c in provider.complete_stream(
+                [LlmMessage(role="user", content="hi")]
+            )
+        ]
+        assert [c.content for c in chunks] == ["X"]
+        assert factory.clients[-1].last_response.aread_calls == 0
 
     async def test_complete_aggregates_stream(self, monkeypatch):
         lines = [

@@ -106,7 +106,7 @@ class BaseProviderImpl(BaseProvider):
                     },
                 ) as response,
             ):
-                await response.aread()  # start request to get status code
+                # headers 已到即可读 status；禁止 aread() 整包缓冲（会破坏 token 真流式）
                 if response.status_code >= 400:
                     await BaseProviderImpl._raise_for_status(response)
 
