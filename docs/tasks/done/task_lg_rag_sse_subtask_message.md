@@ -1,6 +1,6 @@
 # Task：lg-rag SSE · subtask.progress 可读 `message`
 
-> **状态**：active（2026-09-08 · 维护者授权 00 统筹 · 00 代签闸）  
+> **状态**：completed（2026-09-08 CLOSE · PR [#130](https://github.com/Cyning12/ops-desk-api/pull/130) MERGED · 归档 done）  
 > **类型**：传输 / 子任务过程可读文案  
 > **上游**：[`05_lg_rag_transport_and_session_plan_v0.md`](../../spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md) **§10.7**（拟增补 `message`）  
 > **前置**：`lg-rag-sse-subtask-steps`（`status=step` + detail 已合 · PR [#127](https://github.com/Cyning12/ops-desk-api/pull/127)）  
@@ -30,7 +30,7 @@
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | `lg-rag-sse-v1`（不新 freeze；不新 event_type；payload 增可选 `message`） |
 | **close_pr_policy** | `required` |
-| **related_pr** | （待开） |
+| **related_pr** | `#130` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | api-first |
 
@@ -170,11 +170,13 @@
 
 ### KPI（00）
 
-（CLOSE 回填）
+Task_KPI%: 100 · D1 范围钉死（可选 message · 确定性模板 · 零新 event_type/freeze）· D2 闸齐（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 00 代签 · R1 pass-with-notes N1–N3 收入）· D3 过程档齐（invoke 10/00/30/40 + R1 审查文）· D4 图谱 G-L1 备注 + G-L2 indexes 随 #130 · D5 关账补登 2026-09-08（Hub + active README）
 
 ### 经验总结
 
-（CLOSE 回填 · 若 `experience_capture=required`）
+1. **确定性模板优于 LLM 写文案**：step+detail 映射表即可覆盖过程可读性，零成本、可单测断言、无 CoT 泄漏风险。
+2. **挂载点同步性约束要早查**：done 挂载在纯同步 `map_node_update`，文案生成函数必须纯同步（R1-N2 前置发现，避免实现返工）。
+3. **截断常量钉死再开工**：`SUBTASK_MESSAGE_MAX_LEN=200` 钉死后单测断言无歧义（R1-N3）。
 
 ---
 
@@ -185,3 +187,17 @@
 | 2026-09-08 | **10-task**：维护者选 B；落盘 draft · 闸 pending |
 | 2026-09-08 | **00**：维护者令统筹并授权签收后续文档；代签 HG-TASK-DRAFT / HG-GRAPH-MODULES；前置 subtask-steps CLOSE（#129）；HG-AUDIT-R1 待 20 R1 落盘后代签 |
 | 2026-09-08 | **20 R1** pass-with-notes（0 阻塞 · N1 必读路径 / N2 同步约束 / N3 截断常量 200）→ 全收入 · **00 代签 HG-AUDIT-R1** |
+| 2026-09-08 | **30+40**：实现 + 单测 20 passed + §10.7/图谱/wiki + 自检 8/8 · PR [#130](https://github.com/Cyning12/ops-desk-api/pull/130) MERGED（CI 三绿） |
+| 2026-09-08 | **00 CLOSE**：`task close --yes` PASS · 归档 done/ · Hub 补登 · CLOSE invoke 续记 |
+
+---
+
+## 关账（CLOSE）
+
+| 项 | 值 |
+|---|---|
+| PR | [#130](https://github.com/Cyning12/ops-desk-api/pull/130) MERGED（2026-09-08 · CI 三绿） |
+| 验收 | 8/8 勾（40 自检回填 · 存量 `test_chat_ws` 2 例本地环境失败如实标注） |
+| 归档 | `docs/tasks/done/task_lg_rag_sse_subtask_message.md` |
+| Hub | 2026-09-08 补登 |
+| 下游 | web `web-lg-rag-sse-subtask-message`（PR [#41](https://github.com/Cyning12/ops-desk-web/pull/41) MERGED） |
