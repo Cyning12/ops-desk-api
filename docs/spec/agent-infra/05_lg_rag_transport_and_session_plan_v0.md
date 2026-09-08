@@ -242,6 +242,7 @@
 | 2026-09-01 | **T5.1 实现回写**：`emit` 后台 persist（不阻塞 yield）· §10.4.1 实然更新 · task `lg-rag-sse-delta-realtime` |
 | 2026-09-07 | **§10.6**：client idle 120s + SSE comment keepalive 30s；联调项去墙钟 300s；task `lg-rag-sse-idle-keepalive` |
 | 2026-09-07 | **§10.7**：subtask `status=running` 起步帧（progress sink）· MVP；task `lg-rag-sse-subtask-live` |
+| 2026-09-08 | **§10.7 增补**：`status=step` 里程碑（router 节点 + retrieve/grade/answer）· provider 禁 aread 整包；task `lg-rag-sse-subtask-steps` |
 
 ---
 
@@ -474,28 +475,32 @@
 
 ---
 
-### 10.7 Subtask 中途可见（running 起步帧 · 2026-09-07）
+### 10.7 Subtask 中途可见（running + step 里程碑 · 2026-09-07 / 2026-09-08）
 
 > **性质**：契约增量（**子任务过程时效**）；不改 freeze、**不**新增 `event_type`。  
-> **动机**：`astream(updates)` 仅在节点结束后才发 `subtask.progress`；`rag_subtask` 内整段 `ainvoke_router_agent` 可静默数分钟，UI 只见「处理中…」。  
-> **本波范围（MVP）**：进入 `rag_subtask` / `info_extract` / `tool_exec` 时 **立即** 发一帧 `subtask.progress`（`status=running`）；节点结束后的既有完成帧补 `status=done`（旧客户端忽略未知键仍可用）。  
-> **非本波**：子图内 retrieve/grade 逐步帧；子任务内 token 流；新 `event_type=node.start`。
+> **动机**：`astream(updates)` 仅在节点结束后才发 `subtask.progress`；`rag_subtask` 内 router / evidence 可静默数分钟，UI 只见「处理中…」。  
+> **MVP（2026-09-07）**：进入 `rag_subtask` / `info_extract` / `tool_exec` 时 **立即** 发一帧 `subtask.progress`（`status=running`）；节点结束后的既有完成帧补 `status=done`。  
+> **增补（2026-09-08 · `lg-rag-sse-subtask-steps`）**：`rag_subtask` 内推送 `status=step` 里程碑——router 子图节点边界 + evidence `retrieve`/`grade`/`answer` 起止（`detail.phase` = `start`|`done`）；`rag_subtask` 改 `astream_router_agent`；evidence 经 `step_hook` ContextVar（**不**造 `lc_evidence_chain→lg_rag` 反向边）。另：provider `_stream_openai_compatible` **禁止**成功路径 `aread()` 整包缓冲，保证终答 delta 真流式。  
+> **仍非本波**：子任务内 token 流；新 `event_type=node.start`；web 假打字机。
 
 | 维度 | 钉死 |
 |---|---|
 | **event_type** | 仍 **`subtask.progress`**（与完成摘要同类型） |
 | **payload（running）** | 至少：`status: "running"` · `subtask_id`（或 `id`）· `type`（rag/extract/tool）· 可选 `input` 截断预览 · `agent_role` 顶层仍为节点名 |
+| **payload（step）** | `status: "step"` · `subtask_id` · `type` · `step`（如 `router`/`rag`/`retrieve`/`grade`/`answer`）· 可选 `detail`（截断；evidence 步含 `phase`） |
 | **payload（done）** | 节点 updates 映射的既有摘要键 + `status: "done"`（可选但推荐） |
-| **投递机制** | 对齐 T5：contextvar **progress sink**（节点内 `await sink(...)` → SSE 主循环竞速 yield）；**禁止**等节点返回才发 running |
-| **落盘 / seq** | running 帧 **落盘**（与业务帧同 seq 单调）；replay 可重放 |
+| **投递机制** | 对齐 T5：contextvar **progress sink**（节点内 `await sink(...)` → SSE 主循环竞速 yield）；evidence 步经 **step_hook** 转 emit；**禁止**等节点返回才发 running/step |
+| **落盘 / seq** | running / step 帧 **落盘**（与业务帧同 seq 单调）；replay 可重放 |
 | **freeze** | 仍 **`lg-rag-sse-v1`** |
-| **web** | 「子任务过程」收到 `status=running` 立即上屏（可标「执行中」）；同 `subtask_id` 的 `done` 帧更新/替换该行 |
-| **实现 task** | api `lg-rag-sse-subtask-live` · web `web-lg-rag-sse-subtask-live` |
+| **web** | 「子任务过程」收到 `status=running` 立即上屏；`status=step` 按时间线追加（同 `subtask_id`）；`done` 更新/替换该行 |
+| **实现 task** | api `lg-rag-sse-subtask-live`（MVP）· `lg-rag-sse-subtask-steps`（step+aread）；web `web-lg-rag-sse-subtask-live` |
 
 **联调项**
 
 - [ ] 慢 `rag_subtask`：节点未结束前 EventStream 已有 `subtask.progress` + `status=running`  
+- [ ] 长等待中可见 ≥1 帧 `status=step`（retrieve/grade 或 router 节点），不只 keepalive  
 - [ ] 完成后同 id 有 `status=done`（或完成摘要帧）；thinking/subtasks 分区不串台  
+- [ ] 终答 delta `ts_ms` 跨度拉开（非同 ms 倾泻）  
 - [ ] T5 delta / T5.1 / keepalive / idle 不回归  
 
 ---

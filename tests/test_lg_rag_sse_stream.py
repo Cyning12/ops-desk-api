@@ -186,6 +186,101 @@ async def test_subtask_running_before_slow_node_update() -> None:
     assert running_persists[0].kwargs["payload"]["type"] == "rag"
 
 
+async def test_subtask_step_visible_before_node_update() -> None:
+    """§10.7 step：慢节点内 emit step 须先于 updates 完成帧可见。"""
+    import asyncio
+    from unittest.mock import AsyncMock, patch
+
+    from app.ops.lg_rag.progress_stream import emit_subtask_running, emit_subtask_step
+    from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
+
+    async def _slow_rag_with_steps(
+        query: str, *, thread_id: str = "t", **_kwargs: Any
+    ) -> AsyncIterator[dict[str, Any]]:
+        await emit_subtask_running(
+            agent_role="rag_subtask",
+            subtask_id="t1",
+            type="rag",
+            input_preview=query,
+        )
+        await emit_subtask_step(
+            agent_role="rag_subtask",
+            subtask_id="t1",
+            type="rag",
+            step="retrieve",
+            detail={"phase": "start"},
+        )
+        await asyncio.sleep(0.05)
+        await emit_subtask_step(
+            agent_role="rag_subtask",
+            subtask_id="t1",
+            type="rag",
+            step="retrieve",
+            detail={"phase": "done", "hit_count": 2},
+        )
+        yield {
+            "rag_subtask": {
+                "subtask_results": [{"id": "t1", "type": "rag", "output": "hit"}]
+            }
+        }
+
+    timeline: list[str] = []
+    with (
+        patch(
+            "app.ops.lg_rag.event_store.persist_run_event",
+            new_callable=AsyncMock,
+        ) as persist_mock,
+        patch(
+            "app.ops.lg_rag.sse_stream.persist_thread_turns",
+            new_callable=AsyncMock,
+        ),
+    ):
+        async for raw in iter_lg_rag_sse(
+            query="慢检索",
+            mode="supervisor",
+            thread_id="th-sub-step",
+            user_id="u-sub-step",
+            astream_fn=_slow_rag_with_steps,
+        ):
+            for block in raw.split("\n\n"):
+                block = block.strip()
+                if not block or not block.startswith("event:"):
+                    continue
+                data_line = None
+                for line in block.split("\n"):
+                    if line.startswith("data: "):
+                        data_line = line[len("data: ") :]
+                if not data_line:
+                    continue
+                ev = json.loads(data_line)
+                if ev.get("event_type") != "subtask.progress":
+                    continue
+                payload = ev.get("payload") or {}
+                status = payload.get("status")
+                if status == "running":
+                    timeline.append("running")
+                elif status == "step":
+                    phase = (payload.get("detail") or {}).get("phase", "")
+                    timeline.append(f"step:{payload.get('step')}:{phase}")
+                elif status == "done":
+                    timeline.append("done")
+
+    assert timeline == [
+        "running",
+        "step:retrieve:start",
+        "step:retrieve:done",
+        "done",
+    ]
+    step_persists = [
+        c
+        for c in persist_mock.await_args_list
+        if c.kwargs.get("event_type") == "subtask.progress"
+        and (c.kwargs.get("payload") or {}).get("status") == "step"
+    ]
+    assert len(step_persists) == 2
+    assert step_persists[0].kwargs["payload"]["step"] == "retrieve"
+
+
 async def test_keepalive_comment_before_slow_update() -> None:
     """§10.6：慢 __anext__ 期间须先 yield comment keepalive（不占 seq / 非 data 帧）。"""
     import asyncio

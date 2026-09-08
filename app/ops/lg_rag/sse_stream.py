@@ -9,9 +9,10 @@ direct_answer 的 LLM chunk → answer {"delta": ...} 多帧；节点 updates
 T5.1：persist 后台调度，不阻塞 SSE yield / pending_frames 入队。
 §10.6：等待下一 update 期间周期性 SSE comment keepalive（不落盘、不占 seq）。
 §10.7：子任务 running 起步帧 —— emit 循环经 contextvar 挂 progress sink
-（progress_stream.emit_subtask_running）；rag_subtask / info_extract /
-tool_exec 入口 → subtask.progress {"status":"running",...}；节点 updates
-到后完成帧补 status=done。running 与 delta 同 pending_frames 竞速、落盘占 seq。
+（progress_stream.emit_subtask_running / emit_subtask_step）；rag_subtask /
+info_extract / tool_exec 入口 → subtask.progress {"status":"running",...}；
+中途 step 里程碑 {"status":"step","step":...}；节点 updates 到后完成帧补
+status=done。running/step 与 delta 同 pending_frames 竞速、落盘占 seq。
 """
 from __future__ import annotations
 

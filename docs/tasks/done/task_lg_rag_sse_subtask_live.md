@@ -1,6 +1,6 @@
 # Task：lg-rag SSE · subtask 中途可见（running 起步帧）
 
-> **状态**：active（2026-09-07 · 维护者令「开启此任务 · subagent 执行 · 00 统筹」）  
+> **状态**：completed（2026-09-08 归档 · MVP running/done 已合；后续 step 见 `task_lg_rag_sse_subtask_steps`）  
 > **类型**：传输 / 子任务过程时效  
 > **上游**：[`05_lg_rag_transport_and_session_plan_v0.md`](../../spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md) **§10.7**  
 > **前置**：idle-keepalive CLOSE · [#123](https://github.com/Cyning12/ops-desk-api/pull/123) / CLOSE [#124](https://github.com/Cyning12/ops-desk-api/pull/124)；web idle [#36](https://github.com/Cyning12/ops-desk-web/pull/36)  

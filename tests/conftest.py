@@ -15,6 +15,15 @@ from datetime import datetime, timedelta
 # 先于 import app.config（其 load_dotenv）关掉 tracing，避免本机 .env 的 keys 在 pytest 里误上报
 os.environ.setdefault("OPS_CHAT_TRACER", "")
 
+# 本地/CI 精简 langchain 元包可能缺 .debug；langchain_core.globals.get_debug 会 AttributeError
+try:
+    import langchain as _langchain
+
+    if not hasattr(_langchain, "debug"):
+        _langchain.debug = False
+except ImportError:
+    pass
+
 _TEST_DB_URL = "postgresql+asyncpg://ops:ops_password@localhost:5432/opsdesk_test"
 
 

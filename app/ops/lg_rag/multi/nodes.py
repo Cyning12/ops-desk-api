@@ -23,14 +23,18 @@ from app.llm.schema import LlmMessage
 from app.ops.capability import CapabilityFilter, list_capabilities
 from app.ops.capability import ainvoke as capability_ainvoke
 from app.ops.capability.types import CapabilitySpec
+from app.ops.lc_evidence_chain.step_hook import (
+    reset_chain_step_hook,
+    set_chain_step_hook,
+)
 from app.ops.lg_rag.answer_stream import complete_answer_streaming
-from app.ops.lg_rag.graph import ainvoke_router_agent
+from app.ops.lg_rag.graph import astream_router_agent
 from app.ops.lg_rag.nodes import (
     _ROUTER_MODEL,
     _ROUTER_PROVIDER,
     _last_user_text,
 )
-from app.ops.lg_rag.progress_stream import emit_subtask_running
+from app.ops.lg_rag.progress_stream import emit_subtask_running, emit_subtask_step
 from app.ops.lg_rag.schemas import ExtractResult, SubtaskItem, SubtasksPlan
 from app.ops.lg_rag.state import LgRagState
 from app.ops.prompts import render
@@ -292,40 +296,93 @@ def _base_result(subtask: dict) -> dict:
     }
 
 
+def _step_detail_from_node_output(node_output: object) -> dict | None:
+    """router 节点 updates 摘要：只取轻量键，避免塞 messages 全文。"""
+    if not isinstance(node_output, dict):
+        return None
+    out: dict = {}
+    for key in ("route", "retry_count", "chain_meta", "quality", "current_query"):
+        if key in node_output:
+            val = node_output[key]
+            if key == "current_query" and isinstance(val, str) and len(val) > 120:
+                out[key] = val[:119] + "…"
+            else:
+                out[key] = val
+    return out or {"keys": sorted(node_output.keys())[:12]}
+
+
 async def rag_subtask_node(state: LgRagState) -> dict:
-    """RAG 子任务：内部调 ainvoke_router_agent（复用 Phase 2/3 全能力）。
+    """RAG 子任务：内部 astream_router_agent（复用 Phase 2/3）并推送 step 里程碑。
 
     子图输入隔离：fresh messages 仅含本子任务 input，不污染父历史；
     结果 = 末条 AIMessage + chain_meta 摘要。异常 → 错误结果不中断。
+    §10.7：running 起步 + router/evidence step 帧（经 progress sink / chain hook）。
     """
     subtask = _pending_subtask(state)
     if subtask is None:  # 防御：dispatch 保证不会发生；追加错误结果保推进
         return {"subtask_results": [{"type": "rag", "error": "no pending subtask"}]}
     result = _base_result(subtask)
+    subtask_id = result["id"]
+    subtask_type = result["type"] or "rag"
     # §10.7：重活前发 running 起步帧（无 sink 时为空操作）
     await emit_subtask_running(
         agent_role="rag_subtask",
-        subtask_id=result["id"],
-        type=result["type"] or "rag",
+        subtask_id=subtask_id,
+        type=subtask_type,
         input_preview=result["input"],
     )
-    with trace_span("rag_subtask", run_type="chain"):
-        try:
-            out = await ainvoke_router_agent(
-                result["input"],
-                thread_id=f"lg-rag-subtask-{result['id'] or 'x'}",
-            )
-            answer = ""
-            for m in reversed(out.get("messages") or []):
-                if getattr(m, "type", None) == "ai":
-                    content = m.content
-                    answer = content if isinstance(content, str) else str(content)
-                    break
-            result["output"] = answer
-            result["chain_meta"] = out.get("chain_meta") or {}
-        except Exception as exc:
-            logger.warning("lg_rag rag 子任务失败 id=%s err=%r", result["id"], exc)
-            result["error"] = repr(exc)
+
+    async def _chain_hook(step: str, detail: dict | None) -> None:
+        await emit_subtask_step(
+            agent_role="rag_subtask",
+            subtask_id=subtask_id,
+            type=subtask_type,
+            step=step,
+            detail=detail,
+        )
+
+    hook_token = set_chain_step_hook(_chain_hook)
+    try:
+        with trace_span("rag_subtask", run_type="chain"):
+            try:
+                acc_messages: list = []
+                acc_chain_meta: dict = {}
+                async for update in astream_router_agent(
+                    result["input"],
+                    thread_id=f"lg-rag-subtask-{subtask_id or 'x'}",
+                ):
+                    if not isinstance(update, dict):
+                        continue
+                    for node_name, node_output in update.items():
+                        await emit_subtask_step(
+                            agent_role="rag_subtask",
+                            subtask_id=subtask_id,
+                            type=subtask_type,
+                            step=str(node_name),
+                            detail=_step_detail_from_node_output(node_output),
+                        )
+                        if not isinstance(node_output, dict):
+                            continue
+                        msgs = node_output.get("messages")
+                        if isinstance(msgs, list) and msgs:
+                            acc_messages.extend(msgs)
+                        if "chain_meta" in node_output and isinstance(
+                            node_output.get("chain_meta"), dict
+                        ):
+                            acc_chain_meta = node_output["chain_meta"] or {}
+                answer = ""
+                for m in reversed(acc_messages):
+                    if getattr(m, "type", None) == "ai":
+                        content = m.content
+                        answer = content if isinstance(content, str) else str(content)
+                        break
+                result["output"] = answer
+                result["chain_meta"] = acc_chain_meta
+            except Exception as exc:
+                logger.warning("lg_rag rag 子任务失败 id=%s err=%r", result["id"], exc)
+                result["error"] = repr(exc)
+    finally:
+        reset_chain_step_hook(hook_token)
     return {"subtask_results": [result]}
 
 

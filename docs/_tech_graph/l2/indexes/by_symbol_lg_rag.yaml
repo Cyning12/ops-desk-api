@@ -50,6 +50,10 @@ by_symbol:
     path: app/ops/lg_rag/progress_stream.py
     node_id: lg_stream
     kind: method
+  emit_subtask_step:
+    path: app/ops/lg_rag/progress_stream.py
+    node_id: lg_stream
+    kind: method
   set_subtask_progress_sink:
     path: app/ops/lg_rag/progress_stream.py
     node_id: lg_stream

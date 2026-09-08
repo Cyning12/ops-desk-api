@@ -4,7 +4,7 @@
 
 ## 本波 active
 
-- `lg-rag-sse-subtask-live`（2026-09-07）：§10.7 subtask `status=running` 起步帧 · progress sink。真值：05 §10.7 · `progress_stream.py` · `sse_stream.py` · `multi/nodes.py` · 完成帧 `status=done`
+- `lg-rag-sse-subtask-steps`（2026-09-08）：§10.7 `status=step` 里程碑 + provider 禁 `aread` 假流式。真值：05 §10.7 · `progress_stream.emit_subtask_step` · `multi/nodes.py` astream · `lc_evidence_chain/step_hook.py` · `llm/providers/base.py`
 
 ## 执行帽速链
 
