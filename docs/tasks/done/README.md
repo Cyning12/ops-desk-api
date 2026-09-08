@@ -91,6 +91,8 @@
 | 2026-09-01 | [`task_lg_rag_sse_delta_realtime_spec.md`](./task_lg_rag_sse_delta_realtime_spec.md) | T5.1 SPEC §10.4.1 pacing / anti-buffer（docs-only） |
 | 2026-09-01 | [`task_lg_rag_sse_delta_realtime.md`](./task_lg_rag_sse_delta_realtime.md) | T5.1 终答 delta 实时投递（persist 不阻塞 yield） · PR #122 |
 | 2026-09-07 | [`task_lg_rag_sse_idle_keepalive.md`](./task_lg_rag_sse_idle_keepalive.md) | §10.6 SSE idle keepalive（comment 30s · 不落盘） · PR #123 |
+| 2026-09-07 | [`task_lg_rag_sse_subtask_live.md`](./task_lg_rag_sse_subtask_live.md) | §10.7 subtask.progress running 起步帧 · PR #125（2026-09-08 Hub 补登漏行） |
+| 2026-09-08 | [`task_lg_rag_sse_subtask_steps.md`](./task_lg_rag_sse_subtask_steps.md) | §10.7 step 里程碑 + provider 真流式（删 aread 假缓冲） · PR #127 |
 
 ---
 

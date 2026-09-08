@@ -29,7 +29,7 @@
 | **invoke_retention_profile** | `default` |
 | **freeze_id** | `lg-rag-sse-v1`（不新 freeze；不新 event_type；payload 增 `status`） |
 | **close_pr_policy** | `required` |
-| **related_pr** | （待开） |
+| **related_pr** | `#125` |
 | **kpi_aggregator** | `CLOSE` |
 | **orchestration** | api-first；web 并行可消费 running 帧 |
 
