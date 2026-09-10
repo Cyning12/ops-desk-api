@@ -22,6 +22,7 @@
 | 2026-08-27 | [`2026-08-27_1.8.0_upgrade-no-prompt-sync.md`](./2026-08-27_1.8.0_upgrade-no-prompt-sync.md) | 1.8.0 | upgrade 仍不 sync `assets/harness/prompts/`（复发） | superseded（见 1.10.0） |
 | 2026-08-31 | [`2026-08-31_1.10.0_sync-prompts-closed.md`](./2026-08-31_1.10.0_sync-prompts-closed.md) | 1.10.0 | 正式 `sync prompts`；关闭 upgrade-no-prompt-sync 链 | closed |
 | 2026-08-31 | [`../../harness/evidence/FEEDBACK_dsh_coding_kit_hat_identity_system_prompt_20260831.md`](../../harness/evidence/FEEDBACK_dsh_coding_kit_hat_identity_system_prompt_20260831.md) | 1.9.1 | 帽身份丢失 / 缺 System·Re-anchor；00 偶现亲自落地；Skills≠全覆盖；Host 授权 npx verify | open |
+| 2026-09-10 | [`2026-09-10_2.1.0_layout-coding-kit-upgrade.md`](./2026-09-10_2.1.0_layout-coding-kit-upgrade.md) | 2.1.0 | 1.10.0→2.1.0；`.coding-kit` 布局 + sync conflict 手合 | open（待 PR） |
 
 ---
 
@@ -34,3 +35,4 @@
 | 2026-08-27 | 登记 1.8.0 upgrade-no-prompt-sync 复发；修正本表误写入修订记录的行 |
 | 2026-08-27 | Hub 关账：`task_dsh_coding_kit_upgrade_1_8_0` · PR #76 |
 | 2026-08-31 | 1.10.0：`sync prompts` 关闭 upgrade-no-prompt-sync |
+| 2026-09-10 | 2.1.0：跨升 + `.coding-kit` 布局 dogfood |

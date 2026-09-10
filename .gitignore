@@ -40,6 +40,9 @@ node_modules/
 .dsh/
 
 # Harness 本机路径（npx 缓存绝对路径；见 RUNBOOK §1.3 · v2.21+）
+# 1.11+ 现行落盘根 .coding-kit/；.cyning-harness/ 为 legacy 只读
+.coding-kit/local.json
+.coding-kit/backups/
 .cyning-harness/local.json
 # refresh-ide-blocks 本地备份（勿入库）
 .cyning-harness/backups/
