@@ -2,7 +2,7 @@
 
 > **状态**：completed（闸已签 · 00 代签授权；2026-08-24 随 PR #47 关账归档）  
 > **类型**：图谱 / 文档（无业务 Python 改码）  
-> **上游 SPEC**：`docs/spec/SPEC-inform-graph-backfill_v1.md`（HG-SPEC-SIGNOFF approved 2026-08-23）  
+> **上游 SPEC**：`docs/spec/inform-graph-backfill/SPEC-inform-graph-backfill_v1.md`（HG-SPEC-SIGNOFF approved 2026-08-23）  
 > **范围真值**：`docs/spec/inform-graph-backfill/01_execution_waves.md` §W2 · `modules/lc_evidence_chain.md` · `modules/lg_rag.md` · `layers/G-L1_flows.md`  
 > **前置**：W1 已合并（PR #46）；kit 1.5.1 升级 + 迁移探针完成（命令面不切，normalize 保留）  
 > **分支**：`task/inform-graph-backfill-w2-bypass-flows`  

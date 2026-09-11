@@ -12,7 +12,7 @@
 
 把 Phase α 之后「模块表有、flow/G-L0/G-L2 缺」的 Inform 资产，拆成 **按层 + 按模块** 的可执行补齐规格；后续每一棒只认领本包中 **一个 wave × 一个模块/层** 文件，按验收清单落盘 yaml 并跑 `./scripts/graph-compile.sh`。
 
-**相关预留 SPEC（编译器迁移）**：[`../SPEC-harness-to-dsh-kit-graph-migrate_v0.md`](../SPEC-harness-to-dsh-kit-graph-migrate_v0.md) — `cyning-harness` → `dsh-coding-kit`；切之前须备份 `scripts/legacy/`，用完成度矩阵验证；本仓 normalize 更优则反哺 kit DEF-023。
+**相关预留 SPEC（编译器迁移）**：[`../harness-to-dsh-kit-graph-migrate/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`](../harness-to-dsh-kit-graph-migrate/SPEC-harness-to-dsh-kit-graph-migrate_v0.md) — `cyning-harness` → `dsh-coding-kit`；切之前须备份 `scripts/legacy/`，用完成度矩阵验证；本仓 normalize 更优则反哺 kit DEF-023。
 
 ---
 

@@ -29,7 +29,7 @@ Open Folder（必须对准这个 worktree，不要用主仓 ops-desk-api/）
 - 仓内另有 active task_ops_sync_sender_migration.md：无关，不要混进本波、不要在本分支改它。
 
 SPEC 已签（真值）
-- docs/spec/SPEC-lc-evidence-chain-hardening_v1.md
+- docs/spec/lc-evidence-chain/SPEC-lc-evidence-chain-hardening_v1.md
   HG-SPEC-SIGNOFF=approved（维护者 2026-08-17）
 - 20-spec-audit pass：docs/harness/reviews/spec_lc-evidence-chain-hardening_audit_R1_20260817.md
 - 对照评审 §3：docs/guides/REVIEW_lc_evidence_chain_third_party_20260816.md

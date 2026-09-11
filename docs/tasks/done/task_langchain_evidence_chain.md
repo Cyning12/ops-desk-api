@@ -2,7 +2,7 @@
 
 > **状态**：completed  
 > **类型**：rag / 实验旁路（学习向 + 可演进）  
-> **关联 SPEC**：`docs/spec/SPEC-langchain-evidence-chain_v1.md`（v1 · HG-SPEC-SIGNOFF=approved）  
+> **关联 SPEC**：`docs/spec/lc-evidence-chain/SPEC-langchain-evidence-chain_v1.md`（v1 · HG-SPEC-SIGNOFF=approved）  
 > **实现辅助文档（与 task 分开 · 30 必读）**：`docs/guides/IMPL_langchain-evidence-chain_v1.md`  
 > **分支**：`task/langchain-evidence-chain`  
 > **编排**：维护者手写 30 主码；Agent 辅助调试/单测/图谱；**00 统筹 40→50 关账**。
@@ -64,7 +64,7 @@ evidence 字段兼容现网引用卡片，便于日后升为 graph node 或单�
 
 ## 依赖
 
-- SPEC：`docs/spec/SPEC-langchain-evidence-chain_v1.md`  
+- SPEC：`docs/spec/lc-evidence-chain/SPEC-langchain-evidence-chain_v1.md`  
 - 实现指南：`docs/guides/IMPL_langchain-evidence-chain_v1.md`  
 - 编码规范：`docs/standards/CODING_BACKEND_L2_v1_zh.md`  
 - 现网检索：`app/ops/rag/retrieve.py` · `app/ops/chat/rag_nodes.py`（只读对齐字段）
@@ -112,7 +112,7 @@ evidence 字段兼容现网引用卡片，便于日后升为 graph node 或单�
 
 ## 给执行帽必读
 
-1. `docs/spec/SPEC-langchain-evidence-chain_v1.md`  
+1. `docs/spec/lc-evidence-chain/SPEC-langchain-evidence-chain_v1.md`  
 2. `docs/guides/IMPL_langchain-evidence-chain_v1.md`  
 3. `docs/standards/CODING_BACKEND_L2_v1_zh.md`  
 4. `app/ops/rag/retrieve.py` · `app/ops/chat/rag_nodes.py`（字段对齐）

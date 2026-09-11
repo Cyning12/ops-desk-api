@@ -10,7 +10,7 @@
 - **`--check` 语义**：kit `graph yaml check` 比对 YAML 与 `shared/graph.json` 切片；另跑 `graph_mermaid_normalize.py --check`（check-only 护栏，不改写）断言 mermaid 围栏无 `//` 注释、无旧边 `--"…"-->`。
 - **export**：`shared/graph.json`（唯一机器轨真值；根目录双写已移除）。
 - **历史 `.ai.md` 双轨已弃用**：结构化信息集中在 YAML 源中。
-- **命令面已切换（2026-08-25）**：`@cyning/harness` → `dsh-coding-kit` 1.6.1（`docs/spec/SPEC-harness-to-dsh-kit-graph-migrate_v0.md` §6 执行完毕；V3 对照材料 `docs/harness/evidence/V3_mermaid_compare_dsh_kit_1_6_1_20260825.md`）。
+- **命令面已切换（2026-08-25）**：`@cyning/harness` → `dsh-coding-kit` 1.6.1（`docs/spec/harness-to-dsh-kit-graph-migrate/SPEC-harness-to-dsh-kit-graph-migrate_v0.md` §6 执行完毕；V3 对照材料 `docs/harness/evidence/V3_mermaid_compare_dsh_kit_1_6_1_20260825.md`）。
 
 ---
 

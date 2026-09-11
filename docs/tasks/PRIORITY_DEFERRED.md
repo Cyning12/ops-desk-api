@@ -20,7 +20,7 @@
 
 | ID | 主题 | 文档 | 暂不搞的理由 | Revisit 触发器 | 登记日 |
 |---|---|---|---|---|---|
-| DEF-001 | Langfuse SDK / 项目 v4 迁移 | [`docs/spec/SPEC-langfuse-sdk-v4-migration_v1.md`](../spec/SPEC-langfuse-sdk-v4-migration_v1.md) | Cloud 双轨至 **2026-11-16**；现 SDK 3.15 仍可用；**无需**升 Python；当前焦点在 RAG/Agent，观测非本周 P0 | ① 维护者令开工 ② **≥2026-10-01** 仍未排期则复评 ③ Migration Assistant / 生产 tracing 异常 | 2026-08-17 |
+| DEF-001 | Langfuse SDK / 项目 v4 迁移 | [`docs/spec/langfuse-sdk-v4-migration/SPEC-langfuse-sdk-v4-migration_v1.md`](../spec/langfuse-sdk-v4-migration/SPEC-langfuse-sdk-v4-migration_v1.md) | Cloud 双轨至 **2026-11-16**；现 SDK 3.15 仍可用；**无需**升 Python；当前焦点在 RAG/Agent，观测非本周 P0 | ① 维护者令开工 ② **≥2026-10-01** 仍未排期则复评 ③ Migration Assistant / 生产 tracing 异常 | 2026-08-17 |
 | DEF-002 | 本地/远程分支与陈旧 task 卫生 | 总轨 `agent-infra-upgrade` 00 invoke（拟 slug `repo-branch-task-hygiene`） | 当前焦点在 agent-infra 升级实现；无效分支/task 过多但不挡本轨 | ① `agent-infra-upgrade` 波次 1–3 验收完成 ② 维护者令开工 | 2026-08-26 |
 | DEF-003 | Grader 混档证据（exact+relevant）作答约束 | [`docs/tasks/deferred/task_rag_answer_mixed_evidence.md`](./deferred/task_rag_answer_mixed_evidence.md) | 探讨未选型；占 active 使每次 00 勿混改成本高；Eval E0/E1 排在 sync + 真实 capability 之后 | ① 维护者令拉回 active ② `ops-pg-lookup-capabilities` 与 `ops-sync-sender-migration` 均 CLOSE 后复评 | 2026-08-28 |
 | DEF-004 | 检索层长自然语言 query 零命中分析 | [`docs/tasks/deferred/task_retrieval_longquery_analysis.md`](./deferred/task_retrieval_longquery_analysis.md) | 分析型未开工；E2 金标会再暴露长句零命中；不占 active | ① 维护者令拉回 ② Eval E2 金标立项时并入或单开 | 2026-08-28 |

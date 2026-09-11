@@ -4,7 +4,7 @@
 > **范围仓**：`ops-desk-api`（实现）· `ops-desk-workspace`（生产 compose）  
 > **主 PR**：[#31](https://github.com/Cyning12/ops-desk-api/pull/31) 能力合入 · [#32](https://github.com/Cyning12/ops-desk-api/pull/32) reconcile 兼容  
 > **运维清单（可执行）**：[`qdrant-cutover.md`](./qdrant-cutover.md)  
-> **契约真值**：[`SPEC-qdrant-migration_v1.md`](../spec/SPEC-qdrant-migration_v1.md)（v1.1）  
+> **契约真值**：[`SPEC-qdrant-migration_v1.md`](../spec/qdrant-migration/SPEC-qdrant-migration_v1.md)（v1.1）  
 > **Task 关账**：[`task_qdrant_migration.md`](../tasks/done/task_qdrant_migration.md)
 
 本文记录**一次完整迁移**：从选型/SPEC → 实现与评测 → 本机灌库 → 生产切流 → 收尾清分支，供后续 RAG 研发与复盘引用。
@@ -242,7 +242,7 @@ SPEC 起草 / 20-audit / 人签 v1.1
 
 | 类型 | 路径 |
 |---|---|
-| SPEC | `docs/spec/SPEC-qdrant-migration_v1.md` |
+| SPEC | `docs/spec/qdrant-migration/SPEC-qdrant-migration_v1.md` |
 | Task 关账 | `docs/tasks/done/task_qdrant_migration.md` |
 | 切流操作 | `docs/deployment/qdrant-cutover.md` |
 | 生产升镜像 | `docs/deployment/qdrant-server-upgrade.md` |

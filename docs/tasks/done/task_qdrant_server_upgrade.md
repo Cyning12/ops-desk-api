@@ -52,7 +52,7 @@
 
 1. 本机：`docker-compose.yml` 的 `qdrant.image`：`v1.13.6` → **`qdrant/qdrant:v1.19.x`**（30 钉具体 patch tag）  
 2. 生产：`../ops-desk-workspace/deploy/docker-compose.prod.yml` 同步同一 tag（跨仓，可另 PR）  
-3. 文档版本句：`docs/spec/SPEC-qdrant-migration_v1.md` 引擎行；`docs/deployment/qdrant-cutover.md` / narrative 中 1.13.6 过时句  
+3. 文档版本句：`docs/spec/qdrant-migration/SPEC-qdrant-migration_v1.md` 引擎行；`docs/deployment/qdrant-cutover.md` / narrative 中 1.13.6 过时句  
 4. **本机先行**：`compose pull && up -d qdrant` → 探活 6333 → 一问（LC Evidence 或 Chat）  
 5. 若旧 volume 无法被 1.19 读取：删/换 volume，按 `docs/deployment/qdrant-cutover.md` 重建 collection + bulk_upsert + reconcile（PG 真源）  
 6. 生产：维护窗口内同样 pull/up；必要时 Flag 暂切 `RAG_VECTOR_BACKEND=pgvector` 再灌库切回
@@ -76,7 +76,7 @@
 | 本机 compose | `docker-compose.yml` |
 | 生产 compose | `../ops-desk-workspace/deploy/docker-compose.prod.yml` |
 | 切流手册 | `docs/deployment/qdrant-cutover.md` |
-| SPEC | `docs/spec/SPEC-qdrant-migration_v1.md`（引擎版本句） |
+| SPEC | `docs/spec/qdrant-migration/SPEC-qdrant-migration_v1.md`（引擎版本句） |
 | 检索器 | `app/ops/rag/retrievers/qdrant_retriever.py`（已 `query_points`，本波原则上不改） |
 | 编码规范 | `docs/standards/CODING_BACKEND_L2_v1_zh.md` |
 
@@ -121,7 +121,7 @@
 1. 本 task  
 2. `docker-compose.yml` · `../ops-desk-workspace/deploy/docker-compose.prod.yml`  
 3. `docs/deployment/qdrant-cutover.md` · **`docs/deployment/qdrant-server-upgrade.md`（生产升镜像窗口）**  
-4. `docs/spec/SPEC-qdrant-migration_v1.md` 引擎表  
+4. `docs/spec/qdrant-migration/SPEC-qdrant-migration_v1.md` 引擎表  
 5. `app/ops/rag/retrievers/qdrant_retriever.py`  
 6. `docs/harness/invokes/by-task/qdrant-query-points/invoke_20260816_30_40_qdrant-query-points.md`
 

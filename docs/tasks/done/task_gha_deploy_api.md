@@ -2,7 +2,7 @@
 
 > **状态**：completed  
 > **类型**：CI/CD（workflow + 文档）+ 极小 API 面（去 probe）  
-> **关联 SPEC**：`docs/spec/SPEC-gha-deploy-api_v1.md`（accepted · HG-SPEC-SIGNOFF approved）  
+> **关联 SPEC**：`docs/spec/gha-deploy-api/SPEC-gha-deploy-api_v1.md`（accepted · HG-SPEC-SIGNOFF approved）  
 > **合入**：PR #18 · `978912a` · 2026-07-28  
 > **生产验收**：deploy-api run `30327570930` success · health `{"status":"ok"}`（无 probe）  
 > **关账**：CLOSE · 迁入 `docs/tasks/done/`

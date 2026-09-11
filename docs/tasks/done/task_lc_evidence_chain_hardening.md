@@ -2,7 +2,7 @@
 
 > **状态**：completed（50 机械 PASS · 待 CLOSE 归档）  
 > **类型**：observability / rag-debug（旁路硬化，不切 Chat 主路）  
-> **上游 SPEC**：`docs/spec/SPEC-lc-evidence-chain-hardening_v1.md`（accepted · HG-SPEC-SIGNOFF=approved · 2026-08-17）  
+> **上游 SPEC**：`docs/spec/lc-evidence-chain/SPEC-lc-evidence-chain-hardening_v1.md`（accepted · HG-SPEC-SIGNOFF=approved · 2026-08-17）  
 > **对照评审**：`docs/guides/REVIEW_lc_evidence_chain_third_party_20260816.md` §3  
 > **20-spec-audit**：`docs/harness/reviews/spec_lc-evidence-chain-hardening_audit_R1_20260817.md`  
 > **分支**：`task/lc-evidence-chain-hardening`（相对 `origin/master`；合入走 PR，禁止直推 master）  
@@ -105,7 +105,7 @@ Trace 父子树已验收，本波 **不再**开 tracing task。
 
 | 项 | 说明 |
 |---|---|
-| SPEC | `docs/spec/SPEC-lc-evidence-chain-hardening_v1.md` |
+| SPEC | `docs/spec/lc-evidence-chain/SPEC-lc-evidence-chain-hardening_v1.md` |
 | 评审 §3 | `docs/guides/REVIEW_lc_evidence_chain_third_party_20260816.md` |
 | 编码规范 | `docs/standards/CODING_BACKEND_L2_v1_zh.md` |
 | 闸扫描 | `docs/harness/prompts/FRAGMENT_30_gate_verify_v1_zh.md` |
@@ -163,7 +163,7 @@ Trace 父子树已验收，本波 **不再**开 tracing task。
 ## 给执行帽必读
 
 1. 本 task  
-2. `docs/spec/SPEC-lc-evidence-chain-hardening_v1.md`  
+2. `docs/spec/lc-evidence-chain/SPEC-lc-evidence-chain-hardening_v1.md`  
 3. `docs/harness/prompts/FRAGMENT_30_gate_verify_v1_zh.md`  
 4. `docs/standards/CODING_BACKEND_L2_v1_zh.md`  
 5. `app/llm/providers/siliconflow.py` · `bailian.py` · `base.py`（`complete` 聚合）  
