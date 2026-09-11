@@ -68,7 +68,7 @@
 - G-L2 indexes 与 `implementedBy` 同步
 - 锚点行号与源码一致
 
-**本仓已断言（2026-08-24）**：`graph_mermaid_normalize.py --check`（mermaid 围栏无 `//`、无旧边 `--"…"-->`）。治根与切 `dsh-coding-kit` 见 `docs/spec/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`。
+**本仓已断言（2026-08-24）**：`graph_mermaid_normalize.py --check`（mermaid 围栏无 `//`、无旧边 `--"…"-->`）。治根与切 `dsh-coding-kit` 见 `docs/spec/harness-to-dsh-kit-graph-migrate/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`。
 
 每棒验收仍以 **`graph-compile.sh` exit 0** 为硬门槛；coverage 脚本一期 **warn only**。
 

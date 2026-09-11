@@ -5,7 +5,7 @@
 | hat_id | 10-spec |
 | task_slug / spec_slug | langchain-evidence-chain |
 | git_branch | task/langchain-evidence-chain |
-| 产出 | docs/spec/SPEC-langchain-evidence-chain_v1.md（draft） |
+| 产出 | docs/spec/lc-evidence-chain/SPEC-langchain-evidence-chain_v1.md（draft） |
 
 ## 裁决
 

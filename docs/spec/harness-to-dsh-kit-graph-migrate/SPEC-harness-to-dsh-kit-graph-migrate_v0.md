@@ -112,7 +112,7 @@ cp scripts/graph_yaml_to_json.py \
 
 ## 7. 与 Inform 补齐包关系
 
-- 本 SPEC **不替代** `SPEC-inform-graph-backfill_v1.md`。  
+- 本 SPEC **不替代** `docs/spec/inform-graph-backfill/SPEC-inform-graph-backfill_v1.md`。  
 - W1/W2 仍改 `.graph.yaml`；compile 路径以本仓 `graph-compile.sh` 为准。  
 - Phase β「回灌」原指 harness 上游；现统一指向 **dsh-coding-kit**（`@cyning/harness` deprecate）。
 

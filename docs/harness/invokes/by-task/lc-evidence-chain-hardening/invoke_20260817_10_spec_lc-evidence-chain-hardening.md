@@ -29,7 +29,7 @@
 
 ## 交付
 
-- `docs/spec/SPEC-lc-evidence-chain-hardening_v1.md`（accepted · HG-SPEC-SIGNOFF=approved）
+- `docs/spec/lc-evidence-chain/SPEC-lc-evidence-chain-hardening_v1.md`（accepted · HG-SPEC-SIGNOFF=approved）
 - `docs/guides/REVIEW_lc_evidence_chain_third_party_20260816.md`（从 tracing 分支 `3cc9219` 恢复，master 线此前未合入）
 
 ---

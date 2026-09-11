@@ -2,7 +2,7 @@
 
 > **状态**：completed（闸已签 · 含维护者「切命令面」签收；2026-08-25 随 PR #51 关账归档）  
 > **类型**：基础设施 / 图谱工具链正式迁移  
-> **执行 SPEC**：`docs/spec/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`（§2 前置 / §3 备份 / §4 矩阵 / §6 步骤）  
+> **执行 SPEC**：`docs/spec/harness-to-dsh-kit-graph-migrate/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`（§2 前置 / §3 备份 / §4 矩阵 / §6 步骤）  
 > **前置**：kit 1.6.1 已入 master；DEF-023 + DEF-031/032/033 全修复（D1–D3/R6 关闭）；探针矩阵 V1/V2/V4/V5 历史 PASS  
 > **分支**：`task/dsh-kit-graph-command-switch`  
 > **执行模式**：00 编排/验收；30 子 agent 执行

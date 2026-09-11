@@ -2,7 +2,7 @@
 
 > **与 task 的关系**：本文件 = **30 手写说明书**；范围/闸/验收真值在  
 > `docs/tasks/active/task_langchain_evidence_chain.md` 与  
-> `docs/spec/SPEC-langchain-evidence-chain_v1.md`。  
+> `docs/spec/lc-evidence-chain/SPEC-langchain-evidence-chain_v1.md`。  
 > **读者**：维护者本人按阶段实现。  
 > **硬约束**：不要改 `app/ops/chat/graph.py` 的节点与边。
 

@@ -2,7 +2,7 @@
 
 > **状态**：completed（闸已签 · 00 代签授权；2026-08-24 随 PR #47 关账归档）  
 > **类型**：基础设施 / 图谱工具链 · **验证+对比型（默认不切命令面）**  
-> **执行 SPEC**：`docs/spec/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`（预留 · DEF-023）  
+> **执行 SPEC**：`docs/spec/harness-to-dsh-kit-graph-migrate/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`（预留 · DEF-023）  
 > **前置**：`task_dsh_coding_kit_upgrade_1_5_1`（kit 已入库 1.5.1）  
 > **分支**：`task/dsh-coding-kit-1-5-1`（与升级同分支累积）  
 > **执行模式**：00 编排/验收；30 子 agent 执行

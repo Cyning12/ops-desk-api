@@ -69,7 +69,7 @@
 ## 非范围
 
 - 修改 `hybrid_recall` SQL / Qdrant / 闸逻辑 / grade·answer 提示词  
-- Langfuse SDK v3→v4 升包（见 `docs/spec/SPEC-langfuse-sdk-v4-migration_v1.md` · DEF-001）  
+- Langfuse SDK v3→v4 升包（见 `docs/spec/langfuse-sdk-v4-migration/SPEC-langfuse-sdk-v4-migration_v1.md` · DEF-001）  
 - 改 Chat `app/ops/chat/rag_nodes.py` 同构缺口（**默认同缺口保留**；若维护者在 `HG-TASK-DRAFT` 明示「Chat 一并修」，30 可扩一行，否则另开 task）  
 - 改 `app/ops/chat/graph.py` 拓扑或 SSE 契约  
 - 强制生产默认开 tracing  

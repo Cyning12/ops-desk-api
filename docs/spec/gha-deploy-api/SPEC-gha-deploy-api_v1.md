@@ -217,7 +217,7 @@ sudo chown -R ubuntu:ubuntu /opt/ops-desk/api
 你是 Harness 20-spec-audit。Open Folder = ops-desk-api 仓根。
 
 读：
-- docs/spec/SPEC-gha-deploy-api_v1.md
+- docs/spec/gha-deploy-api/SPEC-gha-deploy-api_v1.md
 - docs/harness/prompts/20-spec-audit.md
 - 金样：../ops-desk-web/.github/workflows/deploy-web.yml
 - 金样文档：../ops-desk-web/docs/deployment/gha-frontend-deploy.md
@@ -231,7 +231,7 @@ sudo chown -R ubuntu:ubuntu /opt/ops-desk/api
 `````text
 你是 Harness 00。Open Folder = ops-desk-api。
 
-依据已签收 docs/spec/SPEC-gha-deploy-api_v1.md 起草 task：
+依据已签收 docs/spec/gha-deploy-api/SPEC-gha-deploy-api_v1.md 起草 task：
 - slug: gha-deploy-api
 - 分支: task/gha-deploy-api（自 origin/master）
 - 范围：去 /health probe + deploy-api.yml + docs/deployment/gha-api-deploy.md
