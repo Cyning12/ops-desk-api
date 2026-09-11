@@ -1,6 +1,6 @@
 # Task：spec-wave 2.1.3 收尾清理（cursor rules 裸文本替换 + 根级裸 SPEC 归位）
 
-> **状态**：active  
+> **状态**：done  
 > **类型**：文档健康度收尾 / harness 过程轨（上一 task 遗留 + 非范围项收编）  
 > **前置**：`task_dsh_coding_kit_upgrade_2_1_0` 验收全勾（待 PR/CLOSE）；spec-wave **2.1.3** 已就位（manifest / package / CI 钉版）  
 > **分支**：`task/specwave-cleanup-2-1-3`（新分支；base 确认：`task/dsh-coding-kit-2-1-0`——前序 PR #132 未合并 · 30 于 2026-09-11 回填）  
@@ -28,7 +28,7 @@
 | **invoke_retention_profile** | `minimal` |
 | **required_invoke_hats** | `30` |
 | **close_pr_policy** | `required` |
-| **related_pr** | （待开） |
+| **related_pr** | #134 |
 | **review_hat** | `20` |
 
 ### 人工闸
@@ -90,19 +90,19 @@ spec-wave 2.1.3 改名升级（`task_dsh_coding_kit_upgrade_2_1_0`）遗留两�
 
 ## 验收标准
 
-- [ ] `.cursor/rules/05-harness-starter.mdc` 与 `05-kit-starter.mdc` 各 1 处 `npx dsh-coding-kit` → `npx spec-wave`；`grep -rn "dsh-coding-kit" .cursor/rules/` 零命中
-- [ ] 8 个根级 `docs/spec/SPEC-*.md` 全部迁入上表目标夹（`ls docs/spec/SPEC-*.md` 无结果）
-- [ ] 全仓引用同步 · **旧位置形式**零命中（路径锚定 · 审查 R2 B-3；**不要求裸文件名零命中**——迁入夹内合法新引用与历史档机械替换后残留的裸文件名均属预期，见范围 B item 5）：
+- [x] `.cursor/rules/05-harness-starter.mdc` 与 `05-kit-starter.mdc` 各 1 处 `npx dsh-coding-kit` → `npx spec-wave`；`grep -rn "dsh-coding-kit" .cursor/rules/` 零命中
+- [x] 8 个根级 `docs/spec/SPEC-*.md` 全部迁入上表目标夹（`ls docs/spec/SPEC-*.md` 无结果）
+- [x] 全仓引用同步 · **旧位置形式**零命中（路径锚定 · 审查 R2 B-3；**不要求裸文件名零命中**——迁入夹内合法新引用与历史档机械替换后残留的裸文件名均属预期，见范围 B item 5）：
   - (a) 绝对旧位置：`grep -rEn "docs/spec/SPEC-(gha-deploy-api_v1|harness-to-dsh-kit-graph-migrate_v0|inform-graph-backfill_v1|langchain-evidence-chain_v1|lc-evidence-chain-hardening_v1|langfuse-sdk-v4-migration_v1|qdrant-migration_v1|rag-reranker-p0_v1)\.md" docs/ .cursor/ scripts/ experiments/ AGENTS.md --exclude=task_specwave_cleanup_2_1_3.md --exclude-dir=reviews` 零命中
   - (b) 相对旧位置变体（覆盖 `../spec/SPEC-…` 与 `../SPEC-…`）：`grep -rEn "(\.\./)+(spec/)?SPEC-(gha-deploy-api_v1|harness-to-dsh-kit-graph-migrate_v0|inform-graph-backfill_v1|langchain-evidence-chain_v1|lc-evidence-chain-hardening_v1|langfuse-sdk-v4-migration_v1|qdrant-migration_v1|rag-reranker-p0_v1)\.md" docs/ .cursor/ scripts/ experiments/ AGENTS.md --exclude=task_specwave_cleanup_2_1_3.md --exclude-dir=reviews` 零命中
   - 豁免说明（元信息引用 · 审查 R2 B-3 处置项）：`--exclude=task_specwave_cleanup_2_1_3.md` 豁免本 task 自身（映射表源列 / test_strategy_note / failure_paths 中 9 处文件名属元信息引用，执行后不改写历史原文）；`--exclude-dir=reviews` 豁免 `docs/harness/reviews/`（R1/R2 等历史审查文）。新位置形式 `docs/spec/<夹>/SPEC-<名>.md` 与 `../<夹>/SPEC-<名>.md` 不匹配上述锚定模式，天然豁免
   - (c) 新位置可达（夹内保留原文件名 · 循 agent-infra 先例 · 逐文件机验）：`test -f docs/spec/gha-deploy-api/SPEC-gha-deploy-api_v1.md && test -f docs/spec/harness-to-dsh-kit-graph-migrate/SPEC-harness-to-dsh-kit-graph-migrate_v0.md && test -f docs/spec/inform-graph-backfill/SPEC-inform-graph-backfill_v1.md && test -f docs/spec/lc-evidence-chain/SPEC-langchain-evidence-chain_v1.md && test -f docs/spec/lc-evidence-chain/SPEC-lc-evidence-chain-hardening_v1.md && test -f docs/spec/langfuse-sdk-v4-migration/SPEC-langfuse-sdk-v4-migration_v1.md && test -f docs/spec/qdrant-migration/SPEC-qdrant-migration_v1.md && test -f docs/spec/rag-reranker-p0/SPEC-rag-reranker-p0_v1.md && echo ALL-8-OK`
-- [ ] 占位符/描述行豁免核对（不改 kit 资产，审查 R1 B-1）：`.cursor/skills/harness-10-spec/SKILL.md:51`、`docs/harness/prompts/10-spec-requirements.md:51`、`docs/spec/doc-health/README.md:48` 保持原样（豁免理由见非范围）
-- [ ] `docs/spec/README.md` 历史债表清空、专属夹表补齐、L3 公约行旧名更新为 `spec-wave`
-- [ ] `node_modules/.bin/spec-wave check --target .` exit 0 且**零 WARN**
-- [ ] `node_modules/.bin/spec-wave verify --target . --task docs/tasks/active/task_specwave_cleanup_2_1_3.md` PASS
-- [ ] `./scripts/graph-compile.sh` exit 0
-- [ ] FEEDBACK 落盘（`docs/spec/doc-health/feedback/`，含 cursor rules 无 marker 不刷写之摩擦记录）
+- [x] 占位符/描述行豁免核对（不改 kit 资产，审查 R1 B-1）：`.cursor/skills/harness-10-spec/SKILL.md:51`、`docs/harness/prompts/10-spec-requirements.md:51`、`docs/spec/doc-health/README.md:48` 保持原样（豁免理由见非范围）
+- [x] `docs/spec/README.md` 历史债表清空、专属夹表补齐、L3 公约行旧名更新为 `spec-wave`
+- [x] `node_modules/.bin/spec-wave check --target .` exit 0 且**零 WARN**
+- [x] `node_modules/.bin/spec-wave verify --target . --task docs/tasks/active/task_specwave_cleanup_2_1_3.md` PASS
+- [x] `./scripts/graph-compile.sh` exit 0
+- [x] FEEDBACK 落盘（`docs/spec/doc-health/feedback/`，含 cursor rules 无 marker 不刷写之摩擦记录）
 
 ## failure_paths
 
@@ -154,4 +154,4 @@ spec-wave 2.1.3 改名升级（`task_dsh_coding_kit_upgrade_2_1_0`）遗留两�
 
 ### KPI
 
-Task_KPI%: _（draft 期占位 · CLOSE 前回填）_
+Task_KPI%: 100 · cursor rules 残留清零 · 8 SPEC 归位 + 引用零断裂 · check 零 WARN · R3 PASS · PR #133/#134 已合 master
