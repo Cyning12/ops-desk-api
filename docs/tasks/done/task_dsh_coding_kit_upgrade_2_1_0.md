@@ -1,6 +1,6 @@
 # Task：dsh-coding-kit 升级 2.1.0（1.10.0 → 2.1.0 · `.coding-kit` 布局）
 
-> **状态**：active  
+> **状态**：done  
 > **类型**：基础设施 / harness 过程轨升级（major 跨度：含 1.11 布局 + 2.x host adapt）  
 > **前置**：manifest / package 钉 `1.10.0`；npm 最新 **`2.1.0`**  
 > **分支**：`task/dsh-coding-kit-2-1-0`  
@@ -28,7 +28,7 @@
 | **invoke_retention_profile** | `minimal` |
 | **required_invoke_hats** | `30` |
 | **close_pr_policy** | `required` |
-| **related_pr** | （待开） |
+| **related_pr** | #132 |
 | **review_hat** | `20` |
 
 ### 人工闸

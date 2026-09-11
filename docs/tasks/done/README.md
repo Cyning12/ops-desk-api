@@ -35,6 +35,8 @@
 | 2026-08-26 | [`task_dsh_coding_kit_upgrade_1_7_1.md`](./task_dsh_coding_kit_upgrade_1_7_1.md) | kit 1.7.1（CLOSE dogfood + 00 条文手补） · PR #63 |
 | 2026-08-27 | [`task_dsh_coding_kit_upgrade_1_8_0.md`](./task_dsh_coding_kit_upgrade_1_8_0.md) | kit 1.8.0（K1–K7 核对 + prompts 手同步） · PR #76 |
 | 2026-08-31 | [`task_dsh_coding_kit_upgrade_1_10_0.md`](./task_dsh_coding_kit_upgrade_1_10_0.md) | kit 1.10.0（sync prompts + re-anchor / 00-delegate） · PR #98 |
+| 2026-09-11 | [`task_dsh_coding_kit_upgrade_2_1_0.md`](./task_dsh_coding_kit_upgrade_2_1_0.md) | kit 改名 spec-wave 2.1.3（依赖改名 + IDE 块 + prompts 同步） · PR #132 |
+| 2026-09-11 | [`task_specwave_cleanup_2_1_3.md`](./task_specwave_cleanup_2_1_3.md) | 8 根级 SPEC 归位 + cursor rules 命令替换（R3 PASS） · PR #133/#134 |
 
 ---
 
