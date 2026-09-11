@@ -12,7 +12,7 @@ metadata:
 
 > **hat_id（V2）**：**20-spec-audit**（自工作区 Extended 收编进包）。  
 > **对应**：**10-spec**（SPEC 多轮思考）· **不**审 task 实现细节。  
-> **与 20-task-audit 分工**：本帽审 **SPEC** → `HG-SPEC-SIGNOFF`；[`20-task-audit.md`](./20-task-audit.md) 审 **task** → `HG-AUDIT-R1`。  
+> **与 20-task-audit 分工**：本帽审 **SPEC** → `HG-SPEC-SIGNOFF`；[`harness-20-task-audit/SKILL.md`](../../skills/harness-20-task-audit/SKILL.md) 审 **task** → `HG-AUDIT-R1`。  
 > **完整版 POINTER**（Ink 工作区）：`docs/harness/prompts/20-spec-audit.md`  
 > **本文件**：嵌入用户仓 `docs/harness/prompts/` 的 **精简真值**。
 
@@ -27,7 +27,7 @@ metadata:
 - 判定：`pass` | `conditional_pass` | `fail` · 建议 **HG-SPEC-SIGNOFF**（**不**代签）
 - **轻量路径**：10-spec 思考轮已充分时，单轮 R1 即可
 - 通过 → 建议 00 起草 task；**不**附 30 Prompt
-- **v2.8+ 机械闸**：00 前跑 `npx dsh-coding-kit verify --spec <SPEC路径> [--workspace-root <Projects>]`——机器只查审查文**存在性**；缺失 exit 2。豁免：`--allow-no-spec-review` · bugfix / `skip_spec_audit`
+- **v2.8+ 机械闸**（**本包已接线**：`verify --spec` 真闸 · findSpecReview src/cli-checks.ts 单一实现源 · PRD_DEF-003 后续棒 · test/cli-verify-spec.test.ts 钉死）：00 前跑 `npx spec-wave verify --spec <SPEC路径>`——机器只查审查文**存在性**（`docs/harness/reviews` 或 `reviews/` 命中 `spec_<slug>_audit_R<n>_*` / `*_ACCEPT_R<n>_*`）；缺失 `VERIFY: BLOCKED · missing spec R<n> review` exit 2。豁免：`--allow-no-spec-review`（留痕）· bugfix / `skip_spec_audit`（旧包 `--workspace-root` 双仓根旗标本包不支持）
 
 ## 禁止什么
 

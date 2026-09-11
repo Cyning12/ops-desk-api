@@ -1,8 +1,7 @@
 # FRAGMENT · 30 开工前 GATE_VERIFY（mandatory · 首输出）
 
 > 嵌入 **30 invoke** 与 `30-execute-code.md`。  
-> **禁止**在 invoke 中预写 `HG-AUDIT-R1 approved`；须 **读 task 人工闸表** 填表。  
-> **仓内定制**：表含 `HG-GRAPH-MODULES`（ops-desk-api · 勿被 kit sync `--force` 冲掉）。
+> **禁止**在 invoke 中预写 `HG-AUDIT-R1 approved`；须 **读 task 人工闸表** 填表。
 
 ## 首输出形状（未通过则 **零 diff**）
 
@@ -13,7 +12,6 @@
 |---------------|--------------|-----------------|--------|-----------|------------|
 | HG-TASK-DRAFT | {读表} | {若有} | {Y/N} | {Y/N} | … |
 | HG-AUDIT-R1 | {读表} | {若有} | {Y/N} | Y | … |
-| HG-GRAPH-MODULES | {l1/01_modules或—} | — | — | … | … |
 
 reviews：task_*_audit_R1_*.md 存在且 R1 通过？ {是/否}（**v2.5+**：`verify` 对 R<n> 审查文**存在性**机械强制 · 缺失即 `VERIFY: BLOCKED · missing R<n> review` · `--allow-no-review` 豁免留痕——**本包已接线**（src/cli.ts cmdVerify · findReview 与 status 同口径 · PRD_DEF-003 阶段二 T4 · test/cli-verify-review.test.ts 钉死）；结论通过与否仍由维护者签 `HG-AUDIT-R1` 覆盖）
 
@@ -25,7 +23,7 @@ pre-30 invoke：`required ∩ {10,20,00}` 文件是否齐全？ {是/否}（**v2
 
 结论：{STOP · 签闸指引 | 可进入读码/改码}
 
-机械辅助（30 改码前必须）：`npx dsh-coding-kit verify --target <meta> --task docs/tasks/active/task_*.md [--json] [--agent-hint] [--workspace-root <Projects>]`
+机械辅助（30 改码前必须）：`npx spec-wave verify --target <meta> --task docs/tasks/active/task_*.md [--json] [--agent-hint] [--workspace-root <Projects>]`
 ```
 
 ## Agent 纪律
