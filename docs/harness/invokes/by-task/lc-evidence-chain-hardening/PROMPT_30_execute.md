@@ -27,7 +27,7 @@ Open Folder
 
 必读（先读再改码）
 1. docs/tasks/active/task_lc_evidence_chain_hardening.md（人工闸表 + 验收 + failure_paths）
-2. docs/spec/SPEC-lc-evidence-chain-hardening_v1.md
+2. docs/spec/lc-evidence-chain/SPEC-lc-evidence-chain-hardening_v1.md
 3. docs/harness/prompts/FRAGMENT_30_gate_verify_v1_zh.md
 4. docs/harness/prompts/30-execute-code.md · 40-self-check.md
 5. docs/standards/CODING_BACKEND_L2_v1_zh.md

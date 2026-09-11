@@ -2,7 +2,7 @@
 
 > **状态**：completed  
 > **类型**：feature（检索质量 · 排序层）  
-> **关联**：`docs/spec/SPEC-rag-reranker-p0_v1.md`（HG-SPEC-SIGNOFF=approved）· Q6 报告 `experiments/rag_compare/REPORT_q6_arms_vs_baseline_20260812.md` · 定稿 `reports/r4-R-floor04.yaml`  
+> **关联**：`docs/spec/rag-reranker-p0/SPEC-rag-reranker-p0_v1.md`（HG-SPEC-SIGNOFF=approved）· Q6 报告 `experiments/rag_compare/REPORT_q6_arms_vs_baseline_20260812.md` · 定稿 `reports/r4-R-floor04.yaml`  
 > **分支**：`task/rag-reranker-p0`
 
 ---

@@ -2,7 +2,7 @@
 
 > **状态**：`accepted`（HG-SPEC-SIGNOFF=**approved** · 2026-08-17 维护者签收 v1）  
 > **track**：`rag` / observability（旁路已生产可用后的 backlog）  
-> **上游**：`docs/guides/REVIEW_lc_evidence_chain_third_party_20260816.md` §3（仓内复核后的采纳表）· 现网 `app/ops/lc_evidence_chain/` · v1 `docs/spec/SPEC-langchain-evidence-chain_v1.md`  
+> **上游**：`docs/guides/REVIEW_lc_evidence_chain_third_party_20260816.md` §3（仓内复核后的采纳表）· 现网 `app/ops/lc_evidence_chain/` · v1 `docs/spec/lc-evidence-chain/SPEC-langchain-evidence-chain_v1.md`  
 > **下游**：新 00（独立 worktree）起草 task → 20-task-audit + HG-AUDIT-R1 → 派 30。**起草 SPEC 的原窗不实现**  
 > **Open Folder（实现）**：`ops-desk-api/`  
 > **Bounded Context**：旁路继续 **默认不进** `chat/graph`；HTTP freeze `lc-evidence-http-v1` **不升**；不把旁路改造成「替代 Chat 的生产主路」。

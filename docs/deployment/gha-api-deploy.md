@@ -2,7 +2,7 @@
 
 > **日期**：2026-07-28  
 > **Workflow**：`.github/workflows/deploy-api.yml`  
-> **SPEC**：`docs/spec/SPEC-gha-deploy-api_v1.md`  
+> **SPEC**：`docs/spec/gha-deploy-api/SPEC-gha-deploy-api_v1.md`  
 > **范围**：rsync `/opt/ops-desk/api` + 远端 `docker compose … up -d --build api`；**不**部署 web dist、**不** reload Nginx、**不**重建 db  
 > **手动应急**：`ops-desk-workspace/deploy/deploy.sh --skip-web`  
 > **生产验收**：2026-07-28 通过（run `30327570930` · health `{"status":"ok"}`）

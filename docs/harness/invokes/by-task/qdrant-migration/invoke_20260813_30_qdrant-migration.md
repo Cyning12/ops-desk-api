@@ -6,7 +6,7 @@
 | **task_slug** | `qdrant-migration` |
 | **日期** | 2026-08-13 |
 | **分支** | `task/qdrant-migration` |
-| **SPEC** | `docs/spec/SPEC-qdrant-migration_v1.md`（v1.1） |
+| **SPEC** | `docs/spec/qdrant-migration/SPEC-qdrant-migration_v1.md`（v1.1） |
 
 ## 人工闸扫描（GATE_VERIFY · 首输出）
 

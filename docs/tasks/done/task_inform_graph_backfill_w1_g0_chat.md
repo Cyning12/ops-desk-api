@@ -2,7 +2,7 @@
 
 > **状态**：completed（2026-08-24 随 PR #46 关账归档）  
 > **类型**：图谱 / 文档（无业务 Python 改码）  
-> **上游 SPEC**：`docs/spec/SPEC-inform-graph-backfill_v1.md`（HG-SPEC-SIGNOFF approved · 2026-08-23）  
+> **上游 SPEC**：`docs/spec/inform-graph-backfill/SPEC-inform-graph-backfill_v1.md`（HG-SPEC-SIGNOFF approved · 2026-08-23）  
 > **执行 spec**：`docs/spec/inform-graph-backfill/modules/chat.md` · `layers/G-L0_00_main.md`  
 > **建议分支**：`task/inform-graph-backfill-w1-g0-chat`
 

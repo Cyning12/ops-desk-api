@@ -2,7 +2,7 @@
 
 > **状态**：completed（00 关账 · 维护者授权开 PR）  
 > **类型**：infra（向量存储迁移 · 架构解耦）  
-> **关联**：`docs/spec/SPEC-qdrant-migration_v1.md`（v1.1 · HG-SPEC-SIGNOFF=approved）· 审查 `docs/harness/reviews/spec_qdrant-migration_audit_R1_20260813.md`  
+> **关联**：`docs/spec/qdrant-migration/SPEC-qdrant-migration_v1.md`（v1.1 · HG-SPEC-SIGNOFF=approved）· 审查 `docs/harness/reviews/spec_qdrant-migration_audit_R1_20260813.md`  
 > **分支**：`task/qdrant-migration`  
 > **合入**：走 PR（禁直推 master）  
 > **编排授权（2026-08-13 维护者）**：00 可代签本 task 全部人闸；**00 除关账外不改业务码/不跑实现**，20/30/40 交子 agent。  
@@ -112,7 +112,7 @@
 
 ## 依赖
 
-- SPEC：`docs/spec/SPEC-qdrant-migration_v1.md`  
+- SPEC：`docs/spec/qdrant-migration/SPEC-qdrant-migration_v1.md`  
 - 现网：`app/ops/rag/retrieve.py` · `app/ops/rag/ingest.py` · `app/ops/rag/embedder.py`  
 - 基线报告：`reports/r4-2.yaml`  
 - 规范：`docs/standards/CODING_BACKEND_L2_v1_zh.md`  

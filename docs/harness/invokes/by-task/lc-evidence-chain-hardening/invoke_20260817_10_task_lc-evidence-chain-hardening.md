@@ -10,7 +10,7 @@
 | task_slug | `lc-evidence-chain-hardening` |
 | freeze_id | `lc-evidence-http-v1`（保持，不升） |
 | task_paths | `docs/tasks/active/task_lc_evidence_chain_hardening.md` |
-| related_review_or_none | 上游 SPEC `docs/spec/SPEC-lc-evidence-chain-hardening_v1.md` · 评审 `docs/guides/REVIEW_lc_evidence_chain_third_party_20260816.md` |
+| related_review_or_none | 上游 SPEC `docs/spec/lc-evidence-chain/SPEC-lc-evidence-chain-hardening_v1.md` · 评审 `docs/guides/REVIEW_lc_evidence_chain_third_party_20260816.md` |
 | git_branch | `task/lc-evidence-chain-hardening` |
 | worktree_root | `.` |
 | created_utc_or_local | 2026-08-17 |

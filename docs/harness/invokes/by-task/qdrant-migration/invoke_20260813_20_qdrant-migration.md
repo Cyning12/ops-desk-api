@@ -10,7 +10,7 @@
 
 ## 摘要
 
-- SPEC `docs/spec/SPEC-qdrant-migration_v1.md` 书面审 R1：**conditional_pass**
+- SPEC `docs/spec/qdrant-migration/SPEC-qdrant-migration_v1.md` 书面审 R1：**conditional_pass**
 - **未**代签 `HG-SPEC-SIGNOFF`（仍 pending）
 - 条件 C1–C4：磁盘类型、写路径枚举、failure_paths 表、金样 compare_with
 

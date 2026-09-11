@@ -4,7 +4,7 @@
 
 | 项 | 内容 |
 |----|------|
-| SPEC | `docs/spec/SPEC-rag-reranker-p0_v1.md`（signed） |
+| SPEC | `docs/spec/rag-reranker-p0/SPEC-rag-reranker-p0_v1.md`（signed） |
 | task | `docs/tasks/done/task_rag_reranker_p0.md`（关账） |
 | 代码 | `app/ops/rag/reranker.py` · 接入点 `app/ops/chat/rag_nodes.py::retrieve_node` |
 | 基线 | `reports/r4-2.yaml` / 误跑对照 `reports/r4-R-misrun-no-ce.yaml` |

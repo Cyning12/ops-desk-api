@@ -4,7 +4,7 @@
 > **类型**：基础设施 / harness 过程轨升级  
 > **先例**：`task_upgrade_harness_2_20_runbook_feedback`（done · 2.24.0 钉升 + FEEDBACK 体例）  
 > **背景**：npm `@cyning/harness@2.24.0` 已 deprecate，迁移至 `dsh-coding-kit`（当前最新 1.5.1）  
-> **关联预留**：`docs/spec/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`（graph 命令面切换属另 task，见 `task_dsh_kit_graph_migrate_probe`）  
+> **关联预留**：`docs/spec/harness-to-dsh-kit-graph-migrate/SPEC-harness-to-dsh-kit-graph-migrate_v0.md`（graph 命令面切换属另 task，见 `task_dsh_kit_graph_migrate_probe`）  
 > **分支**：`task/dsh-coding-kit-1-5-1`  
 > **执行模式**：00 编排/验收；30 子 agent 执行
 

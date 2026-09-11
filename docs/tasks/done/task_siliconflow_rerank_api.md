@@ -2,7 +2,7 @@
 
 > **状态**：completed（维护者本地验收通过 · 2026-08-17）  
 > **类型**：feature / RAG 排序层  
-> **上游**：`docs/spec/SPEC-rag-reranker-p0_v1.md`（signed · 过滤策略方案 B）· 生产 2C4G 本地 CE OOM/meta tensor  
+> **上游**：`docs/spec/rag-reranker-p0/SPEC-rag-reranker-p0_v1.md`（signed · 过滤策略方案 B）· 生产 2C4G 本地 CE OOM/meta tensor  
 > **分支**：`task/siliconflow-rerank-api`  
 > **编排**：闸齐 → 30+40 → 维护者验收 → CLOSE / PR
 
@@ -74,7 +74,7 @@
 
 | 项 | 说明 |
 |---|---|
-| SPEC 过滤策略 | `docs/spec/SPEC-rag-reranker-p0_v1.md` 方案 B |
+| SPEC 过滤策略 | `docs/spec/rag-reranker-p0/SPEC-rag-reranker-p0_v1.md` 方案 B |
 | 现实现 | `app/ops/rag/reranker.py` |
 | HTTP 先例 | `app/ops/rag/embedder.py` · `ApiEmbedder` |
 | 密钥 | 既有 `SILICONFLOW_API_KEY`（缺 key 且 enabled → 失败回退粗排，打日志） |
@@ -118,7 +118,7 @@
 ## 给执行帽必读
 
 1. 本 task  
-2. `docs/spec/SPEC-rag-reranker-p0_v1.md` D2 过滤 env  
+2. `docs/spec/rag-reranker-p0/SPEC-rag-reranker-p0_v1.md` D2 过滤 env  
 3. `app/ops/rag/reranker.py`  
 4. `app/ops/rag/embedder.py` · `ApiEmbedder`  
 5. SiliconFlow rerank：`POST /v1/rerank` · model `BAAI/bge-reranker-v2-m3`
