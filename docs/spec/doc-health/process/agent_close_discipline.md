@@ -19,8 +19,8 @@
 
 1. task 状态 `done` / `completed`；验收勾选与自检已回填。  
 2. 有代码变更：关联 PR **MERGED**（或 `close_pr_policy=exempt` + `close_pr_exempt_note`，或 `--allow-no-pr-merge`）。可用 `gh pr view` 看当前分支。  
-3. 预检：`npx dsh-coding-kit task close --file <task>`（**不要** `--yes`）→ 摘要写 **`CLOSE: READY` / dry-run**，禁止写完成态 `CLOSE: PASS`。  
-4. 执行：`npx dsh-coding-kit task close --file <task> --yes` → 成功才写 **`CLOSE: PASS`**。  
+3. 预检：`npx spec-wave task close --file <task>`（**不要** `--yes`）→ 摘要写 **`CLOSE: READY` / dry-run**，禁止写完成态 `CLOSE: PASS`。  
+4. 执行：`npx spec-wave task close --file <task> --yes` → 成功才写 **`CLOSE: PASS`**。  
 5. 确认已离开 `active/`，进入 `done/`（或域子目录）。  
 6. **本仓必做**：`docs/tasks/done/README.md` 对应域表追加一行（`close_hub_index` 默认开；缺行则 BLOCK）；invoke `task_paths` 改为归档路径。  
 7. 禁止「CLOSE: PASS 但暂留 active」而不留豁免/清理 task。

@@ -5,7 +5,7 @@ Task：docs/tasks/active/task_host_harness_cli_capability.md（00 定夺钉死�
 
 钉死项：
 
-- 命令向量硬编码 npx --yes dsh-coding-kit@<env pin> ... 三形态；子进程走
+- 命令向量硬编码 npx --yes spec-wave@<env pin> ... 三形态；子进程走
   asyncio.create_subprocess_exec 逐 argv 传入，**禁止 shell 模式**（SPEC §3 禁令 A）。
 - kit 版本由 env DSH_CODING_KIT_VERSION 钉版；缺失/非法 → capability_unavailable
   （非静默漂版，SPEC §7）。
@@ -106,7 +106,7 @@ def _build_argv(capability_id: str, args: Any) -> tuple[list[str], str]:
     if args is not None and not isinstance(args, dict):
         raise HarnessCliError("invalid_args: args 必须为 dict")
     payload: dict[str, Any] = args or {}
-    base = ["npx", "--yes", f"dsh-coding-kit@{_kit_pin()}"]
+    base = ["npx", "--yes", f"spec-wave@{_kit_pin()}"]
     if capability_id == HARNESS_VERIFY_ID:
         task_path = _validate_task_path(payload.get("task_path"))
         return (
@@ -245,7 +245,7 @@ _HARNESS_SPECS: tuple[CapabilitySpec, ...] = (
     CapabilitySpec(
         capability_id=HARNESS_VERIFY_ID,
         kind="cli",
-        description="Host harness：dsh-coding-kit verify --json（env 钉版 · Policy 默认关）",
+        description="Host harness：spec-wave verify --json（env 钉版 · Policy 默认关）",
         args_schema=_VERIFY_ARGS_SCHEMA,
         tags=("harness", "cli", "host", "whitelist"),
         risk_level="high",

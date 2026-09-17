@@ -33,7 +33,7 @@ docs/coding_wiki/
 ## 验证
 
 ```bash
-npx dsh-coding-kit wiki export --json --target .
+npx spec-wave wiki export --json --target .
 #（原钉 @cyning/harness@2.19.0；dsh-coding-kit ≥1.6.1 wiki 子命令参数面兼容，2026-08-25 实证 exit 0）
 # 期望：nodes≥6 且 edges>0
 ```

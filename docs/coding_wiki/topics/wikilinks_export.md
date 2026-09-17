@@ -11,7 +11,7 @@
 ## 命令
 
 ```bash
-npx dsh-coding-kit wiki export --json --target .  # 原钉 @cyning/harness@2.19.0；kit ≥1.6.1 参数面兼容（2026-08-25 实证）
+npx spec-wave wiki export --json --target .  # 原钉 @cyning/harness@2.19.0；kit ≥1.6.1 参数面兼容（2026-08-25 实证）
 ```
 
 ## 相关

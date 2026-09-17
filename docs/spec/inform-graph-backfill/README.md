@@ -99,7 +99,7 @@ docs/spec/inform-graph-backfill/
 
 1. 新建或认领 `docs/tasks/active/task_inform_graph_backfill_<wave>_<slug>.md`
 2. `graph_change_layer` / `graph_delta` **必须指向本包具体路径**，禁止只写「改模块表半句」除非 W6
-3. 30 前：`npx dsh-coding-kit verify --target . --task docs/tasks/active/task_*.md`
+3. 30 前：`npx spec-wave verify --target . --task docs/tasks/active/task_*.md`
 4. 改 yaml 后：`./scripts/graph-compile.sh` exit 0
 5. `HG-GRAPH-MODULES`：若只改 flow 不改模块边界 → 备注「不新增一级模块」即可
 
