@@ -41,10 +41,15 @@ def build_allowlist_from_candidates(
     *,
     visible_ids: frozenset[str] | None = None,
 ) -> tuple[list[str], list[str]]:
-    """从候选 id 构建 allowlist；返回 ``(allowed, stripped)``。"""
+    """从候选 id 构建 allowlist；返回 ``(allowed, stripped)``。
+
+    ``candidates is None``：**已废弃**生产语义（旧「全开」）；现等同空列表。
+    生产路径须经 ``get_candidate_capability_ids``（永不 None）。
+    """
     visible = visible_ids if visible_ids is not None else get_policy_visible_ids()
     if candidates is None:
-        return sorted(visible), []
+        # 废弃：禁止 None=全开；安全默认空
+        return [], []
     allowed = [cid for cid in candidates if cid in visible]
     stripped = [cid for cid in candidates if cid not in visible]
     if stripped:
@@ -84,7 +89,17 @@ async def strategy_builder_node(state: LgRagState) -> dict:
         if needs_tool is False:
             allowed, stripped = [], []
         else:
-            candidates = get_candidate_capability_ids()
+            # 按 agent_type / mode 显式 allowlist；未知 key → []（非全开）
+            agent_type = None
+            if isinstance(intent, dict):
+                raw_at = intent.get("agent_type")
+                if raw_at is not None:
+                    agent_type = str(raw_at)
+            mode = state.get("mode")
+            mode_s = str(mode) if mode is not None else None
+            candidates = get_candidate_capability_ids(
+                agent_type=agent_type, mode=mode_s or "supervisor"
+            )
             allowed, stripped = build_allowlist_from_candidates(
                 candidates, visible_ids=visible_ids
             )

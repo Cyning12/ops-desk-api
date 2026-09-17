@@ -222,13 +222,19 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
         raise ManifestError(f"{loc} tags 必须是 list")
     tags = tuple(str(t) for t in tags_raw)
     enabled = bool(raw.get("enabled", True))
+    args_schema = raw.get("args_schema")
+    if args_schema is not None and not isinstance(args_schema, dict):
+        raise ManifestError(f"{loc} args_schema 必须是 mapping")
+    tenant_scoped = bool(raw.get("tenant_scoped", False))
     spec = CapabilitySpec(
         capability_id=cid,
         kind=kind,
         description=str(raw.get("description") or ""),
+        args_schema=args_schema,
         tags=tags,
         risk_level=str(raw.get("risk_level") or "low"),
         enabled=enabled,
+        tenant_scoped=tenant_scoped,
     )
     return _PendingEntry(spec=spec, adapter=LocalFnAdapter(fn))
 

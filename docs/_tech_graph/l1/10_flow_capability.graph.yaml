@@ -1,7 +1,7 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_capability"
 title: "Capability Gateway 注册与 invoke"
-description: "能力注册表 + Filter + 统一 invoke/ainvoke；YAML/JSON manifest 加载 register（仅 local_fn · defaults/lookups 前缀）；local_fn 默认含本库 issue/PR 只读 lookup；可选 schemas_for_llm/ToolNode；mcp/sandbox/cli mock 探针与 skill stub 默认关闭。不是业界 LLM Gateway。首接入面：lg_rag tool_exec_node。C1（2026-09-01）：harness.verify / harness.task_lint 白名单 CLI Capability（harness_cli.py · 代码路径 gateway.register · 显式 register_harness_cli_capabilities() · Policy 默认关 · 不进默认目录；harness.status 可选未做）。"
+description: "能力进程内注册表 + Filter + 统一 invoke/ainvoke（非跨进程注册中心）；YAML/JSON manifest 加载 register（仅 local_fn · defaults/lookups 前缀）；local_fn 默认含本库 issue/PR 只读 lookup（tenant_scoped + 最小 args_schema）；可选 schemas_for_llm/ToolNode；mcp/sandbox/cli mock 探针与 skill stub 默认关闭。不是业界 LLM Gateway。首接入面：lg_rag tool_exec_node。C1（2026-09-01）：harness.verify / harness.task_lint 白名单 CLI Capability（harness_cli.py · 代码路径 gateway.register · 显式 register_harness_cli_capabilities() · Policy 默认关 · 不进默认目录；harness.status 可选未做）。阶段 H（2026-09-17）：Gateway args_schema 校验 + tenant_scoped 门 + span args/policy/subtask 摘要。"
 version: "2026-09-01"
 layer: "G-L1"
 primary_layer: "G-L1"

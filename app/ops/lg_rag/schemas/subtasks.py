@@ -8,7 +8,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class SubtaskItem(BaseModel):
-    """单个子任务；type 白名单规整在节点侧（非法 → rag）。"""
+    """单个子任务；type 白名单规整在节点侧（非法 → rag）。
+
+    ``args``：可选结构化参数；``tool_exec`` 优先传 Gateway，兼容仅 ``input``。
+    """
 
     model_config = ConfigDict(extra="ignore")
 
@@ -16,6 +19,7 @@ class SubtaskItem(BaseModel):
     type: str | None = None
     input: str = Field(..., min_length=1)
     tool: str | None = None
+    args: dict[str, Any] | None = None
 
 
 class SubtasksPlan(BaseModel):

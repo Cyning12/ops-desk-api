@@ -40,6 +40,7 @@
 | **P-13** | 异步一致性 | — | 全链路 async；DB 用 `asyncpg` + SQLAlchemy async；禁止同步 IO 阻塞事件循环 |
 | **P-14** | 数据库迁移 | — | 模型变更必须生成 Alembic migration；migration 脚本可回滚 |
 | **P-15** | LangGraph 节点纯函数 | B-01 | `app/ops/chat/nodes.py` 不依赖 FastAPI；只读/写 `ChatState` |
+| **P-16** | Capability `args_schema` 纪律 | — | Gateway 只做参数形态 / Policy；**业务不变量**（涨跌幅规则等）**禁止**写入 `args_schema`；进程内称**注册表**，禁止暗示已上线跨进程「注册中心」 |
 
 ### P-13 异步一致性
 
@@ -63,6 +64,12 @@ alembic upgrade head
 - 节点函数签名：`async def xxx_node(state: ChatState) -> dict`
 - 返回 dict 的 key 必须是 `ChatState` 的字段或新增字段。
 - 节点内部不发起 HTTP 请求、不操作 SSE。
+
+### P-16 Capability 契约纪律
+
+- `CapabilitySpec.args_schema` 只描述参数 JSON 形态；业务不变量留在领域代码 / Policy。
+- 文档与注释称进程内「注册表」；禁止写成已上线「注册中心 / 跨进程发现服务」。
+- 详见 `app/ops/capability/` 包注释与 `schema_validate.py`。
 
 ---
 

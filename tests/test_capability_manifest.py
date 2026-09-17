@@ -61,6 +61,8 @@ def test_builtin_yaml_aligns_with_default_specs():
         assert loaded.description == spec.description
         assert loaded.tags == spec.tags
         assert loaded.risk_level == spec.risk_level
+        assert loaded.tenant_scoped == spec.tenant_scoped
+        assert loaded.args_schema == spec.args_schema
     now = invoke("utc_now_iso", "")
     assert now.ok is True
     assert now.output["tool"] == utc_now_iso("")["tool"]
