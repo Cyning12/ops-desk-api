@@ -1,6 +1,6 @@
 # Task：spec-wave 升级 2.4.2（2.1.3 → 2.4.2 · 跨 6 版过程轨升级）
 
-> **状态**：draft  
+> **状态**：done  
 > **类型**：基础设施 / harness 过程轨升级（minor×4 + patch×2 跨度：2.2.0/2.2.1/2.3.0/2.3.1/2.4.0/2.4.1）  
 > **前置**：manifest / package 钉 `2.1.3`（`task_dsh_coding_kit_upgrade_2_1_0` + `task_specwave_cleanup_2_1_3` 均已 done）；npm 最新 **`2.4.2`**（2026-09-15 发布）  
 > **分支**：`task/specwave-2-4-2`（**从 master 切**；master 已同步 origin/master）  
@@ -28,7 +28,7 @@
 | **invoke_retention_profile** | `minimal` |
 | **required_invoke_hats** | `30` |
 | **close_pr_policy** | `required` |
-| **related_pr** | TBD（30 执行后回填） |
+| **related_pr** | #136 |
 | **review_hat** | `20` |
 
 ### 人工闸
@@ -107,20 +107,20 @@
 
 ## 验收标准
 
-- [ ] `package.json` `"spec-wave": "2.4.2"`（exact）；`package-lock.json` 中 spec-wave `version`/`resolved` = 2.4.2
-- [ ] `.coding-kit/manifest.json` `version` = 2.4.2 · `from_version` = 2.1.3
-- [ ] `node_modules/.bin/spec-wave --version` 输出 2.4.2
-- [ ] `node_modules/.bin/spec-wave check --target .` exit 0 ·「已是最新」· **零 WARN**
-- [ ] `refresh-ide-blocks` dry-run 报告已审；`git diff AGENTS.md CLAUDE.md` 中 `cyning-harness-local` 块内容零变化
-- [ ] `sync prompts` 后：`grep -rn "dsh-coding-kit" docs/harness/prompts/` 零命中；`grep -n "HG-GRAPH-MODULES" docs/harness/prompts/30-execute-code.md` 有命中（定制行保留）
-- [ ] CI：`grep -n "dsh-coding-kit" .github/workflows/` 零命中；`grep -c "spec-wave@2.4.2" .github/workflows/lint-wiki-delta.yml` = 3
-- [ ] `grep -n 'spec-wave@{_kit_pin()}' app/ops/capability/harness_cli.py` 命中 1 处；`grep -n "dsh-coding-kit@" app/ tests/` 零命中（env 名 `DSH_CODING_KIT_VERSION` 保留不在此 grep 面）
-- [ ] `pytest tests/test_capability_harness_cli.py` PASS
-- [ ] `grep -n 'GRAPH_CLI:-spec-wave' scripts/graph-compile.sh` 命中；`./scripts/graph-compile.sh` exit 0
-- [ ] `node_modules/.bin/spec-wave verify --target . --task docs/tasks/active/task_specwave_upgrade_2_4_2.md` PASS
-- [ ] `assets verify` / `pins check` 基线结果已留痕（FEEDBACK 或 invoke；偏差不挡）
-- [ ] （范围 F 已裁定收编）5 处旧字面替换完成：`grep -rn "npx dsh-coding-kit" docs/coding_wiki/README.md docs/coding_wiki/topics/wikilinks_export.md docs/spec/inform-graph-backfill/README.md docs/spec/doc-health/process/agent_close_discipline.md docs/_tech_graph/shared/99_mermaid_protocol.md` 零命中；**N-2 补锚**：`grep -rn "GRAPH_CLI=dsh-coding-kit" docs/_tech_graph/shared/99_mermaid_protocol.md` 零命中；**N-3**：app/tests 侧 grep 一律加 `--include='*.py'` 避 `__pycache__` 二进制噪音；裸名残留（N-4 清单）属预期不要求零命中
-- [ ] FEEDBACK 落盘 `docs/spec/doc-health/feedback/`
+- [x] `package.json` `"spec-wave": "2.4.2"`（exact）；`package-lock.json` 中 spec-wave `version`/`resolved` = 2.4.2
+- [x] `.coding-kit/manifest.json` `version` = 2.4.2 · `from_version` = 2.1.3
+- [x] `node_modules/.bin/spec-wave --version` 输出 2.4.2
+- [x] `node_modules/.bin/spec-wave check --target .` exit 0 ·「已是最新」· **零 WARN**
+- [x] `refresh-ide-blocks` dry-run 报告已审；`git diff AGENTS.md CLAUDE.md` 中 `cyning-harness-local` 块内容零变化
+- [x] `sync prompts` 后：`grep -rn "dsh-coding-kit" docs/harness/prompts/` 零命中；`grep -n "HG-GRAPH-MODULES" docs/harness/prompts/30-execute-code.md` 有命中（定制行保留）
+- [x] CI：`grep -n "dsh-coding-kit" .github/workflows/` 零命中；`grep -c "spec-wave@2.4.2" .github/workflows/lint-wiki-delta.yml` = 3
+- [x] `grep -n 'spec-wave@{_kit_pin()}' app/ops/capability/harness_cli.py` 命中 1 处；`grep -n "dsh-coding-kit@" app/ tests/` 零命中（env 名 `DSH_CODING_KIT_VERSION` 保留不在此 grep 面）
+- [x] `pytest tests/test_capability_harness_cli.py` PASS
+- [x] `grep -n 'GRAPH_CLI:-spec-wave' scripts/graph-compile.sh` 命中；`./scripts/graph-compile.sh` exit 0
+- [x] `node_modules/.bin/spec-wave verify --target . --task docs/tasks/active/task_specwave_upgrade_2_4_2.md` PASS
+- [x] `assets verify` / `pins check` 基线结果已留痕（FEEDBACK 或 invoke；偏差不挡）
+- [x] （范围 F 已裁定收编）5 处旧字面替换完成：`grep -rn "npx dsh-coding-kit" docs/coding_wiki/README.md docs/coding_wiki/topics/wikilinks_export.md docs/spec/inform-graph-backfill/README.md docs/spec/doc-health/process/agent_close_discipline.md docs/_tech_graph/shared/99_mermaid_protocol.md` 零命中；**N-2 补锚**：`grep -rn "GRAPH_CLI=dsh-coding-kit" docs/_tech_graph/shared/99_mermaid_protocol.md` 零命中；**N-3**：app/tests 侧 grep 一律加 `--include='*.py'` 避 `__pycache__` 二进制噪音；裸名残留（N-4 清单）属预期不要求零命中
+- [x] FEEDBACK 落盘 `docs/spec/doc-health/feedback/`
 
 ## failure_paths
 
@@ -174,4 +174,4 @@
 
 ### KPI
 
-Task_KPI%: TBD（30 执行后回填） · 目标：钉 2.4.2 · manifest 升级 · CI/scripts/tests/宿主向量字面清零 · prompts 冲突零或手合保留 · check 零 WARN · verify PASS
+Task_KPI%: 100 · 钉 2.4.2 ✓ · manifest 升级（from 2.1.3）✓ · CI/scripts/tests/宿主向量字面清零 ✓ · prompts 零冲突（README 手合留痕 FEEDBACK）✓ · check 零 WARN ✓ · verify PASS ✓ · 验收 14/14 · PR #136 已合 master
