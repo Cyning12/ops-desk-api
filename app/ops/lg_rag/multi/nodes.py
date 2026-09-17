@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 
 from langchain_core.messages import AIMessage
 from pydantic import ValidationError
@@ -170,6 +171,8 @@ def _parse_subtasks(raw: str) -> list[dict] | None:
         }
         if subtask_type == "tool" and item.tool:
             subtask["tool"] = str(item.tool)
+        if item.args is not None:
+            subtask["args"] = dict(item.args)
         subtasks.append(subtask)
     return subtasks or None
 
@@ -439,7 +442,10 @@ async def tool_exec_node(state: LgRagState) -> dict:
     """工具子任务：经 Capability Gateway ainvoke；未知 id → 错误结果不中断。
 
     观测：复用 ``trace_span("tool_exec")``；Gateway 向当前 span 写
-    capability_id / kind / ok / error 截断（SPEC §5），不另开根 span。
+    capability_id / kind / ok / error / args 摘要 / policy / subtask_id。
+
+    入参：优先 ``subtask.args``；否则兼容 legacy ``input`` 字符串。
+    构造性单租户：注入 ``tenant_id``（试点，非多租户产品）。
     """
     subtask = _pending_subtask(state)
     if subtask is None:
@@ -453,8 +459,19 @@ async def tool_exec_node(state: LgRagState) -> dict:
         type=result["type"] or "tool",
         input_preview=result["input"],
     )
+    # B：args 优先；兼容 input
+    raw_args = subtask.get("args")
+    if isinstance(raw_args, dict):
+        call_args: object = raw_args
+    else:
+        call_args = result["input"]
+    pilot_tenant = os.environ.get("OPS_PILOT_TENANT_ID", "ops-desk-pilot").strip()
+    cap_ctx: dict = {
+        "tenant_id": pilot_tenant or "ops-desk-pilot",
+        "subtask_id": result["id"],
+    }
     with trace_span("tool_exec", run_type="tool"):
-        cap = await capability_ainvoke(tool_name, result["input"])
+        cap = await capability_ainvoke(tool_name, call_args, ctx=cap_ctx)
         if not cap.ok:
             logger.warning(
                 "lg_rag 工具失败 tool=%r id=%s err=%r",

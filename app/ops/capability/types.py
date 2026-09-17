@@ -1,4 +1,8 @@
-"""Capability Gateway · 契约类型（SPEC §3）。"""
+"""Capability Gateway · 契约类型（SPEC §3）。
+
+进程内**注册表**条目（非跨进程「注册中心」）。``args_schema`` 仅描述参数形态；
+业务不变量不进 schema（见 CODING P-16）。
+"""
 
 from __future__ import annotations
 
@@ -8,7 +12,7 @@ from typing import Any
 
 @dataclass(frozen=True)
 class CapabilitySpec:
-    """注册表条目（SPEC §3.1）。"""
+    """进程内注册表条目（SPEC §3.1）。"""
 
     capability_id: str
     kind: str
@@ -17,6 +21,8 @@ class CapabilitySpec:
     tags: tuple[str, ...] = ()
     risk_level: str = "low"  # low | medium | high
     enabled: bool = True
+    # True：invoke 须 ctx 含租户谓词（tenant_id / _host_tenant）；缺则拒
+    tenant_scoped: bool = False
 
 
 @dataclass(frozen=True)

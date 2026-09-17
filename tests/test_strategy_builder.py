@@ -29,15 +29,29 @@ def test_lg_rag_state_has_allowlist_fields():
     assert "allowed_skill_ids" in hints
 
 
-def test_build_allowlist_default_all_visible():
-    """S1-b：候选 None → 全量 Registry ∩ Policy 可见 local_fn。"""
+def test_build_allowlist_none_is_empty_not_full_open():
+    """阶段 H：candidates=None 不再全开，安全默认空。"""
     visible = frozenset(
         s.capability_id
         for s in list_capabilities(filter=BUILDER_CAP_FILTER)
     )
     allowed, stripped = build_allowlist_from_candidates(None, visible_ids=visible)
-    assert set(allowed) == visible
+    assert allowed == []
     assert stripped == []
+
+
+def test_get_candidate_unknown_key_fail_closed():
+    """未知 agent_type/mode → 空 allowlist。"""
+    assert strategy_config.get_candidate_capability_ids(agent_type="no_such_agent") == []
+    assert strategy_config.get_candidate_capability_ids(mode="mystery") == []
+
+
+def test_get_candidate_supervisor_map_is_explicit():
+    ids = strategy_config.get_candidate_capability_ids(mode="supervisor")
+    assert "utc_now_iso" in ids
+    assert "get_issue_by_number" in ids
+    # 非 None（全开语义已废）
+    assert isinstance(ids, list)
 
 
 def test_build_allowlist_strips_illegal_ids():

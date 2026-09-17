@@ -177,3 +177,4 @@ provide(capability_id, *, ctx) -> CapabilityResult   # P3：kind=skill 注入上
 | 2026-08-26 | v0 | **P0–P3 落地状态**：P0 Registry + `local_fn` + `tool_exec` 接入；P1 `schemas_for_llm` + 可选 ToolNode adapter；P2 mcp/sandbox/cli **mock 探针**（默认关闭）；P3 `kind=skill` · `provide()` 注入上下文 vs `invoke()` 可执行步骤（**stub** · 无完整引擎）+ 与 `docs/skills/` 划界（`GUIDE_capability-gateway-p3-skill-boundary_v0.md`）。分支 `task/capability-gateway` |
 | 2026-08-26 | v0 | 迁入 `docs/spec/agent-infra/capability/`；Mode A 定为默认挂载；下一里程碑 [`ROADMAP_portable_core_v0.md`](./ROADMAP_portable_core_v0.md)；根路径留 POINTER |
 | 2026-08-26 | v0 | **portable U1–U3 落地**（契约未升版）：默认导出去 LG · extras.langchain · 真 MCP env 默认关（PR #66/#68）；详见 ROADMAP |
+| 2026-09-17 | v0 | **阶段 H α 契约硬化落地**（未升版）：默认 `args_schema` + Gateway 校验 · `tenant_scoped` · agent_type/mode allowlist · span metadata · 口径「注册表」；task `capability-contract-hardening` CLOSE。**跟进（不扩 W）**：β supervisor 预算；阶段 T 多租户产品；完整 JSON Schema 库可选替换最小校验器 |

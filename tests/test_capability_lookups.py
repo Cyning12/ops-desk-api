@@ -17,6 +17,8 @@ from app.ops.capability.defaults import (
 from app.ops.lg_rag.multi.nodes import tool_exec_node
 from tests.conftest import DB_AVAILABLE
 
+_TENANT_CTX = {"tenant_id": "test-tenant"}
+
 
 def test_mock_and_utc_now_invoke_regression():
     """utc_now_iso / mock 同步 invoke 不破。"""
@@ -40,6 +42,22 @@ async def test_ainvoke_utc_now_iso_sync_adapter():
     assert result.ok is True
     assert result.output["tool"] == "utc_now_iso"
     assert "utc" in result.output
+
+
+def test_lookup_tenant_scoped_missing_ctx_blocked():
+    """D：tenant_scoped lookup 无租户谓词 → 拒。"""
+    result = invoke("get_issue_by_number", "#128")
+    assert result.ok is False
+    assert "tenant_scope_missing" in (result.error or "")
+
+
+def test_lookup_specs_declare_tenant_scoped_and_schema():
+    from app.ops.capability import list_capabilities
+
+    by_id = {s.capability_id: s for s in list_capabilities()}
+    for cid in ("get_issue_by_number", "get_pr_by_number"):
+        assert by_id[cid].tenant_scoped is True
+        assert by_id[cid].args_schema is not None
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
@@ -67,7 +85,7 @@ async def test_ainvoke_get_issue_by_number_hit(clean_sync_data):
         )
         await db.commit()
 
-    result = await ainvoke("get_issue_by_number", "#128")
+    result = await ainvoke("get_issue_by_number", "#128", ctx=_TENANT_CTX)
     assert result.ok is True
     out = result.output
     assert out["number"] == 128
@@ -105,7 +123,7 @@ async def test_ainvoke_get_pr_by_number_hit(clean_sync_data):
         )
         await db.commit()
 
-    result = await ainvoke("get_pr_by_number", "42")
+    result = await ainvoke("get_pr_by_number", "42", ctx=_TENANT_CTX)
     assert result.ok is True
     out = result.output
     assert out["number"] == 42
@@ -121,23 +139,23 @@ async def test_ainvoke_get_pr_by_number_hit(clean_sync_data):
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
 async def test_ainvoke_issue_not_found_ok_false(clean_sync_data):
-    result = await ainvoke("get_issue_by_number", "#99999")
+    result = await ainvoke("get_issue_by_number", "#99999", ctx=_TENANT_CTX)
     assert result.ok is False
     assert "issue_not_found" in (result.error or "")
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
 async def test_ainvoke_pr_not_found_ok_false(clean_sync_data):
-    result = await ainvoke("get_pr_by_number", "99999")
+    result = await ainvoke("get_pr_by_number", "99999", ctx=_TENANT_CTX)
     assert result.ok is False
     assert "pr_not_found" in (result.error or "")
 
 
 async def test_ainvoke_missing_number_ok_false():
-    result = await ainvoke("get_issue_by_number", "没有编号")
+    result = await ainvoke("get_issue_by_number", "没有编号", ctx=_TENANT_CTX)
     assert result.ok is False
     assert "missing_number" in (result.error or "")
-    pr = await ainvoke("get_pr_by_number", "")
+    pr = await ainvoke("get_pr_by_number", "", ctx=_TENANT_CTX)
     assert pr.ok is False
     assert "missing_number" in (pr.error or "")
 
@@ -174,7 +192,7 @@ async def test_multi_repo_same_number_takes_latest(clean_sync_data):
         )
         await db.commit()
 
-    result = await ainvoke("get_issue_by_number", "7")
+    result = await ainvoke("get_issue_by_number", "7", ctx=_TENANT_CTX)
     assert result.ok is True
     assert result.output["title"] == "新仓库"
     assert result.output["state"] == "open"
@@ -230,3 +248,110 @@ async def test_tool_exec_lookup_ainvoke_and_error_continues(clean_sync_data):
         }
     )
     assert "issue_not_found" in (miss["subtask_results"][0].get("error") or "")
+
+
+@pytest.mark.asyncio
+async def test_tool_exec_prefers_args_over_input_no_db(monkeypatch):
+    """B（无 PG）：优先 args 入 Gateway；非法 args → 拒，图不垮。"""
+    from app.ops.capability.types import CapabilityResult
+
+    captured: dict = {}
+
+    async def _capture(cid: str, args, *, ctx=None):
+        captured["cid"] = cid
+        captured["args"] = args
+        captured["ctx"] = ctx
+        return CapabilityResult(ok=True, output={"echo": args}, capability_id=cid)
+
+    monkeypatch.setattr(
+        "app.ops.lg_rag.multi.nodes.capability_ainvoke",
+        _capture,
+    )
+    hit = await tool_exec_node(
+        {
+            "subtasks": [
+                {
+                    "id": "t-args-nd",
+                    "type": "tool",
+                    "input": "ignored-legacy",
+                    "tool": "utc_now_iso",
+                    "args": {"note": "structured"},
+                }
+            ],
+            "subtask_results": [],
+        }
+    )
+    assert hit["subtask_results"][0]["output"]["echo"] == {"note": "structured"}
+    assert captured["args"] == {"note": "structured"}
+    assert captured["ctx"]["subtask_id"] == "t-args-nd"
+    assert captured["ctx"].get("tenant_id")
+
+    monkeypatch.undo()
+    bad = await tool_exec_node(
+        {
+            "subtasks": [
+                {
+                    "id": "t-bad-nd",
+                    "type": "tool",
+                    "input": "#55",
+                    "tool": "get_issue_by_number",
+                    "args": {"number": ["nope"]},
+                }
+            ],
+            "subtask_results": [],
+        }
+    )
+    assert "args_schema_invalid" in (bad["subtask_results"][0].get("error") or "")
+
+
+@pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
+async def test_tool_exec_prefers_args_over_input(clean_sync_data):
+    """B：tool_exec 优先 args；非法 args → Gateway 拒，图不垮。"""
+    now = datetime.utcnow()
+    async with AsyncSessionLocal() as db:
+        repo = OpsRepo(owner="acme", name="args", full_name="acme/lookup-args")
+        db.add(repo)
+        await db.flush()
+        db.add(
+            OpsIssue(
+                repo_id=repo.id,
+                number=55,
+                title="args-hit",
+                state="open",
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        await db.commit()
+
+    hit = await tool_exec_node(
+        {
+            "subtasks": [
+                {
+                    "id": "t-args",
+                    "type": "tool",
+                    "input": "ignored-legacy",
+                    "tool": "get_issue_by_number",
+                    "args": {"number": 55},
+                }
+            ],
+            "subtask_results": [],
+        }
+    )
+    assert hit["subtask_results"][0]["output"]["title"] == "args-hit"
+
+    bad = await tool_exec_node(
+        {
+            "subtasks": [
+                {
+                    "id": "t-bad",
+                    "type": "tool",
+                    "input": "#55",
+                    "tool": "get_issue_by_number",
+                    "args": {"number": ["nope"]},
+                }
+            ],
+            "subtask_results": [],
+        }
+    )
+    assert "args_schema_invalid" in (bad["subtask_results"][0].get("error") or "")

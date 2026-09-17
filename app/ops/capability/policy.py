@@ -53,6 +53,17 @@ def plan_ctx_has_host_only_keys(ctx: dict[str, Any] | None) -> bool:
     return any(k in ctx for k in HOST_ONLY_POLICY_KEYS)
 
 
+def _tenant_predicate(ctx: dict[str, Any] | None) -> Any:
+    """租户谓词：``tenant_id`` 或 Host ``_host_tenant``（非空即视为已注入）。"""
+    if not ctx:
+        return None
+    for key in ("tenant_id", "_host_tenant"):
+        value = ctx.get(key)
+        if value is not None and str(value).strip():
+            return value
+    return None
+
+
 def check_invoke(
     spec: CapabilitySpec,
     *,
@@ -75,5 +86,8 @@ def check_invoke(
         _env_bool(_ENV_ALLOW_CLI) or host.get("allow_cli") is True
     ):
         return PolicyDecision(False, "policy_blocked: cli_disabled")
+
+    if getattr(spec, "tenant_scoped", False) and _tenant_predicate(ctx) is None:
+        return PolicyDecision(False, "policy_blocked: tenant_scope_missing")
 
     return PolicyDecision(True, None)

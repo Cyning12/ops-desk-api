@@ -124,3 +124,29 @@ def test_policy_decision_frozen():
     d = PolicyDecision(False, "policy_blocked: high_risk")
     assert d.allowed is False
     assert d.reason == "policy_blocked: high_risk"
+
+
+def test_tenant_scoped_missing_predicate_blocked():
+    """D：tenant_scoped 缺租户谓词 → policy_blocked。"""
+    def _fn(_: str) -> dict:
+        return {"ok": True}
+
+    cid = "test_tenant_scoped"
+    register(
+        CapabilitySpec(
+            capability_id=cid,
+            kind="local_fn",
+            description="租户门探针",
+            risk_level="low",
+            tenant_scoped=True,
+        ),
+        LocalFnAdapter(_fn),
+    )
+    denied = invoke(cid, "x")
+    assert denied.ok is False
+    assert "tenant_scope_missing" in (denied.error or "")
+    allowed = invoke(cid, "x", ctx={"tenant_id": "acme"})
+    assert allowed.ok is True
+    via_host = invoke(cid, "x", ctx={"_host_tenant": "acme"})
+    assert via_host.ok is True
+    unregister(cid)

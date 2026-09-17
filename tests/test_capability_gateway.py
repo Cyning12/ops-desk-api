@@ -187,6 +187,9 @@ def test_invoke_writes_span_metadata_on_current_span():
         assert meta["kind"] == "local_fn"
         assert meta["ok"] is True
         assert "error" not in meta
+        assert "args_summary" in meta
+        assert "policy" in meta
+        assert "approval_id" in meta
 
         invoke("missing_tool", "x")
         meta2 = upd.call_args[0][0]
@@ -195,12 +198,64 @@ def test_invoke_writes_span_metadata_on_current_span():
         assert len(meta2["error"]) <= 200
 
 
+def test_invoke_span_metadata_includes_subtask_and_args_summary():
+    """阶段 H：ctx.subtask_id + args 摘要写入 span。"""
+    with patch("app.ops.capability.gateway.update_current_span_metadata") as upd:
+        invoke(
+            "utc_now_iso",
+            "",
+            ctx={"subtask_id": "t9", "approval_id": None},
+        )
+        meta = upd.call_args[0][0]
+        assert meta["subtask_id"] == "t9"
+        assert meta["args_summary"] is not None
+        assert meta["policy"] == "allowed"
+        assert meta.get("approval_id") is None
+
+
+def test_args_schema_invalid_returns_ok_false():
+    """有 args_schema 时非法 args → ok=False · args_schema_invalid。"""
+    result = invoke("utc_now_iso", [1, 2, 3])
+    assert result.ok is False
+    assert "args_schema_invalid" in (result.error or "")
+
+
+def test_args_schema_lookup_rejects_wrong_number_type():
+    result = invoke(
+        "get_issue_by_number",
+        {"number": ["bad"]},
+        ctx={"tenant_id": "pilot"},
+    )
+    assert result.ok is False
+    assert "args_schema_invalid" in (result.error or "")
+
+
 # --- P1：schemas_for_llm + 可选 ToolNode ---
 
 
+def test_schemas_for_llm_includes_default_builtins_with_schema():
+    """阶段 H：默认能力已声明 args_schema → schemas_for_llm 含 builtin。"""
+    names = {s["function"]["name"] for s in schemas_for_llm()}
+    assert "utc_now_iso" in names
+    assert "get_issue_by_number" in names
+    assert "mock_get_issue_status" in names
+
+
 def test_schemas_for_llm_skips_without_args_schema():
-    """钉死：默认 mock 无 args_schema → schemas_for_llm 跳过（不吐残缺条目）。"""
-    assert schemas_for_llm() == []
+    """钉死：无 args_schema 的条目仍跳过（不吐残缺）。"""
+    cid = "no_schema_probe"
+    register(
+        CapabilitySpec(
+            capability_id=cid,
+            kind="local_fn",
+            description="无 schema",
+            args_schema=None,
+        ),
+        LocalFnAdapter(lambda x: x),
+    )
+    names = {s["function"]["name"] for s in schemas_for_llm()}
+    assert cid not in names
+    unregister(cid)
 
 
 def test_schemas_for_llm_shape_and_filter():
@@ -215,10 +270,11 @@ def test_schemas_for_llm_shape_and_filter():
         ),
         LocalFnAdapter(lambda args: args),
     )
-    # 无 filter：仅含带 schema 的条目
+    # 无 filter：含 builtin + 探针
     all_schemas = schemas_for_llm()
-    assert len(all_schemas) == 1
-    item = all_schemas[0]
+    by_name = {s["function"]["name"]: s for s in all_schemas}
+    assert cid in by_name
+    item = by_name[cid]
     assert item["type"] == "function"
     assert item["function"]["name"] == cid
     assert item["function"]["description"] == "P1 schema 探针"

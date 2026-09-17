@@ -1,13 +1,42 @@
-"""默认 local_fn 能力：两枚 mock + utc_now_iso + 本库 issue/PR lookup。"""
+"""默认 local_fn 能力：两枚 mock + utc_now_iso + 本库 issue/PR lookup。
+
+进程内注册表默认条目（非注册中心）。``args_schema`` 仅参数形态；
+业务不变量不进 schema。lookup 标 ``tenant_scoped=True``。
+"""
 
 from __future__ import annotations
 
 from datetime import UTC
+from typing import Any
 
 from app.ops.capability.adapters.local_fn import LocalFnAdapter
 from app.ops.capability.gateway import get_registry, register
 from app.ops.capability.lookups import get_issue_by_number, get_pr_by_number
 from app.ops.capability.types import CapabilitySpec
+
+# 最小 schema：兼容 legacy 字符串 payload + 结构化 object
+_SCHEMA_STRING_OR_OBJECT: dict[str, Any] = {
+    "type": ["string", "object"],
+    "properties": {},
+    "additionalProperties": True,
+}
+
+_SCHEMA_LOOKUP: dict[str, Any] = {
+    "type": ["string", "object"],
+    "properties": {
+        "number": {
+            "type": ["integer", "string"],
+            "description": "issue/PR 号",
+        },
+    },
+    "additionalProperties": True,
+}
+
+_SCHEMA_UTC: dict[str, Any] = {
+    "type": ["string", "object", "null"],
+    "properties": {},
+    "additionalProperties": True,
+}
 
 
 def mock_get_issue_status(payload: str) -> dict:
@@ -51,6 +80,7 @@ _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
             capability_id="mock_get_issue_status",
             kind="local_fn",
             description="Mock：查询 issue 状态（罐头数据）",
+            args_schema=dict(_SCHEMA_STRING_OR_OBJECT),
             tags=("mock", "issue"),
             risk_level="low",
         ),
@@ -61,6 +91,7 @@ _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
             capability_id="mock_get_deploy_info",
             kind="local_fn",
             description="Mock：查询部署信息（罐头数据）",
+            args_schema=dict(_SCHEMA_STRING_OR_OBJECT),
             tags=("mock", "deploy"),
             risk_level="low",
         ),
@@ -71,6 +102,7 @@ _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
             capability_id="utc_now_iso",
             kind="local_fn",
             description="只读：返回当前 UTC ISO 时间戳",
+            args_schema=dict(_SCHEMA_UTC),
             tags=("readonly", "time"),
             risk_level="low",
         ),
@@ -81,8 +113,10 @@ _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
             capability_id="get_issue_by_number",
             kind="local_fn",
             description="本库只读：按 number 查 Issue 摘要（无 raw_payload）",
+            args_schema=dict(_SCHEMA_LOOKUP),
             tags=("lookup", "issue", "readonly"),
             risk_level="low",
+            tenant_scoped=True,
         ),
         LocalFnAdapter(get_issue_by_number),
     ),
@@ -91,8 +125,10 @@ _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
             capability_id="get_pr_by_number",
             kind="local_fn",
             description="本库只读：按 number 查 PR 摘要（无 raw_payload）",
+            args_schema=dict(_SCHEMA_LOOKUP),
             tags=("lookup", "pr", "readonly"),
             risk_level="low",
+            tenant_scoped=True,
         ),
         LocalFnAdapter(get_pr_by_number),
     ),

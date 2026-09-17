@@ -1,5 +1,6 @@
 # 内置 capability 目录（S3 · 五枚默认 local_fn · 对齐 defaults.py）
-# 无密钥字段；仅 Host load_capability_manifest 解析。
+# 进程内注册表清单；非跨进程注册中心。无密钥字段；仅 Host load 解析。
+# args_schema 仅参数形态；业务不变量不进 schema。
 version: 1
 capabilities:
   - id: mock_get_issue_status
@@ -8,6 +9,11 @@ capabilities:
     tags: [mock, issue]
     risk_level: low
     enabled: true
+    tenant_scoped: false
+    args_schema:
+      type: [string, object]
+      properties: {}
+      additionalProperties: true
     adapter: local_fn:app.ops.capability.defaults:mock_get_issue_status
   - id: mock_get_deploy_info
     kind: local_fn
@@ -15,6 +21,11 @@ capabilities:
     tags: [mock, deploy]
     risk_level: low
     enabled: true
+    tenant_scoped: false
+    args_schema:
+      type: [string, object]
+      properties: {}
+      additionalProperties: true
     adapter: local_fn:app.ops.capability.defaults:mock_get_deploy_info
   - id: utc_now_iso
     kind: local_fn
@@ -22,6 +33,11 @@ capabilities:
     tags: [readonly, time]
     risk_level: low
     enabled: true
+    tenant_scoped: false
+    args_schema:
+      type: [string, object, "null"]
+      properties: {}
+      additionalProperties: true
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
   - id: get_issue_by_number
     kind: local_fn
@@ -29,6 +45,14 @@ capabilities:
     tags: [lookup, issue, readonly]
     risk_level: low
     enabled: true
+    tenant_scoped: true
+    args_schema:
+      type: [string, object]
+      properties:
+        number:
+          type: [integer, string]
+          description: issue/PR 号
+      additionalProperties: true
     adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
   - id: get_pr_by_number
     kind: local_fn
@@ -36,4 +60,12 @@ capabilities:
     tags: [lookup, pr, readonly]
     risk_level: low
     enabled: true
+    tenant_scoped: true
+    args_schema:
+      type: [string, object]
+      properties:
+        number:
+          type: [integer, string]
+          description: issue/PR 号
+      additionalProperties: true
     adapter: local_fn:app.ops.capability.lookups:get_pr_by_number
