@@ -306,7 +306,10 @@ async def test_non_dict_args_rejected(monkeypatch):
     with patch("asyncio.create_subprocess_exec", new=_fake_exec(calls, _FakeProc())):
         result = await ainvoke(HARNESS_VERIFY_ID, "docs/tasks/active/x.md", ctx=_HOST_OPEN)
     assert result.ok is False
-    assert "invalid_args" in (result.error or "")
+    # 阶段 H：有 args_schema 时 Gateway 先拒非 object（args_schema_invalid）；
+    # adapter 层 invalid_args 仍保留给无 schema / 更深校验路径。
+    err = result.error or ""
+    assert "args_schema_invalid" in err or "invalid_args" in err
     assert calls == []
 
 
