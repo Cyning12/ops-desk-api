@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 
 from langchain_core.messages import AIMessage
 from pydantic import ValidationError
@@ -44,6 +43,7 @@ from app.ops.lg_rag.schemas import ExtractResult, SubtaskItem, SubtasksPlan
 from app.ops.lg_rag.state import LgRagState
 from app.ops.prompts import render
 from app.ops.structured_output import parse_only
+from app.ops.tenant_context import current_tenant_or_default
 from app.ops.tracing import score_current_trace, trace_span, tracing_enabled
 
 logger = logging.getLogger(__name__)
@@ -466,7 +466,7 @@ async def tool_exec_node(state: LgRagState) -> dict:
     capability_id / kind / ok / error / args 摘要 / policy / subtask_id。
 
     入参：优先 ``subtask.args``；否则兼容 legacy ``input`` 字符串。
-    构造性单租户：注入 ``tenant_id``（试点，非多租户产品）。
+    租户：优先请求 ContextVar（F1=C），否则试点 A。
     """
     bump = bump_supervisor_step(state)
     subtask = _pending_subtask(state)
@@ -490,9 +490,9 @@ async def tool_exec_node(state: LgRagState) -> dict:
         call_args: object = raw_args
     else:
         call_args = result["input"]
-    pilot_tenant = os.environ.get("OPS_PILOT_TENANT_ID", "ops-desk-pilot").strip()
+    pilot_tenant = current_tenant_or_default()
     cap_ctx: dict = {
-        "tenant_id": pilot_tenant or "ops-desk-pilot",
+        "tenant_id": pilot_tenant,
         "subtask_id": result["id"],
     }
     with trace_span("tool_exec", run_type="tool"):

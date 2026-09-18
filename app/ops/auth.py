@@ -13,6 +13,7 @@ from app.db.models import OpsInviteToken, OpsSession, OpsUser
 from app.db.session import get_db
 from app.ops.deps import CurrentUser
 from app.ops.security import generate_session_token, hash_token
+from app.ops.tenant_context import TENANT_A, normalize_tenant
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -128,10 +129,46 @@ async def logout(
 
 
 @router.get("/me")
-async def me(user: OpsUser = CurrentUser) -> dict:
-    """Return current user info."""
+async def me(request: Request, user: OpsUser = CurrentUser) -> dict:
+    """Return current user info and session tenant."""
+    tenant_id = getattr(request.state, "ops_tenant_id", TENANT_A)
     return {
         "user": UserOut(
             id=str(user.id), username=user.username, role=user.role
         ).model_dump(),
+        "tenant_id": tenant_id,
     }
+
+
+class SwitchTenantRequest(BaseModel):
+    """切换当前 session 租户（Fixture 轨仅允许试点 A/B）。"""
+
+    tenant_id: str
+
+
+@router.post("/tenant", status_code=status.HTTP_200_OK)
+async def switch_tenant(
+    body: SwitchTenantRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: OpsUser = CurrentUser,
+) -> dict:
+    """写入 session.tenant_id。本请求不校验旧头（切换动作本身）。"""
+    del user
+    try:
+        tenant_id = normalize_tenant(body.tenant_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    cookie_token = request.cookies.get(settings.session_cookie_name)
+    if not cookie_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token_hash = hash_token(cookie_token)
+    result = await db.execute(select(OpsSession).where(OpsSession.token_hash == token_hash))
+    session = result.scalar_one_or_none()
+    if session is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    session.tenant_id = tenant_id
+    await db.commit()
+    request.state.ops_tenant_id = tenant_id
+    return {"ok": True, "tenant_id": tenant_id}

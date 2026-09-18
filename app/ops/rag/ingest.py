@@ -47,6 +47,7 @@ class SourceUnit:
     html_url: str | None
     updated_at: str
     content_hash: str
+    tenant_id: str = "ops-desk-pilot"
 
 
 def _hash(title: str, body: str) -> str:
@@ -76,6 +77,7 @@ def load_issue_units(
             html_url=issue.html_url,
             updated_at=issue.updated_at.isoformat() if issue.updated_at else "",
             content_hash=_hash(issue.title, issue.body or ""),
+            tenant_id=getattr(issue, "tenant_id", None) or "ops-desk-pilot",
         )
         for issue, repo_name in session.execute(stmt)
     ]
@@ -104,6 +106,7 @@ def load_pull_units(
             html_url=pr.html_url,
             updated_at=pr.updated_at.isoformat() if pr.updated_at else "",
             content_hash=_hash(pr.title, pr.body or ""),
+            tenant_id=getattr(pr, "tenant_id", None) or "ops-desk-pilot",
         )
         for pr, repo_name in session.execute(stmt)
     ]
@@ -253,6 +256,7 @@ def ingest(
                             "html_url": u.html_url,
                             "updated_at": u.updated_at,
                             "embedding_model": embedder.name,
+                            "tenant_id": u.tenant_id,
                         }
                     ),
                     "images": json.dumps(media),
@@ -269,6 +273,7 @@ def ingest(
                         repo=repo,
                         source_id=sid,
                         chunk_index=idx,
+                        tenant_id=u.tenant_id,
                     ),
                 )
             )

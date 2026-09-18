@@ -55,13 +55,27 @@ def _iso(dt: datetime | None) -> str | None:
     return dt.isoformat()
 
 
-async def get_issue_by_number(payload: Any) -> dict[str, Any]:
-    """按 number 查本库 Issue 摘要；未命中 → LookupError(issue_not_found)。"""
+def _tenant_from_ctx(ctx: dict[str, Any] | None) -> str:
+    """租户谓词；缺则拒（与 Policy tenant_scoped 对齐）。"""
+    if not ctx:
+        raise LookupError("tenant_scope_missing")
+    raw = ctx.get("tenant_id") or ctx.get("_host_tenant")
+    tenant = str(raw or "").strip()
+    if not tenant:
+        raise LookupError("tenant_scope_missing")
+    return tenant
+
+
+async def get_issue_by_number(
+    payload: Any, *, ctx: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """按 number + tenant_id 查本库 Issue；跨租户未命中 → LookupError(issue_not_found)。"""
     number = _parse_first_int(payload)
+    tenant = _tenant_from_ctx(ctx)
     async with AsyncSessionLocal() as session:
         stmt = (
             select(OpsIssue)
-            .where(OpsIssue.number == number)
+            .where(OpsIssue.number == number, OpsIssue.tenant_id == tenant)
             .order_by(OpsIssue.updated_at.desc())
             .limit(1)
         )
@@ -79,13 +93,16 @@ async def get_issue_by_number(payload: Any) -> dict[str, Any]:
     }
 
 
-async def get_pr_by_number(payload: Any) -> dict[str, Any]:
-    """按 number 查本库 PR 摘要；未命中 → LookupError(pr_not_found)。"""
+async def get_pr_by_number(
+    payload: Any, *, ctx: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """按 number + tenant_id 查本库 PR；跨租户未命中 → LookupError(pr_not_found)。"""
     number = _parse_first_int(payload)
+    tenant = _tenant_from_ctx(ctx)
     async with AsyncSessionLocal() as session:
         stmt = (
             select(OpsPullRequest)
-            .where(OpsPullRequest.number == number)
+            .where(OpsPullRequest.number == number, OpsPullRequest.tenant_id == tenant)
             .order_by(OpsPullRequest.updated_at.desc())
             .limit(1)
         )

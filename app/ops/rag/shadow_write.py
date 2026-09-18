@@ -58,13 +58,17 @@ def filter_payload(
     repo: str,
     source_id: str,
     chunk_index: int,
+    tenant_id: str | None = None,
 ) -> dict[str, Any]:
-    """Qdrant 仅允许 filter 字段。"""
+    """Qdrant 仅允许 filter 字段。tenant_id 缺省试点 A。"""
+    from app.ops.tenant_context import TENANT_A
+
     return {
         "source_type": source_type,
         "repo": repo,
         "source_id": source_id,
         "chunk_index": chunk_index,
+        "tenant_id": (tenant_id or TENANT_A).strip() or TENANT_A,
     }
 
 

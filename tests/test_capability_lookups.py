@@ -17,7 +17,7 @@ from app.ops.capability.defaults import (
 from app.ops.lg_rag.multi.nodes import tool_exec_node
 from tests.conftest import DB_AVAILABLE
 
-_TENANT_CTX = {"tenant_id": "test-tenant"}
+_TENANT_CTX = {"tenant_id": "ops-desk-pilot"}
 
 
 def test_mock_and_utc_now_invoke_regression():
@@ -355,3 +355,35 @@ async def test_tool_exec_prefers_args_over_input(clean_sync_data):
         }
     )
     assert "args_schema_invalid" in (bad["subtask_results"][0].get("error") or "")
+
+
+@pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
+async def test_lookup_cross_tenant_misses(clean_sync_data):
+    """A 查 B 的 issue# → 未命中；B 可命中。"""
+    from app.ops.tenant_context import TENANT_A, TENANT_B
+
+    now = datetime.utcnow()
+    async with AsyncSessionLocal() as db:
+        repo = OpsRepo(owner="acme", name="tenant-b", full_name="acme/tenant-b")
+        db.add(repo)
+        await db.flush()
+        db.add(
+            OpsIssue(
+                repo_id=repo.id,
+                number=900001,
+                title="TENANT_B_MARKER",
+                state="open",
+                tenant_id=TENANT_B,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        await db.commit()
+
+    denied = await ainvoke("get_issue_by_number", "#900001", ctx={"tenant_id": TENANT_A})
+    assert denied.ok is False
+    assert "issue_not_found" in (denied.error or "")
+
+    allowed = await ainvoke("get_issue_by_number", "#900001", ctx={"tenant_id": TENANT_B})
+    assert allowed.ok is True
+    assert allowed.output["title"] == "TENANT_B_MARKER"
