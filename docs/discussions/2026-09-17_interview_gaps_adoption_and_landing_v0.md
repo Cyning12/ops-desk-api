@@ -126,7 +126,7 @@
 
 **不建议**在无 HG/task 下直接改 `app/`；优先开一条 `task_capability_contract_hardening`（名自定）把 α 收进闸。
 
-> **进度（2026-09-17）**：波次 α CLOSE · PR [#138](https://github.com/Cyning12/ops-desk-api/pull/138) MERGED。波次 β `task_supervisor_budget_h_beta` **00 CLOSE**（40 PASS · pytest 41 · 分支 `task/supervisor-budget-h-beta` · commit/PR 待维护者令 · 须纳入 `budget.py`）。阶段 T：条件核对 NO-GO 30（缺第二租户试点数据）· 前置见 workspace `docs/05-plan/06_stage_t_second_tenant_prep_v0_zh.md`。W/P 未开。
+> **进度（2026-09-18）**：波次 α CLOSE · PR [#138](https://github.com/Cyning12/ops-desk-api/pull/138) MERGED。波次 β `task_supervisor_budget_h_beta` **00 CLOSE** · PR [#141](https://github.com/Cyning12/ops-desk-api/pull/141)（40 reverify PASS · pytest 41 · 待合入）。阶段 T：条件核对 NO-GO 30（缺第二租户试点数据）· 前置见 workspace `docs/05-plan/06_stage_t_second_tenant_prep_v0_zh.md`。W/P 未开。
 
 ---
 
@@ -202,7 +202,7 @@
 
 ### 8.4 一句话
 
-> **阶段 H 波次 α 已 CLOSE 且合入**（PR #138）；**波次 β 已 CLOSE**（`task_supervisor_budget_h_beta` · 待 commit/PR）；下一产品串行是阶段 T（只读多租户）→ W；T 的 30 仍阻塞于第二租户试点数据（前置清单见 workspace `06_stage_t_second_tenant_prep_v0_zh.md`）。  
+> **阶段 H 波次 α 已 CLOSE 且合入**（PR #138）；**波次 β 已 CLOSE**（`task_supervisor_budget_h_beta` · PR [#141](https://github.com/Cyning12/ops-desk-api/pull/141) 待合入）；下一产品串行是阶段 T（只读多租户）→ W；T 的 30 仍阻塞于第二租户试点数据（前置清单见 workspace `06_stage_t_second_tenant_prep_v0_zh.md`）。  
 > **跨仓总 00**：`ops-desk-workspace/docs/harness/invokes/by-task/ops-desk-post-h-stage/` · 简报 `05_post_h_stage_brief_v1_zh.md`
 
 ---

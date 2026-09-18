@@ -97,7 +97,7 @@
 | 2026-09-07 | [`task_lg_rag_sse_subtask_live.md`](./task_lg_rag_sse_subtask_live.md) | §10.7 subtask.progress running 起步帧 · PR #125（2026-09-08 Hub 补登漏行） |
 | 2026-09-08 | [`task_lg_rag_sse_subtask_steps.md`](./task_lg_rag_sse_subtask_steps.md) | §10.7 step 里程碑 + provider 真流式（删 aread 假缓冲） · PR #127 |
 | 2026-09-08 | [`task_lg_rag_sse_subtask_message.md`](./task_lg_rag_sse_subtask_message.md) | §10.7 subtask.progress 可选可读 `message`（确定性模板 ≤200 字） · PR #130 |
-| 2026-09-18 | [`task_supervisor_budget_h_beta.md`](./task_supervisor_budget_h_beta.md) | 阶段 H β · supervisor 总预算（默认 32 · 耗尽→aggregate · 墙钟默认关） · PR 待填 |
+| 2026-09-18 | [`task_supervisor_budget_h_beta.md`](./task_supervisor_budget_h_beta.md) | 阶段 H β · supervisor 总预算（默认 32 · 耗尽→aggregate · 墙钟默认关） · PR #141 |
 
 ---
 

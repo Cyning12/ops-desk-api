@@ -309,5 +309,5 @@ Task_KPI%: 100 · D1 范围钉死（总步 32 · 耗尽→aggregate · 墙钟降
 | 归档 | `docs/tasks/done/task_supervisor_budget_h_beta.md` |
 | Hub | engineering 域补登 |
 | 跟进（不扩 W） | 阶段 T（第二租户数据前置）；完整墙钟硬门若产品需要可另开 |
-| Git | 见本轮 commit / PR（须含 `app/ops/lg_rag/multi/budget.py`；**排除**无关 `uv.lock` / `.agents/`） |
-| PR | 本轮开；合入后机读 `close_pr_merged` 可过（文件已在 done · 不作二次 `task close` mv） |
+| Git | commit `6911483` · 已 push；**排除**无关 `uv.lock` / `.agents/` |
+| PR | [#141](https://github.com/Cyning12/ops-desk-api/pull/141)（待合入；合入后机读 `close_pr_merged` 可过） |

@@ -24,10 +24,10 @@
 - [x] KPI / 经验总结回填
 - [x] Hub 索引行
 - [x] 40 reverify PASS
-- [ ] commit / push / PR（本窗执行 · 完成后勾）
-- [ ] PR 合入后回写 Hub「PR #N」与讨论稿水位（合入后）
+- [x] commit / push / PR → [#141](https://github.com/Cyning12/ops-desk-api/pull/141)
+- [ ] PR 合入后回写讨论稿/workspace 简报为 MERGED（合入后）
 
 ## Judgment（00）
 
-- **gate/risk**：无 pending 挡关账；机读二次 `task close` 因已在 done 跳过；以 Hub+KPI+PR 为关账闭环
-- **hat_self**：本窗未改 `app/`/`tests/` 实现 · 仅 CLOSE 文档与编排 · 符合 delegate-only · 已派 40 reverify
+- **gate/risk**：无 pending 挡关账；机读二次 `task close` 因已在 done 跳过；以 Hub+KPI+PR #141 为关账闭环
+- **hat_self**：本窗未改 `app/`/`tests/` 实现 · 仅 CLOSE 文档与编排 · 符合 delegate-only · 已派 40 reverify · 已开 PR
