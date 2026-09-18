@@ -7,10 +7,11 @@ START → intent_node（S2 细意图）→ strategy_builder（S1 allowlist）→
   ├─ type=rag     → rag_subtask（内部调 router 图子图）→ 回 dispatch
   ├─ type=extract → info_extract（LLM 实体抽取）→ 回 dispatch
   ├─ type=tool    → tool_exec（Mock 工具注册表）→ 回 dispatch
-  └─ 耗尽/空 subtasks → aggregator（LLM 综合）→ critic_node（S4 规则 stub）
+  └─ 子任务耗尽/空 / 总步预算耗尽 → aggregator（LLM 综合）→ critic_node（S4 规则 stub）
        ├─ pass / end → END
-       ├─ retry_planner → supervisor（同 catalog / 已有 allowlist）
-       └─ rebind → strategy_builder（结构闭环，不扩权）
+       ├─ retry_planner → supervisor（同 catalog / 已有 allowlist；全局耗尽禁回环）
+       └─ rebind → strategy_builder（结构闭环，不扩权；全局耗尽禁回环）
+总步默认 32（env ``LG_RAG_SUPERVISOR_MAX_STEPS``）；不计 rag_subtask 内 router 子图。
 
 tracing 注入复用 app.ops.lg_rag.graph._ainvoke_with_tracing（不复制）；
 默认 InMemorySaver；三图并存（basic / router / supervisor）互不破坏。

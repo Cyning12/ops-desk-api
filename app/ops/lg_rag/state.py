@@ -57,6 +57,9 @@ class LgRagState(MessagesState):
     critic_verdict（S4）：critic_node 写入的判定 dict（至少含 outcome）；无 reducer。
     inner_retry_count（S4）：同 catalog 重拆次数；无 reducer；缺省 0；上限 1。
     rebinding_count（S4）：回 Builder 次数；无 reducer；缺省 0；上限 1。
+    supervisor_step_count（H-β）：supervisor 图 8 类节点入口计数；无 reducer；缺省 0。
+    supervisor_budget_exhausted（H-β）：总步/墙钟耗尽旗标；无 reducer；建议 True 后主闸→aggregate。
+    supervisor_started_at（H-β · 可选墙钟）：首次 bump 写入的 monotonic 起点；默认墙钟关闭。
     """
 
     route: str
@@ -71,3 +74,6 @@ class LgRagState(MessagesState):
     critic_verdict: dict
     inner_retry_count: int
     rebinding_count: int
+    supervisor_step_count: int
+    supervisor_budget_exhausted: bool
+    supervisor_started_at: float

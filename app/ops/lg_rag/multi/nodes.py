@@ -30,6 +30,10 @@ from app.ops.lc_evidence_chain.step_hook import (
 )
 from app.ops.lg_rag.answer_stream import complete_answer_streaming
 from app.ops.lg_rag.graph import astream_router_agent
+from app.ops.lg_rag.multi.budget import (
+    bump_supervisor_step,
+    is_supervisor_budget_exhausted,
+)
 from app.ops.lg_rag.nodes import (
     _ROUTER_MODEL,
     _ROUTER_PROVIDER,
@@ -45,7 +49,7 @@ from app.ops.tracing import score_current_trace, trace_span, tracing_enabled
 logger = logging.getLogger(__name__)
 
 SUBTASK_TYPES = ("rag", "extract", "tool")
-MAX_SUBTASKS = 4  # cap=4，超出截断（DESIGN §3）
+MAX_SUBTASKS = 4  # cap=4，超出截断（DESIGN §3）；与 supervisor 总步预算并存
 
 # 子任务 type → 条件边目标节点
 _TYPE_TO_NODE = {
@@ -212,6 +216,7 @@ async def supervisor_node(state: LgRagState) -> dict:
     选型：complete 一次 + ``parse_only``（见 ``_parse_subtasks``），
     不用 ``acomplete_structured`` 以免本波双重 LLM。
     """
+    bump = bump_supervisor_step(state)
     query = _last_user_text(state["messages"])
     caps, allowed_ids = _resolve_supervisor_visible_caps(state)
     if state.get("allowed_capability_ids") is None or not allowed_ids:
@@ -225,7 +230,10 @@ async def supervisor_node(state: LgRagState) -> dict:
             "supervisor_raw": "",
         }
         _record_span_metadata(span_meta)
-        return {"subtasks": [{"id": "t1", "type": "rag", "input": query}]}
+        return {
+            **bump,
+            "subtasks": [{"id": "t1", "type": "rag", "input": query}],
+        }
     system_content = _build_supervisor_system(_format_capability_catalog(caps))
     raw = ""
     subtasks: list[dict] | None = None
@@ -271,15 +279,19 @@ async def supervisor_node(state: LgRagState) -> dict:
     if invalid_tool_id:
         span_meta["supervisor_invalid_tool_id"] = True
     _record_span_metadata(span_meta)
-    return {"subtasks": subtasks}
+    return {**bump, "subtasks": subtasks}
 
 
 def route_next_subtask(state: LgRagState) -> str:
-    """dispatch 条件边：取下一子任务按 type 分派；耗尽/空 subtasks → aggregate。
+    """dispatch 条件边：取下一子任务按 type 分派；子任务耗尽或总预算耗尽 → aggregate。
 
-    防死循环：len(subtask_results) >= len(subtasks) 即耗尽（含空列表），
+    主闸：``supervisor_step_count`` / 耗尽旗标 / 墙钟（若开）触发时，
+    **即使仍有 pending 子任务** 也返回 ``"aggregate"``（禁止直跳 END）。
+    防死循环：len(subtask_results) >= len(subtasks) 即子任务耗尽（含空列表），
     且每个 agent 节点必追加恰好一条结果，索引单调推进。
     """
+    if is_supervisor_budget_exhausted(state):
+        return "aggregate"
     subtask = _pending_subtask(state)
     if subtask is None:
         return "aggregate"
@@ -320,10 +332,15 @@ async def rag_subtask_node(state: LgRagState) -> dict:
     子图输入隔离：fresh messages 仅含本子任务 input，不污染父历史；
     结果 = 末条 AIMessage + chain_meta 摘要。异常 → 错误结果不中断。
     §10.7：running 起步 + router/evidence step 帧（经 progress sink / chain hook）。
+    总步计数只计本节点入口，**不计**内部 router 子图节点。
     """
+    bump = bump_supervisor_step(state)
     subtask = _pending_subtask(state)
     if subtask is None:  # 防御：dispatch 保证不会发生；追加错误结果保推进
-        return {"subtask_results": [{"type": "rag", "error": "no pending subtask"}]}
+        return {
+            **bump,
+            "subtask_results": [{"type": "rag", "error": "no pending subtask"}],
+        }
     result = _base_result(subtask)
     subtask_id = result["id"]
     subtask_type = result["type"] or "rag"
@@ -386,7 +403,7 @@ async def rag_subtask_node(state: LgRagState) -> dict:
                 result["error"] = repr(exc)
     finally:
         reset_chain_step_hook(hook_token)
-    return {"subtask_results": [result]}
+    return {**bump, "subtask_results": [result]}
 
 
 def _empty_extract() -> dict:
@@ -400,9 +417,13 @@ async def info_extract_node(state: LgRagState) -> dict:
     非法 JSON / schema 失败 → 空结构 + warning + structured_output_fallback，
     不中断（DESIGN §8 / SPEC §5）。
     """
+    bump = bump_supervisor_step(state)
     subtask = _pending_subtask(state)
     if subtask is None:
-        return {"subtask_results": [{"type": "extract", "error": "no pending subtask"}]}
+        return {
+            **bump,
+            "subtask_results": [{"type": "extract", "error": "no pending subtask"}],
+        }
     result = _base_result(subtask)
     # §10.7：重活前发 running 起步帧（无 sink 时为空操作）
     await emit_subtask_running(
@@ -426,7 +447,7 @@ async def info_extract_node(state: LgRagState) -> dict:
             result["output"] = _empty_extract()
             result["error"] = repr(exc)
             _record_span_metadata({"structured_output_fallback": True})
-            return {"subtask_results": [result]}
+            return {**bump, "subtask_results": [result]}
         outcome = parse_only(raw, schema=ExtractResult)
         if not outcome.ok or outcome.data is None:
             logger.warning("lg_rag extract 输出非法，置空结构 raw=%r", (raw or "")[:200])
@@ -435,7 +456,7 @@ async def info_extract_node(state: LgRagState) -> dict:
         else:
             result["output"] = outcome.data.model_dump()
             _record_span_metadata({"structured_output_fallback": False})
-    return {"subtask_results": [result]}
+    return {**bump, "subtask_results": [result]}
 
 
 async def tool_exec_node(state: LgRagState) -> dict:
@@ -447,9 +468,13 @@ async def tool_exec_node(state: LgRagState) -> dict:
     入参：优先 ``subtask.args``；否则兼容 legacy ``input`` 字符串。
     构造性单租户：注入 ``tenant_id``（试点，非多租户产品）。
     """
+    bump = bump_supervisor_step(state)
     subtask = _pending_subtask(state)
     if subtask is None:
-        return {"subtask_results": [{"type": "tool", "error": "no pending subtask"}]}
+        return {
+            **bump,
+            "subtask_results": [{"type": "tool", "error": "no pending subtask"}],
+        }
     result = _base_result(subtask)
     tool_name = str(subtask.get("tool") or "")
     # §10.7：重活前发 running 起步帧（无 sink 时为空操作）
@@ -482,7 +507,7 @@ async def tool_exec_node(state: LgRagState) -> dict:
             result["error"] = cap.error or f"未知工具: {tool_name or '(未指定)'}"
         else:
             result["output"] = cap.output
-    return {"subtask_results": [result]}
+    return {**bump, "subtask_results": [result]}
 
 
 # ---------------------------------------------------------------------------
@@ -496,6 +521,7 @@ async def aggregator_node(state: LgRagState) -> dict:
     中间结果只在 subtask_results，不进 messages；LLM 失败异常上抛
     （与全站一致，DESIGN §8）。
     """
+    bump = bump_supervisor_step(state)
     query = _last_user_text(state["messages"])
     results = state.get("subtask_results") or []
     payload = json.dumps(results, ensure_ascii=False, default=str)
@@ -526,4 +552,4 @@ async def aggregator_node(state: LgRagState) -> dict:
             )
             or "（无子任务结果）"
         )
-    return {"messages": [AIMessage(content=answer)]}
+    return {**bump, "messages": [AIMessage(content=answer)]}

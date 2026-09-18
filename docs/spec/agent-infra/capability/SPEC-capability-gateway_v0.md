@@ -178,3 +178,4 @@ provide(capability_id, *, ctx) -> CapabilityResult   # P3：kind=skill 注入上
 | 2026-08-26 | v0 | 迁入 `docs/spec/agent-infra/capability/`；Mode A 定为默认挂载；下一里程碑 [`ROADMAP_portable_core_v0.md`](./ROADMAP_portable_core_v0.md)；根路径留 POINTER |
 | 2026-08-26 | v0 | **portable U1–U3 落地**（契约未升版）：默认导出去 LG · extras.langchain · 真 MCP env 默认关（PR #66/#68）；详见 ROADMAP |
 | 2026-09-17 | v0 | **阶段 H α 契约硬化落地**（未升版）：默认 `args_schema` + Gateway 校验 · `tenant_scoped` · agent_type/mode allowlist · span metadata · 口径「注册表」；task `capability-contract-hardening` CLOSE。**跟进（不扩 W）**：β supervisor 预算；阶段 T 多租户产品；完整 JSON Schema 库可选替换最小校验器 |
+| 2026-09-17 | v0 | **阶段 H β supervisor 总预算落地**（未升版 · 落点在 `lg_rag` 非 Gateway）：默认总步 32 · 耗尽→aggregate · 辅闸禁 critic 回环 · 墙钟默认关；task `supervisor-budget-h-beta` CLOSE。**跟进（不扩 W）**：阶段 T 多租户产品；完整 JSON Schema 库可选 |
