@@ -153,7 +153,7 @@ async def test_policy_double_key_required():
 
 
 async def test_verify_success_json_passthrough_via_ctx(monkeypatch):
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0")
     register_harness_cli_capabilities()
     calls: list[dict] = []
     proc = _FakeProc(stdout=json.dumps(_VERIFY_FIXTURE).encode())
@@ -167,7 +167,7 @@ async def test_verify_success_json_passthrough_via_ctx(monkeypatch):
     assert calls[0]["argv"] == (
         "npx",
         "--yes",
-        "spec-wave@2.4.2",
+        "spec-wave@3.0.0",
         "verify",
         "--target",
         ".",
@@ -182,7 +182,7 @@ async def test_verify_success_json_passthrough_via_ctx(monkeypatch):
 
 async def test_task_lint_success_via_env_open(monkeypatch):
     """Host 策略 env 通道：OPS_CAPABILITY_ALLOW_HIGH_RISK + _CLI 双键放行。"""
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0")
     monkeypatch.setenv("OPS_CAPABILITY_ALLOW_HIGH_RISK", "true")
     monkeypatch.setenv("OPS_CAPABILITY_ALLOW_CLI", "1")
     register_harness_cli_capabilities()
@@ -200,7 +200,7 @@ async def test_task_lint_success_via_env_open(monkeypatch):
     assert calls[0]["argv"] == (
         "npx",
         "--yes",
-        "spec-wave@2.4.2",
+        "spec-wave@3.0.0",
         "task",
         "lint",
         "--file",
@@ -209,7 +209,7 @@ async def test_task_lint_success_via_env_open(monkeypatch):
 
 
 async def test_lint_wiki_delta_success(monkeypatch):
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0")
     register_harness_cli_capabilities()
     calls: list[dict] = []
     proc = _FakeProc(stdout=b"PASS lint-wiki-delta", stderr=b"")
@@ -223,7 +223,7 @@ async def test_lint_wiki_delta_success(monkeypatch):
     assert calls[0]["argv"] == (
         "npx",
         "--yes",
-        "spec-wave@2.4.2",
+        "spec-wave@3.0.0",
         "task",
         "lint-wiki-delta",
         "--target",
@@ -246,7 +246,7 @@ async def test_env_missing_capability_unavailable():
 
 
 async def test_env_pin_invalid_capability_unavailable(monkeypatch):
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2; rm -rf /")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0; rm -rf /")
     register_harness_cli_capabilities()
     calls: list[dict] = []
     with patch("asyncio.create_subprocess_exec", new=_fake_exec(calls, _FakeProc())):
@@ -278,7 +278,7 @@ async def test_env_pin_invalid_capability_unavailable(monkeypatch):
     ],
 )
 async def test_task_path_escape_rejected(bad_path, monkeypatch):
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0")
     register_harness_cli_capabilities()
     calls: list[dict] = []
     with patch("asyncio.create_subprocess_exec", new=_fake_exec(calls, _FakeProc())):
@@ -289,7 +289,7 @@ async def test_task_path_escape_rejected(bad_path, monkeypatch):
 
 
 async def test_task_lint_unknown_op_rejected(monkeypatch):
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0")
     register_harness_cli_capabilities()
     calls: list[dict] = []
     with patch("asyncio.create_subprocess_exec", new=_fake_exec(calls, _FakeProc())):
@@ -300,7 +300,7 @@ async def test_task_lint_unknown_op_rejected(monkeypatch):
 
 
 async def test_non_dict_args_rejected(monkeypatch):
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0")
     register_harness_cli_capabilities()
     calls: list[dict] = []
     with patch("asyncio.create_subprocess_exec", new=_fake_exec(calls, _FakeProc())):
@@ -317,7 +317,7 @@ async def test_non_dict_args_rejected(monkeypatch):
 
 
 async def test_timeout_cli_failed_adapter_direct(monkeypatch):
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0")
     adapter = HarnessCliAdapter(HARNESS_VERIFY_ID, timeout_seconds=0.05)
     proc = _FakeProc(hang=True)
     calls: list[dict] = []
@@ -331,7 +331,7 @@ async def test_timeout_cli_failed_adapter_direct(monkeypatch):
 
 async def test_timeout_via_gateway_ok_false_not_hang(monkeypatch):
     """超时经 gateway：ok=False 返回不挂起（自定义 id 避免污染稳定 id）。"""
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0")
     register(
         CapabilitySpec(
             capability_id="test_harness_timeout",
@@ -353,7 +353,7 @@ async def test_timeout_via_gateway_ok_false_not_hang(monkeypatch):
 
 
 async def test_nonzero_exit_cli_failed_with_stderr(monkeypatch):
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0")
     register_harness_cli_capabilities()
     proc = _FakeProc(stdout=b"", stderr=b"ERR: W1 gate pending", returncode=1)
     calls: list[dict] = []
@@ -370,7 +370,7 @@ async def test_nonzero_exit_cli_failed_with_stderr(monkeypatch):
 
 
 async def test_verify_invalid_json_cli_failed(monkeypatch):
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0")
     register_harness_cli_capabilities()
     proc = _FakeProc(stdout=b"not-json-output", returncode=0)
     calls: list[dict] = []
@@ -382,7 +382,7 @@ async def test_verify_invalid_json_cli_failed(monkeypatch):
 
 
 async def test_stdout_truncation(monkeypatch):
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0")
     register_harness_cli_capabilities()
     big = b"x" * (MAX_STREAM_BYTES + 2048)
     proc = _FakeProc(stdout=big)
@@ -416,7 +416,7 @@ def test_no_shell_mode_in_source():
 
 
 def test_sync_invoke_ok_outside_event_loop(monkeypatch):
-    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "2.4.2")
+    monkeypatch.setenv(DSH_KIT_VERSION_ENV, "3.0.0")
     register_harness_cli_capabilities()
     calls: list[dict] = []
     proc = _FakeProc(stdout=b"PASS lint-wiki-delta")
