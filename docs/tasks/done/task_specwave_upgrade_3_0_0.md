@@ -1,6 +1,6 @@
 # Task：spec-wave 升级 3.0.0（2.4.2 → 3.0.0 · major · 过程轨）
 
-> **状态**：in_progress  
+> **状态**：done  
 > **类型**：基础设施 / harness 过程轨升级（major：适配表 schema v1→v2 **可选**；默认路径零破坏）  
 > **前置**：manifest / package 钉 `2.4.2`（`task_specwave_upgrade_2_4_2` done · PR #136）；npm 最新 **`3.0.0`**  
 > **分支**：`task/specwave-3-0-0`（**从 origin/master 切** · 独立 worktree，与主仓 budget 脏树隔离）  
@@ -28,6 +28,7 @@
 | **invoke_retention_profile** | `minimal` |
 | **required_invoke_hats** | `30` |
 | **close_pr_policy** | `required` |
+| **related_pr** | #139 |
 | **review_hat** | `20` |
 
 ### 人工闸
@@ -93,19 +94,19 @@
 
 ## 验收标准
 
-- [ ] `package.json` `"spec-wave": "3.0.0"`（exact）；`package-lock.json` 中 spec-wave `version`/`resolved` = 3.0.0
-- [ ] `.coding-kit/manifest.json` `version` = 3.0.0 · `from_version` = 2.4.2
-- [ ] `node_modules/.bin/spec-wave --version` 输出 3.0.0
-- [ ] `node_modules/.bin/spec-wave check --target .` exit 0 ·「已是最新」· **零 WARN**
-- [ ] `refresh-ide-blocks` dry-run 已审并 `--yes`；`git diff AGENTS.md CLAUDE.md` 中 `cyning-harness-local` 块内容零变化
-- [ ] `sync prompts` 后：`grep -n "HG-GRAPH-MODULES" docs/harness/prompts/30-execute-code.md` 有命中
-- [ ] CI：`grep -c "spec-wave@3.0.0" .github/workflows/lint-wiki-delta.yml` = 3；`grep -n "spec-wave@2.4.2" .github/workflows/` 零命中
-- [ ] `grep -n 'spec-wave@{_kit_pin()}' app/ops/capability/harness_cli.py` 命中 1 处（本波未改该文件亦可）
-- [ ] `pytest tests/test_capability_harness_cli.py` PASS；测试内无残留 `"2.4.2"` 钉版字面（`grep -n '2\.4\.2' tests/test_capability_harness_cli.py` 零命中）
-- [ ] `grep -n 'GRAPH_CLI:-spec-wave' scripts/graph-compile.sh` 命中；`./scripts/graph-compile.sh` exit 0
-- [ ] `node_modules/.bin/spec-wave verify --target . --task docs/tasks/active/task_specwave_upgrade_3_0_0.md` PASS
-- [ ] `assets verify` / `pins check` 基线结果已留痕（FEEDBACK 或 invoke；偏差不挡）
-- [ ] FEEDBACK 落盘 `docs/spec/doc-health/feedback/`
+- [x] `package.json` `"spec-wave": "3.0.0"`（exact）；`package-lock.json` 中 spec-wave `version`/`resolved` = 3.0.0
+- [x] `.coding-kit/manifest.json` `version` = 3.0.0 · `from_version` = 2.4.2
+- [x] `node_modules/.bin/spec-wave --version` 输出 3.0.0
+- [x] `node_modules/.bin/spec-wave check --target .` exit 0 ·「已是最新」· **零 WARN**
+- [x] `refresh-ide-blocks` dry-run 已审并 `--yes`；`git diff AGENTS.md CLAUDE.md` 中 `cyning-harness-local` 块内容零变化
+- [x] `sync prompts` 后：`grep -n "HG-GRAPH-MODULES" docs/harness/prompts/30-execute-code.md` 有命中
+- [x] CI：`grep -c "spec-wave@3.0.0" .github/workflows/lint-wiki-delta.yml` = 3；`grep -n "spec-wave@2.4.2" .github/workflows/` 零命中
+- [x] `grep -n 'spec-wave@{_kit_pin()}' app/ops/capability/harness_cli.py` 命中 1 处（本波未改该文件亦可）
+- [x] `pytest tests/test_capability_harness_cli.py` PASS；测试内无残留 `"2.4.2"` 钉版字面（`grep -n '2\.4\.2' tests/test_capability_harness_cli.py` 零命中）
+- [x] `grep -n 'GRAPH_CLI:-spec-wave' scripts/graph-compile.sh` 命中；`./scripts/graph-compile.sh` exit 0
+- [x] `node_modules/.bin/spec-wave verify --target . --task docs/tasks/active/task_specwave_upgrade_3_0_0.md` PASS
+- [x] `assets verify` / `pins check` 基线结果已留痕（FEEDBACK 或 invoke；偏差不挡）
+- [x] FEEDBACK 落盘 `docs/spec/doc-health/feedback/`
 
 ## failure_paths
 
@@ -184,4 +185,4 @@ version/manifest/CI 计数=3/tests 零残留 2.4.2/verify PASS 双锚。
 
 ### KPI
 
-_（CLOSE 时回填）_
+Task_KPI%: 100 · 钉 3.0.0 ✓ · manifest 升级（from 2.4.2）✓ · CI/tests 字面清零 ✓ · refresh/sync 零冲突 · check 零 WARN ✓ · verify PASS ✓ · 验收 13/13 · PR #139 已合 master
