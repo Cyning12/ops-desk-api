@@ -126,7 +126,7 @@
 
 **不建议**在无 HG/task 下直接改 `app/`；优先开一条 `task_capability_contract_hardening`（名自定）把 α 收进闸。
 
-> **进度（2026-09-17）**：波次 α 竖切 `task_capability_contract_hardening` 已 30/40 PASS · 00 CLOSE 归档 → `docs/tasks/done/`（分支 `task/capability-contract-hardening`；commit/PR 待维护者令）。β 预算 / 阶段 T/W 未开。
+> **进度（2026-09-17）**：波次 α CLOSE · PR [#138](https://github.com/Cyning12/ops-desk-api/pull/138) MERGED。波次 β `task_supervisor_budget_h_beta` **00 CLOSE**（40 PASS · pytest 41 · 分支 `task/supervisor-budget-h-beta` · commit/PR 待维护者令 · 须纳入 `budget.py`）。阶段 T：条件核对 NO-GO 30（缺第二租户试点数据）· 前置见 workspace `docs/05-plan/06_stage_t_second_tenant_prep_v0_zh.md`。W/P 未开。
 
 ---
 
@@ -180,7 +180,7 @@
 
 | 阶段 | 做什么 | 不做什么 | 进入条件 |
 |------|--------|----------|----------|
-| **H** | args_schema + invoke 校验；按 agent_type 可见集；`tenant_scoped` + 单测；观测串链；supervisor 预算 | 不开写；不宣称多租户 SaaS | **α 竖切已 CLOSE（2026-09-17）**；β 预算仍挂账；进入 T 条件：schema/allowlist/tenant_scoped 测绿 ✓ |
+| **H** | args_schema + invoke 校验；按 agent_type 可见集；`tenant_scoped` + 单测；观测串链；supervisor 预算 | 不开写；不宣称多租户 SaaS | **α+β 均已 CLOSE（2026-09-17）**；进入 T 条件：schema/allowlist/tenant_scoped 测绿 ✓；另须第二租户试点数据 |
 | **T** | Principal↔Workspace；Issue/PR/Chunk 查询下推；RAG ANN 前语料/元数据过滤；跨租户负样本金样 | 不开放 write capability | H 的 schema/allowlist/tenant_scoped 测试绿；有第二租户试点数据 |
 | **W** | 首条极窄写能力；结构化 Intent + confirmation + Policy；幂等与审计 | 不自动改码合 PR；不跳过 HITL | T 跨租户负样本门禁达标；审批与令牌设计签收 |
 | **P** | 面试 B 档平台项 | — | 真出现多团队注册冲突再开 |
@@ -202,7 +202,8 @@
 
 ### 8.4 一句话
 
-> **阶段 H 波次 α 已 CLOSE（2026-09-17）**；下一产品串行仍是阶段 T（只读多租户）→ W（写/HITL）；β supervisor 预算可另开 task，不阻塞 T 进入条件中的契约测绿项。
+> **阶段 H 波次 α 已 CLOSE 且合入**（PR #138）；**波次 β 已 CLOSE**（`task_supervisor_budget_h_beta` · 待 commit/PR）；下一产品串行是阶段 T（只读多租户）→ W；T 的 30 仍阻塞于第二租户试点数据（前置清单见 workspace `06_stage_t_second_tenant_prep_v0_zh.md`）。  
+> **跨仓总 00**：`ops-desk-workspace/docs/harness/invokes/by-task/ops-desk-post-h-stage/` · 简报 `05_post_h_stage_brief_v1_zh.md`
 
 ---
 
@@ -213,5 +214,6 @@
 | 2026-09-17 | 首版：汇总 Q1–Q7 待改进 → A/B/C/D 与本仓落地序 |
 | 2026-09-17 | §8：多租户/写能力插入阶段 H→T→W |
 | 2026-09-17 | §5/§8：阶段 H α 竖切 CLOSE（`task_capability_contract_hardening`）；T/W/P 未开 · 00 代签过程 · 维护者令开启 |
+| 2026-09-17 | §5/§8：阶段 H β CLOSE（`task_supervisor_budget_h_beta`）；T 仍 NO-GO 30（第二租户数据） |
 
 

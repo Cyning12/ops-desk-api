@@ -3,10 +3,17 @@
 节点 id 必须是 ``critic_node``：LangGraph 禁止与 state key 同名。
 判定写 ``critic_verdict``；回环时清空 subtasks / subtask_results。
 rebind 只再跑 Builder，不自动扩权、不绕过 Policy。
+
+与 supervisor 总步预算（H-β）优先级：全局耗尽优先于局部
+``MAX_INNER_RETRIES`` / ``MAX_REBINDING``——已耗尽则禁止 retry/rebind，强制 ``end``。
 """
 
 from __future__ import annotations
 
+from app.ops.lg_rag.multi.budget import (
+    bump_supervisor_step,
+    is_supervisor_budget_exhausted,
+)
 from app.ops.lg_rag.schemas.critic import CriticVerdict
 from app.ops.lg_rag.state import LgRagState
 from app.ops.tracing import trace_span, tracing_enabled, update_current_span_metadata
@@ -32,9 +39,15 @@ def _allowlist_empty(state: LgRagState) -> bool:
 
 
 def decide_critic_verdict(state: LgRagState) -> str:
-    """纯函数：无 error → pass；error+空 allowlist → rebind；error+非空 → retry_planner；超预算 → end。"""
+    """纯函数：无 error → pass；error+空 allowlist → rebind；error+非空 → retry_planner；超预算 → end。
+
+    辅闸：全局 supervisor 总步/墙钟已耗尽时，禁止 retry/rebind，强制 ``end``。
+    """
     if not _has_error(state.get("subtask_results")):
         return "pass"
+    # 全局耗尽优先于局部 1+1 回环额度
+    if is_supervisor_budget_exhausted(state):
+        return "end"
     inner = int(state.get("inner_retry_count") or 0)
     rebind = int(state.get("rebinding_count") or 0)
     if _allowlist_empty(state):
@@ -55,9 +68,11 @@ def _reason_for(outcome: str) -> str:
 
 
 def route_after_critic(state: LgRagState) -> str:
-    """条件边：读节点写回后的 ``critic_verdict.outcome``。"""
+    """条件边：读节点写回后的 ``critic_verdict.outcome``；全局耗尽禁回环。"""
     verdict = state.get("critic_verdict") or {}
     outcome = verdict.get("outcome") if isinstance(verdict, dict) else None
+    if outcome in ("retry_planner", "rebind") and is_supervisor_budget_exhausted(state):
+        return "end"
     if outcome in ("pass", "retry_planner", "rebind", "end"):
         return str(outcome)
     return "end"
@@ -77,11 +92,14 @@ def _record_critic_span(metadata: dict) -> None:
 
 async def critic_node(state: LgRagState) -> dict:
     """写 critic_verdict；retry/rebind 时递增计数并清空 subtasks / results。"""
-    outcome = decide_critic_verdict(state)
+    bump = bump_supervisor_step(state)
+    # 辅闸读含本节点入口计数后的视图（本步 tip-over 也禁回环）
+    outcome = decide_critic_verdict({**state, **bump})
     reason = _reason_for(outcome)
     inner = int(state.get("inner_retry_count") or 0)
     rebind = int(state.get("rebinding_count") or 0)
     update: dict = {
+        **bump,
         "critic_verdict": CriticVerdict(outcome=outcome, reason=reason).model_dump(),
         "inner_retry_count": inner,
         "rebinding_count": rebind,

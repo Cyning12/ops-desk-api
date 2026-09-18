@@ -9,6 +9,7 @@ import logging
 
 from app.ops.capability import list_capabilities
 from app.ops.capability.types import CapabilityFilter, CapabilitySpec
+from app.ops.lg_rag.multi.budget import bump_supervisor_step
 from app.ops.lg_rag.state import LgRagState
 from app.ops.strategy.config import get_candidate_capability_ids
 from app.ops.tracing import trace_span, tracing_enabled, update_current_span_metadata
@@ -81,6 +82,7 @@ async def strategy_builder_node(state: LgRagState) -> dict:
     - ``needs_skill`` 本波仍写空 ``allowed_skill_ids``
     - ``risk_hint`` 不得绕过 Policy（始终 deny_high_risk）
     """
+    bump = bump_supervisor_step(state)
     with trace_span("strategy_builder", run_type="chain"):
         visible = get_policy_visible_catalog()
         visible_ids = frozenset(s.capability_id for s in visible)
@@ -115,6 +117,7 @@ async def strategy_builder_node(state: LgRagState) -> dict:
             span_meta["intent_risk_hint"] = intent.get("risk_hint")
         _record_builder_span(span_meta)
         return {
+            **bump,
             "allowed_capability_ids": allowed,
             "allowed_skill_ids": [],
         }

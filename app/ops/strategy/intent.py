@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 
+from app.ops.lg_rag.multi.budget import bump_supervisor_step
 from app.ops.lg_rag.schemas.intent import IntentV1
 from app.ops.lg_rag.state import LgRagState
 from app.ops.prompts import render
@@ -50,6 +51,7 @@ def _query_from_state(state: LgRagState) -> str:
 
 async def intent_node(state: LgRagState) -> dict:
     """写 ``state.intent``；SO 失败走 fallback + span，不拒图。"""
+    bump = bump_supervisor_step(state)
     with trace_span("intent", run_type="chain"):
         query = _query_from_state(state)
         system = render(INTENT_SYSTEM_TEMPLATE)
@@ -87,4 +89,4 @@ async def intent_node(state: LgRagState) -> dict:
                 "intent_needs_tool": intent.get("needs_tool"),
             }
         )
-        return {"intent": intent}
+        return {**bump, "intent": intent}
