@@ -69,6 +69,8 @@ class OpsSession(Base):
     )
     token_hash: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(nullable=False)
+    # 阶段 T：session 为租户真源（F1=C）；缺省试点 A
+    tenant_id: Mapped[str] = mapped_column(String, nullable=False, default="ops-desk-pilot")
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
 
     user: Mapped["OpsUser"] = relationship(back_populates="sessions")
@@ -120,6 +122,7 @@ class OpsIssue(Base):
     updated_at: Mapped[datetime] = mapped_column(nullable=False)
     closed_at: Mapped[datetime | None] = mapped_column(nullable=True)
     raw_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    tenant_id: Mapped[str] = mapped_column(String, nullable=False, default="ops-desk-pilot")
 
 
 class OpsPullRequest(Base):
@@ -152,6 +155,7 @@ class OpsPullRequest(Base):
     closed_at: Mapped[datetime | None] = mapped_column(nullable=True)
     first_review_at: Mapped[datetime | None] = mapped_column(nullable=True)
     raw_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    tenant_id: Mapped[str] = mapped_column(String, nullable=False, default="ops-desk-pilot")
 
 
 class OpsSyncRun(Base):

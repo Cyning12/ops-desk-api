@@ -18,15 +18,23 @@ class LocalFnAdapter:
     def __init__(self, fn: Callable[[Any], Any]) -> None:
         self._fn = fn
 
-    def invoke(self, args: Any, *, ctx: dict[str, Any] | None = None) -> Any:
-        del ctx  # P0 未用；预留策略/审批上下文
-        if inspect.iscoroutinefunction(self._fn):
-            raise TypeError("async local_fn 请使用 ainvoke")
+    def _call(self, args: Any, ctx: dict[str, Any] | None) -> Any:
+        """若 fn 声明 ``ctx`` 则传入（阶段 T lookup）；否则保持仅 args。"""
+        try:
+            params = inspect.signature(self._fn).parameters
+        except (TypeError, ValueError):
+            return self._fn(args)
+        if "ctx" in params:
+            return self._fn(args, ctx=ctx)
         return self._fn(args)
 
+    def invoke(self, args: Any, *, ctx: dict[str, Any] | None = None) -> Any:
+        if inspect.iscoroutinefunction(self._fn):
+            raise TypeError("async local_fn 请使用 ainvoke")
+        return self._call(args, ctx)
+
     async def ainvoke(self, args: Any, *, ctx: dict[str, Any] | None = None) -> Any:
-        del ctx
-        result = self._fn(args)
+        result = self._call(args, ctx)
         if inspect.isawaitable(result):
             return await result
         return result

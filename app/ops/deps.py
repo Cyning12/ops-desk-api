@@ -41,6 +41,8 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session"
         )
 
+    request.state.ops_tenant_id = (session.tenant_id or "ops-desk-pilot").strip() or "ops-desk-pilot"
+
     result = await db.execute(select(OpsUser).where(OpsUser.id == session.user_id))
     user = result.scalar_one_or_none()
     if user is None:

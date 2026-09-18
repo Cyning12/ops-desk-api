@@ -21,7 +21,7 @@ import uuid
 from collections.abc import AsyncIterator
 from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import AIMessage
 from pydantic import BaseModel, Field
@@ -42,6 +42,13 @@ from app.ops.lg_rag.thread_store import (
     load_thread_turns,
     persist_thread_turns,
     resolve_thread_for_user,
+)
+from app.ops.tenant_context import (
+    TENANT_A,
+    TENANT_HEADER,
+    reset_current_tenant,
+    resolve_header_against_session,
+    set_current_tenant,
 )
 from app.ops.tracing import flush_traces, tracing_enabled
 
@@ -183,69 +190,95 @@ async def _prepare_thread(thread_id: str, user_id: str) -> list[dict]:
         return []
 
 
+def _resolve_request_tenant(request: Request) -> str:
+    """F1=C：session 真源；头不一致 → 403；未知租户 → 422。"""
+    session_tenant = getattr(request.state, "ops_tenant_id", TENANT_A)
+    try:
+        return resolve_header_against_session(
+            session_tenant, request.headers.get(TENANT_HEADER)
+        )
+    except ValueError as exc:
+        detail = str(exc)
+        code = 403 if "mismatch" in detail else 422
+        raise HTTPException(status_code=code, detail=detail) from exc
+
+
 @router.post("/invoke")
 async def invoke_lg_rag(
     body: InvokeRequest,
+    request: Request,
     user: OpsUser = CurrentUser,
 ) -> JSONResponse:
     """同步调用 lg_rag 旁路图；须登录。"""
+    tenant_id = _resolve_request_tenant(request)
     thread_id = (body.thread_id or uuid.uuid4().hex)[:THREAD_ID_MAX_LENGTH]
     history_turns = await _prepare_thread(thread_id, str(user.id))
+    token = set_current_tenant(tenant_id)
     try:
-        state = await _dispatch(
-            body.mode, body.query, thread_id, history_turns=history_turns
-        )
-    except HTTPException:
-        raise
-    except Exception:
-        logger.exception("lg-rag invoke failed")
+        try:
+            state = await _dispatch(
+                body.mode, body.query, thread_id, history_turns=history_turns
+            )
+        except HTTPException:
+            raise
+        except Exception:
+            logger.exception("lg-rag invoke failed")
+            if tracing_enabled():
+                flush_traces()
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={
+                    "ok": False,
+                    "error": {"code": _FAIL_CODE, "message": _FAIL_MESSAGE},
+                },
+            )
+        try:
+            await persist_thread_turns(
+                thread_id, str(user.id), body.query, _extract_answer(state.get("messages"))
+            )
+        except Exception:
+            logger.exception("lg-rag invoke persist failed thread_id=%s", thread_id)
         if tracing_enabled():
             flush_traces()
         return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
-                "ok": False,
-                "error": {"code": _FAIL_CODE, "message": _FAIL_MESSAGE},
-            },
+                "ok": True,
+                "data": serialize_state(
+                    state, mode=body.mode, thread_id=thread_id
+                ).model_dump(),
+            }
         )
-    try:
-        await persist_thread_turns(
-            thread_id, str(user.id), body.query, _extract_answer(state.get("messages"))
-        )
-    except Exception:
-        logger.exception("lg-rag invoke persist failed thread_id=%s", thread_id)
-    if tracing_enabled():
-        flush_traces()
-    return JSONResponse(
-        content={
-            "ok": True,
-            "data": serialize_state(
-                state, mode=body.mode, thread_id=thread_id
-            ).model_dump(),
-        }
-    )
+    finally:
+        reset_current_tenant(token)
 
 
 @router.post("/stream")
 async def stream_lg_rag(
     body: StreamRequest,
+    request: Request,
     user: OpsUser = CurrentUser,
 ) -> StreamingResponse:
     """SSE 流式旁路（freeze lg-rag-sse-v1）；须登录。默认 mode=supervisor。"""
+    tenant_id = _resolve_request_tenant(request)
+
     thread_id = (body.thread_id or uuid.uuid4().hex)[:THREAD_ID_MAX_LENGTH]
     history_turns = await _prepare_thread(thread_id, str(user.id))
     run_id = uuid.uuid4().hex
 
     async def event_gen() -> AsyncIterator[str]:
-        async for chunk in iter_lg_rag_sse(
-            query=body.query,
-            mode=body.mode,
-            thread_id=thread_id,
-            run_id=run_id,
-            history_turns=history_turns,
-            user_id=str(user.id),
-        ):
-            yield chunk
+        token = set_current_tenant(tenant_id)
+        try:
+            async for chunk in iter_lg_rag_sse(
+                query=body.query,
+                mode=body.mode,
+                thread_id=thread_id,
+                run_id=run_id,
+                history_turns=history_turns,
+                user_id=str(user.id),
+            ):
+                yield chunk
+        finally:
+            reset_current_tenant(token)
 
     return StreamingResponse(
         event_gen(),

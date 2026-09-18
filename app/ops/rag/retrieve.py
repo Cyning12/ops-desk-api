@@ -214,6 +214,7 @@ async def hybrid_recall_detail(
         kw_rows = await session.execute(kw_sql, {"q": kw_param, "k": k_each})
 
     keyword = [_row_to_chunk(r) for r in kw_rows]
+    semantic, keyword = _filter_by_request_tenant(semantic, keyword)
     fused = rrf_fuse(semantic, keyword, top_n)
     logger.info(
         "hybrid_recall: path=%s query=%r semantic=%d keyword=%d fused=%d "
@@ -228,6 +229,29 @@ async def hybrid_recall_detail(
         [(c.anchor, round(c.rrf_score, 4), c.semantic_rank, c.keyword_rank) for c in fused],
     )
     return HybridRecallResult(fused=fused, semantic=semantic, keyword=keyword)
+
+
+def _chunk_visible_to_tenant(chunk: RetrievedChunk, tenant_id: str) -> bool:
+    """无 metadata.tenant_id 视为试点 A（存量本地库）。"""
+    from app.ops.tenant_context import TENANT_A
+
+    meta = chunk.metadata or {}
+    chunk_tenant = str(meta.get("tenant_id") or TENANT_A)
+    return chunk_tenant == tenant_id
+
+
+def _filter_by_request_tenant(
+    semantic: list[RetrievedChunk], keyword: list[RetrievedChunk]
+) -> tuple[list[RetrievedChunk], list[RetrievedChunk]]:
+    from app.ops.tenant_context import current_tenant
+
+    tenant_id = current_tenant()
+    if not tenant_id:
+        return semantic, keyword
+    return (
+        [c for c in semantic if _chunk_visible_to_tenant(c, tenant_id)],
+        [c for c in keyword if _chunk_visible_to_tenant(c, tenant_id)],
+    )
 
 
 async def hybrid_recall(
