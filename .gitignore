@@ -46,3 +46,6 @@ node_modules/
 .cyning-harness/local.json
 # refresh-ide-blocks 本地备份（勿入库）
 .cyning-harness/backups/
+
+# SpecWave verify 本机审计落盘（3.0+ · 勿入库）
+docs/harness/audit/
