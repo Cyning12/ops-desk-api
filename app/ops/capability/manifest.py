@@ -38,11 +38,13 @@ from app.ops.capability.adapters.local_fn import LocalFnAdapter
 from app.ops.capability.errors import STABLE_ERROR_CODES
 from app.ops.capability.gateway import get_registry, register, unregister
 from app.ops.capability.types import (
+    CLASSIFICATION_LEVELS,
     RISK_LEVELS,
     SIDE_EFFECTS,
     WRITE_SIDE_EFFECTS,
     CapabilitySpec,
 )
+from app.ops.capability.visibility import VISIBILITY_KEYS
 from app.ops.tracing import update_current_span_metadata
 
 logger = logging.getLogger(__name__)
@@ -391,6 +393,29 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
     if not isinstance(capture_raw, list):
         raise ManifestError(f"{loc}.receipt.capture 必须是 list")
 
+    visibility_raw = raw.get("visibility")
+    if visibility_raw is not None:
+        if not isinstance(visibility_raw, dict):
+            raise ManifestError(f"{loc} visibility 必须是 mapping")
+        _reject_secret_keys(visibility_raw, where=f"{loc}.visibility")
+        unknown = set(visibility_raw) - VISIBILITY_KEYS
+        if unknown:
+            raise ManifestError(
+                f"{loc}.visibility 未知键"
+                f"（仅 {', '.join(sorted(VISIBILITY_KEYS))}）: {sorted(unknown)}"
+            )
+        cls = str(visibility_raw.get("classification_max") or "").strip().lower()
+        if cls and cls not in CLASSIFICATION_LEVELS:
+            raise ManifestError(
+                f"{loc}.visibility.classification_max 非法"
+                f"（仅 {', '.join(CLASSIFICATION_LEVELS)}）: {cls}"
+            )
+        for dim in ("departments", "roles", "projects"):
+            if dim in visibility_raw and not isinstance(
+                visibility_raw[dim], (list, str)
+            ):
+                raise ManifestError(f"{loc}.visibility.{dim} 必须是 list 或 str")
+
     spec = CapabilitySpec(
         capability_id=cid,
         kind=kind,
@@ -413,6 +438,9 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
         hitl_required=bool(hitl_raw.get("required", False)),
         hitl_snapshot_fields=tuple(str(x) for x in snapshot_raw),
         receipt_capture=tuple(str(x) for x in capture_raw),
+        visibility=(
+            dict(visibility_raw) if isinstance(visibility_raw, dict) else None
+        ),
     )
     adapter = _build_adapter(spec, raw=raw, loc=loc)
     _validate_invariants(spec, loc=loc)
@@ -544,6 +572,14 @@ def _validate_invariants(spec: CapabilitySpec, *, loc: str) -> None:
     if not is_write and str(http_block.get("idempotency_key") or "").strip():
         raise ManifestError(
             f"{loc} V8: side_effect={spec.side_effect} 不应声明 idempotency_key"
+        )
+
+    # V9：对外接入（kind=http）必须显式声明可见范围。
+    # 进程内的 local_fn 沿用 CapabilityFilter 语义（未声明即不受限，但留痕）；
+    # 而 http 是接别人系统的入口，**不该有「默认全员可见」这种兜底**。
+    if spec.kind == "http" and spec.visibility is None:
+        raise ManifestError(
+            f"{loc} V9: kind=http 必须声明 visibility（部门 / 角色 / 密级）"
         )
 
 

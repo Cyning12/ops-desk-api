@@ -6,8 +6,14 @@
 # 纪律（加载期强校验，见 manifest._validate_invariants）：
 # - 无密钥值进仓：只写**环境变量名**（base_url）与**凭证名**（auth）
 # - tenant_scoped 能力必须声明 tenant_param（租户谓词怎么下推到下游）
+# - kind=http 必须声明 visibility（V9：对外接入不设「默认全员可见」兜底）
 # - 模板变量必须出现在 args_schema.properties，或以 _ 开头（Host 注入）
 # - error_map 的值必须是稳定错误码词表内的一员（见 errors.STABLE_ERROR_CODES）
+#
+# 关于 visibility 的现状：部门/角色维度先声明 ``all``——真实的数据隔离靠
+# ``tenant_param`` 下推（文档有密级与部门可见性，由 OA 侧按谓词裁剪）。
+# 等 Host 侧能提供部门级 principal，再把 ``all`` 收紧成具体部门；
+# 密级维度现在就是真的（public < internal < confidential < secret）。
 #
 # 依赖环境变量：
 #   OA_BASE                   网关基址（如 https://oa.example.internal）
@@ -26,6 +32,10 @@ capabilities:
     enabled: true
     # 文档有密级与部门可见性：不把租户谓词传下去，等于问出一个不该看的结果
     tenant_scoped: true
+    visibility:
+      departments: [all]
+      roles: [all]
+      classification_max: internal
     args_schema:
       type: object
       required: [keyword]
@@ -68,6 +78,11 @@ capabilities:
     side_effect: read
     enabled: true
     tenant_scoped: false
+    # 组织关系（谁在哪个岗、谁批什么）属公开信息，密级只要 public
+    visibility:
+      departments: [all]
+      roles: [all]
+      classification_max: public
     args_schema:
       type: object
       required: [name]
@@ -102,6 +117,10 @@ capabilities:
     enabled: true
     # 个人数据，必须强隔离：租户/用户谓词由 Host 注入并下推，不取自模型
     tenant_scoped: true
+    visibility:
+      departments: [all]
+      roles: [all]
+      classification_max: internal
     args_schema:
       type: object
       properties:

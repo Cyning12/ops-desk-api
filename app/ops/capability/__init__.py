@@ -38,6 +38,7 @@ from app.ops.capability.defaults import ensure_default_capabilities
 from app.ops.capability.errors import STABLE_ERROR_CODES
 from app.ops.capability.gateway import (
     ainvoke,
+    capability_catalog_snapshot,
     get_registry,
     invoke,
     list_capabilities,
@@ -53,11 +54,27 @@ from app.ops.capability.manifest import (
     load_extra_manifests_from_env,
 )
 from app.ops.capability.probes import register_p2_probes
+from app.ops.capability.receipts import (
+    InMemoryReceiptSink,
+    NullReceiptSink,
+    Receipt,
+    ReceiptSink,
+    get_receipt_sink,
+    reset_receipt_sink,
+    set_receipt_sink,
+)
 from app.ops.capability.skill_stub import register_skill_stub
 from app.ops.capability.types import (
     CapabilityFilter,
     CapabilityResult,
     CapabilitySpec,
+    Principal,
+)
+from app.ops.capability.visibility import (
+    check_visible,
+    evaluate_visibility,
+    filter_visible,
+    principal_from_ctx,
 )
 
 ensure_default_capabilities()
@@ -80,25 +97,38 @@ __all__ = [
     "HttpCapabilityError",
     "HttpResponse",
     "HttpTransport",
+    "InMemoryReceiptSink",
     "LocalFnAdapter",
     "McpClientAdapter",
     "MockCliAdapter",
     "MockMcpAdapter",
     "MockSandboxAdapter",
+    "NullReceiptSink",
+    "Principal",
+    "Receipt",
+    "ReceiptSink",
     "SkillStubAdapter",
     "StaticCredentialVault",
     "UrllibHttpTransport",
     "ainvoke",
+    "capability_catalog_snapshot",
+    "check_visible",
+    "evaluate_visibility",
+    "filter_visible",
+    "get_receipt_sink",
     "get_registry",
     "invoke",
     "list_capabilities",
     "load_capability_manifests",
     "load_extra_manifests_from_env",
+    "principal_from_ctx",
     "provide",
     "register",
     "register_mcp_client_if_enabled",
     "register_p2_probes",
     "register_skill_stub",
+    "reset_receipt_sink",
     "schemas_for_llm",
+    "set_receipt_sink",
     "unregister",
 ]

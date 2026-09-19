@@ -16,6 +16,13 @@ invoke **不**做参数 schema 校验。有 schema 时校验失败 → ``ok=Fals
 
 写能力强制 schema（预留）：本仓尚无写能力实现；上路后须强制校验
 （env / ``_host_policy.force_args_schema`` 或 kind=write）。
+
+W2 增补：
+- 错误口径带**稳定错误码前缀**（``unknown_id:`` / ``disabled:``，见 ``errors``），
+  中文详情保留在冒号之后——模型认码，人读详情。
+- ``list_capabilities`` / ``schemas_for_llm`` 支持 ``principal``：在 CapabilityFilter
+  之上再做一层**身份可见性**裁剪（见 ``visibility``）。
+- 写能力调用无论成败都落**副作用回执**（见 ``receipts``）。
 """
 
 from __future__ import annotations
@@ -28,15 +35,23 @@ import os
 import time
 from typing import Any
 
-from app.ops.capability.policy import check_invoke
+from app.ops.capability.errors import DISABLED, UNKNOWN_ID, format_error
+from app.ops.capability.policy import check_invoke, write_allowed
+from app.ops.capability.receipts import build_receipt, record_receipt
 from app.ops.capability.registry import CapabilityAdapter, CapabilityRegistry
 from app.ops.capability.schema_validate import validate_capability_args
 from app.ops.capability.types import (
+    WRITE_SIDE_EFFECTS,
     CapabilityFilter,
     CapabilityResult,
     CapabilitySpec,
+    Principal,
 )
+from app.ops.capability.visibility import evaluate_visibility
 from app.ops.tracing import update_current_span_metadata
+
+# 「未知工具」文案保留（既有调用方与测试按子串断言）；前面加稳定错误码
+_UNKNOWN_TEMPLATE = "未知工具"
 
 _ERROR_TRUNCATE = 200
 _ARGS_SUMMARY_MAX = 160
@@ -61,14 +76,39 @@ def unregister(capability_id: str) -> bool:
 
 
 def list_capabilities(
-    *, filter: CapabilityFilter | None = None
+    *,
+    filter: CapabilityFilter | None = None,
+    principal: Principal | None = None,
 ) -> list[CapabilitySpec]:
-    """列出可见能力（SPEC 表面名 ``list``；避 builtins 故命名 ``list_capabilities``）。"""
-    return _registry.list_specs(filter=filter)
+    """列出可见能力（SPEC 表面名 ``list``；避 builtins 故命名 ``list_capabilities``）。
+
+    两层裁剪：``filter``（场景：kind / 风险 / 写副作用 / tags）→
+    ``principal``（身份：部门 / 角色 / 项目 / 密级）。
+
+    ``principal is None`` → 按**匿名主体**求值（``Principal()``）：未声明
+    ``visibility`` 的能力照旧可见，声明了限制的能力对匿名主体不可见（fail-closed）。
+    需要审计摘要用 :func:`capability_catalog_snapshot`。
+    """
+    return capability_catalog_snapshot(filter=filter, principal=principal)[0]
+
+
+def capability_catalog_snapshot(
+    *,
+    filter: CapabilityFilter | None = None,
+    principal: Principal | None = None,
+) -> tuple[list[CapabilitySpec], dict[str, Any]]:
+    """可见集 + 求值摘要（谁被裁、为什么、多少条未声明 visibility）。
+
+    给 Builder / 审计用：只看 ``list_capabilities`` 拿不到「为什么他没看到」。
+    """
+    specs = _registry.list_specs(filter=filter)
+    return evaluate_visibility(specs, principal or Principal())
 
 
 def schemas_for_llm(
-    *, filter: CapabilityFilter | None = None
+    *,
+    filter: CapabilityFilter | None = None,
+    principal: Principal | None = None,
 ) -> list[dict[str, Any]]:
     """导出 OpenAI / LangChain tools 风格可序列化 schema（SPEC §3.2 · P1）。
 
@@ -76,13 +116,13 @@ def schemas_for_llm(
 
         {"type": "function", "function": {"name", "description", "parameters"}}
 
-    Filter 与 ``list_capabilities`` 相同。
+    Filter / principal 与 ``list_capabilities`` 相同。
 
     无 ``args_schema``（钉死）：**跳过**该能力，不生成空/残缺 parameters 条目；
     需要 FC 暴露时须在注册时提供 JSON Schema（``CapabilitySpec.args_schema``）。
     """
     out: list[dict[str, Any]] = []
-    for spec in list_capabilities(filter=filter):
+    for spec in list_capabilities(filter=filter, principal=principal):
         if spec.args_schema is None:
             # 钉死：无 args_schema → 跳过（见模块 docstring）
             continue
@@ -166,7 +206,7 @@ def _prepare_call(
     if entry is None:
         result = CapabilityResult(
             ok=False,
-            error=f"未知工具: {cid or '(未指定)'}",
+            error=format_error(UNKNOWN_ID, f"{_UNKNOWN_TEMPLATE}: {cid or '(未指定)'}"),
             capability_id=cid,
             duration_ms=0.0,
         )
@@ -177,7 +217,7 @@ def _prepare_call(
     if not spec.enabled:
         result = CapabilityResult(
             ok=False,
-            error=f"未知工具: {cid}",
+            error=format_error(DISABLED, f"{_UNKNOWN_TEMPLATE}: {cid}"),
             capability_id=cid,
             duration_ms=0.0,
             meta={"blocked": "disabled"},
@@ -238,6 +278,42 @@ def _prepare_call(
     return spec, adapter, started
 
 
+def _maybe_record_receipt(
+    spec: CapabilitySpec,
+    result: CapabilityResult,
+    *,
+    ctx: dict[str, Any] | None,
+) -> None:
+    """写能力无论成败都落回执（见 ``receipts`` 模块 docstring）。
+
+    同时把 ``receipt_id`` 回填到 ``result.meta``，便于调用方与日志对账。
+    """
+    is_write = spec.side_effect in WRITE_SIDE_EFFECTS
+    if not is_write and not spec.receipt_capture:
+        return
+    captured: dict[str, Any] = {}
+    key: str | None = None
+    if isinstance(result.output, dict):
+        raw_captured = result.output.get("receipt")
+        if isinstance(raw_captured, dict):
+            captured = raw_captured
+        raw_key = result.output.get("idempotency_key")
+        key = str(raw_key) if raw_key else None
+    receipt = build_receipt(
+        capability_id=spec.capability_id,
+        side_effect=spec.side_effect,
+        ok=result.ok,
+        ctx=ctx,
+        idempotency_key=key,
+        captured=captured,
+        error=result.error,
+        write_confirmed=write_allowed(ctx),
+    )
+    record_receipt(receipt)
+    result.meta["receipt_id"] = receipt.receipt_id
+    result.meta["side_effect"] = spec.side_effect
+
+
 def _ok_result(
     *,
     spec: CapabilitySpec,
@@ -256,6 +332,7 @@ def _ok_result(
         duration_ms=duration_ms,
         meta={"kind": spec.kind, "mode": mode},
     )
+    _maybe_record_receipt(spec, result, ctx=ctx)
     _write_span_metadata(
         result,
         kind=spec.kind,
@@ -263,6 +340,8 @@ def _ok_result(
         policy_reason="allowed",
         args=args,
         ctx=ctx,
+        side_effect=spec.side_effect,
+        receipt_id=result.meta.get("receipt_id"),
     )
     return result
 
@@ -285,6 +364,8 @@ def _err_result(
         duration_ms=duration_ms,
         meta={"kind": spec.kind, "mode": mode},
     )
+    # 失败也要留：一次「失败」的写操作可能已经在下游生效（超时 / 半成功）
+    _maybe_record_receipt(spec, result, ctx=ctx)
     _write_span_metadata(
         result,
         kind=spec.kind,
@@ -292,6 +373,8 @@ def _err_result(
         policy_reason="allowed",
         args=args,
         ctx=ctx,
+        side_effect=spec.side_effect,
+        receipt_id=result.meta.get("receipt_id"),
     )
     return result
 
@@ -473,6 +556,8 @@ def _write_span_metadata(
     policy_reason: str | None = None,
     args: Any = None,
     ctx: dict[str, Any] | None = None,
+    side_effect: str | None = None,
+    receipt_id: str | None = None,
 ) -> None:
     """附加到当前 span；无父 span / 未开启 tracing 时静默。"""
     payload: dict[str, Any] = {
@@ -485,6 +570,11 @@ def _write_span_metadata(
     }
     if risk_level is not None:
         payload["risk_level"] = risk_level
+    # 副作用维度与 risk_level **并列**上报：审计要能按「有没有副作用」筛
+    if side_effect is not None:
+        payload["side_effect"] = side_effect
+    if receipt_id:
+        payload["receipt_id"] = receipt_id
     if policy_blocked:
         payload["policy_blocked"] = True
     if policy_reason is not None:

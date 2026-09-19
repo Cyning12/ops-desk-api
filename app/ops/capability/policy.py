@@ -75,6 +75,15 @@ def _tenant_predicate(ctx: dict[str, Any] | None) -> Any:
     return None
 
 
+def write_allowed(ctx: dict[str, Any] | None) -> bool:
+    """本次调用是否获得写放行（env 或 Host 单次放行）。
+
+    对外暴露给回执层：回执要记「这次写是在放行下执行的」，而不只是「成功了」。
+    """
+    host = _host_policy(ctx)
+    return _env_bool(_ENV_ALLOW_WRITE) or host.get("allow_write") is True
+
+
 def check_invoke(
     spec: CapabilitySpec,
     *,
@@ -90,9 +99,7 @@ def check_invoke(
         return PolicyDecision(False, format_error(POLICY_BLOCKED, "high_risk"))
 
     # H4 写操作闸：与 risk_level **独立**（medium + write 亦默认拒）
-    if spec.side_effect in WRITE_SIDE_EFFECTS and not (
-        _env_bool(_ENV_ALLOW_WRITE) or host.get("allow_write") is True
-    ):
+    if spec.side_effect in WRITE_SIDE_EFFECTS and not write_allowed(ctx):
         return PolicyDecision(
             False, format_error(POLICY_BLOCKED, "write_not_confirmed")
         )

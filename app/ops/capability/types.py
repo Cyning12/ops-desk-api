@@ -25,6 +25,48 @@ SIDE_EFFECTS: frozenset[str] = frozenset(
 )
 WRITE_SIDE_EFFECTS: frozenset[str] = frozenset({"write", "irreversible"})
 
+# 密级序（低 → 高）。可见集求值时按序比较：principal 需 ≥ capability。
+CLASSIFICATION_ORDER: tuple[str, ...] = (
+    "public",
+    "internal",
+    "confidential",
+    "secret",
+)
+CLASSIFICATION_LEVELS: frozenset[str] = frozenset(CLASSIFICATION_ORDER)
+# 未识别身份时的密级。取 internal 而非 public：企业内网默认口径，
+# 同时保证 confidential/secret 能力对匿名主体仍然不可见（fail-closed）。
+DEFAULT_CLASSIFICATION = "internal"
+
+# 可见性声明里的通配
+VISIBILITY_ANY = "all"
+
+
+def classification_rank(value: str) -> int:
+    """密级序号；未知值按最低（public）处理，不抛异常。"""
+    text = str(value or "").strip().lower()
+    return (
+        CLASSIFICATION_ORDER.index(text) if text in CLASSIFICATION_LEVELS else 0
+    )
+
+
+@dataclass(frozen=True)
+class Principal:
+    """已认证主体（谁在调）。
+
+    **必须由代码从会话/请求上下文构造，不取自模型产出**——与
+    ``tenant_scoped`` 的租户谓词同一条纪律（见 policy._tenant_predicate）。
+    """
+
+    user_id: str = ""
+    tenant_id: str = ""
+    departments: frozenset[str] = frozenset()
+    roles: frozenset[str] = frozenset()
+    projects: frozenset[str] = frozenset()
+    classification_max: str = DEFAULT_CLASSIFICATION
+
+    def is_anonymous(self) -> bool:
+        return not (self.user_id or self.tenant_id or self.departments or self.roles)
+
 
 @dataclass(frozen=True)
 class CapabilitySpec:
@@ -56,6 +98,11 @@ class CapabilitySpec:
     hitl_snapshot_fields: tuple[str, ...] = ()
     # 副作用回执捕获路径（JSONPath 子集），副作用以收据为真
     receipt_capture: tuple[str, ...] = ()
+    # 可见性声明（departments / roles / projects / classification_max）。
+    # None = **未声明**：不受可见性规则裁剪（沿用 CapabilityFilter 语义），
+    # 但会在 span 上留 ``visibility_undeclared`` 痕，让遗漏可度量。
+    # kind=http 的**对外接入**能力必须声明（加载期 V9）。
+    visibility: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)

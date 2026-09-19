@@ -47,6 +47,8 @@ _CAP_BASE = {
     "side_effect": "read",
     "enabled": True,
     "tenant_scoped": False,
+    # V9：kind=http 必须声明 visibility
+    "visibility": {"departments": ["all"], "roles": ["all"]},
     "args_schema": {"type": "object", "properties": {"keyword": {"type": "string"}}},
     "http": _HTTP_BASE,
 }
@@ -280,6 +282,47 @@ def test_v8_read_must_not_declare_idempotency_key(tmp_path: Path):
     )
     with pytest.raises(ManifestError, match="V8"):
         load_capability_manifest(path)
+
+
+def test_v9_http_must_declare_visibility(tmp_path: Path):
+    """对外接入不设「默认全员可见」兜底——接别人系统的入口必须显式声明可见范围。"""
+    cap = _cap()
+    del cap["visibility"]
+    with pytest.raises(ManifestError, match="V9"):
+        load_capability_manifest(_write(tmp_path, "v9.json", [cap]))
+
+
+def test_v9_does_not_apply_to_local_fn(tmp_path: Path):
+    """进程内能力沿用 CapabilityFilter 语义，不强制声明 visibility。"""
+    path = _write(
+        tmp_path,
+        "v9b.json",
+        [
+            {
+                "id": "local_no_vis",
+                "kind": "local_fn",
+                "description": "x",
+                "when_to_use": "单测",
+                "args_schema": {"type": "object", "properties": {}},
+                "side_effect": "read",
+                "adapter": "local_fn:app.ops.capability.defaults:utc_now_iso",
+            }
+        ],
+    )
+    assert load_capability_manifest(path).registered_ids == ("local_no_vis",)
+
+
+def test_visibility_block_shape_is_validated(tmp_path: Path):
+    with pytest.raises(ManifestError, match="visibility 未知键"):
+        load_capability_manifest(
+            _write(tmp_path, "vis1.json", [_cap(visibility={"dept": ["x"]})])
+        )
+    with pytest.raises(ManifestError, match="classification_max 非法"):
+        load_capability_manifest(
+            _write(tmp_path, "vis2.json", [_cap(visibility={"classification_max": "top"})])
+        )
+    with pytest.raises(ManifestError, match="必须是 mapping"):
+        load_capability_manifest(_write(tmp_path, "vis3.json", [_cap(visibility=["x"])]))
 
 
 # ---------- 必填字段 ----------
