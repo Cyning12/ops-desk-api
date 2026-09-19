@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import urllib.error
 import urllib.parse
@@ -45,6 +46,45 @@ HOST_INJECTED_VARS: frozenset[str] = frozenset(
 )
 
 _MISSING = object()
+
+# 显式指定能力调用走的代理；不设 → **不走任何代理**（见 UrllibHttpTransport）
+_ENV_HTTP_PROXY = "OPS_CAPABILITY_HTTP_PROXY"
+
+# 幂等键百分号编码后保留的可读分隔符（其余非 ASCII 一律编码）
+_IDEMPOTENCY_SAFE_CHARS = ":._-"
+
+
+def ascii_idempotency_key(value: str) -> str:
+    """把幂等键规范成 **ASCII 安全**的形态。
+
+    为什么必须做：HTTP 头只能承载 latin-1。而幂等键的模板通常会嵌**用户输入**
+    （如 ``"oa.ticket.create:{{_user_id}}:{{subject}}:{{_date}}"`` 里的中文标题），
+    直接塞进头里会让 ``urllib`` 抛 ``UnicodeEncodeError: 'latin-1'`` ——
+    **结果是所有含非 ASCII 参数的写操作都发不出去**。
+
+    这是联调才暴露出来的：单测参数全是 ASCII，永远踩不到。
+
+    用百分号编码而非哈希：同一输入必须得到同一键（否则去重失效），
+    同时保留可读的分隔符便于对账。
+    """
+    return urllib.parse.quote(str(value), safe=_IDEMPOTENCY_SAFE_CHARS)
+
+
+def assert_header_latin1(name: str, value: str) -> None:
+    """头值必须 latin-1 可编码；否则**显式失败**，不做静默改写。
+
+    与幂等键不同：幂等键是我们自己的不透明令牌（编码无损），而 ``header_map``
+    里的值往往有业务含义，悄悄改写会让对端看不懂。所以这里选择早失败、报清楚。
+    """
+    text = "" if value is None else str(value)
+    try:
+        text.encode("latin-1")
+    except UnicodeEncodeError as exc:
+        raise HttpCapabilityError(
+            ARGS_SCHEMA_INVALID,
+            f"头 {name} 的值含非 latin-1 字符（HTTP 头不支持），"
+            f"请改用 query/body 承载：{text[:40]!r}",
+        ) from exc
 
 
 class HttpCapabilityError(Exception):
@@ -163,7 +203,18 @@ class FakeHttpTransport:
 
 
 class UrllibHttpTransport:
-    """真传输：stdlib ``urllib``（不引入 httpx，与 mcp_client 约定一致）。"""
+    """真传输：stdlib ``urllib``（不引入 httpx，与 mcp_client 约定一致）。
+
+    **默认不走环境代理**（``HTTP_PROXY`` / ``http_proxy`` 等）。理由：能力的
+    ``base_url`` 是运维选定的**内网**端点，把内网调用经环境里的出口代理转发
+    几乎总是错的；而且失败形态是一个看不懂的 502/407，看起来像网络故障而非配置问题。
+    （联调时实测踩到：本机设了 ``HTTP_PROXY``，所有能力调用被劫持到出口代理。）
+
+    确实需要代理时显式开：``OPS_CAPABILITY_HTTP_PROXY=http://proxy:3128``。
+    """
+
+    def __init__(self) -> None:
+        self._opener = _capability_opener()
 
     def request(
         self,
@@ -190,7 +241,7 @@ class UrllibHttpTransport:
             url, data=data, headers=send_headers, method=method.upper()
         )
         try:
-            with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+            with self._opener.open(req, timeout=timeout_s) as resp:
                 raw = resp.read().decode("utf-8", errors="replace")
                 status = int(getattr(resp, "status", 200) or 200)
         except urllib.error.HTTPError as exc:
@@ -206,6 +257,16 @@ class UrllibHttpTransport:
         except TimeoutError as exc:
             raise HttpCapabilityError(UPSTREAM_ERROR, "请求超时") from exc
         return HttpResponse(status=status, payload=_parse_payload(raw))
+
+
+def _capability_opener() -> urllib.request.OpenerDirector:
+    """构造能力调用的 opener：默认不挂代理；配了 ``OPS_CAPABILITY_HTTP_PROXY`` 才挂。"""
+    explicit = os.environ.get(_ENV_HTTP_PROXY, "").strip()
+    if explicit:
+        handler = urllib.request.ProxyHandler({"http": explicit, "https": explicit})
+    else:
+        handler = urllib.request.ProxyHandler({})  # 空 dict = 不走任何代理
+    return urllib.request.build_opener(handler)
 
 
 def _parse_payload(raw: str) -> Any:
@@ -283,6 +344,10 @@ class GenericHttpAdapter:
         if idem:
             # 写操作必带（V1 已在加载期强制；此处兜运行期）
             headers.setdefault("Idempotency-Key", idem)
+
+        # 头值必须 latin-1 可编码——早失败，别留给 urllib 抛一个看不懂的 UnicodeEncodeError
+        for name, value in headers.items():
+            assert_header_latin1(name, value)
 
         method = str(http.get("method") or "GET").upper()
         url = self._resolve_url(http)
@@ -442,7 +507,8 @@ class GenericHttpAdapter:
                 ARGS_SCHEMA_INVALID, "写操作缺 idempotency_key"
             )
         scope = {**args, **self._host_vars(ctx)}
-        return str(self._render_value(template, scope))
+        # 幂等键进 HTTP 头 → 必须 ASCII 安全（否则含中文参数的写操作全发不出去）
+        return ascii_idempotency_key(self._render_value(template, scope))
 
     # ---- 调用 ----
     def _call(

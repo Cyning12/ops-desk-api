@@ -268,6 +268,128 @@ def test_undeclared_template_var_rejected_at_runtime():
     assert tx.calls == []
 
 
+# ---------- 头编码（联调实测踩到：含中文的写操作发不出去） ----------
+
+
+def test_idempotency_key_with_chinese_is_ascii_safe():
+    """HTTP 头只能承载 latin-1；幂等键模板常嵌用户输入（中文标题），必须规范化。
+
+    联调实测：直接塞中文进 Idempotency-Key → urllib 抛
+    UnicodeEncodeError('latin-1')，**所有含非 ASCII 参数的写操作都发不出去**。
+    单测参数全是 ASCII，所以一直没暴露。
+    """
+    tx = FakeHttpTransport(payload={"code": 0})
+    spec = _spec(
+        side_effect="write",
+        hitl_required=True,
+        args_schema={"type": "object", "properties": {"subject": {"type": "string"}}},
+        http={
+            "method": "POST",
+            "query_map": {},  # 覆盖基座里的 keyword 模板，避免引用未声明变量
+            "body_map": {"subject": "{{subject}}"},
+            "idempotency_key": "oa.demo:{{subject}}:{{_date}}",
+        },
+    )
+    out = _adapter(spec, tx).invoke({"subject": "打印机故障"}, ctx={"user_id": "u-1"})
+    key = tx.calls[0]["headers"]["Idempotency-Key"]
+    key.encode("latin-1")  # 不抛即通过
+    assert "打印机" not in key
+    assert "%" in key
+    assert out["idempotency_key"] == key
+
+
+def test_idempotency_key_is_deterministic_for_same_input():
+    """必须是确定性映射：同输入同键，否则去重失效。"""
+    from app.ops.capability.adapters.http_generic import ascii_idempotency_key
+
+    assert ascii_idempotency_key("k:打印机:2026-01-01") == ascii_idempotency_key(
+        "k:打印机:2026-01-01"
+    )
+    assert ascii_idempotency_key("k:打印机") != ascii_idempotency_key("k:复印件")
+    # 分隔符保留，便于对账
+    assert ascii_idempotency_key("a.b-c_d:e").startswith("a.b-c_d:")
+
+
+def test_header_value_with_non_latin1_fails_fast():
+    """header_map 的值有业务含义，不做静默改写——早失败并报清楚。"""
+    tx = FakeHttpTransport()
+    spec = _spec(http={"header_map": {"X-Title": "{{keyword}}"}})
+    with pytest.raises(HttpCapabilityError) as ei:
+        _adapter(spec, tx).invoke({"keyword": "报销"})
+    assert ei.value.code == "args_schema_invalid"
+    assert "latin-1" in ei.value.detail
+    assert tx.calls == []  # 没发出去
+
+
+# ---------- 代理环境变量（联调实测踩到） ----------
+
+
+def _local_json_server() -> tuple[object, str]:
+    """起一个只回 {"code":0} 的本地 HTTP 服务，返回 (server, url)。"""
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    class _Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802
+            body = b'{"code":0,"data":{"ok":true}}'
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args: object) -> None:  # 静音
+            return
+
+    server = HTTPServer(("127.0.0.1", 0), _Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server, f"http://127.0.0.1:{server.server_address[1]}/probe"
+
+
+def test_urllib_transport_bypasses_ambient_http_proxy(monkeypatch: pytest.MonkeyPatch):
+    """base_url 指向内网服务；被环境 HTTP_PROXY 劫持会得到看不懂的 502/407。
+
+    联调实测踩到：本机设了 HTTP_PROXY，所有能力调用被路由到出口代理。
+    断言方式：把代理指向**必然连不上**的地址，若仍能调通，说明代理确实被绕过了。
+    """
+    from app.ops.capability.adapters import UrllibHttpTransport
+
+    server, url = _local_json_server()
+    try:
+        monkeypatch.setenv("HTTP_PROXY", "http://127.0.0.1:1")
+        monkeypatch.setenv("http_proxy", "http://127.0.0.1:1")
+        monkeypatch.delenv("NO_PROXY", raising=False)
+        monkeypatch.delenv("no_proxy", raising=False)
+        monkeypatch.delenv("OPS_CAPABILITY_HTTP_PROXY", raising=False)
+
+        resp = UrllibHttpTransport().request(
+            method="GET", url=url, headers={}, params={}, body=None, timeout_s=5
+        )
+        assert resp.status == 200
+        assert resp.payload["code"] == 0
+    finally:
+        server.shutdown()
+
+
+def test_urllib_transport_honors_explicit_capability_proxy(monkeypatch: pytest.MonkeyPatch):
+    """确实需要代理时显式开——不靠环境里的隐式代理。
+
+    断言方式：把显式代理指向不可达地址，若调用失败，说明它**真的被用上了**。
+    """
+    from app.ops.capability.adapters import UrllibHttpTransport
+    from app.ops.capability.adapters.http_generic import HttpCapabilityError
+
+    server, url = _local_json_server()
+    try:
+        monkeypatch.setenv("OPS_CAPABILITY_HTTP_PROXY", "http://127.0.0.1:1")
+        with pytest.raises(HttpCapabilityError) as ei:
+            UrllibHttpTransport().request(
+                method="GET", url=url, headers={}, params={}, body=None, timeout_s=3
+            )
+        assert ei.value.code == "upstream_error"
+    finally:
+        server.shutdown()
+
+
 # ---------- 经 gateway 的端到端语义 ----------
 
 
