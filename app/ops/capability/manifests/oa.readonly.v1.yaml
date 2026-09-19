@@ -1,0 +1,130 @@
+# OA 只读能力清单（第一期 · H4）
+#
+# 域：企业 OA（老系统，通过 HTTP 接入）。**只读**——不含任何写操作。
+# 拆独立文件的原因：失败域隔离 + 变更频率与 builtin 不同（接一个接口不该发后端版本）。
+#
+# 纪律（加载期强校验，见 manifest._validate_invariants）：
+# - 无密钥值进仓：只写**环境变量名**（base_url）与**凭证名**（auth）
+# - tenant_scoped 能力必须声明 tenant_param（租户谓词怎么下推到下游）
+# - 模板变量必须出现在 args_schema.properties，或以 _ 开头（Host 注入）
+# - error_map 的值必须是稳定错误码词表内的一员（见 errors.STABLE_ERROR_CODES）
+#
+# 依赖环境变量：
+#   OA_BASE                   网关基址（如 https://oa.example.internal）
+#   OPS_CAP_CRED_OA_GATEWAY_TOKEN  凭证值（不进仓、不进日志）
+version: 1
+domain: oa
+capabilities:
+  - id: oa.doc.search
+    kind: http
+    description: 在 OA 文档中心按关键词检索文件，返回标题、编号与链接（不含正文）
+    when_to_use: 用户想找某份制度、报告、合同或方案，但只给了关键词或大致名称
+    when_not_to_use: 用户已知文件编号想看要点时，取文件摘要接口；问"规定是什么"属于制度问答
+    tags: [oa, doc, readonly]
+    risk_level: low
+    side_effect: read
+    enabled: true
+    # 文档有密级与部门可见性：不把租户谓词传下去，等于问出一个不该看的结果
+    tenant_scoped: true
+    args_schema:
+      type: object
+      required: [keyword]
+      properties:
+        keyword:
+          type: string
+          description: 检索关键词（文件标题、编号或内容片段）
+        top_k:
+          type: integer
+          default: 10
+          description: 返回条数上限
+    http:
+      method: GET
+      base_url: OA_BASE
+      path: /api/v1/doc/search
+      auth: oa_gateway_token
+      query_map:
+        q: "{{keyword}}"
+        limit: "{{top_k}}"
+      tenant_param:
+        in: header
+        name: X-Ops-Tenant
+      timeout_ms: 8000
+      success_when:
+        path: "$.code"
+        in: [0, 200]
+      error_map:
+        "1001": args_schema_invalid
+        "2003": permission_denied
+        "2004": policy_blocked
+        "5001": upstream_error
+
+  - id: oa.org.whois
+    kind: http
+    description: 按姓名或部门名查组织关系：岗位、汇报线、兼岗代管、常用对接人
+    when_to_use: 用户问"这个项目谁负责""这个流程该找谁批""XX 部门的对接人是谁"
+    when_not_to_use: 问具体某人还剩几天年假属个人数据，不属于公开组织关系
+    tags: [oa, org, readonly]
+    risk_level: low
+    side_effect: read
+    enabled: true
+    tenant_scoped: false
+    args_schema:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: 人名或部门名
+    http:
+      method: GET
+      base_url: OA_BASE
+      path: /api/v1/org/whois
+      auth: oa_gateway_token
+      query_map:
+        name: "{{name}}"
+      timeout_ms: 8000
+      success_when:
+        path: "$.code"
+        in: [0, 200]
+      error_map:
+        "1001": args_schema_invalid
+        "2003": permission_denied
+        "5001": upstream_error
+
+  - id: oa.todo.mine
+    kind: http
+    description: 查询当前用户的 OA 待办与在办流程（仅本人可见）
+    when_to_use: 用户问"我还有几个待办""我那个单子走到哪了""谁还没批"
+    when_not_to_use: 查询他人待办属越权；查历史已办清单用其它接口
+    tags: [oa, todo, readonly, personal]
+    risk_level: low
+    side_effect: read
+    enabled: true
+    # 个人数据，必须强隔离：租户/用户谓词由 Host 注入并下推，不取自模型
+    tenant_scoped: true
+    args_schema:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, running, all]
+          default: pending
+          description: 待办状态筛选
+    http:
+      method: GET
+      base_url: OA_BASE
+      path: /api/v1/todo/mine
+      auth: oa_gateway_token
+      query_map:
+        status: "{{status}}"
+      tenant_param:
+        in: header
+        name: X-Ops-Tenant
+      timeout_ms: 8000
+      success_when:
+        path: "$.code"
+        in: [0, 200]
+      error_map:
+        "1001": args_schema_invalid
+        "2003": permission_denied
+        "5001": upstream_error

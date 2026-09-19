@@ -10,19 +10,32 @@ U3 真 MCP：``McpClientAdapter``（``OPS_CAPABILITY_MCP_ENABLED`` 默认关；C
 P3 skill：``SkillStubAdapter`` + ``register_skill_stub``；**非**完整引擎；
 边界见 ``docs/guides/GUIDE_capability-gateway-p3-skill-boundary_v0.md``。
 Mode A / filter 契约：``docs/guides/GUIDE_capability-portable-core-mode-a_v0.md``。
+
+H4：``kind=http``（``GenericHttpAdapter``）+ 稳定错误码词表（``errors``）+
+写操作闸（``side_effect``）。额外清单按 env 显式加载（``OPS_CAPABILITY_EXTRA_MANIFESTS``，
+默认空 → 不动存量），与 U3 MCP 同一约定。
 """
 
 from app.ops.capability.adapters import (
+    EnvCredentialVault,
+    FakeHttpTransport,
     FakeTransport,
+    GenericHttpAdapter,
+    HttpCapabilityError,
+    HttpResponse,
+    HttpTransport,
     LocalFnAdapter,
     McpClientAdapter,
     MockCliAdapter,
     MockMcpAdapter,
     MockSandboxAdapter,
     SkillStubAdapter,
+    StaticCredentialVault,
+    UrllibHttpTransport,
     register_mcp_client_if_enabled,
 )
 from app.ops.capability.defaults import ensure_default_capabilities
+from app.ops.capability.errors import STABLE_ERROR_CODES
 from app.ops.capability.gateway import (
     ainvoke,
     get_registry,
@@ -32,6 +45,12 @@ from app.ops.capability.gateway import (
     register,
     schemas_for_llm,
     unregister,
+)
+from app.ops.capability.manifest import (
+    BUILTIN_MANIFEST_PATH,
+    MANIFEST_DIR,
+    load_capability_manifests,
+    load_extra_manifests_from_env,
 )
 from app.ops.capability.probes import register_p2_probes
 from app.ops.capability.skill_stub import register_skill_stub
@@ -44,22 +63,37 @@ from app.ops.capability.types import (
 ensure_default_capabilities()
 # U3：仅当 OPS_CAPABILITY_MCP_ENABLED=true 且配置了 endpoint 才注册真 client
 register_mcp_client_if_enabled()
+# H4：仅当 OPS_CAPABILITY_EXTRA_MANIFESTS 显式列出清单文件才加载（默认空）
+load_extra_manifests_from_env()
 
 __all__ = [
+    "BUILTIN_MANIFEST_PATH",
+    "MANIFEST_DIR",
+    "STABLE_ERROR_CODES",
     "CapabilityFilter",
     "CapabilityResult",
     "CapabilitySpec",
+    "EnvCredentialVault",
+    "FakeHttpTransport",
     "FakeTransport",
+    "GenericHttpAdapter",
+    "HttpCapabilityError",
+    "HttpResponse",
+    "HttpTransport",
     "LocalFnAdapter",
     "McpClientAdapter",
     "MockCliAdapter",
     "MockMcpAdapter",
     "MockSandboxAdapter",
     "SkillStubAdapter",
+    "StaticCredentialVault",
+    "UrllibHttpTransport",
     "ainvoke",
     "get_registry",
     "invoke",
     "list_capabilities",
+    "load_capability_manifests",
+    "load_extra_manifests_from_env",
     "provide",
     "register",
     "register_mcp_client_if_enabled",

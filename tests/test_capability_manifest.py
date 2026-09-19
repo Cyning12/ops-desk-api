@@ -1,4 +1,10 @@
-"""S3 · capability catalog manifest YAML/JSON 加载。"""
+"""S3 · capability catalog manifest YAML/JSON 加载。
+
+H4 更新：契约收紧——``args_schema`` 与 ``when_to_use`` 变为**必填**。
+理由：无 ``args_schema`` 的能力进不了 FC 目录（``schemas_for_llm`` 会跳过），
+注册它几乎总是笔误；无 ``when_to_use`` 则模型只能靠 id 猜。fixture 随之补齐，
+**断言本身未改**。
+"""
 
 from __future__ import annotations
 
@@ -30,6 +36,11 @@ _BUILTIN_IDS = (
     "get_issue_by_number",
     "get_pr_by_number",
 )
+
+# H4 必填字段的最小声明（fixture 复用；契约本身见 manifest._entry_from_raw）
+_MIN_DECL = """    when_to_use: 单测 fixture
+    args_schema: {type: object, properties: {}}
+"""
 
 
 @pytest.fixture(autouse=True)
@@ -63,6 +74,8 @@ def test_builtin_yaml_aligns_with_default_specs():
         assert loaded.risk_level == spec.risk_level
         assert loaded.tenant_scoped == spec.tenant_scoped
         assert loaded.args_schema == spec.args_schema
+        # H4：YAML 与硬编码回退必须对 side_effect 一致（否则回退路径语义漂移）
+        assert loaded.side_effect == spec.side_effect
     now = invoke("utc_now_iso", "")
     assert now.ok is True
     assert now.output["tool"] == utc_now_iso("")["tool"]
@@ -80,9 +93,11 @@ capabilities:
   - id: extra_utc
     kind: local_fn
     description: extra from yaml
+    when_to_use: 单测 fixture
     tags: [readonly, fixture]
     risk_level: low
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
 """,
     )
@@ -102,9 +117,11 @@ capabilities:
                         "id": "extra_issue",
                         "kind": "local_fn",
                         "description": "extra from json",
+                        "when_to_use": "单测 fixture",
                         "tags": ["mock", "fixture"],
                         "risk_level": "low",
                         "enabled": True,
+                        "args_schema": {"type": "object", "properties": {}},
                         "adapter": (
                             "local_fn:app.ops.capability.defaults:mock_get_issue_status"
                         ),
@@ -132,13 +149,17 @@ capabilities:
   - id: would_register
     kind: local_fn
     description: valid-looking
+    when_to_use: 单测 fixture
     tags: [fixture]
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
   - id: evil
     kind: local_fn
     description: illegal module
+    when_to_use: 单测 fixture
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:os:system
 """,
     )
@@ -161,12 +182,16 @@ capabilities:
   - id: sneaky_ok
     kind: local_fn
     description: ok
+    when_to_use: 单测 fixture
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
   - id: mcp_probe
     kind: mcp
     description: not allowed
+    when_to_use: 单测 fixture
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
 """,
     )
@@ -202,7 +227,9 @@ capabilities:
   - id: via_gateway
     kind: local_fn
     description: wrong module
+    when_to_use: 单测 fixture
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.gateway:register
 """,
     )
@@ -238,14 +265,18 @@ capabilities:
   - id: skipped_cap
     kind: local_fn
     description: disabled
+    when_to_use: 单测 fixture
     tags: [fixture]
     enabled: false
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
   - id: live_cap
     kind: local_fn
     description: enabled
+    when_to_use: 单测 fixture
     tags: [fixture]
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
 """,
     )
@@ -287,8 +318,10 @@ capabilities:
   - id: reload_cap
     kind: local_fn
     description: first
+    when_to_use: 单测 fixture
     tags: [fixture]
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
 """,
     )
@@ -306,8 +339,10 @@ capabilities:
   - id: reload_cap
     kind: local_fn
     description: second
+    when_to_use: 单测 fixture
     tags: [fixture]
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
 """,
         encoding="utf-8",
@@ -344,9 +379,11 @@ capabilities:
   - id: extra_issue_lookup
     kind: local_fn
     description: lookups prefix
+    when_to_use: 单测 fixture
     tags: [lookup, fixture]
     risk_level: low
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
 """,
     )
@@ -364,12 +401,16 @@ capabilities:
   - id: would_register
     kind: local_fn
     description: valid-looking
+    when_to_use: 单测 fixture
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
   - id: evil_session
     kind: local_fn
     description: illegal module
+    when_to_use: 单测 fixture
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.db.session:AsyncSessionLocal
 """,
     )
@@ -378,3 +419,15 @@ capabilities:
     assert {s.capability_id for s in list_capabilities()} == before
     assert "evil_session" not in before
     assert "would_register" not in {s.capability_id for s in list_capabilities()}
+
+
+def test_min_decl_snippet_is_valid_yaml():
+    """fixture 里那段公共声明本身可解析（防止 helper 与真契约漂移）。"""
+    import textwrap
+
+    import yaml
+
+    body = "id: probe\nkind: local_fn\n" + textwrap.dedent(_MIN_DECL)
+    data = yaml.safe_load(body)
+    assert data["when_to_use"]
+    assert data["args_schema"] == {"type": "object", "properties": {}}
