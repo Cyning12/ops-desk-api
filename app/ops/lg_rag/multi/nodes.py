@@ -21,6 +21,7 @@ from pydantic import ValidationError
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage
 from app.ops.capability import CapabilityFilter, list_capabilities
+from app.ops.capability.baseline import baseline_filter
 from app.ops.capability import ainvoke as capability_ainvoke
 from app.ops.capability.types import CapabilitySpec
 from app.ops.lc_evidence_chain.step_hook import (
@@ -58,12 +59,9 @@ _TYPE_TO_NODE = {
     "tool": "tool_exec",
 }
 
-# Supervisor planner filter：与 Builder 同 Policy 裁剪（S1：再 ∩ state allowlist）
-_SUPERVISOR_CAP_FILTER = CapabilityFilter(
-    node_role="supervisor",
-    kinds=frozenset({"local_fn"}),
-    deny_high_risk=True,
-)
+# Supervisor planner filter：与 Builder **共用同一份基线**（见 capability.baseline），
+# 再 ∩ state.allowed_capability_ids（S1）。
+_SUPERVISOR_CAP_FILTER = baseline_filter(node_role="supervisor")
 
 _EXTRACT_SYSTEM = (
     "你是信息抽取器。从用户给出的文本中抽取结构化信息，只输出 JSON：\n"

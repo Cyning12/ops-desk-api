@@ -34,6 +34,11 @@ from app.ops.capability.adapters import (
     UrllibHttpTransport,
     register_mcp_client_if_enabled,
 )
+from app.ops.capability.baseline import (
+    DEFAULT_KINDS,
+    DOMAIN_ALLOW_TAGS,
+    baseline_filter,
+)
 from app.ops.capability.defaults import ensure_default_capabilities
 from app.ops.capability.errors import STABLE_ERROR_CODES
 from app.ops.capability.gateway import (
@@ -85,6 +90,8 @@ load_extra_manifests_from_env()
 
 __all__ = [
     "BUILTIN_MANIFEST_PATH",
+    "DEFAULT_KINDS",
+    "DOMAIN_ALLOW_TAGS",
     "MANIFEST_DIR",
     "STABLE_ERROR_CODES",
     "CapabilityFilter",
@@ -111,6 +118,7 @@ __all__ = [
     "StaticCredentialVault",
     "UrllibHttpTransport",
     "ainvoke",
+    "baseline_filter",
     "capability_catalog_snapshot",
     "check_visible",
     "evaluate_visibility",

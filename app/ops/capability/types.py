@@ -107,12 +107,30 @@ class CapabilitySpec:
 
 @dataclass(frozen=True)
 class CapabilityFilter:
-    """可见集合裁剪（SPEC §3.3 · v0 最小）。"""
+    """可见集合裁剪（SPEC §3.3 · v0 最小）。
+
+    ``tags_any`` 与 ``allow_tags_any`` **方向相反，别搞混**：
+
+    | 字段 | 方向 | 语义 |
+    |---|---|---|
+    | ``tags_any`` | **收窄** | 只看带这些 tag 的能力（交集） |
+    | ``allow_tags_any`` | **放宽** | 命中这些 tag 的能力**豁免 ``kinds`` 裁剪** |
+
+    为什么需要 ``allow_tags_any``：新 kind（如 ``http``）一次性放开风险大，
+    按**业务域**逐批放开更稳，而"域"天然落在 ``tags`` 上。用法::
+
+        CapabilityFilter(kinds={"local_fn"}, allow_tags_any={"oa"})
+
+    → 存量 local_fn 照旧可见；命中 ``oa`` 标签的 http 能力也放行；
+      新增一个域只是往集合里加一个 tag，不动 kind 语义。
+    """
 
     node_role: str | None = None
     mode: str | None = None
     tags_any: frozenset[str] | None = None
     kinds: frozenset[str] | None = None
+    # 命中任一 tag → 豁免 kinds 裁剪（按域逐批放开新 kind 用）
+    allow_tags_any: frozenset[str] | None = None
     deny_high_risk: bool = False
     # 与 deny_high_risk 对称：可见集裁剪阶段就把写能力挡在模型视野之外
     deny_write: bool = False
