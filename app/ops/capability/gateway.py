@@ -36,6 +36,7 @@ import time
 from typing import Any
 
 from app.ops.capability.errors import DISABLED, UNKNOWN_ID, format_error
+from app.ops.capability.idempotency import get_idempotency_store
 from app.ops.capability.policy import check_invoke, write_allowed
 from app.ops.capability.receipts import build_receipt, record_receipt
 from app.ops.capability.registry import CapabilityAdapter, CapabilityRegistry
@@ -293,12 +294,22 @@ def _maybe_record_receipt(
         return
     captured: dict[str, Any] = {}
     key: str | None = None
+    duplicated = False
     if isinstance(result.output, dict):
         raw_captured = result.output.get("receipt")
         if isinstance(raw_captured, dict):
             captured = raw_captured
         raw_key = result.output.get("idempotency_key")
         key = str(raw_key) if raw_key else None
+        duplicated = result.output.get("duplicated") is True
+
+    if duplicated:
+        # 命中幂等键：本次**没有执行**，按「没执行就没有副作用」不留回执，
+        # 也不重复 complete（否则会把原回执 id 覆盖掉，duplicate_of 就对不上了）
+        result.meta["duplicated"] = True
+        result.meta["side_effect"] = spec.side_effect
+        return
+
     receipt = build_receipt(
         capability_id=spec.capability_id,
         side_effect=spec.side_effect,
@@ -312,6 +323,12 @@ def _maybe_record_receipt(
     record_receipt(receipt)
     result.meta["receipt_id"] = receipt.receipt_id
     result.meta["side_effect"] = spec.side_effect
+
+    # 幂等键在这一刻才算「完成」——因为回执 id 此刻才有，才能把「键 ↔ 回执」对上。
+    # 只在成功时 complete：失败的状态由 adapter 决定（无副作用则 release，
+    # 否则保持 in_flight 交给租约）——**不要把失败当成完成**。
+    if key and result.ok:
+        get_idempotency_store().complete(key, receipt_id=receipt.receipt_id)
 
 
 def _ok_result(

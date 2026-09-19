@@ -31,11 +31,20 @@ from typing import Any, Protocol, runtime_checkable
 
 from app.ops.capability.errors import (
     ARGS_SCHEMA_INVALID,
+    DUPLICATE_ID,
     PERMISSION_DENIED,
+    POLICY_BLOCKED,
     UPSTREAM_ERROR,
     format_error,
 )
+from app.ops.capability.idempotency import get_idempotency_store
 from app.ops.capability.types import WRITE_SIDE_EFFECTS, CapabilitySpec
+
+#: 这些失败**确知下游没有产生副作用**，可以释放幂等键允许重试。
+#: 其余（超时 / 连接错误 / 未知业务码）一律保持 in_flight，交给租约过期 —— fail-closed。
+RELEASE_SAFE_ERROR_CODES: frozenset[str] = frozenset(
+    {ARGS_SCHEMA_INVALID, POLICY_BLOCKED, PERMISSION_DENIED}
+)
 
 _VAR_RE = re.compile(r"\{\{(\w+)\}\}")
 _EXACT_VAR_RE = re.compile(r"^\{\{(\w+)\}\}$")
@@ -308,10 +317,30 @@ def jsonpath_get(data: Any, expr: str) -> Any:
     return cur
 
 
+@dataclass(frozen=True)
+class _Prepared:
+    """一次调用的全部就绪要素（同步 / 异步路径共用，避免两套逻辑漂移）。"""
+
+    http: dict[str, Any]
+    method: str
+    url: str
+    headers: dict[str, str]
+    params: dict[str, Any]
+    body: dict[str, Any] | None
+    timeout_s: float
+    idempotency_key: str | None
+    tenant_id: str
+
+
 class GenericHttpAdapter:
     """声明式 HTTP 能力；``kind=http``。
 
-    契约与 ``LocalFnAdapter`` 相同：``invoke(args, *, ctx) -> Any``（可 JSON 化 dict）。
+    契约与 ``LocalFnAdapter`` 相同：``invoke(args, *, ctx) -> Any``（可 JSON 化 dict），
+    另提供 ``ainvoke``。
+
+    ⚠️ **async 应用里必须走 ``ainvoke``**：``urllib`` 传输是**阻塞**的，
+    在事件循环里同步调用会把整个循环按住（一次 8 秒的下游请求 = 8 秒内所有请求排队）。
+    ``ainvoke`` 用 ``asyncio.to_thread`` 把它挪出事件循环。
     """
 
     kind = "http"
@@ -322,13 +351,60 @@ class GenericHttpAdapter:
         *,
         transport: HttpTransport | None = None,
         vault: CredentialVault | None = None,
+        store: Any = None,
     ) -> None:
         self._spec = spec
         self._transport = transport
         self._vault = vault
+        # 显式注入优先；否则用模块级单例（`set_idempotency_store` 装配）
+        self._store = store
 
     # ---- 对外 ----
     def invoke(self, args: Any, *, ctx: dict[str, Any] | None = None) -> Any:
+        """同步调用。**传输阻塞**——async 应用请用 :meth:`ainvoke`。"""
+        prepared = self._prepare(args, ctx)
+        short_circuit = self._claim(prepared)
+        if short_circuit is not None:
+            return short_circuit
+        try:
+            resp = self._call(
+                method=prepared.method,
+                url=prepared.url,
+                headers=prepared.headers,
+                params=prepared.params,
+                body=prepared.body,
+                timeout_s=prepared.timeout_s,
+            )
+        except HttpCapabilityError as exc:
+            self._settle_failure(prepared, exc)
+            raise
+        return self._finish(prepared, resp)
+
+    async def ainvoke(self, args: Any, *, ctx: dict[str, Any] | None = None) -> Any:
+        """异步调用：把阻塞传输挪到线程里，不占住事件循环。"""
+        import asyncio
+
+        prepared = self._prepare(args, ctx)
+        short_circuit = self._claim(prepared)
+        if short_circuit is not None:
+            return short_circuit
+        try:
+            resp = await asyncio.to_thread(
+                self._call,
+                method=prepared.method,
+                url=prepared.url,
+                headers=prepared.headers,
+                params=prepared.params,
+                body=prepared.body,
+                timeout_s=prepared.timeout_s,
+            )
+        except HttpCapabilityError as exc:
+            self._settle_failure(prepared, exc)
+            raise
+        return self._finish(prepared, resp)
+
+    # ---- 就绪 / 防重 / 收束 ----
+    def _prepare(self, args: Any, ctx: dict[str, Any] | None) -> _Prepared:
         http = self._spec.http or {}
         safe_args = self._apply_defaults(args if isinstance(args, dict) else {})
         self._assert_declared_vars(http)
@@ -345,24 +421,77 @@ class GenericHttpAdapter:
             # 写操作必带（V1 已在加载期强制；此处兜运行期）
             headers.setdefault("Idempotency-Key", idem)
 
-        # 头值必须 latin-1 可编码——早失败，别留给 urllib 抛一个看不懂的 UnicodeEncodeError
+        # 头值必须 latin-1 可编码——早失败，别留给 urllib 抛看不懂的 UnicodeEncodeError
         for name, value in headers.items():
             assert_header_latin1(name, value)
 
-        method = str(http.get("method") or "GET").upper()
-        url = self._resolve_url(http)
-        resp = self._call(
-            method=method,
-            url=url,
+        c = ctx or {}
+        return _Prepared(
+            http=http,
+            method=str(http.get("method") or "GET").upper(),
+            url=self._resolve_url(http),
             headers=headers,
             params=rendered["params"],
             body=rendered["body"],
             timeout_s=float(http.get("timeout_ms", 8000)) / 1000.0,
+            idempotency_key=idem,
+            tenant_id=str(c.get("tenant_id") or c.get("_host_tenant") or ""),
         )
 
+    def _store_impl(self) -> Any:
+        if self._store is not None:
+            return self._store
+        return get_idempotency_store()
+
+    def _claim(self, prepared: _Prepared) -> dict[str, Any] | None:
+        """抢执行权。返回非 ``None`` 表示**不该真的发请求**（已完成 / 正在执行）。"""
+        if not prepared.idempotency_key:
+            return None
+        claim = self._store_impl().claim(
+            prepared.idempotency_key,
+            capability_id=self._spec.capability_id,
+            tenant_id=prepared.tenant_id,
+        )
+        if claim.should_execute:
+            return None
+        if claim.duplicate:
+            # 已完成过：不再执行，回一个形状一致的载荷，便于调用方对账
+            return {
+                "protocol": "http",
+                "kind": self.kind,
+                "capability_id": self._spec.capability_id,
+                "status": 0,
+                "result": {
+                    "code": 0,
+                    "msg": "duplicated",
+                    "data": {"duplicated": True, "duplicate_of": claim.receipt_id},
+                },
+                "duplicated": True,
+                "duplicate_of": claim.receipt_id,
+                "idempotency_key": prepared.idempotency_key,
+            }
+        raise HttpCapabilityError(
+            DUPLICATE_ID, "同一幂等键正在执行中（in-flight）"
+        )
+
+    def _settle_failure(self, prepared: _Prepared, exc: HttpCapabilityError) -> None:
+        """失败后的防重状态处理——**只在下游确无副作用时释放**。
+
+        超时 / 连接错误 / 未知业务码一律保持 ``in_flight``，交给租约过期，
+        由人工或后续查询确认。宁可拒，也不冒重复执行的风险（fail-closed）。
+        """
+        if not prepared.idempotency_key:
+            return
+        if exc.code in RELEASE_SAFE_ERROR_CODES:
+            self._store_impl().release(prepared.idempotency_key)
+
+    def _finish(self, prepared: _Prepared, resp: HttpResponse) -> dict[str, Any]:
+        http = prepared.http
         payload = resp.payload if isinstance(resp.payload, dict) else {}
         if not self._is_success(resp, payload, http):
-            raise self._map_upstream_error(payload, http, resp.status)
+            err = self._map_upstream_error(payload, http, resp.status)
+            self._settle_failure(prepared, err)
+            raise err
 
         out: dict[str, Any] = {
             "protocol": "http",
@@ -373,8 +502,12 @@ class GenericHttpAdapter:
         }
         if self._spec.receipt_capture:
             out["receipt"] = self._capture(payload)
-        if idem:
-            out["idempotency_key"] = idem
+        if prepared.idempotency_key:
+            # 成功就把键标完成——**"执行完成了"是适配器掌握的事实**，
+            # 不能等上层来标（否则直接用适配器的调用会一直卡在 in_flight）。
+            # 回执 id 由 gateway 在落完回执后补上（complete 支持二次调用更新关联）。
+            self._store_impl().complete(prepared.idempotency_key)
+            out["idempotency_key"] = prepared.idempotency_key
         return out
 
     # ---- 渲染 ----
