@@ -65,9 +65,22 @@ def _build():
 async def _run(graph, query: str = _QUERY, thread_id: str = "t-p4"):
     with patch(_INTENT_COMPLETE_PATCH, new=AsyncMock(return_value=_INTENT_OK)):
         return await graph.ainvoke(
-            {"messages": [HumanMessage(content=query)]},
+            {
+                "messages": [HumanMessage(content=query)],
+                "run_id": "multirun",
+            },
             {"configurable": {"thread_id": thread_id}},
         )
+
+
+def _host_plan_ok(subtasks: list[dict], *, alias: str, type_: str, input_: str) -> None:
+    assert len(subtasks) == 1
+    row = subtasks[0]
+    assert row["alias"] == alias
+    assert row["type"] == type_
+    assert row["input"] == input_
+    assert row["id"] == row["subtask_id"]
+    assert row["subtask_id"].startswith("multirun:")
 
 
 @pytest.mark.asyncio
@@ -155,7 +168,8 @@ async def test_decompose_invalid_json_fallback_single_rag():
         patch(_CHAIN_PATCH, new=chain),
     ):
         out = await _run(_build())
-    assert out["subtasks"] == [{"id": "t1", "type": "rag", "input": _QUERY}]
+    assert out["subtasks"][0]["type"] == "rag"
+    _host_plan_ok(out["subtasks"], alias="t1", type_="rag", input_=_QUERY)
     assert len(out["subtask_results"]) == 1
     assert out["subtask_results"][0]["output"] == "兜底检索答案"
     assert out["messages"][-1].content == _AGGREGATED
@@ -173,7 +187,8 @@ async def test_decompose_llm_exception_fallback_single_rag():
         patch(_CHAIN_PATCH, new=chain),
     ):
         out = await _run(_build())
-    assert out["subtasks"] == [{"id": "t1", "type": "rag", "input": _QUERY}]
+    assert out["subtasks"][0]["type"] == "rag"
+    _host_plan_ok(out["subtasks"], alias="t1", type_="rag", input_=_QUERY)
     assert out["subtask_results"][0]["output"] == "兜底检索答案"
 
 
@@ -267,21 +282,31 @@ def test_empty_subtasks_dispatch_goes_aggregate():
     assert (
         route_next_subtask(
             {
-                "subtasks": [{"id": "t1", "type": "rag", "input": "q"}],
-                "subtask_results": [{"type": "rag", "output": "a"}],
+                "subtasks": [{"id": "t1", "subtask_id": "t1", "type": "rag", "input": "q"}],
+                "subtask_results": [{"subtask_id": "t1", "type": "rag", "output": "a"}],
+                "inflight_subtask_ids": [],
             }
         )
         == "aggregate"
     )
-    assert (
-        route_next_subtask(
-            {
-                "subtasks": [{"id": "t1", "type": "extract", "input": "q"}],
-                "subtask_results": [],
-            }
-        )
-        == "info_extract"
+    routed = route_next_subtask(
+        {
+            "subtasks": [
+                {
+                    "id": "r:1",
+                    "subtask_id": "r:1",
+                    "type": "extract",
+                    "input": "q",
+                    "depends_on": [],
+                }
+            ],
+            "subtask_results": [],
+            "inflight_subtask_ids": ["r:1"],
+        }
     )
+    assert isinstance(routed, list) and len(routed) == 1
+    assert routed[0].node == "info_extract"
+    assert routed[0].arg["assigned_subtask"]["subtask_id"] == "r:1"
 
 
 @pytest.mark.asyncio

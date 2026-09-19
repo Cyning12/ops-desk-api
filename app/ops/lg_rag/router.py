@@ -154,6 +154,7 @@ async def _dispatch(
     query: str,
     thread_id: str,
     history_turns: list[dict] | None = None,
+    run_id: str | None = None,
 ) -> dict[str, Any]:
     """mode → 对应 ainvoke 入口；env 开关决定是否包 PG checkpointer。"""
     if mode == "basic":
@@ -166,6 +167,8 @@ async def _dispatch(
         "thread_id": thread_id,
         "history_turns": history_turns or [],
     }
+    if mode == "supervisor" and run_id:
+        kwargs["run_id"] = run_id
     if _use_postgres_checkpointer():
         async with apostgres_saver(setup=True) as saver:
             return await entry(query, checkpointer=saver, **kwargs)
@@ -213,11 +216,16 @@ async def invoke_lg_rag(
     tenant_id = _resolve_request_tenant(request)
     thread_id = (body.thread_id or uuid.uuid4().hex)[:THREAD_ID_MAX_LENGTH]
     history_turns = await _prepare_thread(thread_id, str(user.id))
+    run_id = uuid.uuid4().hex
     token = set_current_tenant(tenant_id)
     try:
         try:
             state = await _dispatch(
-                body.mode, body.query, thread_id, history_turns=history_turns
+                body.mode,
+                body.query,
+                thread_id,
+                history_turns=history_turns,
+                run_id=run_id,
             )
         except HTTPException:
             raise

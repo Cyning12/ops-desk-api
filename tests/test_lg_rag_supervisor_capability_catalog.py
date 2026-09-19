@@ -18,12 +18,26 @@ from app.ops.lg_rag.multi.nodes import (
 from app.ops.strategy import BUILDER_CAP_FILTER
 
 
+def _assert_host_rag(subtasks: list[dict], query: str) -> None:
+    assert len(subtasks) == 1
+    row = subtasks[0]
+    assert row["alias"] == "t1"
+    assert row["type"] == "rag"
+    assert row["input"] == query
+    assert row["id"] == row["subtask_id"]
+    assert row["subtask_id"] == "catrun:1"
+
+
 def _full_allowlist_state(messages: list) -> dict:
     """supervisor 单测：模拟 Builder 已写入全量可见 allowlist。"""
     ids = [
         s.capability_id for s in list_capabilities(filter=BUILDER_CAP_FILTER)
     ]
-    return {"messages": messages, "allowed_capability_ids": ids}
+    return {
+        "messages": messages,
+        "allowed_capability_ids": ids,
+        "run_id": "catrun",
+    }
 
 
 def _span_cm():
@@ -128,7 +142,7 @@ async def test_supervisor_invalid_tool_id_fallback_single_rag():
         out = await supervisor_node(
             _full_allowlist_state([HumanMessage(content="复合问题")])
         )
-    assert out["subtasks"] == [{"id": "t1", "type": "rag", "input": "复合问题"}]
+    _assert_host_rag(out["subtasks"], "复合问题")
     assert recorded
     assert recorded[0]["supervisor_fallback"] is True
     assert recorded[0]["supervisor_invalid_tool_id"] is True
@@ -149,9 +163,13 @@ async def test_supervisor_empty_allowlist_fallback_single_rag():
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
     ):
         out = await supervisor_node(
-            {"messages": [HumanMessage(content="复合问题")], "allowed_capability_ids": []}
+            {
+                "messages": [HumanMessage(content="复合问题")],
+                "allowed_capability_ids": [],
+                "run_id": "catrun",
+            }
         )
-    assert out["subtasks"] == [{"id": "t1", "type": "rag", "input": "复合问题"}]
+    _assert_host_rag(out["subtasks"], "复合问题")
     assert recorded[0]["supervisor_empty_allowlist"] is True
     provider.complete.assert_not_called()
 
@@ -179,6 +197,7 @@ async def test_supervisor_restricted_allowlist_hides_tool_from_catalog():
             {
                 "messages": [HumanMessage(content="复合问题")],
                 "allowed_capability_ids": ["utc_now_iso"],
+                "run_id": "catrun",
             }
         )
     system = captured[0][0].content
@@ -212,9 +231,10 @@ async def test_supervisor_tool_not_in_allowlist_fallback_single_rag():
             {
                 "messages": [HumanMessage(content="复合问题")],
                 "allowed_capability_ids": ["utc_now_iso"],
+                "run_id": "catrun",
             }
         )
-    assert out["subtasks"] == [{"id": "t1", "type": "rag", "input": "复合问题"}]
+    _assert_host_rag(out["subtasks"], "复合问题")
 
 
 @pytest.mark.asyncio

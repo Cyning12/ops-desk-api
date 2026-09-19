@@ -32,6 +32,8 @@ TEMPLATES: dict[str, dict[str, str]] = {
             "input 为工具入参描述；\n"
             "可用工具（Capability 目录）：\n{catalog_block}\n"
             "- 子任务最多 4 个，按执行顺序排列；单一简单问题就只给一个 rag 子任务。\n"
+            "- 可选 depends_on：字符串数组，指向本轮其它子任务的别名（如 t1）；"
+            "缺省或空数组表示无依赖。\n"
             "只输出一个 JSON 对象，不要输出其他文字。"
         ),
     },

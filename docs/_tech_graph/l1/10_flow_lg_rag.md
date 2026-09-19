@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_lg_rag
 version: 2026-08-31
-generated_at: sha256-59f5094e5489e507
+generated_at: sha256-a804ceb039f33267
 source: 10_flow_lg_rag.graph.yaml
 ---
 
@@ -30,7 +30,7 @@ flowchart TB
     s_intent["intent_node（S2 IntentV1 · acomplete_structured）"]
     s_strategy_builder["strategy_builder_node（S1 allowlist · Registry∩Policy）"]
     s_supervisor["supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag）"]
-    s_dispatch["route_next_subtask（dispatch）"]
+    s_dispatch["一次下发无依赖工人，按 subtask_id 归并"]
     s_rag["rag_subtask_node（复用 router 子图）"]
     s_extract["info_extract_node"]
     s_tool["tool_exec_node（Capability Gateway）"]
@@ -108,23 +108,23 @@ flowchart TB
     %% → app/ops/lg_rag/multi/graph.py#L75
     s_supervisor -->|"subtasks（≤4）"| s_dispatch
     %% → app/ops/lg_rag/multi/graph.py#L76
-    s_dispatch -->|"[type=rag]"| s_rag
+    s_dispatch -->|"[同批 Send · type=rag]"| s_rag
     %% → app/ops/lg_rag/multi/graph.py#L42
     %% → app/ops/lg_rag/multi/nodes.py#L238
-    s_dispatch -->|"[type=extract]"| s_extract
+    s_dispatch -->|"[同批 Send · type=extract]"| s_extract
     %% → app/ops/lg_rag/multi/graph.py#L43
     %% → app/ops/lg_rag/multi/nodes.py#L238
-    s_dispatch -->|"[type=tool]"| s_tool
+    s_dispatch -->|"[同批 Send · type=tool]"| s_tool
     %% → app/ops/lg_rag/multi/graph.py#L44
     %% → app/ops/lg_rag/multi/nodes.py#L238
     s_dispatch -->|"[耗尽/空 → aggregate]"| s_aggregator
     %% → app/ops/lg_rag/multi/graph.py#L45
     %% → app/ops/lg_rag/multi/nodes.py#L237
-    s_rag -->|"回 dispatch（追加一条结果）"| s_dispatch
+    s_rag -->|"按 subtask_id 归并回 dispatch"| s_dispatch
     %% → app/ops/lg_rag/multi/graph.py#L78
-    s_extract -->|"回 dispatch（追加一条结果）"| s_dispatch
+    s_extract -->|"按 subtask_id 归并回 dispatch"| s_dispatch
     %% → app/ops/lg_rag/multi/graph.py#L78
-    s_tool -->|"回 dispatch（追加一条结果）"| s_dispatch
+    s_tool -->|"按 subtask_id 归并回 dispatch"| s_dispatch
     %% → app/ops/lg_rag/multi/graph.py#L78
     s_aggregator -->|"综合后进入 Critic"| s_critic
     %% → app/ops/lg_rag/multi/graph.py#L79
@@ -195,7 +195,7 @@ flowchart TB
 | s_intent | intent_node（S2 IntentV1 · acomplete_structured） | flow |
 | s_strategy_builder | strategy_builder_node（S1 allowlist · Registry∩Policy） | flow |
 | s_supervisor | supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag） | flow |
-| s_dispatch | route_next_subtask（dispatch） | flow |
+| s_dispatch | 一次下发无依赖工人，按 subtask_id 归并 | flow |
 | s_rag | rag_subtask_node（复用 router 子图） | flow |
 | s_extract | info_extract_node | flow |
 | s_tool | tool_exec_node（Capability Gateway） | flow |
@@ -243,13 +243,13 @@ flowchart TB
 | s_intent | s_strategy_builder | -> | depends_on | intent dict | 1 anchor(s) |
 | s_strategy_builder | s_supervisor | -> | depends_on | allowed_capability_ids | 1 anchor(s) |
 | s_supervisor | s_dispatch | -> | depends_on | subtasks（≤4） | 1 anchor(s) |
-| s_dispatch | s_rag | ?> | branches | [type=rag] | 2 anchor(s) |
-| s_dispatch | s_extract | ?> | branches | [type=extract] | 2 anchor(s) |
-| s_dispatch | s_tool | ?> | branches | [type=tool] | 2 anchor(s) |
+| s_dispatch | s_rag | ?> | branches | [同批 Send · type=rag] | 2 anchor(s) |
+| s_dispatch | s_extract | ?> | branches | [同批 Send · type=extract] | 2 anchor(s) |
+| s_dispatch | s_tool | ?> | branches | [同批 Send · type=tool] | 2 anchor(s) |
 | s_dispatch | s_aggregator | ?> | branches | [耗尽/空 → aggregate] | 2 anchor(s) |
-| s_rag | s_dispatch | -> | depends_on | 回 dispatch（追加一条结果） | 1 anchor(s) |
-| s_extract | s_dispatch | -> | depends_on | 回 dispatch（追加一条结果） | 1 anchor(s) |
-| s_tool | s_dispatch | -> | depends_on | 回 dispatch（追加一条结果） | 1 anchor(s) |
+| s_rag | s_dispatch | -> | depends_on | 按 subtask_id 归并回 dispatch | 1 anchor(s) |
+| s_extract | s_dispatch | -> | depends_on | 按 subtask_id 归并回 dispatch | 1 anchor(s) |
+| s_tool | s_dispatch | -> | depends_on | 按 subtask_id 归并回 dispatch | 1 anchor(s) |
 | s_aggregator | s_critic | -> | depends_on | 综合后进入 Critic | 1 anchor(s) |
 | s_critic | s_end | ?> | branches | [pass\|end → END] | 2 anchor(s) |
 | s_critic | s_supervisor | ?> | branches | [retry_planner → supervisor] | 2 anchor(s) |

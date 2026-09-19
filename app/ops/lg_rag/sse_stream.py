@@ -280,7 +280,10 @@ async def iter_lg_rag_sse(
     progress_handle = set_subtask_progress_sink(_subtask_progress_sink)
     try:
         agen = astream_fn(
-            query, thread_id=thread_id, history_turns=history_turns or []
+            query,
+            thread_id=thread_id,
+            history_turns=history_turns or [],
+            **({"run_id": rid} if mode == "supervisor" else {}),
         )
         while True:
             next_task = asyncio.ensure_future(_anext_or_end(agen))

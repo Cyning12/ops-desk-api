@@ -20,6 +20,7 @@ class SubtaskItem(BaseModel):
     input: str = Field(..., min_length=1)
     tool: str | None = None
     args: dict[str, Any] | None = None
+    depends_on: list[str] | None = None
 
 
 class SubtasksPlan(BaseModel):

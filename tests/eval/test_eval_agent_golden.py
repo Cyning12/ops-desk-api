@@ -129,6 +129,7 @@ async def test_eval_agent_supervisor_golden(case: dict[str, Any]) -> None:
             {
                 "messages": [HumanMessage(content=query)],
                 "allowed_capability_ids": allowlist,
+                "run_id": "evalrun",
             }
         )
     subtasks = out["subtasks"]
@@ -179,7 +180,10 @@ async def test_eval_agent_e2e_golden() -> None:
         patch(_CHAIN_PATCH, new=chain),
     ):
         out = await graph.ainvoke(
-            {"messages": [HumanMessage(content=case["query"])]},
+            {
+                "messages": [HumanMessage(content=case["query"])],
+                "run_id": "evalrun",
+            },
             {"configurable": {"thread_id": "t-eval-e2e"}},
         )
     assert expect["reached_end"] is True

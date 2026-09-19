@@ -269,7 +269,7 @@ nodes:
         kind: method
 
   - id: "s_dispatch"
-    label: "route_next_subtask（dispatch）"
+    label: "一次下发无依赖工人，按 subtask_id 归并"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
@@ -596,7 +596,7 @@ edges:
 
   - from: "s_dispatch"
     to: "s_rag"
-    label: "[type=rag]"
+    label: "[同批 Send · type=rag]"
     mark: "?>"
     type: "branches"
     anchors:
@@ -607,7 +607,7 @@ edges:
 
   - from: "s_dispatch"
     to: "s_extract"
-    label: "[type=extract]"
+    label: "[同批 Send · type=extract]"
     mark: "?>"
     type: "branches"
     anchors:
@@ -618,7 +618,7 @@ edges:
 
   - from: "s_dispatch"
     to: "s_tool"
-    label: "[type=tool]"
+    label: "[同批 Send · type=tool]"
     mark: "?>"
     type: "branches"
     anchors:
@@ -640,21 +640,21 @@ edges:
 
   - from: "s_rag"
     to: "s_dispatch"
-    label: "回 dispatch（追加一条结果）"
+    label: "按 subtask_id 归并回 dispatch"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
         line: 78
 
   - from: "s_extract"
     to: "s_dispatch"
-    label: "回 dispatch（追加一条结果）"
+    label: "按 subtask_id 归并回 dispatch"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
         line: 78
 
   - from: "s_tool"
     to: "s_dispatch"
-    label: "回 dispatch（追加一条结果）"
+    label: "按 subtask_id 归并回 dispatch"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
         line: 78
