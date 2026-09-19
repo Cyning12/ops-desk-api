@@ -27,6 +27,7 @@ W2 增补：
 
 from __future__ import annotations
 
+import asyncio
 import copy
 import hashlib
 import inspect
@@ -38,7 +39,12 @@ from typing import Any
 from app.ops.capability.errors import DISABLED, UNKNOWN_ID, format_error
 from app.ops.capability.idempotency import get_idempotency_store
 from app.ops.capability.policy import check_invoke, write_allowed
-from app.ops.capability.receipts import build_receipt, record_receipt
+from app.ops.capability.receipts import (
+    Receipt,
+    arecord_receipt,
+    build_receipt,
+    record_receipt,
+)
 from app.ops.capability.registry import CapabilityAdapter, CapabilityRegistry
 from app.ops.capability.schema_validate import validate_capability_args
 from app.ops.capability.types import (
@@ -279,19 +285,19 @@ def _prepare_call(
     return spec, adapter, started
 
 
-def _maybe_record_receipt(
+def _build_receipt(
     spec: CapabilitySpec,
     result: CapabilityResult,
     *,
     ctx: dict[str, Any] | None,
-) -> None:
-    """写能力无论成败都落回执（见 ``receipts`` 模块 docstring）。
+) -> tuple[Receipt | None, str | None]:
+    """构建回执并回填 meta；返回 ``(receipt | None, idempotency_key | None)``。
 
-    同时把 ``receipt_id`` 回填到 ``result.meta``，便于调用方与日志对账。
+    ``receipt is None`` 有两种情况：不该留（只读且无 capture），或**命中幂等键没真执行**。
     """
     is_write = spec.side_effect in WRITE_SIDE_EFFECTS
     if not is_write and not spec.receipt_capture:
-        return
+        return None, None
     captured: dict[str, Any] = {}
     key: str | None = None
     duplicated = False
@@ -308,7 +314,7 @@ def _maybe_record_receipt(
         # 也不重复 complete（否则会把原回执 id 覆盖掉，duplicate_of 就对不上了）
         result.meta["duplicated"] = True
         result.meta["side_effect"] = spec.side_effect
-        return
+        return None, key
 
     receipt = build_receipt(
         capability_id=spec.capability_id,
@@ -320,15 +326,60 @@ def _maybe_record_receipt(
         error=result.error,
         write_confirmed=write_allowed(ctx),
     )
-    record_receipt(receipt)
     result.meta["receipt_id"] = receipt.receipt_id
     result.meta["side_effect"] = spec.side_effect
+    return receipt, key
 
+
+def _tenant_of(ctx: dict[str, Any] | None) -> str:
+    c = ctx or {}
+    return str(c.get("tenant_id") or c.get("_host_tenant") or "")
+
+
+def _maybe_record_receipt(
+    spec: CapabilitySpec,
+    result: CapabilityResult,
+    *,
+    ctx: dict[str, Any] | None,
+) -> None:
+    """同步路径：写能力无论成败都落回执（见 ``receipts`` 模块 docstring）。"""
+    receipt, key = _build_receipt(spec, result, ctx=ctx)
+    if receipt is None:
+        return
+    record_receipt(receipt)
     # 幂等键在这一刻才算「完成」——因为回执 id 此刻才有，才能把「键 ↔ 回执」对上。
     # 只在成功时 complete：失败的状态由 adapter 决定（无副作用则 release，
     # 否则保持 in_flight 交给租约）——**不要把失败当成完成**。
     if key and result.ok:
-        get_idempotency_store().complete(key, receipt_id=receipt.receipt_id)
+        # tenant_id 必须传：防重键的作用域是**租户内**，不传会落到空租户上，
+        # 于是 complete 找不到那一行、状态永远停在 in_flight（静默失效）。
+        get_idempotency_store().complete(
+            key, receipt_id=receipt.receipt_id, tenant_id=_tenant_of(ctx)
+        )
+
+
+async def _amaybe_record_receipt(
+    spec: CapabilitySpec,
+    result: CapabilityResult,
+    *,
+    ctx: dict[str, Any] | None,
+) -> None:
+    """异步路径：DB 版 sink / store 只有异步接口，不能在这里同步调用（会阻塞事件循环）。"""
+    receipt, key = _build_receipt(spec, result, ctx=ctx)
+    if receipt is None:
+        return
+    await arecord_receipt(receipt)
+    if not (key and result.ok):
+        return
+    tenant = _tenant_of(ctx)
+    store = get_idempotency_store()
+    acomplete = getattr(store, "acomplete", None)
+    if callable(acomplete):
+        await acomplete(key, receipt_id=receipt.receipt_id, tenant_id=tenant)
+    else:
+        await asyncio.to_thread(
+            store.complete, key, receipt_id=receipt.receipt_id, tenant_id=tenant
+        )
 
 
 def _ok_result(
@@ -383,6 +434,70 @@ def _err_result(
     )
     # 失败也要留：一次「失败」的写操作可能已经在下游生效（超时 / 半成功）
     _maybe_record_receipt(spec, result, ctx=ctx)
+    _write_span_metadata(
+        result,
+        kind=spec.kind,
+        risk_level=spec.risk_level,
+        policy_reason="allowed",
+        args=args,
+        ctx=ctx,
+        side_effect=spec.side_effect,
+        receipt_id=result.meta.get("receipt_id"),
+    )
+    return result
+
+
+async def _aok_result(
+    *,
+    spec: CapabilitySpec,
+    cid: str,
+    mode: str,
+    output: Any,
+    started: float,
+    args: Any,
+    ctx: dict[str, Any] | None,
+) -> CapabilityResult:
+    """异步路径的成功结果（回执走异步 sink，不阻塞事件循环）。"""
+    result = CapabilityResult(
+        ok=True,
+        output=output,
+        capability_id=cid,
+        duration_ms=(time.perf_counter() - started) * 1000.0,
+        meta={"kind": spec.kind, "mode": mode},
+    )
+    await _amaybe_record_receipt(spec, result, ctx=ctx)
+    _write_span_metadata(
+        result,
+        kind=spec.kind,
+        risk_level=spec.risk_level,
+        policy_reason="allowed",
+        args=args,
+        ctx=ctx,
+        side_effect=spec.side_effect,
+        receipt_id=result.meta.get("receipt_id"),
+    )
+    return result
+
+
+async def _aerr_result(
+    *,
+    spec: CapabilitySpec,
+    cid: str,
+    mode: str,
+    started: float,
+    exc: BaseException,
+    args: Any,
+    ctx: dict[str, Any] | None,
+) -> CapabilityResult:
+    """异步路径的失败结果。**失败也要留回执**：一次"失败"的写可能已在下游生效。"""
+    result = CapabilityResult(
+        ok=False,
+        error=repr(exc),
+        capability_id=cid,
+        duration_ms=(time.perf_counter() - started) * 1000.0,
+        meta={"kind": spec.kind, "mode": mode},
+    )
+    await _amaybe_record_receipt(spec, result, ctx=ctx)
     _write_span_metadata(
         result,
         kind=spec.kind,
@@ -516,7 +631,7 @@ async def _adispatch(
         output = await _call_adapter_async(
             adapter, mode=mode, args=args, ctx=ctx
         )
-        return _ok_result(
+        return await _aok_result(
             spec=spec,
             cid=cid,
             mode=mode,
@@ -526,7 +641,7 @@ async def _adispatch(
             ctx=ctx,
         )
     except Exception as exc:
-        return _err_result(
+        return await _aerr_result(
             spec=spec,
             cid=cid,
             mode=mode,

@@ -54,6 +54,8 @@ from app.ops.capability.gateway import (
 )
 from app.ops.capability.idempotency import (
     DEFAULT_LEASE_SECONDS,
+    AsyncIdempotencyStore,
+    DbIdempotencyStore,
     IdempotencyClaim,
     IdempotencyStore,
     InMemoryIdempotencyStore,
@@ -69,11 +71,15 @@ from app.ops.capability.manifest import (
     load_extra_manifests_from_env,
 )
 from app.ops.capability.probes import register_p2_probes
+from app.ops.capability.persistence import ENV_PERSISTENCE, configure_persistence_from_env
 from app.ops.capability.receipts import (
+    AsyncReceiptSink,
+    DbReceiptSink,
     InMemoryReceiptSink,
     NullReceiptSink,
     Receipt,
     ReceiptSink,
+    arecord_receipt,
     get_receipt_sink,
     reset_receipt_sink,
     set_receipt_sink,
@@ -97,17 +103,24 @@ ensure_default_capabilities()
 register_mcp_client_if_enabled()
 # H4：仅当 OPS_CAPABILITY_EXTRA_MANIFESTS 显式列出清单文件才加载（默认空）
 load_extra_manifests_from_env()
+# W6：仅当 OPS_CAPABILITY_PERSISTENCE=db|memory 才启用防重与回执落库（默认不启用）
+configure_persistence_from_env()
 
 __all__ = [
     "BUILTIN_MANIFEST_PATH",
     "DEFAULT_KINDS",
     "DEFAULT_LEASE_SECONDS",
     "DOMAIN_ALLOW_TAGS",
+    "ENV_PERSISTENCE",
     "MANIFEST_DIR",
     "STABLE_ERROR_CODES",
+    "AsyncIdempotencyStore",
+    "AsyncReceiptSink",
     "CapabilityFilter",
     "CapabilityResult",
     "CapabilitySpec",
+    "DbIdempotencyStore",
+    "DbReceiptSink",
     "EnvCredentialVault",
     "FakeHttpTransport",
     "FakeTransport",
@@ -133,9 +146,11 @@ __all__ = [
     "StaticCredentialVault",
     "UrllibHttpTransport",
     "ainvoke",
+    "arecord_receipt",
     "baseline_filter",
     "capability_catalog_snapshot",
     "check_visible",
+    "configure_persistence_from_env",
     "evaluate_visibility",
     "filter_visible",
     "get_idempotency_store",

@@ -15,6 +15,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 import threading
 import uuid
@@ -53,6 +55,13 @@ class ReceiptSink(Protocol):
     def record(self, receipt: Receipt) -> None: ...
 
 
+@runtime_checkable
+class AsyncReceiptSink(Protocol):
+    """异步 sink（DB 版实现它）。"""
+
+    async def arecord(self, receipt: Receipt) -> None: ...
+
+
 class NullReceiptSink:
     """默认 sink：不落库，但**不静默**——写能力没地方落回执是配置问题，要看得见。"""
 
@@ -63,6 +72,9 @@ class NullReceiptSink:
             receipt.ok,
             receipt.idempotency_key,
         )
+
+    async def arecord(self, receipt: Receipt) -> None:
+        self.record(receipt)
 
 
 class InMemoryReceiptSink:
@@ -151,3 +163,71 @@ def record_receipt(receipt: Receipt) -> None:
         get_receipt_sink().record(receipt)
     except Exception:  # pragma: no cover - 防御
         logger.exception("副作用回执落库失败: %s", receipt.capability_id)
+
+
+async def arecord_receipt(receipt: Receipt) -> None:
+    """异步落回执（异步路径用）。
+
+    sink 有 ``arecord`` 就 await 它（DB 版）；否则把同步实现丢线程——
+    **不要直接在事件循环里调同步 sink**，那正是我们刚修掉的阻塞问题。
+    """
+    sink = get_receipt_sink()
+    try:
+        arecord = getattr(sink, "arecord", None)
+        if callable(arecord):
+            await arecord(receipt)
+            return
+        await asyncio.to_thread(sink.record, receipt)
+    except Exception:  # pragma: no cover - 防御
+        logger.exception("副作用回执落库失败: %s", receipt.capability_id)
+
+
+# ---- DB sink（跨实例可见）----
+
+_INSERT = """
+INSERT INTO ops_capability_receipts
+    (id, receipt_id, capability_id, side_effect, ok, write_confirmed,
+     user_id, tenant_id, subtask_id, idempotency_key, captured, error, created_at)
+VALUES
+    (CAST(:id AS uuid), :receipt_id, :capability_id, :side_effect, :ok,
+     :write_confirmed, :user_id, :tenant_id, :subtask_id, :key,
+     CAST(:captured AS jsonb), :error, now())
+"""
+
+
+class DbReceiptSink:
+    """PostgreSQL 版回执 sink——副作用凭据要**跨实例、跨重启**可查。"""
+
+    def __init__(self, *, session_factory: Any = None) -> None:
+        if session_factory is None:
+            from app.db.session import AsyncSessionLocal
+
+            session_factory = AsyncSessionLocal
+        self._session_factory = session_factory
+
+    async def arecord(self, receipt: Receipt) -> None:
+        from sqlalchemy import text
+
+        params = {
+            "id": str(uuid.uuid4()),
+            "receipt_id": receipt.receipt_id,
+            "capability_id": receipt.capability_id,
+            "side_effect": receipt.side_effect,
+            "ok": receipt.ok,
+            "write_confirmed": receipt.write_confirmed,
+            "user_id": receipt.user_id,
+            "tenant_id": receipt.tenant_id,
+            "subtask_id": receipt.subtask_id,
+            "key": receipt.idempotency_key,
+            "captured": json.dumps(receipt.captured, ensure_ascii=False, default=str),
+            "error": receipt.error,
+        }
+        async with self._session_factory() as session:
+            async with session.begin():
+                await session.execute(text(_INSERT), params)
+
+    def record(self, receipt: Receipt) -> None:
+        raise RuntimeError(
+            "DbReceiptSink 只提供异步落库：请走异步路径（arecord），"
+            "不要在事件循环里同步调用——那会阻塞事件循环"
+        )

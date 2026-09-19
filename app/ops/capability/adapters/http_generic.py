@@ -381,11 +381,14 @@ class GenericHttpAdapter:
         return self._finish(prepared, resp)
 
     async def ainvoke(self, args: Any, *, ctx: dict[str, Any] | None = None) -> Any:
-        """异步调用：把阻塞传输挪到线程里，不占住事件循环。"""
+        """异步调用：把阻塞传输挪到线程里，不占住事件循环。
+
+        **DB 版防重存储只有异步接口**，所以生产路径必须走这里。
+        """
         import asyncio
 
         prepared = self._prepare(args, ctx)
-        short_circuit = self._claim(prepared)
+        short_circuit = await self._aclaim(prepared)
         if short_circuit is not None:
             return short_circuit
         try:
@@ -399,9 +402,9 @@ class GenericHttpAdapter:
                 timeout_s=prepared.timeout_s,
             )
         except HttpCapabilityError as exc:
-            self._settle_failure(prepared, exc)
+            await self._asettle_failure(prepared, exc)
             raise
-        return self._finish(prepared, resp)
+        return await self._afinish(prepared, resp)
 
     # ---- 就绪 / 防重 / 收束 ----
     def _prepare(self, args: Any, ctx: dict[str, Any] | None) -> _Prepared:
@@ -443,15 +446,21 @@ class GenericHttpAdapter:
             return self._store
         return get_idempotency_store()
 
-    def _claim(self, prepared: _Prepared) -> dict[str, Any] | None:
-        """抢执行权。返回非 ``None`` 表示**不该真的发请求**（已完成 / 正在执行）。"""
-        if not prepared.idempotency_key:
-            return None
-        claim = self._store_impl().claim(
-            prepared.idempotency_key,
-            capability_id=self._spec.capability_id,
-            tenant_id=prepared.tenant_id,
-        )
+    async def _astore_call(self, async_name: str, sync_name: str, *args: Any, **kwargs: Any) -> Any:
+        """调防重存储：有异步接口就 await，否则把同步实现丢线程。
+
+        **不要直接在事件循环里调同步 store**——那正是刚修掉的阻塞问题。
+        """
+        import asyncio
+
+        store = self._store_impl()
+        fn = getattr(store, async_name, None)
+        if callable(fn):
+            return await fn(*args, **kwargs)
+        return await asyncio.to_thread(getattr(store, sync_name), *args, **kwargs)
+
+    def _claim_from(self, claim: Any, prepared: _Prepared) -> dict[str, Any] | None:
+        """把存储层的判定翻成"要不要发请求"。"""
         if claim.should_execute:
             return None
         if claim.duplicate:
@@ -470,9 +479,40 @@ class GenericHttpAdapter:
                 "duplicate_of": claim.receipt_id,
                 "idempotency_key": prepared.idempotency_key,
             }
-        raise HttpCapabilityError(
-            DUPLICATE_ID, "同一幂等键正在执行中（in-flight）"
+        raise HttpCapabilityError(DUPLICATE_ID, "同一幂等键正在执行中（in-flight）")
+
+    def _claim(self, prepared: _Prepared) -> dict[str, Any] | None:
+        """抢执行权。返回非 ``None`` 表示**不该真的发请求**（已完成 / 正在执行）。"""
+        if not prepared.idempotency_key:
+            return None
+        store = self._store_impl()
+        claim_fn = getattr(store, "claim", None)
+        if not callable(claim_fn):
+            # DB 版只有异步接口：同步路径用它会是错的（而且会阻塞事件循环）
+            raise HttpCapabilityError(
+                UPSTREAM_ERROR,
+                f"{type(store).__name__} 只支持异步接口，请走 ainvoke",
+            )
+        return self._claim_from(
+            claim_fn(
+                prepared.idempotency_key,
+                capability_id=self._spec.capability_id,
+                tenant_id=prepared.tenant_id,
+            ),
+            prepared,
         )
+
+    async def _aclaim(self, prepared: _Prepared) -> dict[str, Any] | None:
+        if not prepared.idempotency_key:
+            return None
+        claim = await self._astore_call(
+            "aclaim",
+            "claim",
+            prepared.idempotency_key,
+            capability_id=self._spec.capability_id,
+            tenant_id=prepared.tenant_id,
+        )
+        return self._claim_from(claim, prepared)
 
     def _settle_failure(self, prepared: _Prepared, exc: HttpCapabilityError) -> None:
         """失败后的防重状态处理——**只在下游确无副作用时释放**。
@@ -480,19 +520,29 @@ class GenericHttpAdapter:
         超时 / 连接错误 / 未知业务码一律保持 ``in_flight``，交给租约过期，
         由人工或后续查询确认。宁可拒，也不冒重复执行的风险（fail-closed）。
         """
-        if not prepared.idempotency_key:
+        if not prepared.idempotency_key or exc.code not in RELEASE_SAFE_ERROR_CODES:
             return
-        if exc.code in RELEASE_SAFE_ERROR_CODES:
-            self._store_impl().release(prepared.idempotency_key)
+        self._store_impl().release(
+            prepared.idempotency_key, tenant_id=prepared.tenant_id
+        )
 
-    def _finish(self, prepared: _Prepared, resp: HttpResponse) -> dict[str, Any]:
+    async def _asettle_failure(
+        self, prepared: _Prepared, exc: HttpCapabilityError
+    ) -> None:
+        if not prepared.idempotency_key or exc.code not in RELEASE_SAFE_ERROR_CODES:
+            return
+        await self._astore_call(
+            "arelease", "release", prepared.idempotency_key, tenant_id=prepared.tenant_id
+        )
+
+    def _evaluate(
+        self, prepared: _Prepared, resp: HttpResponse
+    ) -> tuple[dict[str, Any] | None, HttpCapabilityError | None]:
+        """纯评估：成功给 ``(out, None)``；失败给 ``(None, err)``。不含任何存储副作用。"""
         http = prepared.http
         payload = resp.payload if isinstance(resp.payload, dict) else {}
         if not self._is_success(resp, payload, http):
-            err = self._map_upstream_error(payload, http, resp.status)
-            self._settle_failure(prepared, err)
-            raise err
-
+            return None, self._map_upstream_error(payload, http, resp.status)
         out: dict[str, Any] = {
             "protocol": "http",
             "kind": self.kind,
@@ -503,11 +553,37 @@ class GenericHttpAdapter:
         if self._spec.receipt_capture:
             out["receipt"] = self._capture(payload)
         if prepared.idempotency_key:
+            out["idempotency_key"] = prepared.idempotency_key
+        return out, None
+
+    def _finish(self, prepared: _Prepared, resp: HttpResponse) -> dict[str, Any]:
+        out, err = self._evaluate(prepared, resp)
+        if err is not None:
+            self._settle_failure(prepared, err)
+            raise err
+        assert out is not None
+        if prepared.idempotency_key:
             # 成功就把键标完成——**"执行完成了"是适配器掌握的事实**，
             # 不能等上层来标（否则直接用适配器的调用会一直卡在 in_flight）。
             # 回执 id 由 gateway 在落完回执后补上（complete 支持二次调用更新关联）。
-            self._store_impl().complete(prepared.idempotency_key)
-            out["idempotency_key"] = prepared.idempotency_key
+            self._store_impl().complete(
+                prepared.idempotency_key, tenant_id=prepared.tenant_id
+            )
+        return out
+
+    async def _afinish(self, prepared: _Prepared, resp: HttpResponse) -> dict[str, Any]:
+        out, err = self._evaluate(prepared, resp)
+        if err is not None:
+            await self._asettle_failure(prepared, err)
+            raise err
+        assert out is not None
+        if prepared.idempotency_key:
+            await self._astore_call(
+                "acomplete",
+                "complete",
+                prepared.idempotency_key,
+                tenant_id=prepared.tenant_id,
+            )
         return out
 
     # ---- 渲染 ----
