@@ -88,7 +88,7 @@ hr
 # ---------------- 前置条件 ----------------
 
 if [[ ! -x "$VENV_PY" ]]; then
-  echo "缺 venv：$VENV_PY（先 cd $ROOT && python -m venv .venv && .venv/bin/pip install -e '.[dev]'）" >&2
+  echo "缺 venv：${VENV_PY}（先 cd ${ROOT} && python -m venv .venv && .venv/bin/pip install -e '.[dev]'）" >&2
   exit 2
 fi
 mkdir -p "$REPORT_DIR"
@@ -99,6 +99,14 @@ export OPS_CAP_CRED_OA_GATEWAY_TOKEN="${OPS_CAP_CRED_OA_GATEWAY_TOKEN:-local-dev
 export OA_BASE="${OA_BASE:-http://127.0.0.1:$MOCK_OA_PORT}"
 export PYTHONPATH="$ROOT"
 export PYTEST_ADDOPTS="--basetemp=$ROOT/.pytest-tmp -q"
+
+# 前置提示：桩服务的 jar 需要 Java 25+，而系统默认 java 往往更低。
+# 不设 JAVA_HOME 时联调层会"起不来但看不出为什么"——所以先说出来。
+if [[ -z "${JAVA_HOME:-}" ]]; then
+  echo "⚠️  JAVA_HOME 未设置：桩服务 jar 需要 Java 25+，系统默认 java 可能是 21 → 联调层会跳过"
+  echo "    正确写法：export JAVA_HOME=/opt/homebrew/opt/openjdk"
+  echo
+fi
 
 # ---------------- 五层 ----------------
 
@@ -135,12 +143,28 @@ else
   MOCK_PID="$(cat "$TMP/mock.pid")"
 
   if wait_listen; then
-    echo "  （桩服务已监听 $MOCK_OA_PORT，pid=$MOCK_PID）"
+    echo "  （桩服务已监听 ${MOCK_OA_PORT}，pid=${MOCK_PID}）"
     run_step "联调" "真桩服务 26 项" "真实出网" \
       "$VENV_PY" "$MOCK_OA_DIR/scripts/agent-integration-smoke.py"
   else
-    skip_step "联调" "真桩服务 26 项" "桩服务 40s 内未监听 $MOCK_OA_PORT（见证据 mock-oa.log）"
-    cp "$TMP/mock-oa.log" "$TMP/mock-oa-collected.log" 2>/dev/null || true
+    skip_step "联调" "真桩服务 26 项" "桩服务 40s 内未监听 ${MOCK_OA_PORT}（原因见下方日志）"
+    echo
+    echo "  ── 桩服务启动日志（最后 20 行）──"
+    tail -20 "$TMP/mock-oa.log" 2>/dev/null | sed 's/^/  | /' || echo "  | (无日志)"
+    echo "  ── 常见原因 ──"
+    echo "  | 1) JAVA_HOME 没设/低于 25 → jar 需 Java 25+，系统默认 java 可能是 21"
+    echo "  |    正确写法：export JAVA_HOME=/opt/homebrew/opt/openjdk"
+    echo "  | 2) 端口被占：lsof -nP -iTCP:${MOCK_OA_PORT} -sTCP:LISTEN"
+    echo "  | 3) jar 未构建：cd ${MOCK_OA_DIR} && mvn package -DskipTests"
+    echo
+    {
+      echo
+      echo "### 联调层跳过原因：桩服务启动日志"
+      echo
+      echo '```'
+      tail -40 "$TMP/mock-oa.log" 2>/dev/null || echo "(无日志)"
+      echo '```'
+    } >>"$TMP/mock-failure.md"
   fi
 fi
 
@@ -154,7 +178,7 @@ rm -rf "$ROOT/.pytest-tmp"
   echo "- 时间：$(date '+%F %T')"
   echo "- 仓库：\`$ROOT\`"
   echo "- 桩服务：\`$MOCK_OA_DIR\` @ 127.0.0.1:$MOCK_OA_PORT"
-  echo "- 结论：**$([[ $FAILED -eq 0 ]] && echo '通过' || echo '不通过')**（失败 $FAILED · 跳过 $SKIPPED）"
+  echo "- 结论：**$([[ $FAILED -eq 0 ]] && echo '通过' || echo '不通过')**（失败 ${FAILED} · 跳过 ${SKIPPED}）"
   echo
   echo "> 五层分开看，**不合并成一个通过率**——它们回答五个不同问题。"
   echo "> 跳过 ≠ 通过：桩服务未就绪时联调被显式标为 SKIP，而不是记成失败、也不假装通过。"
@@ -168,6 +192,8 @@ rm -rf "$ROOT/.pytest-tmp"
   echo '```'
   cat "$TMP/full.log" 2>/dev/null || echo "(无)"
   echo '```'
+  # 联调层跳过时把桩服务的启动日志一并附上——否则"未监听"就成了无从下手的结论
+  [[ -f "$TMP/mock-failure.md" ]] && cat "$TMP/mock-failure.md"
 } >"$REPORT"
 
 hr
