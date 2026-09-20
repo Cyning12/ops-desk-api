@@ -33,6 +33,7 @@ from app.ops.capability import (
 )
 from app.ops.capability.baseline import baseline_filter
 from app.ops.capability.budget import snapshot as budget_snapshot
+from app.ops.capability.circuit import snapshot as circuit_snapshot
 from app.ops.capability.idempotency import DbIdempotencyStore
 from app.ops.capability.metrics import snapshot as metrics_snapshot
 from app.ops.capability.persistence import describe_persistence
@@ -99,6 +100,10 @@ async def runtime(_user: OpsUser | None = AdminSyncAuth) -> dict[str, Any]:
         # 失控兜底（P0-2）：kill switch 按下没有、谁被拦了、配额还剩多少。
         # "我到底停干净了没有"必须是一个能直接读出来的字段，不能靠推理。
         "budget": budget_snapshot(),
+        # 下游熔断（P1）：哪些下游现在是熔断的、还要多久能探测。
+        # ready_to_probe 是本模块自己算的——pybreaker 不会提前把 open 翻成 half-open，
+        # 只回显它的 state 会出现"显示没恢复、实际下一次就放行"。
+        "circuits": circuit_snapshot(),
         # 结果契约（P0-1）：有多少能力声明了 output_schema。
         # 没声明 = 不校验，这个数越低，"错了还报成功"的口子越大。
         "contracts": {

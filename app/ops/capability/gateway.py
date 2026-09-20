@@ -36,6 +36,7 @@ import os
 import time
 from typing import Any
 
+from app.ops.capability import circuit
 from app.ops.capability.budget import check as budget_check
 from app.ops.capability.budget import count as budget_count
 from app.ops.capability.errors import (
@@ -53,6 +54,7 @@ from app.ops.capability.receipts import (
     build_receipt,
     record_receipt,
 )
+from app.ops.capability.circuit import CircuitOpen, check as circuit_check
 from app.ops.capability.result_contract import validate as validate_result_contract
 from app.ops.capability.registry import CapabilityAdapter, CapabilityRegistry
 from app.ops.capability.schema_validate import validate_capability_args
@@ -213,6 +215,45 @@ def _force_args_schema(ctx: dict[str, Any] | None) -> bool:
     return isinstance(host, dict) and host.get("force_args_schema") is True
 
 
+def _blocked_result(
+    *,
+    spec: CapabilitySpec,
+    cid: str,
+    mode: str,
+    started: float,
+    error: str,
+    blocked: str,
+    args: Any,
+    ctx: dict[str, Any] | None,
+) -> CapabilityResult:
+    """**没执行**就被拦下的结果（熔断 / 配额 / kill switch 共用）。
+
+    与 :func:`_fail_result` 的关键区别：**不落回执**。
+    回执记录的是"发生了副作用"，被闸门拦下的调用没有执行，
+    留下一条回执就等于声称做了一件没做的事。
+    """
+    result = CapabilityResult(
+        ok=False,
+        error=error,
+        capability_id=cid,
+        duration_ms=(time.perf_counter() - started) * 1000.0,
+        meta={
+            "kind": spec.kind,
+            "mode": mode,
+            "blocked": blocked,
+            "side_effect": spec.side_effect,
+        },
+    )
+    _write_span_metadata(
+        result,
+        kind=spec.kind,
+        risk_level=spec.risk_level,
+        args=args,
+        ctx=ctx,
+    )
+    return result
+
+
 def _prepare_call(
     capability_id: str,
     *,
@@ -276,6 +317,23 @@ def _prepare_call(
             ctx=ctx,
         )
         return result
+
+    # ---- P1：下游熔断（写能力不参与半开探测）----
+    # 熔断优先于配额：下游已经不健康，先谈"别打了"，再谈"打几次"。
+    # 只在这里挡**写能力的探测**；读能力的 open/放行由执行处 circuit.guard 驱动。
+    if mode == "invoke":
+        circuit_err = circuit_check(spec)
+        if circuit_err is not None:
+            return _blocked_result(
+                spec=spec,
+                cid=cid,
+                mode=mode,
+                started=started,
+                error=format_error(UPSTREAM_ERROR, circuit_err),
+                blocked="circuit",
+                args=args,
+                ctx=ctx,
+            )
 
     # ---- P0-2：失控兜底（kill switch + 会话配额）----
     # 放在 Policy 之后、真正执行之前：被 Policy 拦下的不计入配额，
@@ -714,13 +772,28 @@ def _dispatch(
                 )
             output = provide_fn(ctx=ctx)
         else:
-            output = adapter.invoke(args, ctx=ctx)
+            # 熔断：状态机交给 pybreaker（业务类异常被 exclude 掉，不计入熔断）。
+            # provide 不走熔断——它是上下文注入，不是下游集成点调用。
+            with circuit.guard(spec):
+                output = adapter.invoke(args, ctx=ctx)
         return _ok_result(
             spec=spec,
             cid=cid,
             mode=mode,
             output=output,
             started=started,
+            args=args,
+            ctx=ctx,
+        )
+    except CircuitOpen as exc:
+        # 熔断中：这次**没有出门** → 不落回执
+        return _blocked_result(
+            spec=spec,
+            cid=cid,
+            mode=mode,
+            started=started,
+            error=circuit.error_detail(exc),
+            blocked="circuit",
             args=args,
             ctx=ctx,
         )
@@ -787,15 +860,32 @@ async def _adispatch(
                 return _missing_provide_result(
                     spec=spec, cid=cid, started=started, ctx=ctx
                 )
-        output = await _call_adapter_async(
-            adapter, mode=mode, args=args, ctx=ctx
-        )
+        # 同同步路径：provide 不走熔断；invoke 由 guard 驱动状态机。
+        # ``await`` 写在 with 体内是合法的——guard 是同步上下文管理器，
+        # pybreaker 的 call_async 是 Tornado-only，不能用于 asyncio。
+        with circuit.guard(spec):
+            output = await _call_adapter_async(
+                adapter, mode=mode, args=args, ctx=ctx
+            )
         return await _aok_result(
             spec=spec,
             cid=cid,
             mode=mode,
             output=output,
             started=started,
+            args=args,
+            ctx=ctx,
+        )
+    except CircuitOpen as exc:
+        # 熔断中：这次**没有出门** → 不落回执。
+        # 被拦下没有副作用，所以不需要异步版（异步版存在的意义是写 sink 不阻塞）。
+        return _blocked_result(
+            spec=spec,
+            cid=cid,
+            mode=mode,
+            started=started,
+            error=circuit.error_detail(exc),
+            blocked="circuit",
             args=args,
             ctx=ctx,
         )

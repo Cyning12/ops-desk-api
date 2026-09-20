@@ -178,10 +178,13 @@ def _reset_capability_budget():
     ``policy_blocked: budget_exhausted`` 拦下——症状长得像功能坏了，实际是状态泄漏。
     """
     from app.ops.capability.budget import reset as budget_reset
+    from app.ops.capability.circuit import reset as circuit_reset
 
     budget_reset()
+    circuit_reset()
     yield
     budget_reset()
+    circuit_reset()
 
 
 @pytest.fixture
