@@ -179,6 +179,64 @@ async def _collect_decisions(row: dict[str, Any]) -> tuple[list[str], list[str]]
     return approved, rejected
 
 
+async def _open_event_sink(row: dict[str, Any], thread_id: str):
+    """恢复段的事件落盘器；归属解析不到就返回 ``None``（**并打 error 日志**）。
+
+    为什么不能省：HITL 申请行里没有 user_id，而 replay 按 user_id 校验。
+    归属取不到 ⇒ 事件写不进（或写了别人也读不到）⇒ 前端永远停在
+    "等待授权"那一帧，而后端日志一片安静。宁可返回 None 也要**报出来**。
+    """
+    from app.ops.hitl.resume import ResumeEventSink
+    from app.ops.lg_rag.event_store import last_seq, run_owner
+
+    run_id = str(row.get("run_id") or "").strip()
+    if not run_id:
+        logger.error(
+            "HITL 恢复：申请 %s 没有 run_id，恢复段事件无处可落 —— 前端 replay 不到",
+            row.get("id"),
+        )
+        return None
+    try:
+        user_id = await run_owner(run_id)
+    except Exception:
+        logger.exception("HITL 恢复：run 归属反查失败 run=%s", run_id)
+        return None
+    if not user_id:
+        logger.error(
+            "HITL 恢复：run %s 查不到归属用户（没落过事件帧？）—— "
+            "恢复段事件不落盘，前端 replay 不到批准后的结论",
+            run_id,
+        )
+        return None
+    try:
+        start_seq = await last_seq(run_id)
+    except Exception:
+        logger.exception("HITL 恢复：run %s 取最大 seq 失败，从 0 续写", run_id)
+        start_seq = 0
+    return ResumeEventSink(
+        run_id=run_id, user_id=user_id, thread_id=thread_id, start_seq=start_seq
+    )
+
+
+async def _persist_resumed_turns(sink, outcome: dict[str, Any]) -> None:
+    """补落这一轮的 user / assistant turn。
+
+    SSE 在"等待授权"那帧就收尾了，**用户这一轮压根没进历史**。
+    恢复完成后必须补上，否则下一轮对话看不到自己问过什么，
+    而且批准得来的答案也永远不在 thread 里。
+    """
+    from app.ops.lg_rag.thread_store import persist_thread_turns
+
+    query = str(outcome.get("query") or "")
+    answer = str(outcome.get("answer") or "")
+    if not (query or answer):
+        return
+    try:
+        await persist_thread_turns(sink.thread_id, sink.user_id, query, answer)
+    except Exception:
+        logger.exception("HITL 恢复：补落 thread turns 失败 thread=%s", sink.thread_id)
+
+
 @router.post("/requests/{request_id}/resume")
 async def resume_request(
     request_id: str, _user: OpsUser | None = AdminSyncAuth
@@ -215,12 +273,16 @@ async def resume_request(
             detail="已批准但拿不到待解锁的步骤（unlock_subtask_id 为空）",
         )
     thread_id = str(row.get("thread_id") or "").strip()
+    sink = await _open_event_sink(row, thread_id)
     try:
+        if sink is not None:
+            await sink.open(approved=approved, decided_by=str(row.get("decision_by") or ""))
         outcome = await resume_hitl_run(
             thread_id=thread_id,
             approved=approved,
             rejected=rejected,
             decided_by=str(row.get("decision_by") or ""),
+            update_sink=sink,
         )
     except ResumeError as exc:
         code = {
@@ -231,12 +293,16 @@ async def resume_request(
         }.get(exc.code, status.HTTP_502_BAD_GATEWAY)
         logger.warning("HITL 恢复被拒 request=%s code=%s %s", request_id, exc.code, exc.detail)
         raise HTTPException(status_code=code, detail=exc.detail) from exc
+    if sink is not None:
+        await sink.close()
+        await _persist_resumed_turns(sink, outcome)
     logger.info(
-        "HITL 恢复完成 request=%s thread=%s approved=%s rejected=%s",
+        "HITL 恢复完成 request=%s thread=%s approved=%s rejected=%s replay=%s",
         request_id,
         thread_id,
         approved,
         rejected,
+        sink.cursor if sink else "",
     )
     return {
         "ok": True,
@@ -247,6 +313,16 @@ async def resume_request(
             "thread_id": thread_id,
         },
         "resume": outcome,
+        # 前端拿这个 cursor 调 POST /lg-rag/replay 就能收到"批准之后跑完的那段"
+        "replay": {
+            "run_id": sink.run_id if sink else str(row.get("run_id") or ""),
+            "cursor": sink.cursor if sink else "",
+            "events_persisted": sink.persisted if sink else 0,
+            "events_failed": sink.failed if sink else 0,
+            # 归属没解析到 ⇒ 事件没落 ⇒ 前端 replay 不到；**必须说出来**
+            "persisted": sink is not None,
+            "re_interrupted": bool(sink.re_interrupted) if sink else False,
+        },
         "ts": time.time(),
     }
 

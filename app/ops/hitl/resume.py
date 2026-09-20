@@ -6,6 +6,11 @@
 approved —— 图还躺在 checkpoint 里，前端还停在"等待授权"那一帧，
 人批了但什么都没发生（比不批更糟：它看起来像批了）。
 
+恢复段还要**接着同一条 run 落事件**：SSE 在 ``interrupt()`` 那一帧就收尾了，
+前端听到的最后一句是"等待授权"。批准之后跑完的那段如果只留在 HTTP 响应里，
+前端就得自己再造一条通道 —— 而 replay 通道本来就存在，只需要把这段
+**按同一个 run_id 接着编号**写进去（见 ``ResumeEventSink``）。
+
 恢复的三件硬事：
 
 1. **定位**：靠 ``thread_id``（checkpoint 的 namespace）找到挂起的那个 checkpoint。
@@ -21,6 +26,8 @@ approved —— 图还躺在 checkpoint 里，前端还停在"等待授权"那�
 from __future__ import annotations
 
 import logging
+import time
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from langgraph.types import Command
@@ -41,6 +48,114 @@ class ResumeError(RuntimeError):
         super().__init__(detail)
         self.code = code
         self.detail = detail
+
+
+class ResumeEventSink:
+    """把恢复段的节点 update 落进**同一条 run** 的事件表。
+
+    为什么必须有它：SSE 在 ``interrupt()`` 那一帧就收尾了（发了
+    ``hitl.waiting`` + ``done(status=waiting_approval)``）。批准之后跑完的那段
+    如果只留在 HTTP 响应里，前端要拿到结论就得再造一条通道；而 replay
+    通道本来就存在（T4 的 cursor 机制），只要**接同一个 run_id 编号**即可 ——
+    前端拿最后一帧的 cursor 再调 replay，就能收到"批准之后发生了什么"。
+
+    两件不能省的事：
+    - ``open()`` 先发一帧 ``hitl.resumed``：replay 出来的这段要能自解释，
+      否则客户端看到凭空多出来的一串节点帧，不知道那是恢复段；
+    - 恢复段**又挂起**时要再发一帧 ``hitl.waiting``：批准一次不代表后面
+      不会再拦一次，静默收尾会让人以为跑完了。
+    """
+
+    def __init__(
+        self,
+        *,
+        run_id: str,
+        user_id: str,
+        thread_id: str,
+        start_seq: int = 0,
+    ) -> None:
+        self.run_id = str(run_id or "")
+        self.user_id = str(user_id or "")
+        self.thread_id = str(thread_id or "")
+        self.seq = int(start_seq or 0)
+        self.persisted = 0
+        self.failed = 0
+        self.re_interrupted = False
+        self._started = time.perf_counter()
+
+    async def _emit(self, event_type: str, role: str, payload: dict[str, Any]) -> None:
+        from app.ops.lg_rag.event_store import persist_run_event
+
+        self.seq += 1
+        try:
+            await persist_run_event(
+                run_id=self.run_id,
+                seq=self.seq,
+                user_id=self.user_id,
+                thread_id=self.thread_id,
+                ts_ms=int((time.perf_counter() - self._started) * 1000),
+                agent_role=role,
+                event_type=event_type,
+                payload=payload,
+            )
+            self.persisted += 1
+        except Exception:
+            self.failed += 1
+            logger.exception(
+                "HITL 恢复段事件落盘失败 run=%s seq=%s type=%s",
+                self.run_id,
+                self.seq,
+                event_type,
+            )
+
+    async def open(self, *, approved: list[str], decided_by: str = "") -> None:
+        await self._emit(
+            "hitl.resumed",
+            "system",
+            {
+                "run_id": self.run_id,
+                "thread_id": self.thread_id,
+                "approved": list(approved),
+                "decided_by": decided_by,
+            },
+        )
+
+    async def close(self) -> None:
+        await self._emit(
+            "done",
+            "system",
+            {
+                "run_id": self.run_id,
+                "thread_id": self.thread_id,
+                "status": "waiting_approval" if self.re_interrupted else "resumed",
+                "events_persisted": self.persisted,
+            },
+        )
+
+    async def __call__(self, update: dict[str, Any]) -> None:
+        from app.ops.lg_rag.sse_stream import extract_interrupt, map_node_update
+
+        # 恢复段又挂起 ⇒ 说清楚，别让 replay 出来的流静默结束
+        waiting = extract_interrupt(update)
+        if waiting is not None:
+            self.re_interrupted = True
+            await self._emit(
+                "hitl.waiting",
+                "system",
+                {**waiting, "run_id": waiting.get("run_id") or self.run_id},
+            )
+            return
+        for node_name, node_output in update.items():
+            if str(node_name).startswith("__"):
+                continue
+            event_type, role, payload = map_node_update(str(node_name), node_output)
+            await self._emit(event_type, role, payload)
+
+    @property
+    def cursor(self) -> str:
+        from app.ops.lg_rag.sse_replay import make_cursor
+
+        return make_cursor(self.run_id, self.seq) if self.run_id else ""
 
 
 def _default_graph_factory(*, checkpointer: Any | None) -> Any:
@@ -69,6 +184,29 @@ def _summarize(state: Any) -> dict[str, Any]:
     return out
 
 
+def _answer_of(state: dict[str, Any]) -> str:
+    """最终答案（末条 AI 消息）。复用 SSE 的抽取口径，避免两处漂移。"""
+    from app.ops.lg_rag.sse_stream import extract_ai_text
+
+    try:
+        return str(extract_ai_text(state.get("messages")) or "")
+    except Exception:
+        return ""
+
+
+def _query_of(state: dict[str, Any]) -> str:
+    """原始提问（首条 Human 消息）——补落 thread turns 要用。
+
+    SSE 在"等待授权"那帧就收尾了，**用户这一轮根本没落进历史**；
+    恢复完成后由这里补上，否则下一轮对话看不到自己问过什么。
+    """
+    for msg in state.get("messages") or []:
+        if getattr(msg, "type", None) == "human":
+            content = getattr(msg, "content", "")
+            return content if isinstance(content, str) else str(content)
+    return ""
+
+
 async def _resume_with(
     checkpointer: Any,
     *,
@@ -77,6 +215,7 @@ async def _resume_with(
     rejected: list[str],
     decided_by: str,
     graph_factory: Any | None,
+    update_sink: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
 ) -> dict[str, Any]:
     factory = graph_factory or _default_graph_factory
     graph = factory(checkpointer=checkpointer)
@@ -100,7 +239,11 @@ async def _resume_with(
             f"thread {thread_id[:32]} 有未完成的任务但不是 interrupt 挂起，拒绝恢复",
         )
 
-    result = await graph.ainvoke(
+    # ⚠️ 用 astream 而不是 ainvoke：ainvoke 只给最终 state，
+    #   恢复段的**过程帧**就没了 ⇒ 前端 replay 不出来"批准之后发生了什么"。
+    #   astream(Command(resume=...)) 与 ainvoke 语义一致（实测确认），
+    #   只是把中间每个节点 update 也吐出来。
+    async for chunk in graph.astream(
         Command(
             resume={
                 "approved": list(approved),
@@ -109,13 +252,25 @@ async def _resume_with(
             }
         ),
         config,
-    )
+        stream_mode="updates",
+    ):
+        if update_sink is not None and isinstance(chunk, dict):
+            try:
+                await update_sink(chunk)
+            except Exception:  # 落盘失败不许把恢复本身弄挂
+                logger.exception("HITL 恢复段事件落盘失败 thread_id=%s", thread_id)
+
+    # astream 不给最终 state；跑完后再取一次快照（已验证与 ainvoke 结果一致）
+    snapshot = await graph.aget_state(config)
+    result = dict(getattr(snapshot, "values", None) or {})
     return {
         "thread_id": thread_id[:_THREAD_ID_MAX],
         "approved": list(approved),
         "rejected": list(rejected),
         "decided_by": decided_by,
         "state": _summarize(result),
+        "answer": _answer_of(result),
+        "query": _query_of(result),
     }
 
 
@@ -127,11 +282,15 @@ async def resume_hitl_run(
     rejected: list[str] | None = None,
     checkpointer: Any | None = None,
     graph_factory: Any | None = None,
+    update_sink: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
 ) -> dict[str, Any]:
     """恢复一条被 HITL 挂起的 run。
 
     ``checkpointer`` 显式传入时用它（联调 / 单测注入内存 saver）；
     否则按 ``LG_RAG_HTTP_CHECKPOINTER=postgres`` 决定 —— 没开就**显式失败**。
+
+    ``update_sink`` 收到恢复段的每个节点 update（``{node: output}``），
+    用来把这段过程**接着同一条 run 落盘**，让前端 replay 得到批准后的结论。
     """
     tid = str(thread_id or "").strip()
     if not tid:
@@ -154,6 +313,7 @@ async def resume_hitl_run(
             rejected=list(rejected or []),
             decided_by=decided_by,
             graph_factory=graph_factory,
+            update_sink=update_sink,
         )
 
     from app.ops.lg_rag.checkpointer import apostgres_saver, use_postgres_checkpointer
@@ -175,6 +335,7 @@ async def resume_hitl_run(
                 rejected=list(rejected or []),
                 decided_by=decided_by,
                 graph_factory=graph_factory,
+                update_sink=update_sink,
             )
     except ResumeError:
         raise

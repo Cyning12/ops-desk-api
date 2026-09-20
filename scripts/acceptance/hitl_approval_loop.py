@@ -27,6 +27,9 @@ OA = f"http://127.0.0.1:{_OA_PORT}/api/v1"
 ADMIN = "Bearer admintok"
 OA_BEARER = "Bearer local-dev-token"
 
+# 开了 PG checkpointer 时，恢复走的是真 PG 路径（由 .sh 的 HITL_RESUME_PG=1 打开）
+_PG_CHECKPOINTER = os.environ.get("LG_RAG_HTTP_CHECKPOINTER", "").strip().lower() == "postgres"
+
 # 出口代理会把打 127.0.0.1 的请求送到代理去（返回看不懂的 502）
 OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
@@ -173,20 +176,33 @@ def main() -> int:
 
     # 9 · 恢复端点：**真驱动**，且不许假装成功
     #
-    # 本联调用 memory 持久化（没开 LG_RAG_HTTP_CHECKPOINTER=postgres），
-    # 内存 saver 是每请求新建的 ⇒ 跨请求恢复**不可能成立**。
-    # 正确行为是显式 503，不是 200 —— 返回 200 就意味着"人点批准、什么都没发生"。
-    code, resumed = call("POST", f"{AGENT}/hitl/requests/{rid}/resume",
-                         headers={"Authorization": ADMIN}, expect=(503,))
-    r = resumed or {}
-    detail = str(r.get("detail") or "")
-    check("未开 PG ⇒ 恢复显式 503（不假装成功）", code == 503, f"code={code} {detail}")
-    check("失败原因写明是 checkpointer 没配", "checkpointer" in detail.lower(), detail)
-    # 503 而不是 409，说明"待解锁步骤"这一步**已经解析到了** ——
-    # 解析不到会先被 409 拦住（下面那条是它的对照）
-    check("503 ⇒ 解锁步骤已解析（不是被 409 拦下）", code == 503, f"code={code}")
+    # 期望值随环境变，别写死 200：
+    # - 没开 LG_RAG_HTTP_CHECKPOINTER=postgres（默认）⇒ 内存 saver 每请求新建，
+    #   跨请求恢复不可能成立 ⇒ **显式 503**。返回 200 就意味着"人点批准、
+    #   什么都没发生"，比报错难查得多。
+    # - 开了 PG ⇒ 走真 PG checkpointer；这里造的 thread 没真挂起过 ⇒ **409**
+    #   not_interrupted（证明它没把 Command 当成新输入重开一局）。
+    if _PG_CHECKPOINTER:
+        code, resumed = call("POST", f"{AGENT}/hitl/requests/{rid}/resume",
+                             headers={"Authorization": ADMIN}, expect=(409,))
+        r = resumed or {}
+        detail = str(r.get("detail") or "")
+        check("PG 开 ⇒ 未挂起 thread 恢复被 409 拒", code == 409, f"code={code} {detail}")
+        check("拒绝原因写明是 interrupt（不是重开一局）",
+              "interrupt" in detail.lower(), detail)
+    else:
+        code, resumed = call("POST", f"{AGENT}/hitl/requests/{rid}/resume",
+                             headers={"Authorization": ADMIN}, expect=(503,))
+        r = resumed or {}
+        detail = str(r.get("detail") or "")
+        check("未开 PG ⇒ 恢复显式 503（不假装成功）", code == 503, f"code={code} {detail}")
+        check("失败原因写明是 checkpointer 没配", "checkpointer" in detail.lower(), detail)
+        # 503 而不是 409，说明"待解锁步骤"这一步**已经解析到了** ——
+        # 解析不到会先被 409 拦住（下面那条是它的对照）
+        check("503 ⇒ 解锁步骤已解析（不是被 409 拦下）", code == 503, f"code={code}")
 
     # 9b · 对照：已批准但拿不到 unlock_subtask_id ⇒ 409，且**与 503 区分开**
+    #      （开了 PG 时这条同样成立：解析不到解锁步骤，压根走不到 checkpointer）
     code, _blank = call(
         "POST",
         f"{AGENT}/hitl/requests",

@@ -68,6 +68,16 @@ PYEOF
 }
 
 cd "$ROOT" || exit 1
+
+# HITL_RESUME_PG=1 ⇒ 开 PG checkpointer，验**真进程里的 PG 恢复路径**
+# （默认关：内存 saver 下恢复必然失败，那条断言验的是"不许假装成功"）
+CKPT_ENV="${LG_RAG_HTTP_CHECKPOINTER:-}"
+if [ "${HITL_RESUME_PG:-0}" = "1" ]; then
+  CKPT_ENV=postgres
+fi
+# 导出：驱动脚本也要读它来决定第 9 步的期望值
+export LG_RAG_HTTP_CHECKPOINTER="$CKPT_ENV"
+
 OPS_HITL_PERSISTENCE=memory \
 OPS_HITL_CALLBACK_SECRET=s3cr3t \
 OPS_ADMIN_SYNC_TOKEN=admintok \

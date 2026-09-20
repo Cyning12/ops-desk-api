@@ -111,7 +111,7 @@ def _summarize_payload(node_output: Any) -> dict[str, Any]:
             json.loads(s) if len(s) <= _PAYLOAD_MAX else _truncate(s, _PAYLOAD_MAX)
         )
     if "messages" in node_output:
-        answer = _extract_ai_text(node_output["messages"])
+        answer = extract_ai_text(node_output["messages"])
         if answer:
             out["answer_preview"] = _truncate(answer, min(200, _PAYLOAD_MAX))
     if not out:
@@ -119,7 +119,7 @@ def _summarize_payload(node_output: Any) -> dict[str, Any]:
     return out
 
 
-def _extract_ai_text(messages: Any) -> str:
+def extract_ai_text(messages: Any) -> str:
     for msg in reversed(messages or []):
         if isinstance(msg, AIMessage):
             content = msg.content
@@ -190,7 +190,7 @@ def map_node_update(node_name: str, node_output: Any) -> tuple[str, str, dict[st
     if node_name in _ANSWER_NODES:
         answer = ""
         if isinstance(node_output, dict):
-            answer = _extract_ai_text(node_output.get("messages"))
+            answer = extract_ai_text(node_output.get("messages"))
         return (
             "answer",
             role,

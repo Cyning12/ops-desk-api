@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.db.models import OpsLgRagRunEvent
 from app.db.session import AsyncSessionLocal
@@ -47,10 +47,17 @@ async def persist_run_event(
         await db.commit()
 
 
-async def assert_run_owned(run_id: str, user_id: str) -> None:
-    """确认 run 存在且归属当前用户；否则 ``LgRagRunNotFoundError``。"""
-    if not run_id or not user_id:
-        raise LgRagRunNotFoundError
+async def run_owner(run_id: str) -> str | None:
+    """该 run 的归属用户；run 不存在（还没落过帧）返回 ``None``。
+
+    为什么需要这个反问：HITL 申请行里只有 ``thread_id`` / ``run_id``，
+    **没有 user_id**，而 replay 是按 user_id 做归属校验的。
+    恢复段要往**同一个 run_id** 里续写事件，归属只能从已有事件反查 ——
+    取不到就宁可不写（写了也读不出来：另一个 user_id 永远 replay 不到），
+    并且必须把这个"没写"报出来，不能静默。
+    """
+    if not run_id:
+        return None
     async with AsyncSessionLocal() as db:
         row = (
             await db.execute(
@@ -59,10 +66,33 @@ async def assert_run_owned(run_id: str, user_id: str) -> None:
                 .limit(1)
             )
         ).first()
-        if row is None:
-            raise LgRagRunNotFoundError
-        if str(row[0]) != str(user_id):
-            raise LgRagRunNotFoundError
+    return str(row[0]) if row else None
+
+
+async def last_seq(run_id: str) -> int:
+    """该 run 当前最大 seq；恢复段从这里**接着编号**（不是从 1 重开）。"""
+    if not run_id:
+        return 0
+    async with AsyncSessionLocal() as db:
+        row = (
+            await db.execute(
+                select(func.max(OpsLgRagRunEvent.seq)).where(
+                    OpsLgRagRunEvent.run_id == run_id
+                )
+            )
+        ).first()
+    return int(row[0] or 0) if row else 0
+
+
+async def assert_run_owned(run_id: str, user_id: str) -> None:
+    """确认 run 存在且归属当前用户；否则 ``LgRagRunNotFoundError``。"""
+    if not run_id or not user_id:
+        raise LgRagRunNotFoundError
+    owner = await run_owner(run_id)
+    if owner is None:
+        raise LgRagRunNotFoundError
+    if str(owner) != str(user_id):
+        raise LgRagRunNotFoundError
 
 
 async def load_events_after(

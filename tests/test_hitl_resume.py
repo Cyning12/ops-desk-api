@@ -37,6 +37,7 @@ from app.ops.hitl.store import (
     STATUS_PENDING,
     STATUS_REJECTED,
 )
+from tests.conftest import DB_AVAILABLE
 
 _RUN = "runresume"
 _T1 = f"{_RUN}:1"
@@ -468,6 +469,62 @@ def test_resume_driver_is_invocable_with_async_store_only():
 # ---------------------------------------------------------------------------
 # 4 · 管路：挂起那一次与恢复这一次必须落在**同一个** saver
 # ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
+async def test_resume_across_two_saver_instances(monkeypatch):
+    """跨**两个独立 saver 实例**恢复 —— 这才是生产的真实形状。
+
+    请求 1（SSE）建一个 saver 跑图并挂起；请求 2（人点批准）是**另一个
+    HTTP 请求**，建的是另一个 saver。内存 saver 下这条要么靠同一个对象
+    蒙对、要么根本测不出来；只有在 PG 下它才是真的在考
+    "挂起与恢复是否落在同一个 checkpointer 后端"。
+
+    图用最小 observe 图（supervisor 图要真 LLM 才能跑起来），
+    checkpointer 是**真的 AsyncPostgresSaver**。
+    """
+    import uuid
+
+    from app.ops.lg_rag.checkpointer import apostgres_saver
+
+    monkeypatch.setenv("LG_RAG_HTTP_CHECKPOINTER", "postgres")
+    set_hitl_store(InMemoryHitlStore())
+    tid = "t-pg-" + uuid.uuid4().hex[:12]
+
+    suspended = None
+    async with apostgres_saver(setup=True) as saver:
+        graph = _graph_factory(checkpointer=saver)
+        async for chunk in graph.astream(
+            _hitl_state(),
+            {"configurable": {"thread_id": tid}},
+            stream_mode="updates",
+        ):
+            for intr in chunk.get("__interrupt__") or []:
+                suspended = intr.value
+    assert suspended is not None, "前置：图没有挂起"
+
+    # 另一个 saver 实例（= 另一个请求）；图工厂相同，checkpointer 不同对象
+    out = await resume_hitl_run(
+        thread_id=tid,
+        approved=[_T1],
+        decided_by="张三",
+        graph_factory=_graph_factory,
+    )
+    assert out["state"]["hitl_unlocked_ids"] == [_T1]
+    assert out["state"]["react_observation"]["verdict"] == "replan"
+
+
+@pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
+async def test_resume_unknown_thread_under_pg_is_refused(monkeypatch):
+    """反向对照：PG 下 thread 没挂起 ⇒ not_interrupted，不是"重开一局"。"""
+    monkeypatch.setenv("LG_RAG_HTTP_CHECKPOINTER", "postgres")
+    with pytest.raises(ResumeError) as exc:
+        await resume_hitl_run(
+            thread_id="t-pg-never-existed",
+            approved=[_T1],
+            graph_factory=_graph_factory,
+        )
+    assert exc.value.code == "not_interrupted"
 
 
 async def test_supervisor_astream_entry_keeps_the_checkpointer():
