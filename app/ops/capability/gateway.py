@@ -38,6 +38,7 @@ from typing import Any
 
 from app.ops.capability.errors import DISABLED, UNKNOWN_ID, format_error
 from app.ops.capability.idempotency import get_idempotency_store
+from app.ops.capability.metrics import record_outcome
 from app.ops.capability.policy import check_invoke, write_allowed
 from app.ops.capability.receipts import (
     Receipt,
@@ -157,7 +158,10 @@ def invoke(
     ``kind=skill``：对应 **可执行步骤**（P3 stub 会 ``NotImplementedError`` → ``ok=False``）；
     注入上下文请用 ``provide``。
     """
-    return _dispatch(capability_id, mode="invoke", args=args, ctx=ctx)
+    result = _dispatch(capability_id, mode="invoke", args=args, ctx=ctx)
+    # 唯一出口记录指标——覆盖全部路径（含 unknown / disabled / policy / schema）
+    record_outcome(result)
+    return result
 
 
 async def ainvoke(
@@ -170,7 +174,9 @@ async def ainvoke(
 
     未知 id / adapter 异常 → ``ok=False``，语义与 ``invoke`` 一致。
     """
-    return await _adispatch(capability_id, mode="invoke", args=args, ctx=ctx)
+    result = await _adispatch(capability_id, mode="invoke", args=args, ctx=ctx)
+    record_outcome(result)
+    return result
 
 
 def provide(
@@ -245,7 +251,12 @@ def _prepare_call(
             error=policy.reason or "policy_blocked",
             capability_id=cid,
             duration_ms=0.0,
-            meta={"policy_blocked": True, "kind": spec.kind},
+            meta={
+                "policy_blocked": True,
+                "kind": spec.kind,
+                # 指标要能按"副作用"筛——"被拦下的写"是最该被盯的数字
+                "side_effect": spec.side_effect,
+            },
         )
         _write_span_metadata(
             result,

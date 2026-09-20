@@ -67,11 +67,16 @@ from app.ops.capability.idempotency import (
 from app.ops.capability.manifest import (
     BUILTIN_MANIFEST_PATH,
     MANIFEST_DIR,
+    get_capability_manifest_metadata,
     load_capability_manifests,
     load_extra_manifests_from_env,
 )
 from app.ops.capability.probes import register_p2_probes
-from app.ops.capability.persistence import ENV_PERSISTENCE, configure_persistence_from_env
+from app.ops.capability.persistence import (
+    ENV_PERSISTENCE,
+    configure_persistence_from_env,
+    describe_persistence,
+)
 from app.ops.capability.receipts import (
     AsyncReceiptSink,
     DbReceiptSink,
@@ -151,8 +156,10 @@ __all__ = [
     "capability_catalog_snapshot",
     "check_visible",
     "configure_persistence_from_env",
+    "describe_persistence",
     "evaluate_visibility",
     "filter_visible",
+    "get_capability_manifest_metadata",
     "get_idempotency_store",
     "get_receipt_sink",
     "get_registry",

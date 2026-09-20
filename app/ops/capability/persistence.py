@@ -67,3 +67,77 @@ def configure_persistence_from_env() -> str:
         ENV_PERSISTENCE,
     )
     return MODE_NULL
+
+
+#: 各模式下的作用域说明——给人看的，不是给机器判的
+SCOPE_BY_MODE = {
+    MODE_DB: "cross_instance",
+    MODE_MEMORY: "process_local",
+    MODE_NULL: "disabled",
+}
+
+_PROD_SAFE_MODES = frozenset({MODE_DB})
+
+
+def describe_persistence() -> dict[str, object]:
+    """**从当前实际生效的对象推导**（不做状态缓存，避免"记的和用的不一致"）。
+
+    这是观测端点 `/admin/capability/runtime` 与验收脚本共用的唯一真相。
+    """
+    from app.ops.capability.idempotency import (
+        DbIdempotencyStore,
+        InMemoryIdempotencyStore,
+        get_idempotency_store,
+    )
+    from app.ops.capability.receipts import (
+        DbReceiptSink,
+        InMemoryReceiptSink,
+        get_receipt_sink,
+    )
+
+    store = get_idempotency_store()
+    sink = get_receipt_sink()
+
+    if isinstance(store, DbIdempotencyStore):
+        mode = MODE_DB
+    elif isinstance(store, InMemoryIdempotencyStore):
+        mode = MODE_MEMORY
+    else:
+        mode = MODE_NULL
+
+    store_scope = (
+        "cross_instance"
+        if isinstance(store, DbIdempotencyStore)
+        else ("process_local" if isinstance(store, InMemoryIdempotencyStore) else "disabled")
+    )
+    sink_scope = (
+        "durable"
+        if isinstance(sink, DbReceiptSink)
+        else ("process_local" if isinstance(sink, InMemoryReceiptSink) else "disabled")
+    )
+
+    return {
+        "mode": mode,
+        "production_safe": mode in _PROD_SAFE_MODES,
+        "idempotency": {
+            "enabled": mode != MODE_NULL,
+            "store": type(store).__name__,
+            "scope": store_scope,
+        },
+        "receipts": {
+            "enabled": mode != MODE_NULL,
+            "sink": type(sink).__name__,
+            "scope": sink_scope,
+        },
+        "env_var": ENV_PERSISTENCE,
+        # 这一行是给人看的：不配就"没有防重"，但**不报错**，所以必须显式说出来
+        "note": (
+            "持久化已按 db 装配（跨实例防重 + 回执落库）"
+            if mode == MODE_DB
+            else (
+                "memory 模式：多实例下防重无效、重启即丢，不可上生产"
+                if mode == MODE_MEMORY
+                else f"未启用防重与回执落库（{ENV_PERSISTENCE} 未设）—— **不可上生产**"
+            )
+        ),
+    }

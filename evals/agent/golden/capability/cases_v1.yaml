@@ -1,0 +1,378 @@
+# Capability 层黑盒题集（E3 · v1）
+#
+# **黑盒的含义是可执行的**：`expect` 只允许引用**出口字段**——
+#   visible_ids / hidden / kept_count / anonymous / undeclared_count
+#   ok / error_code / error_contains / downstream_calls / duplicated / registered_ids
+# 不允许断言内部函数名、内部字段、日志文案。谁重写了 http_generic 的内部实现，
+# 这套 case 都不该动。
+#
+# `expect` 是**子集**比对：只覆盖你想到的字段；没想到的由基线 diff 兜
+# （runner --against-baseline）。
+#
+# 题集自身也有约束：每个 case 的出口面必须**非空**（runner 测试会守），
+# 否则"empty == empty"会带来假通过。
+version: 1
+module: capability
+cases:
+  # ---------------- 可见集（两层裁剪：kinds 先，visibility 后）----------------
+
+  - id: catalog_anonymous_cannot_see_department_restricted
+    scenario: catalog
+    setup:
+      baseline: true
+      capabilities: []
+      principal: {}
+      register:
+        - {id: dept_finance_only, tags: [oa], visibility: {departments: [finance]}}
+    expect:
+      hidden:
+        - {capability_id: dept_finance_only, reason: department_mismatch}
+      anonymous: true
+
+  - id: catalog_finance_principal_sees_department_restricted
+    scenario: catalog
+    setup:
+      baseline: true
+      capabilities: []
+      principal: {departments: [finance, hr]}
+      register:
+        - {id: dept_finance_only, tags: [oa], visibility: {departments: [finance]}}
+    expect:
+      visible_ids: [dept_finance_only]
+      kept_count: 1
+
+  - id: catalog_untagged_http_is_cropped_by_kinds_not_visibility
+    scenario: catalog
+    setup:
+      baseline: true
+      capabilities: []
+      principal: {}
+      register:
+        - {id: untagged_http, tags: [], visibility: {departments: [all]}}
+    expect:
+      visible_ids: []
+      hidden: [] # 没走到可见性判定——被形态裁剪掉了，不该出现在 hidden 里
+      kept_count: 0
+
+  # ---------------- 加载期校验：V1–V9（走真实加载器）----------------
+
+  - id: manifest_missing_args_schema_is_rejected
+    scenario: manifest
+    setup:
+      capabilities:
+        - id: no_schema
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: read
+          tags: [oa]
+          visibility: {departments: [all]}
+          http: {method: GET, base_url: OA_BASE, path: /x, auth: oa_gateway_token,
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+    expect:
+      ok: false
+      error_code: manifest_invalid
+      error_contains: 缺 args_schema
+
+  - id: manifest_write_without_idempotency_key_hits_v1
+    scenario: manifest
+    setup:
+      capabilities:
+        - id: w_no_key
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: write
+          hitl: {required: true}
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {subject: {type: string}}}
+          http: {method: POST, base_url: OA_BASE, path: /t, auth: oa_gateway_token,
+                 body_map: {subject: "{{subject}}"},
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+    expect:
+      ok: false
+      error_code: manifest_invalid
+      error_contains: V1
+
+  - id: manifest_write_without_hitl_hits_v2
+    scenario: manifest
+    setup:
+      capabilities:
+        - id: w_no_hitl
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: write
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {subject: {type: string}}}
+          http: {method: POST, base_url: OA_BASE, path: /t, auth: oa_gateway_token,
+                 body_map: {subject: "{{subject}}"}, idempotency_key: "t:{{subject}}",
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+    expect:
+      ok: false
+      error_code: manifest_invalid
+      error_contains: V2
+
+  - id: manifest_high_risk_without_hitl_hits_v3
+    scenario: manifest
+    setup:
+      capabilities:
+        - id: high_no_hitl
+          kind: http
+          description: x
+          when_to_use: 题集
+          risk_level: high
+          side_effect: read
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {}}
+          http: {method: GET, base_url: OA_BASE, path: /x, auth: oa_gateway_token,
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+    expect:
+      ok: false
+      error_code: manifest_invalid
+      error_contains: V3
+
+  - id: manifest_tenant_scoped_http_without_tenant_param_hits_v4
+    scenario: manifest
+    setup:
+      capabilities:
+        - id: ts_no_param
+          kind: http
+          description: x
+          when_to_use: 题集
+          tenant_scoped: true
+          side_effect: read
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {}}
+          http: {method: GET, base_url: OA_BASE, path: /x, auth: oa_gateway_token,
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+    expect:
+      ok: false
+      error_code: manifest_invalid
+      error_contains: V4
+
+  - id: manifest_undeclared_template_variable_hits_v5
+    scenario: manifest
+    setup:
+      capabilities:
+        - id: bad_var
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: read
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {}}
+          http: {method: GET, base_url: OA_BASE, path: /x, auth: oa_gateway_token,
+                 query_map: {q: "{{nope}}"},
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+    expect:
+      ok: false
+      error_code: manifest_invalid
+      error_contains: 模板变量未声明
+
+  - id: manifest_error_map_must_use_stable_code_hits_v6
+    scenario: manifest
+    setup:
+      capabilities:
+        - id: bad_map
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: read
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {}}
+          http: {method: GET, base_url: OA_BASE, path: /x, auth: oa_gateway_token,
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": invented_code}}
+    expect:
+      ok: false
+      error_code: manifest_invalid
+      error_contains: 稳定错误码
+
+  - id: manifest_read_with_idempotency_key_hits_v8
+    scenario: manifest
+    setup:
+      capabilities:
+        - id: read_with_key
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: read
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {}}
+          http: {method: GET, base_url: OA_BASE, path: /x, auth: oa_gateway_token,
+                 idempotency_key: "k",
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+    expect:
+      ok: false
+      error_code: manifest_invalid
+      error_contains: V8
+
+  - id: manifest_http_without_visibility_hits_v9
+    scenario: manifest
+    setup:
+      capabilities:
+        - id: no_vis
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: read
+          tags: [oa]
+          args_schema: {type: object, properties: {}}
+          http: {method: GET, base_url: OA_BASE, path: /x, auth: oa_gateway_token,
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+    expect:
+      ok: false
+      error_code: manifest_invalid
+      error_contains: V9
+
+  - id: manifest_valid_read_registers
+    scenario: manifest
+    setup:
+      capabilities:
+        - id: good_read
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: read
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {}}
+          http: {method: GET, base_url: OA_BASE, path: /x, auth: oa_gateway_token,
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+    expect:
+      ok: true
+      error_code: null
+      registered_ids: [good_read]
+
+  # ---------------- 写闸与错误归一 ----------------
+
+  - id: invoke_write_without_host_policy_is_blocked_with_zero_requests
+    scenario: invoke
+    setup:
+      capabilities:
+        - id: w_guard
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: write
+          hitl: {required: true}
+          tenant_scoped: true
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, required: [subject], properties: {subject: {type: string}}}
+          http: {method: POST, base_url: OA_BASE, path: /t, auth: oa_gateway_token,
+                 body_map: {subject: "{{subject}}"}, idempotency_key: "t:{{subject}}",
+                 tenant_param: {in: header, name: X-Ops-Tenant},
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+      downstream: {payload: {code: 0, data: {ticketId: T-1}}}
+      invoke: {capability_id: w_guard, args: {subject: x}, ctx: {tenant_id: t1}}
+    expect:
+      ok: false
+      error_code: policy_blocked
+      downstream_calls: 0
+
+  - id: invoke_upstream_business_error_is_normalized
+    scenario: invoke
+    setup:
+      capabilities:
+        - id: r_norm
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: read
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {}}
+          http: {method: GET, base_url: OA_BASE, path: /x, auth: oa_gateway_token,
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+      downstream: {payload: {code: 1001, msg: "内部堆栈 at com.oa.Foo"}}
+      invoke: {capability_id: r_norm, args: {}}
+    expect:
+      ok: false
+      error_code: args_schema_invalid
+      downstream_calls: 1
+
+  - id: invoke_read_timeout_retries_once
+    scenario: invoke
+    setup:
+      capabilities:
+        - id: r_timeout
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: read
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {}}
+          http: {method: GET, base_url: OA_BASE, path: /x, auth: oa_gateway_token,
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+      downstream: {exc: TimeoutError}
+      invoke: {capability_id: r_timeout, args: {}}
+    expect:
+      ok: false
+      error_code: upstream_error
+      downstream_calls: 2
+
+  # ---------------- 幂等 / 重试纪律（看"次数"）----------------
+
+  - id: sequence_write_timeout_single_downstream_call
+    scenario: sequence
+    setup:
+      capabilities:
+        - id: w_once
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: write
+          hitl: {required: true}
+          tenant_scoped: true
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, required: [subject], properties: {subject: {type: string}}}
+          http: {method: POST, base_url: OA_BASE, path: /t, auth: oa_gateway_token,
+                 body_map: {subject: "{{subject}}"}, idempotency_key: "t:{{subject}}",
+                 tenant_param: {in: header, name: X-Ops-Tenant},
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+      downstream: {exc: TimeoutError}
+      calls:
+        - {capability_id: w_once, args: {subject: x},
+           ctx: {tenant_id: t1, _host_policy: {allow_write: true}}}
+    expect:
+      ok: false
+      downstream_calls: 1
+
+  - id: sequence_same_key_second_call_does_not_reach_downstream
+    scenario: sequence
+    setup:
+      capabilities:
+        - id: w_dup
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: write
+          hitl: {required: true}
+          tenant_scoped: true
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, required: [subject], properties: {subject: {type: string}}}
+          http: {method: POST, base_url: OA_BASE, path: /t, auth: oa_gateway_token,
+                 body_map: {subject: "{{subject}}"}, idempotency_key: "t:{{subject}}",
+                 tenant_param: {in: header, name: X-Ops-Tenant},
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+      downstream: {payload: {code: 0, data: {ticketId: T-9}}}
+      calls:
+        - {capability_id: w_dup, args: {subject: same},
+           ctx: {tenant_id: t1, _host_policy: {allow_write: true}}}
+        - {capability_id: w_dup, args: {subject: same},
+           ctx: {tenant_id: t1, _host_policy: {allow_write: true}}}
+    expect:
+      ok: true
+      duplicated_flags: [false, true]
+      downstream_calls: 1

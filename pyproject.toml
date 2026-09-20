@@ -63,6 +63,7 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 markers = [
     "integration: 可选真连/外网；默认 CI 不跑（须显式 -m integration）",
+    "redline: 红线（否决项）——任一条被突破即整体不通过，不能靠别处高分补",
 ]
 
 [tool.mypy]

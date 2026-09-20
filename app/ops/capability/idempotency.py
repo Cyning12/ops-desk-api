@@ -422,22 +422,44 @@ class DbIdempotencyStore:
                     _text(_RELEASE), {"tenant": tenant_id, "key": key}
                 )
 
-    async def asnapshot(self, *, tenant_id: str = "") -> list[dict[str, Any]]:
-        """运维/测试用：列出某租户的防重行（含卡住的 in_flight）。"""
+    async def asnapshot(
+        self, *, tenant_id: str = "", stuck_only: bool = False, limit: int = 200
+    ) -> list[dict[str, Any]]:
+        """运维/测试用：列出防重行。
+
+        ``stuck_only=True`` 只返回**租约已过期的 `in_flight`**——那些是"发出去了但
+        不知道结果"的写操作，需要人工去下游确认。**这一步只发现，不自动重试**：
+        要不要重试取决于下游到底有没有生效，那是人或专门的查询能力才能判断的。
+        """
+        clauses = []
+        params: dict[str, Any] = {"limit": max(1, min(int(limit), 1000))}
+        if tenant_id:
+            clauses.append("tenant_id = :tenant")
+            params["tenant"] = tenant_id
+        if stuck_only:
+            clauses.append("status = 'in_flight'")
+            clauses.append("lease_expires_at IS NOT NULL AND lease_expires_at < now()")
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         stmt = (
-            "SELECT idempotency_key, status, attempts, receipt_id, lease_expires_at "
-            "FROM ops_capability_idempotency WHERE tenant_id = :tenant "
-            "ORDER BY updated_at DESC LIMIT 200"
+            "SELECT idempotency_key, tenant_id, capability_id, status, attempts, "
+            "receipt_id, lease_expires_at, updated_at "
+            f"FROM ops_capability_idempotency {where} "
+            "ORDER BY updated_at DESC LIMIT :limit"
         )
         async with self._session_factory() as session:
-            rows = await session.execute(_text(stmt), {"tenant": tenant_id})
+            rows = await session.execute(_text(stmt), params)
             return [
                 {
                     "idempotency_key": r[0],
-                    "status": r[1],
-                    "attempts": int(r[2]),
-                    "receipt_id": r[3],
-                    "lease_expires_at": r[4].isoformat() if r[4] else None,
+                    "tenant_id": r[1],
+                    "capability_id": r[2],
+                    "status": r[3],
+                    "attempts": int(r[4]),
+                    "receipt_id": r[5],
+                    "lease_expires_at": r[6].isoformat() if r[6] else None,
+                    "updated_at": r[7].isoformat() if r[7] else None,
+                    # 卡住的行要给出对账线索，而不只是一个 id
+                    "needs_reconcile": r[3] == STATUS_IN_FLIGHT,
                 }
                 for r in rows
             ]

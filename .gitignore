@@ -49,3 +49,7 @@ node_modules/
 
 # SpecWave verify 本机审计落盘（3.0+ · 勿入库）
 docs/harness/audit/
+
+### 验收报告（每次跑都生成，不进仓）
+# 注意：reports/ 里有 tracked 的基准产物，不能整体忽略
+.acceptance-reports/

@@ -231,3 +231,47 @@ class DbReceiptSink:
             "DbReceiptSink 只提供异步落库：请走异步路径（arecord），"
             "不要在事件循环里同步调用——那会阻塞事件循环"
         )
+
+    async def arecent(
+        self,
+        *,
+        tenant_id: str = "",
+        capability_id: str = "",
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """最近的回执（观测端点 / 对账用）。**只读，不改任何状态。**"""
+        from sqlalchemy import text
+
+        clauses = []
+        params: dict[str, Any] = {"limit": max(1, min(int(limit), 500))}
+        if tenant_id:
+            clauses.append("tenant_id = :tenant")
+            params["tenant"] = tenant_id
+        if capability_id:
+            clauses.append("capability_id = :cap")
+            params["cap"] = capability_id
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        stmt = (
+            "SELECT receipt_id, capability_id, side_effect, ok, write_confirmed, "
+            "user_id, tenant_id, subtask_id, idempotency_key, captured, error, created_at "
+            f"FROM ops_capability_receipts {where} ORDER BY created_at DESC LIMIT :limit"
+        )
+        async with self._session_factory() as session:
+            rows = await session.execute(text(stmt), params)
+            return [
+                {
+                    "receipt_id": r[0],
+                    "capability_id": r[1],
+                    "side_effect": r[2],
+                    "ok": r[3],
+                    "write_confirmed": r[4],
+                    "user_id": r[5],
+                    "tenant_id": r[6],
+                    "subtask_id": r[7],
+                    "idempotency_key": r[8],
+                    "captured": r[9],
+                    "error": r[10],
+                    "created_at": r[11].isoformat() if r[11] else None,
+                }
+                for r in rows
+            ]

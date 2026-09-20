@@ -1,0 +1,67 @@
+# Capability 层 · 红线清单（v1）
+#
+# **红线 ≠ 准确率**。红线是**否决项**：任一条被突破，整体不通过，不能"用别处的高分补"。
+#
+# 本文件是**清单**（给人看的、可审计的）；实现在 tests/eval/test_capability_redlines.py。
+# 两者必须一一对应：
+#   - 清单里有、测试里没有 → 「声明了但没实现」→ 测试会 fail
+#   - 测试里有、清单里没有 → 「实现了但没记录」→ 测试会 fail
+# 这条对齐本身也是一条红线（R0）——否则清单会慢慢变成一张废纸。
+#
+# 每条红线在测试里都要有**正向断言 + 反向对照**：
+#   - 正向：该拦的拦住了
+#   - 反向对照：该放行的放行了
+# 只做正向会得到**假通过**——"一律拒绝"天然满足"未授权访问被拒绝"。
+#
+# 依据栏指回这条红线是从哪次真实事故/评审里来的，不是凭空列的。
+
+version: 1
+layer: capability
+redlines:
+  - id: R0
+    severity: critical
+    statement: 红线清单与实现必须一一对应（声明=实现）
+    rationale: 清单漂移后就会变成废纸，而人会继续以为有防护。类比 V7 的死代码教训。
+    source: 本文档自身
+
+  - id: R1
+    severity: critical
+    statement: 无写放行时，任何 side_effect ∈ {write, irreversible} 的能力必须被拒，且下游零请求
+    rationale: 写操作失控是最高代价的失败；"拒了但请求已经发出去"等于没拒。
+    source: H4 写操作闸
+
+  - id: R2
+    severity: critical
+    statement: 出站请求不得包含未声明的模板变量，也不得静默渲染成空串
+    rationale: 拼出一个"看起来对、其实少了参数"的请求，比直接报错危险得多——错误会静默传到下游。
+    source: H4 校验 V5
+
+  - id: R3
+    severity: critical
+    statement: 对外暴露的错误不得包含下游原始文案，只能是稳定错误码 + 我们自己的详情
+    rationale: 一是数据边界（下游可能把内部细节写在错误里），二是模型面对一堆无法决策的字符串。
+    source: H4 错误归一 + 联调 D2
+
+  - id: R4
+    severity: critical
+    statement: 含非 ASCII 参数的写调用必须成功（幂等键须 ASCII 安全化）
+    rationale: 这条曾经让**所有含中文参数的写操作全部发不出去**——中文业务场景下写能力等于不可用。
+    source: 联调实测（单测参数全 ASCII 所以一直没暴露）
+
+  - id: R5
+    severity: critical
+    statement: 写操作超时后不得重发（对端被调用次数必须为 1）
+    rationale: 超时≠失败。重发会建出第二张单据，且下游没有幂等键时无法挽回。
+    source: H4 重试纪律 + 联调 C2b
+
+  - id: R6
+    severity: critical
+    statement: 出站请求不得经环境代理（除非显式配 OPS_CAPABILITY_HTTP_PROXY）
+    rationale: 内网调用被出口代理劫持后表现为一个看不懂的 502，看起来像网络故障，极难排查。
+    source: 联调实测
+
+  - id: R7
+    severity: critical
+    statement: 命中幂等键的那次调用不得再发请求，且不得留下第二条回执
+    rationale: 防重的全部意义就在这里；漏一条就等于防重形同虚设。
+    source: W5/W6 幂等防重
