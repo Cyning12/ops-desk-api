@@ -582,9 +582,11 @@ def _ok_result(
         # 但不能和"查到了"长得一样——编排层要看得到这个区别。
         result.meta["result_empty"] = True
         result.meta["result_suspicious"] = verdict.suspicious
-    if mode == "invoke":
-        # action=cache 的降级源：只记**真实成功**的结果。
-        # 降级结果绝不入库——否则陈旧数据会被当成新结果再降一次级。
+    # action=cache 的降级源：只给**声明了 cache 降级**的能力记账，
+    # 且只记**真实成功**的结果。两个理由：
+    #   1. 没声明 cache 的能力永远用不到这份数据，留着只是内存里躺着过期数据；
+    #   2. 降级结果绝不入库——否则陈旧数据会被当成新结果再降一次级。
+    if mode == "invoke" and fallback_mod.action_of(spec) == fallback_mod.ACTION_CACHE:
         fallback_mod.remember(spec.capability_id, output, args=args, ctx=ctx)
     _maybe_record_receipt(spec, result, ctx=ctx)
     _write_span_metadata(
@@ -694,7 +696,8 @@ async def _aok_result(
     if verdict is not None and verdict.empty:
         result.meta["result_empty"] = True
         result.meta["result_suspicious"] = verdict.suspicious
-    if mode == "invoke":
+    if mode == "invoke" and fallback_mod.action_of(spec) == fallback_mod.ACTION_CACHE:
+        # 同 sync 路径：只给声明了 cache 降级的能力记真实成功结果
         fallback_mod.remember(spec.capability_id, output, args=args, ctx=ctx)
     await _amaybe_record_receipt(spec, result, ctx=ctx)
     _write_span_metadata(
@@ -919,6 +922,15 @@ def _degraded_result(
     }
     if meta_extra:
         meta.update(meta_extra)
+
+    # ★ 标记必须跟着**数据**走：模型看不到 meta，它只看工具输出。
+    # 不 inject 的话，模型会拿着静态兜底/过期缓存当真实结果写进答复，语气还很确定
+    # ——这是最坏的一种静默错误，所以宁可污染输出也不能漏。
+    output, inline = fallback_mod.annotate_output(
+        output, cid=cid, action=action, meta=meta
+    )
+    meta["degraded_marker_inline"] = inline
+
     result = CapabilityResult(
         ok=True,
         output=output,

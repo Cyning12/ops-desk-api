@@ -793,6 +793,21 @@ async def tool_exec_node(state: LgRagState) -> dict:
             result["error"] = cap.error or f"未知工具: {tool_name or '(未指定)'}"
         else:
             result["output"] = cap.output
+            # ★ 降级必须让**模型**看得见。meta 里的 degraded 标记模型看不到
+            # （它只看子任务输出），所以：
+            #   1) Gateway 已把 _degraded 提示写进 output（跟着数据走）；
+            #   2) 这里再在子任务结果上打一层标，让聚合器/前端也能筛出来。
+            # 否则模型会拿着静态兜底或过期缓存当真实结果回答，语气还很确定。
+            if cap.meta.get("degraded") is True:
+                result["degraded"] = True
+                result["degraded_action"] = cap.meta.get("degraded_action")
+                logger.warning(
+                    "lg_rag 工具降级 tool=%r id=%s action=%s reason=%s",
+                    tool_name,
+                    result["id"],
+                    cap.meta.get("degraded_action"),
+                    cap.meta.get("degraded_reason"),
+                )
     return _finish_worker(state, bump, result)
 
 

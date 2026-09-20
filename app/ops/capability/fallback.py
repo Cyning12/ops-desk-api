@@ -285,3 +285,77 @@ def cache_snapshot() -> dict[str, Any]:
 
 def iso(ts: float | None = None) -> str:
     return datetime.fromtimestamp(ts if ts is not None else time.time(), tz=UTC).isoformat()
+
+
+# ---------------- 给「调用方 / 模型」看的降级提示 ----------------
+#
+# meta 里的标记只有**看得到 meta 的人**知道这次是降级。模型看不到 meta——
+# 它只看到工具输出。于是就出现了最坏的一种静默错误：
+# 模型拿到一个静态兜底值 / 一份过期缓存，当成真实结果写进答复，而且语气确定。
+# 所以标记必须**跟着数据走**，进 output。
+
+_NOTICE = {
+    ACTION_STATIC: (
+        "【降级结果】{cid} 调用失败（{reason}）。以下为能力清单声明的**静态兜底值**，"
+        "**不是查询结果**：不要把它当事实陈述，回答时应明确告诉用户该服务当前查不到。"
+    ),
+    ACTION_CACHE: (
+        "【降级结果】{cid} 调用失败（{reason}）。以下为 {age:.0f} 秒前一次成功调用的结果缓存"
+        "（stale_at={stale_at}），**可能已过期**：不要当作实时数据回答。"
+    ),
+    ACTION_CAPABILITY: (
+        "【降级结果】{cid} 调用失败（{reason}）。以下来自替代能力 {to}，"
+        "口径可能更粗或更旧，**不等于** {cid} 自己的查询结果。"
+    ),
+    ACTION_NONE: "【降级结果】{cid} 调用失败（{reason}）。",
+}
+
+
+def notice(*, cid: str, action: str, meta: dict[str, Any]) -> str:
+    """给模型的一句话提示（中文，直接进工具输出）。"""
+    reason = str(meta.get("degraded_reason") or "未知原因")[:120]
+    template = _NOTICE.get(action) or _NOTICE[ACTION_NONE]
+    age = 0.0
+    stale = str(meta.get("stale_at") or "")
+    if stale:
+        try:
+            delta = datetime.now(UTC) - datetime.fromisoformat(stale)
+            age = max(0.0, delta.total_seconds())
+        except ValueError:
+            age = 0.0
+    return template.format(
+        cid=cid,
+        reason=reason,
+        age=age,
+        stale_at=stale or "未知",
+        to=str(meta.get("degraded_to") or "未知"),
+    )
+
+
+def annotate_output(
+    output: Any, *, cid: str, action: str, meta: dict[str, Any]
+) -> tuple[Any, bool]:
+    """把降级标记写进工具输出；返回 ``(新输出, 是否写成)``。
+
+    ``是否写成`` 为 False 只发生在输出**不是 mapping** 时（无法塞字段）。
+    这种情况下不能假装"反正 meta 里有"——调用方要把
+    ``degraded_marker_inline=False`` 报出来，让它在观测里可见。
+    """
+    block: dict[str, Any] = {
+        "capability": cid,
+        "action": action,
+        "trigger": meta.get("degraded_trigger"),
+        "depth": meta.get("degrade_depth"),
+        "at": meta.get("degraded_at"),
+        "reason": str(meta.get("degraded_reason") or "")[:200],
+        "notice": notice(cid=cid, action=action, meta=meta),
+    }
+    if stale := meta.get("stale_at"):
+        block["stale_at"] = stale
+    if target := meta.get("degraded_to"):
+        block["degraded_to"] = target
+    if not isinstance(output, dict):
+        return output, False
+    merged = dict(output)
+    merged["_degraded"] = block
+    return merged, True

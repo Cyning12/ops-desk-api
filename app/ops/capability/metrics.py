@@ -34,6 +34,9 @@ _LATENCY_MAX_MS = 0.0
 _DEGRADED_TOTAL = 0
 _DEGRADED_BY_ACTION: dict[str, int] = {}
 _DEGRADE_BY_DEPTH: dict[int, int] = {}
+# 降级标记**没写进 output** 的次数（输出不是 mapping 时会发生）。
+# 这个数必须可见：模型看不到 meta，标记进不了输出就等于模型拿到了"裸的兜底值"。
+_DEGRADE_UNMARKED = 0
 
 
 def outcome_of(result: CapabilityResult) -> str:
@@ -53,7 +56,7 @@ def record_outcome(result: CapabilityResult) -> None:
     """在 `invoke` / `ainvoke` 的**唯一出口**调用，覆盖全部路径（含 unknown/disabled）。"""
     global _WRITE_TOTAL, _WRITE_BLOCKED
     global _LATENCY_COUNT, _LATENCY_SUM_MS, _LATENCY_MAX_MS
-    global _DEGRADED_TOTAL
+    global _DEGRADED_TOTAL, _DEGRADE_UNMARKED
 
     outcome = outcome_of(result)
     cid = result.capability_id or "<unknown>"
@@ -64,6 +67,8 @@ def record_outcome(result: CapabilityResult) -> None:
         if result.meta.get("degraded") is True:
             _DEGRADED_TOTAL += 1
             act = str(result.meta.get("degraded_action") or "unknown")
+            if result.meta.get("degraded_marker_inline") is False:
+                _DEGRADE_UNMARKED += 1
             _DEGRADED_BY_ACTION[act] = _DEGRADED_BY_ACTION.get(act, 0) + 1
             try:
                 depth = int(result.meta.get("degrade_depth") or 0)
@@ -109,6 +114,8 @@ def snapshot() -> dict[str, Any]:
                 "deeper_than_one": sum(
                     v for k, v in _DEGRADE_BY_DEPTH.items() if k > 1
                 ),
+                # 标记没写进输出的次数：>0 说明有人会拿到"看不出是降级的兜底值"
+                "unmarked": _DEGRADE_UNMARKED,
             },
         }
 
@@ -116,7 +123,8 @@ def snapshot() -> dict[str, Any]:
 def reset() -> None:
     """测试用。生产不该调。"""
     global _WRITE_TOTAL, _WRITE_BLOCKED
-    global _LATENCY_COUNT, _LATENCY_SUM_MS, _LATENCY_MAX_MS, _DEGRADED_TOTAL
+    global _LATENCY_COUNT, _LATENCY_SUM_MS, _LATENCY_MAX_MS
+    global _DEGRADED_TOTAL, _DEGRADE_UNMARKED
     with _LOCK:
         _BY_CAPABILITY.clear()
         _BY_OUTCOME.clear()
@@ -126,5 +134,6 @@ def reset() -> None:
         _LATENCY_SUM_MS = 0.0
         _LATENCY_MAX_MS = 0.0
         _DEGRADED_TOTAL = 0
+        _DEGRADE_UNMARKED = 0
         _DEGRADED_BY_ACTION.clear()
         _DEGRADE_BY_DEPTH.clear()

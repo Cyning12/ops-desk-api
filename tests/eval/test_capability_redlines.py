@@ -1183,6 +1183,13 @@ def _r13_down() -> FakeHttpTransport:
     return FakeHttpTransport(payload=None, exc=TimeoutError("t"))
 
 
+def _without_marker(output: Any) -> Any:
+    """去掉注入的降级标记，用于比对"业务内容本身"。"""
+    if isinstance(output, dict):
+        return {k: v for k, v in output.items() if k != "_degraded"}
+    return output
+
+
 @redline("R13")
 def test_r13_declared_fallback_degrades_with_marker():
     """声明了降级 + 下游不可用 → **成功但带 degraded 标记**；未声明 → 明确失败。"""
@@ -1533,7 +1540,8 @@ def test_r13_cache_action_is_tenant_and_args_scoped():
             and second.meta.get("degraded_action") == "cache"
             and second.meta.get("stale_at")  # ★ 多旧，必须看得见
             # 重放的是**上次真实结果**，不是"一个像样的结果"
-            and second.output == first.output
+            # （去掉 _degraded 标记后应与首次输出逐字相同）
+            and _without_marker(second.output) == first.output
         )
         # 对照：换租户 / 换参数 → 缓存不命中 → 明确失败（不能拿别人的结果兜底）
         other_tenant = invoke("r13.cache", {"subject": "报销"}, ctx={"tenant_id": "t2"})
@@ -1591,4 +1599,92 @@ def test_r13_is_not_vacuous(monkeypatch: pytest.MonkeyPatch):
     assert res.ok is True and res.meta.get("degraded") is True, (
         f"变异未翻转：把所有失败都判成「下游不可用」后业务类失败仍未降级"
         f"（ok={res.ok} err={res.error!r}），说明 R13 的触发条件对照是空真"
+    )
+
+
+@redline("R13")
+def test_r13_marker_travels_with_the_output_not_only_meta():
+    """★ 标记必须**跟着数据走**：模型只看工具输出，看不到 meta。
+
+    只把 degraded 写进 meta 等于没写——模型拿到静态兜底值会当成真实结果，
+    语气还很确定。这是"降级"这个机制最危险的一种静默错误。
+    """
+    from app.ops.capability import fallback
+
+    fallback.reset()
+    _register(
+        _r13_read(
+            "r13.mark",
+            fallback={
+                "action": "static",
+                "value": {"code": 503, "message": "服务暂不可用", "data": {"items": []}},
+            },
+        ),
+        _r13_down(),
+    )
+    try:
+        res = invoke("r13.mark", {"subject": "x"}, ctx={"tenant_id": "t1"})
+        out = res.output
+        marker = out.get("_degraded") if isinstance(out, dict) else None
+        notice = str((marker or {}).get("notice") or "")
+        holds = (
+            res.ok is True
+            and isinstance(marker, dict)
+            and marker.get("action") == "static"
+            and marker.get("capability") == "r13.mark"
+            and bool(notice)
+            and "不是查询结果" in notice  # ★ 说清楚"这不是真的"
+            and res.meta.get("degraded_marker_inline") is True
+            # 真实原因也要跟着走：模型才知道为什么拿到的不是真数据
+            and "upstream_error" in str(marker.get("reason") or "")
+        )
+        # 对照：标记**只**加在降级结果上，真实成功结果必须干干净净
+        good = FakeHttpTransport(payload={"code": 0, "data": {"items": [{"id": 1}]}})
+        unregister("r13.mark")
+        _register(_r13_read("r13.mark"), good)
+        plain = invoke("r13.mark", {"subject": "x"}, ctx={"tenant_id": "t1"})
+        control = (
+            plain.ok is True
+            and plain.meta.get("degraded") is not True
+            and "_degraded" not in (plain.output or {})
+        )
+    finally:
+        unregister("r13.mark")
+        fallback.reset()
+
+    assert_redline(
+        redline_id="R13",
+        holds=holds,
+        control=control,
+        detail=f"marker={marker} plain_has_marker={' _degraded' in str(plain.output)}",
+    )
+
+
+def test_r13_marker_is_not_vacuous(monkeypatch: pytest.MonkeyPatch):
+    """变异检验：把注入摘掉（只留 meta 标记）→ 模型侧必须**看不到**降级。
+
+    不翻 = 说明"标记进输出"这条是被别的东西满足的，R13 的后半句是空真。
+    """
+    import app.ops.capability.gateway as gw
+
+    gw.fallback_mod.reset()
+    monkeypatch.setattr(
+        gw.fallback_mod,
+        "annotate_output",
+        lambda output, *, cid, action, meta: (output, False),
+    )
+    _register(
+        _r13_read("r13.mut2", fallback={"action": "static", "value": {"ok": 1}}),
+        _r13_down(),
+    )
+    try:
+        res = invoke("r13.mut2", {"subject": "x"}, ctx={"tenant_id": "t1"})
+        leaked = res.ok is True and "_degraded" not in (res.output or {})
+    finally:
+        unregister("r13.mut2")
+        gw.fallback_mod.reset()
+
+    assert leaked, (
+        "变异未翻转：注入被摘掉后输出里仍然有 _degraded，"
+        f"说明 R13 的『标记跟着数据走』是空真（output={res.output!r}）"
     )

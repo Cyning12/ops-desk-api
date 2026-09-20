@@ -35,7 +35,9 @@ os.environ.setdefault(
     str(ROOT / "app" / "ops" / "capability" / "manifests" / "oa.readonly.v1.yaml"),
 )
 
-from app.ops.capability import circuit, invoke  # noqa: E402
+import json  # noqa: E402
+
+from app.ops.capability import circuit, invoke, list_capabilities  # noqa: E402
 from app.ops.capability.fallback import cache_snapshot  # noqa: E402
 from app.ops.capability.gateway import get_registry  # noqa: E402
 from app.ops.capability.manifest import reload_capability_manifest  # noqa: E402
@@ -111,20 +113,62 @@ def main() -> int:
     os.environ.pop("OPS_CAPABILITY_CB_RESET_TIMEOUT", None)
     circuit.reset()
 
-    # ---- 4) 反向对照：未声明降级的能力仍然**明确失败** ----
-    whois = invoke("oa.org.whois", {"name": "张三"}, ctx=dict(ctx))
+    # ---- 4) 三条业务声明都生效，且**降级成什么**各不同（是业务定的，不是框架猜的）----
+    for cid, args, want in (
+        ("oa.org.whois", {"name": "张三"}, "regular_employee"),
+        ("oa.todo.mine", {"status": "pending"}, "degraded_unavailable"),
+    ):
+        r = invoke(cid, args, ctx=dict(ctx))
+        blob = json.dumps(r.output or {}, ensure_ascii=False)
+        check(
+            f"{cid} 按业务声明降级（不是框架猜的）",
+            r.ok is True and r.meta.get("degraded") is True and want in blob,
+            f"ok={r.ok} action={r.meta.get('degraded_action')} hit={want in blob}",
+        )
+        # ★ 模型必须看得见：标记要写进 output，不能只留在 meta
+        marker = (r.output or {}).get("_degraded") if isinstance(r.output, dict) else None
+        check(
+            f"{cid} 降级标记写进了工具输出（模型看得见）",
+            isinstance(marker, dict) and "不是查询结果" in str(marker.get("notice") or ""),
+            f"marker={'有' if marker else '无'}",
+        )
+
+    # ---- 5) 反向对照：**业务类失败**（缺参数）不得降级 ----
+    # 这条在真清单上验才有意义：参数错换接口也一样错，降级只会多付一次调用
+    # 并把真实原因盖掉。
+    bad = invoke("oa.doc.search", {}, ctx=dict(ctx))  # 缺 keyword
     check(
-        "未声明降级 → 明确失败（默认就是不降级）",
-        whois.ok is False and whois.meta.get("degraded") is not True,
-        f"ok={whois.ok} err={str(whois.error)[:60]!r}",
+        "业务类失败（缺参数）不降级 → 明确失败",
+        bad.ok is False
+        and bad.meta.get("degraded") is not True
+        and "args_schema_invalid" in str(bad.error or ""),
+        f"ok={bad.ok} err={str(bad.error)[:60]!r}",
     )
 
-    # ---- 5) 观测：降级必须在指标里看得见（否则"系统正常"是假的）----
+    # ---- 6) 默认确实是不降级：内置五枚能力一律没声明 ----
+    specs = list_capabilities()
+    builtin_declared = [
+        s.capability_id
+        for s in specs
+        if s.fallback and s.capability_id.startswith(("mock_", "get_", "utc_"))
+    ]
+    declared = [s.capability_id for s in specs if s.fallback]
+    check(
+        "默认不降级（内置能力零声明，声明的只有业务显式写的）",
+        not builtin_declared and set(declared) == {
+            "oa.doc.search",
+            "oa.org.whois",
+            "oa.todo.mine",
+        },
+        f"declared={sorted(declared)}",
+    )
+
+    # ---- 7) 观测：降级必须在指标里看得见（否则"系统正常"是假的）----
     snap = metrics_snapshot()
     degrade = snap.get("degrade") or {}
     check(
         "指标里有 degrade 计数（降级不会从监控里消失）",
-        degrade.get("calls", 0) >= 3,
+        degrade.get("calls", 0) >= 4 and degrade.get("unmarked", 0) == 0,
         f"degrade={degrade}",
     )
     print(f"  [INFO] 降级缓存 {cache_snapshot()}")
