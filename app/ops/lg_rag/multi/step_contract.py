@@ -22,8 +22,32 @@ from typing import Any
 # 单步 declares 字段数上界：防止模型一次性声明几百个字段把绑定撑爆
 MAX_FIELDS = 16
 
-# 绑定进 rag/extract 文本的值的截断长度：长值污染 prompt
+# 绑定进 rag/extract 文本的**单值**截断长度：长值污染 prompt
 MAX_VALUE_CHARS = 200
+
+# 上下文块的**整块**预算：单值截断挡不住"16 个字段 × 200 字"这种累加污染，
+# 所以还要有总量闸。超了就按字段顺序丢弃尾部字段（宁少给，不超预算）。
+MAX_CONTEXT_BLOCK_CHARS = 800
+
+
+def _env_int(name: str, default: int, *, low: int, high: int) -> int:
+    """读 env 覆盖；非法 / 越界一律回退默认（禁"配错就静默生效"）。"""
+    import os
+
+    raw = os.environ.get(name, "")
+    try:
+        value = int(str(raw).strip())
+    except (TypeError, ValueError):
+        return default
+    return value if low <= value <= high else default
+
+
+def max_value_chars() -> int:
+    return _env_int("LG_RAG_STEP_CONTEXT_VALUE_CHARS", MAX_VALUE_CHARS, low=16, high=4000)
+
+
+def max_block_chars() -> int:
+    return _env_int("LG_RAG_STEP_CONTEXT_BLOCK_CHARS", MAX_CONTEXT_BLOCK_CHARS, low=64, high=16000)
 
 # 上下文块的固定抬头：编排层生成，模型写不出来
 CONTEXT_HEAD = "【上游产出】"
@@ -229,10 +253,10 @@ def gate(
 # ---------------------------------------------------------------------------
 
 
-def _render_value(value: Any) -> str:
+def _render_value(value: Any, *, limit: int) -> str:
     text = value if isinstance(value, str) else str(value)
-    if len(text) > MAX_VALUE_CHARS:
-        return text[: MAX_VALUE_CHARS - 1] + "…"
+    if len(text) > limit:
+        return text[: limit - 1] + "…"
     return text
 
 
@@ -276,22 +300,52 @@ def bind_args(args: Any, values: dict[str, dict[str, Any]]) -> dict:
 
 def render_context_block(
     values: dict[str, dict[str, Any]], *, sid_to_alias: dict[str, str]
-) -> str:
-    """rag / extract 步：编排层生成的固定格式上下文块。"""
+) -> tuple[str, list[str]]:
+    """rag / extract 步：编排层生成的固定格式上下文块。
+
+    返回 ``(块文本, 实际进块的字段列表)``。两层截断：
+    **单值**截断（防一个超长值吃掉整块）+ **整块**预算（防多字段累加污染）。
+    触发整块预算时**按字段顺序丢尾部**，并把丢掉的字段返回去——
+    静默丢字段等于给模型一份看起来完整但不完整的数据。
+    """
+    limit = max_value_chars()
+    budget = max_block_chars()
     lines = [CONTEXT_HEAD]
+    included: list[str] = []
+    used = len(CONTEXT_HEAD)
     for dep in sorted(values):
         alias = sid_to_alias.get(dep) or dep
         for field, value in values[dep].items():
-            lines.append(f"{alias}.{field} = {_render_value(value)}")
-    return "\n".join(lines)
+            rendered = _render_value(value, limit=limit)
+            line = f"{alias}.{field} = {rendered}"
+            if used + len(line) + 1 > budget and included:
+                break
+            lines.append(line)
+            included.append(f"{dep}:{field}")
+            used += len(line) + 1
+    return "\n".join(lines), included
 
 
-def bind_input(text: str, values: dict[str, dict[str, Any]], **kw: Any) -> str:
-    """rag / extract 步：在 input 尾部追加上下文块（不改写用户问句本身）。"""
+def bind_input(
+    text: str, values: dict[str, dict[str, Any]], **kw: Any
+) -> tuple[str, list[str]]:
+    """rag / extract 步：在 input 尾部追加上下文块（不改写用户问句本身）。
+
+    返回 ``(新文本, 实际绑定的字段)``；末尾追加的是被**整块预算挤掉**的字段名，
+    便于观测"其实没给全"。
+    """
     if not values:
-        return text
-    block = render_context_block(values, **kw)
-    return f"{text}\n\n{block}"
+        return text, []
+    block, included = render_context_block(values, **kw)
+    return f"{text}\n\n{block}", included
+
+
+def dropped_fields(
+    values: dict[str, dict[str, Any]], included: list[str]
+) -> list[str]:
+    """声明了但被整块预算挤掉的字段（观测用：不能假装都给到了）。"""
+    wanted = bound_field_names(values)
+    return [name for name in wanted if name not in set(included)]
 
 
 def bound_field_names(values: dict[str, dict[str, Any]]) -> list[str]:

@@ -403,3 +403,44 @@ class OpsCapabilityIdempotency(Base):
     receipt_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
     updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
+
+
+class OpsHitlRequest(Base):
+    """人工审批申请（HITL）——**授权记录**，不是日志。
+
+    触发点只有一个：``prefix_touch_required``。它的含义是"要满足这一步，
+    得重跑一个**已执行**的步骤"，而按 Q8 §2.2，改已执行步骤的 ``args``
+    就是换一个幂等键 = 一次**新的写**。所以必须有人批。
+
+    为什么必须落库（不能只打在 LangGraph 状态里）：进程内状态重启即丢，
+    "申请丢了"和"从来没申请过"在观测上长得一模一样 —— 人会一直等一个
+    根本不存在的审批。
+
+    ``unlock_subtask_id``：审批通过要解锁的那一步。解锁 = 把它从不可变前缀里
+    摘出来 ⇒ 可恢复点回退到它 ⇒ 从那里重跑（这就是"改历史"的授权边界）。
+    """
+
+    __tablename__ = "ops_hitl_requests"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    run_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    thread_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    #: LangGraph checkpoint 标识（PG saver 才有；InMemorySaver 时为 None）
+    checkpoint_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    #: 被拦下的步骤
+    subtask_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    #: 拦截原因（当前只会是 prefix_touch_required）
+    blocked_by: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    #: 审批通过后允许重跑的**已执行**步骤
+    unlock_subtask_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    detail: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    #: pending | approved | rejected | expired
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    decision_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    decision_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+    updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)

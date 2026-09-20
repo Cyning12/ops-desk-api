@@ -180,7 +180,7 @@ def test_bind_args_overrides_placeholder():
 
 def test_bind_input_appends_deterministic_block():
     """rag/extract：追加编排层生成的固定块，不改写问句本身。"""
-    text = sc.bind_input(
+    text, included = sc.bind_input(
         "查一下这个人的待办",
         {_T1: {"assignee": "张三"}},
         sid_to_alias={_T1: "t1"},
@@ -188,13 +188,28 @@ def test_bind_input_appends_deterministic_block():
     assert text.startswith("查一下这个人的待办")
     assert sc.CONTEXT_HEAD in text
     assert "t1.assignee = 张三" in text
+    assert included == [f"{_T1}:assignee"]
 
 
 def test_bind_input_truncates_long_values():
+    """单值截断：一个超长值不能吃掉整块。"""
     long_value = "x" * 500
-    text = sc.bind_input("q", {_T1: {"blob": long_value}}, sid_to_alias={_T1: "t1"})
-    assert len(text) < 500 + 60
+    text, _included = sc.bind_input(
+        "q", {_T1: {"blob": long_value}}, sid_to_alias={_T1: "t1"}
+    )
+    assert len(text) < sc.max_value_chars() + 60
     assert text.rstrip().endswith("…")
+
+
+def test_context_block_has_total_budget_and_says_what_it_dropped():
+    """整块预算：多字段累加也会污染 prompt，所以还要有总量闸；
+    挤掉的字段必须**说出来**，不能假装都给到了。"""
+    many = {_T1: {f"f{i}": "y" * 120 for i in range(12)}}
+    _text, included = sc.render_context_block(many, sid_to_alias={_T1: "t1"})
+    dropped = sc.dropped_fields(many, included)
+    assert len(included) < 12, "整块预算没生效"
+    assert dropped, "挤掉的字段没报出来（静默少给）"
+    assert set(dropped) | set(included) == set(sc.bound_field_names(many))
 
 
 # ---------------------------------------------------------------------------
@@ -695,7 +710,9 @@ async def test_replan_preserves_prefix_results_and_does_not_rerun_them():
         return _cap(True, output={"assignee": "张三"}) if len(seen) != 2 else _cap(False, error="boom")
 
     graph = build_supervisor_agent(checkpointer=InMemorySaver())
-    provider = _seq_provider(plan, "## 综合结论一", suffix, "## 综合结论二")
+    # 外层 ReAct：没有待发步骤先过 observe，它判定"没做完"就 replan。
+    # 于是**第 2 次 LLM 就是重规划**（不再是 aggregator）——桩要按新拓扑给。
+    provider = _seq_provider(plan, suffix, "## 综合结论一", suffix, "## 综合结论二")
     with patch(
         "app.ops.strategy.intent.acomplete_structured", new=AsyncMock(return_value=intent_ok)
     ), patch(

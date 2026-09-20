@@ -176,12 +176,15 @@ async def test_critic_retry_keeps_prefix_results():
             }
         )
     assert out["critic_verdict"]["outcome"] == "retry_planner"
-    # 计划只留前缀
-    assert [r["subtask_id"] for r in out["subtasks"]] == ["r:1"]
-    # 结果裁剪到前缀：失败终态（r:2）不保，它属于可变后缀
-    assert out["subtask_results"].plan_ids == frozenset({"r:1"})
+    # 计划 = 前缀 + **未解决后缀**。
+    # 只留前缀是错的（2026-09-20 实测）：r:2 一旦从计划里消失，它的失败记录
+    # 就变成"计划外 id"，observe 按 plan_ids 过滤看不见、aggregator 更看不见，
+    # 结论会写成"已覆盖全部子任务" —— 失败被静默抹掉。
+    assert [r["subtask_id"] for r in out["subtasks"]] == ["r:1", "r:2"]
+    # 结果同样保留未解决后缀：失败是**发生过的事实**，重规划不能假装没发生
+    assert out["subtask_results"].plan_ids == frozenset({"r:1", "r:2"})
     assert out["subtask_results"].replace is True
-    # 可恢复点显式声明出来了
+    # 可恢复点显式声明出来了（只有成功终态算前缀）
     assert out["plan_prefix_ids"] == ["r:1"]
     assert out["recoverable_point"] == 1
 

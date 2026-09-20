@@ -7,6 +7,7 @@ from app.ops.auth import router as auth_router
 from app.ops.chat.router import router as chat_router
 from app.ops.chat.ws import router as chat_ws_router
 from app.ops.graph import router as graph_router
+from app.ops.hitl.router import router as hitl_router
 from app.ops.issues import router as issues_router
 from app.ops.lc_evidence_chain.router import router as lc_evidence_router
 from app.ops.lg_rag.router import router as lg_rag_router
@@ -26,3 +27,4 @@ router.include_router(chat_router)
 router.include_router(chat_ws_router)
 router.include_router(lc_evidence_router)
 router.include_router(lg_rag_router)
+router.include_router(hitl_router)

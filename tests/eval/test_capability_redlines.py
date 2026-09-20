@@ -1948,12 +1948,23 @@ async def test_r15_recoverable_point_keeps_prefix():
             "subtasks": out1["subtasks"],
         }
     )
-    kept = crit["subtask_results"].plan_ids == frozenset({t1})
+    # ★ 未解决后缀（t2 失败）必须跟着走。只留前缀是错的：
+    #   t2 一从计划里消失，它的失败记录就变成"计划外 id"，
+    #   observe 按 plan_ids 过滤看不见、aggregator 更看不见，
+    #   结论会写成"已覆盖全部子任务" —— 失败被静默抹掉（2026-09-20 实测）。
+    kept = crit["subtask_results"].plan_ids == frozenset({t1, t2})
     assert_redline(
         redline_id="R15",
         holds=kept and crit["recoverable_point"] == 1,
         control=True,
         detail=f"回环把前缀结果清掉了 {crit.get('subtask_results')}",
+    )
+    # 失败步骤本身也必须留在计划里（不然 observe 无从判定"没做完"）
+    assert_redline(
+        redline_id="R15",
+        holds=[str(r["subtask_id"]) for r in crit["subtasks"]] == [t1, t2],
+        control=True,
+        detail=f"回环把未解决步骤从计划里删掉了 {crit.get('subtasks')}",
     )
     # 失败终态不进前缀（它没有要保护的东西，锁进去会让链卡死）
     assert_redline(

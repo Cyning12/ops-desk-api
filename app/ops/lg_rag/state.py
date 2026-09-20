@@ -76,6 +76,50 @@ def success_terminal_ids(
     ]
 
 
+def unresolved_suffix_ids(
+    plan: list[dict] | None,
+    results: list[dict] | None,
+    prefix_ids: set[str] | frozenset[str] | list[str] | None = None,
+) -> list[str]:
+    """计划里**还没解决**的步骤 id（按计划顺序）：未终态，或终态是 error。
+
+    与 ``success_terminal_ids`` 互补，两件事都要守：
+    - 前缀保护"已经产生了结果/副作用"的步骤 —— 重跑它就是一次新的写；
+    - 这里保护"还没解决"的步骤 —— **重规划时它们必须跟着走**。
+
+    为什么必须跟着走（实测，不是推演）：重规划一旦只保留前缀，
+    那些失败/未终态的步骤就从计划里消失，它们的记录随即变成**计划外 id**，
+    observe 按 plan_ids 过滤看不见、aggregator 更看不见，
+    结论会写成"已覆盖全部子任务" —— 失败被静默抹掉。
+
+    放在 state 层：critic（strategy 包）与 multi/nodes 都要读，
+    而 nodes 已经依赖 critic，反向导入会成环。
+    """
+    rows = [row for row in (plan or []) if isinstance(row, dict)]
+    known = {
+        str(row.get("subtask_id") or "").strip()
+        for row in rows
+        if str(row.get("subtask_id") or "").strip()
+    }
+    excluded = {str(sid) for sid in (prefix_ids or [])}
+    done: dict[str, dict] = {}
+    for row in results or []:
+        if not isinstance(row, dict):
+            continue
+        sid = str(row.get("subtask_id") or "").strip()
+        if sid and sid not in done and ("output" in row or "error" in row):
+            done[sid] = row
+    out: list[str] = []
+    for row in rows:
+        sid = str(row.get("subtask_id") or "").strip()
+        if not sid or sid in excluded or sid in out:
+            continue
+        term = done.get(sid)
+        if term is None or "error" in term:
+            out.append(sid)
+    return [sid for sid in out if sid in known]
+
+
 def merge_supervisor_step_count(existing: int | None, new: int | None) -> int:
     """同批工人各写绝对步数时取较大值，避免 LastValue 并发冲突。"""
     return max(int(existing or 0), int(new or 0))
@@ -186,6 +230,12 @@ class LgRagState(MessagesState):
         protected 的是"已产生结果/副作用"的步骤：其 (tool, args) 决定幂等键。
     recoverable_point（Q8）：= len(前缀)，下一个**真正要执行**的步骤下标。
         恢复 = 沿用前缀结果 + 从这里继续；前缀不重跑（幂等键不变 ⇒ 重放不重做）。
+    react_round（Q8 延伸）：外层 ReAct 已完成的**轮数**（plan → execute → observe = 1 轮）。
+        与 supervisor_step_count（内层**步数**）是两个维度：步数耗尽只意味着
+        "这轮别再开节点了"，而"总共允许重规划几次"必须单独封顶。
+    react_observation：observe 写的本轮观察（planned/done/failed/blocked/
+        hitl_pending/pending_ids/unsatisfied/verdict）——**执行层收口**的依据。
+    hitl_requests：本轮落库的审批申请（含 persisted 标记；没落库必须看得见）。
     """
 
     route: str
@@ -200,6 +250,9 @@ class LgRagState(MessagesState):
     assigned_subtask: dict
     plan_prefix_ids: list[str]
     recoverable_point: int
+    react_round: int
+    react_observation: dict
+    hitl_requests: list[dict]
     allowed_capability_ids: list[str]
     allowed_skill_ids: list[str]
     intent: dict

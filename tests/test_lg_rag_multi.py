@@ -49,7 +49,26 @@ def _result(answer: str, gate: str = "answer", kept: int = 1) -> ChainResult:
 
 
 def _provider(*outputs) -> SimpleNamespace:
-    return SimpleNamespace(complete=AsyncMock(side_effect=list(outputs)))
+    """按序返回；用尽后**重复最后一项**；异常实例按抛出处理。
+
+    为什么不再让 AsyncMock 抛 StopAsyncIteration：外层 ReAct 加了 observe 之后，
+    一次 run 里 supervisor / aggregator 的调用次数取决于"判定结果"，
+    把桩写死成固定条数会让**拓扑一变测试就红**，而红的原因跟被测行为无关。
+
+    保留 AsyncMock 是为了留住 ``await_count`` / ``await_args_list``：
+    "调了几次 LLM"本身是被测行为（不该多调一次模型），丢了就测不了。
+    """
+    stream = list(outputs)
+
+    async def _next(messages, model=None):
+        if not stream:
+            return ""
+        item = stream.pop(0) if len(stream) > 1 else stream[0]
+        if isinstance(item, BaseException):
+            raise item
+        return item
+
+    return SimpleNamespace(complete=AsyncMock(side_effect=_next))
 
 
 def _subtasks_json(subtasks: list[dict]) -> str:
@@ -278,7 +297,7 @@ def test_supervisor_graph_includes_strategy_builder_node():
 
 def test_empty_subtasks_dispatch_goes_aggregate():
     """空 subtasks / 耗尽 → dispatch 直走 aggregate（防死循环）。"""
-    assert route_next_subtask({"subtasks": [], "subtask_results": []}) == "aggregate"
+    assert route_next_subtask({"subtasks": [], "subtask_results": []}) == "observe"
     assert (
         route_next_subtask(
             {
@@ -287,7 +306,7 @@ def test_empty_subtasks_dispatch_goes_aggregate():
                 "inflight_subtask_ids": [],
             }
         )
-        == "aggregate"
+        == "observe"
     )
     routed = route_next_subtask(
         {

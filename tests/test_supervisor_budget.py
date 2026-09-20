@@ -81,13 +81,13 @@ def test_route_next_subtask_budget_exhausted_goes_aggregate_even_with_pending(
     """主闸：总步耗尽 → aggregate（即使仍有 pending）。"""
     monkeypatch.setenv("LG_RAG_SUPERVISOR_MAX_STEPS", "5")
     state = _pending_rag_state(supervisor_step_count=5)
-    assert route_next_subtask(state) == "aggregate"
+    assert route_next_subtask(state) == "observe"
 
     flagged = _pending_rag_state(
         supervisor_step_count=1,
         supervisor_budget_exhausted=True,
     )
-    assert route_next_subtask(flagged) == "aggregate"
+    assert route_next_subtask(flagged) == "observe"
 
 
 def test_route_next_subtask_not_exhausted_dispatches():
@@ -116,7 +116,7 @@ def test_route_wall_clock_exhausted_goes_aggregate(monkeypatch: pytest.MonkeyPat
         return_value=20.0,
     ):
         assert is_supervisor_budget_exhausted(state) is True
-        assert route_next_subtask(state) == "aggregate"
+        assert route_next_subtask(state) == "observe"
 
 
 def test_decide_critic_global_exhausted_forbids_retry_rebind():

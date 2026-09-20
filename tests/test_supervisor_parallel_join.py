@@ -34,7 +34,22 @@ _AGG = "## 综合结论\n齐了。"
 
 
 def _provider(*outputs) -> SimpleNamespace:
-    return SimpleNamespace(complete=AsyncMock(side_effect=list(outputs)))
+    """按序返回；用尽后**重复最后一项**。
+
+    为什么不再让 AsyncMock 抛 StopAsyncIteration：外层 ReAct 加了 observe 之后，
+    一次 run 里 supervisor / aggregator 的调用次数取决于"判定结果"，
+    把桩写死成固定条数会让**拓扑一变测试就红**，而红的原因跟被测行为无关。
+    """
+    stream = list(outputs)
+
+    async def complete(messages, model=None):
+        if not stream:
+            return ""
+        if len(stream) > 1:
+            return stream.pop(0)
+        return stream[0]
+
+    return SimpleNamespace(complete=complete)
 
 
 def _plan_json(items: list[dict]) -> str:
@@ -192,7 +207,7 @@ def test_route_budget_exhausted_still_aggregate():
             "supervisor_budget_exhausted": True,
         }
     )
-    assert routed == "aggregate"
+    assert routed == "observe"
 
 
 def test_route_dependent_not_in_same_batch():
@@ -421,7 +436,7 @@ async def test_missing_run_id_does_not_dispatch_t1(monkeypatch: pytest.MonkeyPat
             "inflight_subtask_ids": [],
         }
     )
-    assert routed == "aggregate"
+    assert routed == "observe"
 
 
 @pytest.mark.asyncio

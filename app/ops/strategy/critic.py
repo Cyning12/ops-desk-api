@@ -16,7 +16,12 @@ from app.ops.lg_rag.multi.budget import (
     is_supervisor_budget_exhausted,
 )
 from app.ops.lg_rag.schemas.critic import CriticVerdict
-from app.ops.lg_rag.state import LgRagState, SubtaskResultBatch, success_terminal_ids
+from app.ops.lg_rag.state import (
+    LgRagState,
+    SubtaskResultBatch,
+    success_terminal_ids,
+    unresolved_suffix_ids,
+)
 from app.ops.tracing import trace_span, tracing_enabled, update_current_span_metadata
 
 MAX_INNER_RETRIES = 1
@@ -112,14 +117,25 @@ async def critic_node(state: LgRagState) -> dict:
             state.get("subtasks"), state.get("subtask_results")
         )
         prefix_set = set(prefix)
+        # ★ 未解决的后缀（失败 / 未终态）**必须跟着走**，不能只留前缀。
+        #   只留前缀 = 把失败记录一起裁掉：它随即变成"计划外 id"，
+        #   observe 按 plan_ids 过滤看不见、aggregator 更看不见，
+        #   结论会写成"已覆盖全部子任务"——失败被静默抹掉。
+        #   （与 supervisor 重规划的 carry 是同一个洞，两边都得堵。）
+        unresolved = set(
+            unresolved_suffix_ids(
+                state.get("subtasks"), state.get("subtask_results"), prefix_set
+            )
+        )
+        keep = prefix_set | unresolved
         plan_rows = [
             row
             for row in (state.get("subtasks") or [])
             if isinstance(row, dict)
-            and str(row.get("subtask_id") or "").strip() in prefix_set
+            and str(row.get("subtask_id") or "").strip() in keep
         ]
         update["subtasks"] = plan_rows
-        update["subtask_results"] = SubtaskResultBatch([], prefix_set, replace=True)
+        update["subtask_results"] = SubtaskResultBatch([], keep, replace=True)
         update["plan_prefix_ids"] = prefix
         update["recoverable_point"] = len(prefix)
         if outcome == "retry_planner":
