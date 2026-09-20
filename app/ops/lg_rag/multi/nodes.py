@@ -14,9 +14,17 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any
+from typing import Any, Optional
 
 from langchain_core.messages import AIMessage
+from langchain_core.runnables import RunnableConfig
+
+# ⚠️ 节点签名里的 ``config`` **必须**写成 ``Optional[RunnableConfig]``：
+#   本模块带 ``from __future__ import annotations``，注解会变成**字符串**，
+#   而 langgraph 1.x 只接受 ``RunnableConfig`` / ``Optional[RunnableConfig]``
+#   两种字面写法 —— 写成 ``RunnableConfig | None`` 它不认，
+#   后果不是告警而已：**config 不会被注入**，``_thread_id_of`` 的兜底
+#   直接失效 ⇒ 审批申请没有 thread_id ⇒ 批准之后无从恢复。
 from langgraph.types import Send, interrupt
 from pydantic import ValidationError
 
@@ -1214,7 +1222,9 @@ async def _satisfied_by_model(state: LgRagState, obs: dict) -> bool | None:
         return None
 
 
-def _thread_id_of(state: LgRagState, config: Any = None) -> str:
+def _thread_id_of(
+    state: LgRagState, config: Optional[RunnableConfig] = None
+) -> str:
     """恢复定位用的 thread_id。
 
     **必须能从 config 兜底**：真实调用时 thread_id 只在 config 里，
@@ -1398,7 +1408,9 @@ def _apply_hitl_decision(state: LgRagState, obs: dict, resumed: Any) -> dict:
     return updates
 
 
-async def observe_node(state: LgRagState, config: Any = None) -> dict:
+async def observe_node(
+    state: LgRagState, config: Optional[RunnableConfig] = None
+) -> dict:
     """外层 ReAct 的"观察 + 判定"：这一轮活干完了没有？
 
     内层是 plan-and-execute（supervisor 拆 ≤4 步、按依赖并行执行）；

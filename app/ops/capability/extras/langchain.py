@@ -82,5 +82,12 @@ def as_structured_tools(
 
 
 def as_tool_node(*, filter: CapabilityFilter | None = None) -> ToolNode:
-    """薄封装：``ToolNode(as_structured_tools(...))``；**不**接入主图。"""
+    """薄封装：``ToolNode(as_structured_tools(...))``；**不**接入主图。
+
+    ⚠️ langgraph 1.x 起有两个约束（0.2 时代没有），用之前先知道：
+    1. **不能裸调** ``node.invoke(...)`` —— 它的内部 runnable 需要 config 里带
+       Runtime（由**图**注入），裸调抛 ``Missing required config key``。
+       必须 ``add_node`` 到图里再调。
+    2. 图只要挂了 checkpointer，invoke/stream 就**必须**传 ``thread_id``。
+    """
     return ToolNode(as_structured_tools(filter=filter))

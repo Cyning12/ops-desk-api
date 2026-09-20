@@ -26,8 +26,13 @@ os.environ.setdefault("OPS_CHAT_TRACER", "")
 # 用官方 set_debug() 预热：它内部会 catch_warnings 抑制掉
 # "Importing debug from langchain root module is no longer supported" 这条告警——
 # 直接 hasattr(_langchain, "debug") / 赋值会**触发**它（走的是 langchain.__getattr__）。
+# ⚠️ 刻意从 ``langchain_core`` 取，不再从 ``langchain`` 伞包取：
+#   langchain 0.2.x 写死了 ``langchain-core>=0.2.43,<0.3.0``，与 langgraph 1.x
+#   要求的 ``langchain-core>=1.4.7`` **直接冲突**。而这里唯一要的就是
+#   langchain_core.globals 里那个 debug 开关，伞包不是必需品
+#   （LangGraph 1.0 也明确不再依赖 langchain 包）。
 try:
-    from langchain.globals import set_debug
+    from langchain_core.globals import set_debug
 except ImportError:
     pass
 else:

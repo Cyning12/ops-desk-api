@@ -41,7 +41,8 @@ _THREAD_ID_MAX = 255
 class ResumeError(RuntimeError):
     """恢复失败。``code`` 决定 HTTP 状态码——**不给 200 + 半句提示**。"""
 
-    #: not_interrupted / no_thread_id → 409（请求本身说得通，但此刻不成立）
+    #: not_interrupted / no_thread_id  → 409（请求本身说得通，但此刻不成立）
+    #: stranded_checkpoint             → 409（旧版本格式残留，**永远**恢复不了）
     #: checkpointer_not_configured     → 503（配置问题，重试无用）
     #: resume_failed                   → 502（下游真的跑挂了）
     def __init__(self, code: str, detail: str) -> None:
@@ -232,11 +233,18 @@ async def _resume_with(
             f"thread {thread_id[:32]} 没有挂起的 interrupt —— "
             "要么这轮已经跑完，要么 checkpointer 与挂起时不是同一个",
         )
-    interleaved = [t for t in tasks if getattr(t, "interrupts", None)]
-    if not interleaved:
+    if not [t for t in tasks if getattr(t, "interrupts", None)]:
+        # ★ 这条分支**专门**覆盖"跨大版本升级后残留的挂起"：
+        #   实测（langgraph 0.2 → 1.2）：旧格式 checkpoint 能读回 values 和
+        #   pending task，但 interrupt 元数据新栈认不出（task.interrupts 为空）；
+        #   硬喂 Command(resume=...) 会在 pregel 内部炸
+        #   ``TypeError: 'Interrupt' object is not subscriptable``。
+        #   所以必须在这里拦成 409，而不是让客户端拿到 500。
+        #   运维含义：**升级前要排空在飞的审批**，升级后这类 run 只能作废重开。
         raise ResumeError(
-            "not_interrupted",
-            f"thread {thread_id[:32]} 有未完成的任务但不是 interrupt 挂起，拒绝恢复",
+            "stranded_checkpoint",
+            f"thread {thread_id[:32]} 有未完成任务但没有 interrupt 元数据 —— "
+            "多半是升级前旧版本格式的 checkpoint，无法恢复（只能作废重开）",
         )
 
     # ⚠️ 用 astream 而不是 ainvoke：ainvoke 只给最终 state，

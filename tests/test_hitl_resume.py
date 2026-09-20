@@ -227,6 +227,40 @@ async def test_resume_on_finished_thread_is_refused_control():
 
 
 @pytest.mark.asyncio
+async def test_stranded_checkpoint_is_refused_not_crashed():
+    """旧版本格式的 checkpoint：**读到 pending task 但没有 interrupt 元数据**。
+
+    实测（langgraph 0.2 → 1.2 升级）：旧 checkpoint 的 values 和 pending task
+    都能读回来，但 ``task.interrupts`` 是空的；硬喂 ``Command(resume=...)``
+    会在 pregel 内部炸 ``TypeError: 'Interrupt' object is not subscriptable``。
+    所以必须在这里拦成 409 —— **不能让客户端拿到 500**，也不能把它和
+    "这轮已经跑完了"混成一个码（两者该给人的提示完全不同）。
+    """
+
+    class _FakeGraph:
+        def __init__(self, tasks):
+            self.tasks = tasks
+
+        async def aget_state(self, _config):
+            return SimpleNamespace(tasks=self.tasks, values={}, config=_config)
+
+        async def astream(self, *_a, **_kw):
+            raise AssertionError("不许走到恢复：这条 checkpoint 恢复不了")
+            yield {}  # pragma: no cover
+
+    stranded = [SimpleNamespace(interrupts=(), name="observe", id="x")]
+    with pytest.raises(ResumeError) as exc:
+        await resume_hitl_run(
+            thread_id="t-stranded",
+            approved=[_T1],
+            checkpointer=InMemorySaver(),
+            graph_factory=lambda *, checkpointer: _FakeGraph(stranded),
+        )
+    assert exc.value.code == "stranded_checkpoint"
+    assert "旧版本" in exc.value.detail or "interrupt" in exc.value.detail
+
+
+@pytest.mark.asyncio
 async def test_resume_without_thread_id_is_refused():
     """申请里没有 thread_id ⇒ 定位不到 checkpoint，显式失败而不是猜。"""
     with pytest.raises(ResumeError) as exc:

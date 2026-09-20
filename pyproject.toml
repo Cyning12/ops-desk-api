@@ -20,15 +20,20 @@ dependencies = [
     "pgvector>=0.2.5,<1",
     "qdrant-client>=1.14.0,<2",
     "sentence-transformers>=3.0,<5",
-    "langgraph>=0.2,<0.3",
-    "langgraph-checkpoint-postgres>=2,<3",
-    "langchain-core>=0.2,<0.3",
+    "langgraph>=1.2,<2",
+    # checkpoint 是**独立版本线**，不跟 langgraph 走（langgraph 1.2.11 要求 >=4.1,<5）
+    "langgraph-checkpoint-postgres>=3.1,<4",
+    # 1.0 起 prebuilt 拆成独立包：``from langgraph.prebuilt import ToolNode`` 靠它
+    "langgraph-prebuilt>=1.1,<1.2",
+    "langchain-core>=1.4.7,<2",
     "httpx>=0.27,<1",
     "python-multipart>=0.0.9",
     "python-jose[cryptography]>=3.3,<4",
     "passlib[bcrypt]>=1.7,<2",
     "langfuse>=3.0,<4",
-    "langchain>=0.2.17,<0.3",
+    # ⚠️ 刻意**不**依赖 ``langchain`` 伞包：它写死 ``langchain-core>=0.2,<0.3``，
+    #   与 langgraph 1.x 要求的 ``langchain-core>=1.4.7`` 冲突。
+    #   本项目只用到 langchain_core 的 messages / runnables / tools / globals。
     # 下游熔断（P1/Q3）。注意：它的 call_async 是 **Tornado-only**，
     # asyncio 路径只能用 CircuitBreaker.calling() 上下文管理器。
     "pybreaker>=1.4,<2",

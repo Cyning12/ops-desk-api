@@ -289,6 +289,9 @@ async def resume_request(
             "no_thread_id": status.HTTP_409_CONFLICT,
             "no_decision": status.HTTP_409_CONFLICT,
             "not_interrupted": status.HTTP_409_CONFLICT,
+            # 旧版本格式残留：不是"这会儿不能恢复"，是"永远恢复不了"，
+            # 但仍然归 409（客户端该做的是提示人重开，而不是重试）
+            "stranded_checkpoint": status.HTTP_409_CONFLICT,
             "checkpointer_not_configured": status.HTTP_503_SERVICE_UNAVAILABLE,
         }.get(exc.code, status.HTTP_502_BAD_GATEWAY)
         logger.warning("HITL 恢复被拒 request=%s code=%s %s", request_id, exc.code, exc.detail)
