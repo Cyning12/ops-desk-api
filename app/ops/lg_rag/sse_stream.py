@@ -13,6 +13,13 @@ T5.1：persist 后台调度，不阻塞 SSE yield / pending_frames 入队。
 info_extract / tool_exec 入口 → subtask.progress {"status":"running",...}；
 中途 step 里程碑 {"status":"step","step":...}；节点 updates 到后完成帧补
 status=done。running/step 与 delta 同 pending_frames 竞速、落盘占 seq。
+
+HITL：``observe_node`` 里 ``interrupt()`` 挂起时，astream 会吐一个
+``{"__interrupt__": [...]}`` 块。这里必须**翻译成一帧 hitl.waiting + 一帧
+done(status=waiting_approval)** 再收流——否则前端看到的就是"流莫名其妙断了"，
+而真实情况是"在等人批"。PG checkpointer 由本模块按
+``LG_RAG_HTTP_CHECKPOINTER=postgres`` 打开，且**整个流期间持有**：
+图挂起后进程内什么都不剩，下次请求能恢复全靠 checkpoint 已落盘。
 """
 from __future__ import annotations
 
@@ -31,6 +38,7 @@ from app.ops.lg_rag.answer_stream import (
     reset_answer_token_sink,
     set_answer_token_sink,
 )
+from app.ops.lg_rag.checkpointer import apostgres_saver
 from app.ops.lg_rag.progress_stream import (
     reset_subtask_progress_sink,
     set_subtask_progress_sink,
@@ -126,6 +134,37 @@ def _agent_role(node_name: str) -> str:
     return _ROLE_ALIAS.get(node_name, node_name)
 
 
+_INTERRUPT_KEY = "__interrupt__"
+
+
+def extract_interrupt(update: dict[str, Any]) -> dict[str, Any] | None:
+    """LangGraph 的 ``__interrupt__`` 块 → 可下发的"等待授权"载荷。
+
+    不是挂起块返回 ``None``。**必须显式区分**：不区分的话这个块会被当成
+    普通节点 update，前端收到一个 ``node "__interrupt__"`` 的进度帧，
+    然后流静默结束 —— 看起来就是"后端崩了"，而真相是"在等人批"。
+    """
+    if _INTERRUPT_KEY not in update:
+        return None
+    raw = update.get(_INTERRUPT_KEY)
+    items = raw if isinstance(raw, (list, tuple)) else (raw,)
+    payload: dict[str, Any] = {"reason": "hitl_waiting", "requests": []}
+    for item in items:
+        # langgraph 0.2 给的是 Interrupt 对象，业务载荷在 .value 里
+        value = getattr(item, "value", item)
+        if not isinstance(value, dict):
+            continue
+        for key, val in value.items():
+            if key != "requests":
+                payload[key] = val
+        reqs = value.get("requests")
+        if isinstance(reqs, list):
+            for one in reqs:
+                if isinstance(one, dict) and one not in payload["requests"]:
+                    payload["requests"].append(one)
+    return payload
+
+
 def map_node_update(node_name: str, node_output: Any) -> tuple[str, str, dict[str, Any]]:
     """返回 (event_type, agent_role, payload)。
 
@@ -177,6 +216,58 @@ async def iter_lg_rag_sse(
     astream_fn: Callable[..., AsyncIterator[dict[str, Any]]] | None = None,
     history_turns: list[dict] | None = None,
     user_id: str | None = None,
+    checkpointer: Any | None = None,
+) -> AsyncIterator[str]:
+    """产出 SSE 字符串帧；异常时发 error 帧后结束；挂起时发 hitl.waiting 帧。
+
+    PG checkpointer（``LG_RAG_HTTP_CHECKPOINTER=postgres``）在**整个流期间持有**：
+    图可以中途被 ``interrupt()`` 挂起，那一刻进程内什么都不推进了，
+    "这次 run 停在哪个 checkpoint"必须已经落盘，否则下一次 HTTP 请求
+    （人点了批准）根本找不到恢复点。只在持有时才打开 —— 默认仍是内存 saver。
+    """
+    if checkpointer is None and mode == "supervisor" and _pg_saver_enabled():
+        async with apostgres_saver(setup=True) as saver:
+            async for frame in _iter_lg_rag_sse_core(
+                query=query,
+                mode=mode,
+                thread_id=thread_id,
+                run_id=run_id,
+                astream_fn=astream_fn,
+                history_turns=history_turns,
+                user_id=user_id,
+                checkpointer=saver,
+            ):
+                yield frame
+        return
+    async for frame in _iter_lg_rag_sse_core(
+        query=query,
+        mode=mode,
+        thread_id=thread_id,
+        run_id=run_id,
+        astream_fn=astream_fn,
+        history_turns=history_turns,
+        user_id=user_id,
+        checkpointer=checkpointer,
+    ):
+        yield frame
+
+
+def _pg_saver_enabled() -> bool:
+    from app.ops.lg_rag.checkpointer import use_postgres_checkpointer
+
+    return use_postgres_checkpointer()
+
+
+async def _iter_lg_rag_sse_core(
+    *,
+    query: str,
+    mode: str,
+    thread_id: str,
+    run_id: str | None = None,
+    astream_fn: Callable[..., AsyncIterator[dict[str, Any]]] | None = None,
+    history_turns: list[dict] | None = None,
+    user_id: str | None = None,
+    checkpointer: Any | None = None,
 ) -> AsyncIterator[str]:
     """产出 SSE 字符串帧；异常时发 error 帧后结束。"""
     from app.ops.lg_rag.event_store import persist_run_event
@@ -262,6 +353,7 @@ async def iter_lg_rag_sse(
             astream_fn = astream_supervisor_agent
 
     saw_answer = False
+    waiting_approval = False  # 被 interrupt() 挂起：在等人批，不是跑完了
     # T5 token sink：终答节点 LLM chunk 在此入队；sink 跑在图执行 task 的
     # context（不能 yield），帧经队列交回主循环吐出。emit 内 seq 单调 +
     # 尽量落盘（T5.1 后台），delta 帧与进度帧共享同一 seq 序列，不串台。
@@ -279,11 +371,18 @@ async def iter_lg_rag_sse(
     sink_handle = set_answer_token_sink(_answer_token_sink)
     progress_handle = set_subtask_progress_sink(_subtask_progress_sink)
     try:
+        call_kwargs: dict[str, Any] = {}
+        if mode == "supervisor":
+            call_kwargs["run_id"] = rid
+        # 只在真的有 saver 时才传：测试替身是 ``(query, *, thread_id, **kw)``，
+        # 传了也被吃掉；但**不传**才是"挂起了却没落盘"的成因。
+        if checkpointer is not None:
+            call_kwargs["checkpointer"] = checkpointer
         agen = astream_fn(
             query,
             thread_id=thread_id,
             history_turns=history_turns or [],
-            **({"run_id": rid} if mode == "supervisor" else {}),
+            **call_kwargs,
         )
         while True:
             next_task = asyncio.ensure_future(_anext_or_end(agen))
@@ -319,6 +418,29 @@ async def iter_lg_rag_sse(
                 break
             if not isinstance(update, dict):
                 continue
+            # ---- HITL：图被 interrupt() 挂起 ----
+            # 这不是"跑完了"，也不是"出错"。必须先说清楚在等什么再收流，
+            # 否则前端看到的是一条静默断掉的流。
+            waiting = extract_interrupt(update)
+            if waiting is not None:
+                waiting_approval = True
+                # ⚠️ run_id / thread_id **只在缺失时补**：审批申请是按
+                # **图里**的 run_id 建的键（``_run_id_of(state)``），
+                # 拿 SSE 帧的 rid 覆盖它，人拿着 frame 里的 run_id 去查
+                # 申请会查不到 —— 两个 run_id 恰好相等只是巧合，不能依赖。
+                yield await emit(
+                    "hitl.waiting",
+                    "system",
+                    {
+                        **waiting,
+                        "run_id": waiting.get("run_id") or rid,
+                        "thread_id": waiting.get("thread_id") or thread_id,
+                        # 未落库必须带出来：人在等一个**不存在的**审批，
+                        # 界面上却跟"正在审批中"长得一模一样
+                        "unpersisted": bool(waiting.get("unpersisted")),
+                    },
+                )
+                break
             for node_name, node_output in update.items():
                 event_type, role, payload = map_node_update(node_name, node_output)
                 if event_type == "answer":
@@ -327,6 +449,22 @@ async def iter_lg_rag_sse(
                     if isinstance(content, str) and content:
                         last_answer = content
                 yield await emit(event_type, role, payload)
+        if waiting_approval:
+            # 收口帧照发（旧客户端靠 done 判断"这条流结束了"），
+            # 但 status 必须说出来：它结束了，是因为**在等人批**。
+            # 不落 thread turns —— 这一轮没有答案，落一条空回答会污染历史。
+            yield await emit(
+                "done",
+                "system",
+                {
+                    "run_id": rid,
+                    "thread_id": thread_id,
+                    "latency_ms": int((time.perf_counter() - started) * 1000),
+                    "status": "waiting_approval",
+                },
+            )
+            await _drain_persist()
+            return
         # router/basic 可能无 aggregator：用末帧预览不够时仍发 done；
         # 若全程无 answer，补一帧空 answer 便于客户端统一收口（可选）
         if not saw_answer and mode != "supervisor":

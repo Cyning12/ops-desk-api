@@ -316,14 +316,9 @@ def test_unresolved_suffix_helper_reads_state():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.asyncio
-async def test_hitl_pending_settles_and_flags_unpersisted():
-    """正向：有 HITL 挂起 → wait_hitl，且**未落库必须显式带出来**。
-
-    默认持久化是 null（不落库并告警）⇒ ``hitl_unpersisted`` 必须为 True。
-    "申请丢了"和"没人申请过"在观测上长得一模一样，人会一直等一个不存在的审批。
-    """
-    state = _state(
+def _hitl_state(**kw) -> dict:
+    """带一条「需要重跑已执行步骤」拦截的状态（HITL 挂起的触发条件）。"""
+    base = _state(
         subtasks=[_plan_row(_T1), _plan_row(_T2)],
         subtask_results=[
             _ok(_T1),
@@ -332,28 +327,180 @@ async def test_hitl_pending_settles_and_flags_unpersisted():
         ],
         plan_prefix_ids=[_T1],
     )
-    out = await observe_node(state)
-    obs = out["react_observation"]
-    assert obs["verdict"] == "wait_hitl"
-    assert obs["hitl_pending"] == [_T2]
-    assert obs["hitl_unpersisted"] is True, "申请没落库却没报出来"
-    # wait_hitl 走 settle（收工等审批），不是 replan
-    assert route_after_react({**state, **out}) == "settle"
-    assert out["hitl_requests"], "没有产出审批申请"
+    base.update(kw)
+    return base
+
+
+def _observe_only_graph():
+    """只含 observe 的最小图。
+
+    为什么不能直接 await observe_node()：``interrupt()`` 要求真实 runnable
+    上下文，裸调用会抛 ``RuntimeError: Called get_config outside of a runnable
+    context``。**这本身就是"挂起是真的"的证据** —— 写个标签继续走的版本
+    根本不会有这个约束。
+    """
+    from langgraph.graph import END, START, StateGraph
+
+    from app.ops.lg_rag.state import LgRagState
+
+    builder = StateGraph(LgRagState)
+    builder.add_node("observe", observe_node)
+    builder.add_edge(START, "observe")
+    builder.add_conditional_edges(
+        "observe", route_after_react, {"replan": END, "settle": END}
+    )
+    return builder.compile(checkpointer=InMemorySaver())
+
+
+async def _run_until_interrupt(state: dict, thread_id: str = "t-hitl"):
+    """跑最小图，返回 (interrupt 载荷, 图, config)。没有 interrupt 则载荷为 None。"""
+    graph = _observe_only_graph()
+    cfg = {"configurable": {"thread_id": thread_id}}
+    payload = None
+    async for chunk in graph.astream(state, cfg, stream_mode="updates"):
+        for intr in chunk.get("__interrupt__") or []:
+            payload = intr.value
+    return payload, graph, cfg
 
 
 @pytest.mark.asyncio
-async def test_no_hitl_pending_does_not_claim_pending_control():
-    """反向对照：没有 HITL 就不许报 pending —— 否则"一律报 pending"能过。"""
+async def test_hitl_pending_really_interrupts_the_graph():
+    """正向：有 HITL 挂起 → **图真的挂起**，不再是"打完标签继续出结论"。
+
+    改这条之前 wait_hitl 只是个字符串，``route_after_react`` 把它按 settle
+    处理 ⇒ 图走到 aggregator 出一份"完整结论"，而后台躺着 pending 审批。
+    这正是 #3 修掉的"看起来完整的答案"，只是换了个入口。
+    """
+    payload, _, _ = await _run_until_interrupt(_hitl_state())
+    assert payload is not None, "有挂起却没有 interrupt —— 图没有真的停下"
+    assert payload["reason"] == "hitl_waiting"
+    assert payload["run_id"] == _RUN
+    assert payload["thread_id"] == "t-react"
+    assert payload["requests"], "挂起载荷里没有申请，人不知道在等什么"
+    assert payload["requests"][0]["blocked_by"] == "prefix_touch_required"
+
+
+@pytest.mark.asyncio
+async def test_no_hitl_pending_does_not_interrupt_control():
+    """反向对照：没有 HITL 就不许停 —— 否则"一律挂起"也能通过上一条。"""
     state = _state(
         subtasks=[_plan_row(_T1), _plan_row(_T2)],
         subtask_results=[_ok(_T1), _ok(_T2)],
         plan_prefix_ids=[_T1, _T2],
     )
-    out = await observe_node(state)
-    assert out["react_observation"]["hitl_pending"] == []
-    assert out["react_observation"]["hitl_unpersisted"] is False
-    assert out["hitl_requests"] == []
+    payload, _, _ = await _run_until_interrupt(state, thread_id="t-nohitl")
+    assert payload is None, f"没有待批申请却把图挂起了：{payload}"
+
+
+@pytest.mark.asyncio
+async def test_unpersisted_request_is_flagged_in_the_interrupt_payload():
+    """未落库必须显式带出来。
+
+    默认持久化是 null（不落库并告警）。"申请丢了"和"没人申请过"在观测上
+    长得一模一样，人会一直等一个不存在的审批。
+    """
+    from app.ops.hitl import set_hitl_store
+    from app.ops.hitl.store import NullHitlStore
+
+    set_hitl_store(NullHitlStore())
+    try:
+        payload, _, _ = await _run_until_interrupt(_hitl_state(), thread_id="t-null")
+    finally:
+        from app.ops.hitl import reset_hitl_store
+
+        reset_hitl_store()
+    assert payload is not None
+    assert payload["unpersisted"] is True, "申请没落库却没报出来"
+
+
+@pytest.mark.asyncio
+async def test_resume_approves_unlocks_and_replans():
+    """恢复：批准 ⇒ 解锁那一步 + 清掉它的旧结果 + 轮次归零 + 判 replan。
+
+    三件事缺一不可：
+    - 只解锁不剪旧结果 ⇒ reducer 见它已有终态就不覆盖，重跑结果进不来，
+      人会看到"批准了但结果没变"；
+    - 不归零轮次 ⇒ 上一轮预算顺手把这次被授权的重跑掐掉；
+    - 不判 replan ⇒ 直接收工，白批准一次。
+    """
+    from langgraph.types import Command
+
+    payload, graph, cfg = await _run_until_interrupt(_hitl_state())
+    assert payload is not None
+
+    out = await graph.ainvoke(
+        Command(resume={"approved": [_T1], "decided_by": "张三"}), cfg
+    )
+    obs = out["react_observation"]
+    assert obs["verdict"] == "replan", obs["verdict"]
+    assert out["hitl_unlocked_ids"] == [_T1]
+    assert out["react_round"] == 0
+    assert out["hitl_interrupt"]["approved"] == [_T1]
+    assert out["hitl_interrupt"]["decided_by"] == "张三"
+    # 旧结果被剪掉 ⇒ 重跑的新结果才有地方落
+    left = [r["subtask_id"] for r in out["subtask_results"]]
+    assert _T1 not in left, f"被解锁步骤的旧结果没清掉：{left}"
+    assert _T2 in left
+
+
+@pytest.mark.asyncio
+async def test_resume_without_approval_settles_control():
+    """反向对照：没批准就不许解锁、不许重跑 —— 否则"一律放行"能过上一条。"""
+    from langgraph.types import Command
+
+    _, graph, cfg = await _run_until_interrupt(_hitl_state())
+    out = await graph.ainvoke(Command(resume={"rejected": [_T2]}), cfg)
+    assert out["react_observation"]["verdict"] == "settle"
+    assert out["hitl_unlocked_ids"] == []
+    # 没有授权 ⇒ 旧结果原样保留（没发生重跑）
+    assert _T1 in [r["subtask_id"] for r in out["subtask_results"]]
+
+
+@pytest.mark.asyncio
+async def test_unlocked_step_leaves_the_immutable_prefix():
+    """解锁 ⇒ 那一步不再是不可变前缀 ⇒ 可恢复点回退到它。"""
+    from app.ops.lg_rag.multi.nodes import _locked_prefix
+
+    state = _hitl_state()
+    assert [r["subtask_id"] for r in _locked_prefix(state)] == [_T1]
+
+    unlocked = {**state, "hitl_unlocked_ids": [_T1]}
+    assert [r["subtask_id"] for r in _locked_prefix(unlocked)] == []
+    # 可恢复点随之回退：前缀空 ⇒ 从第一步重新规划
+    assert len(_locked_prefix(unlocked)) == 0
+
+
+@pytest.mark.asyncio
+async def test_persist_hitl_is_idempotent_across_resume():
+    """恢复重跑 observe 时不得重复建申请。
+
+    为什么必须按 store 去重：interrupt 挂起期间节点 return 的值**不进
+    checkpoint**，恢复后 ``state["hitl_requests"]`` 是空的。只认 state 的话
+    每恢复一次就多一条一模一样的申请。
+    """
+    from app.ops.hitl import get_hitl_store, set_hitl_store
+    from app.ops.hitl.store import InMemoryHitlStore
+
+    store = InMemoryHitlStore()
+    set_hitl_store(store)
+    try:
+        from app.ops.lg_rag.multi.nodes import _persist_hitl
+
+        obs = {"hitl_pending": [_T2], "round": 0, "planned": 2, "done": 2}
+        first, _ = await _persist_hitl(_hitl_state(), obs)
+        assert len(first) == 1
+
+        # 模拟恢复：state 里的 hitl_requests 是空的（挂起时没写进去）
+        again, _ = await _persist_hitl(
+            {**_hitl_state(), "hitl_requests": []}, obs
+        )
+        assert len(again) == 1, f"恢复后重复建申请了：{again}"
+        assert again[0]["id"] == first[0]["id"]
+        assert len(await store.alist(status="pending")) == 1
+    finally:
+        from app.ops.hitl import reset_hitl_store
+
+        reset_hitl_store()
 
 
 # ---------------------------------------------------------------------------

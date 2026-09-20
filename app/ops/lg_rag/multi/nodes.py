@@ -14,9 +14,10 @@ from __future__ import annotations
 import json
 import logging
 import time
+from typing import Any
 
 from langchain_core.messages import AIMessage
-from langgraph.types import Send
+from langgraph.types import Send, interrupt
 from pydantic import ValidationError
 
 from app.llm.factory import get_llm_provider
@@ -477,6 +478,9 @@ def _locked_prefix(state: LgRagState) -> list[dict]:
     prefix_ids = set(
         success_terminal_ids(_plan_rows(state), state.get("subtask_results"))
     )
+    # 已获批准授权重跑的步骤**不再是不可变前缀** —— 这就是"批准"的唯一效果。
+    # 摘掉它 ⇒ 可恢复点回退到那一步 ⇒ 下一轮重规划会重新执行它。
+    prefix_ids -= {str(sid) for sid in (state.get("hitl_unlocked_ids") or [])}
     return [
         dict(row)
         for row in _plan_rows(state)
@@ -1210,7 +1214,26 @@ async def _satisfied_by_model(state: LgRagState, obs: dict) -> bool | None:
         return None
 
 
-async def _persist_hitl(state: LgRagState, obs: dict) -> tuple[list[dict], bool]:
+def _thread_id_of(state: LgRagState, config: Any = None) -> str:
+    """恢复定位用的 thread_id。
+
+    **必须能从 config 兜底**：真实调用时 thread_id 只在 config 里，
+    state 里未必有人写。拿不到的话审批申请就是一条没有归属的记录——
+    人批完之后无从知道要恢复哪条 run。
+    """
+    direct = str(state.get("thread_id") or "").strip()
+    if direct:
+        return direct
+    try:
+        configurable = (config or {}).get("configurable") or {}
+        return str(configurable.get("thread_id") or "").strip()
+    except Exception:  # config 形态意外时不因此崩
+        return ""
+
+
+async def _persist_hitl(
+    state: LgRagState, obs: dict, *, thread_id: str = ""
+) -> tuple[list[dict], bool]:
     """把本轮 pending 的拦截落库成审批申请。
 
     返回 ``(申请列表, 是否有未落库的)``。**未落库必须显式带出来**：
@@ -1225,15 +1248,30 @@ async def _persist_hitl(state: LgRagState, obs: dict) -> tuple[list[dict], bool]
     terms = _terminal_index(
         list(state.get("subtask_results") or []), set(plan)
     )
-    existing = {
-        str(r.get("subtask_id"))
+    # ⚠️ 去重**不能只看 state**：interrupt 挂起时节点 return 的值不会进 checkpoint，
+    #   恢复后重跑 observe 时 ``state["hitl_requests"]`` 是空的（上一轮没写进去）。
+    #   于是"恢复一次就重复建一条申请" —— 人会在审批列表里看到两条一模一样的。
+    #   真相在 store 里，以 (run_id, subtask_id) 为幂等键。
+    already = {
+        str(r.get("subtask_id")): r
         for r in (state.get("hitl_requests") or [])
         if isinstance(r, dict)
     }
+    run_id = _run_id_of(state)
+    try:
+        for row in await store.alist(status="pending", limit=200):
+            if str(row.get("run_id") or "") == run_id:
+                already.setdefault(str(row.get("subtask_id") or ""), row)
+    except Exception as exc:  # 拉不到就退回只认 state，不因此崩
+        logger.warning("HITL 申请去重拉取失败，退回按 state 去重 err=%r", exc)
     created = list(state.get("hitl_requests") or [])
     unpersisted = False
     for sid in obs["hitl_pending"]:
-        if sid in existing:
+        if sid in already:
+            # 已经有 pending 了 —— 但**要把它带回返回值**，
+            # 否则恢复那一次（state 里是空的）前端就看不到在等哪条申请
+            if not any(str(r.get("subtask_id")) == sid for r in created):
+                created.append(already[sid])
             continue
         term = terms.get(sid) or {}
         # 要解锁的是被它依赖的**已执行**前缀步骤（Q8 §2.4）
@@ -1244,9 +1282,9 @@ async def _persist_hitl(state: LgRagState, obs: dict) -> tuple[list[dict], bool]
                 break
         request = {
             "id": new_request_id(),
-            "run_id": _run_id_of(state),
-            "thread_id": str(state.get("thread_id") or ""),
-            "checkpoint_id": state.get("checkpoint_id"),
+            "run_id": run_id,
+            "thread_id": thread_id,
+            "checkpoint_id": state.get("hitl_checkpoint_id"),
             "tenant_id": str(term.get("tenant_id") or ""),
             "subtask_id": sid,
             "blocked_by": str(term.get("blocked_by") or ""),
@@ -1270,7 +1308,97 @@ async def _persist_hitl(state: LgRagState, obs: dict) -> tuple[list[dict], bool]
     return created, unpersisted
 
 
-async def observe_node(state: LgRagState) -> dict:
+def _hitl_interrupt_payload(
+    state: LgRagState, obs: dict, requests: list[dict], *, thread_id: str = ""
+) -> dict:
+    """挂起载荷：告诉外面"这次等的是哪几条申请"。
+
+    会被序列化进 checkpoint 并透给前端，**只放关联标识，不放任何密钥**。
+    """
+    return {
+        "reason": "hitl_waiting",
+        "run_id": _run_id_of(state),
+        "thread_id": thread_id,
+        "checkpoint_id": state.get("hitl_checkpoint_id"),
+        "round": int(state.get("react_round") or 0),
+        "unpersisted": bool(requests) and all(
+            r.get("persisted") is False for r in requests
+        ),
+        "requests": [
+            {
+                "id": str(r.get("id") or ""),
+                "subtask_id": str(r.get("subtask_id") or ""),
+                "unlock_subtask_id": str(r.get("unlock_subtask_id") or ""),
+                "blocked_by": str(r.get("blocked_by") or ""),
+                "reason": str(r.get("reason") or ""),
+            }
+            for r in requests
+            if isinstance(r, dict) and r.get("status") == "pending"
+        ],
+    }
+
+
+def _apply_hitl_decision(state: LgRagState, obs: dict, resumed: Any) -> dict:
+    """把"批准"落成 state 更新：**只授权，不代劳**。
+
+    批准的**唯一**效果是解除锁定 —— 它不会自动改历史，也不会自动继续跑，
+    而是把被解锁的那一步从不可变前缀里摘出去，让下一轮重规划重新执行它。
+
+    两件必须一起做的事：
+    1. 记进 ``hitl_unlocked_ids`` ⇒ ``_locked_prefix`` 不再把它当前缀
+       ⇒ 可恢复点回退到它（这就是"从可恢复点重跑"）；
+    2. **剪掉它的旧结果**。不然 ``merge_subtask_results`` 见它已有终态就不覆盖，
+       重跑的新结果根本进不来 —— 人会看到"批准了但结果没变"。
+    """
+    payload = resumed if isinstance(resumed, dict) else {}
+    approved = {
+        str(x)
+        for x in (payload.get("approved") or [])
+        if str(x).strip()
+    }
+    decided_by = str(payload.get("decided_by") or "")
+    obs = dict(obs)
+    obs["verdict"] = "replan" if approved else "settle"
+    obs["hitl_decision"] = {
+        "approved": sorted(approved),
+        "rejected": [str(x) for x in (payload.get("rejected") or [])],
+        "decided_by": decided_by,
+    }
+
+    unlocked = set(str(s) for s in (state.get("hitl_unlocked_ids") or []))
+    unlocked |= approved
+
+    updates: dict = {
+        "react_observation": obs,
+        "hitl_unlocked_ids": sorted(unlocked),
+        "hitl_interrupt": {
+            "resumed": True,
+            "approved": sorted(approved),
+            "decided_by": decided_by,
+        },
+    }
+    if approved:
+        # 被授权重跑 ⇒ 外层的轮数归零：这是一次**被批准的全新尝试**，
+        # 不该被上一轮的轮次预算顺手掐掉。有界性由"人批一次才跑一次"保证。
+        updates["react_round"] = 0
+        plan_ids = {str(row["subtask_id"]) for row in _plan_rows(state)}
+        keep = plan_ids - approved
+        updates["subtask_results"] = SubtaskResultBatch([], keep, replace=True)
+        logger.info(
+            "HITL 已批准，解锁 %d 步并从可恢复点重跑 run=%s unlocked=%s by=%s",
+            len(approved),
+            _run_id_of(state),
+            sorted(approved),
+            decided_by or "unknown",
+        )
+    else:
+        logger.info(
+            "HITL 未获批准（驳回或无授权），收工 run=%s", _run_id_of(state)
+        )
+    return updates
+
+
+async def observe_node(state: LgRagState, config: Any = None) -> dict:
     """外层 ReAct 的"观察 + 判定"：这一轮活干完了没有？
 
     内层是 plan-and-execute（supervisor 拆 ≤4 步、按依赖并行执行）；
@@ -1288,14 +1416,32 @@ async def observe_node(state: LgRagState) -> dict:
     """
     bump = bump_supervisor_step(state)
     obs = _observe(state)
-    hitl_requests, unpersisted = await _persist_hitl(state, obs)
+    thread_id = _thread_id_of(state, config)
+    # 落库**先于**挂起：挂起期间节点 return 的值不进 checkpoint，
+    # 但申请必须在外面立刻能拉到 —— 否则人不知道有东西等他批。
+    hitl_requests, unpersisted = await _persist_hitl(state, obs, thread_id=thread_id)
+
+    # ---- 等待授权：**真的把图挂起**（不是写个标签继续走）----
+    #
+    # 为什么必须 interrupt：原来 wait_hitl 只是个字符串，route_after_react
+    # 把它按 settle 处理 ⇒ 图照样走到 aggregator 出一份"完整结论"。
+    # 用户在界面上看到答复的同时，后台躺着一条 pending 审批 ——
+    # 这正是 #3 要防的"看起来完整的答案"，只是换了个入口。
+    if obs["hitl_pending"]:
+        resumed = interrupt(
+            _hitl_interrupt_payload(state, obs, hitl_requests, thread_id=thread_id)
+        )
+        # 执行到这里只有两种可能：① 恢复后重跑，interrupt() 返回 resume 值；
+        # ② 对端没恢复 ⇒ 上一行已经抛 GraphInterrupt，根本走不到这。
+        return {
+            **bump,
+            **_apply_hitl_decision(state, obs, resumed),
+        }
 
     model_says = await _satisfied_by_model(state, obs)
     obs["model_satisfied"] = model_says
 
-    if obs["hitl_pending"]:
-        verdict = "wait_hitl"
-    elif obs["unsatisfied"] or model_says is False:
+    if obs["unsatisfied"] or model_says is False:
         verdict = (
             "replan"
             if not is_react_round_exhausted(state) and not is_supervisor_budget_exhausted(state)

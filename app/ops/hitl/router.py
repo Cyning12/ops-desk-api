@@ -7,6 +7,12 @@
 | ``POST /api/ops/hitl/callback`` | OA 回调审批结果 | HMAC 签名 |
 | ``POST /api/ops/hitl/requests/{id}/resume`` | 运维 / 前端 | 管理员 |
 
+**恢复这一半为什么单独有驱动器（``hitl/resume.py``）**：
+``observe_node`` 用 ``interrupt()`` 把图挂起后，前端停在"等待授权"那一帧、
+进程里那次 run 已经不再推进。"批准"只是把库里一行改成 approved ——
+要让它真的继续跑，得拿 ``thread_id`` 找到那个 checkpoint 并喂
+``Command(resume=...)``。缺了这一步，"批了"和"没批"在界面上长得一样。
+
 **为什么"接收审批结果"要单独做成一个接口，而不是轮询**：
 审批是**外部系统**的行为，它发生时本进程可能已经不在同一轮执行里了。
 回调让"批准"这件事成为一个**有凭据的事件**（落库 + 签名），
@@ -17,7 +23,6 @@ from __future__ import annotations
 
 import logging
 import time
-import uuid
 from typing import Any
 
 from fastapi import APIRouter, Body, Header, HTTPException, Query, Request, status
@@ -26,6 +31,7 @@ from app.db.models import OpsUser
 from app.ops.deps import AdminSyncAuth
 from app.ops.hitl import get_hitl_store, new_request_id
 from app.ops.hitl.persistence import describe_hitl_persistence
+from app.ops.hitl.resume import ResumeError, resume_hitl_run
 from app.ops.hitl.signature import (
     HEADER_NONCE,
     HEADER_SIGNATURE,
@@ -132,35 +138,115 @@ async def callback(
     return {"ok": True, "request": row}
 
 
+def _same_run(row: dict[str, Any], other: dict[str, Any]) -> bool:
+    """两条申请是否属于同一次挂起（run_id 优先，缺失时退回 thread_id）。"""
+    run_id = str(row.get("run_id") or "").strip()
+    if run_id:
+        return str(other.get("run_id") or "").strip() == run_id
+    tid = str(row.get("thread_id") or "").strip()
+    return bool(tid) and str(other.get("thread_id") or "").strip() == tid
+
+
+async def _collect_decisions(row: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """汇总**同一次挂起**里所有已决申请 → ``(approved, rejected)``。
+
+    为什么不是"只带这一条"：人可能在审批列表里一次批了三条，
+    恢复却只带一条 ⇒ 图重跑一次、又被剩下两条拦住、再挂起 ——
+    人要连点三次，每次都以为"这次应该完了"。
+    批准带的是 ``unlock_subtask_id``（**要解锁重跑**的那一步），
+    驳回带 ``subtask_id``（**被否掉**的那一步，仅作记录，不解锁任何东西）。
+    """
+    approved: list[str] = []
+    rejected: list[str] = []
+    store = get_hitl_store()
+    try:
+        rows = await store.alist(limit=200)
+    except Exception as exc:  # 拉不全就退回只看这一条，不因此拒绝恢复
+        logger.warning("HITL 恢复前汇总同批申请失败，退回单条 err=%r", exc)
+        rows = [row]
+    for other in rows:
+        if not _same_run(row, other):
+            continue
+        status = str(other.get("status") or "")
+        if status == STATUS_APPROVED:
+            sid = str(other.get("unlock_subtask_id") or "").strip()
+        elif status == STATUS_REJECTED:
+            sid = str(other.get("subtask_id") or "").strip()
+        else:
+            continue
+        if sid and sid not in approved and sid not in rejected:
+            (approved if status == STATUS_APPROVED else rejected).append(sid)
+    return approved, rejected
+
+
 @router.post("/requests/{request_id}/resume")
 async def resume_request(
     request_id: str, _user: OpsUser | None = AdminSyncAuth
 ) -> dict[str, Any]:
-    """批准后**恢复**执行：把被锁的那一步从不可变前缀里摘出来。
+    """审批出结果后**真的把挂起的图恢复起来**。
 
-    审批通过的**唯一**效果就是"授权改历史"——它不会自动帮你改，
-    也不会自动继续跑（继续跑要显式调这个端点，且要人来调）。
+    两处必须说清，否则"恢复"是个假动作：
+
+    - 批准 ⇒ 解锁（被批准的那一步从不可变前缀里摘出去、旧结果剪掉、
+      轮数归零），然后**真的从那个 checkpoint 继续跑**；
+    - 驳回 ⇒ 不解锁，收工出结论（结论里带着"这步没做、因为没批"）。
+
+    **驳回也必须能调这个端点**：图正挂在 ``interrupt()`` 上等人，
+    如果"只有批准能恢复"，驳回之后那条 run 会**永远挂在等待授权那一帧**，
+    前端看着像卡死，而库里清清楚楚写着 rejected。
     """
     row = await get_hitl_store().aget(request_id)
     if row is None:
         raise HTTPException(status_code=404, detail="申请不存在")
-    if row.get("status") != STATUS_APPROVED:
+    # ⚠️ 别叫 ``status``：本模块从 fastapi 导入了同名模块，遮蔽了会炸
+    req_status = str(row.get("status") or "")
+    if req_status not in (STATUS_APPROVED, STATUS_REJECTED):
         raise HTTPException(
             status_code=409,
-            detail=f"申请状态为 {row.get('status')}，只有 approved 才能恢复",
+            detail=f"申请状态为 {req_status or 'unknown'}，只有已决（approved/rejected）才能恢复",
         )
-    unlock = str(row.get("unlock_subtask_id") or "").strip()
-    if not unlock:
-        raise HTTPException(status_code=409, detail="申请里没有待解锁的步骤")
-    # 恢复 = 新开一个 run，前缀**排除**被解锁的那一步 ⇒ 可恢复点回退到它
+    approved, rejected = await _collect_decisions(row)
+    if not approved and req_status == STATUS_APPROVED:
+        # 批准了却拿不到可解锁的步骤 —— 多半是申请行缺 unlock_subtask_id。
+        # 这里必须响，否则会拿着空 approved 去恢复 ⇒ 实际按"驳回"收工，
+        # 人看到"批了但结果是没做"，且没有任何报错。
+        raise HTTPException(
+            status_code=409,
+            detail="已批准但拿不到待解锁的步骤（unlock_subtask_id 为空）",
+        )
+    thread_id = str(row.get("thread_id") or "").strip()
+    try:
+        outcome = await resume_hitl_run(
+            thread_id=thread_id,
+            approved=approved,
+            rejected=rejected,
+            decided_by=str(row.get("decision_by") or ""),
+        )
+    except ResumeError as exc:
+        code = {
+            "no_thread_id": status.HTTP_409_CONFLICT,
+            "no_decision": status.HTTP_409_CONFLICT,
+            "not_interrupted": status.HTTP_409_CONFLICT,
+            "checkpointer_not_configured": status.HTTP_503_SERVICE_UNAVAILABLE,
+        }.get(exc.code, status.HTTP_502_BAD_GATEWAY)
+        logger.warning("HITL 恢复被拒 request=%s code=%s %s", request_id, exc.code, exc.detail)
+        raise HTTPException(status_code=code, detail=exc.detail) from exc
+    logger.info(
+        "HITL 恢复完成 request=%s thread=%s approved=%s rejected=%s",
+        request_id,
+        thread_id,
+        approved,
+        rejected,
+    )
     return {
         "ok": True,
-        "resume_run_id": f"{row.get('run_id') or 'run'}-resume-{uuid.uuid4().hex[:8]}",
-        "thread_id": row.get("thread_id"),
-        "checkpoint_id": row.get("checkpoint_id"),
-        "unlock_subtask_id": unlock,
-        # 可恢复点**回退**到被解锁的那一步：它不再是不可变前缀
-        "recoverable_point_subtask_id": unlock,
+        "request": {
+            "id": row.get("id"),
+            "status": req_status,
+            "run_id": row.get("run_id"),
+            "thread_id": thread_id,
+        },
+        "resume": outcome,
         "ts": time.time(),
     }
 

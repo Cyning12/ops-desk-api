@@ -236,6 +236,19 @@ class LgRagState(MessagesState):
     react_observation：observe 写的本轮观察（planned/done/failed/blocked/
         hitl_pending/pending_ids/unsatisfied/verdict）——**执行层收口**的依据。
     hitl_requests：本轮落库的审批申请（含 persisted 标记；没落库必须看得见）。
+    hitl_unlocked_ids：**已被批准授权重跑**的步骤 subtask_id。
+        写进来之后它们不再算"不可变前缀" —— 可恢复点随之回退到那一步，
+        下一轮重规划就会重新执行它。这是"批准"的**唯一**效果：
+        它只授权改历史，不自动帮你改，也不自动继续跑。
+    hitl_interrupt：图挂起时的载荷（等待授权的申请 / 恢复后的决定）。
+        挂起期间节点 return 的值**不会**进 checkpoint，所以这个字段只能由
+        恢复那一次写入——观测与前端读它来知道"这次等的是哪条申请"。
+    thread_id / hitl_checkpoint_id：**恢复定位用的关联标识**。
+        必须真的在 schema 里——不在的话 StateGraph 会把它们丢掉，
+        审批申请里的 thread_id 永远是空，人批完之后无从定位要恢复哪条 run。
+
+    ⚠️ 不能叫 ``checkpoint_id``：那是 LangGraph 的**保留 channel 名**，
+       写进 StateGraph 会直接抛 ``Channel names checkpoint_id are reserved``。
     """
 
     route: str
@@ -253,6 +266,10 @@ class LgRagState(MessagesState):
     react_round: int
     react_observation: dict
     hitl_requests: list[dict]
+    hitl_unlocked_ids: list[str]
+    hitl_interrupt: dict
+    thread_id: str
+    hitl_checkpoint_id: str
     allowed_capability_ids: list[str]
     allowed_skill_ids: list[str]
     intent: dict

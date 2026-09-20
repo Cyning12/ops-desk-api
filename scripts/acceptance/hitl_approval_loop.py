@@ -1,8 +1,13 @@
 """HITL 审批回路·真进程联调驱动（不 import 业务代码，纯 HTTP）。
 
-验证「OA 拉得到申请 → 批完代理侧真收到 → 再次回调被 409 拒 → 可恢复点解锁」。
+验证「OA 拉得到申请 → 批完代理侧真收到 → 再次回调被 409 拒 → 恢复端点真驱动」。
 两端都是真进程、真 socket：签名头编码 / 中文 body / 状态码这些
 只有真联调才暴露的问题，单测（连桩都算）会替你掩盖掉。
+
+恢复端点这一段的期望值**随环境变**，别写死 200：
+本联调没开 ``LG_RAG_HTTP_CHECKPOINTER=postgres``（内存 saver 每请求新建），
+跨请求恢复不可能成立 ⇒ 正确行为是 **503 显式拒绝**，不是 200 假装成功。
+返回 200 就意味着"人点批准、什么都没发生"，比报错难查得多。
 
 由 ``hitl_approval_loop.sh`` 调用（它负责起服务与等就绪）；端口经环境变量传入。
 """
@@ -55,6 +60,30 @@ def call(method: str, url: str, body=None, headers=None, expect=(200,)):
         if expect and exc.code not in expect:
             raise
         return exc.code, payload
+
+
+def _signed(body: dict) -> dict:
+    """给回调请求生成签名头（不 import 业务代码，按 signature.py 的口径自己算）。
+
+    口径：``HMAC-SHA256(secret, "{ts}.{nonce}.".encode() + raw_body)``，
+    头名 ``X-Ops-Signature`` / ``X-Ops-Timestamp`` / ``X-Ops-Nonce``。
+    """
+    import hashlib
+    import hmac
+    import uuid
+
+    secret = os.environ.get("OPS_HITL_CALLBACK_SECRET", "s3cr3t")
+    raw = json.dumps(body, ensure_ascii=False).encode("utf-8")
+    ts = str(int(time.time()))
+    nonce = uuid.uuid4().hex
+    mac = hmac.new(
+        secret.encode("utf-8"), f"{ts}.{nonce}.".encode() + raw, hashlib.sha256
+    ).hexdigest()
+    return {
+        "X-Ops-Timestamp": ts,
+        "X-Ops-Nonce": nonce,
+        "X-Ops-Signature": f"sha256={mac}",
+    }
 
 
 def main() -> int:
@@ -142,14 +171,48 @@ def main() -> int:
     )
     check("假签名回调被 401", code == 401, f"code={code}")
 
-    # 9 · 恢复端点：只有 approved 才能 resume
+    # 9 · 恢复端点：**真驱动**，且不许假装成功
+    #
+    # 本联调用 memory 持久化（没开 LG_RAG_HTTP_CHECKPOINTER=postgres），
+    # 内存 saver 是每请求新建的 ⇒ 跨请求恢复**不可能成立**。
+    # 正确行为是显式 503，不是 200 —— 返回 200 就意味着"人点批准、什么都没发生"。
     code, resumed = call("POST", f"{AGENT}/hitl/requests/{rid}/resume",
-                         headers={"Authorization": ADMIN}, expect=(200, 409))
+                         headers={"Authorization": ADMIN}, expect=(503,))
     r = resumed or {}
-    check("resume 给出解锁步骤", code == 200 and r.get("unlock_subtask_id") == "e2e-run:1",
-          str(r.get("unlock_subtask_id")))
-    check("resume 带着 checkpoint 标识", r.get("thread_id") == "e2e-thread"
-          and r.get("checkpoint_id") == "ckpt-e2e")
+    detail = str(r.get("detail") or "")
+    check("未开 PG ⇒ 恢复显式 503（不假装成功）", code == 503, f"code={code} {detail}")
+    check("失败原因写明是 checkpointer 没配", "checkpointer" in detail.lower(), detail)
+    # 503 而不是 409，说明"待解锁步骤"这一步**已经解析到了** ——
+    # 解析不到会先被 409 拦住（下面那条是它的对照）
+    check("503 ⇒ 解锁步骤已解析（不是被 409 拦下）", code == 503, f"code={code}")
+
+    # 9b · 对照：已批准但拿不到 unlock_subtask_id ⇒ 409，且**与 503 区分开**
+    code, _blank = call(
+        "POST",
+        f"{AGENT}/hitl/requests",
+        body={"run_id": "e2e-run-b", "thread_id": "e2e-thread-b",
+              "subtask_id": "e2e-run-b:2", "unlock_subtask_id": ""},
+        headers={"Authorization": ADMIN},
+    )
+    rid_b = (_blank.get("request") or {}).get("id", "")
+    _, _ = call("POST", f"{AGENT}/hitl/callback",
+                body={"request_id": rid_b, "decision": "approved", "decision_by": "张三"},
+                headers=_signed({"request_id": rid_b, "decision": "approved",
+                                 "decision_by": "张三"}))
+    code, blank = call("POST", f"{AGENT}/hitl/requests/{rid_b}/resume",
+                       headers={"Authorization": ADMIN}, expect=(409, 503))
+    check("已批但无解锁步骤 ⇒ 409（与 503 区分）", code == 409,
+          f"code={code} {blank.get('detail')}")
+
+    # 9c · 对照：还没决的申请不许恢复
+    code, pend = call("POST", f"{AGENT}/hitl/requests",
+                      body={"run_id": "e2e-run-c", "thread_id": "e2e-thread-c",
+                            "subtask_id": "e2e-run-c:2", "unlock_subtask_id": "e2e-run-c:1"},
+                      headers={"Authorization": ADMIN})
+    rid_c = (pend.get("request") or {}).get("id", "")
+    code, pending_resume = call("POST", f"{AGENT}/hitl/requests/{rid_c}/resume",
+                                headers={"Authorization": ADMIN}, expect=(409,))
+    check("pending 申请不许恢复 ⇒ 409", code == 409, f"code={code}")
 
     print()
     if failures:
