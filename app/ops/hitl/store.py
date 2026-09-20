@@ -86,6 +86,12 @@ class InMemoryHitlStore:
         row = self._items.get(request_id)
         if row is None:
             return None
+        # ★ 只受理 pending。**必须与 DbHitlStore 的 `WHERE status='pending'` 一致**
+        #   —— 真联调抓出来的：内存版无条件覆写，DB 版挡重复，两套语义不同。
+        #   后果是"联调时用 memory 一切正常、上生产换成 db 行为变了"，
+        #   而路由 404 / 409 的区分完全依赖这里返回 None。
+        if row.get("status") != STATUS_PENDING:
+            return None
         row["status"] = decision
         row["decision_by"] = by
         row["decision_note"] = note
