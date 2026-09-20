@@ -31,11 +31,16 @@ from typing import Any, Protocol, runtime_checkable
 
 from app.ops.capability.errors import (
     ARGS_SCHEMA_INVALID,
+    CAUSE_BUSINESS,
+    CAUSE_HTTP_STATUS,
+    CAUSE_LOCAL,
+    CAUSE_TRANSPORT,
     DUPLICATE_ID,
     PERMISSION_DENIED,
     POLICY_BLOCKED,
     UPSTREAM_ERROR,
     format_error,
+    is_environmental_failure,
 )
 from app.ops.capability.idempotency import get_idempotency_store
 from app.ops.capability.receipts import get_receipt_sink
@@ -97,16 +102,40 @@ def assert_header_latin1(name: str, value: str) -> None:
             ARGS_SCHEMA_INVALID,
             f"头 {name} 的值含非 latin-1 字符（HTTP 头不支持），"
             f"请改用 query/body 承载：{text[:40]!r}",
+            cause=CAUSE_LOCAL,  # 请求装配问题，不是下游不健康
         ) from exc
 
 
 class HttpCapabilityError(Exception):
-    """HTTP 能力失败；``code`` 必须是稳定错误码。"""
+    """HTTP 能力失败；``code`` 必须是稳定错误码。
 
-    def __init__(self, code: str, detail: str = "") -> None:
+    ``cause`` / ``http_status`` 是**熔断的判定依据**（见 ``errors.is_environmental_failure``）：
+
+    - ``cause``：``transport`` / ``http_status`` / ``business`` / ``local``
+    - ``http_status``：HTTP 状态码（仅 ``cause=http_status`` 时有意义）
+
+    两者都是**可选**的（默认 None）——老调用点可以不填，那样就不参与熔断计数
+    （宁可少熔）。但新写的调用点必须填，否则失败原因对熔断层就是黑盒。
+    """
+
+    def __init__(
+        self,
+        code: str,
+        detail: str = "",
+        *,
+        cause: str | None = None,
+        http_status: int | None = None,
+    ) -> None:
         self.code = code
         self.detail = detail
+        self.cause = cause
+        self.http_status = http_status
         super().__init__(format_error(code, detail))
+
+    @property
+    def environmental(self) -> bool:
+        """这次失败是否属于"下游不健康"（供熔断层判定，不解析文案）。"""
+        return is_environmental_failure(self.cause, self.http_status)
 
     def __repr__(self) -> str:  # gateway._err_result 用 repr(exc)
         return format_error(self.code, self.detail)
@@ -155,7 +184,7 @@ class EnvCredentialVault:
         value = os.environ.get(key, "").strip()
         if not value:
             raise HttpCapabilityError(
-                PERMISSION_DENIED, f"未配置凭证: {auth_name}（env {key} 缺失）"
+                PERMISSION_DENIED, f"未配置凭证: {auth_name}（env {key} 缺失）", cause=CAUSE_LOCAL
             )
         return {"Authorization": f"Bearer {value}"}
 
@@ -170,7 +199,7 @@ class StaticCredentialVault:
         value = self._creds.get(auth_name)
         if not value:
             raise HttpCapabilityError(
-                PERMISSION_DENIED, f"未配置凭证: {auth_name}"
+                PERMISSION_DENIED, f"未配置凭证: {auth_name}", cause=CAUSE_LOCAL
             )
         return {"Authorization": f"Bearer {value}"}
 
@@ -261,14 +290,16 @@ class UrllibHttpTransport:
             detail = exc.read().decode("utf-8", errors="replace")[:200]
             # 注意：不回显请求头/请求体（可能含凭证）
             raise HttpCapabilityError(
-                UPSTREAM_ERROR, f"HTTP {exc.code}: {detail}"
+                UPSTREAM_ERROR, f"HTTP {exc.code}: {detail}", cause=CAUSE_HTTP_STATUS, http_status=int(getattr(exc, "code", 0) or 0)
             ) from exc
         except urllib.error.URLError as exc:
             raise HttpCapabilityError(
-                UPSTREAM_ERROR, f"网络错误: {exc.reason!r}"
+                UPSTREAM_ERROR, f"网络错误: {exc.reason!r}", cause=CAUSE_TRANSPORT
             ) from exc
         except TimeoutError as exc:
-            raise HttpCapabilityError(UPSTREAM_ERROR, "请求超时") from exc
+            raise HttpCapabilityError(
+                UPSTREAM_ERROR, "请求超时", cause=CAUSE_TRANSPORT
+            ) from exc
         return HttpResponse(status=status, payload=_parse_payload(raw))
 
 
@@ -509,7 +540,7 @@ class GenericHttpAdapter:
                 "duplicate_of": claim.receipt_id,
                 "idempotency_key": prepared.idempotency_key,
             }
-        raise HttpCapabilityError(DUPLICATE_ID, "同一幂等键正在执行中（in-flight）")
+        raise HttpCapabilityError(DUPLICATE_ID, "同一幂等键正在执行中（in-flight）", cause=CAUSE_BUSINESS)
 
     def _claim(self, prepared: _Prepared) -> dict[str, Any] | None:
         """抢执行权。返回非 ``None`` 表示**不该真的发请求**（已完成 / 正在执行）。"""
@@ -521,7 +552,7 @@ class GenericHttpAdapter:
             # DB 版只有异步接口：同步路径用它会是错的（而且会阻塞事件循环）
             raise HttpCapabilityError(
                 UPSTREAM_ERROR,
-                f"{type(store).__name__} 只支持异步接口，请走 ainvoke",
+                f"{type(store).__name__} 只支持异步接口，请走 ainvoke", cause=CAUSE_LOCAL
             )
         claim = claim_fn(
             prepared.idempotency_key,
@@ -646,7 +677,7 @@ class GenericHttpAdapter:
         for match in _VAR_RE.finditer(json.dumps(http, ensure_ascii=False, default=str)):
             if match.group(1) not in allowed:
                 raise HttpCapabilityError(
-                    ARGS_SCHEMA_INVALID, f"未声明模板变量: {match.group(1)}"
+                    ARGS_SCHEMA_INVALID, f"未声明模板变量: {match.group(1)}", cause=CAUSE_LOCAL
                 )
 
     def _render(
@@ -719,16 +750,16 @@ class GenericHttpAdapter:
         param = http.get("tenant_param")
         if not isinstance(param, dict):
             raise HttpCapabilityError(
-                ARGS_SCHEMA_INVALID, "tenant_scoped 能力缺 tenant_param"
+                ARGS_SCHEMA_INVALID, "tenant_scoped 能力缺 tenant_param", cause=CAUSE_LOCAL
             )
         c = ctx or {}
         value = c.get("tenant_id") or c.get("_host_tenant")
         if value is None or not str(value).strip():
-            raise HttpCapabilityError(PERMISSION_DENIED, "缺租户谓词")
+            raise HttpCapabilityError(PERMISSION_DENIED, "缺租户谓词", cause=CAUSE_LOCAL)
         where = str(param.get("in") or "").strip().lower()
         name = str(param.get("name") or "").strip()
         if not name:
-            raise HttpCapabilityError(ARGS_SCHEMA_INVALID, "tenant_param.name 为空")
+            raise HttpCapabilityError(ARGS_SCHEMA_INVALID, "tenant_param.name 为空", cause=CAUSE_LOCAL)
         if where == "query":
             rendered["params"][name] = value
         elif where == "body":
@@ -739,7 +770,7 @@ class GenericHttpAdapter:
             rendered["headers"][name] = str(value)
         else:
             raise HttpCapabilityError(
-                ARGS_SCHEMA_INVALID, f"tenant_param.in 非法: {where or '(空)'}"
+                ARGS_SCHEMA_INVALID, f"tenant_param.in 非法: {where or '(空)'}", cause=CAUSE_LOCAL
             )
 
     def _idempotency_key(
@@ -751,7 +782,7 @@ class GenericHttpAdapter:
         if not template:
             # 加载期 V1 已拦；此处为运行期兜底（例如手工 register 绕过 manifest）
             raise HttpCapabilityError(
-                ARGS_SCHEMA_INVALID, "写操作缺 idempotency_key"
+                ARGS_SCHEMA_INVALID, "写操作缺 idempotency_key", cause=CAUSE_LOCAL
             )
         scope = {**args, **self._host_vars(ctx)}
         # 幂等键进 HTTP 头 → 必须 ASCII 安全（否则含中文参数的写操作全发不出去）
@@ -787,7 +818,7 @@ class GenericHttpAdapter:
                 # 第三方 transport 可能抛裸异常；在边界处统一归一化，
                 # 免得原始异常文本一路冒到模型面前。
                 last = HttpCapabilityError(
-                    UPSTREAM_ERROR, f"传输失败: {type(exc).__name__}"
+                    UPSTREAM_ERROR, f"传输失败: {type(exc).__name__}", cause=CAUSE_TRANSPORT
                 )
         assert last is not None
         raise last
@@ -799,7 +830,7 @@ class GenericHttpAdapter:
         base = os.environ.get(base_name, "").strip()
         if not base:
             raise HttpCapabilityError(
-                UPSTREAM_ERROR, f"未配置 base_url 环境变量: {base_name}"
+                UPSTREAM_ERROR, f"未配置 base_url 环境变量: {base_name}", cause=CAUSE_LOCAL
             )
         path = str(http.get("path") or "").strip()
         return f"{base.rstrip('/')}/{path.lstrip('/')}"
@@ -825,8 +856,8 @@ class GenericHttpAdapter:
         if isinstance(error_map, dict) and code_raw is not _MISSING:
             mapped = error_map.get(str(code_raw))
             if mapped:
-                return HttpCapabilityError(str(mapped), f"upstream_code={code_raw}")
-        return HttpCapabilityError(UPSTREAM_ERROR, f"HTTP {status}")
+                return HttpCapabilityError(str(mapped), f"upstream_code={code_raw}", cause=CAUSE_BUSINESS)
+        return HttpCapabilityError(UPSTREAM_ERROR, f"HTTP {status}", cause=CAUSE_HTTP_STATUS, http_status=int(status or 0))
 
     def _capture(self, payload: dict[str, Any]) -> dict[str, Any]:
         out: dict[str, Any] = {}

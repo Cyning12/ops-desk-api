@@ -47,6 +47,52 @@ def is_stable_error_code(code: str) -> bool:
     return str(code or "").strip() in STABLE_ERROR_CODES
 
 
+# ---- 失败成因（熔断的判定依据；**结构化，不解析文案**）----
+#
+# 为什么需要：``upstream_error`` 一个码里同时混着三种完全不同的东西——
+#   传输层故障（下游不响应）  → 该熔
+#   HTTP 5xx / 429           → 该熔
+#   HTTP 200 + 未识别业务码   → 下游活着且回答了，**不该熔**
+#   本地配置缺失（base_url / 凭证 / 存储接口）→ 我们自己没配好，**不该熔**
+# 只用 code 判断的话，"用户填错 5 次参数"会把整个能力熔断 60s；
+# 用 detail 字符串判断的话，文案一改熔断就静默失效（V7 那类死代码问题）。
+
+#: 传输层：超时 / 连接失败 / DNS / 第三方 transport 抛裸异常
+CAUSE_TRANSPORT = "transport"
+#: HTTP 状态码层：5xx / 429 计环境类，其余按业务响应处理
+CAUSE_HTTP_STATUS = "http_status"
+#: 业务层：下游返回了结构化响应（含未识别的业务码）
+CAUSE_BUSINESS = "business"
+#: 本地装配层：我们这边没配好（缺 base_url / 缺凭证 / 存储接口不匹配 / 模板没声明）
+CAUSE_LOCAL = "local"
+
+CAUSES: frozenset[str] = frozenset(
+    {CAUSE_TRANSPORT, CAUSE_HTTP_STATUS, CAUSE_BUSINESS, CAUSE_LOCAL}
+)
+
+#: 计入熔断的 HTTP 状态码：服务端故障 + 过载限流
+TRIP_HTTP_STATUSES: frozenset[int] = frozenset({429})
+TRIP_HTTP_STATUS_MIN = 500
+
+
+def is_environmental_failure(cause: str | None, http_status: int | None = None) -> bool:
+    """这次失败是不是"下游不健康"——**熔断只计这一类**。
+
+    判据一句话：**「下游活着并回答了」就不该熔；只有「不响应 / 5xx / 429」才熔。**
+
+    ``cause`` 缺失时（老调用点没填 / 非 HttpCapabilityError）**一律不算环境类**——
+    宁可少熔，不可误熔：误熔等于把一个能用的能力停 60s。
+    """
+    if cause == CAUSE_TRANSPORT:
+        return True
+    if cause == CAUSE_HTTP_STATUS:
+        if http_status is None:
+            # 标了状态码层却没给状态码：不敢判定，按业务类处理（少熔）
+            return False
+        return http_status >= TRIP_HTTP_STATUS_MIN or http_status in TRIP_HTTP_STATUSES
+    return False
+
+
 def error_code_of(message: str) -> str | None:
     """从 ``"code: detail"`` 形状的消息里取回 code；不匹配返回 None。"""
     head = str(message or "").strip().split(":", 1)[0].strip()

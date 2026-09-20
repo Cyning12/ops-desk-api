@@ -541,3 +541,89 @@ def test_output_schema_valid_shape_loads(tmp_path: Path):
     }
     unregister_probe = getattr(spec, "capability_id", None)
     assert unregister_probe == "probe_contract"
+
+
+# ---------------- 失败成因分类（熔断的判定依据）----------------
+
+
+def test_environmental_failure_classification():
+    """只有「下游不响应 / 5xx / 429」算环境类；业务响应与本地装配不算。"""
+    from app.ops.capability.errors import (
+        CAUSE_BUSINESS,
+        CAUSE_HTTP_STATUS,
+        CAUSE_LOCAL,
+        CAUSE_TRANSPORT,
+        is_environmental_failure,
+    )
+
+    # 该熔
+    assert is_environmental_failure(CAUSE_TRANSPORT) is True
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 500) is True
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 503) is True
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 429) is True
+
+    # 不该熔：下游活着并回答了
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 200) is False
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 404) is False
+    assert is_environmental_failure(CAUSE_BUSINESS) is False
+    # 不该熔：我们自己没配好（配错一次不能把能力停 60s）
+    assert is_environmental_failure(CAUSE_LOCAL) is False
+    # 信息不全时不判定 → 宁可少熔
+    assert is_environmental_failure(None) is False
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, None) is False
+
+
+def test_http_capability_error_exposes_structured_cause():
+    """``cause`` 必须能从异常上读到（熔断层不解析 detail 文案）。"""
+    from app.ops.capability.adapters.http_generic import HttpCapabilityError
+    from app.ops.capability.errors import CAUSE_TRANSPORT, UPSTREAM_ERROR
+
+    err = HttpCapabilityError(UPSTREAM_ERROR, "请求超时", cause=CAUSE_TRANSPORT)
+    assert err.environmental is True
+    assert str(err) == "upstream_error: 请求超时"  # 对外口径不变
+
+    biz = HttpCapabilityError(UPSTREAM_ERROR, "HTTP 200")
+    assert biz.environmental is False  # 未填 cause → 不熔（宁可少熔）
+
+
+# ---------------- 失败成因分类（熔断的判定依据）----------------
+
+
+def test_environmental_failure_classification():
+    """只有「下游不响应 / 5xx / 429」算环境类；业务响应与本地装配不算。"""
+    from app.ops.capability.errors import (
+        CAUSE_BUSINESS,
+        CAUSE_HTTP_STATUS,
+        CAUSE_LOCAL,
+        CAUSE_TRANSPORT,
+        is_environmental_failure,
+    )
+
+    # 该熔
+    assert is_environmental_failure(CAUSE_TRANSPORT) is True
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 500) is True
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 503) is True
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 429) is True
+
+    # 不该熔：下游活着并回答了
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 200) is False
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 404) is False
+    assert is_environmental_failure(CAUSE_BUSINESS) is False
+    # 不该熔：我们自己没配好（配错一次不能把能力停 60s）
+    assert is_environmental_failure(CAUSE_LOCAL) is False
+    # 信息不全时不判定 → 宁可少熔
+    assert is_environmental_failure(None) is False
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, None) is False
+
+
+def test_http_capability_error_exposes_structured_cause():
+    """``cause`` 必须能从异常上读到（熔断层不解析 detail 文案）。"""
+    from app.ops.capability.adapters.http_generic import HttpCapabilityError
+    from app.ops.capability.errors import CAUSE_TRANSPORT, UPSTREAM_ERROR
+
+    err = HttpCapabilityError(UPSTREAM_ERROR, "请求超时", cause=CAUSE_TRANSPORT)
+    assert err.environmental is True
+    assert str(err) == "upstream_error: 请求超时"  # 对外口径不变
+
+    biz = HttpCapabilityError(UPSTREAM_ERROR, "HTTP 200")
+    assert biz.environmental is False  # 未填 cause → 不熔（宁可少熔）
