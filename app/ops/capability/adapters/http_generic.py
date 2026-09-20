@@ -38,6 +38,7 @@ from app.ops.capability.errors import (
     format_error,
 )
 from app.ops.capability.idempotency import get_idempotency_store
+from app.ops.capability.receipts import get_receipt_sink
 from app.ops.capability.types import WRITE_SIDE_EFFECTS, CapabilitySpec
 
 #: 这些失败**确知下游没有产生副作用**，可以释放幂等键允许重试。
@@ -459,12 +460,67 @@ class GenericHttpAdapter:
             return await fn(*args, **kwargs)
         return await asyncio.to_thread(getattr(store, sync_name), *args, **kwargs)
 
-    def _claim_from(self, claim: Any, prepared: _Prepared) -> dict[str, Any] | None:
+    @staticmethod
+    def _replay_fields(captured: Any) -> dict[str, Any]:
+        """把回执里 captured 的 JSONPath 还原成业务字段（``$.data.ticketId`` → ``ticketId``）。
+
+        目的：幂等命中的响应要**与首次形状一致**。只回 ``duplicated=True`` + 回执 id 的话，
+        调用方拿不到上次的业务结果（ticketId/url 之类），幂等就只剩"没有重复执行"，
+        丢了"重复调用返回同样结果"这半句。
+        """
+        out: dict[str, Any] = {}
+        if not isinstance(captured, dict):
+            return out
+        for path, value in captured.items():
+            if isinstance(path, str) and path.startswith("$.data."):
+                out.setdefault(path[len("$.data.") :], value)
+        return out
+
+    def _previous_captured(self, key: str) -> Any:
+        """同步路径取上次回执的 captured（有就有，没有就 None——不能因为读不到而失败）。"""
+        try:
+            sink = get_receipt_sink()
+        except Exception:  # noqa: BLE001 - 读不到回执不该让幂等判定失败
+            return None
+        fn = getattr(sink, "latest_by_key", None)
+        if not callable(fn):
+            return None
+        try:
+            prev = fn(key)
+        except Exception:  # noqa: BLE001
+            return None
+        return getattr(prev, "captured", None)
+
+    async def _aprevious_captured(self, key: str) -> Any:
+        """异步路径取上次回执的 captured。"""
+        try:
+            sink = get_receipt_sink()
+        except Exception:  # noqa: BLE001
+            return None
+        afn = getattr(sink, "alatest_by_key", None)
+        if callable(afn):
+            try:
+                prev = await afn(key)
+            except Exception:  # noqa: BLE001
+                return None
+            return (prev or {}).get("captured") if isinstance(prev, dict) else None
+        import asyncio
+
+        return await asyncio.to_thread(self._previous_captured, key)
+
+    def _claim_from(
+        self,
+        claim: Any,
+        prepared: _Prepared,
+        previous_captured: Any = None,
+    ) -> dict[str, Any] | None:
         """把存储层的判定翻成"要不要发请求"。"""
         if claim.should_execute:
             return None
         if claim.duplicate:
-            # 已完成过：不再执行，回一个形状一致的载荷，便于调用方对账
+            # 已完成过：不再执行，回一个**与首次形状一致**的载荷，便于调用方对账
+            data: dict[str, Any] = {"duplicated": True, "duplicate_of": claim.receipt_id}
+            data.update(self._replay_fields(previous_captured))
             return {
                 "protocol": "http",
                 "kind": self.kind,
@@ -473,7 +529,7 @@ class GenericHttpAdapter:
                 "result": {
                     "code": 0,
                     "msg": "duplicated",
-                    "data": {"duplicated": True, "duplicate_of": claim.receipt_id},
+                    "data": data,
                 },
                 "duplicated": True,
                 "duplicate_of": claim.receipt_id,
@@ -493,14 +549,17 @@ class GenericHttpAdapter:
                 UPSTREAM_ERROR,
                 f"{type(store).__name__} 只支持异步接口，请走 ainvoke",
             )
-        return self._claim_from(
-            claim_fn(
-                prepared.idempotency_key,
-                capability_id=self._spec.capability_id,
-                tenant_id=prepared.tenant_id,
-            ),
-            prepared,
+        claim = claim_fn(
+            prepared.idempotency_key,
+            capability_id=self._spec.capability_id,
+            tenant_id=prepared.tenant_id,
         )
+        prev = (
+            self._previous_captured(prepared.idempotency_key)
+            if getattr(claim, "duplicate", False)
+            else None
+        )
+        return self._claim_from(claim, prepared, prev)
 
     async def _aclaim(self, prepared: _Prepared) -> dict[str, Any] | None:
         if not prepared.idempotency_key:
@@ -512,7 +571,12 @@ class GenericHttpAdapter:
             capability_id=self._spec.capability_id,
             tenant_id=prepared.tenant_id,
         )
-        return self._claim_from(claim, prepared)
+        prev = (
+            await self._aprevious_captured(prepared.idempotency_key)
+            if getattr(claim, "duplicate", False)
+            else None
+        )
+        return self._claim_from(claim, prepared, prev)
 
     def _settle_failure(self, prepared: _Prepared, exc: HttpCapabilityError) -> None:
         """失败后的防重状态处理——**只在下游确无副作用时释放**。

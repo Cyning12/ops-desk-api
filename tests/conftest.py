@@ -22,14 +22,16 @@ from datetime import datetime, timedelta
 # 先于 import app.config（其 load_dotenv）关掉 tracing，避免本机 .env 的 keys 在 pytest 里误上报
 os.environ.setdefault("OPS_CHAT_TRACER", "")
 
-# 本地/CI 精简 langchain 元包可能缺 .debug；langchain_core.globals.get_debug 会 AttributeError
+# 本地/CI 精简 langchain 元包可能缺 langchain.debug，某些三方路径读它会 AttributeError。
+# 用官方 set_debug() 预热：它内部会 catch_warnings 抑制掉
+# "Importing debug from langchain root module is no longer supported" 这条告警——
+# 直接 hasattr(_langchain, "debug") / 赋值会**触发**它（走的是 langchain.__getattr__）。
 try:
-    import langchain as _langchain
-
-    if not hasattr(_langchain, "debug"):
-        _langchain.debug = False
+    from langchain.globals import set_debug
 except ImportError:
     pass
+else:
+    set_debug(False)
 
 _TEST_DB_URL = "postgresql+asyncpg://ops:ops_password@localhost:5432/opsdesk_test"
 

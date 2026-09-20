@@ -65,6 +65,13 @@ markers = [
     "integration: 可选真连/外网；默认 CI 不跑（须显式 -m integration）",
     "redline: 红线（否决项）——任一条被突破即整体不通过，不能靠别处高分补",
 ]
+# 把 langchain 的 root-module 访问告警升级成**错误**：它只会由我们自己的
+# `langchain.debug` 读写触发（正确姿势是 langchain.globals.set_debug/get_debug）。
+# 之前它每次跑测试刷满屏，看起来像报错却没人管——现在谁再引入就当场失败。
+filterwarnings = [
+    "error:Importing debug from langchain root module is no longer supported",
+    "error:Importing verbose from langchain root module is no longer supported",
+]
 
 [tool.mypy]
 python_version = "3.11"

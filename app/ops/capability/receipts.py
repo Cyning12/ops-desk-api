@@ -99,6 +99,14 @@ class InMemoryReceiptSink:
         with self._lock:
             return [r for r in self._items if r.idempotency_key == key]
 
+    def latest_by_key(self, key: str) -> Receipt | None:
+        """按幂等键取最近一条（幂等命中时**重放上次结果**要用）。"""
+        with self._lock:
+            for r in reversed(self._items):
+                if r.idempotency_key == key:
+                    return r
+            return None
+
     def clear(self) -> None:
         with self._lock:
             self._items.clear()
@@ -231,6 +239,31 @@ class DbReceiptSink:
             "DbReceiptSink 只提供异步落库：请走异步路径（arecord），"
             "不要在事件循环里同步调用——那会阻塞事件循环"
         )
+
+    async def alatest_by_key(self, idempotency_key: str) -> dict[str, Any] | None:
+        """按幂等键取最近一条回执（幂等命中时**重放上次结果**要用）。只读。"""
+        from sqlalchemy import text
+
+        stmt = (
+            "SELECT receipt_id, capability_id, side_effect, ok, write_confirmed, "
+            "user_id, tenant_id, subtask_id, idempotency_key, captured, error, created_at "
+            "FROM ops_capability_receipts WHERE idempotency_key = :key "
+            "ORDER BY created_at DESC LIMIT 1"
+        )
+        async with self._session_factory() as session:
+            rows = await session.execute(text(stmt), {"key": idempotency_key})
+            row = rows.first()
+        if row is None:
+            return None
+        return {
+            "receipt_id": row[0],
+            "capability_id": row[1],
+            "ok": row[3],
+            "write_confirmed": row[4],
+            "idempotency_key": row[8],
+            "captured": row[9],
+            "error": row[10],
+        }
 
     async def arecent(
         self,
