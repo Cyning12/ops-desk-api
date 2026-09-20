@@ -100,11 +100,27 @@ export OA_BASE="${OA_BASE:-http://127.0.0.1:$MOCK_OA_PORT}"
 export PYTHONPATH="$ROOT"
 export PYTEST_ADDOPTS="--basetemp=$ROOT/.pytest-tmp -q"
 
-# 前置提示：桩服务的 jar 需要 Java 25+，而系统默认 java 往往更低。
-# 不设 JAVA_HOME 时联调层会"起不来但看不出为什么"——所以先说出来。
-if [[ -z "${JAVA_HOME:-}" ]]; then
-  echo "⚠️  JAVA_HOME 未设置：桩服务 jar 需要 Java 25+，系统默认 java 可能是 21 → 联调层会跳过"
-  echo "    正确写法：export JAVA_HOME=/opt/homebrew/opt/openjdk"
+# 默认**关掉** Langfuse 上报。两个理由：
+#   1) 验收不该有外部副作用：.env 里有真 key（OPS_CHAT_TRACER=langfuse + LANGFUSE_*），
+#      不关就是每次验收都往外部服务发 trace；
+#   2) 它会刷满屏 "Context error: No active span in current context..."（langfuse SDK 在无
+#      active OTel span 时的告警），把报告明细淹掉，看着像报错其实不是。
+# 需要留 trace 时显式开：OPS_ACCEPTANCE_TRACING=1
+if [[ "${OPS_ACCEPTANCE_TRACING:-0}" != "1" ]]; then
+  export OPS_CHAT_TRACER=""
+  export LANGFUSE_TRACING="0"
+fi
+
+# 前置提示：桩服务 jar 按 **Java 21** 构建（pom 里 java.version=21），java 21+ 即可跑。
+# 系统默认 java 通常就是 21；只有低于 21 时才需要显式 JAVA_HOME——
+# 否则联调层会"起不来但看不出为什么"，所以这里先把版本说出来。
+JAVA_BIN="java"
+if [[ -n "${JAVA_HOME:-}" ]]; then JAVA_BIN="$JAVA_HOME/bin/java"; fi
+if ! command -v "$JAVA_BIN" >/dev/null 2>&1; then
+  echo "⚠️  找不到 java（JAVA_HOME=${JAVA_HOME:-未设置}）→ 联调层会跳过"
+elif "$JAVA_BIN" -version 2>&1 | head -1 | grep -qE '"(1[0-9]|20)"'; then
+  echo "⚠️  当前 java 低于 21（$("$JAVA_BIN" -version 2>&1 | head -1)）→ 桩服务起不来，联调层会跳过"
+  echo "    正确写法：export JAVA_HOME=\$(/usr/libexec/java_home -v 21)"
   echo
 fi
 
@@ -152,8 +168,7 @@ else
     echo "  ── 桩服务启动日志（最后 20 行）──"
     tail -20 "$TMP/mock-oa.log" 2>/dev/null | sed 's/^/  | /' || echo "  | (无日志)"
     echo "  ── 常见原因 ──"
-    echo "  | 1) JAVA_HOME 没设/低于 25 → jar 需 Java 25+，系统默认 java 可能是 21"
-    echo "  |    正确写法：export JAVA_HOME=/opt/homebrew/opt/openjdk"
+    echo "  | 1) java 低于 21（jar 按 Java 21 构建）→ export JAVA_HOME=\$(/usr/libexec/java_home -v 21)"
     echo "  | 2) 端口被占：lsof -nP -iTCP:${MOCK_OA_PORT} -sTCP:LISTEN"
     echo "  | 3) jar 未构建：cd ${MOCK_OA_DIR} && mvn package -DskipTests"
     echo
