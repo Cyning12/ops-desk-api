@@ -135,6 +135,42 @@
     "ok": false,
     "registered_ids": []
   },
+  "sequence_business_errors_never_trip_circuit": {
+    "downstream_calls": 4,
+    "duplicated_flags": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "error_codes": [
+      "args_schema_invalid",
+      "args_schema_invalid",
+      "args_schema_invalid",
+      "args_schema_invalid"
+    ],
+    "ok": false
+  },
+  "sequence_circuit_open_blocks_further_calls": {
+    "downstream_calls": 10,
+    "duplicated_flags": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "error_codes": [
+      "upstream_error",
+      "upstream_error",
+      "upstream_error",
+      "upstream_error",
+      "upstream_error",
+      "upstream_error"
+    ],
+    "ok": false
+  },
   "sequence_same_key_second_call_does_not_reach_downstream": {
     "downstream_calls": 1,
     "duplicated_flags": [

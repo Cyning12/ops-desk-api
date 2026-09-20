@@ -459,3 +459,67 @@ cases:
       error_code: manifest_invalid
       error_contains: "V10"
       registered_ids: []
+
+  # ---------------- 熔断（P1）：连续环境类失败 → 零出网 ----------------
+
+  - id: sequence_circuit_open_blocks_further_calls
+    scenario: sequence
+    setup:
+      capabilities:
+        - id: r_flaky
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: read
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {}}
+          http: {method: GET, base_url: OA_BASE, path: /flaky, auth: oa_gateway_token,
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+      # 默认 fail_max=5：前 5 次超时（环境类）把闸跳开，第 6 次必须**零出网**。
+      #
+      # 注意「调用次数 ≠ 下游请求次数」：GET 会重试 1 次（http_generic attempts=2），
+      # 所以 5 次调用 = 10 次下游请求。**熔断后这 10 就停止增长**——
+      # 没有熔断时，下游每挂一次就要多扛 2 倍请求，这正是熔断要挡的事。
+      downstream: {exc: TimeoutError}
+      calls:
+        - {capability_id: r_flaky, args: {}, ctx: {tenant_id: t1}}
+        - {capability_id: r_flaky, args: {}, ctx: {tenant_id: t1}}
+        - {capability_id: r_flaky, args: {}, ctx: {tenant_id: t1}}
+        - {capability_id: r_flaky, args: {}, ctx: {tenant_id: t1}}
+        - {capability_id: r_flaky, args: {}, ctx: {tenant_id: t1}}
+        - {capability_id: r_flaky, args: {}, ctx: {tenant_id: t1}}
+    expect:
+      ok: false
+      error_codes: [upstream_error, upstream_error, upstream_error, upstream_error,
+                    upstream_error, upstream_error]
+      # 5×2=10；第 6 次被熔断挡住 → 仍是 10（换成 12 就说明没拦住）
+      downstream_calls: 10
+
+  - id: sequence_business_errors_never_trip_circuit
+    scenario: sequence
+    setup:
+      capabilities:
+        - id: r_biz
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: read
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {}}
+          http: {method: GET, base_url: OA_BASE, path: /biz, auth: oa_gateway_token,
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+      # 业务失败码（下游活着且正确响应）：打 4 次也不能熔断，
+      # 最后一次换成成功响应后必须**照常成功**（证明断路器是闭合的）
+      downstream: {payload: {code: 1001, data: {}}}
+      calls:
+        - {capability_id: r_biz, args: {}, ctx: {tenant_id: t1}}
+        - {capability_id: r_biz, args: {}, ctx: {tenant_id: t1}}
+        - {capability_id: r_biz, args: {}, ctx: {tenant_id: t1}}
+        - {capability_id: r_biz, args: {}, ctx: {tenant_id: t1}}
+    expect:
+      ok: false
+      error_codes: [args_schema_invalid, args_schema_invalid, args_schema_invalid, args_schema_invalid]
+      # ★ 没熔断 = 4 次全部真的打出去了
+      downstream_calls: 4

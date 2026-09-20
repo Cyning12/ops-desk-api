@@ -967,3 +967,163 @@ def test_r11_is_not_vacuous(monkeypatch: pytest.MonkeyPatch):
     assert second.ok is True and len(tx.calls) == 2, (
         f"变异未翻转：配额被摘掉后第二次仍被拦 err={second.error!r}"
     )
+
+
+# ---------------- R12：下游熔断（三态 + 只计环境类失败）----------------
+
+
+def _r12_env(monkeypatch: pytest.MonkeyPatch, fail_max: int = 3) -> None:
+    monkeypatch.setenv("OPS_CAPABILITY_CB_ENABLED", "1")
+    monkeypatch.setenv("OPS_CAPABILITY_CB_FAIL_MAX", str(fail_max))
+    monkeypatch.setenv("OPS_CAPABILITY_CB_RESET_TIMEOUT", "60")
+    monkeypatch.setenv("OPS_CAPABILITY_CB_SUCCESS_THRESHOLD", "1")
+    monkeypatch.setenv("OPS_CAPABILITY_CB_SCOPE", "capability")
+    monkeypatch.setenv("OPS_CAPABILITY_CB_HALFOPEN_WRITES", "0")
+
+
+@redline("R12")
+def test_r12_environmental_failures_trip_then_zero_egress(monkeypatch: pytest.MonkeyPatch):
+    """环境类失败达阈值 → 熔断，后续**零出网**；60s 后放行一次探测。"""
+    from app.ops.capability import circuit
+
+    _r12_env(monkeypatch)
+    circuit.reset()
+
+    spec = _spec("r12.read", side_effect="read")
+    try:
+        ctx = {"tenant_id": "t1"}
+        # 连续 3 次超时（环境类）
+        down = FakeHttpTransport(payload=None, exc=TimeoutError("t"))
+        _register(spec, down)
+        for _ in range(3):
+            invoke("r12.read", {"subject": "x"}, ctx=dict(ctx))
+
+        cb = circuit.breaker_for(spec)
+        # 闸已合上：换成能成功的传输，请求也必须**一次都出不去**
+        unregister("r12.read")
+        tx = FakeHttpTransport(payload={"code": 0, "data": {"ok": 1}})
+        _register(spec, tx)
+        blocked = invoke("r12.read", {"subject": "x"}, ctx=dict(ctx))
+        detail = str(blocked.error or "")
+        holds = (
+            cb.current_state == "open"
+            and blocked.ok is False
+            and detail.startswith("upstream_error")
+            and "circuit_open" in detail
+            and blocked.meta.get("blocked") == "circuit"
+            and tx.calls == []  # ★ 零出网
+        )
+
+        # 60s 到点 → 放行一次探测；成功 → 恢复
+        circuit.advance(spec, 61)
+        probed = invoke("r12.read", {"subject": "x"}, ctx=dict(ctx))
+        control = (
+            probed.ok is True
+            and len(tx.calls) == 1
+            and circuit.breaker_for(spec).current_state == "closed"
+        )
+    finally:
+        unregister("r12.read")
+
+    assert_redline(
+        redline_id="R12",
+        holds=holds,
+        control=control,
+        detail=f"state={cb.current_state} blocked={blocked.error!r} calls={len(tx.calls)}",
+    )
+
+
+@redline("R12")
+def test_r12_business_failures_never_trip(monkeypatch: pytest.MonkeyPatch):
+    """★ 反向对照：业务类失败连打 20 次，断路器必须**始终闭合**。
+
+    这条防的是"把用户填错参数熔了整个能力"——那等于用可用性问题换可用性问题。
+    """
+    from app.ops.capability import circuit
+
+    _r12_env(monkeypatch)
+    circuit.reset()
+
+    spec = _spec("r12.biz", side_effect="read")
+    # 下游返回 200 + 业务失败码（下游活着且正确响应）
+    tx = FakeHttpTransport(payload={"code": 1001, "data": {}})
+    _register(spec, tx)
+    try:
+        ctx = {"tenant_id": "t1"}
+        for _ in range(20):
+            invoke("r12.biz", {"subject": "x"}, ctx=dict(ctx))
+        cb = circuit.breaker_for(spec)
+        holds = cb.current_state == "closed" and cb.fail_counter == 0
+        # 对照：业务失败不熔断 ≠ 请求没打出去（下游确实被调用了 20 次）
+        control = len(tx.calls) == 20
+    finally:
+        unregister("r12.biz")
+
+    assert_redline(
+        redline_id="R12",
+        holds=holds,
+        control=control,
+        detail=f"state={cb.current_state} counter={cb.fail_counter} calls={len(tx.calls)}",
+    )
+
+
+@redline("R12")
+def test_r12_one_capability_trip_does_not_affect_another(monkeypatch: pytest.MonkeyPatch):
+    """反向对照：A 熔断不影响 B（per capability 独立性）。"""
+    from app.ops.capability import circuit
+
+    _r12_env(monkeypatch)
+    circuit.reset()
+
+    down = FakeHttpTransport(payload=None, exc=TimeoutError("t"))
+    good = FakeHttpTransport(payload={"code": 0, "data": {"ok": 1}})
+    _register(_spec("r12.a", side_effect="read"), down)
+    _register(_spec("r12.b", side_effect="read"), good)
+    try:
+        ctx = {"tenant_id": "t1"}
+        for _ in range(3):
+            invoke("r12.a", {"subject": "x"}, ctx=dict(ctx))
+        # B 从头到尾正常
+        for _ in range(3):
+            invoke("r12.b", {"subject": "x"}, ctx=dict(ctx))
+        cb_a = circuit.breaker_for(_spec("r12.a", side_effect="read"))
+        cb_b = circuit.breaker_for(_spec("r12.b", side_effect="read"))
+        holds = cb_a.current_state == "open"
+        control = cb_b.current_state == "closed" and len(good.calls) == 3
+    finally:
+        unregister("r12.a")
+        unregister("r12.b")
+
+    assert_redline(
+        redline_id="R12",
+        holds=holds,
+        control=control,
+        detail=f"a={cb_a.current_state} b={cb_b.current_state} b_calls={len(good.calls)}",
+    )
+
+
+def test_r12_is_not_vacuous(monkeypatch: pytest.MonkeyPatch):
+    """变异检验：把分类器改成"所有失败都算环境类" → 业务类对照必须**翻掉**。
+
+    不翻 = 说明上面那条对照是被别的东西满足的，是空真。
+    """
+    import app.ops.capability.circuit as circuit_mod
+
+    _r12_env(monkeypatch)
+    circuit_mod.reset()
+    # 变异：一切失败皆环境类（这正是最容易写错的实现）
+    monkeypatch.setattr(circuit_mod, "_is_business_error", lambda exc: False)
+
+    spec = _spec("r12.mut", side_effect="read")
+    tx = FakeHttpTransport(payload={"code": 1001, "data": {}})
+    _register(spec, tx)
+    try:
+        for _ in range(3):
+            invoke("r12.mut", {"subject": "x"}, ctx={"tenant_id": "t1"})
+    finally:
+        unregister("r12.mut")
+    cb = circuit_mod.breaker_for(spec)
+    assert cb.current_state == "open", (
+        f"变异未翻转：业务类失败被算作环境类后仍未熔断（state={cb.current_state}），"
+        "说明 R12 的业务类对照是空真"
+    )
