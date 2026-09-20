@@ -29,6 +29,11 @@ _WRITE_BLOCKED = 0
 _LATENCY_COUNT = 0
 _LATENCY_SUM_MS = 0.0
 _LATENCY_MAX_MS = 0.0
+# 降级（P1 · Q3 下半）：**降级率要和熔断率一起看**——
+# 熔断 open 但降级率 0 = 用户正在硬吃错误，兜底根本没接上。
+_DEGRADED_TOTAL = 0
+_DEGRADED_BY_ACTION: dict[str, int] = {}
+_DEGRADE_BY_DEPTH: dict[int, int] = {}
 
 
 def outcome_of(result: CapabilityResult) -> str:
@@ -48,6 +53,7 @@ def record_outcome(result: CapabilityResult) -> None:
     """在 `invoke` / `ainvoke` 的**唯一出口**调用，覆盖全部路径（含 unknown/disabled）。"""
     global _WRITE_TOTAL, _WRITE_BLOCKED
     global _LATENCY_COUNT, _LATENCY_SUM_MS, _LATENCY_MAX_MS
+    global _DEGRADED_TOTAL
 
     outcome = outcome_of(result)
     cid = result.capability_id or "<unknown>"
@@ -55,6 +61,15 @@ def record_outcome(result: CapabilityResult) -> None:
         bucket = _BY_CAPABILITY.setdefault(cid, {})
         bucket[outcome] = bucket.get(outcome, 0) + 1
         _BY_OUTCOME[outcome] = _BY_OUTCOME.get(outcome, 0) + 1
+        if result.meta.get("degraded") is True:
+            _DEGRADED_TOTAL += 1
+            act = str(result.meta.get("degraded_action") or "unknown")
+            _DEGRADED_BY_ACTION[act] = _DEGRADED_BY_ACTION.get(act, 0) + 1
+            try:
+                depth = int(result.meta.get("degrade_depth") or 0)
+            except (TypeError, ValueError):
+                depth = 0
+            _DEGRADE_BY_DEPTH[depth] = _DEGRADE_BY_DEPTH.get(depth, 0) + 1
         if is_write_result(result):
             _WRITE_TOTAL += 1
             if not result.ok:
@@ -84,13 +99,24 @@ def snapshot() -> dict[str, Any]:
             },
             "by_capability": {cid: dict(sorted(b.items())) for cid, b in sorted(_BY_CAPABILITY.items())},
             "latency_ms": latency,
+            # 降级：**成功但降级**的调用最容易从监控里消失（它们 ok=True），
+            # 所以必须单列——不然"系统一切正常"是真的，用户拿到的却是兜底答案。
+            "degrade": {
+                "calls": _DEGRADED_TOTAL,
+                "by_action": dict(sorted(_DEGRADED_BY_ACTION.items())),
+                "by_depth": {str(k): v for k, v in sorted(_DEGRADE_BY_DEPTH.items())},
+                # 经常退到第二级 = 第一级长期不可用，是选型问题不是抖动
+                "deeper_than_one": sum(
+                    v for k, v in _DEGRADE_BY_DEPTH.items() if k > 1
+                ),
+            },
         }
 
 
 def reset() -> None:
     """测试用。生产不该调。"""
     global _WRITE_TOTAL, _WRITE_BLOCKED
-    global _LATENCY_COUNT, _LATENCY_SUM_MS, _LATENCY_MAX_MS
+    global _LATENCY_COUNT, _LATENCY_SUM_MS, _LATENCY_MAX_MS, _DEGRADED_TOTAL
     with _LOCK:
         _BY_CAPABILITY.clear()
         _BY_OUTCOME.clear()
@@ -99,3 +125,6 @@ def reset() -> None:
         _LATENCY_COUNT = 0
         _LATENCY_SUM_MS = 0.0
         _LATENCY_MAX_MS = 0.0
+        _DEGRADED_TOTAL = 0
+        _DEGRADED_BY_ACTION.clear()
+        _DEGRADE_BY_DEPTH.clear()

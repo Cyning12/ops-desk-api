@@ -37,6 +37,7 @@ import time
 from typing import Any
 
 from app.ops.capability import circuit
+from app.ops.capability import fallback as fallback_mod
 from app.ops.capability.budget import check as budget_check
 from app.ops.capability.budget import count as budget_count
 from app.ops.capability.errors import (
@@ -581,6 +582,10 @@ def _ok_result(
         # 但不能和"查到了"长得一样——编排层要看得到这个区别。
         result.meta["result_empty"] = True
         result.meta["result_suspicious"] = verdict.suspicious
+    if mode == "invoke":
+        # action=cache 的降级源：只记**真实成功**的结果。
+        # 降级结果绝不入库——否则陈旧数据会被当成新结果再降一次级。
+        fallback_mod.remember(spec.capability_id, output, args=args, ctx=ctx)
     _maybe_record_receipt(spec, result, ctx=ctx)
     _write_span_metadata(
         result,
@@ -689,6 +694,8 @@ async def _aok_result(
     if verdict is not None and verdict.empty:
         result.meta["result_empty"] = True
         result.meta["result_suspicious"] = verdict.suspicious
+    if mode == "invoke":
+        fallback_mod.remember(spec.capability_id, output, args=args, ctx=ctx)
     await _amaybe_record_receipt(spec, result, ctx=ctx)
     _write_span_metadata(
         result,
@@ -748,21 +755,227 @@ def _missing_provide_result(
     return result
 
 
+def _degrade(
+    *,
+    spec: CapabilitySpec,
+    cid: str,
+    mode: str,
+    args: Any,
+    ctx: dict[str, Any] | None,
+    started: float,
+    trigger: str,
+    root_error: str,
+    chain: fallback_mod.Chain,
+) -> CapabilityResult | None:
+    """按声明降级；**不降级 / 降级没成功 → 返回 None**（调用方照常返回原始失败）。
+
+    返回 ``None`` 而不是抛错，是刻意的：降级是**兜底**，
+    兜底失败不应该制造一个新错误把真实原因盖掉。
+    """
+    if not fallback_mod.should_degrade(spec, trigger=trigger):
+        return None
+    action = fallback_mod.action_of(spec)
+    depth = fallback_mod.max_depth_of(spec)
+
+    if action == fallback_mod.ACTION_CAPABILITY:
+        target = str(fallback_mod.plan_of(spec).get("capability_id") or "").strip()
+        nxt = chain.next(target, max_depth=depth)
+        if nxt is None:
+            return None  # 成环 / 深度到顶（B3）
+        mapped = fallback_mod.map_args(
+            args, fallback_mod.plan_of(spec).get("args_map")
+        )
+        # 走**内部**分派而非公开 invoke：降级目标也是一次真实调用，
+        # 必须同样过 Policy / 熔断 / 配额 / 参数校验，但不重复计一次指标。
+        inner = _dispatch(
+            target, mode=mode, args=mapped, ctx=ctx, chain=nxt
+        )
+        if not inner.ok:
+            return None  # 降级目标也失败 → 不降级（明确失败优于静默兜底）
+        output: Any = inner.output
+        extra: dict[str, Any] = {"degraded_to": target}
+    elif action == fallback_mod.ACTION_CACHE:
+        hit = fallback_mod.recall(
+            cid, args=args, ctx=ctx, ttl_seconds=fallback_mod.ttl_of(spec)
+        )
+        if hit is None:
+            return None  # 没缓存 / 已过期 → 不降级（陈旧数据比报错更危险）
+        output, stored_at = hit
+        extra = {"stale_at": fallback_mod.iso(stored_at)}
+    elif action == fallback_mod.ACTION_STATIC:
+        output = fallback_mod.plan_of(spec).get("value")
+        extra = {}
+    else:
+        return None
+
+    return _degraded_result(
+        spec=spec,
+        cid=cid,
+        mode=mode,
+        output=output,
+        started=started,
+        trigger=trigger,
+        action=action,
+        depth=chain.depth + 1,
+        root_error=root_error,
+        args=args,
+        ctx=ctx,
+        meta_extra=extra,
+    )
+
+
+async def _adegrade(
+    *,
+    spec: CapabilitySpec,
+    cid: str,
+    mode: str,
+    args: Any,
+    ctx: dict[str, Any] | None,
+    started: float,
+    trigger: str,
+    root_error: str,
+    chain: fallback_mod.Chain,
+) -> CapabilityResult | None:
+    """异步版：只有 action=capability 需要真的 await，其余与同步同路径。"""
+    if not fallback_mod.should_degrade(spec, trigger=trigger):
+        return None
+    action = fallback_mod.action_of(spec)
+    if action != fallback_mod.ACTION_CAPABILITY:
+        return _degrade(
+            spec=spec,
+            cid=cid,
+            mode=mode,
+            args=args,
+            ctx=ctx,
+            started=started,
+            trigger=trigger,
+            root_error=root_error,
+            chain=chain,
+            # cache / static 无 IO，同步helper 直接可用
+        )
+
+    target = str(fallback_mod.plan_of(spec).get("capability_id") or "").strip()
+    nxt = chain.next(target, max_depth=fallback_mod.max_depth_of(spec))
+    if nxt is None:
+        return None
+    mapped = fallback_mod.map_args(args, fallback_mod.plan_of(spec).get("args_map"))
+    inner = await _adispatch(target, mode=mode, args=mapped, ctx=ctx, chain=nxt)
+    if not inner.ok:
+        return None
+    return _degraded_result(
+        spec=spec,
+        cid=cid,
+        mode=mode,
+        output=inner.output,
+        started=started,
+        trigger=trigger,
+        action=action,
+        depth=chain.depth + 1,
+        root_error=root_error,
+        args=args,
+        ctx=ctx,
+        meta_extra={"degraded_to": target},
+    )
+
+
+def _degraded_result(
+    *,
+    spec: CapabilitySpec,
+    cid: str,
+    mode: str,
+    output: Any,
+    started: float,
+    trigger: str,
+    action: str,
+    depth: int,
+    root_error: str,
+    args: Any,
+    ctx: dict[str, Any] | None,
+    meta_extra: dict[str, Any] | None = None,
+) -> CapabilityResult:
+    """**降级成功**的结果：ok=True，但**必须带标记**（B2）。
+
+    不标记的话编排层与模型分不清「真实结果」和「降级结果」——
+    拿缓存当实时数据回答是**静默错误**，没人会来查。
+
+    两个刻意的选择：
+
+    - **不落回执**：这次调用没有真的执行副作用，留回执等于声称做了没做的事。
+    - **跳过结果契约校验**：契约描述的是"真实结果长什么样"，降级结果本来就不是
+      真实结果；但跳过必须**显式可见**（``result_contract_skipped``），不能悄悄跳。
+    """
+    meta: dict[str, Any] = {
+        "kind": spec.kind,
+        "mode": mode,
+        "degraded": True,
+        "degraded_from": cid,
+        "degraded_action": action,
+        "degraded_trigger": trigger,
+        "degrade_depth": depth,
+        "degraded_at": fallback_mod.iso(),
+        # 真实原因必须留着：降级是"给了个替代答案"，不是"问题消失了"
+        "degraded_reason": str(root_error or "")[:_ERROR_TRUNCATE],
+        "result_contract_skipped": True,
+    }
+    if meta_extra:
+        meta.update(meta_extra)
+    result = CapabilityResult(
+        ok=True,
+        output=output,
+        capability_id=cid,
+        duration_ms=(time.perf_counter() - started) * 1000.0,
+        meta=meta,
+    )
+    _write_span_metadata(
+        result,
+        kind=spec.kind,
+        risk_level=spec.risk_level,
+        policy_reason="allowed",
+        args=args,
+        ctx=ctx,
+        side_effect=spec.side_effect,
+        extra=meta,
+    )
+    return result
+
+
 def _dispatch(
     capability_id: str,
     *,
     mode: str,
     args: Any,
     ctx: dict[str, Any] | None,
+    chain: fallback_mod.Chain | None = None,
 ) -> CapabilityResult:
-    """内部：lookup + enabled 检查 + invoke/provide 分派。"""
+    """内部：lookup + enabled 检查 + invoke/provide 分派。
+
+    ``chain``：降级链的进度（None = 原始调用）。由 :func:`_degrade` 递归传入。
+    """
     prepared = _prepare_call(capability_id, args=args, ctx=ctx, mode=mode)
     if isinstance(prepared, CapabilityResult):
+        if mode == "invoke" and prepared.meta.get("blocked") == "circuit":
+            # 熔断中：下游已知不可用，正是降级的时机（不必再付一次超时）
+            entry = _registry.get(capability_id or "")
+            if entry is not None:
+                dgr = _degrade(
+                    spec=entry[0],
+                    cid=capability_id or "",
+                    mode=mode,
+                    args=args,
+                    ctx=ctx,
+                    started=time.perf_counter(),
+                    trigger=fallback_mod.TRIGGER_CIRCUIT_OPEN,
+                    root_error=str(prepared.error or ""),
+                    chain=chain or fallback_mod.Chain(),
+                )
+                if dgr is not None:
+                    return dgr
         return prepared
     spec, adapter, started = prepared
     cid = capability_id or ""
     # 计数：**已放行、即将真正执行**才计（被拦下的不算，见 budget.count 的说明）
     budget_count(spec, ctx=ctx)
+    chain = chain or fallback_mod.Chain(visited=frozenset({cid}))
     try:
         if mode == "provide":
             provide_fn = getattr(adapter, "provide", None)
@@ -787,6 +1000,20 @@ def _dispatch(
         )
     except CircuitOpen as exc:
         # 熔断中：这次**没有出门** → 不落回执
+        if mode == "invoke":
+            dgr = _degrade(
+                spec=spec,
+                cid=cid,
+                mode=mode,
+                args=args,
+                ctx=ctx,
+                started=started,
+                trigger=fallback_mod.TRIGGER_CIRCUIT_OPEN,
+                root_error=circuit.error_detail(exc),
+                chain=chain,
+            )
+            if dgr is not None:
+                return dgr
         return _blocked_result(
             spec=spec,
             cid=cid,
@@ -798,6 +1025,22 @@ def _dispatch(
             ctx=ctx,
         )
     except Exception as exc:
+        if mode == "invoke":
+            trigger = fallback_mod.trigger_of(exc)
+            if trigger is not None:
+                dgr = _degrade(
+                    spec=spec,
+                    cid=cid,
+                    mode=mode,
+                    args=args,
+                    ctx=ctx,
+                    started=started,
+                    trigger=trigger,
+                    root_error=repr(exc),
+                    chain=chain,
+                )
+                if dgr is not None:
+                    return dgr
         return _err_result(
             spec=spec,
             cid=cid,
@@ -844,15 +1087,33 @@ async def _adispatch(
     mode: str,
     args: Any,
     ctx: dict[str, Any] | None,
+    chain: fallback_mod.Chain | None = None,
 ) -> CapabilityResult:
     """异步分派：coroutine adapter 则 await，否则兼容 sync invoke。"""
     prepared = _prepare_call(capability_id, args=args, ctx=ctx, mode=mode)
     if isinstance(prepared, CapabilityResult):
+        if mode == "invoke" and prepared.meta.get("blocked") == "circuit":
+            entry = _registry.get(capability_id or "")
+            if entry is not None:
+                dgr = await _adegrade(
+                    spec=entry[0],
+                    cid=capability_id or "",
+                    mode=mode,
+                    args=args,
+                    ctx=ctx,
+                    started=time.perf_counter(),
+                    trigger=fallback_mod.TRIGGER_CIRCUIT_OPEN,
+                    root_error=str(prepared.error or ""),
+                    chain=chain or fallback_mod.Chain(),
+                )
+                if dgr is not None:
+                    return dgr
         return prepared
     spec, adapter, started = prepared
     cid = capability_id or ""
     # 与同步路径同口径：已放行、即将执行才计数
     budget_count(spec, ctx=ctx)
+    chain = chain or fallback_mod.Chain(visited=frozenset({cid}))
     try:
         if mode == "provide":
             provide_fn = getattr(adapter, "provide", None)
@@ -879,6 +1140,20 @@ async def _adispatch(
     except CircuitOpen as exc:
         # 熔断中：这次**没有出门** → 不落回执。
         # 被拦下没有副作用，所以不需要异步版（异步版存在的意义是写 sink 不阻塞）。
+        if mode == "invoke":
+            dgr = await _adegrade(
+                spec=spec,
+                cid=cid,
+                mode=mode,
+                args=args,
+                ctx=ctx,
+                started=started,
+                trigger=fallback_mod.TRIGGER_CIRCUIT_OPEN,
+                root_error=circuit.error_detail(exc),
+                chain=chain,
+            )
+            if dgr is not None:
+                return dgr
         return _blocked_result(
             spec=spec,
             cid=cid,
@@ -890,6 +1165,22 @@ async def _adispatch(
             ctx=ctx,
         )
     except Exception as exc:
+        if mode == "invoke":
+            trigger = fallback_mod.trigger_of(exc)
+            if trigger is not None:
+                dgr = await _adegrade(
+                    spec=spec,
+                    cid=cid,
+                    mode=mode,
+                    args=args,
+                    ctx=ctx,
+                    started=started,
+                    trigger=trigger,
+                    root_error=repr(exc),
+                    chain=chain,
+                )
+                if dgr is not None:
+                    return dgr
         return await _aerr_result(
             spec=spec,
             cid=cid,
@@ -939,6 +1230,7 @@ def _write_span_metadata(
     ctx: dict[str, Any] | None = None,
     side_effect: str | None = None,
     receipt_id: str | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> None:
     """附加到当前 span；无父 span / 未开启 tracing 时静默。"""
     payload: dict[str, Any] = {
@@ -970,4 +1262,6 @@ def _write_span_metadata(
             payload["subtask_id"] = sid
     if result.error:
         payload["error"] = result.error[:_ERROR_TRUNCATE]
+    if extra:
+        payload.update(extra)
     update_current_span_metadata(payload)

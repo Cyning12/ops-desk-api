@@ -2,25 +2,26 @@
 #
 # Capability 层一键验收。
 #
-# 一条命令跑完七层，出一份**带证据**的 Markdown 报告，退出码可直接接 CI：
+# 一条命令跑完八层，出一份**带证据**的 Markdown 报告，退出码可直接接 CI：
 #
 #   0  全部通过
 #   1  有条目失败
 #   2  前置条件不满足（缺 venv 等）
 #
-# 七层分开报，**不合并成一个"通过率"**——它们回答的是七个不同问题：
+# 八层分开报，**不合并成一个"通过率"**——它们回答的是八个不同问题：
 #   单测      内部逻辑对不对
 #   黑盒题集  出口产出有没有变
 #   红线      有没有踩到否决项
 #   失控兜底  配额 / kill switch **运维真按得下去吗**（配置级，非单测装置）
 #   熔断      三态真按 60s 走吗、业务类错误会不会误熔（配置级）
+#   降级      真清单上的降级声明真的生效吗、默认是不是不降级（配置级）
 #   DB 持久化 跨实例那条链路是不是真的通
 #   桩服务联调 **真的发得出网吗**（唯一能证明这点的）
 #
 # 用法：
 #   scripts/acceptance/capability_acceptance.sh
 #   MOCK_OA_DIR=/path/to/ops-desk-mock-oa MOCK_OA_PORT=18080 scripts/.../capability_acceptance.sh
-#   SKIP_SMOKE=1 scripts/.../capability_acceptance.sh     # 只跑不需要桩服务的六层
+#   SKIP_SMOKE=1 scripts/.../capability_acceptance.sh     # 只跑不需要桩服务的七层
 
 set -uo pipefail
 
@@ -146,6 +147,13 @@ run_step "失控兜底" "kill switch + 会话配额" "按下即停、零出网" 
 run_step "熔断" "三态 + 只熔环境类失败" "零出网、60s 探测" \
   "$VENV_PY" "$ROOT/scripts/acceptance/capability_circuit_gate.py"
 
+# 降级链的**配置级**闸门：熔断管"打得通吗"，降级管"打不通给什么"。
+# 后者与业务强相关，所以这一层验的是**真清单上的声明真的生效了**
+# （字段名拼错、YAML 把裸键 on 解析成布尔，只有真清单才暴露得了），
+# 以及"未声明的能力仍然明确失败"——默认必须是不降级。
+run_step "降级" "声明才降级 + 必须带标记" "兜底可见、默认不降级" \
+  "$VENV_PY" "$ROOT/scripts/acceptance/capability_fallback_gate.py"
+
 run_step "持久化" "DB 版 store/sink" "跨实例防重" \
   "$VENV_PY" -m pytest "$ROOT/tests/test_capability_persistence_db.py"
 
@@ -206,7 +214,7 @@ rm -rf "$ROOT/.pytest-tmp"
   echo "- 桩服务：\`$MOCK_OA_DIR\` @ 127.0.0.1:$MOCK_OA_PORT"
   echo "- 结论：**$([[ $FAILED -eq 0 ]] && echo '通过' || echo '不通过')**（失败 ${FAILED} · 跳过 ${SKIPPED}）"
   echo
-  echo "> 七层分开看，**不合并成一个通过率**——它们回答七个不同问题。"
+  echo "> 八层分开看，**不合并成一个通过率**——它们回答八个不同问题。"
   echo "> 跳过 ≠ 通过：桩服务未就绪时联调被显式标为 SKIP，而不是记成失败、也不假装通过。"
   echo
   echo "| 层 | 内容 | 结果 | 说明 |"

@@ -1127,3 +1127,468 @@ def test_r12_is_not_vacuous(monkeypatch: pytest.MonkeyPatch):
         f"变异未翻转：业务类失败被算作环境类后仍未熔断（state={cb.current_state}），"
         "说明 R12 的业务类对照是空真"
     )
+
+
+# ---------------- R13：降级链（声明即行为，且绝不静默）----------------
+#
+# 熔断回答"打得通吗"，降级回答"打不通给什么"。后者与业务强相关，所以：
+#   - **降级成什么**必须由清单声明（走 Git + PR + 人闸），框架不猜
+#   - 默认**不降级**（action=none）——让"不降级"成为需要显式改掉的默认
+#   - 降级结果必须带 degraded 标记（否则等于用兜底掩盖了故障）
+
+_READ_HTTP = {
+    "method": "GET",
+    "base_url": "OA_BASE",
+    "path": "/api/v1/read",
+    "auth": "oa_gateway_token",
+    "query_map": {"subject": "{{subject}}"},
+    # ★ _spec 是「以 _WRITE_HTTP 为底再 update」，所以写能力的 body_map /
+    #   idempotency_key 会被继承下来。这两个模板都引用 {{subject}}，
+    #   对只声明了 keyword 的降级目标就成了"未声明模板变量"——降级目标失败，
+    #   于是整条降级链失效（**降级失败要看得见**，正是这里想证明的）。
+    "body_map": {},
+    "idempotency_key": "",
+    "timeout_ms": 2000,
+    "success_when": {"path": "$.code", "in": [0]},
+    "error_map": {"1001": "args_schema_invalid", "5001": "upstream_error"},
+}
+
+_ARGS_KEYWORD = {"type": "object", "properties": {"keyword": {"type": "string"}}}
+# 降级目标用自己的参数名（query_map 必须引用自己 schema 里声明的字段，
+# 否则加载期/运行期会因"未声明模板变量"失败——那正是"降级失败要看得见"的样例）
+_READ_HTTP_KW = {**_READ_HTTP, "query_map": {"keyword": "{{keyword}}"}}
+
+
+def _r13_kw(cid: str, **over: Any) -> CapabilitySpec:
+    """降级目标：参数名是 keyword（与源能力的 subject 不同，用于验证 args_map）。"""
+    over.setdefault("args_schema", dict(_ARGS_KEYWORD))
+    return _spec(cid, side_effect="read", http=dict(_READ_HTTP_KW), **over)
+# 降级目标用自己的参数名（query_map 必须引用自己 schema 里声明的字段，
+# 否则加载期/运行期会因"未声明模板变量"失败——那正是"降级失败要看得见"的样例）
+_READ_HTTP_KW = {**_READ_HTTP, "query_map": {"keyword": "{{keyword}}"}}
+
+
+def _r13_kw(cid: str, **over: Any) -> CapabilitySpec:
+    """降级目标：参数名是 keyword（与源能力的 subject 不同，用于验证 args_map）。"""
+    over.setdefault("args_schema", dict(_ARGS_KEYWORD))
+    return _spec(cid, side_effect="read", http=dict(_READ_HTTP_KW), **over)
+
+
+def _r13_read(cid: str, **over: Any) -> CapabilitySpec:
+    return _spec(cid, side_effect="read", http=dict(_READ_HTTP), **over)
+
+
+def _r13_down() -> FakeHttpTransport:
+    """下游不可用（超时 = transport，最典型的降级触发条件）。"""
+    return FakeHttpTransport(payload=None, exc=TimeoutError("t"))
+
+
+@redline("R13")
+def test_r13_declared_fallback_degrades_with_marker():
+    """声明了降级 + 下游不可用 → **成功但带 degraded 标记**；未声明 → 明确失败。"""
+    from app.ops.capability import fallback
+
+    fallback.reset()
+    down_a = _r13_down()
+    good_b = FakeHttpTransport(payload={"code": 0, "data": {"items": [{"id": 1}]}})
+    spec_a = _r13_read(
+        "r13.a",
+        fallback={
+            "triggers": ["transport"],
+            "action": "capability",
+            "capability_id": "r13.b",
+            "args_map": {"keyword": "subject"},  # 目标参数名 ← 源参数名
+        },
+    )
+    spec_b = _r13_kw("r13.b")
+    _register(spec_a, down_a)
+    _register(spec_b, good_b)
+
+    down_c = _r13_down()
+    good_d = FakeHttpTransport(payload={"code": 0, "data": {}})
+    _register(_r13_read("r13.c"), down_c)
+    _register(_r13_kw("r13.d"), good_d)
+    try:
+        ctx = {"tenant_id": "t1"}
+        res = invoke("r13.a", {"subject": "报销"}, ctx=dict(ctx))
+        holds = (
+            res.ok is True  # ★ 成功但降级
+            and res.meta.get("degraded") is True  # ★ B2：必须显式标记
+            and res.meta.get("degraded_from") == "r13.a"
+            and res.meta.get("degraded_action") == "capability"
+            and res.meta.get("degraded_to") == "r13.b"
+            and res.meta.get("degrade_depth") == 1
+            and res.meta.get("degraded_at")  # 时间也要有：编排层才知道有多旧
+            and len(good_b.calls) == 1  # ★ 降级目标真的被调用了
+            # args_map 生效：源参数 subject → 目标参数 keyword
+            and good_b.calls[0]["params"] == {"keyword": "报销"}
+        )
+
+        # 对照：**没声明**降级 → 明确失败，降级目标零调用
+        res2 = invoke("r13.c", {"subject": "报销"}, ctx=dict(ctx))
+        control = (
+            res2.ok is False
+            and res2.meta.get("degraded") is not True
+            and good_d.calls == []
+        )
+    finally:
+        for cid in ("r13.a", "r13.b", "r13.c", "r13.d"):
+            unregister(cid)
+        fallback.reset()
+
+    assert_redline(
+        redline_id="R13",
+        holds=holds,
+        control=control,
+        detail=(
+            f"degraded={res.meta.get('degraded')} ok={res.ok} err={res.error!r} "
+            f"fb={spec_a.fallback} b_calls={len(good_b.calls)} "
+            f"undeclared_ok={res2.ok} err2={res2.error!r}"
+        ),
+    )
+
+
+@redline("R13")
+def test_r13_only_downstream_unavailability_degrades():
+    """★ 反向对照：业务码失败 / 参数错不得降级（换接口参数还是错的）。"""
+    from app.ops.capability import fallback
+
+    fallback.reset()
+    biz = FakeHttpTransport(payload={"code": 1001, "data": {}})
+    good = FakeHttpTransport(payload={"code": 0, "data": {"items": []}})
+    _register(
+        _r13_read(
+            "r13.biz",
+            fallback={"action": "capability", "capability_id": "r13.bizfb"},
+        ),
+        biz,
+    )
+    _register(_r13_kw("r13.bizfb"), good)
+
+    down = _r13_down()
+    good2 = FakeHttpTransport(payload={"code": 0, "data": {"items": []}})
+    _register(
+        _r13_read(
+            "r13.env",
+            fallback={"action": "capability", "capability_id": "r13.envfb"},
+        ),
+        down,
+    )
+    _register(_r13_kw("r13.envfb"), good2)
+    try:
+        ctx = {"tenant_id": "t1"}
+        # 下游活着并返回了业务失败码 → 不该降级
+        res = invoke("r13.biz", {"subject": "x"}, ctx=dict(ctx))
+        holds = (
+            res.ok is False
+            and res.meta.get("degraded") is not True
+            and "args_schema_invalid" in str(res.error or "")
+            and good.calls == []  # ★ 降级目标零调用
+        )
+        # 对照：同一个声明，换成 transport 失败 → 确实降级（证明声明本身接上了）
+        res2 = invoke("r13.env", {"subject": "x"}, ctx=dict(ctx))
+        control = res2.ok is True and res2.meta.get("degraded") is True
+    finally:
+        for cid in ("r13.biz", "r13.bizfb", "r13.env", "r13.envfb"):
+            unregister(cid)
+        fallback.reset()
+
+    assert_redline(
+        redline_id="R13",
+        holds=holds,
+        control=control,
+        detail=f"biz_ok={res.ok} biz_err={res.error!r} env_degraded={res2.meta.get('degraded')}",
+    )
+
+
+@redline("R13")
+def test_r13_write_capability_never_degrades(tmp_path: Path):
+    """B1：写能力永不降级——运行期 + 加载期两道闸。"""
+    from app.ops.capability import fallback
+
+    fallback.reset()
+    good = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-X"}})
+    _register(
+        _spec(
+            "r13.w",
+            fallback={"action": "capability", "capability_id": "r13.wfb"},
+        ),
+        _r13_down(),
+    )
+    _register(_r13_kw("r13.wfb"), good)
+    try:
+        res = invoke("r13.w", {"subject": "x"}, ctx=dict(_CTX_WRITE))
+        holds = (
+            res.ok is False
+            and res.meta.get("degraded") is not True
+            and good.calls == []  # ★ 写失败就是失败，没有"降级成建了一半"
+        )
+    finally:
+        unregister("r13.w")
+        unregister("r13.wfb")
+
+    # 对照（加载期 V12）：写能力声明降级 → 整文件拒；**同样的声明用在读能力上放行**
+    def _manifest(cid: str, side: str, fb: dict[str, Any], http: dict[str, Any]) -> str:
+        return json.dumps(
+            {
+                "version": 1,
+                "capabilities": [
+                    {
+                        "id": cid,
+                        "kind": "http",
+                        "description": "R13 加载期",
+                        "when_to_use": "R13 加载期",
+                        "args_schema": dict(_ARGS),
+                        "side_effect": side,
+                        "hitl": {"required": side == "write"},
+                        "visibility": {"departments": ["all"]},
+                        "http": http,
+                        "fallback": fb,
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+
+    bad = tmp_path / "write_fallback.json"
+    bad.write_text(
+        _manifest("r13.mw", "write", {"action": "static", "value": {"ok": 1}}, dict(_WRITE_HTTP)),
+        encoding="utf-8",
+    )
+    try:
+        load_capability_manifest(bad)
+        rejected = False
+        why = ""
+    except ManifestError as exc:
+        rejected = "V12" in str(exc)
+        why = str(exc)
+
+    read_http = {k: v for k, v in _WRITE_HTTP.items() if k != "idempotency_key"}
+    ok_file = tmp_path / "read_fallback.json"
+    ok_file.write_text(
+        _manifest("r13.mr", "read", {"action": "static", "value": {"ok": 1}}, read_http),
+        encoding="utf-8",
+    )
+    loaded = load_capability_manifest(ok_file).registered_ids == ("r13.mr",)
+    unregister("r13.mr")
+
+    control = rejected and loaded
+    assert_redline(
+        redline_id="R13",
+        holds=holds,
+        control=control,
+        detail=f"write_ok={res.ok} degraded={res.meta.get('degraded')} V12={why} loaded={loaded}",
+    )
+
+
+@redline("R13")
+def test_r13_chain_is_bounded():
+    """B3：成环不死循环；``max_depth`` 真的生效（1 与 2 行为不同）。"""
+    from app.ops.capability import fallback
+
+    fallback.reset()
+    # ① 成环：A → B → A
+    a_tx = _r13_down()
+    b_tx = _r13_down()
+    _register(
+        _r13_read(
+            "r13.cyc.a",
+            fallback={"action": "capability", "capability_id": "r13.cyc.b"},
+        ),
+        a_tx,
+    )
+    _register(
+        _r13_read(
+            "r13.cyc.b",
+            fallback={"action": "capability", "capability_id": "r13.cyc.a"},
+        ),
+        b_tx,
+    )
+    try:
+        res = invoke("r13.cyc.a", {"subject": "x"}, ctx={"tenant_id": "t1"})
+        # 不死循环：A / B 各只被打了「自己那一次」的量（GET 会重试一次 = 2 次）。
+        # 真递归的话这里会是 4、6、… 或直接 RecursionError。
+        holds = (
+            res.ok is False
+            and 0 < len(a_tx.calls) <= 2
+            and 0 < len(b_tx.calls) <= 2
+        )
+    finally:
+        unregister("r13.cyc.a")
+        unregister("r13.cyc.b")
+
+    # ② 两级链：A → B → C，max_depth=2 时第二级**必须**跑得到
+    c_payload = {"code": 0, "data": {"items": [{"id": 9}]}}
+    a2 = _r13_down()
+    b2 = _r13_down()
+    c2 = FakeHttpTransport(payload=c_payload)
+    _register(
+        _r13_read(
+            "r13.d2.a",
+            fallback={
+                "action": "capability",
+                "capability_id": "r13.d2.b",
+                "max_depth": 2,
+            },
+        ),
+        a2,
+    )
+    _register(
+        _r13_read(
+            "r13.d2.b",
+            fallback={
+                "action": "capability",
+                "capability_id": "r13.d2.c",
+                "max_depth": 2,
+            },
+        ),
+        b2,
+    )
+    _register(_r13_read("r13.d2.c"), c2)
+    try:
+        res2 = invoke("r13.d2.a", {"subject": "x"}, ctx={"tenant_id": "t1"})
+        control = (
+            res2.ok is True
+            and res2.meta.get("degraded") is True
+            and len(c2.calls) == 1  # ★ 第二级真的跑到了
+            # 拿到的确实是 C 的结果（http 适配器把下游响应体放在 output["result"]）
+            and isinstance(res2.output, dict)
+            and res2.output.get("result") == c_payload
+        )
+    finally:
+        for cid in ("r13.d2.a", "r13.d2.b", "r13.d2.c"):
+            unregister(cid)
+
+    # ③ max_depth=1：第二级**不得**发生（上界是真的，不是摆设）
+    a3 = _r13_down()
+    b3 = _r13_down()
+    c3 = FakeHttpTransport(payload={"code": 0, "data": {}})
+    _register(
+        _r13_read(
+            "r13.d1.a",
+            fallback={
+                "action": "capability",
+                "capability_id": "r13.d1.b",
+                "max_depth": 1,
+            },
+        ),
+        a3,
+    )
+    _register(
+        _r13_read(
+            "r13.d1.b",
+            fallback={
+                "action": "capability",
+                "capability_id": "r13.d1.c",
+                "max_depth": 1,
+            },
+        ),
+        b3,
+    )
+    _register(_r13_read("r13.d1.c"), c3)
+    try:
+        res3 = invoke("r13.d1.a", {"subject": "x"}, ctx={"tenant_id": "t1"})
+        bounded = res3.ok is False and c3.calls == []
+    finally:
+        for cid in ("r13.d1.a", "r13.d1.b", "r13.d1.c"):
+            unregister(cid)
+        fallback.reset()
+
+    assert_redline(
+        redline_id="R13",
+        holds=holds and bounded,
+        control=control,
+        detail=(
+            f"cycle_a_calls={len(a_tx.calls)} depth1_ok={res3.ok} c3={len(c3.calls)} "
+            f"depth2_ok={res2.ok} c2={len(c2.calls)}"
+        ),
+    )
+
+
+@redline("R13")
+def test_r13_cache_action_is_tenant_and_args_scoped():
+    """action=cache：重放上次成功结果 + 陈旧标记；**换租户/换参数不得命中**。"""
+    from app.ops.capability import fallback
+
+    fallback.reset()
+    payload = {"code": 0, "data": {"items": [{"id": 1}]}}
+    tx_ok = FakeHttpTransport(payload=payload)
+    spec = _r13_read(
+        "r13.cache",
+        fallback={"action": "cache", "ttl_seconds": 60},
+    )
+    _register(spec, tx_ok)
+    try:
+        first = invoke("r13.cache", {"subject": "报销"}, ctx={"tenant_id": "t1"})
+        # 下游挂了 → 只能吃缓存
+        tx_down = _r13_down()
+        unregister("r13.cache")
+        _register(spec, tx_down)
+        second = invoke("r13.cache", {"subject": "报销"}, ctx={"tenant_id": "t1"})
+        holds = (
+            first.ok is True
+            and first.meta.get("degraded") is not True  # 真实结果不带标记
+            and second.ok is True
+            and second.meta.get("degraded") is True
+            and second.meta.get("degraded_action") == "cache"
+            and second.meta.get("stale_at")  # ★ 多旧，必须看得见
+            # 重放的是**上次真实结果**，不是"一个像样的结果"
+            and second.output == first.output
+        )
+        # 对照：换租户 / 换参数 → 缓存不命中 → 明确失败（不能拿别人的结果兜底）
+        other_tenant = invoke("r13.cache", {"subject": "报销"}, ctx={"tenant_id": "t2"})
+        other_args = invoke("r13.cache", {"subject": "年假"}, ctx={"tenant_id": "t1"})
+        control = (
+            other_tenant.ok is False
+            and other_tenant.meta.get("degraded") is not True
+            and other_args.ok is False
+            and other_args.meta.get("degraded") is not True
+        )
+    finally:
+        unregister("r13.cache")
+        fallback.reset()
+
+    assert_redline(
+        redline_id="R13",
+        holds=holds,
+        control=control,
+        detail=(
+            f"second_degraded={second.meta.get('degraded')} "
+            f"tenant2_ok={other_tenant.ok} args2_ok={other_args.ok}"
+        ),
+    )
+
+
+def test_r13_is_not_vacuous(monkeypatch: pytest.MonkeyPatch):
+    """变异检验：把触发判定改成"什么失败都降级" → 业务类失败那半必须**翻掉**。
+
+    不翻 = 说明"业务类失败没降级"是被别的东西满足的，R13 是空真。
+    """
+    import app.ops.capability.gateway as gw
+
+    gw.fallback_mod.reset()
+    monkeypatch.setattr(
+        gw.fallback_mod, "trigger_of", lambda *a, **k: gw.fallback_mod.TRIGGER_TRANSPORT
+    )
+
+    biz = FakeHttpTransport(payload={"code": 1001, "data": {}})
+    good = FakeHttpTransport(payload={"code": 0, "data": {"items": []}})
+    _register(
+        _r13_read(
+            "r13.mut",
+            fallback={"action": "capability", "capability_id": "r13.mutfb"},
+        ),
+        biz,
+    )
+    _register(_r13_kw("r13.mutfb"), good)
+    try:
+        res = invoke("r13.mut", {"subject": "x"}, ctx={"tenant_id": "t1"})
+    finally:
+        unregister("r13.mut")
+        unregister("r13.mutfb")
+        gw.fallback_mod.reset()
+
+    assert res.ok is True and res.meta.get("degraded") is True, (
+        f"变异未翻转：把所有失败都判成「下游不可用」后业务类失败仍未降级"
+        f"（ok={res.ok} err={res.error!r}），说明 R13 的触发条件对照是空真"
+    )

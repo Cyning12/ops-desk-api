@@ -35,6 +35,7 @@ from app.ops.capability.adapters.http_generic import (
     GenericHttpAdapter,
 )
 from app.ops.capability.adapters.local_fn import LocalFnAdapter
+from app.ops.capability import fallback as fallback_mod
 from app.ops.capability.errors import STABLE_ERROR_CODES
 from app.ops.capability.gateway import get_registry, register, unregister
 from app.ops.capability.types import (
@@ -310,6 +311,112 @@ def _validate_output_schema(block: dict[str, Any], *, loc: str) -> None:
         )
 
 
+def _validate_fallback(block: dict[str, Any], *, loc: str) -> None:
+    """V11：降级声明形状校验。
+
+    校验意图与 V10 相同——防「声明拼错等于没有声明」。降级是**静默**改变结果的
+    机制（ok=True 但内容不是真的），一个拼错的降级声明比没有降级更危险：
+    要么长久不生效（以为有兜底其实没有），要么降级到错误的目标。
+    """
+    action = str(block.get("action") or fallback_mod.ACTION_NONE).strip()
+    if action not in fallback_mod.ACTIONS:
+        raise ManifestError(
+            f"{loc} V11: action 非法"
+            f"（仅 {', '.join(sorted(fallback_mod.ACTIONS))}）: {action or '(空)'}"
+        )
+
+    # 字段名是 ``triggers`` 不是 ``on``：YAML 1.1 会把裸键 ``on`` 当布尔 True，
+    # 声明会静默变成 ``{True: [...]}`` 而从不被读到。
+    triggers = block.get("triggers")
+    if triggers is not None:
+        if not isinstance(triggers, list) or not triggers:
+            raise ManifestError(f"{loc} V11: triggers 必须是非空列表（触发条件）")
+        bad = [x for x in triggers if str(x).strip() not in fallback_mod.TRIGGERS]
+        if bad:
+            raise ManifestError(
+                f"{loc} V11: triggers 含未知触发条件 {bad}"
+                f"（仅 {', '.join(sorted(fallback_mod.TRIGGERS))}）——"
+                "框架不接受业务发明新的「不可用」"
+            )
+
+    depth = block.get("max_depth")
+    if depth is not None:
+        try:
+            n = int(depth)
+        except (TypeError, ValueError):
+            raise ManifestError(
+                f"{loc} V11: max_depth 必须是整数（当前 {depth!r}）"
+            ) from None
+        if n < 1 or n > fallback_mod.MAX_DEPTH_CEILING:
+            raise ManifestError(
+                f"{loc} V11: max_depth 必须在 1..{fallback_mod.MAX_DEPTH_CEILING}"
+                f"（当前 {n}）——链条必须有界（B3）"
+            )
+
+    target = block.get("capability_id")
+    args_map = block.get("args_map")
+    ttl = block.get("ttl_seconds")
+    value = block.get("value")
+
+    if action == fallback_mod.ACTION_CAPABILITY:
+        if not str(target or "").strip():
+            raise ManifestError(f"{loc} V11: action=capability 必须声明 capability_id")
+        if not _CAPABILITY_ID_RE.match(str(target).strip()):
+            raise ManifestError(
+                f"{loc} V11: capability_id 非法（须小写字母开头 + 点分域）: {target}"
+            )
+        if args_map is not None:
+            if not isinstance(args_map, dict) or not args_map:
+                raise ManifestError(f"{loc} V11: args_map 必须是非空 mapping")
+            if not all(
+                isinstance(k, str) and isinstance(v, str)
+                for k, v in args_map.items()
+            ):
+                raise ManifestError(
+                    f"{loc} V11: args_map 必须是 str→str（目标参数名 ← 源参数名）"
+                )
+    else:
+        if target is not None:
+            raise ManifestError(
+                f"{loc} V11: 只有 action=capability 可声明 capability_id"
+            )
+        if args_map is not None:
+            raise ManifestError(f"{loc} V11: 只有 action=capability 可声明 args_map")
+
+    if action == fallback_mod.ACTION_CACHE:
+        if ttl is not None:
+            try:
+                if int(ttl) <= 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                raise ManifestError(
+                    f"{loc} V11: ttl_seconds 必须是正整数（当前 {ttl!r}）"
+                ) from None
+    elif ttl is not None:
+        raise ManifestError(f"{loc} V11: 只有 action=cache 可声明 ttl_seconds")
+
+    if action == fallback_mod.ACTION_STATIC:
+        if "value" not in block:
+            raise ManifestError(f"{loc} V11: action=static 必须声明 value")
+    elif value is not None:
+        raise ManifestError(f"{loc} V11: 只有 action=static 可声明 value")
+
+    unknown = set(block) - {
+        "triggers",
+        "action",
+        "capability_id",
+        "args_map",
+        "max_depth",
+        "ttl_seconds",
+        "value",
+    }
+    if unknown:
+        raise ManifestError(
+            f"{loc} V11: fallback 未知字段 {sorted(unknown)}"
+            "（拼错的字段会让降级静默失效）"
+        )
+
+
 def _parse_and_validate(
     path: Path,
 ) -> tuple[int | str | None, list[_PendingEntry]]:
@@ -451,6 +558,14 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
     if not isinstance(capture_raw, list):
         raise ManifestError(f"{loc}.receipt.capture 必须是 list")
 
+    # 降级声明（P1 · Q3 下半）。默认**不降级**；声明了才降级。
+    fallback_raw = raw.get("fallback")
+    if fallback_raw is not None:
+        if not isinstance(fallback_raw, dict):
+            raise ManifestError(f"{loc} fallback 必须是 mapping")
+        _reject_secret_keys(fallback_raw, where=f"{loc}.fallback")
+        _validate_fallback(fallback_raw, loc=f"{loc}.fallback")
+
     visibility_raw = raw.get("visibility")
     if visibility_raw is not None:
         if not isinstance(visibility_raw, dict):
@@ -503,6 +618,7 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
         visibility=(
             dict(visibility_raw) if isinstance(visibility_raw, dict) else None
         ),
+        fallback=dict(fallback_raw) if isinstance(fallback_raw, dict) else None,
     )
     adapter = _build_adapter(spec, raw=raw, loc=loc)
     _validate_invariants(spec, loc=loc)
@@ -642,6 +758,15 @@ def _validate_invariants(spec: CapabilitySpec, *, loc: str) -> None:
     if spec.kind == "http" and spec.visibility is None:
         raise ManifestError(
             f"{loc} V9: kind=http 必须声明 visibility（部门 / 角色 / 密级）"
+        )
+
+    # V12：写能力**禁止**声明降级（B1）。
+    # 单据没建就是没建，不存在"降级成建了一半"。写操作失败必须看得见——
+    # 一旦允许降级，就会出现"用户以为提交了、实际没提交"的最坏结果。
+    if is_write and fallback_mod.action_of(spec) != fallback_mod.ACTION_NONE:
+        raise ManifestError(
+            f"{loc} V12: side_effect={spec.side_effect} 禁止声明降级动作"
+            f"（当前 action={fallback_mod.action_of(spec)}）——写失败必须明确可见"
         )
 
 

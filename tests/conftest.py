@@ -177,11 +177,16 @@ def _reset_capability_budget():
     而不带 ctx 的调用全部落进匿名桶 ``""``，跑满 64 次之后后面每个用例都被
     ``policy_blocked: budget_exhausted`` 拦下——症状长得像功能坏了，实际是状态泄漏。
     """
+    from app.ops.capability import fallback
     from app.ops.capability.budget import reset as budget_reset
     from app.ops.capability.circuit import reset as circuit_reset
 
     budget_reset()
     circuit_reset()
+    # 降级缓存也是进程内全局状态（按 (能力,租户,参数) 分桶、有界），
+    # 不清会让上一个用例的成功结果被下一个用例的 cache 降级命中——
+    # 症状是"降级莫名其妙成功了"，实际是串了数据。
+    fallback.reset()
     yield
     budget_reset()
     circuit_reset()

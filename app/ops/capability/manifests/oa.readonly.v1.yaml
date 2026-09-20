@@ -71,6 +71,22 @@ capabilities:
         "2003": permission_denied
         "2004": policy_blocked
         "5001": upstream_error
+    # ---- 降级声明（竖切片：全系统第一条）----
+    # 「降级成什么」是业务决策，必须由清单声明（走 Git + PR + 人闸），
+    # 框架绝不自己发明。这里选 static 而非"换个接口/用缓存"，理由：
+    # 文档检索没有更粗的替代接口，而缓存会把昨天的检索结果当成今天的答案。
+    # **默认是不降级**——其他两个 OA 能力没写 fallback，就是明确失败。
+    fallback:
+      # 字段名是 triggers 不是 on：YAML 1.1 会把裸键 on 解析成布尔 True
+      triggers: [transport, 5xx, "429", circuit_open]
+      action: static
+      # 给模型的是"服务不可用"这个**事实**，不是一份伪造的检索结果。
+      # 编排层与用户都看得到 meta.degraded=True，不会把兜底当真。
+      value:
+        code: 503
+        message: "文档检索服务暂时不可用，请稍后重试（这是降级结果，不是检索结果）"
+        data:
+          items: []
 
   - id: oa.org.whois
     kind: http

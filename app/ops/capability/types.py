@@ -109,6 +109,13 @@ class CapabilitySpec:
     # 但会在 span 上留 ``visibility_undeclared`` 痕，让遗漏可度量。
     # kind=http 的**对外接入**能力必须声明（加载期 V9）。
     visibility: dict[str, Any] | None = None
+    # ---- 降级声明（P1 · 八问 Q3 下半）----
+    # 「打不通时给什么」是**业务决策**，必须由清单声明（走 Git + PR + 人闸），
+    # 框架只忠实执行，绝不自己发明降级结果。形状见 fallback 模块：
+    #   {on: [transport, 5xx, 429, circuit_open], action: none|capability|cache|static,
+    #    capability_id, args_map, max_depth, ttl_seconds, value}
+    # ``None`` = 未声明 = **不降级**，明确失败——让"不降级"成为需要显式改掉的默认。
+    fallback: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)

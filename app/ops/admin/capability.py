@@ -34,6 +34,7 @@ from app.ops.capability import (
 from app.ops.capability.baseline import baseline_filter
 from app.ops.capability.budget import snapshot as budget_snapshot
 from app.ops.capability.circuit import snapshot as circuit_snapshot
+from app.ops.capability.fallback import cache_snapshot as fallback_cache_snapshot
 from app.ops.capability.idempotency import DbIdempotencyStore
 from app.ops.capability.metrics import snapshot as metrics_snapshot
 from app.ops.capability.persistence import describe_persistence
@@ -114,6 +115,16 @@ async def runtime(_user: OpsUser | None = AdminSyncAuth) -> dict[str, Any]:
                 if s.side_effect in ("write", "irreversible") and not s.output_schema
             ],
         },
+        # 降级（P1 · Q3 下半）：**降级成什么是业务决策**，所以这里只报
+        # "谁声明了、声明成什么"，不替业务判断合不合适。
+        # declared 少 ≠ 有问题（默认就是不降级）；但**熔断 open 而降级率 0**
+        # 意味着用户在硬吃错误——这两个数必须一起看。
+        "fallback": {
+            "declared": sum(1 for s in specs if s.fallback),
+            "by_action": _count_fallback_actions(specs),
+            "declared_ids": sorted(s.capability_id for s in specs if s.fallback),
+            "cache": fallback_cache_snapshot(),
+        },
         "health": _health(persistence),
     }
 
@@ -124,6 +135,18 @@ def _count_by(specs: list[Any], attr: str) -> dict[str, int]:
         key = str(getattr(spec, attr, "") or "unknown")
         out[key] = out.get(key, 0) + 1
     return out
+
+
+def _count_fallback_actions(specs: list[Any]) -> dict[str, int]:
+    """按降级动作聚合；声明了却没写 action 的按默认 ``none`` 计（不静默消失）。"""
+    out: dict[str, int] = {}
+    for spec in specs:
+        block = getattr(spec, "fallback", None) or {}
+        if not block:
+            continue
+        key = str(block.get("action") or "none")
+        out[key] = out.get(key, 0) + 1
+    return dict(sorted(out.items()))
 
 
 def _health(persistence: dict[str, Any]) -> dict[str, Any]:
