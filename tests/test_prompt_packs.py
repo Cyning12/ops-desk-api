@@ -174,12 +174,17 @@ def test_route_intent_signature():
 
 
 def test_product_templates_unchanged():
-    assert set(TEMPLATES) == {"lg_rag.intent.system", "lg_rag.supervisor.system"}
+    # 2026-09-20：不再断言"集合恒等"。步骤契约（Q4/Q8）新增了
+    # lg_rag.supervisor.suffix.system，这是**加法**——既有两枚的 key 与渲染
+    # 行为都没动。真正的"product 侧零影响"是下面这条：既有 key 仍在。
+    assert {"lg_rag.intent.system", "lg_rag.supervisor.system"} <= set(TEMPLATES)
 
 
 def test_product_render_unchanged():
     tmpl = get_template("lg_rag.supervisor.system")
-    assert tmpl.version == "v1"
+    # v1 → v2：body 增加了 produces / consumes 声明说明。
+    # version 必须跟着内容走，否则版本号本身就成了假信号。
+    assert tmpl.version == "v2"
     text = render("lg_rag.supervisor.system", {"catalog_block": "(无)"})
     assert "Capability 目录" in text
     text_with_slot = render(

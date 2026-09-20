@@ -23,15 +23,57 @@ class SubtaskResultBatch(list):
 
     reducer 只认这个集合：计划外 id 丢弃，已有终态的重复条不覆盖。
     普通 list 不带计划上下文（单测直调 / 无 Host id 的错误条）。
+
+    ``replace=True``：把已有结果**裁剪**到 plan_ids（其余丢弃）。
+    Q8 用得到——critic 回环重规划时只保留不可变前缀的结果，不再整批清空。
+    默认 False（追加语义不变）。
     """
 
     def __init__(
         self,
         items: list[dict],
         plan_ids: set[str] | frozenset[str] | list[str],
+        *,
+        replace: bool = False,
     ) -> None:
         super().__init__(items)
         self.plan_ids = frozenset(str(item) for item in plan_ids)
+        self.replace = bool(replace)
+
+
+def success_terminal_ids(
+    plan: list[dict] | None, results: list[dict] | None
+) -> list[str]:
+    """不可变前缀（Q8）：已进入**成功终态**的计划 id，按计划顺序。
+
+    **失败终态不算**——它没有要保护的东西（没有副作用、没有可取的结果），
+    重规划可以重写它。要保护的是已经产生结果/副作用的步骤：
+    它们的 ``(tool, args)`` 决定幂等键，改了就是一次新的写。
+
+    放在 state 层：critic（strategy 包）与 multi/nodes 都要读，
+    而 nodes 已经依赖 critic，反向导入会成环。
+    """
+    rows = [row for row in (plan or []) if isinstance(row, dict)]
+    plan_ids = {
+        str(row.get("subtask_id") or "").strip()
+        for row in rows
+        if str(row.get("subtask_id") or "").strip()
+    }
+    done: dict[str, dict] = {}
+    for row in results or []:
+        if not isinstance(row, dict):
+            continue
+        sid = str(row.get("subtask_id") or "").strip()
+        if sid not in plan_ids or sid in done:
+            continue
+        if "output" in row or "error" in row:
+            done[sid] = row
+    success = {sid for sid, term in done.items() if "output" in term}
+    return [
+        str(row["subtask_id"]).strip()
+        for row in rows
+        if str(row.get("subtask_id") or "").strip() in success
+    ]
 
 
 def merge_supervisor_step_count(existing: int | None, new: int | None) -> int:
@@ -66,7 +108,16 @@ def merge_subtask_results(
         return []
     items = list(new or [])
     plan_ids = getattr(new, "plan_ids", None)
-    out = [row for row in (existing or []) if isinstance(row, dict)]
+    if getattr(new, "replace", False) and plan_ids is not None:
+        # 裁剪到 plan_ids：重规划时把"可变后缀"的结果丢掉，前缀的留下
+        out = [
+            row
+            for row in (existing or [])
+            if isinstance(row, dict)
+            and str(row.get("subtask_id") or "").strip() in plan_ids
+        ]
+    else:
+        out = [row for row in (existing or []) if isinstance(row, dict)]
     seen: set[str] = set()
     for row in out:
         sid = _terminal_subtask_id(row)
@@ -130,6 +181,11 @@ class LgRagState(MessagesState):
     supervisor_step_count（H-β）：supervisor 图 8 类节点入口计数；无 reducer；缺省 0。
     supervisor_budget_exhausted（H-β）：总步/墙钟耗尽旗标；无 reducer；建议 True 后主闸→aggregate。
     supervisor_started_at（H-β · 可选墙钟）：首次 bump 写入的 monotonic 起点；默认墙钟关闭。
+    plan_prefix_ids（Q8）：不可变前缀的 subtask_id 列表（**成功终态**的步骤，按计划顺序）。
+        失败终态不在内——它没有要保护的东西，重规划可以重写它。
+        protected 的是"已产生结果/副作用"的步骤：其 (tool, args) 决定幂等键。
+    recoverable_point（Q8）：= len(前缀)，下一个**真正要执行**的步骤下标。
+        恢复 = 沿用前缀结果 + 从这里继续；前缀不重跑（幂等键不变 ⇒ 重放不重做）。
     """
 
     route: str
@@ -142,6 +198,8 @@ class LgRagState(MessagesState):
     host_subtask_seq: int
     inflight_subtask_ids: list[str]
     assigned_subtask: dict
+    plan_prefix_ids: list[str]
+    recoverable_point: int
     allowed_capability_ids: list[str]
     allowed_skill_ids: list[str]
     intent: dict

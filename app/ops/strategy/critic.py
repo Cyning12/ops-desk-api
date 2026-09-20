@@ -1,7 +1,8 @@
 """Critic 规则 stub（S4 · 无 LLM 主路径）。
 
 节点 id 必须是 ``critic_node``：LangGraph 禁止与 state key 同名。
-判定写 ``critic_verdict``；回环时清空 subtasks / subtask_results。
+判定写 ``critic_verdict``；回环时**裁剪** subtasks / subtask_results 到不可变前缀
+（Q8：已成功步骤的结果不得被抹掉，否则重规划等于全量重来、前缀无从锁定）。
 rebind 只再跑 Builder，不自动扩权、不绕过 Policy。
 
 与 supervisor 总步预算（H-β）优先级：全局耗尽优先于局部
@@ -15,7 +16,7 @@ from app.ops.lg_rag.multi.budget import (
     is_supervisor_budget_exhausted,
 )
 from app.ops.lg_rag.schemas.critic import CriticVerdict
-from app.ops.lg_rag.state import LgRagState
+from app.ops.lg_rag.state import LgRagState, SubtaskResultBatch, success_terminal_ids
 from app.ops.tracing import trace_span, tracing_enabled, update_current_span_metadata
 
 MAX_INNER_RETRIES = 1
@@ -104,20 +105,34 @@ async def critic_node(state: LgRagState) -> dict:
         "inner_retry_count": inner,
         "rebinding_count": rebind,
     }
-    if outcome == "retry_planner":
-        inner += 1
-        update["inner_retry_count"] = inner
-        update["subtasks"] = []
-        update["subtask_results"] = None
-    elif outcome == "rebind":
-        rebind += 1
-        update["rebinding_count"] = rebind
-        update["subtasks"] = []
-        update["subtask_results"] = None
+    if outcome in ("retry_planner", "rebind"):
+        # Q8：只丢"可变后缀"，前缀（已成功步骤）连计划带结果一起留下。
+        # 整批清空的话，supervisor 重规划时算不出前缀 ⇒ 已跑过的步骤会被重跑一遍。
+        prefix = success_terminal_ids(
+            state.get("subtasks"), state.get("subtask_results")
+        )
+        prefix_set = set(prefix)
+        plan_rows = [
+            row
+            for row in (state.get("subtasks") or [])
+            if isinstance(row, dict)
+            and str(row.get("subtask_id") or "").strip() in prefix_set
+        ]
+        update["subtasks"] = plan_rows
+        update["subtask_results"] = SubtaskResultBatch([], prefix_set, replace=True)
+        update["plan_prefix_ids"] = prefix
+        update["recoverable_point"] = len(prefix)
+        if outcome == "retry_planner":
+            inner += 1
+            update["inner_retry_count"] = inner
+        else:
+            rebind += 1
+            update["rebinding_count"] = rebind
     span_meta = {
         "critic_outcome": outcome,
         "inner_retry_count": inner,
         "rebinding_count": rebind,
+        "plan_prefix_len": len(update.get("plan_prefix_ids") or []),
     }
     with trace_span("critic", run_type="chain", **span_meta):
         _record_critic_span(span_meta)

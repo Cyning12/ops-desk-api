@@ -1688,3 +1688,284 @@ def test_r13_marker_is_not_vacuous(monkeypatch: pytest.MonkeyPatch):
         "变异未翻转：注入被摘掉后输出里仍然有 _degraded，"
         f"说明 R13 的『标记跟着数据走』是空真（output={res.output!r}）"
     )
+
+
+# ---------------- R14：步骤契约（编排层 · 八问 Q4） ----------------
+
+
+async def _drive_step_contract(plan: list[dict], terminals: dict[str, dict]):
+    """跑一遍「归并 → 派发 → 执行工具」，返回 (被执行的 id, 被拦的 id→行, 调用计数)。
+
+    "零请求"不是靠"没出现在 ready 里"推断的，而是**真去执行**派发的步骤、
+    数工具被调用了几次。
+    """
+    from types import SimpleNamespace
+    from unittest.mock import patch
+
+    from app.ops.lg_rag.multi.nodes import _join_subtasks, route_next_subtask, tool_exec_node
+
+    state = {
+        "subtasks": plan,
+        "subtask_results": list(terminals.values()),
+        "inflight_subtask_ids": [],
+        "supervisor_step_count": 1,
+        "run_id": "r14run",
+        "messages": [],
+    }
+    out = _join_subtasks(state)
+    blocked = {
+        str(r.get("subtask_id")): r for r in (out.get("subtask_results") or [])
+    }
+    ready = list(out.get("inflight_subtask_ids") or [])
+    executed: list[str] = []
+    calls: list[str] = []
+
+    async def _cap(name, args, ctx=None):
+        calls.append(str((ctx or {}).get("subtask_id")))
+        return SimpleNamespace(
+            ok=True, output={"assignee": "张三", "status": "open"}, error=None, meta={}
+        )
+
+    with patch("app.ops.lg_rag.multi.nodes.capability_ainvoke", new=_cap):
+        for sid in ready:
+            routed = route_next_subtask({**state, "inflight_subtask_ids": [sid]})
+            if not isinstance(routed, list):
+                continue
+            for send in routed:
+                if send.node != "tool_exec":
+                    continue
+                executed.append(str(send.arg["assigned_subtask"]["subtask_id"]))
+                await tool_exec_node(send.arg)
+    return executed, blocked, calls
+
+
+def _r14_plan(consumes_field: bool):
+    from app.ops.lg_rag.multi.nodes import _issue_plan
+
+    t2 = {"id": "t2", "type": "tool", "tool": "mock_get_issue_status", "input": "乙"}
+    if consumes_field:
+        t2["depends_on"] = ["t1"]
+        t2["consumes"] = {"t1": ["assignee"]}
+    plan, _errors, _seq = _issue_plan(
+        [
+            {
+                "id": "t1",
+                "type": "tool",
+                "tool": "mock_get_issue_status",
+                "input": "甲",
+                "produces": ["assignee"],
+            },
+            t2,
+        ],
+        run_id="r14run",
+        seq=0,
+    )
+    return plan
+
+
+@redline("R14")
+async def test_r14_step_contract_gate_and_binding():
+    """前驱失败 / 缺 consumes 字段 ⇒ 后继零执行；契约满足 ⇒ 照常执行且真绑定。"""
+    from app.ops.lg_rag.multi import step_contract as sc
+
+    plan = _r14_plan(consumes_field=True)
+    t1, t2 = plan[0]["subtask_id"], plan[1]["subtask_id"]
+
+    # 正向 1：前驱失败终态
+    executed, blocked, calls = await _drive_step_contract(
+        plan, {t1: {"id": t1, "subtask_id": t1, "type": "tool", "error": "下游 500"}}
+    )
+    # t1 已有终态 ⇒ 本轮谁都不该被执行；calls 全空才是"后继零请求"
+    holds_1 = t2 not in executed and calls == []
+    assert_redline(
+        redline_id="R14",
+        holds=holds_1,
+        control=True,
+        detail=f"前驱失败后后继仍被执行 executed={executed} calls={calls}",
+    )
+    assert blocked[t2]["blocked_by"] == sc.BLOCKED_PREDECESSOR_FAILED
+
+    # 正向 2：前驱成功但缺 consumes 声明的字段
+    executed, blocked, calls = await _drive_step_contract(
+        plan, {t1: {"id": t1, "subtask_id": t1, "type": "tool", "output": {"status": "open"}}}
+    )
+    holds_2 = t2 not in executed and calls == []
+    assert_redline(
+        redline_id="R14",
+        holds=holds_2,
+        control=True,
+        detail=f"缺字段后后继仍被执行 executed={executed} calls={calls}",
+    )
+    assert blocked[t2]["blocked_by"] == sc.BLOCKED_CONTRACT_MISSING
+
+    # 反向对照：字段齐全 ⇒ 两步都执行，且第二步拿到的是**绑定值**
+    executed, blocked, calls = await _drive_step_contract(
+        plan, {t1: {"id": t1, "subtask_id": t1, "type": "tool", "output": {"assignee": "张三"}}}
+    )
+    assert_redline(
+        redline_id="R14",
+        holds=True,
+        control=(t2 in executed) and (t2 in calls) and not blocked,
+        detail=f"该放行的被拦了 executed={executed} blocked={blocked}",
+    )
+
+    # 反向对照 2：未声明 consumes ⇒ 前驱成功时不拦（否则"一律不派"也能满足正向）
+    undecided = _r14_plan(consumes_field=False)
+    executed, blocked, calls = await _drive_step_contract(
+        undecided,
+        {t1: {"id": t1, "subtask_id": t1, "type": "tool", "output": {"whatever": 1}}},
+    )
+    assert_redline(
+        redline_id="R14",
+        holds=True,
+        control=not blocked,
+        detail=f"未声明契约却被拦截 blocked={blocked}",
+    )
+
+    # 绑定必须真的发生（只校验不绑定 = 空门）
+    from app.ops.lg_rag.multi.nodes import _worker_state
+
+    bound = _worker_state(
+        {
+            "subtasks": plan,
+            "subtask_results": [
+                {"id": t1, "subtask_id": t1, "type": "tool", "output": {"assignee": "张三"}}
+            ],
+            "messages": [],
+            "supervisor_step_count": 1,
+        },
+        {**plan[1], "args": {"assignee": "待填"}},
+    )["assigned_subtask"]
+    assert_redline(
+        redline_id="R14",
+        holds=bound["args"]["assignee"] == "张三",
+        control=True,
+        detail=f"契约命中但没绑定：args={bound.get('args')}",
+    )
+
+
+# ---------------- R15：可恢复点 / 不可变前缀（编排层 · 八问 Q8） ----------------
+
+
+@redline("R15")
+async def test_r15_recoverable_point_keeps_prefix():
+    """重规划只动后缀；前缀逐字段不变、不被重跑；首次规划照常。"""
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock, patch
+
+    from langchain_core.messages import HumanMessage
+
+    from app.ops.lg_rag.multi.nodes import supervisor_node
+    from app.ops.lg_rag.state import SubtaskResultBatch, success_terminal_ids
+    from app.ops.strategy.critic import critic_node
+
+    tool = "mock_get_issue_status"
+    caps = [SimpleNamespace(capability_id=tool, description="d", risk_level="low")]
+
+    def _prov(*outputs):
+        return SimpleNamespace(complete=AsyncMock(side_effect=list(outputs)))
+
+    def _state(**kw):
+        base = {
+            "messages": [HumanMessage(content="复合问题")],
+            "run_id": "r15run",
+            "allowed_capability_ids": [tool],
+            "supervisor_step_count": 0,
+            "host_subtask_seq": 0,
+            "subtasks": [],
+            "subtask_results": [],
+        }
+        base.update(kw)
+        return base
+
+    first = '{"subtasks":[{"id":"t1","type":"tool","tool":"mock_get_issue_status",' \
+            '"input":"甲","args":{"k":"v"}},{"id":"t2","type":"tool",' \
+            '"tool":"mock_get_issue_status","input":"乙","depends_on":["t1"]}]}'
+    suffix = '{"subtasks":[{"id":"s1","type":"tool","tool":"mock_get_issue_status",' \
+             '"input":"丙","depends_on":["t1"]}]}'
+
+    with patch(
+        "app.ops.lg_rag.multi.nodes.list_capabilities", new=lambda *a, **k: caps
+    ), patch("app.ops.lg_rag.multi.nodes.get_llm_provider", new=lambda *a, **k: _prov(first)):
+        out1 = await supervisor_node(_state())
+
+    # 反向对照：首次规划无前缀，计划照常签发、可恢复点为 0
+    assert_redline(
+        redline_id="R15",
+        holds=True,
+        control=len(out1["subtasks"]) == 2 and out1["recoverable_point"] == 0,
+        detail=f"首次规划被前缀逻辑影响 {out1.get('recoverable_point')}",
+    )
+
+    t1, t2 = out1["subtasks"][0]["subtask_id"], out1["subtasks"][1]["subtask_id"]
+    done = SubtaskResultBatch(
+        [{"id": t1, "subtask_id": t1, "type": "tool", "output": {"assignee": "张三"}}],
+        {t1, t2},
+    )
+    state2 = _state(
+        subtasks=out1["subtasks"],
+        subtask_results=done,
+        host_subtask_seq=out1["host_subtask_seq"],
+        supervisor_step_count=1,
+    )
+
+    with patch(
+        "app.ops.lg_rag.multi.nodes.list_capabilities", new=lambda *a, **k: caps
+    ), patch("app.ops.lg_rag.multi.nodes.get_llm_provider", new=lambda *a, **k: _prov(suffix)):
+        out2 = await supervisor_node(state2)
+
+    plan2 = out2["subtasks"]
+    prefix_kept = (
+        [r["subtask_id"] for r in plan2] == [t1, "r15run:3"]
+        and plan2[0]["tool"] == tool
+        and plan2[0]["args"] == {"k": "v"}
+        and plan2[0]["input"] == "甲"
+    )
+    assert_redline(
+        redline_id="R15",
+        holds=prefix_kept,
+        control=True,
+        detail=f"重规划改写了前缀 {plan2}",
+    )
+    # 可恢复点显式声明 = 下一个真正要执行的下标
+    assert_redline(
+        redline_id="R15",
+        holds=out2["recoverable_point"] == 1 and out2["plan_prefix_ids"] == [t1],
+        control=True,
+        detail=f"可恢复点未声明 {out2.get('recoverable_point')}",
+    )
+
+    # critic 回环不得抹掉前缀结果（这是最容易被写错的地方）
+    crit = await critic_node(
+        {
+            "subtask_results": [
+                {"subtask_id": t1, "output": {"assignee": "张三"}},
+                {"subtask_id": t2, "error": "boom"},
+            ],
+            "allowed_capability_ids": [tool],
+            "inner_retry_count": 0,
+            "rebinding_count": 0,
+            "subtasks": out1["subtasks"],
+        }
+    )
+    kept = crit["subtask_results"].plan_ids == frozenset({t1})
+    assert_redline(
+        redline_id="R15",
+        holds=kept and crit["recoverable_point"] == 1,
+        control=True,
+        detail=f"回环把前缀结果清掉了 {crit.get('subtask_results')}",
+    )
+    # 失败终态不进前缀（它没有要保护的东西，锁进去会让链卡死）
+    assert_redline(
+        redline_id="R15",
+        holds=success_terminal_ids(
+            out1["subtasks"],
+            [
+                {"subtask_id": t1, "output": {"a": 1}},
+                {"subtask_id": t2, "error": "boom"},
+            ],
+        )
+        == [t1],
+        control=True,
+        detail="失败终态不应进入不可变前缀",
+    )

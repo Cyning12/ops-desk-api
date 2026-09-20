@@ -15,12 +15,15 @@ class SubtaskItem(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
+    # Q4 步骤契约：两者都可选，不声明 ⇒ 不校验（契约不推测，见 step_contract 第 1 条）
     id: str | None = None
     type: str | None = None
     input: str = Field(..., min_length=1)
     tool: str | None = None
     args: dict[str, Any] | None = None
     depends_on: list[str] | None = None
+    produces: list[str] | None = None
+    consumes: dict[str, Any] | None = None
 
 
 class SubtasksPlan(BaseModel):

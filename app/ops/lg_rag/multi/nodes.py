@@ -34,6 +34,7 @@ from app.ops.lg_rag.multi.budget import (
     bump_supervisor_step,
     is_supervisor_budget_exhausted,
 )
+from app.ops.lg_rag.multi import step_contract as sc
 from app.ops.lg_rag.nodes import (
     _ROUTER_MODEL,
     _ROUTER_PROVIDER,
@@ -41,7 +42,7 @@ from app.ops.lg_rag.nodes import (
 )
 from app.ops.lg_rag.progress_stream import emit_subtask_running, emit_subtask_step
 from app.ops.lg_rag.schemas import ExtractResult, SubtaskItem, SubtasksPlan
-from app.ops.lg_rag.state import LgRagState, SubtaskResultBatch
+from app.ops.lg_rag.state import LgRagState, SubtaskResultBatch, success_terminal_ids
 from app.ops.prompts import render
 from app.ops.structured_output import parse_only
 from app.ops.tenant_context import current_tenant_or_default
@@ -102,6 +103,20 @@ def _build_supervisor_system(catalog_block: str) -> str:
     return render(
         "lg_rag.supervisor.system",
         {"catalog_block": catalog_block},
+    )
+
+
+def _build_supervisor_suffix_system(
+    catalog_block: str, prefix_block: str, suffix_cap: int
+) -> str:
+    """重规划（Q8）：只让模型写后缀，前缀以**只读**形态出现。"""
+    return render(
+        "lg_rag.supervisor.suffix.system",
+        {
+            "catalog_block": catalog_block,
+            "prefix_block": prefix_block,
+            "suffix_cap": str(suffix_cap),
+        },
     )
 
 
@@ -177,6 +192,13 @@ def _parse_subtasks(raw: str) -> list[dict] | None:
             subtask["args"] = dict(item.args)
         if item.depends_on:
             subtask["depends_on"] = [str(dep) for dep in item.depends_on]
+        # Q4 步骤契约：可选声明。没声明就留空 ⇒ 后续不校验（契约不推测）
+        produces = sc.normalize_produces(item.produces)
+        if produces:
+            subtask["produces"] = produces
+        consumes = sc.normalize_consumes(item.consumes)
+        if consumes:
+            subtask["consumes"] = consumes
         subtasks.append(subtask)
     return subtasks or None
 
@@ -300,13 +322,31 @@ def _cyclic_ids(rows: list[dict]) -> set[str]:
 
 
 def _issue_plan(
-    items: list[dict], *, run_id: str, seq: int
+    items: list[dict],
+    *,
+    run_id: str,
+    seq: int,
+    alias_prefix: str = "t",
+    cap: int = MAX_SUBTASKS,
+    locked: list[dict] | None = None,
 ) -> tuple[list[dict], list[dict], int]:
-    """先签发 subtask_id，再解析 depends_on。超出 cap 的项不签发。"""
+    """先签发 subtask_id，再解析 depends_on / consumes。超出 cap 的项不签发。
+
+    ``locked``（Q8）：不可变前缀。它**不参与签发**（沿用原来的 subtask_id，
+    序列不回退、不复用），但参与别名解析——后缀可以依赖前缀、吃前缀的产出。
+
+    ``alias_prefix``：首次规划 ``t``，重规划后缀 ``s``。别名**强制按位置编号**，
+    模型写的 id 只用于**内部互相引用**的重映射；前缀别名不参与重映射，
+    否则"后缀引用前缀 t1"会被误改成"后缀引用后缀 s1"。
+    """
+    locked_rows = [dict(row) for row in (locked or [])]
     issued: list[dict] = []
-    for offset, item in enumerate(items[:MAX_SUBTASKS]):
+    remap: dict[str, str] = {}
+    for offset, item in enumerate(items[:cap]):
         seq += 1
-        alias = str(item.get("id") or f"t{offset + 1}")
+        old_alias = str(item.get("id") or f"{alias_prefix}{offset + 1}")
+        alias = f"{alias_prefix}{offset + 1}"
+        remap[old_alias] = alias
         sid = f"{run_id}:{seq}"
         stamped = {
             "id": sid,
@@ -319,20 +359,46 @@ def _issue_plan(
             stamped["tool"] = str(item["tool"])
         if item.get("args") is not None:
             stamped["args"] = dict(item["args"])
+        produces = sc.normalize_produces(item.get("produces"))
+        if produces:
+            stamped["produces"] = produces
         raw_deps = item.get("depends_on") or []
         if not isinstance(raw_deps, list):
             raw_deps = ["__invalid__"]
         stamped["_raw_deps"] = raw_deps
+        stamped["_raw_consumes"] = item.get("consumes") or {}
         issued.append(stamped)
 
+    locked_aliases = {str(row.get("alias") or "") for row in locked_rows}
+
+    def _tok(token: str) -> str:
+        """前缀别名原样保留；其余走后缀重映射。"""
+        if token in locked_aliases:
+            return token
+        return remap.get(token, token)
+
     alias_map: dict[str, list[str]] = {}
-    for row in issued:
+    for row in locked_rows + issued:
         alias_map.setdefault(str(row["alias"]), []).append(str(row["subtask_id"]))
-    id_set = {str(row["subtask_id"]) for row in issued}
+    id_set = {str(row["subtask_id"]) for row in locked_rows + issued}
     illegal: dict[str, str] = {}
     for row in issued:
-        raw_deps = row.pop("_raw_deps")
+        raw_deps = [_tok(str(dep)) for dep in row.pop("_raw_deps")]
         resolved, err = _resolve_depends(row, raw_deps, id_set, alias_map)
+        raw_cons = row.pop("_raw_consumes")
+        if isinstance(raw_cons, dict):
+            consumes = {_tok(str(k)): v for k, v in raw_cons.items()}
+            by_sid = sc.resolve_consumes(
+                sc.normalize_consumes(consumes), alias_map
+            )
+        else:
+            by_sid = {}
+        if by_sid:
+            row["consumes_resolved"] = by_sid
+            # consumes 隐含依赖：吃了谁的产出，就必须等谁跑完
+            for sid in sc.consumes_implied_deps(by_sid):
+                if sid not in resolved:
+                    resolved.append(sid)
         row["depends_on"] = resolved
         if err:
             illegal[str(row["subtask_id"])] = err
@@ -347,24 +413,70 @@ def _issue_plan(
     return issued, errors, seq
 
 
-def _stamp_host_plan(state: LgRagState, items: list[dict]) -> dict:
-    """校验后的项换成 Host id。run_id 空白则不签发。"""
+def _stamp_host_plan(
+    state: LgRagState, items: list[dict], locked: list[dict] | None = None
+) -> dict:
+    """校验后的项换成 Host id；``locked`` 前缀原样保留在最前面。"""
     run_id = _run_id_of(state)
     if not run_id:
         query = str(items[0].get("input") or "") if items else ""
         return _missing_run_update(query)
+    locked_rows = [dict(row) for row in (locked or [])]
     seq = int(state.get("host_subtask_seq") or 0)
-    plan, errors, seq = _issue_plan(items, run_id=run_id, seq=seq)
+    cap = max(0, MAX_SUBTASKS - len(locked_rows))
+    alias_prefix = "s" if locked_rows else "t"
+    plan, errors, seq = _issue_plan(
+        items,
+        run_id=run_id,
+        seq=seq,
+        alias_prefix=alias_prefix,
+        cap=cap,
+        locked=locked_rows,
+    )
+    full = locked_rows + plan
     out: dict = {
-        "subtasks": plan,
+        "subtasks": full,
         "host_subtask_seq": seq,
         "inflight_subtask_ids": [],
+        # Q8 可恢复点：前缀长度 = 下一个**真正要执行**的步骤下标。
+        # 恢复 = 沿用前缀结果 + 从这里继续，不重跑前缀。
+        "plan_prefix_ids": [str(row["subtask_id"]) for row in locked_rows],
+        "recoverable_point": len(locked_rows),
     }
     if errors:
         out["subtask_results"] = SubtaskResultBatch(
-            errors, {str(row["subtask_id"]) for row in plan}
+            errors, {str(row["subtask_id"]) for row in full}
         )
     return out
+
+
+def _locked_prefix(state: LgRagState) -> list[dict]:
+    """不可变前缀（Q8）：已进入**成功终态**的计划项，按计划顺序。
+
+    失败终态**不进**前缀——它没有需要保护的东西：没有副作用，也没有可取的结果，
+    重规划可以重写它。要保护的是"已经产生了结果/副作用"的步骤：
+    它们的 ``(tool, args)`` 决定幂等键，改了就是一次新的写（设计 §2.2）。
+    """
+    prefix_ids = set(
+        success_terminal_ids(_plan_rows(state), state.get("subtask_results"))
+    )
+    return [
+        dict(row)
+        for row in _plan_rows(state)
+        if str(row["subtask_id"]) in prefix_ids
+    ]
+
+
+def _format_prefix_block(locked: list[dict]) -> str:
+    """前缀摘要：只给模型**只读**视图（id / type / input / tool）。"""
+    lines = []
+    for row in locked:
+        alias = str(row.get("alias") or row.get("subtask_id") or "")
+        line = f"- {alias}（{row.get('type') or 'rag'}）：{row.get('input') or ''}"
+        if row.get("tool"):
+            line += f" [tool={row['tool']}]"
+        lines.append(line)
+    return "\n".join(lines) or "（无）"
 
 
 def _plan_rows(state: LgRagState) -> list[dict]:
@@ -407,6 +519,13 @@ def _join_subtasks(state: LgRagState) -> dict:
             _error_terminal(by_id[sid], "工人未带回匹配的 subtask_id，已写错误终态")
         )
         done[sid] = extras[-1]
+    # 不可变前缀（Q8）：**读声明**，不从"有 output 的终态"反推。
+    # 反推会把"本轮刚跑完的前驱"也算成前缀，于是任何缺字段都变成
+    # prefix_touch_required —— contract_missing_field 永远走不到（死分支），
+    # 而 Q4 要的"别把坏数据喂下去"和 Q8 要的"改历史得交人"被混成一件事。
+    prefix_ids = frozenset(
+        str(sid) for sid in (state.get("plan_prefix_ids") or [])
+    )
     updates: dict = {}
     if is_supervisor_budget_exhausted(state):
         for row in plan:
@@ -420,23 +539,92 @@ def _join_subtasks(state: LgRagState) -> dict:
         updates["inflight_subtask_ids"] = []
     else:
         ready: list[str] = []
+        blocked_meta: dict[str, int] = {}
         for row in plan:
             sid = str(row["subtask_id"])
             if sid in done:
                 continue
             deps = [str(dep) for dep in (row.get("depends_on") or [])]
-            if all(dep in done for dep in deps):
-                ready.append(sid)
+            if not all(dep in done for dep in deps):
+                continue
+            # ★ 前驱失败即终止（Q4 缺陷二）：error 终态不再算"前驱已完成"。
+            #   契约校验也在这里 —— 喂入前判，不合格一次工具都不打。
+            reason, detail = sc.gate(
+                row=row, terminals=done, by_id=by_id, prefix_ids=prefix_ids
+            )
+            if reason:
+                blocked = _error_terminal(
+                    row, f"{sc.label_of(reason)}（{detail}）"
+                )
+                blocked["blocked_by"] = reason
+                if sc.needs_hitl(reason):
+                    blocked["hitl_required"] = True
+                extras.append(blocked)
+                # 写进 done ⇒ 依赖它的后继同批级联停（不是等下一轮）
+                done[sid] = blocked
+                blocked_meta[reason] = blocked_meta.get(reason, 0) + 1
+                continue
+            ready.append(sid)
         updates["inflight_subtask_ids"] = ready
+        if blocked_meta:
+            _record_span_metadata(
+                {
+                    "step_contract_blocked": sum(blocked_meta.values()),
+                    "step_contract_blocked_by_reason": blocked_meta,
+                }
+            )
     if extras:
         updates["subtask_results"] = SubtaskResultBatch(extras, plan_ids)
     return updates
 
 
+def _bind_upstream(
+    state: LgRagState, subtask: dict
+) -> tuple[dict | None, str | None, list[str]]:
+    """按 ``consumes`` 把前驱产出注入本步（Q4 缺陷一：之前根本没串数据）。
+
+    ``type=tool`` → 注入 ``args[字段名]``（**覆盖** planner 写死的占位值）；
+    ``type=rag|extract`` → 在 input 尾部追加编排层生成的固定上下文块。
+    取哪些字段由模型声明，**怎么注入由代码决定**。
+    """
+    consumes = subtask.get("consumes_resolved") or {}
+    if not consumes:
+        return None, None, []
+    plan = _plan_rows(state)
+    terminals = _terminal_index(
+        list(state.get("subtask_results") or []),
+        {str(row["subtask_id"]) for row in plan},
+    )
+    sid_to_alias = {
+        str(row["subtask_id"]): str(row.get("alias") or row["subtask_id"])
+        for row in plan
+    }
+    values = sc.collect_values(
+        consumes_by_sid=consumes, terminals=terminals, sid_to_alias=sid_to_alias
+    )
+    if not values:
+        return None, None, []
+    names = sc.bound_field_names(values)
+    if str(subtask.get("type") or "") == "tool":
+        return sc.bind_args(subtask.get("args"), values), None, names
+    text = sc.bind_input(
+        str(subtask.get("input") or ""), values, sid_to_alias=sid_to_alias
+    )
+    return None, text, names
+
+
 def _worker_state(state: LgRagState, subtask: dict) -> dict:
+    task = dict(subtask)
+    args, text, bound = _bind_upstream(state, subtask)
+    if args is not None:
+        task["args"] = args
+    if text is not None:
+        task["input"] = text
+    if bound:
+        task["bound_fields"] = bound
     payload: dict = {
         "messages": list(state.get("messages") or []),
-        "assigned_subtask": dict(subtask),
+        "assigned_subtask": task,
         "subtasks": list(state.get("subtasks") or []),
         "supervisor_step_count": int(state.get("supervisor_step_count") or 0),
     }
@@ -476,6 +664,8 @@ async def supervisor_node(state: LgRagState) -> dict:
             }
         )
         return {**bump, **_missing_run_update(query)}
+    # Q8：重规划入口先算不可变前缀。空 ⇒ 首次规划，走原路径。
+    locked = _locked_prefix(state)
     caps, allowed_ids = _resolve_supervisor_visible_caps(state)
     if state.get("allowed_capability_ids") is None or not allowed_ids:
         span_meta: dict = {
@@ -488,11 +678,19 @@ async def supervisor_node(state: LgRagState) -> dict:
             "supervisor_raw": "",
         }
         _record_span_metadata(span_meta)
-        stamped = _stamp_host_plan(
-            state, [{"id": "t1", "type": "rag", "input": query}]
-        )
+        # 已有前缀时不退化成"单 rag"：那会把已完成步骤的关联键抹掉
+        items = [] if locked else [{"id": "t1", "type": "rag", "input": query}]
+        stamped = _stamp_host_plan(state, items, locked=locked)
         return {**bump, **stamped}
-    system_content = _build_supervisor_system(_format_capability_catalog(caps))
+    catalog_block = _format_capability_catalog(caps)
+    if locked:
+        system_content = _build_supervisor_suffix_system(
+            catalog_block,
+            _format_prefix_block(locked),
+            max(0, MAX_SUBTASKS - len(locked)),
+        )
+    else:
+        system_content = _build_supervisor_system(catalog_block)
     raw = ""
     subtasks: list[dict] | None = None
     invalid_tool_id = False
@@ -524,8 +722,19 @@ async def supervisor_node(state: LgRagState) -> dict:
             "lg_rag supervisor 输出非法，fallback 单 rag raw=%r", raw[:200]
         )
     if fallback:
-        subtasks = [{"id": "t1", "type": "rag", "input": query}]
-    stamped = _stamp_host_plan(state, subtasks or [])
+        if locked:
+            # 前缀已锁定：拿不到后缀就"只保留前缀"，不退化成单 rag。
+            # 退化会把已完成步骤的 subtask_id 一起抹掉 —— 那是 Q8 要防的事。
+            logger.warning(
+                "lg_rag supervisor 重规划输出非法，保留前缀 %d 步、后缀为空 raw=%r",
+                len(locked),
+                raw[:200],
+            )
+            subtasks = []
+            fallback = False
+        else:
+            subtasks = [{"id": "t1", "type": "rag", "input": query}]
+    stamped = _stamp_host_plan(state, subtasks or [], locked=locked)
     issued = stamped.get("subtasks") or []
     span_meta = {
         "capability_catalog_count": len(caps),
@@ -535,7 +744,12 @@ async def supervisor_node(state: LgRagState) -> dict:
         # 与 supervisor_fallback 并存（SPEC §5）
         "structured_output_fallback": fallback,
         "supervisor_raw": raw[:200],
+        # Q8 可恢复点
+        "plan_prefix_len": len(locked),
+        "recoverable_point": int(stamped.get("recoverable_point") or 0),
     }
+    if locked:
+        span_meta["replan_suffix_only"] = True
     if invalid_tool_id:
         span_meta["supervisor_invalid_tool_id"] = True
     _record_span_metadata(span_meta)

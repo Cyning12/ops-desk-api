@@ -334,9 +334,18 @@ async def test_subtask_exception_recorded_and_continues():
     ):
         out = await _run(_build())
     results = out["subtask_results"]
-    assert len(results) == 2
-    assert "chain down" in results[0]["error"]
-    assert results[1]["output"]["status"] == "healthy"
+    # 2026-09-20（Q8）：critic 回环不再整批清空结果，只裁掉"可变后缀"。
+    # 于是重规划后结果条数不再恒等于计划条数 —— 断言改成**意图**而不是条数：
+    #   · 同一个 subtask_id 不得重复（归并去重仍成立）
+    #   · rag 异常被如实记成 error
+    #   · tool 子任务照常执行出结果
+    ids = [r["subtask_id"] for r in results]
+    assert len(ids) == len(set(ids)), f"同一个 subtask_id 不得重复：{ids}"
+    assert any("chain down" in str(r.get("error") or "") for r in results)
+    assert any(
+        isinstance(r.get("output"), dict) and r["output"].get("status") == "healthy"
+        for r in results
+    )
     assert out["messages"][-1].content == _AGGREGATED
     assert out["inner_retry_count"] == 1
     assert out["critic_verdict"]["outcome"] == "end"
