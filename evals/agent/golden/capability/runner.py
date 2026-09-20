@@ -55,6 +55,7 @@ from app.ops.capability.adapters import (  # noqa: E402
     StaticCredentialVault,
 )
 from app.ops.capability.baseline import baseline_filter  # noqa: E402
+from app.ops.capability.budget import reset as budget_reset  # noqa: E402
 from app.ops.capability.defaults import ensure_default_capabilities  # noqa: E402
 from app.ops.capability.errors import STABLE_ERROR_CODES  # noqa: E402
 from app.ops.capability.gateway import get_registry  # noqa: E402
@@ -263,6 +264,9 @@ def run_case(case: dict[str, Any]) -> dict[str, Any]:
     get_registry().clear()
     set_idempotency_store(InMemoryIdempotencyStore())
     set_receipt_sink(InMemoryReceiptSink())
+    # 配额是进程内的：不 reset 的话用例会互相吃配额，出口面就变成"取决于执行顺序"。
+    # 题集的意义是**每个 case 独立可复现**，所以这里必须清。
+    budget_reset()
     try:
         return fn(case.get("setup") or {})
     finally:

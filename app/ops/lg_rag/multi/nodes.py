@@ -776,6 +776,10 @@ async def tool_exec_node(state: LgRagState) -> dict:
     cap_ctx: dict = {
         "tenant_id": pilot_tenant,
         "subtask_id": result["id"],
+        # 会话维度：配额按 **run** 记，不是按子任务。
+        # 只给 subtask_id 的话，budget 只能退回去剥 run_id:seq ——剥得出来是运气，
+        # 剥不出来就退化成"一个子任务一个桶"，配额永远打不满（假门）。
+        "run_id": _run_id_of(state),
     }
     with trace_span("tool_exec", run_type="tool"):
         cap = await capability_ainvoke(tool_name, call_args, ctx=cap_ctx)

@@ -431,3 +431,113 @@ def test_min_decl_snippet_is_valid_yaml():
     data = yaml.safe_load(body)
     assert data["when_to_use"]
     assert data["args_schema"] == {"type": "object", "properties": {}}
+
+
+# ---------------- V10：结果契约形状（拼错 = 没有契约）----------------
+
+
+def _write_output_schema_manifest(tmp_path: Path, output_schema_block: str) -> Path:
+    body = f"""version: 1
+capabilities:
+  - id: probe_contract
+    kind: local_fn
+    description: 契约形状单测
+    when_to_use: 单测 fixture
+    args_schema: {{type: object, properties: {{}}}}
+    adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
+    output_schema:
+{output_schema_block}
+"""
+    return _write_yaml(tmp_path / "contract.yaml", body)
+
+
+@pytest.mark.parametrize(
+    "block, why",
+    [
+        ("      required: []", "required 为空列表 —— 等于声明了一个空契约"),
+        ("      required: ['data.ticketId']", "路径不以 $ 开头 —— 取不到，契约静默失效"),
+        ("      min_items: {'$.data.items': 'one'}", "min_items 不是整数"),
+        ("      requiredx: ['$.data.x']", "拼错字段名"),
+    ],
+)
+def test_output_schema_bad_shape_rejected(tmp_path: Path, block: str, why: str):
+    """V10：形状不合法必须在**加载期**炸，不能留到运行期静默不生效。"""
+    path = _write_output_schema_manifest(tmp_path, block)
+    with pytest.raises(ManifestError, match="V10"):
+        load_capability_manifest(path)
+    assert "probe_contract" not in {s.capability_id for s in list_capabilities()}
+
+
+def test_output_schema_valid_shape_loads(tmp_path: Path):
+    """合法契约必须能加载进 spec（对照——上面四条不是"一律拒绝"）。"""
+    block = """      required: ["$.data.ticketId"]
+      min_items: {"$.data.items": 1}
+      empty_is_suspicious: true"""
+    path = _write_output_schema_manifest(tmp_path, block)
+    result = load_capability_manifest(path)
+    assert "probe_contract" in set(result.registered_ids)
+    spec = next(
+        s for s in list_capabilities() if s.capability_id == "probe_contract"
+    )
+    assert spec.output_schema == {
+        "required": ["$.data.ticketId"],
+        "min_items": {"$.data.items": 1},
+        "empty_is_suspicious": True,
+    }
+    unregister_probe = getattr(spec, "capability_id", None)
+    assert unregister_probe == "probe_contract"
+
+
+# ---------------- V10：结果契约形状（拼错 = 没有契约）----------------
+
+
+def _write_output_schema_manifest(tmp_path: Path, output_schema_block: str) -> Path:
+    body = f"""version: 1
+capabilities:
+  - id: probe_contract
+    kind: local_fn
+    description: 契约形状单测
+    when_to_use: 单测 fixture
+    args_schema: {{type: object, properties: {{}}}}
+    adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
+    output_schema:
+{output_schema_block}
+"""
+    return _write_yaml(tmp_path / "contract.yaml", body)
+
+
+@pytest.mark.parametrize(
+    "block, why",
+    [
+        ("      required: []", "required 为空列表 —— 等于声明了一个空契约"),
+        ("      required: ['data.ticketId']", "路径不以 $ 开头 —— 取不到，契约静默失效"),
+        ("      min_items: {'$.data.items': 'one'}", "min_items 不是整数"),
+        ("      requiredx: ['$.data.x']", "拼错字段名"),
+    ],
+)
+def test_output_schema_bad_shape_rejected(tmp_path: Path, block: str, why: str):
+    """V10：形状不合法必须在**加载期**炸，不能留到运行期静默不生效。"""
+    path = _write_output_schema_manifest(tmp_path, block)
+    with pytest.raises(ManifestError, match="V10"):
+        load_capability_manifest(path)
+    assert "probe_contract" not in {s.capability_id for s in list_capabilities()}
+
+
+def test_output_schema_valid_shape_loads(tmp_path: Path):
+    """合法契约必须能加载进 spec（对照——上面四条不是"一律拒绝"）。"""
+    block = """      required: ["$.data.ticketId"]
+      min_items: {"$.data.items": 1}
+      empty_is_suspicious: true"""
+    path = _write_output_schema_manifest(tmp_path, block)
+    result = load_capability_manifest(path)
+    assert "probe_contract" in set(result.registered_ids)
+    spec = next(
+        s for s in list_capabilities() if s.capability_id == "probe_contract"
+    )
+    assert spec.output_schema == {
+        "required": ["$.data.ticketId"],
+        "min_items": {"$.data.items": 1},
+        "empty_is_suspicious": True,
+    }
+    unregister_probe = getattr(spec, "capability_id", None)
+    assert unregister_probe == "probe_contract"

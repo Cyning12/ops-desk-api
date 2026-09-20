@@ -27,6 +27,14 @@
     "undeclared_count": 0,
     "visible_ids": []
   },
+  "invoke_no_contract_stays_ok_on_same_payload": {
+    "downstream_calls": 1,
+    "duplicated": false,
+    "error_code": null,
+    "ok": true,
+    "receipt_id_present": true,
+    "side_effect": "write"
+  },
   "invoke_read_timeout_retries_once": {
     "downstream_calls": 2,
     "duplicated": false,
@@ -34,6 +42,14 @@
     "ok": false,
     "receipt_id_present": false,
     "side_effect": null
+  },
+  "invoke_result_contract_violation_is_not_ok": {
+    "downstream_calls": 1,
+    "duplicated": false,
+    "error_code": "upstream_error",
+    "ok": false,
+    "receipt_id_present": true,
+    "side_effect": "write"
   },
   "invoke_upstream_business_error_is_normalized": {
     "downstream_calls": 1,
@@ -72,6 +88,12 @@
   "manifest_missing_args_schema_is_rejected": {
     "error_code": "manifest_invalid",
     "error_contains": "capabilities[0] 缺 args_schema（无 schema 的能力无法进 FC 目录）",
+    "ok": false,
+    "registered_ids": []
+  },
+  "manifest_output_schema_typo_rejected": {
+    "error_code": "manifest_invalid",
+    "error_contains": "capabilities[0].output_schema V10: output_schema 未知字段 ['requird']（拼错的字段会让契约静默失效）",
     "ok": false,
     "registered_ids": []
   },

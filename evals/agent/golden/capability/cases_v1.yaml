@@ -376,3 +376,86 @@ cases:
       ok: true
       duplicated_flags: [false, true]
       downstream_calls: 1
+
+  # ---------------- 结果契约（P0-1）：错了不许报成功 ----------------
+
+  - id: invoke_result_contract_violation_is_not_ok
+    scenario: invoke
+    setup:
+      capabilities:
+        - id: w_contract
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: write
+          hitl: {required: true}
+          tenant_scoped: true
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, required: [subject], properties: {subject: {type: string}}}
+          output_schema: {required: ["$.data.ticketId"]}
+          http: {method: POST, base_url: OA_BASE, path: /t, auth: oa_gateway_token,
+                 body_map: {subject: "{{subject}}"}, idempotency_key: "t:{{subject}}",
+                 tenant_param: {in: header, name: X-Ops-Tenant},
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+      # 下游说成功（code=0）但契约字段缺失 —— 这正是"错了还报成功"的口子
+      downstream: {payload: {code: 0, data: {}}}
+      invoke:
+        capability_id: w_contract
+        args: {subject: x}
+        ctx: {tenant_id: t1, _host_policy: {allow_write: true}}
+    expect:
+      ok: false
+      error_code: upstream_error
+      downstream_calls: 1
+
+  - id: invoke_no_contract_stays_ok_on_same_payload
+    scenario: invoke
+    setup:
+      capabilities:
+        - id: w_free
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: write
+          hitl: {required: true}
+          tenant_scoped: true
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, required: [subject], properties: {subject: {type: string}}}
+          http: {method: POST, base_url: OA_BASE, path: /t, auth: oa_gateway_token,
+                 body_map: {subject: "{{subject}}"}, idempotency_key: "t:{{subject}}",
+                 tenant_param: {in: header, name: X-Ops-Tenant},
+                 success_when: {path: "$.code", in: [0]}, error_map: {"1001": args_schema_invalid}}
+      # 同样的残缺返回，但**没声明契约** → 必须照旧成功（不推测性拦截）
+      downstream: {payload: {code: 0, data: {}}}
+      invoke:
+        capability_id: w_free
+        args: {subject: x}
+        ctx: {tenant_id: t1, _host_policy: {allow_write: true}}
+    expect:
+      ok: true
+      downstream_calls: 1
+
+  # ---------------- 契约形状：拼错 = 没有契约，必须在加载期炸 ----------------
+
+  - id: manifest_output_schema_typo_rejected
+    scenario: manifest
+    setup:
+      capabilities:
+        - id: w_typo
+          kind: http
+          description: x
+          when_to_use: 题集
+          side_effect: read
+          tags: [oa]
+          visibility: {departments: [all]}
+          args_schema: {type: object, properties: {}}
+          output_schema: {requird: ["$.data.ticketId"]}
+          http: {method: GET, base_url: OA_BASE, path: /t, auth: oa_gateway_token,
+                 success_when: {path: "$.code", in: [0]}}
+    expect:
+      ok: false
+      error_code: manifest_invalid
+      error_contains: "V10"
+      registered_ids: []

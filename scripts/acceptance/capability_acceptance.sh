@@ -2,23 +2,24 @@
 #
 # Capability 层一键验收。
 #
-# 一条命令跑完五层，出一份**带证据**的 Markdown 报告，退出码可直接接 CI：
+# 一条命令跑完六层，出一份**带证据**的 Markdown 报告，退出码可直接接 CI：
 #
 #   0  全部通过
 #   1  有条目失败
 #   2  前置条件不满足（缺 venv 等）
 #
-# 五层分开报，**不合并成一个"通过率"**——它们回答的是五个不同问题：
+# 六层分开报，**不合并成一个"通过率"**——它们回答的是六个不同问题：
 #   单测      内部逻辑对不对
 #   黑盒题集  出口产出有没有变
 #   红线      有没有踩到否决项
+#   失控兜底  配额 / kill switch **运维真按得下去吗**（配置级，非单测装置）
 #   DB 持久化 跨实例那条链路是不是真的通
 #   桩服务联调 **真的发得出网吗**（唯一能证明这点的）
 #
 # 用法：
 #   scripts/acceptance/capability_acceptance.sh
 #   MOCK_OA_DIR=/path/to/ops-desk-mock-oa MOCK_OA_PORT=18080 scripts/.../capability_acceptance.sh
-#   SKIP_SMOKE=1 scripts/.../capability_acceptance.sh     # 只跑不需要桩服务的四层
+#   SKIP_SMOKE=1 scripts/.../capability_acceptance.sh     # 只跑不需要桩服务的五层
 
 set -uo pipefail
 
@@ -124,7 +125,7 @@ elif "$JAVA_BIN" -version 2>&1 | head -1 | grep -qE '"(1[0-9]|20)"'; then
   echo
 fi
 
-# ---------------- 五层 ----------------
+# ---------------- 六层 ----------------
 
 run_step "单测" "capability 单测" "内部逻辑" \
   "$VENV_PY" -m pytest "$ROOT/tests" -k capability
@@ -132,8 +133,13 @@ run_step "单测" "capability 单测" "内部逻辑" \
 run_step "题集" "黑盒题集（含基线 diff）" "出口产出漂移" \
   "$VENV_PY" -m pytest "$ROOT/tests/eval/test_eval_capability_golden.py"
 
-run_step "红线" "红线（否决项）" "7 条 hard line" \
+run_step "红线" "红线（否决项）" "清单=实现，缺一即失败" \
   "$VENV_PY" -m pytest "$ROOT/tests" -m redline
+
+# 失控兜底的**配置级**闸门：红线层用假传输证明了逻辑，这里证明运维真按得下去
+# （环境变量名对不对、前缀匹配对不对、按下后是不是真的零出网）
+run_step "失控兜底" "kill switch + 会话配额" "按下即停、零出网" \
+  "$VENV_PY" "$ROOT/scripts/acceptance/capability_budget_gate.py"
 
 run_step "持久化" "DB 版 store/sink" "跨实例防重" \
   "$VENV_PY" -m pytest "$ROOT/tests/test_capability_persistence_db.py"
@@ -195,7 +201,7 @@ rm -rf "$ROOT/.pytest-tmp"
   echo "- 桩服务：\`$MOCK_OA_DIR\` @ 127.0.0.1:$MOCK_OA_PORT"
   echo "- 结论：**$([[ $FAILED -eq 0 ]] && echo '通过' || echo '不通过')**（失败 ${FAILED} · 跳过 ${SKIPPED}）"
   echo
-  echo "> 五层分开看，**不合并成一个通过率**——它们回答五个不同问题。"
+  echo "> 六层分开看，**不合并成一个通过率**——它们回答六个不同问题。"
   echo "> 跳过 ≠ 通过：桩服务未就绪时联调被显式标为 SKIP，而不是记成失败、也不假装通过。"
   echo
   echo "| 层 | 内容 | 结果 | 说明 |"

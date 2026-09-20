@@ -47,6 +47,10 @@ capabilities:
           type: integer
           default: 10
           description: 返回条数上限
+    # 结果契约（P0-1）：下游说 code=0 但结构不对 → 判失败，不许"错了还报成功"
+    # items 允许为空（查无是正常结果），但会被标记 result_empty 供编排层区分
+    output_schema:
+      required: ["$.data.items", "$.data.tenant"]
     http:
       method: GET
       base_url: OA_BASE
@@ -90,6 +94,8 @@ capabilities:
         name:
           type: string
           description: 人名或部门名
+    output_schema:
+      required: ["$.data.items"]
     http:
       method: GET
       base_url: OA_BASE
@@ -129,6 +135,9 @@ capabilities:
           enum: [pending, running, all]
           default: pending
           description: 待办状态筛选
+    # tenant 回显 = 租户谓词真的下推了；缺它说明这一路请求没带谓词
+    output_schema:
+      required: ["$.data.items", "$.data.tenant"]
     http:
       method: GET
       base_url: OA_BASE

@@ -55,7 +55,10 @@ HOST_INJECTED_VARS: frozenset[str] = frozenset(
     {"_user_id", "_date", "_tenant_id", "_subtask_id"}
 )
 
-_MISSING = object()
+# JSONPath 取值与"缺失"哨兵：与 receipt_capture / output_schema 共用一份实现
+# （见 capability/jsonpath.py），避免"回执抓到了但契约说缺字段"这种自相矛盾。
+from app.ops.capability.jsonpath import MISSING as _MISSING
+from app.ops.capability.jsonpath import jsonpath_get  # noqa: F401 - 保兼容导出路径
 
 # 显式指定能力调用走的代理；不设 → **不走任何代理**（见 UrllibHttpTransport）
 _ENV_HTTP_PROXY = "OPS_CAPABILITY_HTTP_PROXY"
@@ -287,35 +290,6 @@ def _parse_payload(raw: str) -> Any:
         return json.loads(text)
     except json.JSONDecodeError:
         return {"_raw": text[:500]}
-
-
-def jsonpath_get(data: Any, expr: str) -> Any:
-    """极简 JSONPath 子集：``$`` / ``$.a.b`` / ``$.a[0].b``。取不到 → ``_MISSING``。"""
-    path = str(expr or "").strip()
-    if path in ("", "$"):
-        return data
-    if path.startswith("$"):
-        path = path[1:]
-    if path.startswith("."):
-        path = path[1:]
-    cur = data
-    for token in [t for t in path.split(".") if t]:
-        name, _, indexes = token.partition("[")
-        if name:
-            if not isinstance(cur, dict) or name not in cur:
-                return _MISSING
-            cur = cur[name]
-        while indexes:
-            idx_str, _, rest = indexes.partition("]")
-            try:
-                idx = int(idx_str)
-            except ValueError:
-                return _MISSING
-            if not isinstance(cur, list) or idx >= len(cur) or idx < -len(cur):
-                return _MISSING
-            cur = cur[idx]
-            indexes = rest.lstrip("[").lstrip("]")
-    return cur
 
 
 @dataclass(frozen=True)

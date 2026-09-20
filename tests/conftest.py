@@ -169,6 +169,21 @@ async def _reset_engine():
     yield
 
 
+@pytest.fixture(autouse=True)
+def _reset_capability_budget():
+    """每个用例前清零 capability 的会话配额计数。
+
+    配额是**进程内全局状态**（和注册表、metrics 同源），不清就会跨用例累积；
+    而不带 ctx 的调用全部落进匿名桶 ``""``，跑满 64 次之后后面每个用例都被
+    ``policy_blocked: budget_exhausted`` 拦下——症状长得像功能坏了，实际是状态泄漏。
+    """
+    from app.ops.capability.budget import reset as budget_reset
+
+    budget_reset()
+    yield
+    budget_reset()
+
+
 @pytest.fixture
 async def clean_sync_data():
     """Remove all synced repos and cascading children before a test.

@@ -32,6 +32,7 @@ from app.ops.capability import (
     list_capabilities,
 )
 from app.ops.capability.baseline import baseline_filter
+from app.ops.capability.budget import snapshot as budget_snapshot
 from app.ops.capability.idempotency import DbIdempotencyStore
 from app.ops.capability.metrics import snapshot as metrics_snapshot
 from app.ops.capability.persistence import describe_persistence
@@ -95,6 +96,19 @@ async def runtime(_user: OpsUser | None = AdminSyncAuth) -> dict[str, Any]:
         },
         "manifest": get_capability_manifest_metadata(),
         "idempotency_store": store["store"],
+        # 失控兜底（P0-2）：kill switch 按下没有、谁被拦了、配额还剩多少。
+        # "我到底停干净了没有"必须是一个能直接读出来的字段，不能靠推理。
+        "budget": budget_snapshot(),
+        # 结果契约（P0-1）：有多少能力声明了 output_schema。
+        # 没声明 = 不校验，这个数越低，"错了还报成功"的口子越大。
+        "contracts": {
+            "declared": sum(1 for s in specs if s.output_schema),
+            "undeclared_write": [
+                s.capability_id
+                for s in specs
+                if s.side_effect in ("write", "irreversible") and not s.output_schema
+            ],
+        },
         "health": _health(persistence),
     }
 

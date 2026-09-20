@@ -36,7 +36,14 @@ import os
 import time
 from typing import Any
 
-from app.ops.capability.errors import DISABLED, UNKNOWN_ID, format_error
+from app.ops.capability.budget import check as budget_check
+from app.ops.capability.budget import count as budget_count
+from app.ops.capability.errors import (
+    DISABLED,
+    UNKNOWN_ID,
+    UPSTREAM_ERROR,
+    format_error,
+)
 from app.ops.capability.idempotency import get_idempotency_store
 from app.ops.capability.metrics import record_outcome
 from app.ops.capability.policy import check_invoke, write_allowed
@@ -46,6 +53,7 @@ from app.ops.capability.receipts import (
     build_receipt,
     record_receipt,
 )
+from app.ops.capability.result_contract import validate as validate_result_contract
 from app.ops.capability.registry import CapabilityAdapter, CapabilityRegistry
 from app.ops.capability.schema_validate import validate_capability_args
 from app.ops.capability.types import (
@@ -269,6 +277,28 @@ def _prepare_call(
         )
         return result
 
+    # ---- P0-2：失控兜底（kill switch + 会话配额）----
+    # 放在 Policy 之后、真正执行之前：被 Policy 拦下的不计入配额，
+    # 否则"反复尝试但都被拒"会把配额打满，反而误伤一次正常调用。
+    budget_err = budget_check(spec, ctx=ctx)
+    if budget_err is not None:
+        blocked = "kill_switch" if budget_err.startswith(DISABLED) else "budget"
+        result = CapabilityResult(
+            ok=False,
+            error=budget_err,
+            capability_id=cid,
+            duration_ms=0.0,
+            meta={"kind": spec.kind, "blocked": blocked, "side_effect": spec.side_effect},
+        )
+        _write_span_metadata(
+            result,
+            kind=spec.kind,
+            risk_level=spec.risk_level,
+            args=args,
+            ctx=ctx,
+        )
+        return result
+
     # provide 无 args；invoke 有 schema 才校验（force 预留：无 schema 时亦拒绝写路径）
     if mode == "invoke":
         schema_err = validate_capability_args(args, spec.args_schema)
@@ -393,6 +423,64 @@ async def _amaybe_record_receipt(
         )
 
 
+def _contract_payload(spec: CapabilitySpec, output: Any) -> Any:
+    """契约校验取哪一段：http 适配器把下游响应体放在 ``output["result"]`` 里。
+
+    刻意与 ``receipt_capture`` 同口径——两处路径都写成 ``$.data.ticketId``，
+    否则会出现「回执抓到了、契约却说缺字段」这种自相矛盾的结论。
+    """
+    if isinstance(output, dict) and isinstance(output.get("result"), dict):
+        return output["result"]
+    return output
+
+
+def _result_contract_verdict(spec: CapabilitySpec, output: Any) -> Any:
+    """未声明契约 → ``None``（**不做任何推测性拦截**，契约是显式声明出来的）。"""
+    if spec.output_schema is None:
+        return None
+    return validate_result_contract(
+        spec.output_schema, _contract_payload(spec, output)
+    )
+
+
+def _fail_result(
+    *,
+    spec: CapabilitySpec,
+    cid: str,
+    mode: str,
+    started: float,
+    error: str,
+    args: Any,
+    ctx: dict[str, Any] | None,
+    meta_extra: dict[str, Any] | None = None,
+) -> CapabilityResult:
+    duration_ms = (time.perf_counter() - started) * 1000.0
+    meta: dict[str, Any] = {"kind": spec.kind, "mode": mode}
+    if meta_extra:
+        meta.update(meta_extra)
+    result = CapabilityResult(
+        ok=False,
+        error=error,
+        capability_id=cid,
+        duration_ms=duration_ms,
+        meta=meta,
+    )
+    # 失败也要留：一次「失败」的写操作可能**已经**在下游生效
+    # （超时 / 半成功 / 结果不合规但单据已建出）
+    _maybe_record_receipt(spec, result, ctx=ctx)
+    _write_span_metadata(
+        result,
+        kind=spec.kind,
+        risk_level=spec.risk_level,
+        policy_reason="allowed",
+        args=args,
+        ctx=ctx,
+        side_effect=spec.side_effect,
+        receipt_id=result.meta.get("receipt_id"),
+    )
+    return result
+
+
 def _ok_result(
     *,
     spec: CapabilitySpec,
@@ -403,6 +491,25 @@ def _ok_result(
     args: Any,
     ctx: dict[str, Any] | None,
 ) -> CapabilityResult:
+    verdict = _result_contract_verdict(spec, output)
+    if verdict is not None and not verdict.ok:
+        # ★ 结果不符合契约 = 这次调用**不能用**。宁可判失败，也不让残缺结果
+        # 混进后续规划（Q2/Q4：错了还报成功，会把整条链路带偏）。
+        # 失败口径落在既有 UPSTREAM_ERROR（错误码词表"七个、不增"），用 detail 区分。
+        return _fail_result(
+            spec=spec,
+            cid=cid,
+            mode=mode,
+            started=started,
+            error=format_error(UPSTREAM_ERROR, verdict.error_detail()),
+            args=args,
+            ctx=ctx,
+            meta_extra={
+                "result_contract_violated": True,
+                "result_contract_reason": verdict.reason,
+            },
+        )
+
     duration_ms = (time.perf_counter() - started) * 1000.0
     result = CapabilityResult(
         ok=True,
@@ -411,6 +518,11 @@ def _ok_result(
         duration_ms=duration_ms,
         meta={"kind": spec.kind, "mode": mode},
     )
+    if verdict is not None and verdict.empty:
+        # 空结果必须是**显式状态**：默认不判失败（正常"查无"不能被误伤），
+        # 但不能和"查到了"长得一样——编排层要看得到这个区别。
+        result.meta["result_empty"] = True
+        result.meta["result_suspicious"] = verdict.suspicious
     _maybe_record_receipt(spec, result, ctx=ctx)
     _write_span_metadata(
         result,
@@ -435,16 +547,40 @@ def _err_result(
     args: Any,
     ctx: dict[str, Any] | None,
 ) -> CapabilityResult:
-    duration_ms = (time.perf_counter() - started) * 1000.0
+    return _fail_result(
+        spec=spec,
+        cid=cid,
+        mode=mode,
+        started=started,
+        error=repr(exc),
+        args=args,
+        ctx=ctx,
+    )
+
+
+async def _afail_result(
+    *,
+    spec: CapabilitySpec,
+    cid: str,
+    mode: str,
+    started: float,
+    error: str,
+    args: Any,
+    ctx: dict[str, Any] | None,
+    meta_extra: dict[str, Any] | None = None,
+) -> CapabilityResult:
+    """异步失败结果。**失败也要留回执**：一次"失败"的写可能已在下游生效。"""
+    meta: dict[str, Any] = {"kind": spec.kind, "mode": mode}
+    if meta_extra:
+        meta.update(meta_extra)
     result = CapabilityResult(
         ok=False,
-        error=repr(exc),
+        error=error,
         capability_id=cid,
-        duration_ms=duration_ms,
-        meta={"kind": spec.kind, "mode": mode},
+        duration_ms=(time.perf_counter() - started) * 1000.0,
+        meta=meta,
     )
-    # 失败也要留：一次「失败」的写操作可能已经在下游生效（超时 / 半成功）
-    _maybe_record_receipt(spec, result, ctx=ctx)
+    await _amaybe_record_receipt(spec, result, ctx=ctx)
     _write_span_metadata(
         result,
         kind=spec.kind,
@@ -469,6 +605,22 @@ async def _aok_result(
     ctx: dict[str, Any] | None,
 ) -> CapabilityResult:
     """异步路径的成功结果（回执走异步 sink，不阻塞事件循环）。"""
+    verdict = _result_contract_verdict(spec, output)
+    if verdict is not None and not verdict.ok:
+        return await _afail_result(
+            spec=spec,
+            cid=cid,
+            mode=mode,
+            started=started,
+            error=format_error(UPSTREAM_ERROR, verdict.error_detail()),
+            args=args,
+            ctx=ctx,
+            meta_extra={
+                "result_contract_violated": True,
+                "result_contract_reason": verdict.reason,
+            },
+        )
+
     result = CapabilityResult(
         ok=True,
         output=output,
@@ -476,6 +628,9 @@ async def _aok_result(
         duration_ms=(time.perf_counter() - started) * 1000.0,
         meta={"kind": spec.kind, "mode": mode},
     )
+    if verdict is not None and verdict.empty:
+        result.meta["result_empty"] = True
+        result.meta["result_suspicious"] = verdict.suspicious
     await _amaybe_record_receipt(spec, result, ctx=ctx)
     _write_span_metadata(
         result,
@@ -500,26 +655,15 @@ async def _aerr_result(
     args: Any,
     ctx: dict[str, Any] | None,
 ) -> CapabilityResult:
-    """异步路径的失败结果。**失败也要留回执**：一次"失败"的写可能已在下游生效。"""
-    result = CapabilityResult(
-        ok=False,
+    return await _afail_result(
+        spec=spec,
+        cid=cid,
+        mode=mode,
+        started=started,
         error=repr(exc),
-        capability_id=cid,
-        duration_ms=(time.perf_counter() - started) * 1000.0,
-        meta={"kind": spec.kind, "mode": mode},
-    )
-    await _amaybe_record_receipt(spec, result, ctx=ctx)
-    _write_span_metadata(
-        result,
-        kind=spec.kind,
-        risk_level=spec.risk_level,
-        policy_reason="allowed",
         args=args,
         ctx=ctx,
-        side_effect=spec.side_effect,
-        receipt_id=result.meta.get("receipt_id"),
     )
-    return result
 
 
 def _missing_provide_result(
@@ -559,6 +703,8 @@ def _dispatch(
         return prepared
     spec, adapter, started = prepared
     cid = capability_id or ""
+    # 计数：**已放行、即将真正执行**才计（被拦下的不算，见 budget.count 的说明）
+    budget_count(spec, ctx=ctx)
     try:
         if mode == "provide":
             provide_fn = getattr(adapter, "provide", None)
@@ -632,6 +778,8 @@ async def _adispatch(
         return prepared
     spec, adapter, started = prepared
     cid = capability_id or ""
+    # 与同步路径同口径：已放行、即将执行才计数
+    budget_count(spec, ctx=ctx)
     try:
         if mode == "provide":
             provide_fn = getattr(adapter, "provide", None)

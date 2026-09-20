@@ -98,6 +98,12 @@ class CapabilitySpec:
     hitl_snapshot_fields: tuple[str, ...] = ()
     # 副作用回执捕获路径（JSONPath 子集），副作用以收据为真
     receipt_capture: tuple[str, ...] = ()
+    # ---- 结果契约（P0-1）----
+    # 声明"这次调用的成功**长什么样**"：必填字段 / 最小条数 / 空结果是否可疑。
+    # 没有它，工具返回缺字段、类型变了、列表为空**一律 ok=True**——
+    # 而"查到 0 条"和"被限流返回空"在系统里长得一模一样，会污染整条链路。
+    # 形状见 result_contract.py；加载期校验见 manifest V10。
+    output_schema: dict[str, Any] | None = None
     # 可见性声明（departments / roles / projects / classification_max）。
     # None = **未声明**：不受可见性规则裁剪（沿用 CapabilityFilter 语义），
     # 但会在 span 上留 ``visibility_undeclared`` 痕，让遗漏可度量。

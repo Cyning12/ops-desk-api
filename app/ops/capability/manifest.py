@@ -260,6 +260,56 @@ def _commit(
     )
 
 
+def _validate_output_schema(block: dict[str, Any], *, loc: str) -> None:
+    """V10：结果契约形状校验。
+
+    校验意图是**防"契约拼错等于没有契约"**：路径写错、min_items 不是整数、
+    required 不是列表——这些在运行期都表现为"契约静默不生效"，最难发现。
+    """
+    required = block.get("required")
+    if required is not None:
+        # ``required: []`` 也要拒：声明了 required 却不含任何路径 = 一个什么都不查
+        # 的契约，和拼错属于同一类静默失效（看起来有契约，实际没有）。
+        # 注意 ``output_schema: {}``（只写 empty_is_suspicious）是**合法**的——
+        # 那是"没有必填字段，但空结果可疑"，是一个真实有意义的契约。
+        if not isinstance(required, list) or not required:
+            raise ManifestError(
+                f"{loc} V10: required 必须是**非空**列表（空列表等于没契约）"
+            )
+        if not all(isinstance(x, str) and x.strip() for x in required):
+            raise ManifestError(f"{loc} V10: required 必须是非空字符串列表")
+        for expr in required:
+            if not str(expr).lstrip().startswith("$"):
+                raise ManifestError(
+                    f"{loc} V10: required 路径必须以 $ 开头（当前 {expr!r}）"
+                )
+
+    min_items = block.get("min_items")
+    if min_items is not None:
+        if not isinstance(min_items, dict):
+            raise ManifestError(f"{loc} V10: min_items 必须是 mapping（路径 → 条数）")
+        for expr, want in min_items.items():
+            if not str(expr).lstrip().startswith("$"):
+                raise ManifestError(
+                    f"{loc} V10: min_items 路径必须以 $ 开头（当前 {expr!r}）"
+                )
+            try:
+                n = int(want)
+            except (TypeError, ValueError):
+                raise ManifestError(
+                    f"{loc} V10: min_items[{expr!r}] 必须是整数（当前 {want!r}）"
+                ) from None
+            if n < 0:
+                raise ManifestError(f"{loc} V10: min_items[{expr!r}] 不得为负")
+
+    unknown = set(block) - {"required", "min_items", "empty_is_suspicious"}
+    if unknown:
+        raise ManifestError(
+            f"{loc} V10: output_schema 未知字段 {sorted(unknown)}"
+            "（拼错的字段会让契约静默失效）"
+        )
+
+
 def _parse_and_validate(
     path: Path,
 ) -> tuple[int | str | None, list[_PendingEntry]]:
@@ -364,6 +414,14 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
     if not when_to_use:
         raise ManifestError(f"{loc} 缺 when_to_use（模型选择依据，不可省）")
 
+    # 结果契约（P0-1）。在**加载期**就把形状钉死：一个拼错的契约等于没有契约，
+    # 而"契约没生效"是静默的——调用照常成功，只是不再校验。
+    output_schema_raw = raw.get("output_schema")
+    if output_schema_raw is not None and not isinstance(output_schema_raw, dict):
+        raise ManifestError(f"{loc} V10: output_schema 必须是 mapping")
+    if isinstance(output_schema_raw, dict):
+        _validate_output_schema(output_schema_raw, loc=f"{loc}.output_schema")
+
     http_block = raw.get("http")
     if kind != "http" and isinstance(http_block, dict) and http_block:
         # V7：仅 kind=http 可声明 http 块。
@@ -438,6 +496,10 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
         hitl_required=bool(hitl_raw.get("required", False)),
         hitl_snapshot_fields=tuple(str(x) for x in snapshot_raw),
         receipt_capture=tuple(str(x) for x in capture_raw),
+        # 结果契约（P0-1）：None = 未声明，不做契约校验（见 result_contract 模块 docstring）
+        output_schema=(
+            dict(output_schema_raw) if isinstance(output_schema_raw, dict) else None
+        ),
         visibility=(
             dict(visibility_raw) if isinstance(visibility_raw, dict) else None
         ),
