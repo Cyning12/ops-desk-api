@@ -65,3 +65,26 @@ redlines:
     statement: 命中幂等键的那次调用不得再发请求，且不得留下第二条回执
     rationale: 防重的全部意义就在这里；漏一条就等于防重形同虚设。
     source: W5/W6 幂等防重
+
+  - id: R8
+    severity: critical
+    statement: >-
+      防重存储只有异步接口（= 配了 db 持久化）时，写能力的同步 invoke 必须显式失败、
+      且下游零请求；同一能力走 ainvoke 必须正常执行并落回执
+    rationale: >-
+      同步落库会阻塞事件循环，所以 DbIdempotencyStore 只提供异步接口。危险不在"报错"，
+      而在**报错的替代方案**：如果同步路径退化成"防重没生效但仍然发请求"，
+      一次重试就会建出第二张单据。必须是 fail-closed——拿不到防重判定就不许发请求。
+      这条过去只靠运行时报错传达，属于"踩到才知道"，现在把它钉成红线。
+    source: 2026-09-20 联调实测（.env 配 OPS_CAPABILITY_PERSISTENCE=db 后写链路 5 项失败）
+
+  - id: R9
+    severity: critical
+    statement: >-
+      幂等命中必须重放上次的业务结果（回执里 captured 的字段），
+      不能只回 duplicated=True + 一个回执 id
+    rationale: >-
+      幂等是"重复调用返回与首次相同的结果"，不只是"没有重复执行"。
+      只回 duplicated=True 和一个回执 id，调用方第二次调用拿不到 ticketId/url，
+      业务上等于这次调用白干了——防重保住了，可用性丢了。
+    source: 2026-09-20 联调 C1c（db 模式下第二次调用 ticketId=None）

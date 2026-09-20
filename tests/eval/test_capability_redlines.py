@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -32,6 +33,7 @@ from app.ops.capability import (
     GenericHttpAdapter,
     InMemoryIdempotencyStore,
     InMemoryReceiptSink,
+    ainvoke,
     invoke,
     register,
     reset_idempotency_store,
@@ -150,6 +152,14 @@ def _clean(monkeypatch: pytest.MonkeyPatch):
 
 
 _CTX_WRITE = {"tenant_id": "t1", "_host_policy": {"allow_write": True}}
+
+
+def _inner_data(result: Any) -> dict[str, Any]:
+    """取代理侧信封里的下游响应体（``output["result"]["data"]``）。"""
+    if not result.ok or not isinstance(result.output, dict):
+        return {}
+    inner = result.output.get("result")
+    return (inner or {}).get("data") or {}
 
 
 # ---------------- R0：清单与实现对齐 ----------------
@@ -437,4 +447,113 @@ def test_r7_duplicate_hits_do_not_call_downstream_and_leave_no_second_receipt():
         holds=holds,
         control=control,
         detail=f"calls={len(tx.calls)} receipts={len(sink)}",
+    )
+
+
+# ---------------- R8：db 持久化下同步 invoke 必须 fail-closed ----------------
+
+
+class _AsyncOnlyIdempotencyStore:
+    """``DbIdempotencyStore`` 的形态：**只有异步接口**，没有同步 claim / complete。
+
+    用替身而不是真连数据库：这条红线守的性质（"拿不到同步防重判定就必须 fail-closed"）
+    与数据库无关；而且红线层必须在**没有 DB 的 CI** 里也跑得起来——
+    真连库的话 DB 不可用时红线会静默失效，那正是 R0 要防的事。
+    """
+
+    def __init__(self, inner: InMemoryIdempotencyStore) -> None:
+        self._inner = inner
+
+    async def aclaim(self, key: str, *, capability_id: str = "", tenant_id: str = ""):
+        return await self._inner.aclaim(
+            key, capability_id=capability_id, tenant_id=tenant_id
+        )
+
+    async def acomplete(self, key: str, *, receipt_id: str = "", tenant_id: str = ""):
+        await self._inner.acomplete(
+            key, receipt_id=receipt_id, tenant_id=tenant_id
+        )
+
+
+@redline("R8")
+def test_r8_async_only_store_fails_closed_on_sync_invoke():
+    """存储只有异步接口时：同步 invoke 必须失败且**请求不出门**；ainvoke 必须正常执行。"""
+    inner = InMemoryIdempotencyStore()
+    set_idempotency_store(_AsyncOnlyIdempotencyStore(inner))
+    sink = InMemoryReceiptSink()
+    set_receipt_sink(sink)
+
+    spec = _spec("r8.write")
+    tx = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-R8"}})
+    _register(spec, tx)
+    try:
+        blocked = invoke("r8.write", {"subject": "x"}, ctx=dict(_CTX_WRITE))
+        holds = (
+            blocked.ok is False
+            and "ainvoke" in str(blocked.error)
+            and tx.calls == []  # ★ 防重没生效就绝不能发请求
+        )
+
+        async def _run() -> Any:
+            return await ainvoke("r8.write", {"subject": "x"}, ctx=dict(_CTX_WRITE))
+
+        allowed = asyncio.run(_run())
+        # 注意：被拦下的同步调用**也留了一条回执**（写能力无论成败都落回执，是既有设计），
+        # 所以这里不能数"回执条数 == 1"，而要断言"确实执行过一次写并留下了 write_confirmed"。
+        control = (
+            allowed.ok is True
+            and len(tx.calls) == 1
+            and any(r.write_confirmed for r in sink.all())
+        )
+    finally:
+        unregister("r8.write")
+
+    assert_redline(
+        redline_id="R8",
+        holds=holds,
+        control=control,
+        detail=f"blocked={blocked.error!r} calls={len(tx.calls)} receipts={len(sink)}",
+    )
+
+
+# ---------------- R9：幂等命中必须重放上次的业务结果 ----------------
+
+
+@redline("R9")
+def test_r9_duplicate_hit_replays_previous_business_fields():
+    """命中必须重放上次业务字段；换 key 必须真执行（对照——防重不是"永远返回第一次的结果"）。"""
+    set_idempotency_store(InMemoryIdempotencyStore())
+    sink = InMemoryReceiptSink()
+    set_receipt_sink(sink)
+
+    spec = _spec("r9.write", receipt_capture=("$.data.ticketId",))
+    tx = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-R9"}})
+    _register(spec, tx)
+    try:
+        first = invoke("r9.write", {"subject": "same"}, ctx=dict(_CTX_WRITE))
+        dup = invoke("r9.write", {"subject": "same"}, ctx=dict(_CTX_WRITE))
+        d1 = _inner_data(first)
+        d2 = _inner_data(dup)
+        holds = (
+            dup.ok is True
+            and dup.meta.get("duplicated") is True
+            and d2.get("ticketId") == d1.get("ticketId") == "T-R9"
+            and len(tx.calls) == 1  # 重放不是"再打一次下游换结果"
+        )
+
+        # 对照：换 key 必须真的执行，而不是命中缓存
+        other = invoke("r9.write", {"subject": "other"}, ctx=dict(_CTX_WRITE))
+        control = (
+            len(tx.calls) == 2
+            and not other.meta.get("duplicated")
+            and _inner_data(other).get("ticketId") == "T-R9"
+        )
+    finally:
+        unregister("r9.write")
+
+    assert_redline(
+        redline_id="R9",
+        holds=holds,
+        control=control,
+        detail=f"first={d1} dup={d2} calls={len(tx.calls)}",
     )
