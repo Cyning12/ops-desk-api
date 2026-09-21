@@ -1,8 +1,8 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_lg_rag"
 title: "LG RAG 旁路三模式流程（basic / router / supervisor · Critic）"
-description: "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。T5：终答 answer 多帧 delta（{delta}）+ 终帧 {content, final:true}（aggregator / direct_answer 经 answer_stream.py contextvar token sink 桥 complete_stream；降级整段）。T5.1：persist 后台调度不阻塞 SSE yield。§10.6：等待 update 期间 SSE comment keepalive（不落盘、不占 seq）。§10.7：子任务 running 起步帧 + step 里程碑（progress_stream · rag_subtask astream_router + evidence step_hook · status=running/step/done）；§10.7 增补：running/step/done 帧可选 message 中文短句（subtask_message.py 确定性模板 · 截断 200 · 生成失败降级帧仍发 · 旧客户端忽略未知键）。"
-version: "2026-08-31"
+description: "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。T5：终答 answer 多帧 delta（{delta}）+ 终帧 {content, final:true}（aggregator / direct_answer 经 answer_stream.py contextvar token sink 桥 complete_stream；降级整段）。T5.1：persist 后台调度不阻塞 SSE yield。§10.6：等待 update 期间 SSE comment keepalive（不落盘、不占 seq）。§10.7：子任务 running 起步帧 + step 里程碑（progress_stream · rag_subtask astream_router + evidence step_hook · status=running/step/done）；§10.7 增补：running/step/done 帧可选 message 中文短句（subtask_message.py 确定性模板 · 截断 200 · 生成失败降级帧仍发 · 旧客户端忽略未知键）。2026-09-21：supervisor 增 subtask_join（ready=依赖全终态+步骤契约闸 consumes/produces · prefix_touch_required→hitl_required）与 observe 执行层收口（没有待发步骤不再直连 aggregator；hitl_required 真 interrupt() 挂起 → /hitl/* 批准 → hitl/resume.py Command(resume) 恢复 · 事件接同一 run_id + replay cursor）；外层 ReAct replan→supervisor / settle→aggregator 有界 LG_RAG_REACT_MAX_ROUNDS=2（Policy 类拒绝不触发 HITL）。"
+version: "2026-09-21"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "method"
@@ -269,13 +269,38 @@ nodes:
         kind: method
 
   - id: "s_dispatch"
-    label: "一次下发无依赖工人，按 subtask_id 归并"
+    label: "subtask_join（ready 判定 + 一次下发无依赖工人 · 按 Host subtask_id 归并）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
       - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "_join_subtasks"
+        kind: method
+      - path: "app/ops/lg_rag/multi/nodes.py"
         symbol: "route_next_subtask"
         kind: method
+
+  - id: "s_step_contract"
+    label: "step_contract 闸（consumes/produces · prefix_touch_required → hitl_required）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/multi/step_contract.py"
+        symbol: "gate"
+        kind: method
+
+  - id: "s_observe"
+    label: "observe_node（执行层收口 · hitl_required 真 interrupt 挂起）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "observe_node"
+        kind: method
+
+  - id: "hitl_gw"
+    label: "HITL 模块 /hitl/*（>./01_modules.md · HMAC + 管理员双口径）"
+    kind: external
 
   - id: "s_rag"
     label: "rag_subtask_node（复用 router 子图）"
@@ -628,33 +653,77 @@ edges:
         line: 238
 
   - from: "s_dispatch"
-    to: "s_aggregator"
-    label: "[耗尽/空 → aggregate]"
+    to: "s_observe"
+    label: "[没有待发步骤 → observe（不再直连 aggregator）]"
     mark: "?>"
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 45
+        symbol: "_DISPATCH_MAP"
       - path: "app/ops/lg_rag/multi/nodes.py"
-        line: 237
+        symbol: "route_next_subtask"
+
+  - from: "s_dispatch"
+    to: "s_step_contract"
+    label: "ready=依赖全终态+契约闸"
+    type: "depends_on"
+    anchors:
+      - path: "app/ops/lg_rag/multi/step_contract.py"
+        symbol: "gate"
+
+  - from: "s_observe"
+    to: "s_supervisor"
+    label: "[replan → supervisor（LG_RAG_REACT_MAX_ROUNDS=2 有界）]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "route_after_react"
+
+  - from: "s_observe"
+    to: "s_aggregator"
+    label: "[settle → aggregator]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "route_after_react"
+
+  - from: "s_observe"
+    to: "hitl_gw"
+    label: "[hitl_required → interrupt() 挂起 + 申请落库]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "observe_node"
+      - path: "app/ops/lg_rag/multi/nodes.py"
+        symbol: "_persist_hitl"
+
+  - from: "hitl_gw"
+    to: "s_observe"
+    label: "批准 → Command(resume) 恢复（同一 run_id + replay cursor）"
+    anchors:
+      - path: "app/ops/hitl/resume.py"
+        symbol: "resume_hitl_run"
 
   - from: "s_rag"
     to: "s_dispatch"
-    label: "按 subtask_id 归并回 dispatch"
+    label: "按 subtask_id 归并回 join"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
         line: 78
 
   - from: "s_extract"
     to: "s_dispatch"
-    label: "按 subtask_id 归并回 dispatch"
+    label: "按 subtask_id 归并回 join"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
         line: 78
 
   - from: "s_tool"
     to: "s_dispatch"
-    label: "按 subtask_id 归并回 dispatch"
+    label: "按 subtask_id 归并回 join"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
         line: 78

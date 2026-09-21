@@ -1,6 +1,6 @@
 # Task：阶段 T · 只读租户谓词下推 + 跨租户负样本
 
-> **状态**：`active` · **30 Fixture PASS**（待 40 / web 联调；生产 B 种子另轨）  
+> **状态**：`done`（2026-09-21 归档 · 代码已在 `chore/upgrade-langgraph-1.2` 入库：`app/ops/tenant_context.py` · `alembic/versions/20260918_tenant_readonly.py` · models/lookups `tenant_id`；**PR 未开、未合 master**，见 `docs/HANDOFF_recent-2days_v1_zh.md` §3-P0；生产 B 种子另轨）  
 > **类型**：feature / 只读多租户  
 > **上游**：workspace `docs/05-plan/06_stage_t_second_tenant_prep_v0_zh.md` · `docs/contracts/api-v1-tenant-readonly-context-draft.md` · 讨论稿 §8 阶段 T  
 > **分支**：`task/tenant-readonly-predicate`（建议；base：`master`）  
@@ -228,3 +228,4 @@ H 只解决「缺租户拒」；T 解决「有租户后真隔离」。
 | 2026-09-18 | 10 起草壳 · NO-GO 30 · 互链 workspace/web |
 | 2026-09-18 | 30 Fixture 本地跑通 · T0–T5 勾选 · invoke `invoke_20260918_30_*` |
 | 2026-09-18 | 40 自检回填 · invoke `invoke_20260918_40_verify_*` · 未 commit |
+| 2026-09-21 | 代码随两日集中开发入库 `chore/upgrade-langgraph-1.2`（脱离 specwave 过程，见 HANDOFF）；task 归档 active→done；PR 待开 |

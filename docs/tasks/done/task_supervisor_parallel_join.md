@@ -1,8 +1,8 @@
 # Task：Supervisor 无依赖子任务并发下发并按 Host subtask_id 归并
 
-> **状态**：`draft`  
+> **状态**：`done`（2026-09-21 归档 · 代码已在 `chore/upgrade-langgraph-1.2` 入库：`034fe7c` 并发归并 + `e80378c` ReAct 收口 + `tests/test_supervisor_parallel_join.py`；**PR 未开、未合 master**，见 `docs/HANDOFF_recent-2days_v1_zh.md` §3-P0）  
 > **关联图谱**：`docs/_tech_graph/l1/01_modules.md` · `docs/_tech_graph/l1/10_flow_lg_rag.md` · `docs/_tech_graph/l1/10_flow_lg_rag.graph.yaml`  
-> **落盘**：`docs/tasks/active/task_supervisor_parallel_join.md`；验收后 `git mv` → `docs/tasks/done/`  
+> **落盘**：`docs/tasks/done/task_supervisor_parallel_join.md`（2026-09-21 已 `git mv` 归档）  
 > **分支**：`task/supervisor-parallel-join`（自 `master` `8be477c`）  
 > **类型**：feature / lg_rag supervisor 编排  
 > **无关**：禁止改 `docs/tasks/active/task_tenant_readonly_predicate.md` 及其闸表  
@@ -349,3 +349,4 @@ Task_KPI%: 80
 | 2026-09-19 | 10-task 首稿。锚点按现码行号。闸三行 pending，未代签 |
 | 2026-09-19 | 按 R1 B-1 补旧测 grep 影响面。顺手补锚点 L235 空 allowlist 的 `t1`（契约语义未改） |
 | 2026-09-19 | 30 实现：Host id 同批下发与按 id 归并。验收勾选未全勾（chat WS 两条既有失败） |
+| 2026-09-21 | 代码随两日集中开发入库 `chore/upgrade-langgraph-1.2`（脱离 specwave 过程，见 HANDOFF）；task 归档 active→done；PR 待开 |

@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260919_V1",
-  "generated_at": "2026-09-19T03:28:50Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260921_V1",
+  "generated_at": "2026-09-21T04:42:00Z",
   "graphs": [
     {
       "id": "00_main",
@@ -251,6 +251,46 @@
     },
     {
       "graph_id": "10_flow_capability",
+      "id": "idempotency",
+      "label": "idempotency 防重（命中重放上次结果 · receipts 回执）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "precheck",
+      "label": "_prepare_call 闸链（lookup→enabled→Policy→熔断→配额/kill→args_schema）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "circuit",
+      "label": "circuit 下游熔断（pybreaker · 写探测 · 判定不看错误文案）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "budget",
+      "label": "budget 会话配额 / kill switch（Policy 拒不计配额）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "fallback",
+      "label": "fallback 降级链（声明才降级 · 降级必带 degraded 标记跟数据走）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "result_contract",
+      "label": "result_contract 输出契约（output_schema · 违约 ok=False）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "obs_admin",
+      "label": "观测端点 /admin/capability/{runtime,catalog,receipts,idempotency}（AdminSyncAuth · 只读）"
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "id": "redlines",
+      "label": "红线题集 R0–R15（evals/agent/redlines/capability_v1.yaml）"
+    },
+    {
+      "graph_id": "10_flow_capability",
       "id": "fc_optional",
       "label": "可选 as_tool_node（不挂 multi 主路径）"
     },
@@ -487,7 +527,22 @@
     {
       "graph_id": "10_flow_lg_rag",
       "id": "s_dispatch",
-      "label": "一次下发无依赖工人，按 subtask_id 归并"
+      "label": "subtask_join（ready 判定 + 一次下发无依赖工人 · 按 Host subtask_id 归并）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "s_step_contract",
+      "label": "step_contract 闸（consumes/produces · prefix_touch_required → hitl_required）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "s_observe",
+      "label": "observe_node（执行层收口 · hitl_required 真 interrupt 挂起）"
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "id": "hitl_gw",
+      "label": "HITL 模块 /hitl/*（>./01_modules.md · HMAC + 管理员双口径）"
     },
     {
       "graph_id": "10_flow_lg_rag",
@@ -1347,10 +1402,95 @@
     {
       "graph_id": "10_flow_capability",
       "from": "invoke",
+      "to": "idempotency",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "写能力先查防重",
+      "anchors": [
+        {
+          "path": "app/ops/capability/gateway.py",
+          "symbol": "invoke"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "idempotency",
+      "to": "result",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[命中 → 重放上次结果]",
+      "anchors": [
+        {
+          "path": "app/ops/capability/idempotency.py",
+          "symbol": "get_idempotency_store"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "idempotency",
+      "to": "precheck",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "[未命中/读能力 → 闸链]",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "precheck",
+      "to": "circuit",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "熔断（写探测）",
+      "anchors": [
+        {
+          "path": "app/ops/capability/circuit.py",
+          "symbol": "check"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "precheck",
+      "to": "budget",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "配额 / kill switch",
+      "anchors": [
+        {
+          "path": "app/ops/capability/budget.py",
+          "symbol": "check"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "precheck",
+      "to": "result",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[Policy/熔断/配额/形态 拦下 → ok=False（Policy 拒不计配额）]",
+      "anchors": [
+        {
+          "path": "app/ops/capability/gateway.py",
+          "symbol": "_blocked_result"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "precheck",
       "to": "local_fn",
       "mark": "->",
       "type": "depends_on",
-      "label": "kind=local_fn（默认）",
+      "label": "过闸 dispatch kind=local_fn（默认）",
       "anchors": [
         {
           "path": "app/ops/capability/gateway.py",
@@ -1365,7 +1505,7 @@
     },
     {
       "graph_id": "10_flow_capability",
-      "from": "invoke",
+      "from": "precheck",
       "to": "probes",
       "mark": "?>",
       "type": "branches",
@@ -1380,7 +1520,7 @@
     },
     {
       "graph_id": "10_flow_capability",
-      "from": "invoke",
+      "from": "precheck",
       "to": "skill_stub",
       "mark": "?>",
       "type": "branches",
@@ -1391,6 +1531,60 @@
           "symbol": "provide"
         }
       ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "circuit",
+      "to": "fallback",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[open/异常 trigger → 降级判定]",
+      "anchors": [
+        {
+          "path": "app/ops/capability/fallback.py",
+          "symbol": "should_degrade"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "fallback",
+      "to": "result",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "降级输出（degraded 标记 · ok=True 须同看标记）",
+      "anchors": [
+        {
+          "path": "app/ops/capability/gateway.py",
+          "symbol": "_degraded_result"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "obs_admin",
+      "to": "idempotency",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "只读快照（不经过 invoke）",
+      "anchors": [
+        {
+          "path": "app/ops/admin/capability.py"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "redlines",
+      "to": "invoke",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "R0–R15 行为红线（黑盒题集）",
+      "anchors": [],
       "sync": true
     },
     {
@@ -1426,14 +1620,29 @@
     {
       "graph_id": "10_flow_capability",
       "from": "local_fn",
-      "to": "result",
+      "to": "result_contract",
       "mark": "->",
       "type": "depends_on",
-      "label": "ok / error",
+      "label": "执行输出过契约",
       "anchors": [
         {
           "path": "app/ops/capability/gateway.py",
-          "symbol": "invoke"
+          "symbol": "_ok_result"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_capability",
+      "from": "result_contract",
+      "to": "result",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "ok / result_contract_violated",
+      "anchors": [
+        {
+          "path": "app/ops/capability/result_contract.py",
+          "symbol": "validate"
         }
       ],
       "sync": true
@@ -2536,18 +2745,97 @@
     {
       "graph_id": "10_flow_lg_rag",
       "from": "s_dispatch",
-      "to": "s_aggregator",
+      "to": "s_observe",
       "mark": "?>",
       "type": "branches",
-      "label": "[耗尽/空 → aggregate]",
+      "label": "[没有待发步骤 → observe（不再直连 aggregator）]",
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 45
+          "symbol": "_DISPATCH_MAP"
         },
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
-          "line": 237
+          "symbol": "route_next_subtask"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_dispatch",
+      "to": "s_step_contract",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "ready=依赖全终态+契约闸",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/step_contract.py",
+          "symbol": "gate"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_observe",
+      "to": "s_supervisor",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[replan → supervisor（LG_RAG_REACT_MAX_ROUNDS=2 有界）]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "symbol": "route_after_react"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_observe",
+      "to": "s_aggregator",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[settle → aggregator]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "symbol": "route_after_react"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "s_observe",
+      "to": "hitl_gw",
+      "mark": "?>",
+      "type": "branches",
+      "label": "[hitl_required → interrupt() 挂起 + 申请落库]",
+      "anchors": [
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "symbol": "observe_node"
+        },
+        {
+          "path": "app/ops/lg_rag/multi/nodes.py",
+          "symbol": "_persist_hitl"
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_lg_rag",
+      "from": "hitl_gw",
+      "to": "s_observe",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "批准 → Command(resume) 恢复（同一 run_id + replay cursor）",
+      "anchors": [
+        {
+          "path": "app/ops/hitl/resume.py",
+          "symbol": "resume_hitl_run"
         }
       ],
       "sync": true
@@ -2558,7 +2846,7 @@
       "to": "s_dispatch",
       "mark": "->",
       "type": "depends_on",
-      "label": "按 subtask_id 归并回 dispatch",
+      "label": "按 subtask_id 归并回 join",
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
@@ -2573,7 +2861,7 @@
       "to": "s_dispatch",
       "mark": "->",
       "type": "depends_on",
-      "label": "按 subtask_id 归并回 dispatch",
+      "label": "按 subtask_id 归并回 join",
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
@@ -2588,7 +2876,7 @@
       "to": "s_dispatch",
       "mark": "->",
       "type": "depends_on",
-      "label": "按 subtask_id 归并回 dispatch",
+      "label": "按 subtask_id 归并回 join",
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",

@@ -1,8 +1,8 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_capability"
 title: "Capability Gateway 注册与 invoke"
-description: "能力进程内注册表 + Filter + 统一 invoke/ainvoke（非跨进程注册中心）；YAML/JSON manifest 加载 register（仅 local_fn · defaults/lookups 前缀）；local_fn 默认含本库 issue/PR 只读 lookup（tenant_scoped + 最小 args_schema）；可选 schemas_for_llm/ToolNode；mcp/sandbox/cli mock 探针与 skill stub 默认关闭。不是业界 LLM Gateway。首接入面：lg_rag tool_exec_node。C1（2026-09-01）：harness.verify / harness.task_lint 白名单 CLI Capability（harness_cli.py · 代码路径 gateway.register · 显式 register_harness_cli_capabilities() · Policy 默认关 · 不进默认目录；harness.status 可选未做）。阶段 H（2026-09-17）：Gateway args_schema 校验 + tenant_scoped 门 + span args/policy/subtask 摘要。"
-version: "2026-09-01"
+description: "能力进程内注册表 + Filter + 统一 invoke/ainvoke（非跨进程注册中心）；YAML/JSON manifest 加载 register（仅 local_fn · defaults/lookups 前缀）；local_fn 默认含本库 issue/PR 只读 lookup（tenant_scoped + 最小 args_schema）；可选 schemas_for_llm/ToolNode；mcp/sandbox/cli mock 探针与 skill stub 默认关闭。不是业界 LLM Gateway。首接入面：lg_rag tool_exec_node。C1（2026-09-01）：harness.verify / harness.task_lint 白名单 CLI Capability（harness_cli.py · 代码路径 gateway.register · 显式 register_harness_cli_capabilities() · Policy 默认关 · 不进默认目录；harness.status 可选未做）。阶段 H（2026-09-17）：Gateway args_schema 校验 + tenant_scoped 门 + span args/policy/subtask 摘要。治理层（2026-09-21）：执行期 _prepare_call 闸链（lookup→enabled→Policy→熔断→配额/kill→args_schema；Policy 拒不计配额）+ 写能力幂等（命中重放）+ 降级链（声明才降级/降级必带 degraded 标记 · ok=True 须同看标记）+ output_schema 输出契约 + 观测端点 /admin/capability/* + 红线 R0–R15。"
+version: "2026-09-21"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "method"
@@ -109,6 +109,71 @@ nodes:
         symbol: "CapabilityResult"
         kind: class
 
+  - id: "idempotency"
+    label: "idempotency 防重（命中重放上次结果 · receipts 回执）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/idempotency.py"
+        symbol: "get_idempotency_store"
+        kind: method
+
+  - id: "precheck"
+    label: "_prepare_call 闸链（lookup→enabled→Policy→熔断→配额/kill→args_schema）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/gateway.py"
+        symbol: "_prepare_call"
+        kind: method
+
+  - id: "circuit"
+    label: "circuit 下游熔断（pybreaker · 写探测 · 判定不看错误文案）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/circuit.py"
+        symbol: "check"
+        kind: method
+      - path: "app/ops/capability/circuit.py"
+        symbol: "guard"
+        kind: method
+
+  - id: "budget"
+    label: "budget 会话配额 / kill switch（Policy 拒不计配额）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/budget.py"
+        symbol: "check"
+        kind: method
+
+  - id: "fallback"
+    label: "fallback 降级链（声明才降级 · 降级必带 degraded 标记跟数据走）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/fallback.py"
+        symbol: "should_degrade"
+        kind: method
+
+  - id: "result_contract"
+    label: "result_contract 输出契约（output_schema · 违约 ok=False）"
+    kind: flow
+    layer_hint: "G-L2"
+    implementedBy:
+      - path: "app/ops/capability/result_contract.py"
+        symbol: "validate"
+        kind: method
+
+  - id: "obs_admin"
+    label: "观测端点 /admin/capability/{runtime,catalog,receipts,idempotency}（AdminSyncAuth · 只读）"
+    kind: external
+
+  - id: "redlines"
+    label: "红线题集 R0–R15（evals/agent/redlines/capability_v1.yaml）"
+    kind: external
+
   - id: "fc_optional"
     label: "可选 as_tool_node（不挂 multi 主路径）"
     kind: flow
@@ -158,15 +223,60 @@ edges:
         symbol: "tool_exec_node"
 
   - from: "invoke"
+    to: "idempotency"
+    label: "写能力先查防重"
+    anchors:
+      - path: "app/ops/capability/gateway.py"
+        symbol: "invoke"
+
+  - from: "idempotency"
+    to: "result"
+    label: "[命中 → 重放上次结果]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/capability/idempotency.py"
+        symbol: "get_idempotency_store"
+
+  - from: "idempotency"
+    to: "precheck"
+    label: "[未命中/读能力 → 闸链]"
+
+  - from: "precheck"
+    to: "circuit"
+    label: "熔断（写探测）"
+    type: "depends_on"
+    anchors:
+      - path: "app/ops/capability/circuit.py"
+        symbol: "check"
+
+  - from: "precheck"
+    to: "budget"
+    label: "配额 / kill switch"
+    type: "depends_on"
+    anchors:
+      - path: "app/ops/capability/budget.py"
+        symbol: "check"
+
+  - from: "precheck"
+    to: "result"
+    label: "[Policy/熔断/配额/形态 拦下 → ok=False（Policy 拒不计配额）]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/capability/gateway.py"
+        symbol: "_blocked_result"
+
+  - from: "precheck"
     to: "local_fn"
-    label: "kind=local_fn（默认）"
+    label: "过闸 dispatch kind=local_fn（默认）"
     anchors:
       - path: "app/ops/capability/gateway.py"
         symbol: "_dispatch"
       - path: "app/ops/capability/gateway.py"
         symbol: "_adispatch"
 
-  - from: "invoke"
+  - from: "precheck"
     to: "probes"
     label: "kind=mcp|sandbox|cli（若已 register）"
     mark: "?>"
@@ -175,7 +285,7 @@ edges:
       - path: "app/ops/capability/probes.py"
         symbol: "register_p2_probes"
 
-  - from: "invoke"
+  - from: "precheck"
     to: "skill_stub"
     label: "kind=skill → provide/invoke stub"
     mark: "?>"
@@ -183,6 +293,34 @@ edges:
     anchors:
       - path: "app/ops/capability/gateway.py"
         symbol: "provide"
+
+  - from: "circuit"
+    to: "fallback"
+    label: "[open/异常 trigger → 降级判定]"
+    mark: "?>"
+    type: "branches"
+    anchors:
+      - path: "app/ops/capability/fallback.py"
+        symbol: "should_degrade"
+
+  - from: "fallback"
+    to: "result"
+    label: "降级输出（degraded 标记 · ok=True 须同看标记）"
+    anchors:
+      - path: "app/ops/capability/gateway.py"
+        symbol: "_degraded_result"
+
+  - from: "obs_admin"
+    to: "idempotency"
+    label: "只读快照（不经过 invoke）"
+    type: "depends_on"
+    anchors:
+      - path: "app/ops/admin/capability.py"
+
+  - from: "redlines"
+    to: "invoke"
+    label: "R0–R15 行为红线（黑盒题集）"
+    type: "depends_on"
 
   - from: "local_fn"
     to: "pg_lookup"
@@ -201,11 +339,18 @@ edges:
         symbol: "get_issue_by_number"
 
   - from: "local_fn"
-    to: "result"
-    label: "ok / error"
+    to: "result_contract"
+    label: "执行输出过契约"
     anchors:
       - path: "app/ops/capability/gateway.py"
-        symbol: "invoke"
+        symbol: "_ok_result"
+
+  - from: "result_contract"
+    to: "result"
+    label: "ok / result_contract_violated"
+    anchors:
+      - path: "app/ops/capability/result_contract.py"
+        symbol: "validate"
 
   - from: "probes"
     to: "result"
