@@ -1,6 +1,6 @@
 # Task：画像记忆 kind=preference 首期「显式-only」（闸放开 + 分节注入 + revoke_by_key + 幻觉偏好红线 + CHECK 放宽 · memory-preference-profile）
 
-> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
+> **状态**：`done`（2026-09-22 · 五棒全通 · 40 PASS 验收 27/27 · PR #157 CI 全绿合并 master（cede506）· CLOSE 归档）  
 > **类型**：feature（新 kind + 新召回渲染语义 + **有 alembic 义务**（CHECK 放宽 · 无新列无新索引）· 图谱零变更按实判，偏离回炉条款见闸表与 graph_delta_note）  
 > **上游 SPEC**：`docs/spec/memory-preference-profile/SPEC-memory-preference-profile_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · commit 4a2f4d9）  
 > **分支**：`task/memory-preference-profile`（**禁止 master/main 直改 · 禁止 push**）  
@@ -299,3 +299,4 @@ SPEC `5 十一条失败面全收并翻四列：三静默错（幻觉偏好注入
 |------|------|
 | 2026-09-22 | 40 核验 **PASS**（27/27）：全量 pytest 1235 passed/3 failed（基线同款 3 红逐名一致 · collected 1210→1239 **+29** 零删除 nodeid 级核验）· ruff 57=基线 · alembic 往返亲跑（脏 downgrade 显式炸停原地 · 终态回 head 数据零触碰）· graph-compile 绿 · fact-only 逐字节 40 独立对拍一致 · 变异 ③ 亲复做（恰 2 挂→还原绿）· B1 抽 5 实核 · 图谱 ratify f90d74d 真读；问题清单 P-1（30 invoke collected 数字措辞偏差 · 不阻塞）· 详见 40 invoke |
 | 2026-09-22 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 **27 条**逐块映射 SPEC `6 实质零差异（人工闸 1 / D1×5 / D2×6 / D3×3 / D4×3 / D5×3 / 变异检验×3 / 工程×3）· B1 旧测影响面 **13 行**实扫落盘（口径：tests grep 5 文件命中 · kind 直引仅 3 处 · 用例计数 9 文件 · pytest 基线 **1210 collected** 真跑 · `alembic heads` = 20260921_llm_usage 真跑）· SPEC `1 锚点复核零偏差 · HG-TASK-DRAFT=pending · HG-AUDIT-R1=pending → 30 拒开工 · HG-GRAPH-MODULES=approved（真读 `01_modules.md` · 零图谱变更 + memory 行备注级更新预期 + 偏离回炉补闸条款）· HG-PILOT-OPSDESK-GLAYER=n/a |
+| 2026-09-22 | **50+CLOSE**：PR [#157](https://github.com/Cyning12/ops-desk-api/pull/157) CI 全绿 merge master（`cede506`）· 归档 done/ · 40 实测 collected 1210→1239（+29）入账（P-1 30 invoke 数字偏差修正）· 遗留：偏好挤占统一预算残余（span 可观测）· 金样判定面为注入上下文结构 |
