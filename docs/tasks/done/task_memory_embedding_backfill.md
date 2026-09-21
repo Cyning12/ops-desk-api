@@ -1,6 +1,6 @@
 # Task：记忆既有行 embedding 回填批处理 + span 专门单测（memory-embedding-backfill）
 
-> **状态**：`signed`（2026-09-21 · 20-task-audit R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
+> **状态**：`done`（2026-09-21 · 五棒全通 · 40 PASS 验收 21/21 · PR #151 CI 全绿合并 master（aaece03）· CLOSE 归档）  
 > **类型**：feature / 运维批处理（**不改表结构 → 无 alembic 义务**；图谱零变更按实判，偏离回炉条款见闸表与 D5）  
 > **上游 SPEC**：`docs/spec/memory-embedding-backfill/SPEC-memory-embedding-backfill_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-21）  
 > **分支**：`task/memory-embedding-backfill`（**禁止 master 直改**）  
@@ -303,3 +303,4 @@ FakeEmbedder 注入消解外网不确定性（CI 可跑）；DB 集成对齐 `te
 |------|------|
 | 2026-09-21 | 40 核验 **PASS（21/21 · 0 FAIL · 2 WARN）**：全量 pytest 1174 passed/3 failed（worktree @ origin/master 对照坐实基线红）· ruff 67=基线零新增 · graph-compile 绿零图谱变更 · 变异检验 40 复做真 fail 还原绿 · 金样走态②夹具轨含回填前基线 · B1 11 条处置核验成立（invoke_20260921_40_verify） |
 | 2026-09-21 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 21 条逐块映射 SPEC §6 零差异 · B1 旧测影响面 11 条实扫落盘 · 金样两态裁定：默认态② FakeEmbedder 夹具轨（`git ls-files evals/memory/`=0 tracked），资产合入切态① · HG-TASK-DRAFT=pending · HG-AUDIT-R1=pending → 30 拒开工 · HG-GRAPH-MODULES=approved（模块表已建置 · 零图谱变更 + 回炉补闸条款）· HG-PILOT-OPSDESK-GLAYER=n/a |
+| 2026-09-21 | **40+50 CLOSE**：40 核验 PASS（21/21 · 0 FAIL · 2 WARN · 变异复做 · worktree 基线对照 3 红坐实环境性）· PR [#151](https://github.com/Cyning12/ops-desk-api/pull/151) CI 全绿 merge master（`aaece03`）· 归档 done/ · 遗留：态②证据强度弱（金样资产合入后切态①重跑）· 回填速率未真实存量校准 |
