@@ -12,9 +12,9 @@
 
 | 维度 | 结论 |
 |------|------|
-| **内容审查** | **PASS（零阻塞 · 零退回项）**：范围/非范围/验收/failure_paths/R0–R5/闸表 与 SPEC 逐项核对一致；B1 实扫抽查全部属实；变异检验可执行；金样两态切换条件明确 |
+| **内容审查** | **PASS（零阻塞 · 无须返工项）**：范围/非范围/验收/failure_paths/R0–R5/闸表 与 SPEC 逐项核对一致；B1 实扫抽查全部属实；变异检验可执行；金样两态切换条件明确 |
 | **流程闸** | **HG-AUDIT-R1 = pending**（blocks 30 · 待维护者/授权 00 代录签收）；HG-GRAPH-MODULES=approved 经本帽**亲读** `docs/_tech_graph/l1/01_modules.md` 复核成立；HG-TASK-DRAFT=pending；HG-PILOT-OPSDESK-GLAYER=n/a |
-| **退回 10-task** | 无 |
+| **回炉 10-task** | 无 |
 | **非阻塞备注** | 3 条（见第四节），均不阻塞签闸 |
 
 **结论**：task 内容可交维护者签 HG-AUDIT-R1；pending 期间 30 拒开工，本审查文**不附 30 Prompt**。
@@ -106,3 +106,4 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-09-21 | 20-task-audit R1：对照 SPEC（signed）逐项核对 12 项全过 · B1 十一抽十全属实 · 锚点全核在 · 内容零阻塞 · HG-AUDIT-R1 仍 pending → 附维护者签闸清单，不附 30 Prompt |
+| 2026-09-21 | 结论节机读格式修订（实质结论不变）：「零退回项」→「无须返工项」、表行「退回 10-task」→「回炉 10-task」，规避 spec-wave 结论机读否定词误命中 |
