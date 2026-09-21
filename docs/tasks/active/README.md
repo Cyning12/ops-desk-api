@@ -4,14 +4,14 @@
 
 | task | 说明 |
 |---|---|
-| [`task_memory_preference_profile.md`](task_memory_preference_profile.md) | 2026-09-22 10-task 落稿：画像记忆 kind=preference 首期显式-only（闸放开+双向 key 域绑定 · 分节注入单 SystemMessage 双节 · supersede 谓词+kind + revoke_by_key · 幻觉偏好红线金样+三态变异检验 · alembic CHECK 放宽可逆往返）· SPEC signed（4a2f4d9）· HG-TASK-DRAFT/HG-AUDIT-R1=pending → 30 拒开工 |
+| （无进行中 task） | 2026-09-22：`task_memory_preference_profile`（PR #157 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （其余无进行中 task） | 2026-09-22：`task_prompt_asset_roadmap_p1`（PR #155 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （无其余进行中 task） | 2026-09-22：`task_continuity_dedup`（PR #153 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （其余） | 2026-09-21：`task_memory_embedding_backfill`（PR #151 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 
 > 2026-09-21 清理：两个已完成 task 归档至 `done/`；近两日开发脱离 specwave 过程，见 `docs/HANDOFF_recent-2days_v1_zh.md`；分支 `chore/upgrade-langgraph-1.2` 领先 master 29 提交，**PR 待开**
 
-> 已归档（2026-09-22）：[`../done/task_prompt_asset_roadmap_p1.md`](../done/task_prompt_asset_roadmap_p1.md)（Prompt 资产化阶段一 · 9 模板迁 assets/*.md + string.Template 去转义 · 对拍 9/9 逐字节 · 40 核验 20/20 PASS · PR #155 CI 绿合入）· [`../done/task_continuity_dedup.md`](../done/task_continuity_dedup.md)（M7 continuity 重复实现合并 · 硬删除+测试收敛 · 真源零 diff · 40 核验 17/17 PASS · PR #153 CI 绿合入）
+> 已归档（2026-09-22）：[`../done/task_memory_preference_profile.md`](../done/task_memory_preference_profile.md)（画像记忆 kind=preference · 闸放开+双节注入+revoke_by_key+幻觉红线金样+CHECK 放宽 · 40 核验 27/27 PASS · PR #157 CI 绿合入）· [`../done/task_prompt_asset_roadmap_p1.md`](../done/task_prompt_asset_roadmap_p1.md)（Prompt 资产化阶段一 · 9 模板迁 assets/*.md + string.Template 去转义 · 对拍 9/9 逐字节 · 40 核验 20/20 PASS · PR #155 CI 绿合入）· [`../done/task_continuity_dedup.md`](../done/task_continuity_dedup.md)（M7 continuity 重复实现合并 · 硬删除+测试收敛 · 真源零 diff · 40 核验 17/17 PASS · PR #153 CI 绿合入）
 >
 > 已归档（2026-09-21）：[`../done/task_memory_embedding_backfill.md`](../done/task_memory_embedding_backfill.md)（存量行 embedding 回填 CLI + span 单测 · 五棒全通 · 40 核验 21/21 PASS · PR #151 CI 绿合入）· [`../done/task_llm_layer_hardening.md`](../done/task_llm_layer_hardening.md)（L5 模型层硬化 · 重试退避+熔断+分档路由+`ops_llm_usage` 账本 · 五棒全通 · 40 核验 24/24 PASS · PR #148 CI 绿合入）· [`../done/task_memory_fuse_tz_fix.md`](../done/task_memory_fuse_tz_fix.md)（bugfix · _time_decay tz 归一化 · live 裁决发现 1 修复 · 40 核验 8/8 PASS）· [`../done/task_memory_facts_p1.md`](../done/task_memory_facts_p1.md)（事实型记忆 P1 · 向量语义召回 + LLM 离线候选抽取 · 双开关默认关 · 40 核验 11/11 PASS）· [`../done/task_memory_facts_p0.md`](../done/task_memory_facts_p0.md)（事实型记忆 P0 · ops_memory_facts + 写入闸 + 确定性召回注入默认关 · 新增 G-L1 一级模块 memory · 40 核验 11/11 PASS）· [`../done/task_tech_graph_recent_sync.md`](../done/task_tech_graph_recent_sync.md)（tech_graph 追平 · 新增 hitl 一级模块 · graph-compile 143 nodes/210 edges）· [`../done/task_tenant_readonly_predicate.md`](../done/task_tenant_readonly_predicate.md)（阶段 T · 只读租户谓词下推 + 负样本 · 代码已入库待 PR）· [`../done/task_supervisor_parallel_join.md`](../done/task_supervisor_parallel_join.md)（supervisor 并发下发 + Host id 归并 · `034fe7c` · 代码已入库待 PR）
 
