@@ -4,7 +4,8 @@
 
 | task | 说明 |
 |---|---|
-| （无进行中 task） | 2026-09-22：`task_continuity_dedup`（PR #153 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
+| [`task_prompt_asset_roadmap_p1.md`](task_prompt_asset_roadmap_p1.md) | 2026-09-22：Prompt 资产化阶段一「改得动」（去 str.format 转义 + 9 模板落盘 `app/ops/prompts/assets/*.md` + 审计形态 · 行为零变化 refactor）· 10 落稿 · HG-TASK-DRAFT / HG-AUDIT-R1 pending → **30 拒开工** |
+| （无其余进行中 task） | 2026-09-22：`task_continuity_dedup`（PR #153 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （其余） | 2026-09-21：`task_memory_embedding_backfill`（PR #151 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 
 > 2026-09-21 清理：两个已完成 task 归档至 `done/`；近两日开发脱离 specwave 过程，见 `docs/HANDOFF_recent-2days_v1_zh.md`；分支 `chore/upgrade-langgraph-1.2` 领先 master 29 提交，**PR 待开**
