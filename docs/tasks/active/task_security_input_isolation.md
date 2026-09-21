@@ -289,6 +289,8 @@ SPEC §5 十条失败面全收并翻四列：两静默错（注入穿透 / 开�
 
 **结构自检 PASS（draft 期）**：验收 25 条逐块映射 SPEC §6 实质零差异；failure_paths 13 条 = SPEC §5 十条 + 过程三；B1 11 行实扫落盘（口径+计数真跑留痕）；闸表四行（HG-TASK-DRAFT/HG-AUDIT-R1 落稿时待签 blocks 30 · HG-GRAPH-MODULES=approved 真读核验+新签义务+回炉条款 · HG-PILOT-OPSDESK-GLAYER=n/a）；R0–R5 全轮无 early_stop。待人签后交 20-task-audit。
 
+**40 核验结论（2026-09-22 · PASS 25/25）**：全量 pytest 1329 passed/3 failed/1 skipped（collected 1333=1278+55；3 红经 worktree @ d0e818c + 同 .env 实证为基线环境性）；双断言读码+亲跑为真（计数=0 且拒收 span · 缺一不过）；off 三态对拍为逐字节真断言（现网公式重构基准）；变异检验①40 复做（开关恒 true → 18 挂 → 还原 55 绿 · 工作树净）；ruff 57=基线 57；graph-compile 绿（graph.json 时间戳漂移已还原）；B1 抽 8 行亲跑全符；金样 P0–P5+G1–G4 一一对应亲核；伪造标记全角转义机制读码有效；图谱行 52d1b45 真 ratify。**如实补记 on 态边界**（不阻塞 · 灰度前须处置）：非 str 结构化工具回执（内建 mock capability 真实返回 dict）on 态经 tool_exec 保原结构后，aggregator 声明 tool_result 而无边界标记 → 显式炸整单 + span input_isolation_rejected（fail-closed 方向安全 · SPEC §7③ 误伤残余风险在案 · 默认关兜住）——建议 W2/灰度 task 处置（非 str output 序列化后入槽或聚合面豁免）。证据全文：`docs/harness/invokes/by-task/security-input-isolation/invoke_20260922_40_verify_security_input_isolation.md`。
+
 ### R5 · 交接就绪
 
 思考充分可交 20-task-audit；与 SPEC 逐条核对**实质差异为零**（验收 25 条 = SPEC §6 各块 + 人工闸行 + 闸前置 B1，均过程化落地；SPEC §1 锚点复核零语义偏差 · nodes.py 行号微漂移如实记录属锚点精确化非偏差；命名邻近纪律为 prompts 包既有 slots 语义的防混淆补钉 · 非范围新增第 9 条对应 · 不改 SPEC 语义）。残余风险四条全承 SPEC §7：文本边界非硬边界（W2 真兜底）；同形标记语义混淆（灰度人工抽检）；校验误伤（纯白函数+金样+默认关兜住）；W3/W4 排期未定（SPEC 签收即承认敞口并锁波次顺序）。
@@ -300,3 +302,4 @@ SPEC §5 十条失败面全收并翻四列：两静默错（注入穿透 / 开�
 | 日期 | 说明 |
 |------|------|
 | 2026-09-22 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 **25 条**逐块映射 SPEC §6 实质零差异（人工闸 1 / D1×4 / D2×4 / D3×3 / D4×5 / D5×2 / 变异检验×3 / 工程×3）· B1 旧测影响面 **11 行**实扫落盘（口径：tests 命中 37 文件 · format_evidence_block/retrieved_chunks/子任务结果 裸格式断言 grep 双零命中 · 用例计数 14 文件真跑 · pytest 基线 **1278 collected** 真跑 · 命名冲突扫零命中 · evals/security/ 不存在）· SPEC §1 锚点复核零语义偏差（nodes.py :1095-1102→:1097-1098 · :764-773→:753-835 微漂移如实记录）· 命名邻近纪律补钉（packs/render 既有 slots 语义 vs 安全槽位 · 非范围第 9 条）· HG-TASK-DRAFT/HG-AUDIT-R1 落稿时待签（10 帽不签）· HG-GRAPH-MODULES=approved（模块表已建置真读核验）+ 新签义务（lc_evidence_chain 行 +prompts 备注级 + lg_rag 行备注 + 人签新行 00 代录位 · 偏离回炉补闸）· HG-PILOT-OPSDESK-GLAYER=n/a |
+| 2026-09-22 | 40 核验 PASS（25/25 亲核）：pytest 1329/3/1（3 红 worktree @ d0e818c 实证基线环境性）· 双断言/off 逐字节对拍读码+亲跑为真 · 变异①复做（18 挂→还原绿 · 树净）· ruff 57=基线 · graph-compile 绿 · B1 抽 8 行+金样一一对应+转义机制+图谱 ratify 真读全符 · **补记 on 态边界**：非 str 结构化回执 on 态 aggregator 显式炸整单（fail-closed · 不阻塞 · 灰度前须处置 · 归 W2/灰度 task）· invoke：`invoke_20260922_40_verify_security_input_isolation.md` |
