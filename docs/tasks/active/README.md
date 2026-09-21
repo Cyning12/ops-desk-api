@@ -4,7 +4,8 @@
 
 | task | 说明 |
 |---|---|
-| （无进行中 task） | 2026-09-22：`task_session_summary_fallback`（PR #159 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
+| [`task_security_input_isolation.md`](./task_security_input_isolation.md) | 2026-09-22：L7 安全硬化 W1 输入结构隔离（SLOT_REGISTRY + wrap_slot + assert_slots_declared · 四面收口 · 默认关三件套+off 三态对拍 · 越权零请求双断言 · 金样零 LLM-as-judge）· 分支 `task/security-hardening` · SPEC signed（c4d42df）· draft 待人签 |
+| （无其余进行中 task） | 2026-09-22：`task_session_summary_fallback`（PR #159 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （无其余进行中 task） | 2026-09-22：`task_memory_preference_profile`（PR #157 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （其余无进行中 task） | 2026-09-22：`task_prompt_asset_roadmap_p1`（PR #155 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （无其余进行中 task） | 2026-09-22：`task_continuity_dedup`（PR #153 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
