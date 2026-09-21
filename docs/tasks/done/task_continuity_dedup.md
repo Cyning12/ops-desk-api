@@ -1,6 +1,6 @@
 # Task：continuity 重复实现合并（S1 硬删除 + 测试收敛 · continuity-dedup）
 
-> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
+> **状态**：`done`（2026-09-22 · 五棒全通 · 40 PASS 验收 17/17 · PR #153 CI 全绿合并 master（bc333be）· CLOSE 归档）  
 > **类型**：refactor / 已知债清理（**行为零变化 · 无 alembic 义务**；图谱零变更按实判，偏离回炉条款见闸表与 D3）  
 > **上游 SPEC**：`docs/spec/continuity-dedup/SPEC-continuity-dedup_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-21 · commit d0152e4/8fdd859）  
 > **分支**：`task/continuity-dedup`（**禁止 master 直改 · 禁止 push**）  
@@ -279,3 +279,4 @@ SPEC §5 失败面全收并翻四列：隐藏动态引用（专扫+全量 pytest
 |------|------|
 | 2026-09-22 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 17 条逐块映射 SPEC §6 实质零差异 · B1 旧测影响面 17 处命中实扫落盘（口径 `compress_window|continuity|ops\.session` · 8+9 · 逐条处置）· pytest 基线 1178 collected 真跑 · SPEC 措辞偏差留痕（sse_replay 实 2 用例非 4 · 范围零影响）· HG-TASK-DRAFT=pending · HG-AUDIT-R1=pending → 30 拒开工 · HG-GRAPH-MODULES=approved（真读 `01_modules.md` · 零图谱变更 + 回炉补闸条款）· HG-PILOT-OPSDESK-GLAYER=n/a |
 | 2026-09-22 | 40 核验回填自检结论：**PASS**（17 条口径全过 · 真源零 diff / grep 零残留 / app diff 白名单亲核 · pytest 1176 vs 基线 1178 差==2 且 3 红同集合 · ruff 57==57 明细 diff 空 · graph-compile 绿漂移已还原 · 变异③亲复做闭环 · B1 抽查 6 处属实 · WARN×3 留痕不阻塞）· 证据 invoke_20260922_40_verify_continuity_dedup.md |
+| 2026-09-22 | **50+CLOSE**：PR [#153](https://github.com/Cyning12/ops-desk-api/pull/153) CI 全绿 merge master（`bc333be`）· 归档 done/ · 遗留：仓外不可扫面 / ruff F822 未核 / 基线 flaky 第 4 红（memory_backfill 随机序）留痕另案 |
