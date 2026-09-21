@@ -1,6 +1,6 @@
 # SPEC：记忆合规物理删除权（v1）
 
-> **状态**：`draft-complete`（10-spec 补全完成 · HG-SPEC-SIGNOFF 落稿时**待签** · 人签前不出 task / 不改码）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved** · 2026-09-22 · 维护者授权 00 本窗代录签收 · 原话「此spec完成后继续把完成后续spec，一个个进行，每次PR到main通过CI后自动merge」承前令「授权00签收所有过程文档」）
 > **track**：`feature`（新增管理面不可逆删除能力 · **本波无 alembic 义务** · 图谱义务有按实判见 §2 D4）
 > **上游**：`../ops-desk-workspace/docs/08-interview/07_agent-memory-prompt-module-landscape_v1_zh.md`（手册 L7 删除权行 · §3.4 第三类「成熟度标志」）
 > **格式基准**：`docs/spec/security-hardening/SPEC-security-hardening_v1.md`（signed · 2026-10-13）
