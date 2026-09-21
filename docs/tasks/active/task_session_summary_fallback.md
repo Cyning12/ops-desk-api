@@ -287,7 +287,7 @@ SPEC §5 十一条失败面全收并翻四列：三静默错（摘错造错误�
 
 ### 自检结论
 
-（40 核验回填位 · 10-task 落稿阶段为空 · 40 验收后按实测回填）
+**PASS · 验收 26/26 全通过**（40 核验 2026-09-22 · 全部真跑亲核 · 详见 `docs/harness/invokes/by-task/session-summary-fallback/invoke_20260922_40_verify_session_summary_fallback.md`）：pytest 1278 collected（+39 与 30 自称一致）1274 passed + 3 红（worktree @ origin/master 95c5279 + 同 .env 对照原样复现 = 基线环境红）；双对拍读实现确为逐字节真断言且 off 三态/on 全失败两路径亲跑全绿（on 态 provider 调用计数证明真走摘要面）；`compress_window` 函数体逐字节零 diff · graph.py 恰好 +2 行 · 生产 diff 26 文件全白名单 · lg_rag↛session 边界零静态 import；alembic downgrade/upgrade 往返亲跑全绿（约束/CASCADE 活库核验 · 终态回 head）；ruff 57=基线 57 零新增；graph-compile 绿（漂移仅时间戳已还原）；变异检验①亲复做成立（恒 true → 恰好 7 failed → 还原 32 绿树净）；金样 F0–F3↔4 用例一一对应 · 正反双断言+空摘要防线在位；图谱 db 行+三行备注+人签新行 approved（00 代录 ratify）在案。B1 12 行处置属实 + 偏差 1 行（test_prompt_assets 集合等式改编 · 口径不变）如实回填确认。
 
 ### R5 · 交接就绪
 
@@ -300,3 +300,4 @@ SPEC §5 十一条失败面全收并翻四列：三静默错（摘错造错误�
 | 日期 | 说明 |
 |------|------|
 | 2026-09-22 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 **26 条**逐块映射 SPEC §6 实质零差异（人工闸 1 / D1×5 / D2×4 / D3×3 / D4×4 / D5×3 / 变异检验×3 / 工程×3）· B1 旧测影响面 **12 行**实扫落盘（口径：tests grep 命中 5 文件 · 无枚举档集合断言 · unknown-task 用例 `"summarize"`≠`"summary"` 语义不反转 · 用例计数 8 文件 · pytest 基线 **1239 collected** 真跑 · `alembic heads`=`20260922_memory_kind_preference` 真跑 · `session.summary` 零命名冲突）· SPEC §1 锚点复核零偏差 · HG-TASK-DRAFT/HG-AUDIT-R1 落稿时待签 → 2026-09-22 00 代录 approved（R1 零阻塞）· HG-GRAPH-MODULES=approved（模块表已建置真读核验）+ 新签义务（db 行新表 + lg_rag/chat/llm 行备注 + 人签新行 00 代录位 · 偏离回炉补闸）· HG-PILOT-OPSDESK-GLAYER=n/a |
+| 2026-09-22 | **40 核验 PASS · 验收 26/26**（真跑亲核 · invoke_20260922_40）：pytest 1278 collected（+39）1274 passed + 3 红经 worktree 基线对照证环境性既有红；双对拍两路径亲跑全绿（逐字节真断言 + on 态 provider 计数证真走摘要面）；`compress_window` 逐字节零 diff · graph.py +2 行 · diff 26 文件全白名单；alembic 往返亲跑绿（终态回 head）；ruff 57=基线零新增；graph-compile 绿；变异检验①亲复做（恒 true → 7 failed → 还原绿树净）；金样 yaml↔测试一一对应；B1 偏差 1 行（test_prompt_assets 集合等式改编 · 口径不变）确认如实回填——task R4「改编×0」为落稿时实扫结论，30 阶段实测漏扫 1 行经 30 invoke B1 回填行 13 如实登记，本行补正留痕 |
