@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import uuid
 from collections.abc import AsyncIterator
 from typing import Any, Literal
@@ -160,8 +159,13 @@ async def _dispatch(
     thread_id: str,
     history_turns: list[dict] | None = None,
     run_id: str | None = None,
+    user_id: str | None = None,
 ) -> dict[str, Any]:
-    """mode → 对应 ainvoke 入口；env 开关决定是否包 PG checkpointer。"""
+    """mode → 对应 ainvoke 入口；env 开关决定是否包 PG checkpointer。
+
+    `user_id` = session 用户（阶段 T 身份链路的产物），仅供图内记忆注入
+    （memory-facts-p0）；`MEMORY_FACTS_ENABLED` 默认关，关闭时零 diff。
+    """
     if mode == "basic":
         entry = ainvoke_basic_agent
     elif mode == "supervisor":
@@ -174,6 +178,8 @@ async def _dispatch(
     }
     if mode == "supervisor" and run_id:
         kwargs["run_id"] = run_id
+    if user_id:
+        kwargs["user_id"] = user_id
     if _use_postgres_checkpointer():
         async with apostgres_saver(setup=True) as saver:
             return await entry(query, checkpointer=saver, **kwargs)
@@ -231,6 +237,7 @@ async def invoke_lg_rag(
                 thread_id,
                 history_turns=history_turns,
                 run_id=run_id,
+                user_id=str(user.id),
             )
         except HTTPException:
             raise

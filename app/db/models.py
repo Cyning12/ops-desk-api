@@ -4,11 +4,14 @@ from datetime import datetime
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -442,5 +445,68 @@ class OpsHitlRequest(Base):
     decision_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
     decision_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     decided_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+    updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
+
+
+class OpsMemoryFact(Base):
+    """事实型记忆（L4 · memory-facts-p0）：**只记事实，不记对话**。
+
+    失效一律走状态机（superseded / revoked / expired），**不物理删**——
+    旧值留表供审计对账；召回只认 ``status='active'`` 且未过期。
+    写入须经 ``app.ops.memory.gate.should_write`` 过闸，闸拒 = 不落库。
+    """
+
+    __tablename__ = "ops_memory_facts"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('active', 'superseded', 'revoked', 'expired')",
+            name="ck_ops_memory_facts_status",
+        ),
+        CheckConstraint("kind = 'fact'", name="ck_ops_memory_facts_kind"),
+        # 召回主谓词：(tenant, user, key, status)
+        Index(
+            "idx_ops_memory_facts_recall",
+            "tenant_id",
+            "user_id",
+            "key",
+            "status",
+        ),
+        # revoke_by_source 按源头批量纠错
+        Index("idx_ops_memory_facts_source_run", "source_run_id"),
+        # 过期扫描只看活跃行：部分索引 WHERE status='active'
+        Index(
+            "idx_ops_memory_facts_expires_active",
+            "expires_at",
+            postgresql_where=text("status = 'active'"),
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    #: 与 Principal 同源；代码从请求 ctx 构造，禁止取模型产出
+    tenant_id: Mapped[str] = mapped_column(String, nullable=False)
+    #: 主体隔离最小粒度
+    user_id: Mapped[str] = mapped_column(String, nullable=False)
+    #: 规范化事实键（小写点分层，约定见 app/ops/memory/README.md）
+    key: Mapped[str] = mapped_column(String, nullable=False)
+    #: 事实值（jsonb；闸限制为标量，见 gate.should_write）
+    value: Mapped[object] = mapped_column(JSONB, nullable=False)
+    #: P0 只接受 'fact'；preference 属画像（P1+）
+    kind: Mapped[str] = mapped_column(String, nullable=False, default="fact")
+    #: 溯源：产生该事实的 run（可空 = 人工/系统导入）
+    source_run_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    source_turn: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    #: 显式声明取代哪条旧事实（自引用）
+    supersedes: Mapped[str | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ops_memory_facts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    #: active | superseded | revoked | expired
+    status: Mapped[str] = mapped_column(String, nullable=False, default="active")
+    #: TTL；null = 不过期。查询路径自带过滤，不依赖 sweep 存活（双保险）
+    expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
     updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)

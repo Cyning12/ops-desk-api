@@ -24,7 +24,7 @@ from typing import Any
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 
-from app.ops.lg_rag.continuity import assemble_graph_messages
+from app.ops.lg_rag.continuity import assemble_graph_messages_with_memory
 from app.ops.lg_rag.nodes import (
     direct_answer_node,
     evaluate_node,
@@ -37,6 +37,7 @@ from app.ops.lg_rag.nodes import (
     router_node,
 )
 from app.ops.lg_rag.state import LgRagState
+from app.ops.tenant_context import current_tenant
 from app.ops.tracing import (
     ensure_langfuse_environment,
     trace_span,
@@ -156,11 +157,22 @@ async def _ainvoke_with_tracing(
     thread_id: str,
     history_turns: list[dict] | None = None,
     run_id: str | None = None,
+    user_id: str | None = None,
 ) -> dict[str, Any]:
-    """共享 ainvoke 外壳：历史压缩 + 本轮 query 装配 + Langfuse。"""
+    """共享 ainvoke 外壳：历史压缩 + 本轮 query 装配 + Langfuse。
+
+    `user_id`（session 用户，由 HTTP 入口显式传入）+ tenant ContextVar
+    仅供记忆注入（memory-facts-p0）；`MEMORY_FACTS_ENABLED` 默认关，
+    关闭时装配与现网逐字节一致。
+    """
     config = _run_config(thread_id)
     span_cm, attr_cm = _tracing_contexts(thread_id)
-    messages = assemble_graph_messages(query, history_turns)
+    messages = await assemble_graph_messages_with_memory(
+        query,
+        history_turns,
+        tenant_id=current_tenant(),
+        user_id=user_id,
+    )
     payload: dict[str, Any] = {"messages": messages}
     if run_id:
         payload["run_id"] = run_id
@@ -179,11 +191,20 @@ async def _astream_with_tracing(
     thread_id: str,
     history_turns: list[dict] | None = None,
     run_id: str | None = None,
+    user_id: str | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
-    """共享 astream(updates) 外壳；yield 每个节点 update dict。"""
+    """共享 astream(updates) 外壳；yield 每个节点 update dict。
+
+    `user_id` 语义同 `_ainvoke_with_tracing`（记忆注入身份；默认关零 diff）。
+    """
     config = _run_config(thread_id)
     span_cm, attr_cm = _tracing_contexts(thread_id)
-    messages = assemble_graph_messages(query, history_turns)
+    messages = await assemble_graph_messages_with_memory(
+        query,
+        history_turns,
+        tenant_id=current_tenant(),
+        user_id=user_id,
+    )
     payload: dict[str, Any] = {"messages": messages}
     if run_id:
         payload["run_id"] = run_id
@@ -202,11 +223,15 @@ async def ainvoke_basic_agent(
     thread_id: str = "lg-rag-smoke",
     checkpointer: Any | None = None,
     history_turns: list[dict] | None = None,
+    user_id: str | None = None,
 ) -> dict[str, Any]:
     """Phase 1 单节点图；同 thread_id 可经 checkpointer 续写 messages。"""
     graph = build_basic_agent(checkpointer=checkpointer)
+    kwargs: dict[str, Any] = {}
+    if user_id:
+        kwargs["user_id"] = user_id
     return await _ainvoke_with_tracing(
-        graph, query, thread_id=thread_id, history_turns=history_turns
+        graph, query, thread_id=thread_id, history_turns=history_turns, **kwargs
     )
 
 
@@ -216,11 +241,15 @@ async def astream_basic_agent(
     thread_id: str = "lg-rag-smoke",
     checkpointer: Any | None = None,
     history_turns: list[dict] | None = None,
+    user_id: str | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Phase 1 basic · astream(updates)。"""
     graph = build_basic_agent(checkpointer=checkpointer)
+    kwargs: dict[str, Any] = {}
+    if user_id:
+        kwargs["user_id"] = user_id
     async for update in _astream_with_tracing(
-        graph, query, thread_id=thread_id, history_turns=history_turns
+        graph, query, thread_id=thread_id, history_turns=history_turns, **kwargs
     ):
         yield update
 
@@ -231,11 +260,15 @@ async def ainvoke_router_agent(
     thread_id: str = "lg-rag-smoke",
     checkpointer: Any | None = None,
     history_turns: list[dict] | None = None,
+    user_id: str | None = None,
 ) -> dict[str, Any]:
     """Phase 2 三路路由图；同 thread_id 可经 checkpointer 续写 messages。"""
     graph = build_router_agent(checkpointer=checkpointer)
+    kwargs: dict[str, Any] = {}
+    if user_id:
+        kwargs["user_id"] = user_id
     return await _ainvoke_with_tracing(
-        graph, query, thread_id=thread_id, history_turns=history_turns
+        graph, query, thread_id=thread_id, history_turns=history_turns, **kwargs
     )
 
 
@@ -245,10 +278,14 @@ async def astream_router_agent(
     thread_id: str = "lg-rag-smoke",
     checkpointer: Any | None = None,
     history_turns: list[dict] | None = None,
+    user_id: str | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Phase 2 router · astream(updates)。"""
     graph = build_router_agent(checkpointer=checkpointer)
+    kwargs: dict[str, Any] = {}
+    if user_id:
+        kwargs["user_id"] = user_id
     async for update in _astream_with_tracing(
-        graph, query, thread_id=thread_id, history_turns=history_turns
+        graph, query, thread_id=thread_id, history_turns=history_turns, **kwargs
     ):
         yield update

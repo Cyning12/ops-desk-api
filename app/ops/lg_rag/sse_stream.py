@@ -378,6 +378,10 @@ async def _iter_lg_rag_sse_core(
         # 传了也被吃掉；但**不传**才是"挂起了却没落盘"的成因。
         if checkpointer is not None:
             call_kwargs["checkpointer"] = checkpointer
+        # 记忆注入身份（memory-facts-p0 · 默认关零 diff）：同 checkpointer 纪律，
+        # 只在有 user_id 时传；supervisor 内层 rag_subtask 不传 ⇒ 每请求只注入一次。
+        if user_id:
+            call_kwargs["user_id"] = user_id
         agen = astream_fn(
             query,
             thread_id=thread_id,
