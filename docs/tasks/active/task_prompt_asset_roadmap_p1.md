@@ -1,6 +1,6 @@
 # Task：Prompt 资产化阶段一「改得动」（去 str.format 转义 + 9 模板落盘 assets + 审计形态 · prompt-asset-roadmap-p1）
 
-> **状态**：`active`（2026-09-22 · 10-task 落稿 · HG-TASK-DRAFT=pending / HG-AUDIT-R1=pending → **30 拒开工**）  
+> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
 > **类型**：refactor（**行为零变化 · 无 alembic 义务**；图谱零变更按实判，偏离回炉条款见闸表与 D4）  
 > **上游 SPEC**：`docs/spec/prompt-asset-roadmap/SPEC-prompt-asset-roadmap_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · commit 94b2e21）  
 > **分支**：`task/prompt-asset-roadmap`（**禁止 master/main 直改 · 禁止 push**）  
@@ -35,8 +35,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 00 验收 10-task 稿通过后代录（维护者本窗授权 00 签收过程文档 · 原话留痕 SPEC 状态行）· **本帽不签** |
-| HG-AUDIT-R1 | **pending** | **30** | 20-task-audit R1 书面审后人签（00 依授权代录）· pending 即 **30 拒开工** |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | 2026-09-22 · 00 验收 10-task 稿通过（维护者本窗授权 00 签收过程文档 · 原话留痕 SPEC 状态行） |
+| HG-AUDIT-R1 | **approved** | **30** | 2026-09-22 · 20-task-audit R1 PASS 零阻塞零返工（`docs/harness/reviews/task_prompt_asset_roadmap_p1_audit_R1_20260922.md` · 计数断言亲跑全吻合）· 维护者本窗授权 00 代录签收 |
 | HG-GRAPH-MODULES | **approved** | **30** | 2026-09-22 本帽**真读** `docs/_tech_graph/l1/01_modules.md`：模块表已建置；lg_rag 行 C2 备注（2026-09-01）已裁定「prompt 装配层 `app/ops/prompts/**` 归属本行（模板 id 全部 `lg_rag.*` 且被 supervisor/intent 消费）」；memory 行在表（出边 `db, rag, llm`）。SPEC §2 D4 判本 task **零图谱变更**（不新增路由/表/事件类型 · `assets/` 为 prompts 模块内数据目录 · 无新增一级模块）→ **无新签义务**。**如实留痕两点**：① SPEC「memory→prompts 依赖边已存在」与实扫不符——`app/ops/memory/` 对 `prompts` **零 import**（2026-09-22 本帽 grep），30 改调 `render()` 将新增 memory→prompts 物理 import；因 prompts 非独立 module_id（C2 裁定归属 lg_rag 行内部路径），该边在模块表语义下为 memory 行出边备注级补充（对齐 llm-layer-hardening 「依赖出边 +db」00 代录先例），**不构成 SPEC 回炉**；② 既有登记缺口（非本波义务 · 不回改）：lg_rag 行出边未列 memory（`router.py:50` / `sse_stream.py:49` / `continuity.py:218` 已 import `app.ops.memory`）· memory 行出边未列 structured_output（`extract.py:30` 已 import）。**若 30 形态进一步偏离（新增一级模块 / prompts 拆独立 module_id / 新增路由/表/事件类型）→ 回炉补闸**（见 graph_delta_note，不得沿用本裁定） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 物理分层试点改码 | 本 task 不涉物理分层试点 |
 
