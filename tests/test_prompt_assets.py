@@ -26,6 +26,9 @@ EXPECTED_IDS = {
     "lg_rag.extract.system": "v1",
     "lg_rag.aggregator.system": "v1",
     "memory.extract.system": "v1",
+    # session-summary-fallback D1：新增摘要资产（B1 漏扫本文件集合等式断言 →
+    # 处置=改编：集合等式口径不变，仅登记新模板；见 30 invoke B1 回填）
+    "session.summary.system": "v1",
 }
 
 #: 渲染变量锚点（string.Template 语法）；除此之外 body 不得含 `$`
@@ -52,13 +55,15 @@ def _render_all() -> dict[str, str]:
         "lg_rag.extract.system": render("lg_rag.extract.system"),
         "lg_rag.aggregator.system": render("lg_rag.aggregator.system"),
         "memory.extract.system": render("memory.extract.system"),
+        "session.summary.system": render("session.summary.system"),
     }
 
 
 # ---------- D2 · registry 覆盖与资产形态 ----------
 
 
-def test_registry_covers_nine_templates():
+def test_registry_covers_declared_templates():
+    """registry 键集合与声明集合相等（增模板 = 同步登记本表，否则必挂）。"""
     assert set(TEMPLATES) == set(EXPECTED_IDS)
 
 
@@ -96,6 +101,8 @@ def test_asset_zero_escape_residue(template_id: str):
         ("lg_rag.router.system", '{"route"'),
         ("lg_rag.extract.system", '{"dates"'),
         ("memory.extract.system", '{"facts"'),
+        # 摘要资产锚点：「不得新增原文没有的事实」级指令（语义锚 · 非全文快照）
+        ("session.summary.system", "不得新增"),
     ],
 )
 def test_rendered_output_structure_anchors(template_id: str, anchor: str):

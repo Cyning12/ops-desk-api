@@ -172,6 +172,7 @@ async def _ainvoke_with_tracing(
         history_turns,
         tenant_id=current_tenant(),
         user_id=user_id,
+        thread_id=thread_id,
     )
     payload: dict[str, Any] = {"messages": messages}
     if run_id:
@@ -204,6 +205,7 @@ async def _astream_with_tracing(
         history_turns,
         tenant_id=current_tenant(),
         user_id=user_id,
+        thread_id=thread_id,
     )
     payload: dict[str, Any] = {"messages": messages}
     if run_id:

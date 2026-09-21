@@ -344,6 +344,40 @@ class OpsLgRagRunEvent(Base):
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
 
 
+class OpsSessionSummary(Base):
+    """会话历史真摘要缓存（session-summary-fallback D2 · C1 独立表）。
+
+    与原文 SoT（ops_lg_rag_turns / ops_runs）**物理分表**——摘要绝不写回
+    turns 表（防摘要的摘要失真复利 + 原文可查对账）。
+    key 铁律：（thread_id, chunk_hash）唯一；chunk_hash 必含
+    内容哈希 + prompt_version + model——窗口滑动内容变 → hash 变 →
+    自然 miss，**无主动失效逻辑**。
+    """
+
+    __tablename__ = "ops_session_summaries"
+    __table_args__ = (
+        UniqueConstraint(
+            "thread_id", "chunk_hash", name="uq_ops_session_summaries_thread_chunk"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    thread_id: Mapped[str] = mapped_column(
+        String(255), ForeignKey("ops_lg_rag_threads.id", ondelete="CASCADE"), nullable=False
+    )
+    #: sha256(prompt_version + model + chunk turns canonical JSON)
+    chunk_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    prompt_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    model: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    turn_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    #: 恒 "llm"（预留未来 heuristic 来源）
+    source: Mapped[str] = mapped_column(String(16), nullable=False, default="llm")
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+
+
 class OpsCapabilityReceipt(Base):
     """副作用回执（W5）：**副作用以收据为真**。
 

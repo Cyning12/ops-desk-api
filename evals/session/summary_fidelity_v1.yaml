@@ -1,0 +1,100 @@
+# 会话记忆真摘要 · 保真度金样清单（v1 · session-summary-fallback D4）
+#
+# **判定面是确定性结构断言，不是对模型自由文本的语义裁判**（热路径零
+# LLM-as-judge · 手册 §1.8 纪律 · evals/memory/preference_redline_v1.yaml 先例）。
+# 本文件是**清单**（给人看的、可审计的）；实现在
+# tests/eval/test_session_summary_fidelity.py，两者必须一一对应（F0 守这条）。
+#
+# 每条规则都有**正向 + 反向对照**（只做反向会得到假通过——空摘要天然满足
+# must_not_add；must_keep 非空断言是空摘要假通过防线）。
+# CI 热路径用**夹具 turns + 录制摘要**跑同一校验函数（evals/session/fidelity.py）；
+# 真模型离线抽检归 evals 层纪律，不作 CI 否决面。
+
+version: 1
+layer: session
+rules:
+  - id: F0
+    severity: critical
+    statement: 金样清单与实现必须一一对应（声明=实现）
+    rationale: 清单漂移后就会变成废纸，而人会继续以为有防护。
+    source: evals/memory/preference_redline_v1.yaml P0 同款
+
+  - id: F1
+    severity: critical
+    statement: >-
+      正向：每个金样的 must_keep sentinel 集合必须全部出现在候选摘要文本中
+      （token 包含断言 · 非语义判定）；反向对照：删掉任一 sentinel 的摘要
+      必须被判违规
+    rationale: >-
+      摘错丢关键事实 = 静默造错误前提（SPEC §5 失败面①）。sentinel 用专有
+      编号/实体 token（如 OD-7391 · repo:ops-desk-api）使判定确定性机检。
+    source: session-summary-fallback SPEC §2 D4 关键事实不丢（正向）
+
+  - id: F2
+    severity: critical
+    statement: >-
+      反向：must_not_add 禁忌 sentinel（原文不存在的编号/实体）逐项不得出现
+      在摘要中；空摘要假通过防线：空摘要必须判违规且每个金样 must_keep 非空
+    rationale: >-
+      摘要新增原文没有的事实 = 幻觉注入上下文（静默错）。只做反向会得到
+      假通过（空摘要天然满足 must_not_add）——正反双断言缺一不算过。
+    source: session-summary-fallback SPEC §2 D4 不新增原文没有的内容（反向对照）
+
+  - id: F3
+    severity: critical
+    statement: >-
+      上下文结构断言：摘要模式装配产物零占位格式残留（无 roles= 占位条），
+      每条摘要条含版本（v1）+ 来源（模型:<model>）+ 有损声明三标记
+    rationale: >-
+      摘要条格式漂移（丢版本/来源/有损标记）会让模型把摘要当原文读——
+      三标记进上下文是模型可见的边界声明（SPEC §2 D1 摘要条标记）。
+    source: session-summary-fallback SPEC §2 D1/D4 上下文结构断言
+
+# 金样夹具：固定 turns（含 sentinel 关键事实）+ 录制摘要 + 正反 sentinel 集合。
+# turns 轮数 >6 触发窗口压缩（max_full_turns=6 · group_size=2）；
+# recorded_summary 为录制/夹具摘要（CI 确定性热路径 · 非真模型产出）。
+golden_cases:
+  - id: G1
+    note: 运维排障会话（工单号 + 仓库实体为 sentinel）
+    turns:
+      - {role: user, content: "工单 OD-7391 线上报错，帮忙看下"}
+      - {role: assistant, content: "先看 repo:ops-desk-api 的最近部署记录"}
+      - {role: user, content: "OD-7391 的报错是 500，集中在 /lg-rag/stream"}
+      - {role: assistant, content: "定位到 repo:ops-desk-api 的 SSE 装配层"}
+      - {role: user, content: "先回退到上一版"}
+      - {role: assistant, content: "已回退，OD-7391 告警恢复"}
+      - {role: user, content: "复盘一下原因"}
+      - {role: assistant, content: "根因是窗口压缩丢了上下文"}
+    recorded_summary: "用户排查工单 OD-7391（/lg-rag/stream 500），定位到 repo:ops-desk-api 的 SSE 装配层并已回退恢复。"
+    must_keep: ["OD-7391", "repo:ops-desk-api"]
+    must_not_add: ["OD-7392", "repo:ops-desk-ios", "INC-2200"]
+
+  - id: G2
+    note: 发版决策会话（版本号 + 分支名为 sentinel）
+    turns:
+      - {role: user, content: "REL-2026-09 这周能发吗"}
+      - {role: assistant, content: "要看 branch:task/session-summary-fallback 的闸状态"}
+      - {role: user, content: "REL-2026-09 只包含摘要回退特性"}
+      - {role: assistant, content: "branch:task/session-summary-fallback 尚未过 40 核验"}
+      - {role: user, content: "那 REL-2026-09 顺延一周"}
+      - {role: assistant, content: "已顺延，REL-2026-09 改到下周三"}
+      - {role: user, content: "通知相关同学"}
+      - {role: assistant, content: "已在站会同步"}
+    recorded_summary: "REL-2026-09 只含摘要回退特性，因 branch:task/session-summary-fallback 未过核验而顺延一周。"
+    must_keep: ["REL-2026-09", "branch:task/session-summary-fallback"]
+    must_not_add: ["REL-2026-10", "branch:main", "HOTFIX-88"]
+
+  - id: G3
+    note: 环境配置会话（时区 + 测试库名为 sentinel）
+    turns:
+      - {role: user, content: "本地测试库连哪个"}
+      - {role: assistant, content: "连 opsdesk_test，别动开发库"}
+      - {role: user, content: "时区按什么算"}
+      - {role: assistant, content: "统一 Asia/Shanghai"}
+      - {role: user, content: "opsdesk_test 里的数据能删吗"}
+      - {role: assistant, content: "可以，opsdesk_test 是隔离测试库"}
+      - {role: user, content: "好，那我重跑了"}
+      - {role: assistant, content: "跑完看 Asia/Shanghai 时区的日志时间"}
+    recorded_summary: "测试一律连隔离库 opsdesk_test（可删可重跑），日志时间统一按 Asia/Shanghai 看。"
+    must_keep: ["opsdesk_test", "Asia/Shanghai"]
+    must_not_add: ["Europe/Berlin", "opsdesk_prod", "UTC+8"]
