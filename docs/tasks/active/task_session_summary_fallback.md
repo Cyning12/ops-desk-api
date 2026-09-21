@@ -1,6 +1,6 @@
 # Task：会话记忆真摘要（可回退原文）· 请求时懒生成 + DB 缓存 · `SESSION_SUMMARY_ENABLED` 默认关 · off/on-态全失败双对拍逐字节一致（session-summary-fallback）
 
-> **状态**：`draft`（2026-09-22 · 10-task 落稿 · 待 20-task-audit + HG-AUDIT-R1 人签）  
+> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
 > **类型**：feature（新 LLM 调用面（summary 档）+ 新 prompt 资产 + **新表 ops_session_summaries（有 alembic 义务 · 建表可逆）** + **有图谱义务按实判**（db 行新表登记 + lg_rag/chat/llm 行备注 · 不新增一级模块/路由/SSE 事件 · 偏离回炉条款见闸表与 graph_delta_note））  
 > **上游 SPEC**：`docs/spec/session-summary-fallback/SPEC-session-summary-fallback_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · commit 48ce63e）  
 > **分支**：`task/session-summary-fallback`（**禁止 master/main 直改 · 禁止 push**）  
@@ -35,8 +35,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 待 00 验收本稿后人签/授权代录；**本帽不签** |
-| HG-AUDIT-R1 | **pending** | **30** | 20-task-audit 书面审后人签/授权代录；pending 期间 **30 拒开工** |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | 2026-09-22 · 00 验收 10-task 稿通过（维护者本窗授权 00 签收过程文档 · 原话留痕 SPEC 状态行） |
+| HG-AUDIT-R1 | **approved** | **30** | 2026-09-22 · 20-task-audit R1 PASS 零阻塞零退回（`docs/harness/reviews/task_session_summary_fallback_audit_R1_20260922.md` · B1 抽 7 亲跑属实 · 双对拍可测性成立）· 维护者本窗授权 00 代录签收 |
 | HG-GRAPH-MODULES | **approved（模块表已建置）· 本 task 有新签义务（留 00 代录位）** | **30** | 2026-09-22 本帽**真读** `docs/_tech_graph/l1/01_modules.md`：模块表已建置（bootstrap 签 2026-07-16 · 签录链完整至 memory-preference-profile 行 :90）；`db` 行 :33（`app/db/**`, `alembic/**` · 新表登记先例 ops_llm_usage）· `lg_rag` 行 :27（`app/ops/lg_rag/**` 覆盖 continuity 装配面）· `chat` 行 :22（glob 含 `app/ops/session/**` 覆盖新文件 `session/summary.py`）· `llm` 行 :32（`app/llm/**` 覆盖 model_catalog 档扩展）均在表。SPEC §2 D5 判**有图谱义务按实判**：新表 `ops_session_summaries` 登记 db 行 + 上述三行备注 + 人签记录**新行留 00 代录位**（随 30 交付落盘 · llm-layer-hardening「00 代录 · 30 交付核验后」先例）——义务钉在 D5 验收，**不新增一级模块/路由/SSE 事件**故不阻塞 30 开工形态预判。**若 30 形态偏离 → 回炉补闸**（见 graph_delta_note，不得沿用本裁定） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 物理分层试点改码 | 本 task 不涉物理分层试点 |
 
