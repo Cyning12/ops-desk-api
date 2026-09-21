@@ -165,3 +165,96 @@ async def test_recall_failure_degrades_to_no_injection(
         )
     assert _shape(out) == _shape(baseline)
     assert "degrade to no injection" in caplog.text
+
+# ---------------- span `memory_facts_injected` 专门单测（memory-embedding-backfill D3） ----------------
+# capture-list 模式对齐 tests/test_llm_routing.py:176；发射点 continuity.py:237-243。
+
+
+def _capture_span(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
+    """monkeypatch continuity 命名空间内的 update_current_span_metadata，返回捕获列表。"""
+    from app.ops.lg_rag import continuity
+
+    captured: list[dict] = []
+    monkeypatch.setattr(
+        continuity, "update_current_span_metadata", lambda m: captured.append(m)
+    )
+    return captured
+
+
+def _patch_recall(monkeypatch: pytest.MonkeyPatch, *, facts=None, error=None):
+    """patch 装配链路实际调用的 memory service 召回（默认确定性通路）。"""
+    from unittest.mock import AsyncMock
+
+    mock = (
+        AsyncMock(side_effect=error)
+        if error is not None
+        else AsyncMock(return_value=facts or [])
+    )
+    monkeypatch.setattr("app.ops.memory.service.recall_active", mock)
+    return mock
+
+
+async def test_span_memory_facts_injected_count(monkeypatch: pytest.MonkeyPatch):
+    """有 facts：span 收到 {"memory_facts_injected": N} 且 N == 实际注入条数。"""
+    monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    captured = _capture_span(monkeypatch)
+    facts = [
+        {"key": "project.primary_repo", "value": "cyning/ops-desk"},
+        {"key": "user.display_tz", "value": "Asia/Shanghai"},
+    ]
+    _patch_recall(monkeypatch, facts=facts)
+
+    out = await assemble_graph_messages_with_memory(
+        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    assert captured == [{"memory_facts_injected": 2}]
+    # N 与实际注入条数一致（注入块真含两条）
+    blocks = [str(m.content) for m in out if isinstance(m, SystemMessage)]
+    assert any("project.primary_repo=cyning/ops-desk" in b for b in blocks)
+    assert any("user.display_tz=Asia/Shanghai" in b for b in blocks)
+
+
+async def test_span_memory_facts_injected_zero(monkeypatch: pytest.MonkeyPatch):
+    """零 facts：span 收到 {"memory_facts_injected": 0}（continuity.py:240 分支）。"""
+    monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    captured = _capture_span(monkeypatch)
+    _patch_recall(monkeypatch, facts=[])
+
+    out = await assemble_graph_messages_with_memory(
+        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    assert captured == [{"memory_facts_injected": 0}]
+    assert not any(
+        isinstance(m, SystemMessage) and str(m.content).startswith(MEMORY_FACTS_HEADER)
+        for m in out
+    )
+
+
+async def test_span_memory_degraded_on_recall_failure(monkeypatch: pytest.MonkeyPatch):
+    """召回故障：span 收到 {"memory_degraded": True} 且全程无 memory_facts_injected。"""
+    monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    captured = _capture_span(monkeypatch)
+    _patch_recall(monkeypatch, error=RuntimeError("db down"))
+
+    out = await assemble_graph_messages_with_memory(
+        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    assert captured == [{"memory_degraded": True}]
+    assert all("memory_facts_injected" not in m for m in captured)
+    baseline = assemble_graph_messages("q", _fixture_turns())
+    assert _shape(out) == _shape(baseline)
+
+
+async def test_span_disabled_zero_calls(monkeypatch: pytest.MonkeyPatch):
+    """开关关闭：零 span 调用（与既有逐字节一致断言并存）。"""
+    monkeypatch.delenv("MEMORY_FACTS_ENABLED", raising=False)
+    captured = _capture_span(monkeypatch)
+
+    history = _fixture_turns()
+    baseline = assemble_graph_messages("q", history)
+    out = await assemble_graph_messages_with_memory(
+        "q", history, tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    assert captured == []
+    assert _shape(out) == _shape(baseline)
+
