@@ -85,7 +85,7 @@ audience: agent-30
 | HG-GRAPH-MODULES | approved | 00 代录（维护者令「签收」· task_memory_facts_p1） | 2026-09-21 | `memory` 行备注：P1 向量语义召回 + LLM 离线候选抽取（默认关 · 依赖出边 +`rag`/`llm`）；不新增一级模块 |
 | HG-GRAPH-MODULES | approved | 00 代录（维护者令「授权00签收后续过程文档，完成此task」· task_memory_facts_p0） | 2026-09-21 | **新增一级模块 `memory`**（事实型记忆 P0）；`lg_rag` 装配路径消费其召回注入；SPEC `docs/spec/memory-facts-p0/` signed |
 | HG-GRAPH-MODULES | approved | 00 代签（维护者令「不切分支，直接在当前分支开始」· task_tech_graph_recent_sync） | 2026-09-21 | **新增一级模块 `hitl`**；`api`/`admin`/`capability`/`lg_rag`/`db` 行备注追平 09-20~09-21 集中开发（治理层闸链/熔断/降级/配额/幂等/output_schema · 观测端点 · HITL interrupt/resume 回路 · ReAct 收口 · `ops_hitl_requests`）；不增 implementedBy（G-L2 indexes 不扩） |
-| HG-GRAPH-MODULES | pending | 待 00 代录（维护者令「授权00签收所有过程文档，接续 llm-layer-hardening」· task_llm_layer_hardening） | 2026-09-21 | `llm` 行备注：L5 硬化四块（重试退避 / provider 级熔断 / 任务分档路由 / `ops_llm_usage` 账本）· 依赖出边 +`db`；`db` 行登记新表 `ops_llm_usage`；不新增一级模块 · 不增 implementedBy（G-L2 indexes 不扩）。**30 帽不签闸，本行留 pending 待 00 代录** |
+| HG-GRAPH-MODULES | approved | 00 代录（维护者令「授权00签收所有过程文档，接续 llm-layer-hardening」· task_llm_layer_hardening） | 2026-09-21 | `llm` 行备注：L5 硬化四块（重试退避 / provider 级熔断 / 任务分档路由 / `ops_llm_usage` 账本）· 依赖出边 +`db`；`db` 行登记新表 `ops_llm_usage`；不新增一级模块 · 不增 implementedBy（G-L2 indexes 不扩）。**00 已代录 approved（2026-09-21 · 30 交付核验后）** |
 
 ## 关联
 
