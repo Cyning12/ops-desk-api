@@ -20,6 +20,12 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
+from app.ops.prompts.slots import (
+    SlotIsolationError,
+    assert_slots_declared,
+    declare_slots,
+    security_input_isolation_enabled,
+)
 from app.ops.tracing import update_current_span_metadata
 
 logger = logging.getLogger(__name__)
@@ -294,7 +300,7 @@ async def _assemble_with_session_summary(
     return _assemble_messages_from_compressed(query, compressed)
 
 
-async def assemble_graph_messages_with_memory(
+async def _assemble_graph_messages_with_memory_impl(
     query: str,
     history_turns: list[dict] | None = None,
     *,
@@ -375,3 +381,85 @@ async def assemble_graph_messages_with_memory(
         span["memory_preferences_injected"] = n_prefs
     update_current_span_metadata(span)
     return inject_memory_facts_block(messages, block)
+
+
+# ---------------- 输入结构隔离边界（security-input-isolation W1 · 默认关） ----------------
+
+
+def _attribute_isolation_slots(messages: list[BaseMessage]) -> list[BaseMessage]:
+    """消息级槽位归因（纯函数 · 仅 on 态触达）：角色序与正文零改动。
+
+    - 末条 HumanMessage（本轮问题）→ `user_query`；
+    - memory 注入块（`[已知事实]`/`[用户偏好]` 节首的 SystemMessage）→ `memory_fact`
+      （语义不变 · 声明补全）；
+    - 其余历史/压缩占位消息 → `history_turn`。
+    """
+    attributed: list[BaseMessage] = []
+    last = len(messages) - 1
+    for i, msg in enumerate(messages):
+        content = str(msg.content)
+        if isinstance(msg, SystemMessage) and (
+            content.startswith(MEMORY_FACTS_HEADER)
+            or content.startswith(MEMORY_PREFERENCES_HEADER)
+        ):
+            slot_id = "memory_fact"
+        elif i == last and isinstance(msg, HumanMessage):
+            slot_id = "user_query"
+        else:
+            slot_id = "history_turn"
+        attributed.append(declare_slots(msg, [slot_id]))
+    return attributed
+
+
+async def assemble_graph_messages_with_memory(
+    query: str,
+    history_turns: list[dict] | None = None,
+    *,
+    tenant_id: str | None = None,
+    user_id: str | None = None,
+    thread_id: str | None = None,
+    max_full_turns: int = DEFAULT_MAX_FULL_TURNS,
+    group_size: int = DEFAULT_GROUP_SIZE,
+) -> list[BaseMessage]:
+    """装配 + 可选真摘要 + 可选记忆注入 + 可选输入结构隔离边界。
+
+    装配语义见 `_assemble_graph_messages_with_memory_impl`；开关全关时与
+    `assemble_graph_messages` **逐字节一致**。
+
+    输入结构隔离（security-input-isolation D2 · `SECURITY_INPUT_ISOLATION_ENABLED`
+    默认关）：on 态对装配产物做消息级槽位归因（`history_turn`/`user_query`/
+    `memory_fact` · 角色序与正文零改动）并在发往图前执行
+    `assert_slots_declared` 纯函数校验——内容违例（未声明段）→
+    :class:`SlotIsolationError` 显式炸，**请求不进入图**（下游零请求）+
+    span `input_isolation_rejected`；机制自身故障 → 该请求降级 off 态装配
+    + span `input_isolation_degraded`（两语义分立断言）。off 态校验零触达
+    （包装/校验调用计数 = 0）。
+    """
+    messages = await _assemble_graph_messages_with_memory_impl(
+        query,
+        history_turns,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        thread_id=thread_id,
+        max_full_turns=max_full_turns,
+        group_size=group_size,
+    )
+    if not security_input_isolation_enabled():
+        return messages
+    try:
+        attributed = _attribute_isolation_slots(messages)
+        assert_slots_declared(attributed)
+        update_current_span_metadata({"slots_wrapped": len(attributed)})
+        return attributed
+    except SlotIsolationError:
+        update_current_span_metadata({"input_isolation_rejected": True})
+        logger.warning(
+            "input isolation rejected undeclared content; request rejected before graph",
+            exc_info=True,
+        )
+        raise
+    except Exception:
+        logger.exception("input isolation mechanism failed; degrade to off-state assembly")
+        update_current_span_metadata({"input_isolation_degraded": True})
+        return messages
+
