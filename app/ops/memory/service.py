@@ -16,7 +16,7 @@ import asyncio
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import select, text, update
@@ -342,9 +342,21 @@ def _source_weight(fact: OpsMemoryFact) -> float:
     return SOURCE_WEIGHT_EXTRACTED if fact.source_run_id else SOURCE_WEIGHT_EXPLICIT
 
 
+def _as_utc(value: datetime) -> datetime:
+    """tz 归一：**naive 一律视为 UTC**（不转本地时区、不把 aware 转 naive）。
+
+    真库列由 migration 建 timestamptz → 读回 aware；`now_utc()` 与测试库
+    （create_all plain DateTime）为 naive。两侧混算前统一归一到 aware-UTC，
+    语义无损（PG 对 naive→timestamptz 的解释同为 UTC）。
+    """
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value
+
+
 def _time_decay(fact: OpsMemoryFact, now: datetime) -> float:
     """指数半衰：decay = 0.5 ** (age_days / HALF_LIFE_DAYS)；未来时间戳按 0 天。"""
-    age_seconds = max(0.0, (now - fact.updated_at).total_seconds())
+    age_seconds = max(0.0, (_as_utc(now) - _as_utc(fact.updated_at)).total_seconds())
     return 0.5 ** ((age_seconds / 86400.0) / HALF_LIFE_DAYS)
 
 
