@@ -1,6 +1,6 @@
 # SPEC：记忆既有行 embedding 回填批处理 + span 专门单测（v1）
 
-> **状态**：`draft-complete · 待人签`（HG-SPEC-SIGNOFF=**pending** · 10-spec 已补全，人签前不出 task / 不改码）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved** · 2026-09-21 · 维护者授权 00 本窗签收全部过程文档 · 原话「此spec完成后继续把完成后续spec，一个个进行，每次PR到main通过CI后自动merge」承前令「授权00签收所有过程文档」）
 > **track**：`feature`（批处理运维功能 · 双轨必经 10-spec；**不改表结构 → 无 alembic 义务**；图谱零变更按实判见 §2 D5）
 > **上游**：`../ops-desk-workspace/docs/08-interview/07_agent-memory-prompt-module-landscape_v1_zh.md`（记忆轨 M2+M6）
 > **格式基准**：`docs/spec/llm-layer-hardening/SPEC-llm-layer-hardening_v1.md`（signed · PR #148 已合）
