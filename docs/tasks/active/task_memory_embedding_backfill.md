@@ -1,6 +1,6 @@
 # Task：记忆既有行 embedding 回填批处理 + span 专门单测（memory-embedding-backfill）
 
-> **状态**：`draft`（2026-09-21 · 10-task 落稿 · HG-AUDIT-R1=pending → **30 拒开工**）  
+> **状态**：`signed`（2026-09-21 · 20-task-audit R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
 > **类型**：feature / 运维批处理（**不改表结构 → 无 alembic 义务**；图谱零变更按实判，偏离回炉条款见闸表与 D5）  
 > **上游 SPEC**：`docs/spec/memory-embedding-backfill/SPEC-memory-embedding-backfill_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-21）  
 > **分支**：`task/memory-embedding-backfill`（**禁止 master 直改**）  
@@ -35,8 +35,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 00 验收 10-task 稿（维护者本窗授权 00 签收过程文档 · 原话留痕 SPEC 状态行）；10 落稿后由 00 代录 |
-| HG-AUDIT-R1 | **pending** | **30** | 20-task-audit 零阻塞后 · 维护者本窗授权 00 代录签收；**本帽（10）不签**，pending 期间 30 拒开工 |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | 2026-09-21 · 00 验收 10-task 稿通过（维护者本窗授权 00 签收过程文档 · 原话留痕 SPEC 状态行） |
+| HG-AUDIT-R1 | **approved** | **30** | 2026-09-21 · 20-task-audit R1 PASS 零阻塞零退回（`docs/harness/reviews/task_memory_embedding_backfill_audit_R1_20260921.md`）· 维护者本窗授权 00 代录签收 |
 | HG-GRAPH-MODULES | **approved** | **30** | 2026-09-21 真读核验 `docs/_tech_graph/l1/01_modules.md`：模块表已建置（bootstrap 签 2026-07-16 · `memory` 行在表 · 签录链完整含当日 memory_facts_p0/p1 等四行）。SPEC §2 D5 判本 task **零图谱变更**（不新增路由/表/事件类型 · `scripts/` 新增 CLI 不在登记义务内）→ **无新签义务**；**若 30 偏离零变更预判则回炉补闸**（见 graph_delta_note，不得沿用本裁定） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 物理分层试点改码 | 本 task 不涉物理分层试点 |
 
