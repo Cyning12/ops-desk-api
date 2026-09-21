@@ -1,6 +1,6 @@
 # SPEC：Prompt 资产化三阶段（改得动→看得见→分得开）（v1）
 
-> **状态**：`draft-complete`（HG-SPEC-SIGNOFF=**pending** · 人签前不出 task / 不改码）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved**（2026-09-22 · 维护者授权 00 本窗签收全部过程文档 · 原话「此spec完成后继续把完成后续spec，一个个进行，每次PR到main通过CI后自动merge」承前令「授权00签收所有过程文档」） · 人签前不出 task / 不改码）
 > **track**：`refactor`（本波 = 阶段一 · 行为零变化 · **无 alembic 义务** · 图谱零变更按实判见 §2 D4；阶段二/三各自动 task 时重裁 track）
 > **上游**：`../ops-desk-workspace/docs/08-interview/07_agent-memory-prompt-module-landscape_v1_zh.md`（手册 §2.1.1 痛点 · §2.4 三阶段）
 > **格式基准**：`docs/spec/continuity-dedup/SPEC-continuity-dedup_v1.md`（signed · PR #153 已合）
