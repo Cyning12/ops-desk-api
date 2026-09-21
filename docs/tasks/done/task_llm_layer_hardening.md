@@ -1,6 +1,6 @@
 # Task：L5 模型层硬化（重试 / 熔断 / 分层路由 / 成本归集）
 
-> **状态**：`signed`（2026-09-21 · 20-task-audit R2 PASS-with-notes 零阻塞 · HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
+> **状态**：`done`（2026-09-21 · 五棒全通 · 40 PASS-with-warnings 验收 24/24 · PR #148 CI 全绿合并 master（22d8879）· CLOSE 归档）  
 > **类型**：feature / L5 模型层 · 承重墙缺角补齐（含新表 → 带 alembic migration 与图谱同步义务）  
 > **上游 SPEC**：`docs/spec/llm-layer-hardening/SPEC-llm-layer-hardening_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-21）  
 > **分支**：`task/llm-layer-hardening`（**禁止 master 直改**）  
@@ -306,3 +306,4 @@ fake provider / fake httpx 消解外网不确定性；sleep 序列 monkeypatch �
 | 2026-09-21 | **闸签收**：HG-TASK-DRAFT=approved（00 验收 10-task 稿）· HG-AUDIT-R1=approved（R2 零阻塞 · 维护者本窗授权 00 代录，原话留痕于 SPEC 状态行与本表 10 注）· 30 放行 |
 | 2026-09-21 | **R1 退回修订（B1 已补）**：实扫落盘「旧测影响面清单」12 条（grep 口径在节首）+ 工程「闸前置」验收断言 + failure_paths 一行；顺带采纳审查文非阻塞备注 1（闸表补全 2026-09-21 三行签录表述）· 2（`get_fallback_chain` 锚点实址修正为 `model_catalog.py:101-105`）· 4（20 invoke 快照由本帽代录至 invokes 目录，原义务属 20 棒）；备注 3（SPEC §8 编排差异）知悉无需改 · HG-AUDIT-R1 保持 pending（本帽不签） |
 | 2026-09-21 | **40 核验**：PASS-with-warnings · 验收 24/24（逐条证据见 invoke `invoke_20260921_40_verify_llm_layer_hardening.md`）· 3 失败经 master worktree 对照证为基线环境性 · 变异检验亲自复做有效并还原 · 本帽未签任何 human_gate、未 CLOSE |
+| 2026-09-21 | **50+CLOSE**：PR [#148](https://github.com/Cyning12/ops-desk-api/pull/148) CI 全绿（pytest 1m19s · tech-graph · lint-wiki-delta）merge 入 master（`22d8879`）· 归档至 `done/` · 遗留：3 条本地基线红（CI 绿，本地环境性）另开 fix task；SPEC residual 三条承手册 L8/流量校准另案 |
