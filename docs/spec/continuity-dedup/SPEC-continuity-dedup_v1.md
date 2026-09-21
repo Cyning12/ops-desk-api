@@ -1,6 +1,6 @@
 # SPEC：continuity 重复实现合并（v1）
 
-> **状态**：`draft-complete · 待人签`（HG-SPEC-SIGNOFF=**approved**（2026-09-21 · 维护者授权 00 本窗签收全部过程文档 · 原话「此spec完成后继续把完成后续spec，一个个进行，每次PR到main通过CI后自动merge」承前令「授权00签收所有过程文档」） · 人签前不出 task / 不改码）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved**（2026-09-21 · 维护者授权 00 本窗签收全部过程文档 · 原话「此spec完成后继续把完成后续spec，一个个进行，每次PR到main通过CI后自动merge」承前令「授权00签收所有过程文档」） · 人签前不出 task / 不改码）
 > **track**：`refactor`（已知债清理 · 行为零变化 · **无 alembic 义务** · 图谱零变更按实判见 §2 D3；占位「待裁定」→ 本 SPEC 裁定）
 > **上游**：`../ops-desk-workspace/docs/08-interview/07_agent-memory-prompt-module-landscape_v1_zh.md`（手册 §1.2.2 已知债 M7）
 > **格式基准**：`docs/spec/memory-embedding-backfill/SPEC-memory-embedding-backfill_v1.md`（signed · PR #151 已合）
