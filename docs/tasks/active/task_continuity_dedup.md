@@ -1,6 +1,6 @@
 # Task：continuity 重复实现合并（S1 硬删除 + 测试收敛 · continuity-dedup）
 
-> **状态**：`draft`（2026-09-22 · 10-task 落稿 · HG-TASK-DRAFT=pending · HG-AUDIT-R1=pending → **30 拒开工**）  
+> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
 > **类型**：refactor / 已知债清理（**行为零变化 · 无 alembic 义务**；图谱零变更按实判，偏离回炉条款见闸表与 D3）  
 > **上游 SPEC**：`docs/spec/continuity-dedup/SPEC-continuity-dedup_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-21 · commit d0152e4/8fdd859）  
 > **分支**：`task/continuity-dedup`（**禁止 master 直改 · 禁止 push**）  
@@ -35,8 +35,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 00 验收 10-task 稿通过后代录（维护者本窗授权 00 签收过程文档 · 原话留痕 SPEC 状态行）· **本帽不签** |
-| HG-AUDIT-R1 | **pending** | **30** | 20-task-audit R1 书面审 → 维护者授权 00 代录签收；pending → **30 拒开工** |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | 2026-09-22 · 00 验收 10-task 稿通过（维护者本窗授权 00 签收过程文档 · 原话留痕 SPEC 状态行） |
+| HG-AUDIT-R1 | **approved** | **30** | 2026-09-22 · 20-task-audit R1 PASS 零阻塞零返工（`docs/harness/reviews/task_continuity_dedup_audit_R1_20260922.md`）· 维护者本窗授权 00 代录签收 |
 | HG-GRAPH-MODULES | **approved** | **30** | 2026-09-22 本帽**真读** `docs/_tech_graph/l1/01_modules.md`：模块表已建置（chat 行 `app/ops/chat/**` · `app/ops/session/**` 在表 · 出边 `llm, db, rag` 无 lg_rag）。SPEC §2 D3 判本 task **零图谱变更**（不新增路由/表/事件类型 · `session/continuity.py` 图谱零登记 · chat 行覆盖与描述删除后仍为真）→ **无新签义务**；**若 30 改走 re-export（S2）或新增任何依赖边/端点/表/事件类型 → 回炉补闸**（见 graph_delta_note，不得沿用本裁定） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 物理分层试点改码 | 本 task 不涉物理分层试点 |
 
