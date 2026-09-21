@@ -24,6 +24,7 @@
 | `llm-layer-hardening` | [`llm-layer-hardening/`](./llm-layer-hardening/) | **signed · 已实施**（2026-09-21 · PR #148 已合 master · 40 核验 24/24 PASS） | L5 模型层硬化：重试退避 / provider 熔断 / 分档路由 / `ops_llm_usage` 账本 |
 | `memory-embedding-backfill` | [`memory-embedding-backfill/`](./memory-embedding-backfill/) | **signed · 已实施**（2026-09-21 · PR #151 已合 master · 40 核验 21/21 PASS） | 存量行 embedding 回填 CLI（幂等断点续跑 · 限速报告）+ span 单测 |
 | `continuity-dedup` | [`continuity-dedup/`](./continuity-dedup/) | **signed · 已实施**（2026-09-22 · PR #153 已合 master · 40 核验 17/17 PASS） | M7 · continuity 重复实现合并（硬删除 + 测试收敛 · 真源零 diff） |
+| `prompt-asset-roadmap` | [`prompt-asset-roadmap/`](./prompt-asset-roadmap/) | **signed · 阶段一已实施**（2026-09-22 · P1 PR #155 已合 master · 40 核验 20/20 PASS；阶段二「看得见」/阶段三「分得开」待后续波次） | Prompt 资产化三阶段（改得动→看得见→分得开 · 顺序不可跳） |
 
 ---
 
@@ -34,12 +35,11 @@
 | 建议序 | slug | 一句话 | 类别 |
 |---|---|---|---|
 | （进行中） | `memory-golden-eval` | M1 · 抽取精度金样 + 调权（P1 开闸前置） | 放大器 · 记忆轨 |
-| 2 | [`prompt-asset-roadmap/`](./prompt-asset-roadmap/) | P1–P4 · Prompt 资产化三阶段（改得动→看得见→分得开） | 迭代速度 |
-| 3 | [`memory-preference-profile/`](./memory-preference-profile/) | M3 · 画像记忆（先事实型后偏好型） | 记忆轨 |
-| 4 | [`session-summary-fallback/`](./session-summary-fallback/) | M5 · 会话真摘要（铁律：可回退原文） | 记忆轨 |
-| 5 | [`security-hardening/`](./security-hardening/) | C2 · L7 注入/PII/脱敏/真沙箱（顺序：隔离→检测） | 承重墙缺角 |
-| 6 | [`memory-compliance-delete/`](./memory-compliance-delete/) | M4 · 合规物理删除权（有合规要求再做） | 成熟度标志 |
-| 7 | [`multi-replica-verify/`](./multi-replica-verify/) | C3 · L0 多副本验证（有真实流量前必答） | 成熟度标志 |
+| 2 | [`memory-preference-profile/`](./memory-preference-profile/) | M3 · 画像记忆（先事实型后偏好型） | 记忆轨 |
+| 3 | [`session-summary-fallback/`](./session-summary-fallback/) | M5 · 会话真摘要（铁律：可回退原文） | 记忆轨 |
+| 4 | [`security-hardening/`](./security-hardening/) | C2 · L7 注入/PII/脱敏/真沙箱（顺序：隔离→检测） | 承重墙缺角 |
+| 5 | [`memory-compliance-delete/`](./memory-compliance-delete/) | M4 · 合规物理删除权（有合规要求再做） | 成熟度标志 |
+| 6 | [`multi-replica-verify/`](./multi-replica-verify/) | C3 · L0 多副本验证（有真实流量前必答） | 成熟度标志 |
 
 > 排序原则（手册 §3.4/B.1）：缺了会不会造成**不可逆或静默**的错 → 承重墙缺角优先；放大器按迭代瓶颈排；成熟度标志等量级。
 

@@ -1,6 +1,6 @@
 # Task：Prompt 资产化阶段一「改得动」（去 str.format 转义 + 9 模板落盘 assets + 审计形态 · prompt-asset-roadmap-p1）
 
-> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
+> **状态**：`done`（2026-09-22 · 五棒全通 · 40 PASS 验收 20/20 · PR #155 CI 全绿合并 master（564f68e）· CLOSE 归档）  
 > **类型**：refactor（**行为零变化 · 无 alembic 义务**；图谱零变更按实判，偏离回炉条款见闸表与 D4）  
 > **上游 SPEC**：`docs/spec/prompt-asset-roadmap/SPEC-prompt-asset-roadmap_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · commit 94b2e21）  
 > **分支**：`task/prompt-asset-roadmap`（**禁止 master/main 直改 · 禁止 push**）  
@@ -305,3 +305,4 @@ SPEC §5 十条失败面全收并翻四列：缺键 KeyError（变异①）· �
 |------|------|
 | 2026-09-22 | 40 核验 PASS：验收 20/20 亲跑复核（pytest 3 红基线对照相同 · 计数断言四组亲跑 · 对拍独立重做 9/9 byte-identical · 变异②复做显式炸·还原绿 · ruff 多重集 identical · graph-compile 绿 · B1 抽 9 全属实 · 特例四例零触碰）· WARN 三条记录非阻塞 · 证据 invoke_20260922_40_verify · 可进 CLOSE |
 | 2026-09-22 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 **20 条**逐块映射 SPEC §6 实质零差异（人工闸 1 / D1×3 / D2×5 / D3×2 / 行为零变化×3 / 变异检验×3 / 工程×3）· B1 旧测影响面 21 行实扫落盘（口径 `.format(`=3 · `你是`=13 · 常量消费点 tests 零直引 · pytest 基线 1176 collected 真跑 · 9 常量区 `$` 零命中）· SPEC 措辞偏差留痕两处（strategy/intent.py 实路径 `app/ops/strategy/` · memory→prompts 边实扫不成立 → 备注级处理非回炉）· HG-TASK-DRAFT=pending · HG-AUDIT-R1=pending → 30 拒开工 · HG-GRAPH-MODULES=approved（真读 `01_modules.md` · 零图谱变更 + 回炉补闸条款 + 既有登记缺口两处留痕）· HG-PILOT-OPSDESK-GLAYER=n/a |
+| 2026-09-22 | **50+CLOSE**：PR [#155](https://github.com/Cyning12/ops-desk-api/pull/155) CI 全绿 merge master（`564f68e`）· 归档 done/ · 阶段二（看得见）/阶段三（分得开）留后续波次（SPEC 全景仍 active）· 遗留：version bump 无机械闸 · 30 对拍基线未留档（40 已独立重建复核） |
