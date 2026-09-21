@@ -46,6 +46,8 @@ from app.ops.lg_rag.progress_stream import (
 from app.ops.lg_rag.sse_replay import format_sse_event, make_cursor
 from app.ops.lg_rag.subtask_message import build_subtask_done_message
 from app.ops.lg_rag.thread_store import persist_thread_turns
+from app.ops.memory.extract import schedule_memory_extraction
+from app.ops.tenant_context import current_tenant
 from app.ops.tracing import flush_traces, tracing_enabled
 
 logger = logging.getLogger(__name__)
@@ -491,6 +493,16 @@ async def _iter_lg_rag_sse_core(
                 logger.exception(
                     "lg-rag persist after done failed thread_id=%s", thread_id
                 )
+            # memory-facts-p1：done 收口后离线抽取点火（create_task 不 await；
+            # 不 yield 新帧、不阻塞已发帧；对齐 T5.1 后台 persist 模式）
+            schedule_memory_extraction(
+                tenant_id=current_tenant(),
+                user_id=user_id,
+                run_id=rid,
+                source_turn=len(history_turns or []) + 1,
+                query=query,
+                answer=last_answer,
+            )
     except Exception as exc:
         # delta 途中图异常：已发 delta 保留（sink 已入队/落盘调度），先吐净残留再发
         # error 帧；不补 final 帧（failure_paths）。

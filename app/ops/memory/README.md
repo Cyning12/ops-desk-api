@@ -1,7 +1,8 @@
-# app/ops/memory — 事实型记忆 P0（memory-facts-p0）
+# app/ops/memory — 事实型记忆 P0 + P1（memory-facts-p0 / memory-facts-p1）
 
-> 上游 SPEC：`docs/spec/memory-facts-p0/SPEC-memory-facts-p0_v1.md`（signed）  
-> 设计纪律：**只记事实，不记对话**；**判据在写入时判，不在检索时筛**；**不能自证的机制等于没装**。
+> 上游 SPEC：`docs/spec/memory-facts-p0/SPEC-memory-facts-p0_v1.md`（signed）· `docs/spec/memory-facts-p1/SPEC-memory-facts-p1_v1.md`（signed）  
+> 设计纪律：**只记事实，不记对话**；**判据在写入时判，不在检索时筛**；**不能自证的机制等于没装**。  
+> P1 纪律：向量只解决"怎么召回"，写入判据永远闸判；抽取产物是候选不是事实；每条增强可独立关闭独立降级，**两开关全关 = P0 逐字节一致**。
 
 ## 模块职责
 
@@ -9,7 +10,8 @@
 |------|------|
 | `gate.py` | `should_write(candidate)` 写入闸**纯函数**；三判据落成显式规则，拒绝返回稳定原因码（`REJECT_REASONS`）。**闸拒 = 不落库**。 |
 | `service.py` | 状态机：`write_fact`（过闸 → 落库；同 `(tenant_id,user_id,key)` 有 active 则**同一事务**内置旧 `superseded` + 新行 `supersedes` 指旧 id）· `revoke_by_source`（按源头批量 `revoked`，幂等，审计日志记影响行数）· `sweep_expired`（过期置 `expired`）· `recall_active`（仅 active 且未过期，`updated_at desc` top-N）。 |
-| `../lg_rag/continuity.py`（注入点） | `assemble_graph_messages_with_memory`：装配 + 可选记忆注入；渲染/插入助手 `render_memory_facts_block` / `inject_memory_facts_block`。 |
+| `../lg_rag/continuity.py`（注入点） | `assemble_graph_messages_with_memory`：装配 + 可选记忆注入；渲染/插入助手 `render_memory_facts_block` / `inject_memory_facts_block`。P1：`MEMORY_FACTS_VECTOR_RECALL_ENABLED=true` 时召回走 `service.recall_with_vector` 混合召回，否则 P0 确定性路径。 |
+| `extract.py`（P1） | LLM 离线候选抽取（默认关）：run 完成后后台点火 → structured_output 管道 → 候选逐条过闸 → `write_fact`（带 `source_run_id`/`source_turn`）。 |
 
 存储：`ops_memory_facts`（`app/db/models.py::OpsMemoryFact`；migration `alembic/versions/20260921_memory_facts.py`）。失效一律走状态机，**不物理删**（旧值留表供审计对账）。
 
@@ -27,6 +29,8 @@
 | `MEMORY_FACTS_ENABLED` | `false` | 回退 `false` + warning | 装配路径记忆注入总开关；**关闭时输出与现网逐字节一致** |
 | `MEMORY_FACTS_MAX_ITEMS` | `8` | 回退 `8` + warning | 召回预算；超限按 `updated_at` 从尾部截断低优先级（最旧）条目，不随机 |
 | `MEMORY_FACTS_MAX_VALUE_CHARS` | `2000` | 回退 `2000` + warning | 闸的 value 序列化长度上限 |
+| `MEMORY_FACTS_VECTOR_RECALL_ENABLED` | `false` | 回退 `false` + warning | P1 向量召回开关；关闭时召回路径与 P0 逐字节一致 |
+| `MEMORY_FACTS_EXTRACT_ENABLED` | `false` | 回退 `false` + warning | P1 LLM 离线候选抽取开关；关闭时零 LLM 调用 |
 
 ## 注入格式与位置
 
@@ -61,6 +65,37 @@ migration 为仓内裸 SQL 风格，`expires_at` 直接落**部分索引**
 `WHERE status='active'`（sweep 只扫活跃行）；model `__table_args__` 以
 `postgresql_where` 对齐同一语义。另两条：`(tenant_id,user_id,key,status)` 召回主谓词、`(source_run_id)` 纠错溯源。
 
-## 非范围（P0）
+## P1 · 向量召回融合算法（recall_with_vector）
 
-向量召回 / embedding 列 / LLM 自动抽取 / 偏好画像（P1+）；对外 HTTP 写端点；对话摘要；物理删除。
+1. **确定性 top-N**：P0 recency 语义不变（active + 未过期，`updated_at desc`，N = `MEMORY_FACTS_MAX_ITEMS`）。
+2. **向量 top-M**：写入时经 `Embedder`（rag 协议，同步接口 `asyncio.to_thread` 线程卸载，对齐 rag_nodes 先例）计算 embedding 落 `embedding` 列；召回时对 query 嵌入，裸 SQL `embedding <=> :qvec`（cosine）取 top-M，**必带 tenant_id + user_id + active + 未过期谓词**。M 初值 = N。
+3. **去重融合**：两路按 fact id 取并集。
+4. **排序**：`score = 向量相似 × 时间衰减 × 来源权重`（初值，SPEC R5 residual ① 需实测调参）：
+   - 相似 = `1 - cosine_distance`（截到 [0,1]）；无向量分（embedding NULL 存量行 / 未进 top-M）取 `SIM_FLOOR=0.5`；
+   - 衰减 = `0.5 ** (age_days / HALF_LIFE_DAYS=30)`；
+   - 来源权重：`source_run_id` 为空（显式/人工）= 1.0，抽取写入 = 0.8。
+5. **截断**：按 score desc 截到预算，截低分不随机；并列按 `updated_at desc, created_at desc, id desc` 兜底（确定性 tiebreak）。
+
+降级：embedder / 向量查询 / 列不存在任何失败 → 回退 P0 确定性召回 + span/log `memory_vector_degraded`，不拖垮请求。写入侧嵌入失败不阻断写入：该行 `embedding=NULL`，只走确定性通路（log 标记）。model 列 `deferred=True`：普通 SELECT 不带向量列，migration 未跑时 P0 读通路 SQL 不含它。
+
+## P1 · 抽取时序（extract.py）
+
+```
+invoke / SSE run 完成（done 收口后）
+  → schedule_memory_extraction（create_task 点火，不 await；热路径零抽取调用零额外延迟，对齐 T5.1 后台 persist 模式）
+  → run_memory_extraction：
+      文本窗（本轮 query + 终答，单侧截断 4000；证据本体不进 prompt）
+      → acomplete_structured（EXTRACTION_SYSTEM_PROMPT 常量 + 文本窗 user 消息；
+         parse → repair → validate；correction 重试 ≤1；整体超时 60s）
+      → MemoryFactExtraction.facts 逐条 should_write → 过闸 write_fact
+        （必带 source_run_id + source_turn，revoke_by_source 一键全撤）
+  → log/span：memory_extract_candidates=N written=M
+```
+
+- 抽取 prompt 为 **memory 模块内常量**（`extract.py::EXTRACTION_SYSTEM_PROMPT`），文本窗走独立 user 消息，**不做 str.format 插值**——规避 JSON 示例花括号转义痛点（仓内已知）。
+- LLM 失败 / 非法 JSON / 超时 → **零写入** + log；每 run 至多 1 次抽取调用。
+- 抽取写入入口：`app/ops/lg_rag/router.py`（invoke）与 `app/ops/lg_rag/sse_stream.py`（SSE done 后），两入口均只点火不 await；SSE 零新事件类型。
+
+## 非范围（P0/P1）
+
+画像 / preference；既有行 embedding 回填批处理（另 task）；热路径/流中抽取；对外 HTTP 写端点；对话摘要；物理删除；跨租户共享。

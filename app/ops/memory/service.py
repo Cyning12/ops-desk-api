@@ -12,15 +12,23 @@
 """
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
+import os
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import select, update
+from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import OpsMemoryFact, now_utc
 from app.db.session import AsyncSessionLocal
 from app.ops.memory.gate import FactCandidate, should_write
+from app.ops.tracing import update_current_span_metadata
+
+if TYPE_CHECKING:
+    from app.ops.rag.embedder import Embedder
 
 logger = logging.getLogger(__name__)
 
@@ -75,8 +83,14 @@ async def write_fact(
     source_turn: int | None = None,
     expires_at: datetime | None = None,
     session: AsyncSession | None = None,
+    embedder: Embedder | None = None,
 ) -> OpsMemoryFact:
-    """过闸 → 落库；闸拒抛 `GateRejectedError`（不落库）；写故障向上抛（不静默）。"""
+    """过闸 → 落库；闸拒抛 `GateRejectedError`（不落库）；写故障向上抛（不静默）。
+
+    P1：`MEMORY_FACTS_VECTOR_RECALL_ENABLED=true` 时写入后计算 embedding
+    （同步 Embedder 线程卸载）；嵌入/列写失败**不阻断写入**，该行 embedding
+    留 NULL 走确定性通路（log 标记）。开关关闭时与 P0 逐字节一致。
+    """
     decision = should_write(candidate)
     if not decision.allowed:
         logger.info(
@@ -99,6 +113,7 @@ async def write_fact(
         fact.source_turn = source_turn
         fact.expires_at = expires_at
         await session.flush()
+        await _maybe_embed_fact(fact, candidate, embedder=embedder, session=session)
         return fact
     async with AsyncSessionLocal() as own, own.begin():
         fact = await _write_in_session(own, candidate)
@@ -106,6 +121,7 @@ async def write_fact(
         fact.source_turn = source_turn
         fact.expires_at = expires_at
     # commit 由 begin() 退出时完成；expire_on_commit=False 保证属性可读
+    await _maybe_embed_fact(fact, candidate, embedder=embedder, session=None)
     return fact
 
 
@@ -202,3 +218,255 @@ async def recall_active(
     async with AsyncSessionLocal() as own:
         result = await own.execute(stmt)
         return list(result.scalars().all())
+
+# ---------------- P1 · 向量语义召回（默认关 · MEMORY_FACTS_VECTOR_RECALL_ENABLED） ----------------
+
+_TRUTHY = ("1", "true", "yes", "on")
+_FALSY = ("0", "false", "no", "off")
+
+# 融合权重初值（SPEC R5 residual ①：初值需实测调参；改动须同步 README）
+#: 无向量相似度时的相似分地板（embedding 为 NULL 的存量行 / 未进向量 top-M）
+SIM_FLOOR = 0.5
+#: 时间衰减半衰期（天）：decay = 0.5 ** (age_days / HALF_LIFE_DAYS)
+HALF_LIFE_DAYS = 30.0
+#: 来源权重：source_run_id 为空（显式/人工）高于抽取写入
+SOURCE_WEIGHT_EXPLICIT = 1.0
+SOURCE_WEIGHT_EXTRACTED = 0.8
+
+# 向量 top-M 召回（裸 SQL 风格同 rag retrieve.py；必带 tenant/user 谓词）
+_VECTOR_RECALL_SQL = text(
+    "SELECT id, embedding <=> CAST(:qvec AS vector) AS dist "
+    "FROM ops_memory_facts "
+    "WHERE tenant_id = :tenant AND user_id = :user AND status = 'active' "
+    "AND (expires_at IS NULL OR expires_at > :now) "
+    "AND embedding IS NOT NULL "
+    "ORDER BY dist "
+    "LIMIT :m"
+)
+
+
+def memory_facts_vector_recall_enabled() -> bool:
+    """`MEMORY_FACTS_VECTOR_RECALL_ENABLED`：默认 false；非法值回退 false + warning。"""
+    raw = (os.getenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED") or "").strip().lower()
+    if not raw:
+        return False
+    if raw in _TRUTHY:
+        return True
+    if raw in _FALSY:
+        return False
+    logger.warning(
+        "invalid MEMORY_FACTS_VECTOR_RECALL_ENABLED=%r; fallback to false", raw
+    )
+    return False
+
+
+def _fact_embed_text(key: str, value: object) -> str:
+    """嵌入文本 = 注入行同形 `key=value`（语义信号对齐召回展示面）。"""
+    text_value = (
+        value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+    )
+    return f"{key}={text_value}"
+
+
+def _resolve_embedder(embedder: Embedder | None):
+    """未显式注入时复用 rag 查询侧工厂（默认 SiliconFlow ApiEmbedder）。"""
+    if embedder is not None:
+        return embedder
+    from app.ops.rag.embedder import get_query_embedder
+
+    return get_query_embedder()
+
+
+async def _embed_one(embedder: Embedder, text_value: str) -> list[float] | None:
+    """同步 Embedder 协议线程卸载（对齐 rag_nodes/lc_evidence_chain 先例）。
+
+    失败返回 None（调用方走确定性通路），不在此抛。
+    """
+    try:
+        vectors = await asyncio.to_thread(embedder.embed, [text_value])
+    except Exception:
+        logger.warning("memory fact embed failed; row stays deterministic", exc_info=True)
+        return None
+    if not vectors or not vectors[0]:
+        logger.warning("memory fact embed returned empty; row stays deterministic")
+        return None
+    return vectors[0]
+
+
+async def _set_embedding(
+    fact_id: str, vector: list[float], *, session: AsyncSession | None
+) -> None:
+    """单列 UPDATE 回填 embedding；caller session 用 SAVEPOINT 隔离，
+    失败只回滚本语句，不污染调用方事务。"""
+    stmt = (
+        update(OpsMemoryFact)
+        .where(OpsMemoryFact.id == fact_id)
+        .values(embedding=vector)
+    )
+    if session is not None:
+        async with session.begin_nested():
+            await session.execute(stmt)
+        return
+    async with AsyncSessionLocal() as own, own.begin():
+        await own.execute(stmt)
+
+
+async def _maybe_embed_fact(
+    fact: OpsMemoryFact,
+    candidate: FactCandidate,
+    *,
+    embedder: Embedder | None,
+    session: AsyncSession | None,
+) -> None:
+    """写入时嵌入（V1）：开关关 → 零行为；嵌入/列写失败不阻断写入，
+    该行 embedding 留 NULL 走确定性通路（log 标记，对齐 failure_paths）。"""
+    if not memory_facts_vector_recall_enabled():
+        return
+    vector = await _embed_one(
+        _resolve_embedder(embedder), _fact_embed_text(candidate.key, candidate.value)
+    )
+    if vector is None:
+        return
+    try:
+        await _set_embedding(str(fact.id), vector, session=session)
+    except Exception:
+        logger.warning(
+            "memory fact embedding persist failed id=%s; row stays deterministic",
+            fact.id,
+            exc_info=True,
+        )
+
+
+def _source_weight(fact: OpsMemoryFact) -> float:
+    """显式/人工来源（source_run_id 为空）权高于抽取。"""
+    return SOURCE_WEIGHT_EXTRACTED if fact.source_run_id else SOURCE_WEIGHT_EXPLICIT
+
+
+def _time_decay(fact: OpsMemoryFact, now: datetime) -> float:
+    """指数半衰：decay = 0.5 ** (age_days / HALF_LIFE_DAYS)；未来时间戳按 0 天。"""
+    age_seconds = max(0.0, (now - fact.updated_at).total_seconds())
+    return 0.5 ** ((age_seconds / 86400.0) / HALF_LIFE_DAYS)
+
+
+def _fuse_recall(
+    deterministic: list[OpsMemoryFact],
+    vector_sims: dict[str, float],
+    vector_rows: dict[str, OpsMemoryFact],
+    *,
+    limit: int,
+    now: datetime,
+) -> list[OpsMemoryFact]:
+    """确定性 top-N ∪ 向量 top-M → 去重 → 相似×衰减×来源权重 → 截断。
+
+    截低分不随机：并列按 `updated_at desc, created_at desc, id desc` 兜底
+    （与 recall_active 同一确定性排序纪律）。
+    """
+    by_id: dict[str, OpsMemoryFact] = {}
+    for fact in deterministic:
+        by_id[str(fact.id)] = fact
+    for fact_id, fact in vector_rows.items():
+        by_id.setdefault(fact_id, fact)
+
+    def _sort_key(fact: OpsMemoryFact) -> tuple:
+        sim = vector_sims.get(str(fact.id), SIM_FLOOR)
+        score = sim * _time_decay(fact, now) * _source_weight(fact)
+        return (score, fact.updated_at, fact.created_at, str(fact.id))
+
+    fused = sorted(by_id.values(), key=_sort_key, reverse=True)
+    return fused[: max(0, limit)]
+
+
+async def _vector_top_m(
+    session: AsyncSession,
+    tenant_id: str,
+    user_id: str,
+    query_vector: list[float],
+    *,
+    m: int,
+    now: datetime,
+) -> tuple[dict[str, float], dict[str, OpsMemoryFact]]:
+    """向量 top-M：cosine 距离升序；返回 (id→相似度, id→ORM 行)。
+
+    相似度 = 1 - cosine_distance，截到 [0,1]。ORM 行补取时**再次**带
+    tenant/user/active/未过期谓词（双保险，不信任第一跳的 id 集）。
+    """
+    rows = await session.execute(
+        _VECTOR_RECALL_SQL,
+        {"tenant": tenant_id, "user": user_id, "qvec": json.dumps(query_vector), "m": max(0, m), "now": now},
+    )
+    sims: dict[str, float] = {}
+    ids: list[str] = []
+    for row in rows:
+        fact_id = str(row.id)
+        sims[fact_id] = min(1.0, max(0.0, 1.0 - float(row.dist)))
+        ids.append(fact_id)
+    if not ids:
+        return sims, {}
+    result = await session.execute(
+        select(OpsMemoryFact).where(
+            OpsMemoryFact.id.in_(ids),
+            OpsMemoryFact.tenant_id == tenant_id,
+            OpsMemoryFact.user_id == user_id,
+            OpsMemoryFact.status == STATUS_ACTIVE,
+            (OpsMemoryFact.expires_at.is_(None)) | (OpsMemoryFact.expires_at > now),
+        )
+    )
+    return sims, {str(f.id): f for f in result.scalars().all()}
+
+
+async def _recall_with_vector_in_session(
+    session: AsyncSession,
+    tenant_id: str,
+    user_id: str,
+    query: str,
+    *,
+    limit: int,
+    now: datetime,
+    embedder: Embedder | None,
+) -> list[OpsMemoryFact]:
+    deterministic = await recall_active(
+        tenant_id, user_id, limit=limit, now=now, session=session
+    )
+    try:
+        query_vector = await _embed_one(_resolve_embedder(embedder), query)
+        if query_vector is None:
+            raise RuntimeError("embedder unavailable")
+        # 向量 top-M 初值 = 召回预算 N（改动须同步 README）
+        sims, vector_rows = await _vector_top_m(
+            session, tenant_id, user_id, query_vector, m=limit, now=now
+        )
+    except Exception:
+        # 向量通路任何失败（embedder/列不存在/查询错误）→ 回退 P0 确定性召回
+        logger.warning(
+            "memory_vector_degraded: vector recall failed; fallback to deterministic",
+            exc_info=True,
+        )
+        update_current_span_metadata({"memory_vector_degraded": True})
+        return deterministic
+    return _fuse_recall(deterministic, sims, vector_rows, limit=limit, now=now)
+
+
+async def recall_with_vector(
+    tenant_id: str,
+    user_id: str,
+    query: str,
+    *,
+    limit: int = 8,
+    now: datetime | None = None,
+    session: AsyncSession | None = None,
+    embedder: Embedder | None = None,
+) -> list[OpsMemoryFact]:
+    """混合召回（V1）：确定性 top-N ∪ 向量 top-M → 融合排序 → 预算截断。
+
+    向量通路失败 → 回退 `recall_active` 确定性结果 + span/log
+    `memory_vector_degraded`，不拖垮请求；tenant 谓词同 P0 纪律。
+    """
+    now = now or now_utc()
+    if session is not None:
+        return await _recall_with_vector_in_session(
+            session, tenant_id, user_id, query, limit=limit, now=now, embedder=embedder
+        )
+    async with AsyncSessionLocal() as own:
+        return await _recall_with_vector_in_session(
+            own, tenant_id, user_id, query, limit=limit, now=now, embedder=embedder
+        )
