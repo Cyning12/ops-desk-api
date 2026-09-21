@@ -1,6 +1,6 @@
 # Task：L7 安全硬化 W1 · 输入结构隔离槽位机制（SLOT_REGISTRY + wrap_slot 强制包装 + assert_slots_declared 装配校验）· RAG 片段/工具回执/用户内容/memory 四面收口 · `SECURITY_INPUT_ISOLATION_ENABLED` 默认关三件套 + off 三态逐字节对拍 · 越权构造「下游零请求」双断言（security-input-isolation）
 
-> **状态**：`draft`（2026-09-22 · 10-task 落稿 · 待 HG-TASK-DRAFT / HG-AUDIT-R1 人签 · 人签前 30 拒开工）  
+> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
 > **类型**：feature（新增安全控制面（输入结构隔离槽位机制）· 开关默认关、off 态逐字节对拍 · **无 alembic 义务**（零新表零列）· **有图谱义务按实判**（新增跨模块依赖边 lc_evidence_chain → prompts（备注级）+ lg_rag 行备注 · 人签新行留 00 代录位 · 不新增一级模块/路由/SSE 事件 · 偏离回炉条款见闸表与 graph_delta_note））  
 > **上游 SPEC**：`docs/spec/security-hardening/SPEC-security-hardening_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · commit c4d42df · 四波全景签收 · 本波只做 W1）  
 > **分支**：`task/security-hardening`（**禁止 master/main 直改 · 禁止 push**）  
@@ -35,8 +35,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 00 验收 10-task 稿后人签/授权代录（10 帽不签） |
-| HG-AUDIT-R1 | pending | **30** | 20-task-audit R1 书面审后人签/授权代录；未签 → **30 拒开工** |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | 2026-09-22 · 00 验收 10-task 稿通过（维护者本窗授权 00 签收过程文档 · 原话留痕 SPEC 状态行） |
+| HG-AUDIT-R1 | approved | **30** | 2026-09-22 · 20-task-audit R1 PASS 零阻塞零退回（`docs/harness/reviews/task_security_input_isolation_audit_R1_20260922.md` · B1 抽 5 亲跑 · 零请求双断言可测性成立）· 维护者本窗授权 00 代录签收 |
 | HG-GRAPH-MODULES | approved | **30** | 2026-09-22 本帽**真读** `docs/_tech_graph/l1/01_modules.md`：模块表已建置（bootstrap 签 2026-07-16 · 签录链完整至 :91 session-summary-fallback 行）；`lg_rag` 行 :27（glob `app/ops/lg_rag/**` · C2 裁定 `app/ops/prompts/**` 归属本行）· `lc_evidence_chain` 行 :24（依赖出边 → rag, llm, db · **无 prompts**）· `memory` 行 :28（依赖出边已含 `prompts` 备注级 · prompt-asset-roadmap-p1 先例）均在表。SPEC §2 D5 判**有图谱义务按实判**：新增跨模块依赖边 `lc_evidence_chain` → `prompts`（备注级 · memory 行先例形态）+ `lg_rag` 行备注（continuity/multi 接线 prompts 内部路径）+ 人签记录**新行留 00 代录位**（随 30 交付落盘 · llm-layer-hardening「00 代录 · 30 交付核验后」先例）——义务钉在 D5 验收，**不新增一级模块/路由/SSE 事件**故不阻塞 30 开工形态预判。**若 30 形态偏离 → 回炉补闸**（见 graph_delta_note，不得沿用本裁定） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 物理分层试点改码 | 本 task 不涉物理分层试点 |
 
