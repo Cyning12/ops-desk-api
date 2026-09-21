@@ -1,6 +1,6 @@
 # SPEC：L0 多副本验证（单实例 → 多实例）（v1）
 
-> **状态**：`draft-complete`（HG-SPEC-SIGNOFF=**pending** 待签 · 10-spec 已补全 · 人签前不出 task / 不改码）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved** · 2026-09-22 · 维护者授权 00 本窗代录签收 · 原话「此spec完成后继续把完成后续spec，一个个进行，每次PR到main通过CI后自动merge」承前令「授权00签收所有过程文档」）
 > **track**：`verify`（验证/实证类 · **预期零生产码改动**——产物是验证方案 + 实测证据 + 进程内状态边界清单；**无 alembic 义务** · **图谱义务预期无**（按实判见 §2 D5）：零新路由/零新表/零新事件；若实扫发现阻断性 bug → 另开 fix task，不在本 SPEC 顺手修）
 > **上游**：`../ops-desk-workspace/docs/08-interview/07_agent-memory-prompt-module-landscape_v1_zh.md`（手册 L0 行 :369/:506 · §3.4 第三类「成熟度标志」）
 > **格式基准**：`docs/spec/memory-compliance-delete/SPEC-memory-compliance-delete_v1.md`（signed · 机读纪律同款）
@@ -25,7 +25,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | pending | 落稿时待签 · 维护者审后签 approved |
+| **HG-SPEC-SIGNOFF** | approved | 2026-09-22 · 维护者授权 00 本窗代录签收（原话留痕头部状态行） |
 | **HG-GRAPH-MODULES** | pending（预期无义务） | 预期零图谱改动；若 30 出现新路由/新表 → 本闸转为有义务，30 前须 approved |
 
 ---
