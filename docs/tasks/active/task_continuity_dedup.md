@@ -258,9 +258,18 @@ SPEC §5 失败面全收并翻四列：隐藏动态引用（专扫+全量 pytest
 
 ---
 
-### 自检结论（40 核验 · 待填）
+### 自检结论（40 核验 · 2026-09-22 回填）
 
-> 40 核验后回填：验收逐条计数 · 变异检验三条复做记录 · 基线对照 · B1 逐条处置核验 · WARN 清单。
+**总判定：PASS**（17 条口径全过 · 16 个勾选项逐条亲核 16/16 · WARN×1 不阻塞）。30 交付 commit `ecaec39` 自称逐项属实。
+
+- **验收逐条计数**：人工闸1（HG-AUDIT-R1=approved 闸表核对）· D1×4（删文件+__init__ 亲读 / 真源零 diff 亲跑 wc=0 / grep 三 pattern exit=1×3 / app diff 零 `+` 行）· D2×3（两用例删+sse_replay 区块与基线逐字 diff 空 / 对账接收方 :65-73·:76-78·:81-85 实存 / lg_rag 测试零 diff 15 绿含方向闸）· 行为零变化×2（1176 collected 差==2 · app diff 白名单两处）· 变异×3 · 工程×3
+- **变异检验复做记录**：③亲复做——摘真源 `compress_window` try/except → `test_compress_window_failure_truncates_tail` 真挂（AttributeError 传播 · 1 failed/14 passed）→ `git checkout` 还原后 15 绿且真源 vs HEAD/origin/master 双零 diff；①②采信 30 真跑留痕（ImportError / ModuleNotFoundError 具体报错在 30 invoke）
+- **基线对照**：worktree detached @ `origin/master` c9739e7（补同 .env）真跑 **1178 collected · 1173p/4f/1s**；任务分支 **1176 collected · 1172p/3f/1s**；3 红（chat_ws×2 + capability proxy）两分支同集合 = 基线环境红；基线第 4 红 `test_reconcile_mismatch_marks_failed` 为随机序 flaky（事件循环关闭类 · 任务分支单跑 1 passed）与本波无关
+- **B1 处置核验**：抽查 6 处实核属实——#1 import 已删 · #2 sse_replay 逐字保留 · #3 对账接收方实存 · #8 方向闸原样 · #15 `__init__.py` re-export 已删 · #16 禁令注释三处+断言原样（`app/ops/prompts/packs.py:9` 实路径）
+- **ruff**：57 == 基线 57 · concise 明细 diff 为空（零新增零减少）
+- **graph-compile**：exit 0 · `shared/graph.json` 仅 generated_at 漂移已 `git checkout` 还原
+- **WARN 清单**：① ruff 验收字面「绿」不成立（57=基线存量 · 零新增口径判过 · 承 SPEC residual ②）；② 基线 flaky 第 4 红留痕；③ 措辞偏差两处（sse_replay 实 2 用例 · packs.py 锚点省 `app/ops/` 前缀）均不影响实质
+- 证据全文：`docs/harness/invokes/by-task/continuity-dedup/invoke_20260922_40_verify_continuity_dedup.md`
 
 ---
 
@@ -269,3 +278,4 @@ SPEC §5 失败面全收并翻四列：隐藏动态引用（专扫+全量 pytest
 | 日期 | 说明 |
 |------|------|
 | 2026-09-22 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 17 条逐块映射 SPEC §6 实质零差异 · B1 旧测影响面 17 处命中实扫落盘（口径 `compress_window|continuity|ops\.session` · 8+9 · 逐条处置）· pytest 基线 1178 collected 真跑 · SPEC 措辞偏差留痕（sse_replay 实 2 用例非 4 · 范围零影响）· HG-TASK-DRAFT=pending · HG-AUDIT-R1=pending → 30 拒开工 · HG-GRAPH-MODULES=approved（真读 `01_modules.md` · 零图谱变更 + 回炉补闸条款）· HG-PILOT-OPSDESK-GLAYER=n/a |
+| 2026-09-22 | 40 核验回填自检结论：**PASS**（17 条口径全过 · 真源零 diff / grep 零残留 / app diff 白名单亲核 · pytest 1176 vs 基线 1178 差==2 且 3 红同集合 · ruff 57==57 明细 diff 空 · graph-compile 绿漂移已还原 · 变异③亲复做闭环 · B1 抽查 6 处属实 · WARN×3 留痕不阻塞）· 证据 invoke_20260922_40_verify_continuity_dedup.md |
