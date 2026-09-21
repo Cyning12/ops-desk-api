@@ -30,6 +30,7 @@ from langchain_core.messages import AIMessage
 from pydantic import BaseModel, Field
 
 from app.db.models import OpsUser
+from app.llm.usage import reset_run_context, set_run_context
 from app.ops.deps import CurrentUser
 from app.ops.lg_rag import (
     ainvoke_basic_agent,
@@ -230,6 +231,8 @@ async def invoke_lg_rag(
     history_turns = await _prepare_thread(thread_id, str(user.id))
     run_id = uuid.uuid4().hex
     token = set_current_tenant(tenant_id)
+    # D4：usage 落表 run 上下文（lg_rag 面 · hex run_id；与 chat UUID 口径区分）
+    llm_ctx_token = set_run_context(run_id=run_id, surface="lg_rag")
     try:
         try:
             state = await _dispatch(
@@ -279,6 +282,7 @@ async def invoke_lg_rag(
             }
         )
     finally:
+        reset_run_context(llm_ctx_token)
         reset_current_tenant(token)
 
 
@@ -297,6 +301,8 @@ async def stream_lg_rag(
 
     async def event_gen() -> AsyncIterator[str]:
         token = set_current_tenant(tenant_id)
+        # D4：usage 落表 run 上下文（lg_rag 面 · hex run_id）
+        llm_ctx_token = set_run_context(run_id=run_id, surface="lg_rag")
         try:
             async for chunk in iter_lg_rag_sse(
                 query=body.query,
@@ -308,6 +314,7 @@ async def stream_lg_rag(
             ):
                 yield chunk
         finally:
+            reset_run_context(llm_ctx_token)
             reset_current_tenant(token)
 
     return StreamingResponse(

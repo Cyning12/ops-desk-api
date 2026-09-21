@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import OpsRun, OpsRunEvent, OpsSessionChat
 from app.db.session import AsyncSessionLocal
+from app.llm.usage import reset_run_context, set_run_context
 from app.ops.chat.service import run_chat_stream
 from app.ops.chat.state import ChatState
 
@@ -187,6 +188,9 @@ class ChatEventStreamer:
 
     async def events(self) -> AsyncIterator[dict]:
         """Yield run events as dicts, flushing them to the DB along the way."""
+        # D4：usage 落表 run 上下文入口注入（chat 面 · ops_runs.id UUID 口径）；
+        # 图内节点另按 state 注入 task_type（answer/grader）
+        llm_ctx_token = set_run_context(run_id=self.run_id, surface="chat")
         seq = 0
         started_at = time.perf_counter()
         all_events: list[dict] = []
@@ -304,6 +308,7 @@ class ChatEventStreamer:
                 {"stage": "chat", "message": str(e), "retryable": False},
             )
         finally:
+            reset_run_context(llm_ctx_token)
             # Persistence must survive outer task cancellation (e.g. client
             # disconnected mid-run): run cleanup as a shielded task and keep
             # re-awaiting it if we get cancelled while waiting.

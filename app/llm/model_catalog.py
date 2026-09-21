@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -103,3 +106,68 @@ def get_fallback_chain(provider: str) -> list[ModelInfo]:
     if provider == "bailian":
         return BAILIAN_FALLBACK_CHAIN
     return []
+
+
+# --- 任务类型分层路由（llm-layer-hardening D3） ---
+#
+# 解析序（钉死）：显式 model= > env 档覆盖 OPS_LLM_TIER_<TASK>_MODEL > 档默认
+# > settings.ops_llm_model（由调用方兜底，本函数返回 None 表示「本层无意见，
+# 沿用现网默认」）。非法档（空/不在已知目录）/未知 task → 回退默认 + warning，
+# 不炸请求。grader 档并入既有 RAG_GRADER_MODEL 覆盖链（不破坏现网配置）。
+
+TASK_TYPES: tuple[str, ...] = ("answer", "grader", "extract", "structured")
+
+#: 档默认表：None = 不落档（回退 settings.ops_llm_model / provider 默认）。
+#: grader 档默认 = 现网 RAG_GRADER_MODEL 未设时的取值（契约 4b 便宜模型）。
+TASK_TIER_MODELS: dict[str, str | None] = {
+    "answer": None,
+    "grader": "Qwen/Qwen3.6-27B",
+    "extract": None,
+    "structured": None,
+}
+
+
+def _known_model_ids() -> set[str]:
+    """已知模型目录（siliconflow 解析列表 ∪ bailian 链）；env 档校验用。
+
+    目录可经 SILICONFLOW_MODELS 扩展——自定义模型先入目录再入档。
+    """
+    ids = {m.id for m in resolve_siliconflow_models()}
+    ids |= {m.id for m in BAILIAN_FALLBACK_CHAIN}
+    return ids
+
+
+def resolve_task_model(
+    task_type: str, explicit_model: str | None = None
+) -> tuple[str | None, str]:
+    """任务类型 → 模型档解析。返回 (model 或 None, source)。
+
+    None 表示分层路由**无意见**：调用方沿用现网默认解析（逐字节一致）。
+    source ∈ explicit / env_tier / rag_grader_model / tier_default / default /
+    unknown_task（观测：写 span metadata 与 usage 行 task_type 的依据）。
+    """
+    if explicit_model and explicit_model.strip():
+        return explicit_model.strip(), "explicit"
+    task = (task_type or "").strip().lower()
+    if task not in TASK_TIER_MODELS:
+        _logger.warning(
+            "unknown llm task_type=%r; fallback to default model resolution", task_type
+        )
+        return None, "unknown_task"
+
+    env_name = f"OPS_LLM_TIER_{task.upper()}_MODEL"
+    raw = (os.getenv(env_name) or "").strip()
+    if raw:
+        if raw in _known_model_ids():
+            return raw, "env_tier"
+        _logger.warning("%s=%r 不在已知模型目录；回退档默认", env_name, raw)
+    if task == "grader":
+        # 兼容现网：RAG_GRADER_MODEL 并入 grader 档覆盖链（直读不校验，
+        # 与改前 rag_nodes.GRADER_MODEL 语义一致）
+        legacy = (os.getenv("RAG_GRADER_MODEL") or "").strip()
+        if legacy:
+            return legacy, "rag_grader_model"
+    tier = TASK_TIER_MODELS[task]
+    if tier:
+        return tier, "tier_default"
+    return None, "default"
