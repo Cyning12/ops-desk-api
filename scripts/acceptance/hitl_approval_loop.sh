@@ -67,7 +67,25 @@ PYEOF
   return 1
 }
 
+require_free_port() {
+  # ⚠️ 起服务**之前**必须确认端口空着。否则 uvicorn/桩服务 bind 失败很快退出，
+  # 而就绪探针是"内容型"的 —— 一个**残留的旧服务**同样满足"内容对得上"，
+  # 于是整轮脚本都在跟别人的服务说话，报出来的失败跟本次改动毫无关系。
+  # （实测踩到过：内存模式却拿到 409、`持久化=memory` 断言失败，根因就是 8123 上
+  #  还留着上一次跑漏掉的 API。）
+  local p="$1" what="$2"
+  if lsof -nP -iTCP:"$p" -sTCP:LISTEN >/dev/null 2>&1; then
+    echo "端口 ${p} 已被占用，${what}起不来；残留进程会骗过就绪探针。占用者："
+    lsof -nP -iTCP:"$p" -sTCP:LISTEN | tail -n +2
+    echo "先清掉它，或换端口（AGENT_PORT / OA_PORT）再跑。"
+    return 1
+  fi
+  return 0
+}
+
 cd "$ROOT" || exit 1
+require_free_port "$AGENT_PORT" "代理侧 API" || exit 1
+require_free_port "$OA_PORT" "mock-oa" || exit 1
 
 # HITL_RESUME_PG=1 ⇒ 开 PG checkpointer，验**真进程里的 PG 恢复路径**
 # （默认关：内存 saver 下恢复必然失败，那条断言验的是"不许假装成功"）
