@@ -230,7 +230,9 @@ async def test_mutation_wrong_fact_vector_recalled_then_revoke(
     assert [f.key for f in deterministic] == ["project.favorite_color"]  # 前提：确定性漏掉
 
     # 第一步：复述 query 经向量通路**真召回**错误事实（相似 1.0 × 抽取权重 0.8
-    # > SIM_FLOOR 0.5 × 显式权重 1.0，排第一）
+    # > SIM_FLOOR 0.3 × 显式权重 1.0，排第一）
+    # 注记：SIM_FLOOR 0.5→0.3 为 task memory-fusion-weight-tuning 调参定稿（2026-09-21）；
+    # 断言语义不变（0.8 > 0.3 不等式方向同旧值），仅注释同步新默认值。
     fused = await recall_with_vector(_TENANT, user, "部署到哪里？", limit=1, embedder=fake)
     assert [f.key for f in fused] == ["project.deploy_target"]
     assert fused[0].value == "wrong-prod-host"
