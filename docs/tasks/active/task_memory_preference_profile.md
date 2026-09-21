@@ -287,9 +287,9 @@ SPEC `5 十一条失败面全收并翻四列：三静默错（幻觉偏好注入
 
 ---
 
-### 自检结论（40 核验 · 待回填）
+### 自检结论（40 核验 · 2026-09-22 回填）
 
-（待 40 核验后回填 · 当前 10-task 落稿态 · HG-AUDIT-R1 pending → 30 拒开工）
+**PASS · 验收 27/27 过**（40 invoke：`docs/harness/invokes/by-task/memory-preference-profile/invoke_20260922_40_verify_memory_preference_profile.md`）。真跑口径：全量 pytest 分支 **1235 passed / 3 failed / 1 skipped（collected 1239）**，3 红与基线 worktree @ origin/master d253c5e（+同 .env · 1206 passed / 同款 3 红 / collected 1210）**逐名一致**=环境性非本波引入；新增守护 **+29 · 零既有用例删除**（nodeid 级 diff 核验 · B1 #1 单测改 4 参数化属声明内改编）；ruff 57=基线 57 零新增；alembic 往返 dev 库亲跑（upgrade → 脏 downgrade **显式炸 CheckViolationError 停原地** → 清行 downgrade 旧 CHECK 拒 preference 收 fact → re-upgrade 回 head · 数据零触碰）；graph-compile 绿 · graph.json 漂移已还原；fact-only 渲染逐字节对拍 40 独立重做一致（7 组输入分支 vs master diff 为空）；变异检验 ③ 40 亲复做（构造点传 preference → **恰 2 挂** → 还原 16 绿 → extract.py diff=0）· ② 三态亲跑绿；B1 抽 5 条实核属实；图谱 ratify f90d74d 真读（HG-GRAPH-MODULES 行 approved · memory 行备注在册）。问题清单（文档措辞级不阻塞）：P-1 30 invoke「collected 1210→1235（+25）」数字不准，实为 **1210→1239（+29）**（1235 是 passed 数 · CLOSE 按 40 实测入账）。
 
 ---
 
@@ -297,4 +297,5 @@ SPEC `5 十一条失败面全收并翻四列：三静默错（幻觉偏好注入
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-22 | 40 核验 **PASS**（27/27）：全量 pytest 1235 passed/3 failed（基线同款 3 红逐名一致 · collected 1210→1239 **+29** 零删除 nodeid 级核验）· ruff 57=基线 · alembic 往返亲跑（脏 downgrade 显式炸停原地 · 终态回 head 数据零触碰）· graph-compile 绿 · fact-only 逐字节 40 独立对拍一致 · 变异 ③ 亲复做（恰 2 挂→还原绿）· B1 抽 5 实核 · 图谱 ratify f90d74d 真读；问题清单 P-1（30 invoke collected 数字措辞偏差 · 不阻塞）· 详见 40 invoke |
 | 2026-09-22 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 **27 条**逐块映射 SPEC `6 实质零差异（人工闸 1 / D1×5 / D2×6 / D3×3 / D4×3 / D5×3 / 变异检验×3 / 工程×3）· B1 旧测影响面 **13 行**实扫落盘（口径：tests grep 5 文件命中 · kind 直引仅 3 处 · 用例计数 9 文件 · pytest 基线 **1210 collected** 真跑 · `alembic heads` = 20260921_llm_usage 真跑）· SPEC `1 锚点复核零偏差 · HG-TASK-DRAFT=pending · HG-AUDIT-R1=pending → 30 拒开工 · HG-GRAPH-MODULES=approved（真读 `01_modules.md` · 零图谱变更 + memory 行备注级更新预期 + 偏离回炉补闸条款）· HG-PILOT-OPSDESK-GLAYER=n/a |
