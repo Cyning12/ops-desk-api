@@ -31,6 +31,9 @@
 | `MEMORY_FACTS_MAX_VALUE_CHARS` | `2000` | 回退 `2000` + warning | 闸的 value 序列化长度上限 |
 | `MEMORY_FACTS_VECTOR_RECALL_ENABLED` | `false` | 回退 `false` + warning | P1 向量召回开关；关闭时召回路径与 P0 逐字节一致 |
 | `MEMORY_FACTS_EXTRACT_ENABLED` | `false` | 回退 `false` + warning | P1 LLM 离线候选抽取开关；关闭时零 LLM 调用 |
+| `MEMORY_BACKFILL_BATCH_SIZE` | `32` | 回退 `32` + warning | 回填 CLI 页大小（对齐 Embedder 批形态；见「存量行 embedding 回填」） |
+| `MEMORY_BACKFILL_SLEEP_MS` | `200` | 回退 `200` + warning | 回填批间限速（ms） |
+| `MEMORY_BACKFILL_CHECKPOINT` | 空（禁用） | 指向目录回退禁用 + warning；文件损坏从头重扫 + warning | 可选 checkpoint 文件路径，**仅加速**，不作正确性依据 |
 
 ## 注入格式与位置
 
@@ -106,6 +109,36 @@ invoke / SSE run 完成（done 收口后）
 - LLM 失败 / 非法 JSON / 超时 → **零写入** + log；每 run 至多 1 次抽取调用。
 - 抽取写入入口：`app/ops/lg_rag/router.py`（invoke）与 `app/ops/lg_rag/sse_stream.py`（SSE done 后），两入口均只点火不 await；SSE 零新事件类型。
 
+## 存量行 embedding 回填（memory-embedding-backfill）
+
+P0 时期写入的存量 active 行 `embedding IS NULL`，永远进不了向量 top-M（`_VECTOR_RECALL_SQL` 带
+`embedding IS NOT NULL`）。`scripts/memory_embedding_backfill.py` 是一次性运维回填 CLI：
+
+```bash
+python scripts/memory_embedding_backfill.py --dry-run   # 只扫描计数 + 前置校验，零嵌入零写库
+python scripts/memory_embedding_backfill.py             # 实跑
+```
+
+- **口径同源**：嵌入文本 = `service.py::_fact_embed_text(key, value)` 原样复用，与在线写入
+  （`_maybe_embed_fact`）同一序列化，向量空间一致；禁止另造口径。
+- **幂等续跑**：扫描谓词 `embedding IS NULL AND status='active'` + id ASC keyset 分页，
+  已嵌行不再命中 → 中断/双跑/重跑零重复嵌入；checkpoint 文件仅加速（损坏从头重扫）。
+- **回写再核**：`UPDATE ... WHERE id AND status='active'`，rowcount=0 记 skipped
+  （回填期间被 supersede/revoke/expire 的行不误嵌）。
+- **前置校验**（exit 2 零写入）：`embedder.name` 必须等于 `RAG_EMBED_MODEL`，试嵌维度必须 ==
+  `MEMORY_FACT_EMBEDDING_DIM`(1024)；`SILICONFLOW_API_KEY` 缺失 / embedding 列不存在同 exit 2
+  （干跑/零候选时零嵌入调用，跳过试嵌）。
+- **重试纪律**：回填层零行级重试（`ApiEmbedder` 内置 3 次指数退避已足，叠加 = 双重放大）；
+  页失败整页记 failed；连续 3 页全败判下游不可用提前终止（status=failed，exit 1）。
+- **报告**：`reports/memory_embedding_backfill/backfill_<UTC 时间戳>.yaml`（对齐 qdrant_migrate
+  形态）：status（pass/partial/failed）· scanned/embedded/skipped/failed · failed_ids（截断 1000）·
+  embedder_name · batch_size/sleep_ms · dry_run · remaining_null_active（实跑后重扫对账，
+  剩余 != failed → status=failed，不伪装成功）· elapsed_s · recorded_at；计数守恒
+  `embedded+skipped+failed==scanned`；只记 id/计数/模型名，**不存** fact 明文 value。
+- **退出码**：0 = pass；1 = partial/failed；2 = 前置校验失败。
+- **中断**：SIGINT/SIGTERM 页边界响应，当前页完成后落 `status: partial` 报告再退出。
+- 回填**不挂** `MEMORY_FACTS_VECTOR_RECALL_ENABLED`（该开关管在线路径；CLI 本身即开关）。
+
 ## 非范围（P0/P1）
 
-画像 / preference；既有行 embedding 回填批处理（另 task）；热路径/流中抽取；对外 HTTP 写端点；对话摘要；物理删除；跨租户共享。
+画像 / preference；热路径/流中抽取；对外 HTTP 写端点；对话摘要；物理删除；跨租户共享。
