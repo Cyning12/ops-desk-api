@@ -4,6 +4,7 @@
 
 | task | 说明 |
 |---|---|
+| [`task_memory_compliance_delete.md`](./task_memory_compliance_delete.md) | 记忆合规物理删除权（purge_by_user 全 status 整行 DELETE + 审计记动作不记内容 · POST /admin/memory/purge AdminSyncAuth + dry_run 默认 true + expected_count 双闸门缺→400/不等→409 零删除 · 两通路零命中+表行零残留+越域零影响断言化 + 变异检验三条）· 2026-09-22 10-task 落稿 · HG-TASK-DRAFT / HG-AUDIT-R1 落稿时待签（blocks 30） |
 | （无进行中 task） | 2026-09-22：`task_security_input_isolation`（PR #161 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （无其余进行中 task） | 2026-09-22：`task_session_summary_fallback`（PR #159 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （无其余进行中 task） | 2026-09-22：`task_memory_preference_profile`（PR #157 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
