@@ -46,6 +46,7 @@ from app.ops.lg_rag.thread_store import (
     persist_thread_turns,
     resolve_thread_for_user,
 )
+from app.ops.memory.extract import schedule_memory_extraction
 from app.ops.tenant_context import (
     TENANT_A,
     TENANT_HEADER,
@@ -252,12 +253,21 @@ async def invoke_lg_rag(
                     "error": {"code": _FAIL_CODE, "message": _FAIL_MESSAGE},
                 },
             )
+        answer = _extract_answer(state.get("messages"))
         try:
-            await persist_thread_turns(
-                thread_id, str(user.id), body.query, _extract_answer(state.get("messages"))
-            )
+            await persist_thread_turns(thread_id, str(user.id), body.query, answer)
         except Exception:
             logger.exception("lg-rag invoke persist failed thread_id=%s", thread_id)
+        # memory-facts-p1：run 完成后离线抽取（默认关；create_task 点火不 await，
+        # 热路径零抽取调用零额外延迟；对齐 T5.1 后台 persist 模式）
+        schedule_memory_extraction(
+            tenant_id=tenant_id,
+            user_id=str(user.id),
+            run_id=run_id,
+            source_turn=len(history_turns) + 1,
+            query=body.query,
+            answer=answer,
+        )
         if tracing_enabled():
             flush_traces()
         return JSONResponse(

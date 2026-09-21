@@ -217,11 +217,21 @@ async def assemble_graph_messages_with_memory(
         # 延迟 import：continuity 保持纯函数可独立加载；memory 依赖 db
         from app.ops.memory import service as memory_service
 
-        facts = await memory_service.recall_active(
-            tenant_id.strip(),
-            user_id.strip(),
-            limit=memory_facts_max_items(),
-        )
+        if memory_service.memory_facts_vector_recall_enabled():
+            # P1 混合召回（默认关）：确定性 top-N ∪ 向量 top-M → 融合排序；
+            # 向量通路失败内部回退确定性 + memory_vector_degraded
+            facts = await memory_service.recall_with_vector(
+                tenant_id.strip(),
+                user_id.strip(),
+                query,
+                limit=memory_facts_max_items(),
+            )
+        else:
+            facts = await memory_service.recall_active(
+                tenant_id.strip(),
+                user_id.strip(),
+                limit=memory_facts_max_items(),
+            )
     except Exception:
         logger.exception("memory facts recall failed; degrade to no injection")
         update_current_span_metadata({"memory_degraded": True})

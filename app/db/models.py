@@ -1,6 +1,7 @@
 """SQLAlchemy ORM models for Ops Desk."""
 from datetime import datetime
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -17,6 +18,9 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+#: 记忆事实 embedding 维度（bge-m3@1024，与 app/ops/rag/ingest.py EMBEDDING_DIM 同源）
+MEMORY_FACT_EMBEDDING_DIM = 1024
 
 
 def now_utc() -> datetime:
@@ -508,5 +512,12 @@ class OpsMemoryFact(Base):
     status: Mapped[str] = mapped_column(String, nullable=False, default="active")
     #: TTL；null = 不过期。查询路径自带过滤，不依赖 sweep 存活（双保险）
     expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    #: P1 向量召回（nullable；既有行不回填 = 只走确定性通路即正确）。
+    #: deferred=True：普通 SELECT 不带本列——migration 未跑时 P0 确定性
+    #: 通路 SQL 不含它（对齐 failure path「向量列不存在 → 回退确定性」）；
+    #: 相似度由向量 SQL 计算，不在 Python 侧触发 deferred 懒加载。
+    embedding: Mapped[list[float] | None] = mapped_column(
+        Vector(MEMORY_FACT_EMBEDDING_DIM), nullable=True, deferred=True
+    )
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
     updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)

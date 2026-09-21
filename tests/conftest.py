@@ -163,6 +163,15 @@ async def _create_test_schema():
             await conn.execute(
                 text("ALTER TABLE ops_repos ALTER COLUMN github_repo_id TYPE BIGINT")
             )
+            # memory-facts-p1：存量 opsdesk_test 的 ops_memory_facts 无 embedding 列，
+            # create_all 不管 ALTER；ORM INSERT 会带该列（deferred 只影响 SELECT），
+            # 缺列会让 P0 写入路径在测试库炸掉
+            await conn.execute(
+                text(
+                    "ALTER TABLE ops_memory_facts "
+                    "ADD COLUMN IF NOT EXISTS embedding vector(1024)"
+                )
+            )
         await engine.dispose()
     yield
 

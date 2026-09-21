@@ -9,6 +9,7 @@
 
 | slug | 路径 | 状态 | 一句话 |
 |------|------|------|--------|
+| `memory-facts-p1` | [`memory-facts-p1/`](./memory-facts-p1/) | **signed · 已实施**（2026-09-21 · task/memory-facts-p1 · PR 待开） | 事实型记忆 P1（向量语义召回 + LLM 离线候选抽取） |
 | `memory-facts-p0` | [`memory-facts-p0/`](./memory-facts-p0/) | **signed · 已实施**（2026-09-21 · task/memory-facts-p0 · PR 待开） | 事实型记忆 P0（ops_memory_facts + 写入闸 + 确定性召回注入） |
 | `inform-graph-backfill` | [`inform-graph-backfill/`](./inform-graph-backfill/) | draft/执行中 | Inform 图谱补齐 |
 | `agent-infra` | [`agent-infra/`](./agent-infra/) | active | Gateway stable + **Host flesh 规划**（`02_agent_host_plan_v0`） |
@@ -39,3 +40,5 @@
 | 2026-09-11 | 历史债 8 条根级裸 SPEC 全部迁入专属夹（C-1/C-2/C-3 裁定）；L3 公约行旧名 → `spec-wave`；见 `task_specwave_cleanup_2_1_3` |
 | 2026-09-21 | 新增 `memory-facts-p0` 专属夹（10-spec 初稿 · 待 HG-SPEC-SIGNOFF） |
 | 2026-09-21 | `memory-facts-p0` signed → 已实施（task 闭环 · 40 PASS · 归档 done） |
+| 2026-09-21 | 新增 `memory-facts-p1` 专属夹（10-spec 初稿 · 待 HG-SPEC-SIGNOFF） |
+| 2026-09-21 | `memory-facts-p1` signed → 已实施（task 闭环 · 40 PASS · 归档 done） |
