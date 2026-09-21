@@ -81,26 +81,6 @@ _TYPE_TO_NODE = {
 # 再 ∩ state.allowed_capability_ids（S1）。
 _SUPERVISOR_CAP_FILTER = baseline_filter(node_role="supervisor")
 
-_EXTRACT_SYSTEM = (
-    "你是信息抽取器。从用户给出的文本中抽取结构化信息，只输出 JSON：\n"
-    '{"dates": ["..."], "versions": ["..."], "people": ["..."]}\n'
-    "- dates：出现的日期/时间点（原文表述）；\n"
-    "- versions：出现的版本号（如 v1.2.3、2.0）；\n"
-    "- people：出现的人名/负责人。\n"
-    "没有的类别给空数组。只输出一个 JSON 对象，不要输出其他文字。"
-)
-
-_AGGREGATOR_SYSTEM = (
-    "你是 Ops Desk 运维知识库助手的答案综合器（Aggregator）。"
-    "用户提出了一个复合问题，各子任务的执行结果以 JSON 形式给出"
-    "（含 type/input/output 或 error）。请综合全部子任务结果，"
-    "输出结构化 markdown 答案：\n"
-    "1. 按子任务分节，每节标注来源"
-    "（rag 检索 / 信息抽取 / 工具查询，失败子任务如实说明）；\n"
-    "2. 末尾给一节「综合结论」，串联各子任务结果回答原始问题。\n"
-    "不要编造子任务结果中没有的事实。"
-)
-
 # Mock / lookup 已迁入 Capability Gateway（defaults + lookups）；
 # tool_exec_node 主路径 await ainvoke（P-13，禁止在 async 节点同步打 PG）。
 
@@ -1038,7 +1018,7 @@ async def info_extract_node(state: LgRagState) -> dict:
             provider = get_llm_provider(_ROUTER_PROVIDER)
             raw = await provider.complete(
                 [
-                    LlmMessage(role="system", content=_EXTRACT_SYSTEM),
+                    LlmMessage(role="system", content=render("lg_rag.extract.system")),
                     LlmMessage(role="user", content=result["input"]),
                 ],
                 model=_ROUTER_MODEL,
@@ -1509,7 +1489,7 @@ async def aggregator_node(state: LgRagState) -> dict:
         text = await complete_answer_streaming(
             provider,
             [
-                LlmMessage(role="system", content=_AGGREGATOR_SYSTEM),
+                LlmMessage(role="system", content=render("lg_rag.aggregator.system")),
                 LlmMessage(
                     role="user",
                     content=f"原始问题：{query}\n子任务结果：{payload}",
