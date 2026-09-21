@@ -4,7 +4,8 @@
 
 | task | 说明 |
 |---|---|
-| （无进行中 task） | 2026-09-22：`task_prompt_asset_roadmap_p1`（PR #155 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
+| [`task_memory_preference_profile.md`](task_memory_preference_profile.md) | 2026-09-22 10-task 落稿：画像记忆 kind=preference 首期显式-only（闸放开+双向 key 域绑定 · 分节注入单 SystemMessage 双节 · supersede 谓词+kind + revoke_by_key · 幻觉偏好红线金样+三态变异检验 · alembic CHECK 放宽可逆往返）· SPEC signed（4a2f4d9）· HG-TASK-DRAFT/HG-AUDIT-R1=pending → 30 拒开工 |
+| （其余无进行中 task） | 2026-09-22：`task_prompt_asset_roadmap_p1`（PR #155 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （无其余进行中 task） | 2026-09-22：`task_continuity_dedup`（PR #153 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （其余） | 2026-09-21：`task_memory_embedding_backfill`（PR #151 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 
