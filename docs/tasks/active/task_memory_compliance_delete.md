@@ -283,6 +283,8 @@ SPEC §5 十条失败面全收并翻四列：两不可逆错（误删 / 越 tena
 
 本稿：范围/非范围/验收/failure_paths 逐块映射 SPEC（§2→范围 · §3→非范围 · §5→failure_paths+过程三 · §6→验收 22 条）；钉死契约自 SPEC §2/§4 锁死不重开辩论；B1 实扫落盘 11 行处置三态齐全；闸表四行（HG-TASK-DRAFT 落稿时待签 · HG-AUDIT-R1 落稿时待签 blocks 30 · HG-GRAPH-MODULES 模块表已建置 approved+新签义务 · HG-PILOT-OPSDESK-GLAYER n/a）；R0–R5 全轮无 early_stop；可交 20-task-audit。
 
+**40 核验结论（2026-09-22 · PASS 22/22）**：全量 pytest 1345 passed/3 failed/1 skipped（collected 1349=1333+16 真跑复核；3 红经 git worktree @ origin/master 10d72e7 + 同 .env 实证为基线环境性：capability proxy urllib + chat_ws×2）；谓词防线读码成立（`_purge_predicate` 含且仅含 tenant+user · count/DELETE 共用同一谓词对象 → 干跑/实删同口径结构性保证）；双闸门三态亲跑（400 零删除 / 409 零删除 detail.current_count / 200 deleted==expected · 重放→409）；审计 caplog 断言记动作不记内容亲核（字段含 tenant/user/dry_run/affected · 无 key/value 参数位）；AdminSyncAuth 挂载逐字对齐 admin/sync.py:32；变异检验①40 亲复（去 tenant 谓词 → 2 failed → 还原 16/16 绿 · 工作树净 · ②③采信 30 留痕）；ruff 57=基线 57（worktree 对拍）；graph-compile 绿（graph.json 时间戳漂移已还原）；alembic diff=0；diff 白名单无越界；B1 抽 5 行亲跑全符；图谱 admin/api 行备注 + HG-GRAPH-MODULES 新行 ratify（741f585）真读核验。证据全文：`docs/harness/invokes/by-task/memory-compliance-delete/invoke_20260922_40_verify_memory_compliance_delete.md`。
+
 ---
 
 ## 修订记录
@@ -290,3 +292,4 @@ SPEC §5 十条失败面全收并翻四列：两不可逆错（误删 / 越 tena
 | 日期 | 摘要 |
 |------|------|
 | 2026-09-22 | 10-task 落稿（SPEC signed a65ce3b 后 · 本棒由 00 委派 10-task 帽 Agent 执行）：锚点逐个复核（revoke 逻辑失效纪律沿用 · AdminSyncAuth :86-116 · admin/sync.py :32/:35-45 · models :500-560 · router :4-5/:24-25 · admin/ 无 memory.py · memory/README.md 存在 · 命名冲突零命中 · 基线 1333 collected 真跑）；验收 22 条断言化映射 SPEC §6；failure_paths 13 条（SPEC §5 十条 + 过程三）；B1 实扫 11 行（回归×9 · 改编×0 · 新增×1 · 迁移无×1 · 删除×0）；HG-GRAPH-MODULES 真读核模块表（admin :30 / memory :28 / api :20 · 签录链至 :92）+ 新签义务 00 代录位 + 偏离回炉条款；HG-TASK-DRAFT / HG-AUDIT-R1 落稿时待签 |
+| 2026-09-22 | 40 核验 **PASS（22/22 亲核）**：pytest 1345/3/1（3 红 worktree @ 10d72e7 实证基线环境性）· 谓词防线读码（含且仅含 tenant+user · 同谓词同口径）· 双闸门三态+重放 409 亲跑 · 审计 caplog 记动作不记内容亲核 · AdminSyncAuth 逐字对齐 · 变异①亲复（2 挂→还原绿 · 树净）· ruff 57=基线 · graph-compile 绿（漂移还原）· alembic diff=0 · B1 抽 5 行+图谱 ratify 741f585 真读全符 · invoke：`invoke_20260922_40_verify_memory_compliance_delete.md` |
