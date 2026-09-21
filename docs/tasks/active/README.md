@@ -4,7 +4,8 @@
 
 | task | 说明 |
 |---|---|
-| （无进行中 task） | 2026-09-21：`task_memory_facts_p0`（PR #144 已合并）与 `task_memory_facts_p1`（当日闭环 · 40 PASS）归档至 `done/`；分支 `task/memory-facts-p1` **PR 待开** |
+| [`task_llm_layer_hardening.md`](task_llm_layer_hardening.md) | llm-layer-hardening · L5 模型层硬化 · 10-task 起草 |
+| ~~（无其他进行中 task）~~ | 2026-09-21：`task_memory_facts_p0`（PR #144 已合并）与 `task_memory_facts_p1`（当日闭环 · 40 PASS）归档至 `done/`；分支 `task/memory-facts-p1` **PR 待开** |
 
 > 2026-09-21 清理：两个已完成 task 归档至 `done/`；近两日开发脱离 specwave 过程，见 `docs/HANDOFF_recent-2days_v1_zh.md`；分支 `chore/upgrade-langgraph-1.2` 领先 master 29 提交，**PR 待开**
 
