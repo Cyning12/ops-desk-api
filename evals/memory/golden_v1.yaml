@@ -1,0 +1,409 @@
+# 记忆金样集 v1（task memory-golden-eval · SPEC §2 D1）
+# 四类：should_remember 应记 / should_not_remember 不应记（负样本）/ supersede 冲突取代 / paraphrase 复述召回
+# schema 与标注指南：evals/memory/README.md
+version: 1
+domain: "ops-desk 运维域（仓库 / 部署 / 环境 / 负责人 / 监控 / 数据库 / 中间件）"
+golden:
+  - id: SR01
+    category: should_remember
+    query: "我目前主要在 cyning/ops-desk 这个仓库做运维开发，后面的问题都默认基于它。"
+    answer: "好的，已记住你的主仓库是 cyning/ops-desk，后续回答以此仓库为准。"
+    expect_facts:
+      - { key: "project.primary_repo", value: "cyning/ops-desk" }
+    fake_facts:
+      - { key: "project.primary_repo", value: "cyning/ops-desk" }
+    note: "明确声明的负责仓库"
+  - id: SR02
+    category: should_remember
+    query: "我日常工作时间按 Asia/Shanghai 时区安排，值班表也按这个时区排。"
+    answer: "收到，你的显示时区是 Asia/Shanghai，涉及时间的回答都按此对齐。"
+    expect_facts:
+      - { key: "user.display_tz", value: "Asia/Shanghai" }
+    fake_facts:
+      - { key: "user.display_tz", value: "Asia/Shanghai" }
+    note: "稳定个人环境（时区）"
+  - id: SR03
+    category: should_remember
+    query: "我们的服务现在固定部署到 prod-cn，别再给我 staging 的命令了。"
+    answer: "明白，部署目标已更新为 prod-cn，后续部署命令都按 prod-cn 给出。"
+    expect_facts:
+      - { key: "deploy.target", value: "prod-cn" }
+    fake_facts:
+      - { key: "deploy.target", value: "prod-cn" }
+    note: "明确声明的部署约束"
+  - id: SR04
+    category: should_remember
+    query: "这个项目的负责人是 zhangsan，评审和发布审批都找他。"
+    answer: "好的，项目 owner 记为 zhangsan，涉及审批的指引会指向他。"
+    expect_facts:
+      - { key: "project.owner", value: "zhangsan" }
+    fake_facts:
+      - { key: "project.owner", value: "zhangsan" }
+    note: "负责人事实"
+  - id: SR05
+    category: should_remember
+    query: "我们发版固定走 release/v2 分支，热修复也合到它上面。"
+    answer: "收到，发布分支是 release/v2，后续发版流程以此为基线。"
+    expect_facts:
+      - { key: "git.release_branch", value: "release/v2" }
+    fake_facts:
+      - { key: "git.release_branch", value: "release/v2" }
+    note: "发布分支约定"
+  - id: SR06
+    category: should_remember
+    query: "告警统一发到 ops-oncall 频道，值班同学只看这个频道。"
+    answer: "好的，告警频道记为 ops-oncall。"
+    expect_facts:
+      - { key: "monitor.alert_channel", value: "ops-oncall" }
+    fake_facts:
+      - { key: "monitor.alert_channel", value: "ops-oncall" }
+    note: "监控告警通路"
+  - id: SR07
+    category: should_remember
+    query: "线上主数据库是 pg-internal-01，排查慢查询都连它。"
+    answer: "明白，主库主机是 pg-internal-01。"
+    expect_facts:
+      - { key: "db.primary_host", value: "pg-internal-01" }
+    fake_facts:
+      - { key: "db.primary_host", value: "pg-internal-01" }
+    note: "数据库主机事实"
+  - id: SR08
+    category: should_remember
+    query: "缓存后端是 redis-cluster-a 集群，单机 redis 那套已经下线了。"
+    answer: "收到，缓存后端为 redis-cluster-a。"
+    expect_facts:
+      - { key: "cache.backend", value: "redis-cluster-a" }
+    fake_facts:
+      - { key: "cache.backend", value: "redis-cluster-a" }
+    note: "缓存基础设施"
+  - id: SR09
+    category: should_remember
+    query: "对外网关域名是 ops.example.cn，所有外部回调都走这个域名。"
+    answer: "好的，对外网关域名记为 ops.example.cn。"
+    expect_facts:
+      - { key: "gateway.public_domain", value: "ops.example.cn" }
+    fake_facts:
+      - { key: "gateway.public_domain", value: "ops.example.cn" }
+    note: "网关入口事实"
+  - id: SR10
+    category: should_remember
+    query: "我们的服务镜像统一基于 ubuntu-22.04 构建，别用 alpine 的 Dockerfile。"
+    answer: "明白，基础镜像是 ubuntu-22.04，后续 Dockerfile 建议以此为准。"
+    expect_facts:
+      - { key: "docker.base_image", value: "ubuntu-22.04" }
+    fake_facts:
+      - { key: "docker.base_image", value: "ubuntu-22.04" }
+    note: "镜像基线约束"
+  - id: SR11
+    category: should_remember
+    query: "消息队列用的是 kafka-main 这套集群，旧的 rabbitmq 已经不用了。"
+    answer: "收到，队列 broker 是 kafka-main。"
+    expect_facts:
+      - { key: "queue.broker", value: "kafka-main" }
+    fake_facts:
+      - { key: "queue.broker", value: "kafka-main" }
+    note: "消息队列设施"
+  - id: SR12
+    category: should_remember
+    query: "出故障时的标准回滚方案是 helm-rollback，回滚到上一个 release。"
+    answer: "好的，回滚方案记为 helm-rollback。"
+    expect_facts:
+      - { key: "ops.rollback_plan", value: "helm-rollback" }
+    fake_facts:
+      - { key: "ops.rollback_plan", value: "helm-rollback" }
+    note: "稳定性预案（回滚）"
+  - id: SR13
+    category: should_remember
+    query: "密钥统一由 vault-prod 管理，代码里不允许写死任何密钥。"
+    answer: "明白，密钥管理器是 vault-prod，后续涉及密钥的建议都走它。"
+    expect_facts:
+      - { key: "secrets.manager", value: "vault-prod" }
+    fake_facts:
+      - { key: "secrets.manager", value: "vault-prod" }
+    note: "密钥管理约定"
+  - id: SR14
+    category: should_remember
+    query: "应用日志只保留 30 天，排查更早的问题要去冷存储捞。"
+    answer: "收到，日志保留期是 30 天。"
+    expect_facts:
+      - { key: "log.retention_days", value: 30 }
+    fake_facts:
+      - { key: "log.retention_days", value: 30 }
+    note: "数值型稳定事实（日志保留天数）"
+  - id: NG01
+    category: should_not_remember
+    query: "帮我把今天这次调试的日志级别临时调成 debug，就这一次，别留到明天。"
+    answer: "好的，本次调试临时使用 debug 级别，不做长期变更。"
+    expect_facts: []
+    fake_facts:
+      - { key: "tmp.log_level", value: "debug" }
+    note: "一次性状态 · fake 罐头为易失 key · 闸应拒（volatile_key）"
+  - id: NG02
+    category: should_not_remember
+    query: "这个会话里先别跑全量测试，我要先对一遍数据。"
+    answer: "好的，本会话内跳过全量测试。"
+    expect_facts: []
+    fake_facts:
+      - { key: "session.skip_tests", value: true }
+    note: "会话级易失状态 · 闸应拒（volatile_key）"
+  - id: NG03
+    category: should_not_remember
+    query: "Python 是哪一年首次发布的？"
+    answer: "Python 于 1991 年首次发布。"
+    expect_facts: []
+    fake_facts: []
+    note: "通用知识 · 与主体无关 · 应零写入"
+  - id: NG04
+    category: should_not_remember
+    query: "李四跟我说他自己的时区是 America/New_York，你排班时参考一下。"
+    answer: "好的，排班时会参考李四所在的 America/New_York 时区。"
+    expect_facts: []
+    fake_facts: []
+    note: "他人事实 · 非本主体稳定事实 · 应零写入"
+  - id: NG05
+    category: should_not_remember
+    query: "早上好！今天天气不错，先随便聊聊。"
+    answer: "早上好！有什么运维上的问题随时说。"
+    expect_facts: []
+    fake_facts: []
+    note: "寒暄 · 无事实 · 应零写入"
+  - id: NG06
+    category: should_not_remember
+    query: "刚才那次部署失败是网络抖动导致的，已经重试成功了。"
+    answer: "了解，既然重试已成功，这次失败作为一次性事件处理即可。"
+    expect_facts: []
+    fake_facts: []
+    note: "一次性事件 · 不可复用 · 应零写入"
+  - id: NG07
+    category: should_not_remember
+    query: "我在起草一个还没定稿的迁移方案，内容随时会改，先别当真。"
+    answer: "好的，方案定稿前不作为依据。"
+    expect_facts: []
+    fake_facts:
+      - { key: "draft.migration_plan", value: "未定稿草稿" }
+    note: "草稿 · 闸应拒（volatile_key）"
+  - id: NG08
+    category: should_not_remember
+    query: "这个服务目前有没有配置告警通道？"
+    answer: "目前该服务没有配置任何告警通道，该项为空。"
+    expect_facts: []
+    fake_facts:
+      - { key: "monitor.alert_channel", value: "" }
+    note: "空值诱导 · 闸应拒（empty_value）"
+  - id: NG09
+    category: should_not_remember
+    query: "记一下：部署目标是 prod-cn。"
+    answer: "好的，已记录部署目标。"
+    expect_facts: []
+    fake_facts:
+      - { key: "Deploy Target", value: "prod-cn" }
+    note: "非法 key 诱导（大写+空格）· 闸应拒（invalid_key）"
+  - id: NG10
+    category: should_not_remember
+    query: "这是我们系统的完整介绍，你整体记住它。"
+    answer: "（系统长篇介绍，内容超过两千字）"
+    expect_facts: []
+    fake_facts:
+      - { key: "notes.full_intro", value: "部署日志片段 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
+    note: "超长复合快照诱导 · 闸应拒（value_too_large）"
+  - id: NG11
+    category: should_not_remember
+    query: "现在这台机器 CPU 使用率 83%，内存 61%，要紧吗？"
+    answer: "当前水位偏高但未到危险线，先观察即可。"
+    expect_facts: []
+    fake_facts: []
+    note: "瞬时指标 · 易失状态 · 应零写入"
+  - id: NG12
+    category: should_not_remember
+    query: "这次登录用的一次性验证码是 483920，马上过期。"
+    answer: "收到，验证码仅本次有效。"
+    expect_facts: []
+    fake_facts:
+      - { key: "session.otp", value: "483920" }
+    note: "一次性凭证 · 闸应拒（volatile_key）"
+  - id: NG13
+    category: should_not_remember
+    query: "Kubernetes 的 etcd 默认客户端端口是多少？"
+    answer: "etcd 默认客户端端口是 2379。"
+    expect_facts: []
+    fake_facts: []
+    note: "通用知识 · 应零写入"
+  - id: NG14
+    category: should_not_remember
+    query: "明天下午三点临时加一次值班评审会，就这一次，不固定。"
+    answer: "好的，已知悉这次临时会议安排。"
+    expect_facts: []
+    fake_facts: []
+    note: "一次性日程 · 应零写入"
+  - id: SP01
+    category: supersede
+    setup_fact: { key: "deploy.target", value: "staging" }
+    query: "之前说部署目标是 staging，现在定了：以后都部署到 prod-cn。"
+    answer: "收到，部署目标已从 staging 更新为 prod-cn。"
+    expect_facts:
+      - { key: "deploy.target", value: "prod-cn" }
+    fake_facts:
+      - { key: "deploy.target", value: "prod-cn" }
+    note: "同一 key 先 staging 后 prod-cn · 召回应只见新值，旧值表内 superseded"
+  - id: SP02
+    category: supersede
+    setup_fact: { key: "project.owner", value: "zhangsan" }
+    query: "项目负责人换了，以后 owner 是 lisi，zhangsan 不再负责这个项目。"
+    answer: "好的，项目 owner 更新为 lisi。"
+    expect_facts:
+      - { key: "project.owner", value: "lisi" }
+    fake_facts:
+      - { key: "project.owner", value: "lisi" }
+    note: "同一 key 先 zhangsan 后 lisi · 召回应只见新值，旧值表内 superseded"
+  - id: SP03
+    category: supersede
+    setup_fact: { key: "git.release_branch", value: "release/v1" }
+    query: "发版分支从 release/v1 切到 release/v2 了，旧分支封存。"
+    answer: "明白，发布分支更新为 release/v2。"
+    expect_facts:
+      - { key: "git.release_branch", value: "release/v2" }
+    fake_facts:
+      - { key: "git.release_branch", value: "release/v2" }
+    note: "同一 key 先 release/v1 后 release/v2 · 召回应只见新值，旧值表内 superseded"
+  - id: SP04
+    category: supersede
+    setup_fact: { key: "monitor.oncall_owner", value: "wangwu" }
+    query: "值班负责人换成 zhaoliu 了，wangwu 不再值这个班。"
+    answer: "收到，值班负责人更新为 zhaoliu。"
+    expect_facts:
+      - { key: "monitor.oncall_owner", value: "zhaoliu" }
+    fake_facts:
+      - { key: "monitor.oncall_owner", value: "zhaoliu" }
+    note: "同一 key 先 wangwu 后 zhaoliu · 召回应只见新值，旧值表内 superseded"
+  - id: SP05
+    category: supersede
+    setup_fact: { key: "db.primary_host", value: "pg-old-01" }
+    query: "主库已经迁移到 pg-new-02，pg-old-01 下线了。"
+    answer: "好的，主库主机更新为 pg-new-02。"
+    expect_facts:
+      - { key: "db.primary_host", value: "pg-new-02" }
+    fake_facts:
+      - { key: "db.primary_host", value: "pg-new-02" }
+    note: "同一 key 先 pg-old-01 后 pg-new-02 · 召回应只见新值，旧值表内 superseded"
+  - id: SP06
+    category: supersede
+    setup_fact: { key: "cache.backend", value: "redis-single" }
+    query: "缓存从单机 redis-single 切到 redis-cluster-a 集群了。"
+    answer: "明白，缓存后端更新为 redis-cluster-a。"
+    expect_facts:
+      - { key: "cache.backend", value: "redis-cluster-a" }
+    fake_facts:
+      - { key: "cache.backend", value: "redis-cluster-a" }
+    note: "同一 key 先 redis-single 后 redis-cluster-a · 召回应只见新值，旧值表内 superseded"
+  - id: SP07
+    category: supersede
+    setup_fact: { key: "gateway.public_domain", value: "ops-old.example.cn" }
+    query: "对外网关域名换成 ops.example.cn，旧域名月底停止解析。"
+    answer: "收到，网关域名更新为 ops.example.cn。"
+    expect_facts:
+      - { key: "gateway.public_domain", value: "ops.example.cn" }
+    fake_facts:
+      - { key: "gateway.public_domain", value: "ops.example.cn" }
+    note: "同一 key 先 ops-old.example.cn 后 ops.example.cn · 召回应只见新值，旧值表内 superseded"
+  - id: SP08
+    category: supersede
+    setup_fact: { key: "docker.registry", value: "registry-old.local" }
+    query: "镜像仓库迁到 registry-new.local，旧仓库只读归档。"
+    answer: "好的，镜像仓库更新为 registry-new.local。"
+    expect_facts:
+      - { key: "docker.registry", value: "registry-new.local" }
+    fake_facts:
+      - { key: "docker.registry", value: "registry-new.local" }
+    note: "同一 key 先 registry-old.local 后 registry-new.local · 召回应只见新值，旧值表内 superseded"
+  - id: SP09
+    category: supersede
+    setup_fact: { key: "queue.broker", value: "rabbitmq-main" }
+    query: "消息队列从 rabbitmq-main 迁到 kafka-main 了。"
+    answer: "明白，队列 broker 更新为 kafka-main。"
+    expect_facts:
+      - { key: "queue.broker", value: "kafka-main" }
+    fake_facts:
+      - { key: "queue.broker", value: "kafka-main" }
+    note: "同一 key 先 rabbitmq-main 后 kafka-main · 召回应只见新值，旧值表内 superseded"
+  - id: SP10
+    category: supersede
+    setup_fact: { key: "user.display_tz", value: "UTC" }
+    query: "我的时区别再用 UTC 了，以后按 Asia/Shanghai 来。"
+    answer: "好的，显示时区更新为 Asia/Shanghai。"
+    expect_facts:
+      - { key: "user.display_tz", value: "Asia/Shanghai" }
+    fake_facts:
+      - { key: "user.display_tz", value: "Asia/Shanghai" }
+    note: "同一 key 先 UTC 后 Asia/Shanghai · 召回应只见新值，旧值表内 superseded"
+  - id: PR01
+    category: paraphrase
+    fact: { key: "project.primary_repo", value: "cyning/ops-desk" }
+    query: "我主要负责哪个仓库？"
+    expect_hit_key: "project.primary_repo"
+    note: "先写入事实再用改写问法检索 · 向量通路 top1/top3 应命中"
+  - id: PR02
+    category: paraphrase
+    fact: { key: "deploy.target", value: "prod-cn" }
+    query: "现在部署到哪套目标环境？"
+    expect_hit_key: "deploy.target"
+    note: "先写入事实再用改写问法检索 · 向量通路 top1/top3 应命中"
+  - id: PR03
+    category: paraphrase
+    fact: { key: "user.display_tz", value: "Asia/Shanghai" }
+    query: "我的时区设置是什么？"
+    expect_hit_key: "user.display_tz"
+    note: "先写入事实再用改写问法检索 · 向量通路 top1/top3 应命中"
+  - id: PR04
+    category: paraphrase
+    fact: { key: "project.owner", value: "zhangsan" }
+    query: "这个项目的负责人是谁？"
+    expect_hit_key: "project.owner"
+    note: "先写入事实再用改写问法检索 · 向量通路 top1/top3 应命中"
+  - id: PR05
+    category: paraphrase
+    fact: { key: "git.release_branch", value: "release/v2" }
+    query: "发版走哪条分支？"
+    expect_hit_key: "git.release_branch"
+    note: "先写入事实再用改写问法检索 · 向量通路 top1/top3 应命中"
+  - id: PR06
+    category: paraphrase
+    fact: { key: "monitor.alert_channel", value: "ops-oncall" }
+    query: "告警会发到哪个频道？"
+    expect_hit_key: "monitor.alert_channel"
+    note: "先写入事实再用改写问法检索 · 向量通路 top1/top3 应命中"
+  - id: PR07
+    category: paraphrase
+    fact: { key: "db.primary_host", value: "pg-internal-01" }
+    query: "主数据库连的是哪台主机？"
+    expect_hit_key: "db.primary_host"
+    note: "先写入事实再用改写问法检索 · 向量通路 top1/top3 应命中"
+  - id: PR08
+    category: paraphrase
+    fact: { key: "cache.backend", value: "redis-cluster-a" }
+    query: "缓存用的是哪套集群？"
+    expect_hit_key: "cache.backend"
+    note: "先写入事实再用改写问法检索 · 向量通路 top1/top3 应命中"
+  - id: PR09
+    category: paraphrase
+    fact: { key: "ops.rollback_plan", value: "helm-rollback" }
+    query: "出故障时怎么回滚？"
+    expect_hit_key: "ops.rollback_plan"
+    note: "先写入事实再用改写问法检索 · 向量通路 top1/top3 应命中"
+  - id: PR10
+    category: paraphrase
+    fact: { key: "gateway.public_domain", value: "ops.example.cn" }
+    query: "对外网关的域名是什么？"
+    expect_hit_key: "gateway.public_domain"
+    note: "先写入事实再用改写问法检索 · 向量通路 top1/top3 应命中"
+  - id: PR11
+    category: paraphrase
+    fact: { key: "docker.base_image", value: "ubuntu-22.04" }
+    query: "基础镜像用的哪个？"
+    expect_hit_key: "docker.base_image"
+    note: "先写入事实再用改写问法检索 · 向量通路 top1/top3 应命中"
+  - id: PR12
+    category: paraphrase
+    fact: { key: "queue.broker", value: "kafka-main" }
+    query: "消息队列用的哪套？"
+    expect_hit_key: "queue.broker"
+    note: "先写入事实再用改写问法检索 · 向量通路 top1/top3 应命中"
