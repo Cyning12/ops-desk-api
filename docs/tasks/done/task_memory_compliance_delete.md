@@ -1,6 +1,6 @@
 # Task：记忆合规物理删除权（service 层 purge_by_user 按 (tenant,user) 全 status 整行 DELETE + 动作级审计记动作不记内容）· POST /admin/memory/purge（AdminSyncAuth 对齐 · dry_run 默认 true + expected_count 双闸门：缺→400 / 不等→409 零删除）· 删除后确定性召回零命中+向量通路零命中+表行全 status 零残留+越 tenant/user 零影响断言化 + 变异检验三条（memory-compliance-delete）
 
-> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
+> **状态**：`done`（2026-09-22 · 五棒全通 · 40 PASS 验收 22/22 · PR #163 CI 全绿合并 master（ea3cb4a）· CLOSE 归档）  
 > **类型**：feature（新增管理面不可逆删除能力 · **无 alembic 义务**（零新表零列 · 审计落既有 logger 面 · SPEC §4 A1 裁决）· **有图谱义务按实判**（新 admin 路由 `POST /admin/memory/purge` 落 admin 行备注 + 人签记录新行留 00 代录位 · 不新增一级模块/表/SSE 事件 · 偏离回炉条款见闸表与 graph_delta_note））  
 > **上游 SPEC**：`docs/spec/memory-compliance-delete/SPEC-memory-compliance-delete_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · a65ce3b · S1 同步物理删除 + A1 日志审计 + 默认干跑双闸门签收锁死）  
 > **分支**：`task/memory-compliance-delete`（**禁止 master/main 直改 · 禁止 push**）  
@@ -293,3 +293,4 @@ SPEC §5 十条失败面全收并翻四列：两不可逆错（误删 / 越 tena
 |------|------|
 | 2026-09-22 | 10-task 落稿（SPEC signed a65ce3b 后 · 本棒由 00 委派 10-task 帽 Agent 执行）：锚点逐个复核（revoke 逻辑失效纪律沿用 · AdminSyncAuth :86-116 · admin/sync.py :32/:35-45 · models :500-560 · router :4-5/:24-25 · admin/ 无 memory.py · memory/README.md 存在 · 命名冲突零命中 · 基线 1333 collected 真跑）；验收 22 条断言化映射 SPEC §6；failure_paths 13 条（SPEC §5 十条 + 过程三）；B1 实扫 11 行（回归×9 · 改编×0 · 新增×1 · 迁移无×1 · 删除×0）；HG-GRAPH-MODULES 真读核模块表（admin :30 / memory :28 / api :20 · 签录链至 :92）+ 新签义务 00 代录位 + 偏离回炉条款；HG-TASK-DRAFT / HG-AUDIT-R1 落稿时待签 |
 | 2026-09-22 | 40 核验 **PASS（22/22 亲核）**：pytest 1345/3/1（3 红 worktree @ 10d72e7 实证基线环境性）· 谓词防线读码（含且仅含 tenant+user · 同谓词同口径）· 双闸门三态+重放 409 亲跑 · 审计 caplog 记动作不记内容亲核 · AdminSyncAuth 逐字对齐 · 变异①亲复（2 挂→还原绿 · 树净）· ruff 57=基线 · graph-compile 绿（漂移还原）· alembic diff=0 · B1 抽 5 行+图谱 ratify 741f585 真读全符 · invoke：`invoke_20260922_40_verify_memory_compliance_delete.md` |
+| 2026-09-22 | **50+CLOSE**：PR [#163](https://github.com/Cyning12/ops-desk-api/pull/163) CI 全绿 merge master（`ea3cb4a`）· 归档 done/ · 遗留承 SPEC §7：双闸门防不住同计数错目标 · 同计数内容替换竞态 · 日志审计不可机查台账 · DSR 受理编排另案 |
