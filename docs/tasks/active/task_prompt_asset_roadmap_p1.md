@@ -282,9 +282,20 @@ SPEC §5 十条失败面全收并翻四列：缺键 KeyError（变异①）· �
 
 ---
 
-### 自检结论（40 核验 · 待回填）
+### 自检结论（40 核验 · 2026-09-22 回填）
 
-（本节由 40 核验后回填 · 对齐 continuity-dedup 先例：总判定 / 逐条计数 / 变异检验复做记录 / 基线对照 / B1 处置核验 / ruff / graph-compile / WARN 清单 / 证据 invoke 指针）
+**总判定：PASS · 验收 20/20 通过**（人工闸 1 · D1×3 · D2×5 · D3×2 · 行为零变化×3 · 变异×3 · 工程×3）· 30 自称全数亲跑复核属实。证据 invoke：`docs/harness/invokes/by-task/prompt-asset-roadmap-p1/invoke_20260922_40_verify_prompt_asset_roadmap_p1.md`。
+
+- **pytest**：当前 `3 failed / 1206 passed / 1 skipped`；worktree @ c48398f + 同 .env 基线 `3 failed / 1172 passed / 1 skipped`，两侧失败集逐名相同（chat_ws×2 + capability proxy×1 环境性基线红 · 非本波引入）；增量恰 +34 = `test_prompt_assets.py` collect 数，零既有用例删除；memory_backfill flaky 两跑均未复现。
+- **计数断言（亲跑 grep）**：`.format(` 3→2（answer.py:107 · fallback.py:326 恰特例）；prompts/ 包内零 `.format(`；`你是` 13→4（grader×2 · chat×1 · packs×1 恰特例清单）；assets `{{`/`}}` 零命中；body 游离 `$` 零命中（README 两处为纪律说明文字）。
+- **逐字节对拍（40 独立重做）**：AST 抽取 c48398f 旧常量 + 旧 `.format` 语义重渲 vs 当前 `render()`（含 supervisor catalog_block · suffix 三变量成品串）→ **9/9 byte-identical**；40 修正一处方法学（无变量模板旧代码同样走 `.format(**{})` 折叠 `{{`→`{`）。
+- **变异检验复做（②）**：改名 `lg_rag.router.system.md` → import 即 `PromptAssetError` 点名路径+template_id（非静默空串）→ 还原 86 用例全绿 → 工作树净；①③ 由常驻守护测试钉死，采信 30 留痕。
+- **ruff**：57 = 基线 57，违规多重集（码+文件）逐条 identical（4 处行号差 = 删常量 −20 行位移）→ 零新增；`graph-compile.sh` 绿，graph.json 时间戳漂移已还原未混入提交；`import app.main` 冒烟 OK。
+- **diff 白名单**：app/ 恰 prompts/ 模块 + 6 常量删除点 + assets/ 新增；`strategy/intent.py` 零 diff；multi/nodes.py render 两调用行逐字未动；**特例四例（grader/answer/packs/chat）零触碰**（diff --stat 空）。
+- **B1 抽查 9 条**（#1/2/3/5/6/7/8/15/18/19/21）全属实；回归×11 / 改编×8 / 新增×1 / 删除×0 与实核一致。
+- **WARN 三条（均记录非阻塞）**：① 30 对拍基线 json 未留存（40 已独立重建复核一致）；② 30 交付 graph.json 含 generated_at 前进（编译产物无边变化）；③ 承 R5 残余（version bump 无机械闸 · 图谱既有登记缺口两处留痕）。
+
+**可进 CLOSE**（40 不签闸 · 人关/后续轨自裁）。
 
 ---
 
@@ -292,4 +303,5 @@ SPEC §5 十条失败面全收并翻四列：缺键 KeyError（变异①）· �
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-22 | 40 核验 PASS：验收 20/20 亲跑复核（pytest 3 红基线对照相同 · 计数断言四组亲跑 · 对拍独立重做 9/9 byte-identical · 变异②复做显式炸·还原绿 · ruff 多重集 identical · graph-compile 绿 · B1 抽 9 全属实 · 特例四例零触碰）· WARN 三条记录非阻塞 · 证据 invoke_20260922_40_verify · 可进 CLOSE |
 | 2026-09-22 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 **20 条**逐块映射 SPEC §6 实质零差异（人工闸 1 / D1×3 / D2×5 / D3×2 / 行为零变化×3 / 变异检验×3 / 工程×3）· B1 旧测影响面 21 行实扫落盘（口径 `.format(`=3 · `你是`=13 · 常量消费点 tests 零直引 · pytest 基线 1176 collected 真跑 · 9 常量区 `$` 零命中）· SPEC 措辞偏差留痕两处（strategy/intent.py 实路径 `app/ops/strategy/` · memory→prompts 边实扫不成立 → 备注级处理非回炉）· HG-TASK-DRAFT=pending · HG-AUDIT-R1=pending → 30 拒开工 · HG-GRAPH-MODULES=approved（真读 `01_modules.md` · 零图谱变更 + 回炉补闸条款 + 既有登记缺口两处留痕）· HG-PILOT-OPSDESK-GLAYER=n/a |
