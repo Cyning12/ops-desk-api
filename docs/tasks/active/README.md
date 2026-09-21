@@ -4,7 +4,8 @@
 
 | task | 说明 |
 |---|---|
-| （无进行中 task） | 2026-09-22：`task_memory_preference_profile`（PR #157 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
+| [task_session_summary_fallback.md](task_session_summary_fallback.md) | 会话记忆真摘要（可回退原文）· 请求时懒生成+DB 缓存 · `SESSION_SUMMARY_ENABLED` 默认关 · off/on-态全失败双对拍逐字节 · 2026-09-22 10-task 落稿（HG-TASK-DRAFT / HG-AUDIT-R1 pending → **30 拒开工**） |
+| （无其余进行中 task） | 2026-09-22：`task_memory_preference_profile`（PR #157 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （其余无进行中 task） | 2026-09-22：`task_prompt_asset_roadmap_p1`（PR #155 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （无其余进行中 task） | 2026-09-22：`task_continuity_dedup`（PR #153 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （其余） | 2026-09-21：`task_memory_embedding_backfill`（PR #151 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
