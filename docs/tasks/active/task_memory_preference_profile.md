@@ -1,6 +1,6 @@
 # Task：画像记忆 kind=preference 首期「显式-only」（闸放开 + 分节注入 + revoke_by_key + 幻觉偏好红线 + CHECK 放宽 · memory-preference-profile）
 
-> **状态**：`draft`（2026-09-22 · 10-task 落稿 · 待 20-task-audit → HG-AUDIT-R1 人签 → 30）  
+> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
 > **类型**：feature（新 kind + 新召回渲染语义 + **有 alembic 义务**（CHECK 放宽 · 无新列无新索引）· 图谱零变更按实判，偏离回炉条款见闸表与 graph_delta_note）  
 > **上游 SPEC**：`docs/spec/memory-preference-profile/SPEC-memory-preference-profile_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · commit 4a2f4d9）  
 > **分支**：`task/memory-preference-profile`（**禁止 master/main 直改 · 禁止 push**）  
@@ -35,8 +35,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 待 00 验收 10-task 稿后代录/人签（**本帽不签**） |
-| HG-AUDIT-R1 | **pending** | **30** | 待 20-task-audit 书面审 R1 PASS 后人签/授权代录（`docs/harness/reviews/` 落盘）；**30 拒开工** |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | 2026-09-22 · 00 验收 10-task 稿通过（维护者本窗授权 00 签收过程文档 · 原话留痕 SPEC 状态行） |
+| HG-AUDIT-R1 | **approved** | **30** | 2026-09-22 · 20-task-audit R1 PASS 零阻塞零退回（`docs/harness/reviews/task_memory_preference_profile_audit_R1_20260922.md` · B1 抽 5 亲跑属实 · 基线 1210 复跑一致）· 维护者本窗授权 00 代录签收 |
 | HG-GRAPH-MODULES | **approved** | **30** | 2026-09-22 本帽**真读** `docs/_tech_graph/l1/01_modules.md`：模块表已建置；memory 行在表（:28 · 路径 glob `app/ops/memory/**` · 出边 `db, rag（embedder）, llm（抽取）, prompts（extract 模板加载）` · P0/P1/prompt-asset 三级备注留痕）；`lg_rag/continuity.py` 在 lg_rag 行路径覆盖内；models/alembic 在 db 行（`app/db/**`, `alembic/**`）覆盖内。SPEC `2 D5 判本 task **零图谱变更**（不新增路由/表/事件类型/一级模块；CHECK 放宽是既有表既有约束的迁移文件，db 行 migrations 既有面）→ **无新签义务**。memory 行**备注级更新预期**：30 交付后备注补 kind=preference 放开（00 代录先例见 graph_delta_note）。**若 30 形态偏离（新增一级模块 / 新增路由/表/事件类型 / 新增列/索引）→ 回炉补闸**（见 graph_delta_note，不得沿用本裁定） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 物理分层试点改码 | 本 task 不涉物理分层试点 |
 

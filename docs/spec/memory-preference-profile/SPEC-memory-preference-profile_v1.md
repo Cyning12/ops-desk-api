@@ -25,7 +25,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | **pending** | 维护者签收本 SPEC 后方可 00 出 task / 30 改码（人签，不由 10-spec 代签） |
+| **HG-SPEC-SIGNOFF** | **approved** | 2026-09-22 · 维护者授权 00 本窗代录签收（原话留痕头部状态行） |
 
 ---
 
