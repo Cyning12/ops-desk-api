@@ -15,8 +15,19 @@ from collections.abc import AsyncIterator
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from httpx import AsyncClient
 from langchain_core.messages import AIMessage
+
+
+@pytest.fixture(autouse=True)
+def _no_pg_checkpointer_by_default(monkeypatch):
+    """测试**不该**从 `.env` 继承「生产式」配置（同 test_lg_rag_sse_stream）。
+
+    ``LG_RAG_HTTP_CHECKPOINTER=postgres`` 会让 supervisor 模式的 SSE 真去开
+    PG saver（连库 + 建表）⇒ 测试依赖外部环境、变慢，对照断言还会被翻掉。
+    """
+    monkeypatch.delenv("LG_RAG_HTTP_CHECKPOINTER", raising=False)
 
 from app.llm.schema import BaseProvider, LlmChunk, LlmMessage
 from app.ops.lg_rag.answer_stream import (

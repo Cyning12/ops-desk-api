@@ -24,6 +24,21 @@ from langgraph.types import Interrupt
 
 from app.ops.lg_rag.sse_stream import extract_interrupt, iter_lg_rag_sse
 
+
+@pytest.fixture(autouse=True)
+def _no_pg_checkpointer_by_default(monkeypatch):
+    """测试**不该**从 `.env` 继承「生产式」配置。
+
+    ``LG_RAG_HTTP_CHECKPOINTER=postgres`` 会让 supervisor 模式的 SSE 真去开
+    PG saver ⇒ "没给 checkpointer 就不该往下传"这类**对照断言**会被环境翻掉
+    （实测过：外部 `.env` 一开，本模块那条反向对照直接红）。
+
+    要验 PG 路径的用例自己 ``monkeypatch.setenv`` 覆盖 —— 它在本 fixture
+    之后执行，所以能生效。
+    """
+    monkeypatch.delenv("LG_RAG_HTTP_CHECKPOINTER", raising=False)
+
+
 _INTERRUPT_PAYLOAD = {
     "reason": "hitl_waiting",
     "run_id": "run-1",

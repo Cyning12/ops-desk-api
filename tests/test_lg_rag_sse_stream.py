@@ -6,10 +6,23 @@ from collections.abc import AsyncIterator
 from typing import Any
 from unittest.mock import patch
 
+import pytest
 from httpx import AsyncClient
 from langchain_core.messages import AIMessage
 
 _PATH = "/api/ops/lg-rag/stream"
+
+
+@pytest.fixture(autouse=True)
+def _no_pg_checkpointer_by_default(monkeypatch):
+    """测试**不该**从 `.env` 继承「生产式」配置。
+
+    ``LG_RAG_HTTP_CHECKPOINTER=postgres`` 会让 ``iter_lg_rag_sse`` 在 supervisor
+    模式下真的去开一个 PG saver（连库 + 幂等建表）——测试就变成依赖外部环境：
+    PG 没起就挂、跑得慢，而且"没传 checkpointer"这类**对照断言**会被环境悄悄翻掉。
+    要验 PG 路径的用例自己 ``monkeypatch.setenv`` 覆盖（它在本 fixture 之后执行）。
+    """
+    monkeypatch.delenv("LG_RAG_HTTP_CHECKPOINTER", raising=False)
 
 
 async def _fake_supervisor_stream(
