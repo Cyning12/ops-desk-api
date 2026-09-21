@@ -87,7 +87,7 @@ audience: agent-30
 | HG-GRAPH-MODULES | approved | 00 代签（维护者令「不切分支，直接在当前分支开始」· task_tech_graph_recent_sync） | 2026-09-21 | **新增一级模块 `hitl`**；`api`/`admin`/`capability`/`lg_rag`/`db` 行备注追平 09-20~09-21 集中开发（治理层闸链/熔断/降级/配额/幂等/output_schema · 观测端点 · HITL interrupt/resume 回路 · ReAct 收口 · `ops_hitl_requests`）；不增 implementedBy（G-L2 indexes 不扩） |
 | HG-GRAPH-MODULES | approved | 00 代录（维护者令「授权00签收所有过程文档」· task_prompt_asset_roadmap_p1 · 30 回写） | 2026-09-22 | `memory` 行备注：extract 改调 prompts 加载器（prompt 资产化阶段一 · 依赖出边 +`prompts` 备注级）；不新增一级模块 · 不增 implementedBy |
 | HG-GRAPH-MODULES | approved | 00 代录（维护者令「授权00签收所有过程文档，接续 llm-layer-hardening」· task_llm_layer_hardening） | 2026-09-21 | `llm` 行备注：L5 硬化四块（重试退避 / provider 级熔断 / 任务分档路由 / `ops_llm_usage` 账本）· 依赖出边 +`db`；`db` 行登记新表 `ops_llm_usage`；不新增一级模块 · 不增 implementedBy（G-L2 indexes 不扩）。**00 已代录 approved（2026-09-21 · 30 交付核验后）** |
-| HG-GRAPH-MODULES | pending（**00 代录位** · 30 不留签） | 待 00 代录（task_memory_preference_profile · 30 回写内容） | 2026-09-22 | `memory` 行备注：kind=preference 放开（闸 `ALLOWED_KINDS` + 双向 key 域绑定 `key_kind_mismatch` + CHECK 放宽 `IN ('fact','preference')` + `revoke_by_key` + 注入分节 `[已知事实]`/`[用户偏好]` · 首期显式-only）；不新增一级模块 · 不增 implementedBy · 零新路由/表/事件类型/列/索引（零图谱变更预判成立） |
+| HG-GRAPH-MODULES | approved | 00 代录（维护者令「授权00签收所有过程文档」· task_memory_preference_profile · 30 回写内容 00 ratify） | 2026-09-22 | `memory` 行备注：kind=preference 放开（闸 `ALLOWED_KINDS` + 双向 key 域绑定 `key_kind_mismatch` + CHECK 放宽 `IN ('fact','preference')` + `revoke_by_key` + 注入分节 `[已知事实]`/`[用户偏好]` · 首期显式-only）；不新增一级模块 · 不增 implementedBy · 零新路由/表/事件类型/列/索引（零图谱变更预判成立） |
 
 ## 关联
 
