@@ -45,6 +45,7 @@ from app.ops.hitl.store import (
     STATUS_PENDING,
     STATUS_REJECTED,
 )
+from tests.conftest import DB_AVAILABLE
 
 
 @pytest.fixture(autouse=True)
@@ -353,3 +354,101 @@ def test_list_requests_requires_signature(monkeypatch):
         )
         assert res.status_code == 200
         assert res.json()["count"] == 0
+
+
+# ---------------------------------------------------------------------------
+# DbHitlStore **真跑 SQL**（不是断言 SQL 字符串的子串）
+# ---------------------------------------------------------------------------
+#
+# 为什么必须真跑：``alist`` 曾经写成 ``WHERE (:status IS NULL OR status = :status)``，
+# 在 asyncpg 下**每次都抛** ``AmbiguousParameterError: could not determine data type
+# of parameter $1``（参数只出现在 ``$1 IS NULL`` 位置时推不出类型）。
+#
+# 而它没被发现，是因为上面那两条只做**字符串子串断言**
+# （``"status = 'pending'" in DbHitlStore._DECIDE``）—— 那种断言证明不了
+# "这段 SQL 在真驱动上跑得通"。**验证方式缺失的约束等于没有约束。**
+#
+# 为什么它没炸到线上：两个调用方（`_persist_hitl` 去重、`resume` 汇总同批申请）
+# 都在 try 里兜住了 ⇒ 静默退化成"只能看单条" ⇒ 表现为"批准一次又冒出一条重复申请"。
+
+
+@pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
+async def test_db_store_alist_really_executes_on_asyncpg():
+    """三种调用形态都必须真跑通；主键/排序/LIMIT 语义也要对。"""
+    from sqlalchemy import text
+
+    from app.db.session import AsyncSessionLocal
+    from app.ops.hitl.store import STATUS_APPROVED, STATUS_PENDING
+
+    store = DbHitlStore()
+    prefix = "hitl_test_alist_"
+    rows = [f"{prefix}1", f"{prefix}2"]
+
+    async def _cleanup() -> None:
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                text("DELETE FROM ops_hitl_requests WHERE id LIKE :p"),
+                {"p": f"{prefix}%"},
+            )
+            await db.commit()
+
+    await _cleanup()
+    try:
+        for rid in rows:
+            await store.acreate(
+                {
+                    "id": rid,
+                    "run_id": "test-alist-run",
+                    "thread_id": "test-alist-thread",
+                    "checkpoint_id": None,
+                    "tenant_id": "acme",
+                    "subtask_id": "test-alist-run:2",
+                    "blocked_by": "prefix_touch_required",
+                    "unlock_subtask_id": "test-alist-run:1",
+                    "reason": "probe",
+                    "detail": "",
+                    "payload": {},
+                    "status": STATUS_PENDING,
+                }
+            )
+
+        # ① 不带 status（真 binder 会把 None 传下去 —— 就是炸出来的那条路径）
+        got = [r for r in await store.alist() if str(r["id"]).startswith(prefix)]
+        assert len(got) == 2, got
+
+        # ② status=None（显式）
+        got = [
+            r
+            for r in await store.alist(status=None)
+            if str(r["id"]).startswith(prefix)
+        ]
+        assert len(got) == 2, got
+
+        # ③ 按 status 过滤：pending 命中、approved 不命中
+        pend = [
+            r
+            for r in await store.alist(status=STATUS_PENDING)
+            if str(r["id"]).startswith(prefix)
+        ]
+        assert len(pend) == 2, pend
+        appr = [
+            r
+            for r in await store.alist(status=STATUS_APPROVED)
+            if str(r["id"]).startswith(prefix)
+        ]
+        assert appr == []
+
+        # ④ 决一条之后过滤要跟着动
+        decided = await store.adecide(rows[0], decision=STATUS_APPROVED, by="张三")
+        assert decided is not None and decided["status"] == STATUS_APPROVED
+        pend = [
+            r
+            for r in await store.alist(status=STATUS_PENDING)
+            if str(r["id"]).startswith(prefix)
+        ]
+        assert [r["id"] for r in pend] == [rows[1]], pend
+
+        # ⑤ 重复决必须返回 None（路由靠它区分 404 / 409）
+        assert await store.adecide(rows[0], decision="rejected", by="李四") is None
+    finally:
+        await _cleanup()

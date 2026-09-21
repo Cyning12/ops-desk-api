@@ -142,12 +142,18 @@ class DbHitlStore:
         "decision_by, decision_note, decided_at, created_at "
         "FROM ops_hitl_requests WHERE id = :id"
     )
+    # ⚠️ ``CAST(:status AS text)`` **不能省**：asyncpg 是强类型的，参数只出现在
+    #   ``$1 IS NULL`` 这种位置时它推不出类型，直接抛
+    #   ``AmbiguousParameterError: could not determine data type of parameter $1``。
+    #   后果不是"查不到"而是**整个 alist 抛异常** —— 而它的两个调用方
+    #   （``_persist_hitl`` 去重、``resume`` 汇总同批申请）**都在 try 里兜住了**，
+    #   于是静默退化成"只能看单条"，表现为"批准一次又冒出一条重复申请"。
     _SELECT_LIST = (
         "SELECT id, run_id, thread_id, checkpoint_id, tenant_id, subtask_id, "
         "blocked_by, unlock_subtask_id, reason, detail, payload, status, "
         "decision_by, decision_note, decided_at, created_at "
         "FROM ops_hitl_requests "
-        "WHERE (:status IS NULL OR status = :status) "
+        "WHERE (CAST(:status AS text) IS NULL OR status = :status) "
         "ORDER BY created_at ASC LIMIT :limit"
     )
     _DECIDE = (
