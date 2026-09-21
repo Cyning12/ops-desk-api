@@ -1,6 +1,6 @@
 # app/ops/memory — 事实型记忆 P0 + P1 + 画像 preference 首期（memory-facts-p0 / memory-facts-p1 / memory-preference-profile）
 
-> 上游 SPEC：`docs/spec/memory-facts-p0/SPEC-memory-facts-p0_v1.md`（signed）· `docs/spec/memory-facts-p1/SPEC-memory-facts-p1_v1.md`（signed）· `docs/spec/memory-preference-profile/SPEC-memory-preference-profile_v1.md`（signed）  
+> 上游 SPEC：`docs/spec/memory-facts-p0/SPEC-memory-facts-p0_v1.md`（signed）· `docs/spec/memory-facts-p1/SPEC-memory-facts-p1_v1.md`（signed）· `docs/spec/memory-preference-profile/SPEC-memory-preference-profile_v1.md`（signed）· `docs/spec/memory-compliance-delete/SPEC-memory-compliance-delete_v1.md`（signed）  
 > 设计纪律：**只记事实，不记对话**；**判据在写入时判，不在检索时筛**；**不能自证的机制等于没装**。  
 > P1 纪律：向量只解决"怎么召回"，写入判据永远闸判；抽取产物是候选不是事实；每条增强可独立关闭独立降级，**两开关全关 = P0 逐字节一致**。  
 > preference 纪律（memory-preference-profile）：**首期只收显式声明**——闸双向 key 域绑定（`kind=preference` ⟺ key 首段 `pref`），抽取管道物理不产 preference（schema 无 kind 字段 + 构造点钉死 fact），推断型偏好**无写入通路**；召回注入分节（`[已知事实]` / `[用户偏好]` 单 SystemMessage 双节）；纠错入口 `revoke_by_key`。
@@ -10,11 +10,21 @@
 | 文件 | 职责 |
 |------|------|
 | `gate.py` | `should_write(candidate)` 写入闸**纯函数**；三判据落成显式规则，拒绝返回稳定原因码（`REJECT_REASONS`）。**闸拒 = 不落库**。kind 集合 `ALLOWED_KINDS={fact, preference}`；双向 key 域绑定违反 → `key_kind_mismatch`。 |
-| `service.py` | 状态机：`write_fact`（过闸 → 落库；同 `(tenant_id,user_id,key,kind)` 有 active 则**同一事务**内置旧 `superseded` + 新行 `supersedes` 指旧 id——查重谓词含 kind，跨 kind 同 key 互不影响）· `revoke_by_source`（按源头批量 `revoked`，幂等，审计日志记影响行数）· `revoke_by_key`（按 key 一键 `revoked`，显式声明 `source_run_id` 为空的纠错入口；必带 tenant+user 谓词 · 幂等 · 审计）· `sweep_expired`（过期置 `expired`）· `recall_active`（仅 active 且未过期，`updated_at desc` top-N，**无 kind 谓词**——分节在渲染层）。 |
+| `service.py` | 状态机：`write_fact`（过闸 → 落库；同 `(tenant_id,user_id,key,kind)` 有 active 则**同一事务**内置旧 `superseded` + 新行 `supersedes` 指旧 id——查重谓词含 kind，跨 kind 同 key 互不影响）· `revoke_by_source`（按源头批量 `revoked`，幂等，审计日志记影响行数）· `revoke_by_key`（按 key 一键 `revoked`，显式声明 `source_run_id` 为空的纠错入口；必带 tenant+user 谓词 · 幂等 · 审计）· `sweep_expired`（过期置 `expired`）· `recall_active`（仅 active 且未过期，`updated_at desc` top-N，**无 kind 谓词**——分节在渲染层）· `purge_by_user`（按 `(tenant_id,user_id)` **全 status 整行物理删除**——合规删除权 · 管理面唯一入口 · 见「合规物理删除」节）。 |
 | `../lg_rag/continuity.py`（注入点） | `assemble_graph_messages_with_memory`：装配 + 可选记忆注入；渲染/插入助手 `render_memory_facts_block` / `inject_memory_facts_block`。P1：`MEMORY_FACTS_VECTOR_RECALL_ENABLED=true` 时召回走 `service.recall_with_vector` 混合召回，否则 P0 确定性路径。 |
 | `extract.py`（P1） | LLM 离线候选抽取（默认关）：run 完成后后台点火 → structured_output 管道 → 候选逐条过闸 → `write_fact`（带 `source_run_id`/`source_turn`）。 |
 
-存储：`ops_memory_facts`（`app/db/models.py::OpsMemoryFact`；migration `alembic/versions/20260921_memory_facts.py`，CHECK 放宽 `kind IN ('fact','preference')` 见 `20260922_memory_kind_preference.py`——回滚须先清 preference 行）。失效一律走状态机，**不物理删**（旧值留表供审计对账）。
+存储：`ops_memory_facts`（`app/db/models.py::OpsMemoryFact`；migration `alembic/versions/20260921_memory_facts.py`，CHECK 放宽 `kind IN ('fact','preference')` 见 `20260922_memory_kind_preference.py`——回滚须先清 preference 行）。失效一律走状态机，运行期**不物理删**（旧值留表供审计对账）；合规物理删除只走管理面 `purge_by_user`（见下节）。
+
+## 合规物理删除（memory-compliance-delete）
+
+- **运行期失效仍走状态机不物理删**；物理删除只有管理面一个入口：`POST /api/ops/admin/memory/purge`（`app/ops/admin/memory.py` · `AdminSyncAuth` 对齐 · **admin 面首个不可逆写端点**）。
+- service 层 `purge_by_user(tenant_id, user_id, *, dry_run=True, session=None) -> PurgeReport`：谓词含且仅含 tenant+user（跨 tenant = 0 行）；**全 status**（active/superseded/revoked/expired）无差别整行 DELETE，embedding 列随行消失（向量 SQL 查表本身，行零残留 = 两通路零残留）；单条 DELETE 单事务原子（无半删中间态）；**幂等**（重复实删第二次 `deleted==0`）。
+- **双闸门铁律**：`dry_run` 默认 true（盲发只读 · 干跑零写对拍）；实删必须 `expected_count` 与同谓词当前匹配计数一致——缺 → 400 · 不等 → **409 零删除**（调用方重新干跑）· 等 → 200 且 `deleted==expected_count`。「删多少」是显式对账不是盲发。
+- **审计记动作不记内容**：`logger.info("memory purge_by_user tenant=%s user=%s dry_run=%s affected=%d", ...)`（无 key/value · revoke 先例同形 · 实删/干跑/幂等 0 行全含）；落既有 logger 面，零新表零 alembic。
+- 报告：`PurgeReport(dry_run/scanned/deleted/by_status/elapsed_s/recorded_at)`（backfill 字段族 · **计数守恒**：实删 `deleted==scanned` · 干跑 `deleted==0` · `sum(by_status)==scanned`）。
+- 残余风险（承 SPEC §7 如实承认）：expected_count 只锁数量不锁主体（计数碰巧相等的错目标不可防 · 管理面人工纪律兜底：先干跑核对计数再实删）；同计数内容替换竞态不可区分（管理面低频可接受）；审计落日志面不可机查台账（合规要求机查台账时回 SPEC 升级新表方案）。
+- 非范围沿用：无用户自助端点 · 无批量/全表/定时 purge worker · 不删其它业务表 · 不删 RAG/Qdrant/Langfuse 侧数据。
 
 ## key 命名约定
 
@@ -69,6 +79,7 @@ pref.answer_lang=中文
 | revoke_by_key（显式声明纠错） | 按 `(tenant_id, user_id, key)` 把 active 行置 `revoked`；幂等（重复调用 0 行）· 跨 tenant 0 行 · 审计日志记 affected；清除后召回零命中、注入块无该 key |
 | sweep 未跑 / 失败 | **召回仍按 `expires_at` 过滤**（双保险，不依赖任务存活） |
 | 跨 tenant 查询 | 所有 SQL 必带 `tenant_id` 谓词；跨 tenant = 空结果 |
+| purge_by_user（合规物理删除） | 按 `(tenant,user)` 全 status 整行 DELETE；dry_run 默认 true 零写 · 幂等（重复 0 行）· 审计记 affected 不记内容；越 tenant/越 user = 0 行；实删双闸门（缺 expected_count → 400 · 计数不等 → 409 零删除） |
 | 召回 DB 故障 | 记 log + span `memory_degraded`，**降级为不注入**，不拖垮 chat |
 | 写 DB 故障 | 异常向上抛（不静默、无半成功态） |
 
@@ -151,4 +162,4 @@ python scripts/memory_embedding_backfill.py             # 实跑
 
 ## 非范围（P0/P1/memory-preference-profile）
 
-推断型 preference（行为推断 / 抽取产偏好——首期物理拒收，无写入通路；未来另案 SPEC）；热路径/流中抽取；对外 HTTP 写端点；对话摘要；物理删除；跨租户共享；偏好管理 UI（另案）。
+推断型 preference（行为推断 / 抽取产偏好——首期物理拒收，无写入通路；未来另案 SPEC）；热路径/流中抽取；业务面对外 HTTP 写端点（合规物理删除走 admin 面 · 见「合规物理删除」节）；对话摘要；用户自助/批量/定时物理删除（管理面单 (tenant,user) purge 除外）；跨租户共享；偏好管理 UI（另案）。
