@@ -286,7 +286,15 @@ fake provider / fake httpx 消解外网不确定性；sleep 序列 monkeypatch �
 
 ### 自检结论（执行者）
 
-> （待 hat 40 独立核验后回填；10-task 落稿阶段为空）
+> **40 核验（2026-09-21 · 独立真跑，非轻信 30 自称）**：**PASS-with-warnings · 验收 24/24**。
+> 证据全文：`docs/harness/invokes/by-task/llm-layer-hardening/invoke_20260921_40_verify_llm_layer_hardening.md`。要点：
+> - `pytest tests`：1137 passed · 1 skipped · 3 failed；3 失败经 **master worktree 对照同错复现**（WS portal-loop ×2 + capability proxy ×1，环境性基线既有，与本波无关，高置信）。
+> - `ruff check app tests`：57 errors = master 基线 57，零新增。
+> - alembic 往返本帽在 dev 库真跑：upgrade/downgrade/re-upgrade 全过，表结构与钉死契约逐列一致，终态回 head，dev 数据零触碰。
+> - `graph-compile.sh` exit 0；`01_modules.md` llm/db 行 + HG-GRAPH-MODULES 新行（00 代录 approved）在位。
+> - 关键断言抽查（重试界/零重试/流式纪律/熔断三态/路由分档/usage 按 run_id 聚合/落表故障不挡主答/无末帧不落行）全部真实存在且断言非空；旧测 12 条处置 diff 实核落地。
+> - 变异检验本帽亲自复做：删 `not exc.retryable` 判据 → `test_4xx_zero_retry` 真 fail（`assert 3 == 1`）→ 还原复跑全绿、工作树净。
+> - 注意项（非阻塞）：3 条基线红仍存（建议独立 fix 分支）；重试默认参数未校准等三条承 SPEC residual。
 
 ---
 
@@ -297,3 +305,4 @@ fake provider / fake httpx 消解外网不确定性；sleep 序列 monkeypatch �
 | 2026-09-21 | 10-task 落稿 · R0–R5 全轮无 early_stop · HG-AUDIT-R1=pending → 30 拒开工 · HG-GRAPH-MODULES 模块表已建置 approved（核验 `01_modules.md`）· D5 新签义务留 30 |
 | 2026-09-21 | **闸签收**：HG-TASK-DRAFT=approved（00 验收 10-task 稿）· HG-AUDIT-R1=approved（R2 零阻塞 · 维护者本窗授权 00 代录，原话留痕于 SPEC 状态行与本表 10 注）· 30 放行 |
 | 2026-09-21 | **R1 退回修订（B1 已补）**：实扫落盘「旧测影响面清单」12 条（grep 口径在节首）+ 工程「闸前置」验收断言 + failure_paths 一行；顺带采纳审查文非阻塞备注 1（闸表补全 2026-09-21 三行签录表述）· 2（`get_fallback_chain` 锚点实址修正为 `model_catalog.py:101-105`）· 4（20 invoke 快照由本帽代录至 invokes 目录，原义务属 20 棒）；备注 3（SPEC §8 编排差异）知悉无需改 · HG-AUDIT-R1 保持 pending（本帽不签） |
+| 2026-09-21 | **40 核验**：PASS-with-warnings · 验收 24/24（逐条证据见 invoke `invoke_20260921_40_verify_llm_layer_hardening.md`）· 3 失败经 master worktree 对照证为基线环境性 · 变异检验亲自复做有效并还原 · 本帽未签任何 human_gate、未 CLOSE |
