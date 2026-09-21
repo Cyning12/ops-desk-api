@@ -1,6 +1,6 @@
 # SPEC：L7 安全与合规硬化（注入/PII/脱敏/真沙箱）四波全景 · W1 输入结构隔离（v1）
 
-> **状态**：`draft-complete`（HG-SPEC-SIGNOFF=**pending** · 人签前不出 task / 不改码）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved**（2026-09-22 · 维护者授权 00 本窗签收全部过程文档 · 原话「此spec完成后继续把完成后续spec，一个个进行，每次PR到main通过CI后自动merge」承前令「授权00签收所有过程文档」） · 人签前不出 task / 不改码）
 > **track**：`feature`（新增安全控制面（输入结构隔离槽位机制）· 开关默认关、off 态逐字节对拍 · **本波无 alembic 义务** · 图谱义务有按实判见 §2 D5）
 > **上游**：`../ops-desk-workspace/docs/08-interview/07_agent-memory-prompt-module-landscape_v1_zh.md`（手册 §2.2 第四问钉死顺序 · L7 行 · 附录 A L7 行）
 > **格式基准**：`docs/spec/session-summary-fallback/SPEC-session-summary-fallback_v1.md`（signed · 2026-10-12）
@@ -25,7 +25,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | **pending** | 维护者签收本 SPEC 后方可 00 出 task / 30 改码（人签，不由 10-spec 代签） |
+| **HG-SPEC-SIGNOFF** | **approved**（2026-09-22 · 00 代录 · 维护者授权） | 维护者签收本 SPEC 后方可 00 出 task / 30 改码（人签，不由 10-spec 代签） |
 | **HG-GRAPH-MODULES** | **pending（按实判 · 有义务）** | 新增跨模块依赖边落 `docs/_tech_graph/l1/01_modules.md`；30 前须 approved |
 
 ---
