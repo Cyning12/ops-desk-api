@@ -1,16 +1,155 @@
 """Base provider implementation."""
 from __future__ import annotations
 
+import functools
 import json
-from collections.abc import AsyncIterator, Iterable
+import logging
+from collections.abc import AsyncIterator, Callable, Iterable
+from contextlib import suppress
 
 import httpx
+import pybreaker
 
+from app.llm import circuit as llm_circuit
+from app.llm import retry as llm_retry
+from app.llm import usage as llm_usage
 from app.llm.schema import BaseProvider, LlmChunk, LlmMessage, LlmProviderError, LlmUsage
+
+logger = logging.getLogger(__name__)
 
 
 class BaseProviderImpl(BaseProvider):
     """Shared provider helpers."""
+
+    #: provider 名（熔断 breaker 粒度 / usage 落表 / 重试日志）；未声明用类名
+    PROVIDER_NAME: str | None = None
+
+    #: 边界包装（重试+熔断+usage 落表）开关。Bailian 关闭：fallback 链内逐候选
+    #: 自走 _resilient_stream（先同模型退避重试、再换模型，链语义不变）。
+    _boundary_resilience: bool = True
+
+    def __init_subclass__(cls, **kwargs) -> None:
+        """给每个子类的 complete_stream 统一套韧性边界（llm-layer-hardening）。
+
+        施加面钉死在 BaseProviderImpl 边界：所有继承本类并实现
+        complete_stream 的 provider（含测试 fake）自动获得
+        熔断 guard + 退避重试 + usage 落表观测；_boundary_resilience=False
+        的子类（Bailian）在 fallback 链内逐候选自走 _resilient_stream。
+        """
+        super().__init_subclass__(**kwargs)
+        fn = cls.__dict__.get("complete_stream")
+        if fn is None or not getattr(cls, "_boundary_resilience", True):
+            return
+
+        @functools.wraps(fn)
+        async def complete_stream(self, messages, model=None):  # noqa: ANN001,ANN202
+            async for chunk in self._resilient_stream(
+                lambda: fn(self, messages, model=model),
+                model=model or "",
+            ):
+                yield chunk
+
+        cls.complete_stream = complete_stream
+
+    def _provider_name(self) -> str:
+        return self.PROVIDER_NAME or type(self).__name__
+
+    async def _resilient_stream(
+        self,
+        stream_factory: Callable[[], AsyncIterator[LlmChunk]],
+        *,
+        model: str,
+    ) -> AsyncIterator[LlmChunk]:
+        """统一韧性边界：熔断 guard（外）+ 退避重试（内）+ usage 落表观测。
+
+        - 熔断：provider 级 breaker 逐次 __anext__ 过 guard；open 时零出网
+          立即 circuit_open（retryable=False）；重试在 guard 内发生并逐次
+          计入失败；业务错误（retryable=False）不计数。
+        - 重试：仅 LlmProviderError(retryable=True) 且尚未吐首 content
+          chunk；耗尽抛原始错误（不包装丢根因）。流中已吐正文后出错 →
+          零重试零换模型，原样上抛走既有 error 事件路径。
+        - usage：见到 usage 末帧落 ops_llm_usage（无帧不落，不写 0 假账；
+          落表故障 log+计数，不挡主答）。
+        """
+        provider = self._provider_name()
+        cfg = llm_retry.retry_config()
+        cb = llm_circuit.breaker_for(provider) if llm_circuit.enabled() else None
+        attempts = 0
+        while True:
+            attempts += 1
+            emitted_content = False
+            agen = stream_factory()
+            try:
+                while True:
+                    done = False
+                    try:
+                        if cb is not None:
+                            # yield 在 guard 外：消费者取消（GeneratorExit）
+                            # 永远不会穿过 calling() 被误计为失败
+                            with cb.calling():
+                                try:
+                                    chunk = await agen.__anext__()
+                                except StopAsyncIteration:
+                                    done = True
+                        else:
+                            try:
+                                chunk = await agen.__anext__()
+                            except StopAsyncIteration:
+                                done = True
+                    except pybreaker.CircuitBreakerError:
+                        raise llm_circuit.circuit_open_error(provider, cb) from None  # type: ignore[arg-type]
+                    if done:
+                        return
+                    if chunk.content:
+                        emitted_content = True
+                    usage_meta = (chunk.meta or {}).get("usage")
+                    if usage_meta:
+                        await self._record_usage_safe(
+                            usage_meta,
+                            provider=provider,
+                            model=model,
+                            attempts=attempts,
+                        )
+                    yield chunk
+            except LlmProviderError as exc:
+                if (
+                    emitted_content
+                    or not cfg.enabled
+                    or not exc.retryable
+                    or attempts >= cfg.max_attempts
+                ):
+                    raise
+                delay = llm_retry.backoff_delay(attempts - 1, cfg)
+                logger.info(
+                    "llm_retry attempt=%d delay=%.2fs provider=%s model=%s",
+                    attempts,
+                    delay,
+                    provider,
+                    model,
+                )
+                await llm_retry.sleep(delay)
+            finally:
+                with suppress(Exception):
+                    await agen.aclose()
+
+    @staticmethod
+    async def _record_usage_safe(
+        usage_meta: object,
+        *,
+        provider: str,
+        model: str,
+        attempts: int,
+    ) -> None:
+        """usage 末帧落 ops_llm_usage；解析失败/落表故障不挡主答（不写 0 假账）。"""
+        parsed = LlmUsage.from_provider_usage(usage_meta)
+        if parsed is None:
+            return
+        try:
+            await llm_usage.record_llm_usage(
+                parsed, provider=provider, model=model, attempts=attempts
+            )
+        except Exception:  # pragma: no cover - record_llm_usage 已内 catch，此为兜底
+            logger.warning("ops_llm_usage record hook failed", exc_info=True)
 
     @staticmethod
     def _messages_to_openai(messages: Iterable[LlmMessage]) -> list[dict]:
