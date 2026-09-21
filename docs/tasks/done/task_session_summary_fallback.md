@@ -1,6 +1,6 @@
 # Task：会话记忆真摘要（可回退原文）· 请求时懒生成 + DB 缓存 · `SESSION_SUMMARY_ENABLED` 默认关 · off/on-态全失败双对拍逐字节一致（session-summary-fallback）
 
-> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
+> **状态**：`done`（2026-09-22 · 五棒全通 · 40 PASS 验收 26/26 · PR #159 CI 全绿合并 master（15a122e）· CLOSE 归档）  
 > **类型**：feature（新 LLM 调用面（summary 档）+ 新 prompt 资产 + **新表 ops_session_summaries（有 alembic 义务 · 建表可逆）** + **有图谱义务按实判**（db 行新表登记 + lg_rag/chat/llm 行备注 · 不新增一级模块/路由/SSE 事件 · 偏离回炉条款见闸表与 graph_delta_note））  
 > **上游 SPEC**：`docs/spec/session-summary-fallback/SPEC-session-summary-fallback_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · commit 48ce63e）  
 > **分支**：`task/session-summary-fallback`（**禁止 master/main 直改 · 禁止 push**）  
@@ -301,3 +301,4 @@ SPEC §5 十一条失败面全收并翻四列：三静默错（摘错造错误�
 |------|------|
 | 2026-09-22 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 **26 条**逐块映射 SPEC §6 实质零差异（人工闸 1 / D1×5 / D2×4 / D3×3 / D4×4 / D5×3 / 变异检验×3 / 工程×3）· B1 旧测影响面 **12 行**实扫落盘（口径：tests grep 命中 5 文件 · 无枚举档集合断言 · unknown-task 用例 `"summarize"`≠`"summary"` 语义不反转 · 用例计数 8 文件 · pytest 基线 **1239 collected** 真跑 · `alembic heads`=`20260922_memory_kind_preference` 真跑 · `session.summary` 零命名冲突）· SPEC §1 锚点复核零偏差 · HG-TASK-DRAFT/HG-AUDIT-R1 落稿时待签 → 2026-09-22 00 代录 approved（R1 零阻塞）· HG-GRAPH-MODULES=approved（模块表已建置真读核验）+ 新签义务（db 行新表 + lg_rag/chat/llm 行备注 + 人签新行 00 代录位 · 偏离回炉补闸）· HG-PILOT-OPSDESK-GLAYER=n/a |
 | 2026-09-22 | **40 核验 PASS · 验收 26/26**（真跑亲核 · invoke_20260922_40）：pytest 1278 collected（+39）1274 passed + 3 红经 worktree 基线对照证环境性既有红；双对拍两路径亲跑全绿（逐字节真断言 + on 态 provider 计数证真走摘要面）；`compress_window` 逐字节零 diff · graph.py +2 行 · diff 26 文件全白名单；alembic 往返亲跑绿（终态回 head）；ruff 57=基线零新增；graph-compile 绿；变异检验①亲复做（恒 true → 7 failed → 还原绿树净）；金样 yaml↔测试一一对应；B1 偏差 1 行（test_prompt_assets 集合等式改编 · 口径不变）确认如实回填——task R4「改编×0」为落稿时实扫结论，30 阶段实测漏扫 1 行经 30 invoke B1 回填行 13 如实登记，本行补正留痕 |
+| 2026-09-22 | **50+CLOSE**：PR [#159](https://github.com/Cyning12/ops-desk-api/pull/159) CI 全绿 merge master（`15a122e`）· 归档 done/ · 遗留：金样覆盖盲区靠灰度人工抽检+回退兜底 · 超长会话首压成本可观测 · summary 档默认 None 灰度期 env 调档 |
