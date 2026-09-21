@@ -61,6 +61,13 @@ from app.ops.lg_rag.state import (
     unresolved_suffix_ids,
 )
 from app.ops.prompts import render
+from app.ops.prompts.slots import (
+    SlotIsolationError,
+    assert_slots_declared,
+    declare_slots,
+    security_input_isolation_enabled,
+    wrap_slot,
+)
 from app.ops.structured_output import parse_only
 from app.ops.tenant_context import current_tenant_or_default
 from app.ops.tracing import score_current_trace, trace_span, tracing_enabled
@@ -1091,7 +1098,26 @@ async def tool_exec_node(state: LgRagState) -> dict:
             )
             result["error"] = cap.error or f"未知工具: {tool_name or '(未指定)'}"
         else:
-            result["output"] = cap.output
+            output = cap.output
+            # security-input-isolation D2 · 工具回执面：on 态自由文本回执在
+            # 回注 subtask_results 前走 wrap_slot("tool_result", ...)（边界标记
+            # + 不可信声明 + 伪造标记转义）；非 str 结构化 output 保持原结构
+            # （下游 consumes 绑定按字段取数，改成文本会破坏编排语义——非范围）。
+            # 包装机制自身故障 → 本子任务降级 off 态原文 + input_isolation_degraded
+            # 标记（跟数据走，aggregator 见标记整单退 off 态装配）。
+            if security_input_isolation_enabled() and isinstance(output, str):
+                try:
+                    output = str(wrap_slot("tool_result", output))
+                except Exception:
+                    logger.exception(
+                        "input isolation wrap failed tool=%r id=%s; degrade to raw output",
+                        tool_name,
+                        result["id"],
+                    )
+                    _record_span_metadata({"input_isolation_degraded": True})
+                    result["input_isolation_degraded"] = True
+                    output = cap.output
+            result["output"] = output
             # ★ 降级必须让**模型**看得见。meta 里的 degraded 标记模型看不到
             # （它只看子任务输出），所以：
             #   1) Gateway 已把 _degraded 提示写进 output（跟着数据走）；
@@ -1472,6 +1498,71 @@ def route_after_react(state: LgRagState) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _aggregator_plain_messages(query: str, payload: str) -> list[LlmMessage]:
+    """off 态装配（现网形态 · 逐字节对拍基准）。"""
+    return [
+        LlmMessage(role="system", content=render("lg_rag.aggregator.system")),
+        LlmMessage(
+            role="user",
+            content=f"原始问题：{query}\n子任务结果：{payload}",
+        ),
+    ]
+
+
+def _aggregator_isolated_messages(
+    query: str, results: list[dict], payload: str
+) -> list[LlmMessage]:
+    """on 态装配（security-input-isolation D2 · 工具回执面收口进槽位）。
+
+    - 原始问题走 `user_query` 槽；工具回执段（tool_exec 已逐条
+      `wrap_slot("tool_result", ...)`）在 payload 内自带边界标记；
+      指令资产归 `system_instruction`。
+    - 装配校验 `assert_slots_declared` 在发往 LLM 前执行：声明了
+      `tool_result` 而 payload 无边界标记（绕过 wrap_slot 直拼 / 未声明段）
+      → :class:`SlotIsolationError` 显式炸，**请求不发出**（下游零请求）
+      + span `input_isolation_rejected`。
+    - 机制故障（含上游 tool_exec 已降级的 `input_isolation_degraded` 结果）
+      → 整单退 off 态装配 + span `input_isolation_degraded`——机制事故退旧
+      路径与内容违例不发出**语义分立**。
+    """
+    tool_outputs = [
+        r
+        for r in results
+        if isinstance(r, dict)
+        and str(r.get("type") or "") == "tool"
+        and r.get("output") is not None
+    ]
+    if any(r.get("input_isolation_degraded") for r in tool_outputs):
+        logger.warning("input isolation degraded upstream; aggregator keeps off-state assembly")
+        return _aggregator_plain_messages(query, payload)
+    try:
+        system_msg = LlmMessage(
+            role="system",
+            content=wrap_slot("system_instruction", render("lg_rag.aggregator.system")),
+        )
+        user_msg = LlmMessage(
+            role="user",
+            content=f"原始问题：{wrap_slot('user_query', query)}\n子任务结果：{payload}",
+        )
+        declared = ["user_query"]
+        if tool_outputs:
+            declared.append("tool_result")
+        declare_slots(user_msg, declared)
+        assert_slots_declared([system_msg, user_msg])
+        return [system_msg, user_msg]
+    except SlotIsolationError:
+        _record_span_metadata({"input_isolation_rejected": True})
+        logger.warning(
+            "aggregator input isolation rejected undeclared content; request not sent",
+            exc_info=True,
+        )
+        raise
+    except Exception:
+        logger.exception("aggregator input isolation failed; degrade to off-state assembly")
+        _record_span_metadata({"input_isolation_degraded": True})
+        return _aggregator_plain_messages(query, payload)
+
+
 async def aggregator_node(state: LgRagState) -> dict:
     """LLM 综合全部 subtask_results → 分节结构化 markdown，追加最终 AIMessage。
 
@@ -1484,17 +1575,15 @@ async def aggregator_node(state: LgRagState) -> dict:
     payload = json.dumps(results, ensure_ascii=False, default=str)
     provider = get_llm_provider(_ROUTER_PROVIDER)
     with trace_span("aggregator", run_type="chain"):
+        if security_input_isolation_enabled():
+            messages = _aggregator_isolated_messages(query, results, payload)
+        else:
+            messages = _aggregator_plain_messages(query, payload)
         # T5：SSE 路径经 token sink 逐 chunk 上屏（answer delta 帧）；
         # 无 sink / 流式异常时桥内降级整段 complete（T2 行为）+ 日志。
         text = await complete_answer_streaming(
             provider,
-            [
-                LlmMessage(role="system", content=render("lg_rag.aggregator.system")),
-                LlmMessage(
-                    role="user",
-                    content=f"原始问题：{query}\n子任务结果：{payload}",
-                ),
-            ],
+            messages,
             model=_ROUTER_MODEL,
             node="aggregator",
         )
