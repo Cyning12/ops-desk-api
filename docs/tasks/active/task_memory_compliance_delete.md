@@ -1,6 +1,6 @@
 # Task：记忆合规物理删除权（service 层 purge_by_user 按 (tenant,user) 全 status 整行 DELETE + 动作级审计记动作不记内容）· POST /admin/memory/purge（AdminSyncAuth 对齐 · dry_run 默认 true + expected_count 双闸门：缺→400 / 不等→409 零删除）· 删除后确定性召回零命中+向量通路零命中+表行全 status 零残留+越 tenant/user 零影响断言化 + 变异检验三条（memory-compliance-delete）
 
-> **状态**：`draft`（2026-09-22 · 10-task 落稿 · HG-TASK-DRAFT / HG-AUDIT-R1 落稿时待签）  
+> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
 > **类型**：feature（新增管理面不可逆删除能力 · **无 alembic 义务**（零新表零列 · 审计落既有 logger 面 · SPEC §4 A1 裁决）· **有图谱义务按实判**（新 admin 路由 `POST /admin/memory/purge` 落 admin 行备注 + 人签记录新行留 00 代录位 · 不新增一级模块/表/SSE 事件 · 偏离回炉条款见闸表与 graph_delta_note））  
 > **上游 SPEC**：`docs/spec/memory-compliance-delete/SPEC-memory-compliance-delete_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · a65ce3b · S1 同步物理删除 + A1 日志审计 + 默认干跑双闸门签收锁死）  
 > **分支**：`task/memory-compliance-delete`（**禁止 master/main 直改 · 禁止 push**）  
@@ -35,8 +35,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 落稿时待签（00 验收代录/人签 · 本帽不签） |
-| HG-AUDIT-R1 | pending | **30** | 落稿时待签（blocks 30 · 20-task-audit 后人签/授权代录）→ 30 拒开工 |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | 2026-09-22 · 00 验收 10-task 稿通过（维护者本窗授权 00 签收过程文档 · 原话留痕 SPEC 状态行） |
+| HG-AUDIT-R1 | approved | **30** | 2026-09-22 · 20-task-audit R1 PASS 零阻塞零退回（`docs/harness/reviews/task_memory_compliance_delete_audit_R1_20260922.md` · B1 抽 5 亲跑 · 双闸门三态可执行）· 维护者本窗授权 00 代录签收 |
 | HG-GRAPH-MODULES | approved | **30** | 2026-09-22 本帽**真读** `docs/_tech_graph/l1/01_modules.md`：模块表已建置（bootstrap 签 2026-07-16 · 签录链完整至 :92 security-input-isolation 行）；`admin` 行 :30（`app/ops/admin/**` → db · Bearer 机读 token + cookie maintainer 双口径）· `memory` 行 :28（ops_memory_facts · **无对外 HTTP 端点**——purge 是 memory 首个对外入口但落在 admin 模块内 · 零新开一级模块）· `api` 行 :20（router.py 注册面）均在表。SPEC §2 D4 判**有图谱义务按实判**：`admin` 行备注（`POST /admin/memory/purge` 首个 admin 面不可逆写端点 · AdminSyncAuth · 默认干跑 + expected_count 双闸门）+ `api` 行注册备注 + 人签记录**新行留 00 代录位**（随 30 交付落盘 · llm-layer-hardening/session-summary-fallback/security-input-isolation 先例）——义务钉在 D4 验收，**不新增一级模块/表/SSE 事件**故不阻塞 30 开工形态预判。**若 30 形态偏离 → 回炉补闸**（见 graph_delta_note，不得沿用本裁定） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 物理分层试点改码 | 本 task 不涉物理分层试点 |
 
