@@ -4,7 +4,7 @@
 > **类型**：feature（新 LLM 调用面（summary 档）+ 新 prompt 资产 + **新表 ops_session_summaries（有 alembic 义务 · 建表可逆）** + **有图谱义务按实判**（db 行新表登记 + lg_rag/chat/llm 行备注 · 不新增一级模块/路由/SSE 事件 · 偏离回炉条款见闸表与 graph_delta_note））  
 > **上游 SPEC**：`docs/spec/session-summary-fallback/SPEC-session-summary-fallback_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · commit 48ce63e）  
 > **分支**：`task/session-summary-fallback`（**禁止 master/main 直改 · 禁止 push**）  
-> **10 注**：2026-09-22 · 本棒由 00 委派 10-task 帽 Agent 执行；HG-TASK-DRAFT / HG-AUDIT-R1 均 **pending**（20 审后由人签/授权代录），**本帽不签**
+> **10 注**：2026-09-22 · 本棒由 00 委派 10-task 帽 Agent 执行；HG-TASK-DRAFT / HG-AUDIT-R1 均 **approved**（2026-09-22 · R1 PASS 零阻塞 · 维护者授权 00 代录；10 帽不签）
 
 ---
 
@@ -37,7 +37,7 @@
 |---------------|--------|-------------|------|
 | HG-TASK-DRAFT | **approved** | 20-R1, 30 | 2026-09-22 · 00 验收 10-task 稿通过（维护者本窗授权 00 签收过程文档 · 原话留痕 SPEC 状态行） |
 | HG-AUDIT-R1 | **approved** | **30** | 2026-09-22 · 20-task-audit R1 PASS 零阻塞零退回（`docs/harness/reviews/task_session_summary_fallback_audit_R1_20260922.md` · B1 抽 7 亲跑属实 · 双对拍可测性成立）· 维护者本窗授权 00 代录签收 |
-| HG-GRAPH-MODULES | **approved（模块表已建置）· 本 task 有新签义务（留 00 代录位）** | **30** | 2026-09-22 本帽**真读** `docs/_tech_graph/l1/01_modules.md`：模块表已建置（bootstrap 签 2026-07-16 · 签录链完整至 memory-preference-profile 行 :90）；`db` 行 :33（`app/db/**`, `alembic/**` · 新表登记先例 ops_llm_usage）· `lg_rag` 行 :27（`app/ops/lg_rag/**` 覆盖 continuity 装配面）· `chat` 行 :22（glob 含 `app/ops/session/**` 覆盖新文件 `session/summary.py`）· `llm` 行 :32（`app/llm/**` 覆盖 model_catalog 档扩展）均在表。SPEC §2 D5 判**有图谱义务按实判**：新表 `ops_session_summaries` 登记 db 行 + 上述三行备注 + 人签记录**新行留 00 代录位**（随 30 交付落盘 · llm-layer-hardening「00 代录 · 30 交付核验后」先例）——义务钉在 D5 验收，**不新增一级模块/路由/SSE 事件**故不阻塞 30 开工形态预判。**若 30 形态偏离 → 回炉补闸**（见 graph_delta_note，不得沿用本裁定） |
+| HG-GRAPH-MODULES | **approved** | **30** | 2026-09-22 本帽**真读** `docs/_tech_graph/l1/01_modules.md`：模块表已建置（bootstrap 签 2026-07-16 · 签录链完整至 memory-preference-profile 行 :90）；`db` 行 :33（`app/db/**`, `alembic/**` · 新表登记先例 ops_llm_usage）· `lg_rag` 行 :27（`app/ops/lg_rag/**` 覆盖 continuity 装配面）· `chat` 行 :22（glob 含 `app/ops/session/**` 覆盖新文件 `session/summary.py`）· `llm` 行 :32（`app/llm/**` 覆盖 model_catalog 档扩展）均在表。SPEC §2 D5 判**有图谱义务按实判**：新表 `ops_session_summaries` 登记 db 行 + 上述三行备注 + 人签记录**新行留 00 代录位**（随 30 交付落盘 · llm-layer-hardening「00 代录 · 30 交付核验后」先例）——义务钉在 D5 验收，**不新增一级模块/路由/SSE 事件**故不阻塞 30 开工形态预判。**若 30 形态偏离 → 回炉补闸**（见 graph_delta_note，不得沿用本裁定） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 物理分层试点改码 | 本 task 不涉物理分层试点 |
 
 ---
@@ -257,7 +257,7 @@
 | 轮 | 结论 | early_stop | reason（early_stop） | residual_risks |
 |----|------|------------|----------------------|----------------|
 | R0 | SPEC signed（HG-SPEC-SIGNOFF=approved 2026-09-22 · 48ce63e）；范围 D1–D5 承 SPEC §2 不重开辩论；本帽实扫复核：分支正确（`task/session-summary-fallback`）· continuity compress_window :27-62 / 开关 :110-120 / 装配 :219-283 · graph.py :153/:187 调用 :170/:202 · load_thread_turns 于 lg_rag/router.py:203（SPEC 锚点「router.py:203」实址 = `app/ops/lg_rag/router.py`）· history.py 无生产调用方 · models.py :255/:260/:305-320 · model_catalog :118/:122-127/:158-163 · loader.py:52-62 · extract.py:43/:99-114 · assets README 变量表 :20-34 · usage.py task_type 自由 str · pytest 基线 **1239 collected**（真跑）· alembic head `20260922_memory_kind_preference`（真跑）· `session.summary`/`SESSION_SUMMARY` 零命名冲突——SPEC §1 锚点全部复核一致 | no | — | none |
-| R1 | 开工闸：HG-TASK-DRAFT=pending（本帽不签）· HG-AUDIT-R1=pending（blocks 30 · 本帽不签）· HG-GRAPH-MODULES=approved（模块表已建置 · **真读** `01_modules.md`：db/lg_rag/chat/llm 四行覆盖全部改动面）+ **新签义务**（db 行新表登记 + 三行备注 + 人签新行 00 代录位随 30 交付落盘 · llm-layer-hardening 先例）+ 偏离回炉补闸条款 · HG-PILOT-OPSDESK-GLAYER=n/a | no | — | 无 |
+| R1 | 开工闸：HG-TASK-DRAFT=approved · HG-AUDIT-R1=approved（2026-09-22 00 代录 · blocks 30 已放行）· HG-GRAPH-MODULES=approved（模块表已建置 · **真读** `01_modules.md`：db/lg_rag/chat/llm 四行覆盖全部改动面）+ **新签义务**（db 行新表登记 + 三行备注 + 人签新行 00 代录位随 30 交付落盘 · llm-layer-hardening 先例）+ 偏离回炉补闸条款 · HG-PILOT-OPSDESK-GLAYER=n/a | no | — | 无 |
 | R2 | 竖切：D1–D5 同 task 一次提交（承 SPEC §2 波次裁定 · 五块不可拆语义单元）；实现序承 SPEC §8（D5 迁移+图谱 → D1 档+prompt 资产+生成服务 → D2 缓存 → D3 开关+对拍 → D4 评测）；方案对比继承 SPEC §4 三组裁决（L1 懒生成+缓存弃 L2/L3 · T2 新增 summary 档弃 T1 · C1 独立表弃 C2/C3），不重演 | no | — | 无 |
 | R3 | failure_paths **14 条** = SPEC §5 十一条翻四列 + 过程三（闸未签拒开工 · B1 闸前置拒收 · 无双对拍/变异检验拒收）；三静默错（摘错造错误前提 / 缓存污染 / 回退开关失效）各有断言+变异检验兜底 | no | — | 无 |
 | R4 | 验收 **26 条**全否定性断言化逐块映射 SPEC §6（人工闸 1 / D1×5 / D2×4 / D3×3 / D4×4 / D5×3 / 变异检验×3 / 工程×3）；B1 实扫 **12 行**落盘（回归×10 · 改编×0 · 新增×1 · 迁移×1 · 删除×0）；实扫确认无「档集合恰好四元」断言（unknown-task 用例用 `"summarize"` ≠ `"summary"` 语义不反转）——改编面为零钉死 | no | — | 超长会话 chunk 数线性增长的首压成本（承 SPEC §7 ② · usage 账可观测） |
@@ -271,7 +271,7 @@ SPEC 已签收，本 task 只做可执行化拆解：窗口压缩占位保窗不
 
 ### R1 · 开工闸
 
-HG-TASK-DRAFT / HG-AUDIT-R1 均 pending（20 审后人签/授权代录，本帽不签）；HG-GRAPH-MODULES **真读** `docs/_tech_graph/l1/01_modules.md` 核验：模块表已建置（bootstrap 签 2026-07-16 · 签录链完整至 :90 memory-preference-profile 行）；`db` 行（:33 · `app/db/**`, `alembic/**` · 新表登记先例 ops_llm_usage）· `lg_rag` 行（:27 · 覆盖 continuity 装配面）· `chat` 行（:22 · glob 含 `app/ops/session/**` 覆盖新增 `session/summary.py`）· `llm` 行（:32 · 覆盖 model_catalog 档扩展）均在表。SPEC §2 D5 判**有图谱义务按实判**：新表 `ops_session_summaries` 登记 db 行 + 三行备注 + 人签记录**新行留 00 代录位**（随 30 交付落盘 · llm-layer-hardening「00 代录 · 30 交付核验后」先例）——不新增一级模块/路由/SSE 事件，义务钉 D5 验收不阻塞 30 开工形态预判；**回炉补闸条款**钉死（偏离 → 退 10-spec + 补闸 + 图谱如实登记）。HG-PILOT-OPSDESK-GLAYER=n/a。
+HG-TASK-DRAFT / HG-AUDIT-R1 均 approved（2026-09-22 · R1 零阻塞 · 维护者授权 00 代录）；HG-GRAPH-MODULES **真读** `docs/_tech_graph/l1/01_modules.md` 核验：模块表已建置（bootstrap 签 2026-07-16 · 签录链完整至 :90 memory-preference-profile 行）；`db` 行（:33 · `app/db/**`, `alembic/**` · 新表登记先例 ops_llm_usage）· `lg_rag` 行（:27 · 覆盖 continuity 装配面）· `chat` 行（:22 · glob 含 `app/ops/session/**` 覆盖新增 `session/summary.py`）· `llm` 行（:32 · 覆盖 model_catalog 档扩展）均在表。SPEC §2 D5 判**有图谱义务按实判**：新表 `ops_session_summaries` 登记 db 行 + 三行备注 + 人签记录**新行留 00 代录位**（随 30 交付落盘 · llm-layer-hardening「00 代录 · 30 交付核验后」先例）——不新增一级模块/路由/SSE 事件，义务钉 D5 验收不阻塞 30 开工形态预判；**回炉补闸条款**钉死（偏离 → 退 10-spec + 补闸 + 图谱如实登记）。HG-PILOT-OPSDESK-GLAYER=n/a。
 
 ### R2 · 竖切
 
@@ -299,4 +299,4 @@ SPEC §5 十一条失败面全收并翻四列：三静默错（摘错造错误�
 
 | 日期 | 说明 |
 |------|------|
-| 2026-09-22 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 **26 条**逐块映射 SPEC §6 实质零差异（人工闸 1 / D1×5 / D2×4 / D3×3 / D4×4 / D5×3 / 变异检验×3 / 工程×3）· B1 旧测影响面 **12 行**实扫落盘（口径：tests grep 命中 5 文件 · 无枚举档集合断言 · unknown-task 用例 `"summarize"`≠`"summary"` 语义不反转 · 用例计数 8 文件 · pytest 基线 **1239 collected** 真跑 · `alembic heads`=`20260922_memory_kind_preference` 真跑 · `session.summary` 零命名冲突）· SPEC §1 锚点复核零偏差 · HG-TASK-DRAFT=pending · HG-AUDIT-R1=pending → 30 拒开工 · HG-GRAPH-MODULES=approved（模块表已建置真读核验）+ 新签义务（db 行新表 + lg_rag/chat/llm 行备注 + 人签新行 00 代录位 · 偏离回炉补闸）· HG-PILOT-OPSDESK-GLAYER=n/a |
+| 2026-09-22 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 **26 条**逐块映射 SPEC §6 实质零差异（人工闸 1 / D1×5 / D2×4 / D3×3 / D4×4 / D5×3 / 变异检验×3 / 工程×3）· B1 旧测影响面 **12 行**实扫落盘（口径：tests grep 命中 5 文件 · 无枚举档集合断言 · unknown-task 用例 `"summarize"`≠`"summary"` 语义不反转 · 用例计数 8 文件 · pytest 基线 **1239 collected** 真跑 · `alembic heads`=`20260922_memory_kind_preference` 真跑 · `session.summary` 零命名冲突）· SPEC §1 锚点复核零偏差 · HG-TASK-DRAFT/HG-AUDIT-R1 落稿时待签 → 2026-09-22 00 代录 approved（R1 零阻塞）· HG-GRAPH-MODULES=approved（模块表已建置真读核验）+ 新签义务（db 行新表 + lg_rag/chat/llm 行备注 + 人签新行 00 代录位 · 偏离回炉补闸）· HG-PILOT-OPSDESK-GLAYER=n/a |
