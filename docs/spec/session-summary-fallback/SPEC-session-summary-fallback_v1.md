@@ -1,6 +1,6 @@
 # SPEC：会话记忆真摘要（可回退原文）（v1）
 
-> **状态**：`draft-complete`（HG-SPEC-SIGNOFF=**pending** · 人签前不出 task / 不改码）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved**（2026-09-22 · 维护者授权 00 本窗签收全部过程文档 · 原话「此spec完成后继续把完成后续spec，一个个进行，每次PR到main通过CI后自动merge」承前令「授权00签收所有过程文档」） · 人签前不出 task / 不改码）
 > **track**：`feature`（新 LLM 调用面（摘要档）+ 新 prompt 资产 + **新表 ops_session_summaries（有 alembic 义务）** + 图谱义务按实判见 §2 D5）
 > **上游**：`../ops-desk-workspace/docs/08-interview/07_agent-memory-prompt-module-landscape_v1_zh.md`（手册 §1.2.2「明确知道缺的一环」· §1.9 反模式：摘要不可回退）
 > **格式基准**：`docs/spec/memory-preference-profile/SPEC-memory-preference-profile_v1.md`（signed · 2026-09-22）
@@ -25,7 +25,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | **pending** | 待人签；签前不出 task / 不改码 |
+| **HG-SPEC-SIGNOFF** | **approved** | 待人签；签前不出 task / 不改码 |
 | **HG-GRAPH-MODULES** | **pending（按实判 · 有义务）** | 新表 `ops_session_summaries` 落 `docs/_tech_graph/l1/01_modules.md` 数据面；30 前须 approved |
 
 ---
@@ -245,7 +245,7 @@
 
 ```text
 你是 ops-desk-api 仓（/Users/cyning/Desktop/Ops-desk/ops-desk-api）的 <20-spec-audit ｜ 00>。
-SPEC：docs/spec/session-summary-fallback/SPEC-session-summary-fallback_v1.md（draft-complete · HG-SPEC-SIGNOFF=pending）。
+SPEC：docs/spec/session-summary-fallback/SPEC-session-summary-fallback_v1.md（draft-complete · HG-SPEC-SIGNOFF=approved（00 代录 · 维护者授权））。
 <20-spec-audit>：书面审范围/非范围/验收/failure_paths 与 R0–R5 思考轮，结论落盘 docs/harness/reviews/，不代签人闸。
 <00>：待维护者签 HG-SPEC-SIGNOFF=approved 后，按 SPEC §8 起草 docs/tasks/active/task_session_summary_fallback.md（D1–D5 · failure_paths 沿用 SPEC §5 · HG-GRAPH-MODULES 有义务（新表 ops_session_summaries）· 变异检验三条入验收 · 铁律：SESSION_SUMMARY_ENABLED 默认关、off/on-失败双对拍逐字节一致）。
 ```
@@ -257,4 +257,4 @@ SPEC：docs/spec/session-summary-fallback/SPEC-session-summary-fallback_v1.md（
 | 日期 | 说明 |
 |---|---|
 | 2026-09-22 | 占位稿（范围草案 + 锚点 + 验收方向 + 接续指引） |
-| 2026-10-12 | 10-spec 补全：锚点逐个实扫（continuity/history/thread_store/models/model_catalog/retry/circuit/usage/prompts assets/extract 先例）——确认 compress_window 纯函数唯一生产入口在 lg_rag、history.py 无生产调用方、原文面保留现状、llm-layer-hardening 四档路由+重试/熔断/usage 全套可继承、prompt 资产化阶段一落盘形态；范围断言化五块；**懒生成+缓存裁定**（§4 L1/L2/L3 对比：成本按需 vs 为不确定未来付费）；**新增 summary 档裁定**（vs 复用 extract 档：延迟预算隔离 + usage 归因）；**缓存独立表裁定**（vs 写回 turns 表污染原文 SoT）；**回退铁律落地**（SESSION_SUMMARY_ENABLED 默认关 · off/on-失败双对拍逐字节一致 · 回退=关开关零代码零迁移）；保真度金样 sentinel 正反断言（热路径零 LLM-as-judge · preference_redline 先例）；track 裁定 `feature`（新 LLM 调用面+新表+alembic+图谱义务）；failure_paths 11 条；R0–R5 回填；HG-SPEC-SIGNOFF 保持 pending 待人签 |
+| 2026-10-12 | 10-spec 补全：锚点逐个实扫（continuity/history/thread_store/models/model_catalog/retry/circuit/usage/prompts assets/extract 先例）——确认 compress_window 纯函数唯一生产入口在 lg_rag、history.py 无生产调用方、原文面保留现状、llm-layer-hardening 四档路由+重试/熔断/usage 全套可继承、prompt 资产化阶段一落盘形态；范围断言化五块；**懒生成+缓存裁定**（§4 L1/L2/L3 对比：成本按需 vs 为不确定未来付费）；**新增 summary 档裁定**（vs 复用 extract 档：延迟预算隔离 + usage 归因）；**缓存独立表裁定**（vs 写回 turns 表污染原文 SoT）；**回退铁律落地**（SESSION_SUMMARY_ENABLED 默认关 · off/on-失败双对拍逐字节一致 · 回退=关开关零代码零迁移）；保真度金样 sentinel 正反断言（热路径零 LLM-as-judge · preference_redline 先例）；track 裁定 `feature`（新 LLM 调用面+新表+alembic+图谱义务）；failure_paths 11 条；R0–R5 回填；HG-SPEC-SIGNOFF 保持 approved（00 代录 · 维护者授权） 待人签 |
