@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 
 from app.ops.capability import list_capabilities
+from app.ops.capability.baseline import baseline_filter
 from app.ops.capability.types import CapabilityFilter, CapabilitySpec
 from app.ops.lg_rag.multi.budget import bump_supervisor_step
 from app.ops.lg_rag.state import LgRagState
@@ -16,12 +17,9 @@ from app.ops.tracing import trace_span, tracing_enabled, update_current_span_met
 
 logger = logging.getLogger(__name__)
 
-# 与 supervisor 同 Policy 裁剪：local_fn · 剔除 high risk（Mode A · ROADMAP §4）
-BUILDER_CAP_FILTER = CapabilityFilter(
-    node_role="strategy_builder",
-    kinds=frozenset({"local_fn"}),
-    deny_high_risk=True,
-)
+# 与 supervisor **共用同一份基线**（见 capability.baseline）：
+# local_fn 全可见 + 按域放行的新 kind（如 oa 的 http）+ 剔除 high risk + 剔除写能力。
+BUILDER_CAP_FILTER = baseline_filter(node_role="strategy_builder")
 
 
 def get_policy_visible_catalog(

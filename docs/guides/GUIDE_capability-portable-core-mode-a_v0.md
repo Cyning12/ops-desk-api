@@ -30,29 +30,43 @@ from app.ops.capability.extras.langchain import as_structured_tools, as_tool_nod
 
 | 场景 | 推荐 `CapabilityFilter` | 说明 |
 |---|---|---|
-| Supervisor / planner 赋能列表 | `kinds=frozenset({"local_fn"})` + `tags_any=…`（按业务域裁剪） | 给模型看「能调什么」；宜窄不宜全表 |
+| Supervisor / planner 赋能列表 | `baseline_filter(node_role=…)`（见 `capability.baseline`） | 给模型看「能调什么」；宜窄不宜全表 |
 | tool_exec 执行侧 | 同上或按 plan 中已选 id 直接 `invoke` | 主路径是 **按 id invoke**，不必再 list 全量 |
 | 探针 / skill | `kinds=frozenset({"mcp"|"sandbox"|"cli"|"skill"})` | 默认不进 defaults；须显式 register |
+
+**基线单一真相**：Builder 与 Supervisor **共用** `app/ops/capability/baseline.py` 的
+`baseline_filter()`——两处各写一份会漂移（一处放开、另一处没放开）。
+按业务域逐批放开新 kind 只改 `DOMAIN_ALLOW_TAGS` 一行。
 
 字段约定（现行 `_match_filter`）：
 
 | 字段 | 行为 |
 |---|---|
 | `kinds` | 精确匹配 `spec.kind` |
-| `tags_any` | 与 `spec.tags` 有交集即过 |
+| `allow_tags_any` | **放宽**：命中任一 tag → **豁免 `kinds` 裁剪**（按域放开新 kind 用；不放宽 `deny_*`） |
+| `tags_any` | **收窄**：与 `spec.tags` 有交集即过 |
 | `deny_high_risk` | 剔除 `risk_level=high` |
+| `deny_write` | 剔除 `side_effect ∈ {write, irreversible}`（裁剪阶段就不进模型视野） |
 | `enabled=False` | 带 filter 时不可见；`invoke` → `ok=False` + `blocked=disabled` |
-| `node_role` / `mode` | **占位**：单独传入**不裁剪**；写入 ctx / 观测用；裁剪请用 `kinds`/`tags_any` |
+| `node_role` / `mode` | **占位**：单独传入**不裁剪**；写入 ctx / 观测用；裁剪请用 `kinds`/`allow_tags_any`/`tags_any` |
+
+> ⚠️ `tags_any`（收窄）与 `allow_tags_any`（放宽）**方向相反，别搞混**。
+> 把域白名单写成 `kinds={"local_fn"}, tags_any={"oa"}` 会得到**空目录**——
+> 存量 local_fn 没有 `oa` 标签，会被收窄掉。
 
 示例：
 
 ```python
 from app.ops.capability import CapabilityFilter, list_capabilities, invoke
+from app.ops.capability.baseline import baseline_filter
 
-# planner：仅 local_fn + issue 标签
-planner_caps = list_capabilities(
+# planner：平台基线（local_fn + 按域放行的新 kind − high risk − 写能力）
+planner_caps = list_capabilities(filter=baseline_filter(node_role="supervisor"))
+
+# 只做域收窄（在基线之上）：仅 issue 标签
+issue_only = list_capabilities(
     filter=CapabilityFilter(
-        node_role="supervisor",  # 占位记录角色；真正裁剪靠 kinds/tags
+        node_role="supervisor",
         kinds=frozenset({"local_fn"}),
         tags_any=frozenset({"issue"}),
     )

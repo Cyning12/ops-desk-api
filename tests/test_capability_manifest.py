@@ -1,4 +1,10 @@
-"""S3 · capability catalog manifest YAML/JSON 加载。"""
+"""S3 · capability catalog manifest YAML/JSON 加载。
+
+H4 更新：契约收紧——``args_schema`` 与 ``when_to_use`` 变为**必填**。
+理由：无 ``args_schema`` 的能力进不了 FC 目录（``schemas_for_llm`` 会跳过），
+注册它几乎总是笔误；无 ``when_to_use`` 则模型只能靠 id 猜。fixture 随之补齐，
+**断言本身未改**。
+"""
 
 from __future__ import annotations
 
@@ -30,6 +36,11 @@ _BUILTIN_IDS = (
     "get_issue_by_number",
     "get_pr_by_number",
 )
+
+# H4 必填字段的最小声明（fixture 复用；契约本身见 manifest._entry_from_raw）
+_MIN_DECL = """    when_to_use: 单测 fixture
+    args_schema: {type: object, properties: {}}
+"""
 
 
 @pytest.fixture(autouse=True)
@@ -63,6 +74,8 @@ def test_builtin_yaml_aligns_with_default_specs():
         assert loaded.risk_level == spec.risk_level
         assert loaded.tenant_scoped == spec.tenant_scoped
         assert loaded.args_schema == spec.args_schema
+        # H4：YAML 与硬编码回退必须对 side_effect 一致（否则回退路径语义漂移）
+        assert loaded.side_effect == spec.side_effect
     now = invoke("utc_now_iso", "")
     assert now.ok is True
     assert now.output["tool"] == utc_now_iso("")["tool"]
@@ -80,9 +93,11 @@ capabilities:
   - id: extra_utc
     kind: local_fn
     description: extra from yaml
+    when_to_use: 单测 fixture
     tags: [readonly, fixture]
     risk_level: low
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
 """,
     )
@@ -102,9 +117,11 @@ capabilities:
                         "id": "extra_issue",
                         "kind": "local_fn",
                         "description": "extra from json",
+                        "when_to_use": "单测 fixture",
                         "tags": ["mock", "fixture"],
                         "risk_level": "low",
                         "enabled": True,
+                        "args_schema": {"type": "object", "properties": {}},
                         "adapter": (
                             "local_fn:app.ops.capability.defaults:mock_get_issue_status"
                         ),
@@ -132,13 +149,17 @@ capabilities:
   - id: would_register
     kind: local_fn
     description: valid-looking
+    when_to_use: 单测 fixture
     tags: [fixture]
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
   - id: evil
     kind: local_fn
     description: illegal module
+    when_to_use: 单测 fixture
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:os:system
 """,
     )
@@ -161,12 +182,16 @@ capabilities:
   - id: sneaky_ok
     kind: local_fn
     description: ok
+    when_to_use: 单测 fixture
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
   - id: mcp_probe
     kind: mcp
     description: not allowed
+    when_to_use: 单测 fixture
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
 """,
     )
@@ -202,7 +227,9 @@ capabilities:
   - id: via_gateway
     kind: local_fn
     description: wrong module
+    when_to_use: 单测 fixture
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.gateway:register
 """,
     )
@@ -238,14 +265,18 @@ capabilities:
   - id: skipped_cap
     kind: local_fn
     description: disabled
+    when_to_use: 单测 fixture
     tags: [fixture]
     enabled: false
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
   - id: live_cap
     kind: local_fn
     description: enabled
+    when_to_use: 单测 fixture
     tags: [fixture]
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
 """,
     )
@@ -287,8 +318,10 @@ capabilities:
   - id: reload_cap
     kind: local_fn
     description: first
+    when_to_use: 单测 fixture
     tags: [fixture]
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
 """,
     )
@@ -306,8 +339,10 @@ capabilities:
   - id: reload_cap
     kind: local_fn
     description: second
+    when_to_use: 单测 fixture
     tags: [fixture]
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
 """,
         encoding="utf-8",
@@ -344,9 +379,11 @@ capabilities:
   - id: extra_issue_lookup
     kind: local_fn
     description: lookups prefix
+    when_to_use: 单测 fixture
     tags: [lookup, fixture]
     risk_level: low
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
 """,
     )
@@ -364,12 +401,16 @@ capabilities:
   - id: would_register
     kind: local_fn
     description: valid-looking
+    when_to_use: 单测 fixture
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
   - id: evil_session
     kind: local_fn
     description: illegal module
+    when_to_use: 单测 fixture
     enabled: true
+    args_schema: {type: object, properties: {}}
     adapter: local_fn:app.db.session:AsyncSessionLocal
 """,
     )
@@ -378,3 +419,211 @@ capabilities:
     assert {s.capability_id for s in list_capabilities()} == before
     assert "evil_session" not in before
     assert "would_register" not in {s.capability_id for s in list_capabilities()}
+
+
+def test_min_decl_snippet_is_valid_yaml():
+    """fixture 里那段公共声明本身可解析（防止 helper 与真契约漂移）。"""
+    import textwrap
+
+    import yaml
+
+    body = "id: probe\nkind: local_fn\n" + textwrap.dedent(_MIN_DECL)
+    data = yaml.safe_load(body)
+    assert data["when_to_use"]
+    assert data["args_schema"] == {"type": "object", "properties": {}}
+
+
+# ---------------- V10：结果契约形状（拼错 = 没有契约）----------------
+
+
+def _write_output_schema_manifest(tmp_path: Path, output_schema_block: str) -> Path:
+    body = f"""version: 1
+capabilities:
+  - id: probe_contract
+    kind: local_fn
+    description: 契约形状单测
+    when_to_use: 单测 fixture
+    args_schema: {{type: object, properties: {{}}}}
+    adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
+    output_schema:
+{output_schema_block}
+"""
+    return _write_yaml(tmp_path / "contract.yaml", body)
+
+
+@pytest.mark.parametrize(
+    "block, why",
+    [
+        ("      required: []", "required 为空列表 —— 等于声明了一个空契约"),
+        ("      required: ['data.ticketId']", "路径不以 $ 开头 —— 取不到，契约静默失效"),
+        ("      min_items: {'$.data.items': 'one'}", "min_items 不是整数"),
+        ("      requiredx: ['$.data.x']", "拼错字段名"),
+    ],
+)
+def test_output_schema_bad_shape_rejected(tmp_path: Path, block: str, why: str):
+    """V10：形状不合法必须在**加载期**炸，不能留到运行期静默不生效。"""
+    path = _write_output_schema_manifest(tmp_path, block)
+    with pytest.raises(ManifestError, match="V10"):
+        load_capability_manifest(path)
+    assert "probe_contract" not in {s.capability_id for s in list_capabilities()}
+
+
+def test_output_schema_valid_shape_loads(tmp_path: Path):
+    """合法契约必须能加载进 spec（对照——上面四条不是"一律拒绝"）。"""
+    block = """      required: ["$.data.ticketId"]
+      min_items: {"$.data.items": 1}
+      empty_is_suspicious: true"""
+    path = _write_output_schema_manifest(tmp_path, block)
+    result = load_capability_manifest(path)
+    assert "probe_contract" in set(result.registered_ids)
+    spec = next(
+        s for s in list_capabilities() if s.capability_id == "probe_contract"
+    )
+    assert spec.output_schema == {
+        "required": ["$.data.ticketId"],
+        "min_items": {"$.data.items": 1},
+        "empty_is_suspicious": True,
+    }
+    unregister_probe = getattr(spec, "capability_id", None)
+    assert unregister_probe == "probe_contract"
+
+
+# ---------------- V10：结果契约形状（拼错 = 没有契约）----------------
+
+
+def _write_output_schema_manifest(tmp_path: Path, output_schema_block: str) -> Path:
+    body = f"""version: 1
+capabilities:
+  - id: probe_contract
+    kind: local_fn
+    description: 契约形状单测
+    when_to_use: 单测 fixture
+    args_schema: {{type: object, properties: {{}}}}
+    adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
+    output_schema:
+{output_schema_block}
+"""
+    return _write_yaml(tmp_path / "contract.yaml", body)
+
+
+@pytest.mark.parametrize(
+    "block, why",
+    [
+        ("      required: []", "required 为空列表 —— 等于声明了一个空契约"),
+        ("      required: ['data.ticketId']", "路径不以 $ 开头 —— 取不到，契约静默失效"),
+        ("      min_items: {'$.data.items': 'one'}", "min_items 不是整数"),
+        ("      requiredx: ['$.data.x']", "拼错字段名"),
+    ],
+)
+def test_output_schema_bad_shape_rejected(tmp_path: Path, block: str, why: str):
+    """V10：形状不合法必须在**加载期**炸，不能留到运行期静默不生效。"""
+    path = _write_output_schema_manifest(tmp_path, block)
+    with pytest.raises(ManifestError, match="V10"):
+        load_capability_manifest(path)
+    assert "probe_contract" not in {s.capability_id for s in list_capabilities()}
+
+
+def test_output_schema_valid_shape_loads(tmp_path: Path):
+    """合法契约必须能加载进 spec（对照——上面四条不是"一律拒绝"）。"""
+    block = """      required: ["$.data.ticketId"]
+      min_items: {"$.data.items": 1}
+      empty_is_suspicious: true"""
+    path = _write_output_schema_manifest(tmp_path, block)
+    result = load_capability_manifest(path)
+    assert "probe_contract" in set(result.registered_ids)
+    spec = next(
+        s for s in list_capabilities() if s.capability_id == "probe_contract"
+    )
+    assert spec.output_schema == {
+        "required": ["$.data.ticketId"],
+        "min_items": {"$.data.items": 1},
+        "empty_is_suspicious": True,
+    }
+    unregister_probe = getattr(spec, "capability_id", None)
+    assert unregister_probe == "probe_contract"
+
+
+# ---------------- 失败成因分类（熔断的判定依据）----------------
+
+
+def test_environmental_failure_classification():
+    """只有「下游不响应 / 5xx / 429」算环境类；业务响应与本地装配不算。"""
+    from app.ops.capability.errors import (
+        CAUSE_BUSINESS,
+        CAUSE_HTTP_STATUS,
+        CAUSE_LOCAL,
+        CAUSE_TRANSPORT,
+        is_environmental_failure,
+    )
+
+    # 该熔
+    assert is_environmental_failure(CAUSE_TRANSPORT) is True
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 500) is True
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 503) is True
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 429) is True
+
+    # 不该熔：下游活着并回答了
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 200) is False
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 404) is False
+    assert is_environmental_failure(CAUSE_BUSINESS) is False
+    # 不该熔：我们自己没配好（配错一次不能把能力停 60s）
+    assert is_environmental_failure(CAUSE_LOCAL) is False
+    # 信息不全时不判定 → 宁可少熔
+    assert is_environmental_failure(None) is False
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, None) is False
+
+
+def test_http_capability_error_exposes_structured_cause():
+    """``cause`` 必须能从异常上读到（熔断层不解析 detail 文案）。"""
+    from app.ops.capability.adapters.http_generic import HttpCapabilityError
+    from app.ops.capability.errors import CAUSE_TRANSPORT, UPSTREAM_ERROR
+
+    err = HttpCapabilityError(UPSTREAM_ERROR, "请求超时", cause=CAUSE_TRANSPORT)
+    assert err.environmental is True
+    assert str(err) == "upstream_error: 请求超时"  # 对外口径不变
+
+    biz = HttpCapabilityError(UPSTREAM_ERROR, "HTTP 200")
+    assert biz.environmental is False  # 未填 cause → 不熔（宁可少熔）
+
+
+# ---------------- 失败成因分类（熔断的判定依据）----------------
+
+
+def test_environmental_failure_classification():
+    """只有「下游不响应 / 5xx / 429」算环境类；业务响应与本地装配不算。"""
+    from app.ops.capability.errors import (
+        CAUSE_BUSINESS,
+        CAUSE_HTTP_STATUS,
+        CAUSE_LOCAL,
+        CAUSE_TRANSPORT,
+        is_environmental_failure,
+    )
+
+    # 该熔
+    assert is_environmental_failure(CAUSE_TRANSPORT) is True
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 500) is True
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 503) is True
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 429) is True
+
+    # 不该熔：下游活着并回答了
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 200) is False
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, 404) is False
+    assert is_environmental_failure(CAUSE_BUSINESS) is False
+    # 不该熔：我们自己没配好（配错一次不能把能力停 60s）
+    assert is_environmental_failure(CAUSE_LOCAL) is False
+    # 信息不全时不判定 → 宁可少熔
+    assert is_environmental_failure(None) is False
+    assert is_environmental_failure(CAUSE_HTTP_STATUS, None) is False
+
+
+def test_http_capability_error_exposes_structured_cause():
+    """``cause`` 必须能从异常上读到（熔断层不解析 detail 文案）。"""
+    from app.ops.capability.adapters.http_generic import HttpCapabilityError
+    from app.ops.capability.errors import CAUSE_TRANSPORT, UPSTREAM_ERROR
+
+    err = HttpCapabilityError(UPSTREAM_ERROR, "请求超时", cause=CAUSE_TRANSPORT)
+    assert err.environmental is True
+    assert str(err) == "upstream_error: 请求超时"  # 对外口径不变
+
+    biz = HttpCapabilityError(UPSTREAM_ERROR, "HTTP 200")
+    assert biz.environmental is False  # 未填 cause → 不熔（宁可少熔）

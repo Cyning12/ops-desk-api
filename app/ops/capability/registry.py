@@ -7,9 +7,14 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any, Protocol
 
-from app.ops.capability.types import CapabilityFilter, CapabilitySpec
+from app.ops.capability.types import (
+    WRITE_SIDE_EFFECTS,
+    CapabilityFilter,
+    CapabilitySpec,
+)
 
 
 class CapabilityAdapter(Protocol):
@@ -34,15 +39,9 @@ class CapabilityRegistry:
             # 钉死：拒绝覆盖（见模块 docstring）
             raise ValueError(f"capability_id 已注册: {cid}")
         if spec.capability_id != cid:
-            spec = CapabilitySpec(
-                capability_id=cid,
-                kind=spec.kind,
-                description=spec.description,
-                args_schema=spec.args_schema,
-                tags=spec.tags,
-                risk_level=spec.risk_level,
-                enabled=spec.enabled,
-            )
+            # 用手工重建会**静默丢字段**（历史 bug：tenant_scoped 曾被漏掉）。
+            # 新增 side_effect / http / hitl_required 等字段后风险更大 → 一律用 replace。
+            spec = replace(spec, capability_id=cid)
         self._entries[cid] = (spec, adapter)
 
     def unregister(self, capability_id: str) -> bool:
@@ -67,11 +66,22 @@ class CapabilityRegistry:
 
 
 def _match_filter(spec: CapabilitySpec, f: CapabilityFilter) -> bool:
+    """可见集裁剪（SPEC §3.3）。
+
+    判序：形态 → 风险 → 副作用 → 标签收窄。``allow_tags_any`` 只作用于**第一层**
+    （豁免 kinds 裁剪），不放宽后面的 deny_* —— 否则它就成了「一个 tag 换全部豁免」。
+    """
     if not spec.enabled:
         return False
     if f.kinds is not None and spec.kind not in f.kinds:
-        return False
+        exempt = bool(
+            f.allow_tags_any and f.allow_tags_any.intersection(spec.tags)
+        )
+        if not exempt:
+            return False
     if f.deny_high_risk and spec.risk_level == "high":
+        return False
+    if f.deny_write and spec.side_effect in WRITE_SIDE_EFFECTS:
         return False
     # node_role / mode：P0 仅占位字段，不裁剪（无 tags 绑定时全放行）
     if f.tags_any is None:

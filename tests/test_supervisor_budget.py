@@ -81,18 +81,28 @@ def test_route_next_subtask_budget_exhausted_goes_aggregate_even_with_pending(
     """主闸：总步耗尽 → aggregate（即使仍有 pending）。"""
     monkeypatch.setenv("LG_RAG_SUPERVISOR_MAX_STEPS", "5")
     state = _pending_rag_state(supervisor_step_count=5)
-    assert route_next_subtask(state) == "aggregate"
+    assert route_next_subtask(state) == "observe"
 
     flagged = _pending_rag_state(
         supervisor_step_count=1,
         supervisor_budget_exhausted=True,
     )
-    assert route_next_subtask(flagged) == "aggregate"
+    assert route_next_subtask(flagged) == "observe"
 
 
 def test_route_next_subtask_not_exhausted_dispatches():
+    """未耗尽：同批两个无依赖工人同时在飞，且不共享下标。"""
     state = _pending_rag_state(supervisor_step_count=2)
-    assert route_next_subtask(state) == "rag_subtask"
+    for row in state["subtasks"]:
+        row["subtask_id"] = row["id"]
+        row["depends_on"] = []
+    state["inflight_subtask_ids"] = ["t1", "t2"]
+    routed = route_next_subtask(state)
+    assert isinstance(routed, list)
+    assert len(routed) == 2
+    bound = [item.arg["assigned_subtask"]["subtask_id"] for item in routed]
+    assert bound == ["t1", "t2"]
+    assert {item.node for item in routed} == {"rag_subtask", "info_extract"}
 
 
 def test_route_wall_clock_exhausted_goes_aggregate(monkeypatch: pytest.MonkeyPatch):
@@ -106,7 +116,7 @@ def test_route_wall_clock_exhausted_goes_aggregate(monkeypatch: pytest.MonkeyPat
         return_value=20.0,
     ):
         assert is_supervisor_budget_exhausted(state) is True
-        assert route_next_subtask(state) == "aggregate"
+        assert route_next_subtask(state) == "observe"
 
 
 def test_decide_critic_global_exhausted_forbids_retry_rebind():

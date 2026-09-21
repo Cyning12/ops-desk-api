@@ -1,0 +1,196 @@
+{
+  "catalog_anonymous_cannot_see_department_restricted": {
+    "anonymous": true,
+    "hidden": [
+      {
+        "capability_id": "dept_finance_only",
+        "reason": "department_mismatch"
+      }
+    ],
+    "kept_count": 0,
+    "undeclared_count": 0,
+    "visible_ids": []
+  },
+  "catalog_finance_principal_sees_department_restricted": {
+    "anonymous": false,
+    "hidden": [],
+    "kept_count": 1,
+    "undeclared_count": 0,
+    "visible_ids": [
+      "dept_finance_only"
+    ]
+  },
+  "catalog_untagged_http_is_cropped_by_kinds_not_visibility": {
+    "anonymous": true,
+    "hidden": [],
+    "kept_count": 0,
+    "undeclared_count": 0,
+    "visible_ids": []
+  },
+  "invoke_no_contract_stays_ok_on_same_payload": {
+    "downstream_calls": 1,
+    "duplicated": false,
+    "error_code": null,
+    "ok": true,
+    "receipt_id_present": true,
+    "side_effect": "write"
+  },
+  "invoke_read_timeout_retries_once": {
+    "downstream_calls": 2,
+    "duplicated": false,
+    "error_code": "upstream_error",
+    "ok": false,
+    "receipt_id_present": false,
+    "side_effect": null
+  },
+  "invoke_result_contract_violation_is_not_ok": {
+    "downstream_calls": 1,
+    "duplicated": false,
+    "error_code": "upstream_error",
+    "ok": false,
+    "receipt_id_present": true,
+    "side_effect": "write"
+  },
+  "invoke_upstream_business_error_is_normalized": {
+    "downstream_calls": 1,
+    "duplicated": false,
+    "error_code": "args_schema_invalid",
+    "ok": false,
+    "receipt_id_present": false,
+    "side_effect": null
+  },
+  "invoke_write_without_host_policy_is_blocked_with_zero_requests": {
+    "downstream_calls": 0,
+    "duplicated": false,
+    "error_code": "policy_blocked",
+    "ok": false,
+    "receipt_id_present": false,
+    "side_effect": "write"
+  },
+  "manifest_error_map_must_use_stable_code_hits_v6": {
+    "error_code": "manifest_invalid",
+    "error_contains": "capabilities[0].http.error_map 值必须是稳定错误码（args_schema_invalid, disabled, duplicate_id, permission_denied, policy_blocked, unknown_id, upstream_error）: 1001 -> invented_code",
+    "ok": false,
+    "registered_ids": []
+  },
+  "manifest_high_risk_without_hitl_hits_v3": {
+    "error_code": "manifest_invalid",
+    "error_contains": "capabilities[0] V3: risk_level=high 必须 hitl.required: true",
+    "ok": false,
+    "registered_ids": []
+  },
+  "manifest_http_without_visibility_hits_v9": {
+    "error_code": "manifest_invalid",
+    "error_contains": "capabilities[0] V9: kind=http 必须声明 visibility（部门 / 角色 / 密级）",
+    "ok": false,
+    "registered_ids": []
+  },
+  "manifest_missing_args_schema_is_rejected": {
+    "error_code": "manifest_invalid",
+    "error_contains": "capabilities[0] 缺 args_schema（无 schema 的能力无法进 FC 目录）",
+    "ok": false,
+    "registered_ids": []
+  },
+  "manifest_output_schema_typo_rejected": {
+    "error_code": "manifest_invalid",
+    "error_contains": "capabilities[0].output_schema V10: output_schema 未知字段 ['requird']（拼错的字段会让契约静默失效）",
+    "ok": false,
+    "registered_ids": []
+  },
+  "manifest_read_with_idempotency_key_hits_v8": {
+    "error_code": "manifest_invalid",
+    "error_contains": "capabilities[0] V8: side_effect=read 不应声明 idempotency_key",
+    "ok": false,
+    "registered_ids": []
+  },
+  "manifest_tenant_scoped_http_without_tenant_param_hits_v4": {
+    "error_code": "manifest_invalid",
+    "error_contains": "capabilities[0] V4: tenant_scoped=true 的 http 能力必须有 tenant_param",
+    "ok": false,
+    "registered_ids": []
+  },
+  "manifest_undeclared_template_variable_hits_v5": {
+    "error_code": "manifest_invalid",
+    "error_contains": "capabilities[0].http 模板变量未声明: {{nope}}（须在 args_schema.properties 或以 _ 开头）",
+    "ok": false,
+    "registered_ids": []
+  },
+  "manifest_valid_read_registers": {
+    "error_code": null,
+    "error_contains": null,
+    "ok": true,
+    "registered_ids": [
+      "good_read"
+    ]
+  },
+  "manifest_write_without_hitl_hits_v2": {
+    "error_code": "manifest_invalid",
+    "error_contains": "capabilities[0] V2: side_effect=write 必须 hitl.required: true",
+    "ok": false,
+    "registered_ids": []
+  },
+  "manifest_write_without_idempotency_key_hits_v1": {
+    "error_code": "manifest_invalid",
+    "error_contains": "capabilities[0] V1: side_effect=write 必须有 idempotency_key",
+    "ok": false,
+    "registered_ids": []
+  },
+  "sequence_business_errors_never_trip_circuit": {
+    "downstream_calls": 4,
+    "duplicated_flags": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "error_codes": [
+      "args_schema_invalid",
+      "args_schema_invalid",
+      "args_schema_invalid",
+      "args_schema_invalid"
+    ],
+    "ok": false
+  },
+  "sequence_circuit_open_blocks_further_calls": {
+    "downstream_calls": 10,
+    "duplicated_flags": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "error_codes": [
+      "upstream_error",
+      "upstream_error",
+      "upstream_error",
+      "upstream_error",
+      "upstream_error",
+      "upstream_error"
+    ],
+    "ok": false
+  },
+  "sequence_same_key_second_call_does_not_reach_downstream": {
+    "downstream_calls": 1,
+    "duplicated_flags": [
+      false,
+      true
+    ],
+    "error_codes": [
+      null,
+      null
+    ],
+    "ok": true
+  },
+  "sequence_write_timeout_single_downstream_call": {
+    "downstream_calls": 1,
+    "duplicated_flags": [
+      false
+    ],
+    "error_codes": [
+      "upstream_error"
+    ],
+    "ok": false
+  }
+}

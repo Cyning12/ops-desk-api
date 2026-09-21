@@ -16,10 +16,26 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager
 
 from app.config import settings
+
+#: 进程级开关名。**只有这一个真源** —— HTTP 入口（invoke）与流式入口（SSE）
+#: 必须走同一把闸，否则"invoke 落盘了、SSE 没落盘"，恢复时找不到挂起点。
+CHECKPOINTER_ENV = "LG_RAG_HTTP_CHECKPOINTER"
+
+
+def use_postgres_checkpointer() -> bool:
+    """是否启用 PG checkpointer。
+
+    为什么默认关：每请求建 saver 有成本，而 InMemorySaver 已经够支撑
+    "同进程同 thread_id 续写"。**默认关不等于可以忘记** ——
+    跨请求恢复（HITL 批准后续跑）在内存 saver 下**根本不可能**，
+    所以恢复入口会把"没开这个开关"当成显式失败报出来，而不是假装恢复成功。
+    """
+    return os.getenv(CHECKPOINTER_ENV, "").strip().lower() == "postgres"
 
 
 def _psycopg_dsn() -> str:

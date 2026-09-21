@@ -1,13 +1,13 @@
 ---
 graph_id: 10_flow_lg_rag
-version: 2026-08-31
-generated_at: sha256-59f5094e5489e507
+version: 2026-09-21
+generated_at: sha256-c869a2e3f924e931
 source: 10_flow_lg_rag.graph.yaml
 ---
 
 # LG RAG 旁路三模式流程（basic / router / supervisor · Critic）
 
-POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。T5：终答 answer 多帧 delta（{delta}）+ 终帧 {content, final:true}（aggregator / direct_answer 经 answer_stream.py contextvar token sink 桥 complete_stream；降级整段）。T5.1：persist 后台调度不阻塞 SSE yield。§10.6：等待 update 期间 SSE comment keepalive（不落盘、不占 seq）。§10.7：子任务 running 起步帧 + step 里程碑（progress_stream · rag_subtask astream_router + evidence step_hook · status=running/step/done）；§10.7 增补：running/step/done 帧可选 message 中文短句（subtask_message.py 确定性模板 · 截断 200 · 生成失败降级帧仍发 · 旧客户端忽略未知键）。
+POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。T5：终答 answer 多帧 delta（{delta}）+ 终帧 {content, final:true}（aggregator / direct_answer 经 answer_stream.py contextvar token sink 桥 complete_stream；降级整段）。T5.1：persist 后台调度不阻塞 SSE yield。§10.6：等待 update 期间 SSE comment keepalive（不落盘、不占 seq）。§10.7：子任务 running 起步帧 + step 里程碑（progress_stream · rag_subtask astream_router + evidence step_hook · status=running/step/done）；§10.7 增补：running/step/done 帧可选 message 中文短句（subtask_message.py 确定性模板 · 截断 200 · 生成失败降级帧仍发 · 旧客户端忽略未知键）。2026-09-21：supervisor 增 subtask_join（ready=依赖全终态+步骤契约闸 consumes/produces · prefix_touch_required→hitl_required）与 observe 执行层收口（没有待发步骤不再直连 aggregator；hitl_required 真 interrupt() 挂起 → /hitl/* 批准 → hitl/resume.py Command(resume) 恢复 · 事件接同一 run_id + replay cursor）；外层 ReAct replan→supervisor / settle→aggregator 有界 LG_RAG_REACT_MAX_ROUNDS=2（Policy 类拒绝不触发 HITL）。
 
 ## Mermaid
 
@@ -30,7 +30,10 @@ flowchart TB
     s_intent["intent_node（S2 IntentV1 · acomplete_structured）"]
     s_strategy_builder["strategy_builder_node（S1 allowlist · Registry∩Policy）"]
     s_supervisor["supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag）"]
-    s_dispatch["route_next_subtask（dispatch）"]
+    s_dispatch["subtask_join（ready 判定 + 一次下发无依赖工人 · 按 Host subtask_id 归并）"]
+    s_step_contract["step_contract 闸（consumes/produces · prefix_touch_required → hitl_required）"]
+    s_observe["observe_node（执行层收口 · hitl_required 真 interrupt 挂起）"]
+    hitl_gw["HITL 模块 /hitl/*（>./01_modules.md · HMAC + 管理员双口径）"]
     s_rag["rag_subtask_node（复用 router 子图）"]
     s_extract["info_extract_node"]
     s_tool["tool_exec_node（Capability Gateway）"]
@@ -108,23 +111,34 @@ flowchart TB
     %% → app/ops/lg_rag/multi/graph.py#L75
     s_supervisor -->|"subtasks（≤4）"| s_dispatch
     %% → app/ops/lg_rag/multi/graph.py#L76
-    s_dispatch -->|"[type=rag]"| s_rag
+    s_dispatch -->|"[同批 Send · type=rag]"| s_rag
     %% → app/ops/lg_rag/multi/graph.py#L42
     %% → app/ops/lg_rag/multi/nodes.py#L238
-    s_dispatch -->|"[type=extract]"| s_extract
+    s_dispatch -->|"[同批 Send · type=extract]"| s_extract
     %% → app/ops/lg_rag/multi/graph.py#L43
     %% → app/ops/lg_rag/multi/nodes.py#L238
-    s_dispatch -->|"[type=tool]"| s_tool
+    s_dispatch -->|"[同批 Send · type=tool]"| s_tool
     %% → app/ops/lg_rag/multi/graph.py#L44
     %% → app/ops/lg_rag/multi/nodes.py#L238
-    s_dispatch -->|"[耗尽/空 → aggregate]"| s_aggregator
-    %% → app/ops/lg_rag/multi/graph.py#L45
-    %% → app/ops/lg_rag/multi/nodes.py#L237
-    s_rag -->|"回 dispatch（追加一条结果）"| s_dispatch
+    s_dispatch -->|"[没有待发步骤 → observe（不再直连 aggregator）]"| s_observe
+    %% → app/ops/lg_rag/multi/graph.py::_DISPATCH_MAP
+    %% → app/ops/lg_rag/multi/nodes.py::route_next_subtask
+    s_dispatch -->|"ready=依赖全终态+契约闸"| s_step_contract
+    %% → app/ops/lg_rag/multi/step_contract.py::gate
+    s_observe -->|"[replan → supervisor（LG_RAG_REACT_MAX_ROUNDS=2 有界）]"| s_supervisor
+    %% → app/ops/lg_rag/multi/nodes.py::route_after_react
+    s_observe -->|"[settle → aggregator]"| s_aggregator
+    %% → app/ops/lg_rag/multi/nodes.py::route_after_react
+    s_observe -->|"[hitl_required → interrupt() 挂起 + 申请落库]"| hitl_gw
+    %% → app/ops/lg_rag/multi/nodes.py::observe_node
+    %% → app/ops/lg_rag/multi/nodes.py::_persist_hitl
+    hitl_gw -->|"批准 → Command(resume) 恢复（同一 run_id + replay cursor）"| s_observe
+    %% → app/ops/hitl/resume.py::resume_hitl_run
+    s_rag -->|"按 subtask_id 归并回 join"| s_dispatch
     %% → app/ops/lg_rag/multi/graph.py#L78
-    s_extract -->|"回 dispatch（追加一条结果）"| s_dispatch
+    s_extract -->|"按 subtask_id 归并回 join"| s_dispatch
     %% → app/ops/lg_rag/multi/graph.py#L78
-    s_tool -->|"回 dispatch（追加一条结果）"| s_dispatch
+    s_tool -->|"按 subtask_id 归并回 join"| s_dispatch
     %% → app/ops/lg_rag/multi/graph.py#L78
     s_aggregator -->|"综合后进入 Critic"| s_critic
     %% → app/ops/lg_rag/multi/graph.py#L79
@@ -167,9 +181,9 @@ flowchart TB
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-    class lg_invoke,lg_stream,lg_replay,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_intent,s_strategy_builder,s_supervisor,s_dispatch,s_rag,s_extract,s_tool,s_aggregator,s_critic phase
+    class lg_invoke,lg_stream,lg_replay,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_intent,s_strategy_builder,s_supervisor,s_dispatch,s_step_contract,s_observe,s_rag,s_extract,s_tool,s_aggregator,s_critic phase
     class basic_graph,router_graph,sup_graph doc
-    class client,structured_output_gw,capability_gw,s_end,lc_chain,llm,db,main_doc infra
+    class client,hitl_gw,structured_output_gw,capability_gw,s_end,lc_chain,llm,db,main_doc infra
 ```
 
 ## Structured Data
@@ -195,7 +209,10 @@ flowchart TB
 | s_intent | intent_node（S2 IntentV1 · acomplete_structured） | flow |
 | s_strategy_builder | strategy_builder_node（S1 allowlist · Registry∩Policy） | flow |
 | s_supervisor | supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag） | flow |
-| s_dispatch | route_next_subtask（dispatch） | flow |
+| s_dispatch | subtask_join（ready 判定 + 一次下发无依赖工人 · 按 Host subtask_id 归并） | flow |
+| s_step_contract | step_contract 闸（consumes/produces · prefix_touch_required → hitl_required） | flow |
+| s_observe | observe_node（执行层收口 · hitl_required 真 interrupt 挂起） | flow |
+| hitl_gw | HITL 模块 /hitl/*（>./01_modules.md · HMAC + 管理员双口径） | external |
 | s_rag | rag_subtask_node（复用 router 子图） | flow |
 | s_extract | info_extract_node | flow |
 | s_tool | tool_exec_node（Capability Gateway） | flow |
@@ -243,13 +260,18 @@ flowchart TB
 | s_intent | s_strategy_builder | -> | depends_on | intent dict | 1 anchor(s) |
 | s_strategy_builder | s_supervisor | -> | depends_on | allowed_capability_ids | 1 anchor(s) |
 | s_supervisor | s_dispatch | -> | depends_on | subtasks（≤4） | 1 anchor(s) |
-| s_dispatch | s_rag | ?> | branches | [type=rag] | 2 anchor(s) |
-| s_dispatch | s_extract | ?> | branches | [type=extract] | 2 anchor(s) |
-| s_dispatch | s_tool | ?> | branches | [type=tool] | 2 anchor(s) |
-| s_dispatch | s_aggregator | ?> | branches | [耗尽/空 → aggregate] | 2 anchor(s) |
-| s_rag | s_dispatch | -> | depends_on | 回 dispatch（追加一条结果） | 1 anchor(s) |
-| s_extract | s_dispatch | -> | depends_on | 回 dispatch（追加一条结果） | 1 anchor(s) |
-| s_tool | s_dispatch | -> | depends_on | 回 dispatch（追加一条结果） | 1 anchor(s) |
+| s_dispatch | s_rag | ?> | branches | [同批 Send · type=rag] | 2 anchor(s) |
+| s_dispatch | s_extract | ?> | branches | [同批 Send · type=extract] | 2 anchor(s) |
+| s_dispatch | s_tool | ?> | branches | [同批 Send · type=tool] | 2 anchor(s) |
+| s_dispatch | s_observe | ?> | branches | [没有待发步骤 → observe（不再直连 aggregator）] | 2 anchor(s) |
+| s_dispatch | s_step_contract | -> | depends_on | ready=依赖全终态+契约闸 | 1 anchor(s) |
+| s_observe | s_supervisor | ?> | branches | [replan → supervisor（LG_RAG_REACT_MAX_ROUNDS=2 有界）] | 1 anchor(s) |
+| s_observe | s_aggregator | ?> | branches | [settle → aggregator] | 1 anchor(s) |
+| s_observe | hitl_gw | ?> | branches | [hitl_required → interrupt() 挂起 + 申请落库] | 2 anchor(s) |
+| hitl_gw | s_observe | -> | depends_on | 批准 → Command(resume) 恢复（同一 run_id + replay cursor） | 1 anchor(s) |
+| s_rag | s_dispatch | -> | depends_on | 按 subtask_id 归并回 join | 1 anchor(s) |
+| s_extract | s_dispatch | -> | depends_on | 按 subtask_id 归并回 join | 1 anchor(s) |
+| s_tool | s_dispatch | -> | depends_on | 按 subtask_id 归并回 join | 1 anchor(s) |
 | s_aggregator | s_critic | -> | depends_on | 综合后进入 Critic | 1 anchor(s) |
 | s_critic | s_end | ?> | branches | [pass\|end → END] | 2 anchor(s) |
 | s_critic | s_supervisor | ?> | branches | [retry_planner → supervisor] | 2 anchor(s) |

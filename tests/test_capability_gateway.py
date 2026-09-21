@@ -332,9 +332,25 @@ def test_as_structured_tools_and_tool_node_smoke():
             }
         ],
     )
-    out = node.invoke({"messages": [msg]})
-    assert len(out["messages"]) == 1
-    content = out["messages"][0].content
+    # ⚠️ langgraph 1.x 起 ToolNode **不能脱离图裸调**：它的内部 runnable 需要
+    # config 里带 Runtime（图编译时注入），裸 ``node.invoke(...)`` 会抛
+    # ``ValueError: Missing required config key 'N/A' for 'tools'``。
+    # 所以这里按真实用法挂一个最小图（仍**不是** multi 主路径）。
+    from langgraph.checkpoint.memory import InMemorySaver
+    from langgraph.graph import END, START, MessagesState, StateGraph
+
+    builder = StateGraph(MessagesState)
+    builder.add_node("tools", node)
+    builder.add_edge(START, "tools")
+    builder.add_edge("tools", END)
+    graph = builder.compile(checkpointer=InMemorySaver())
+
+    # langgraph 1.x：挂了 checkpointer 就必须给 thread_id（否则直接 ValueError）
+    out = graph.invoke(
+        {"messages": [msg]}, {"configurable": {"thread_id": "toolnode-smoke"}}
+    )
+    assert len(out["messages"]) == 2, out["messages"]
+    content = out["messages"][-1].content
     payload = json.loads(content) if isinstance(content, str) else content
     assert payload == {"echo": {"q": "via-node"}}
     unregister(cid)

@@ -130,7 +130,8 @@ async def test_critic_span_metadata_contains_outcome():
 
 
 @pytest.mark.asyncio
-async def test_critic_retry_clears_subtasks_and_results():
+async def test_critic_retry_clears_subtasks_and_results_when_no_prefix():
+    """无已成功步骤时，回环等价于整批清空（与 2026-09-20 之前一致）。"""
     with patch("app.ops.strategy.critic.trace_span", return_value=_span_cm()):
         out = await critic_node(
             {
@@ -144,7 +145,48 @@ async def test_critic_retry_clears_subtasks_and_results():
     assert out["critic_verdict"]["outcome"] == "retry_planner"
     assert out["inner_retry_count"] == 1
     assert out["subtasks"] == []
-    assert out["subtask_results"] is None
+    # 不再是 None，而是"裁剪到空前缀"的批次 —— 语义相同，写法可断言
+    assert list(out["subtask_results"]) == []
+    assert out["subtask_results"].plan_ids == frozenset()
+    assert out["subtask_results"].replace is True
+    assert out["recoverable_point"] == 0
+
+
+@pytest.mark.asyncio
+async def test_critic_retry_keeps_prefix_results():
+    """Q8：已成功步骤连计划带结果都留下，重规划只动后缀。
+
+    修这条之前是 ``subtask_results = None`` ⇒ 已跑过的步骤会被重跑一遍，
+    前缀根本无从锁定。
+    """
+    with patch("app.ops.strategy.critic.trace_span", return_value=_span_cm()):
+        out = await critic_node(
+            {
+                "subtask_results": [
+                    {"subtask_id": "r:1", "output": {"a": 1}},
+                    {"subtask_id": "r:2", "error": "boom"},
+                ],
+                "allowed_capability_ids": ["utc_now_iso"],
+                "inner_retry_count": 0,
+                "rebinding_count": 0,
+                "subtasks": [
+                    {"id": "r:1", "subtask_id": "r:1", "type": "tool", "input": "甲"},
+                    {"id": "r:2", "subtask_id": "r:2", "type": "tool", "input": "乙"},
+                ],
+            }
+        )
+    assert out["critic_verdict"]["outcome"] == "retry_planner"
+    # 计划 = 前缀 + **未解决后缀**。
+    # 只留前缀是错的（2026-09-20 实测）：r:2 一旦从计划里消失，它的失败记录
+    # 就变成"计划外 id"，observe 按 plan_ids 过滤看不见、aggregator 更看不见，
+    # 结论会写成"已覆盖全部子任务" —— 失败被静默抹掉。
+    assert [r["subtask_id"] for r in out["subtasks"]] == ["r:1", "r:2"]
+    # 结果同样保留未解决后缀：失败是**发生过的事实**，重规划不能假装没发生
+    assert out["subtask_results"].plan_ids == frozenset({"r:1", "r:2"})
+    assert out["subtask_results"].replace is True
+    # 可恢复点显式声明出来了（只有成功终态算前缀）
+    assert out["plan_prefix_ids"] == ["r:1"]
+    assert out["recoverable_point"] == 1
 
 
 @pytest.mark.asyncio

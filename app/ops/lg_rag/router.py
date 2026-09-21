@@ -10,7 +10,11 @@ lc_evidence_chain/router.py 先例。
 
 Checkpointer：默认不传（入口默认 InMemorySaver，进程内同 thread_id 续写）；
 env LG_RAG_HTTP_CHECKPOINTER=postgres 时走 apostgres_saver(setup=True)
-（每请求构建，幂等建表；生产默认不开）。stream 本波不挂 PG（与 invoke 可后续对齐）。
+（每请求构建，幂等建表；生产默认不开）。
+**stream 与 invoke 读同一把闸**（checkpointer.use_postgres_checkpointer）：
+supervisor 图会在 observe 里被 interrupt() 挂起等人审批，那一刻进程内什么都不
+推进了，"这次 run 停在哪个 checkpoint"必须已落盘，否则下一个请求（人点批准）
+找不到恢复点。SSE 侧的 saver 由 sse_stream 在整个流期间持有。
 """
 from __future__ import annotations
 
@@ -33,7 +37,7 @@ from app.ops.lg_rag import (
     ainvoke_router_agent,
     ainvoke_supervisor_agent,
 )
-from app.ops.lg_rag.checkpointer import apostgres_saver
+from app.ops.lg_rag.checkpointer import apostgres_saver, use_postgres_checkpointer
 from app.ops.lg_rag.event_store import LgRagRunNotFoundError, load_events_after
 from app.ops.lg_rag.sse_replay import InvalidCursorError, resolve_replay_target
 from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
@@ -146,7 +150,8 @@ def serialize_state(state: dict[str, Any], *, mode: str, thread_id: str) -> Data
 
 
 def _use_postgres_checkpointer() -> bool:
-    return os.getenv("LG_RAG_HTTP_CHECKPOINTER", "").strip().lower() == "postgres"
+    """委托给 checkpointer 模块的唯一真源（SSE 与恢复入口读同一把闸）。"""
+    return use_postgres_checkpointer()
 
 
 async def _dispatch(
@@ -154,6 +159,7 @@ async def _dispatch(
     query: str,
     thread_id: str,
     history_turns: list[dict] | None = None,
+    run_id: str | None = None,
 ) -> dict[str, Any]:
     """mode → 对应 ainvoke 入口；env 开关决定是否包 PG checkpointer。"""
     if mode == "basic":
@@ -166,6 +172,8 @@ async def _dispatch(
         "thread_id": thread_id,
         "history_turns": history_turns or [],
     }
+    if mode == "supervisor" and run_id:
+        kwargs["run_id"] = run_id
     if _use_postgres_checkpointer():
         async with apostgres_saver(setup=True) as saver:
             return await entry(query, checkpointer=saver, **kwargs)
@@ -213,11 +221,16 @@ async def invoke_lg_rag(
     tenant_id = _resolve_request_tenant(request)
     thread_id = (body.thread_id or uuid.uuid4().hex)[:THREAD_ID_MAX_LENGTH]
     history_turns = await _prepare_thread(thread_id, str(user.id))
+    run_id = uuid.uuid4().hex
     token = set_current_tenant(tenant_id)
     try:
         try:
             state = await _dispatch(
-                body.mode, body.query, thread_id, history_turns=history_turns
+                body.mode,
+                body.query,
+                thread_id,
+                history_turns=history_turns,
+                run_id=run_id,
             )
         except HTTPException:
             raise

@@ -10,8 +10,10 @@ from app.ops.prompts.render import PromptTemplateNotFoundError
 
 def test_get_template_version():
     tmpl = get_template("lg_rag.supervisor.system")
-    assert tmpl.version == "v1"
+    # v2：body 增加 produces / consumes 声明说明（步骤契约 Q4）
+    assert tmpl.version == "v2"
     assert "Supervisor" in tmpl.body
+    assert "consumes" in tmpl.body
 
 
 def test_get_intent_template():

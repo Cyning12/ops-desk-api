@@ -1,0 +1,210 @@
+# OA 只读能力清单（第一期 · H4）
+#
+# 域：企业 OA（老系统，通过 HTTP 接入）。**只读**——不含任何写操作。
+# 拆独立文件的原因：失败域隔离 + 变更频率与 builtin 不同（接一个接口不该发后端版本）。
+#
+# 纪律（加载期强校验，见 manifest._validate_invariants）：
+# - 无密钥值进仓：只写**环境变量名**（base_url）与**凭证名**（auth）
+# - tenant_scoped 能力必须声明 tenant_param（租户谓词怎么下推到下游）
+# - kind=http 必须声明 visibility（V9：对外接入不设「默认全员可见」兜底）
+# - 模板变量必须出现在 args_schema.properties，或以 _ 开头（Host 注入）
+# - error_map 的值必须是稳定错误码词表内的一员（见 errors.STABLE_ERROR_CODES）
+#
+# 关于 visibility 的现状：部门/角色维度先声明 ``all``——真实的数据隔离靠
+# ``tenant_param`` 下推（文档有密级与部门可见性，由 OA 侧按谓词裁剪）。
+# 等 Host 侧能提供部门级 principal，再把 ``all`` 收紧成具体部门；
+# 密级维度现在就是真的（public < internal < confidential < secret）。
+#
+# 依赖环境变量：
+#   OA_BASE                   网关基址（如 https://oa.example.internal）
+#   OPS_CAP_CRED_OA_GATEWAY_TOKEN  凭证值（不进仓、不进日志）
+version: 1
+domain: oa
+capabilities:
+  - id: oa.doc.search
+    kind: http
+    description: 在 OA 文档中心按关键词检索文件，返回标题、编号与链接（不含正文）
+    when_to_use: 用户想找某份制度、报告、合同或方案，但只给了关键词或大致名称
+    when_not_to_use: 用户已知文件编号想看要点时，取文件摘要接口；问"规定是什么"属于制度问答
+    tags: [oa, doc, readonly]
+    risk_level: low
+    side_effect: read
+    enabled: true
+    # 文档有密级与部门可见性：不把租户谓词传下去，等于问出一个不该看的结果
+    tenant_scoped: true
+    visibility:
+      departments: [all]
+      roles: [all]
+      classification_max: internal
+    args_schema:
+      type: object
+      required: [keyword]
+      properties:
+        keyword:
+          type: string
+          description: 检索关键词（文件标题、编号或内容片段）
+        top_k:
+          type: integer
+          default: 10
+          description: 返回条数上限
+    # 结果契约（P0-1）：下游说 code=0 但结构不对 → 判失败，不许"错了还报成功"
+    # items 允许为空（查无是正常结果），但会被标记 result_empty 供编排层区分
+    output_schema:
+      required: ["$.data.items", "$.data.tenant"]
+    http:
+      method: GET
+      base_url: OA_BASE
+      path: /api/v1/doc/search
+      auth: oa_gateway_token
+      query_map:
+        q: "{{keyword}}"
+        limit: "{{top_k}}"
+      tenant_param:
+        in: header
+        name: X-Ops-Tenant
+      timeout_ms: 8000
+      success_when:
+        path: "$.code"
+        in: [0, 200]
+      error_map:
+        "1001": args_schema_invalid
+        "2003": permission_denied
+        "2004": policy_blocked
+        "5001": upstream_error
+    # ---- 降级声明（竖切片：全系统第一条）----
+    # 「降级成什么」是业务决策，必须由清单声明（走 Git + PR + 人闸），
+    # 框架绝不自己发明。这里选 static 而非"换个接口/用缓存"，理由：
+    # 文档检索没有更粗的替代接口，而缓存会把昨天的检索结果当成今天的答案。
+    # **默认是不降级**——其他两个 OA 能力没写 fallback，就是明确失败。
+    fallback:
+      # 字段名是 triggers 不是 on：YAML 1.1 会把裸键 on 解析成布尔 True
+      triggers: [transport, 5xx, "429", circuit_open]
+      action: static
+      # 给模型的是"服务不可用"这个**事实**，不是一份伪造的检索结果。
+      # 编排层与用户都看得到 meta.degraded=True，不会把兜底当真。
+      value:
+        code: 503
+        message: "文档检索服务暂时不可用，请稍后重试（这是降级结果，不是检索结果）"
+        data:
+          items: []
+
+  - id: oa.org.whois
+    kind: http
+    description: 按姓名或部门名查组织关系：岗位、汇报线、兼岗代管、常用对接人
+    when_to_use: 用户问"这个项目谁负责""这个流程该找谁批""XX 部门的对接人是谁"
+    when_not_to_use: 问具体某人还剩几天年假属个人数据，不属于公开组织关系
+    tags: [oa, org, readonly]
+    risk_level: low
+    side_effect: read
+    enabled: true
+    tenant_scoped: false
+    # 组织关系（谁在哪个岗、谁批什么）属公开信息，密级只要 public
+    visibility:
+      departments: [all]
+      roles: [all]
+      classification_max: public
+    args_schema:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: 人名或部门名
+    output_schema:
+      required: ["$.data.items"]
+    http:
+      method: GET
+      base_url: OA_BASE
+      path: /api/v1/org/whois
+      auth: oa_gateway_token
+      query_map:
+        name: "{{name}}"
+      timeout_ms: 8000
+      success_when:
+        path: "$.code"
+        in: [0, 200]
+      error_map:
+        "1001": args_schema_invalid
+        "2003": permission_denied
+        "5001": upstream_error
+    # ---- 降级声明（业务决策，走 Git + PR + 人闸）----
+    # 组织关系查不到时按**最小权限**处理（= 普通员工，不授予任何额外权限），
+    # 而不是按最大权限——降级必须往**安全方向**退。
+    #
+    # ★ 关键口径：这不是"查出他是普通员工"，而是"查不到，所以按最低权限对待"。
+    #   items 保持为空（**绝不伪造一条人员记录**），假设值放进 data.degraded_assumption，
+    #   并且任何权限判定都不得依赖降级结果（输出里带了给模型的显式提示）。
+    fallback:
+      triggers: [transport, 5xx, "429", circuit_open]
+      action: static
+      value:
+        code: 503
+        message: >-
+          组织关系服务暂时不可用，查不到该人员的岗位与汇报线。按最小权限处理：
+          未能确认任何管理权限，按普通员工对待。这不是查询到的事实，不要据此下结论。
+        data:
+          items: []
+          degraded_assumption:
+            role: regular_employee
+            has_management_authority: false
+            note: 查不到组织关系时的最低权限假设，**不得用于授权判定**
+
+  - id: oa.todo.mine
+    kind: http
+    description: 查询当前用户的 OA 待办与在办流程（仅本人可见）
+    when_to_use: 用户问"我还有几个待办""我那个单子走到哪了""谁还没批"
+    when_not_to_use: 查询他人待办属越权；查历史已办清单用其它接口
+    tags: [oa, todo, readonly, personal]
+    risk_level: low
+    side_effect: read
+    enabled: true
+    # 个人数据，必须强隔离：租户/用户谓词由 Host 注入并下推，不取自模型
+    tenant_scoped: true
+    visibility:
+      departments: [all]
+      roles: [all]
+      classification_max: internal
+    args_schema:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, running, all]
+          default: pending
+          description: 待办状态筛选
+    # tenant 回显 = 租户谓词真的下推了；缺它说明这一路请求没带谓词
+    output_schema:
+      required: ["$.data.items", "$.data.tenant"]
+    http:
+      method: GET
+      base_url: OA_BASE
+      path: /api/v1/todo/mine
+      auth: oa_gateway_token
+      query_map:
+        status: "{{status}}"
+      tenant_param:
+        in: header
+        name: X-Ops-Tenant
+      timeout_ms: 8000
+      success_when:
+        path: "$.code"
+        in: [0, 200]
+      error_map:
+        "1001": args_schema_invalid
+        "2003": permission_denied
+        "5001": upstream_error
+    # ---- 降级声明：待办属**个人数据**，没有可以退的安全缺省值 ----
+    # 这里唯一诚实的降级就是"功能不可用 + 文案兜底"：
+    # 既不能返回别人的待办，也不能返回空列表暗示"你没有待办"
+    # （"查不到"和"确实没有"在系统里长得一样，那是静默错误）。
+    fallback:
+      triggers: [transport, 5xx, "429", circuit_open]
+      action: static
+      value:
+        code: 503
+        message: >-
+          待办查询服务暂时不可用，**无法确认你当前有没有待办**。
+          请稍后重试，或直接在 OA 页面查看。不要因为没有列出条目就回答"你没有待办"。
+        data:
+          items: []
+          degraded_unavailable: true

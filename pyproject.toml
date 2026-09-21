@@ -20,15 +20,23 @@ dependencies = [
     "pgvector>=0.2.5,<1",
     "qdrant-client>=1.14.0,<2",
     "sentence-transformers>=3.0,<5",
-    "langgraph>=0.2,<0.3",
-    "langgraph-checkpoint-postgres>=2,<3",
-    "langchain-core>=0.2,<0.3",
+    "langgraph>=1.2,<2",
+    # checkpoint 是**独立版本线**，不跟 langgraph 走（langgraph 1.2.11 要求 >=4.1,<5）
+    "langgraph-checkpoint-postgres>=3.1,<4",
+    # 1.0 起 prebuilt 拆成独立包：``from langgraph.prebuilt import ToolNode`` 靠它
+    "langgraph-prebuilt>=1.1,<1.2",
+    "langchain-core>=1.4.7,<2",
     "httpx>=0.27,<1",
     "python-multipart>=0.0.9",
     "python-jose[cryptography]>=3.3,<4",
     "passlib[bcrypt]>=1.7,<2",
     "langfuse>=3.0,<4",
-    "langchain>=0.2.17,<0.3",
+    # ⚠️ 刻意**不**依赖 ``langchain`` 伞包：它写死 ``langchain-core>=0.2,<0.3``，
+    #   与 langgraph 1.x 要求的 ``langchain-core>=1.4.7`` 冲突。
+    #   本项目只用到 langchain_core 的 messages / runnables / tools / globals。
+    # 下游熔断（P1/Q3）。注意：它的 call_async 是 **Tornado-only**，
+    # asyncio 路径只能用 CircuitBreaker.calling() 上下文管理器。
+    "pybreaker>=1.4,<2",
 ]
 
 [project.optional-dependencies]
@@ -39,6 +47,10 @@ dev = [
     "ruff>=0.5,<1",
     "mypy>=1.10,<2",
 ]
+
+# 熔断状态跨实例共享时才需要（OPS_CAPABILITY_CB_BACKEND=redis）。
+# 本阶段默认 mock-unavailable，不装也能跑。
+circuit-redis = ["redis>=5,<6"]
 
 [build-system]
 requires = ["hatchling"]
@@ -63,6 +75,14 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 markers = [
     "integration: 可选真连/外网；默认 CI 不跑（须显式 -m integration）",
+    "redline: 红线（否决项）——任一条被突破即整体不通过，不能靠别处高分补",
+]
+# 把 langchain 的 root-module 访问告警升级成**错误**：它只会由我们自己的
+# `langchain.debug` 读写触发（正确姿势是 langchain.globals.set_debug/get_debug）。
+# 之前它每次跑测试刷满屏，看起来像报错却没人管——现在谁再引入就当场失败。
+filterwarnings = [
+    "error:Importing debug from langchain root module is no longer supported",
+    "error:Importing verbose from langchain root module is no longer supported",
 ]
 
 [tool.mypy]

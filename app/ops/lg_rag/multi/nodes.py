@@ -3,24 +3,35 @@
 说明书：docs/guides/DESIGN_langgraph-lg-rag-phase4-multiagent_v1.md §3–§5。
 
 原则：
-- supervisor 拆解失败/非法 → fallback 单 rag 子任务（宁退化不失败）；
-- 子任务按序执行，结果追加到 subtask_results（不进 messages）；
-- 单个子任务异常 → 记录错误结果并继续后续子任务；
-- dispatch 以 len(subtask_results) 作推进索引，每个 agent 节点必追加
-  恰好一条结果（含错误结果），保证索引单调推进、无死循环。
+- supervisor 拆解失败/非法 → fallback 单 rag（须已有 run_id；否则不派工人）；
+- 无依赖子任务同批 Send 给多个工人；有 depends_on 的等前驱终态再下发；
+- 归并键是 Host subtask_id，不用模型别名，也不用结果列表长度当下标；
+- 单个子任务异常 → 该 id 占错误终态，不卡住收齐。
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import time
+from typing import Any, Optional
 
 from langchain_core.messages import AIMessage
+from langchain_core.runnables import RunnableConfig
+
+# ⚠️ 节点签名里的 ``config`` **必须**写成 ``Optional[RunnableConfig]``：
+#   本模块带 ``from __future__ import annotations``，注解会变成**字符串**，
+#   而 langgraph 1.x 只接受 ``RunnableConfig`` / ``Optional[RunnableConfig]``
+#   两种字面写法 —— 写成 ``RunnableConfig | None`` 它不认，
+#   后果不是告警而已：**config 不会被注入**，``_thread_id_of`` 的兜底
+#   直接失效 ⇒ 审批申请没有 thread_id ⇒ 批准之后无从恢复。
+from langgraph.types import Send, interrupt
 from pydantic import ValidationError
 
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage
 from app.ops.capability import CapabilityFilter, list_capabilities
+from app.ops.capability.baseline import baseline_filter
 from app.ops.capability import ainvoke as capability_ainvoke
 from app.ops.capability.types import CapabilitySpec
 from app.ops.lc_evidence_chain.step_hook import (
@@ -30,9 +41,12 @@ from app.ops.lc_evidence_chain.step_hook import (
 from app.ops.lg_rag.answer_stream import complete_answer_streaming
 from app.ops.lg_rag.graph import astream_router_agent
 from app.ops.lg_rag.multi.budget import (
+    bump_react_round,
     bump_supervisor_step,
+    is_react_round_exhausted,
     is_supervisor_budget_exhausted,
 )
+from app.ops.lg_rag.multi import step_contract as sc
 from app.ops.lg_rag.nodes import (
     _ROUTER_MODEL,
     _ROUTER_PROVIDER,
@@ -40,7 +54,12 @@ from app.ops.lg_rag.nodes import (
 )
 from app.ops.lg_rag.progress_stream import emit_subtask_running, emit_subtask_step
 from app.ops.lg_rag.schemas import ExtractResult, SubtaskItem, SubtasksPlan
-from app.ops.lg_rag.state import LgRagState
+from app.ops.lg_rag.state import (
+    LgRagState,
+    SubtaskResultBatch,
+    success_terminal_ids,
+    unresolved_suffix_ids,
+)
 from app.ops.prompts import render
 from app.ops.structured_output import parse_only
 from app.ops.tenant_context import current_tenant_or_default
@@ -58,12 +77,9 @@ _TYPE_TO_NODE = {
     "tool": "tool_exec",
 }
 
-# Supervisor planner filter：与 Builder 同 Policy 裁剪（S1：再 ∩ state allowlist）
-_SUPERVISOR_CAP_FILTER = CapabilityFilter(
-    node_role="supervisor",
-    kinds=frozenset({"local_fn"}),
-    deny_high_risk=True,
-)
+# Supervisor planner filter：与 Builder **共用同一份基线**（见 capability.baseline），
+# 再 ∩ state.allowed_capability_ids（S1）。
+_SUPERVISOR_CAP_FILTER = baseline_filter(node_role="supervisor")
 
 _EXTRACT_SYSTEM = (
     "你是信息抽取器。从用户给出的文本中抽取结构化信息，只输出 JSON：\n"
@@ -104,6 +120,20 @@ def _build_supervisor_system(catalog_block: str) -> str:
     return render(
         "lg_rag.supervisor.system",
         {"catalog_block": catalog_block},
+    )
+
+
+def _build_supervisor_suffix_system(
+    catalog_block: str, prefix_block: str, suffix_cap: int
+) -> str:
+    """重规划（Q8）：只让模型写后缀，前缀以**只读**形态出现。"""
+    return render(
+        "lg_rag.supervisor.suffix.system",
+        {
+            "catalog_block": catalog_block,
+            "prefix_block": prefix_block,
+            "suffix_cap": str(suffix_cap),
+        },
     )
 
 
@@ -177,6 +207,15 @@ def _parse_subtasks(raw: str) -> list[dict] | None:
             subtask["tool"] = str(item.tool)
         if item.args is not None:
             subtask["args"] = dict(item.args)
+        if item.depends_on:
+            subtask["depends_on"] = [str(dep) for dep in item.depends_on]
+        # Q4 步骤契约：可选声明。没声明就留空 ⇒ 后续不校验（契约不推测）
+        produces = sc.normalize_produces(item.produces)
+        if produces:
+            subtask["produces"] = produces
+        consumes = sc.normalize_consumes(item.consumes)
+        if consumes:
+            subtask["consumes"] = consumes
         subtasks.append(subtask)
     return subtasks or None
 
@@ -196,11 +235,481 @@ def _record_span_metadata(metadata: dict) -> None:
 
 
 def _pending_subtask(state: LgRagState) -> dict | None:
-    """按推进索引取当前待执行子任务（结果与子任务按序一一对应）。"""
+    """直调节点的兜底：只在没有 Send 载荷时按下标取一项。同批工人禁止走这里。"""
     subtasks = state.get("subtasks") or []
     results = state.get("subtask_results") or []
     idx = len(results)
     return subtasks[idx] if idx < len(subtasks) else None
+
+
+def _current_subtask(state: LgRagState) -> dict | None:
+    """优先读本工人的 assigned_subtask，避免兄弟任务抢同一个下标。"""
+    assigned = state.get("assigned_subtask")
+    if isinstance(assigned, dict) and assigned:
+        return assigned
+    return _pending_subtask(state)
+
+
+def _run_id_of(state: LgRagState) -> str:
+    return str(state.get("run_id") or "").strip()
+
+
+def _missing_run_update(query: str) -> dict:
+    return {
+        "subtasks": [],
+        "inflight_subtask_ids": [],
+        "subtask_results": [
+            {
+                "error": "run_id 缺失，未签发 subtask_id，未派工人",
+                "input": query,
+            }
+        ],
+    }
+
+
+def _error_terminal(item: dict, message: str) -> dict:
+    sid = str(item.get("subtask_id") or "")
+    row = {
+        "id": sid,
+        "subtask_id": sid,
+        "type": str(item.get("type") or ""),
+        "input": str(item.get("input") or ""),
+        "error": message,
+    }
+    if item.get("alias"):
+        row["alias"] = str(item["alias"])
+    if item.get("tool"):
+        row["tool"] = str(item["tool"])
+    return row
+
+
+def _resolve_depends(
+    row: dict,
+    raw_deps: list,
+    id_set: set[str],
+    alias_map: dict[str, list[str]],
+) -> tuple[list[str], str | None]:
+    """把 depends_on 收成已签发 id。非法则整项不派。"""
+    if not raw_deps:
+        return [], None
+    resolved: list[str] = []
+    own = row["subtask_id"]
+    for dep in raw_deps:
+        token = str(dep).strip()
+        if not token or token == "__invalid__":
+            return [], "depends_on 无法解析，不派工人"
+        if token == own or token == row.get("alias"):
+            return [], "depends_on 指向自身，不派工人"
+        if token in id_set:
+            resolved.append(token)
+            continue
+        targets = alias_map.get(token) or []
+        if len(targets) != 1:
+            return [], "depends_on 指向计划外或无法解析，不派工人"
+        target = targets[0]
+        if target == own:
+            return [], "depends_on 指向自身，不派工人"
+        resolved.append(target)
+    return resolved, None
+
+
+def _cyclic_ids(rows: list[dict]) -> set[str]:
+    """depends_on 成环的 subtask_id。前驱方向：项 → 它等待的 id。"""
+    graph = {str(row["subtask_id"]): list(row.get("depends_on") or []) for row in rows}
+    color = dict.fromkeys(graph, 0)
+    cyclic: set[str] = set()
+
+    def walk(node: str, stack: list[str]) -> None:
+        color[node] = 1
+        stack.append(node)
+        for dep in graph.get(node, []):
+            if dep not in graph:
+                continue
+            if color[dep] == 1:
+                cyclic.update(stack[stack.index(dep) :])
+            elif color[dep] == 0:
+                walk(dep, stack)
+        stack.pop()
+        color[node] = 2
+
+    for node in list(graph):
+        if color[node] == 0:
+            walk(node, [])
+    return cyclic
+
+
+def _issue_plan(
+    items: list[dict],
+    *,
+    run_id: str,
+    seq: int,
+    alias_prefix: str = "t",
+    cap: int = MAX_SUBTASKS,
+    locked: list[dict] | None = None,
+) -> tuple[list[dict], list[dict], int]:
+    """先签发 subtask_id，再解析 depends_on / consumes。超出 cap 的项不签发。
+
+    ``locked``（Q8）：不可变前缀。它**不参与签发**（沿用原来的 subtask_id，
+    序列不回退、不复用），但参与别名解析——后缀可以依赖前缀、吃前缀的产出。
+
+    ``alias_prefix``：首次规划 ``t``，重规划后缀 ``s``。别名**强制按位置编号**，
+    模型写的 id 只用于**内部互相引用**的重映射；前缀别名不参与重映射，
+    否则"后缀引用前缀 t1"会被误改成"后缀引用后缀 s1"。
+    """
+    locked_rows = [dict(row) for row in (locked or [])]
+    issued: list[dict] = []
+    remap: dict[str, str] = {}
+    for offset, item in enumerate(items[:cap]):
+        seq += 1
+        old_alias = str(item.get("id") or f"{alias_prefix}{offset + 1}")
+        alias = f"{alias_prefix}{offset + 1}"
+        remap[old_alias] = alias
+        sid = f"{run_id}:{seq}"
+        stamped = {
+            "id": sid,
+            "subtask_id": sid,
+            "alias": alias,
+            "type": str(item.get("type") or "rag"),
+            "input": str(item.get("input") or ""),
+        }
+        if item.get("tool"):
+            stamped["tool"] = str(item["tool"])
+        if item.get("args") is not None:
+            stamped["args"] = dict(item["args"])
+        produces = sc.normalize_produces(item.get("produces"))
+        if produces:
+            stamped["produces"] = produces
+        raw_deps = item.get("depends_on") or []
+        if not isinstance(raw_deps, list):
+            raw_deps = ["__invalid__"]
+        stamped["_raw_deps"] = raw_deps
+        stamped["_raw_consumes"] = item.get("consumes") or {}
+        issued.append(stamped)
+
+    locked_aliases = {str(row.get("alias") or "") for row in locked_rows}
+
+    def _tok(token: str) -> str:
+        """前缀别名原样保留；其余走后缀重映射。"""
+        if token in locked_aliases:
+            return token
+        return remap.get(token, token)
+
+    alias_map: dict[str, list[str]] = {}
+    for row in locked_rows + issued:
+        alias_map.setdefault(str(row["alias"]), []).append(str(row["subtask_id"]))
+    id_set = {str(row["subtask_id"]) for row in locked_rows + issued}
+    illegal: dict[str, str] = {}
+    for row in issued:
+        raw_deps = [_tok(str(dep)) for dep in row.pop("_raw_deps")]
+        resolved, err = _resolve_depends(row, raw_deps, id_set, alias_map)
+        raw_cons = row.pop("_raw_consumes")
+        if isinstance(raw_cons, dict):
+            consumes = {_tok(str(k)): v for k, v in raw_cons.items()}
+            by_sid = sc.resolve_consumes(
+                sc.normalize_consumes(consumes), alias_map
+            )
+        else:
+            by_sid = {}
+        if by_sid:
+            row["consumes_resolved"] = by_sid
+            # consumes 隐含依赖：吃了谁的产出，就必须等谁跑完
+            for sid in sc.consumes_implied_deps(by_sid):
+                if sid not in resolved:
+                    resolved.append(sid)
+        row["depends_on"] = resolved
+        if err:
+            illegal[str(row["subtask_id"])] = err
+    cyclic = _cyclic_ids([row for row in issued if str(row["subtask_id"]) not in illegal])
+    for sid in cyclic:
+        illegal[sid] = "depends_on 成环，不派工人"
+    errors = [
+        _error_terminal(row, illegal[str(row["subtask_id"])])
+        for row in issued
+        if str(row["subtask_id"]) in illegal
+    ]
+    return issued, errors, seq
+
+
+def _stamp_host_plan(
+    state: LgRagState, items: list[dict], locked: list[dict] | None = None
+) -> dict:
+    """校验后的项换成 Host id；``locked`` 前缀原样保留在最前面。"""
+    run_id = _run_id_of(state)
+    if not run_id:
+        query = str(items[0].get("input") or "") if items else ""
+        return _missing_run_update(query)
+    locked_rows = [dict(row) for row in (locked or [])]
+    seq = int(state.get("host_subtask_seq") or 0)
+    cap = max(0, MAX_SUBTASKS - len(locked_rows))
+    alias_prefix = "s" if locked_rows else "t"
+    plan, errors, seq = _issue_plan(
+        items,
+        run_id=run_id,
+        seq=seq,
+        alias_prefix=alias_prefix,
+        cap=cap,
+        locked=locked_rows,
+    )
+    full = locked_rows + plan
+    out: dict = {
+        "subtasks": full,
+        "host_subtask_seq": seq,
+        "inflight_subtask_ids": [],
+        # Q8 可恢复点：前缀长度 = 下一个**真正要执行**的步骤下标。
+        # 恢复 = 沿用前缀结果 + 从这里继续，不重跑前缀。
+        "plan_prefix_ids": [str(row["subtask_id"]) for row in locked_rows],
+        "recoverable_point": len(locked_rows),
+    }
+    if locked_rows:
+        # 重规划**成功**：新后缀已经替代了旧后缀，被替代的步骤连结果一起剪掉。
+        # 不剪的话，上一轮那个失败步骤的记录会一直挂在 results 里：
+        # critic 见 error 就 retry、aggregator 见 error 就写"部分失败"——
+        # 可它早就被新计划取代了（**陈尸不清理会让整条链反复回环**）。
+        # 注意只剪"不在新计划里"的：前缀结果必须完整留下。
+        out["subtask_results"] = SubtaskResultBatch(
+            [], {str(row["subtask_id"]) for row in full}, replace=True
+        )
+    if errors:
+        out["subtask_results"] = SubtaskResultBatch(
+            errors, {str(row["subtask_id"]) for row in full}
+        )
+    return out
+
+
+def _locked_prefix(state: LgRagState) -> list[dict]:
+    """不可变前缀（Q8）：已进入**成功终态**的计划项，按计划顺序。
+
+    失败终态**不进**前缀——它没有需要保护的东西：没有副作用，也没有可取的结果，
+    重规划可以重写它。要保护的是"已经产生了结果/副作用"的步骤：
+    它们的 ``(tool, args)`` 决定幂等键，改了就是一次新的写（设计 §2.2）。
+    """
+    prefix_ids = set(
+        success_terminal_ids(_plan_rows(state), state.get("subtask_results"))
+    )
+    # 已获批准授权重跑的步骤**不再是不可变前缀** —— 这就是"批准"的唯一效果。
+    # 摘掉它 ⇒ 可恢复点回退到那一步 ⇒ 下一轮重规划会重新执行它。
+    prefix_ids -= {str(sid) for sid in (state.get("hitl_unlocked_ids") or [])}
+    return [
+        dict(row)
+        for row in _plan_rows(state)
+        if str(row["subtask_id"]) in prefix_ids
+    ]
+
+
+def _unresolved_suffix(state: LgRagState, locked: list[dict]) -> list[dict]:
+    """上一轮计划里**还没解决**的后缀步骤，原样带回（不重新签发 id）。
+
+    未解决 = 没有终态，或终态是 error。成功终态要么已在 ``locked`` 里、
+    要么不该出现在这里；两种情形都不重复带。
+
+    **为什么不重新签发**：换 id 就等于换了一个新步骤，旧步骤的失败记录
+    变成"计划外"，observe 按 plan_ids 一过滤就看不见了 —— 失败被抹掉。
+    """
+    locked_ids = {str(row.get("subtask_id") or "") for row in locked or []}
+    unresolved = set(
+        unresolved_suffix_ids(
+            _plan_rows(state), state.get("subtask_results"), locked_ids
+        )
+    )
+    return [
+        dict(row)
+        for row in _plan_rows(state)
+        if str(row["subtask_id"]) in unresolved
+    ]
+
+
+def _carry_plan(
+    state: LgRagState, locked: list[dict], carried: list[dict]
+) -> dict:
+    """沿用上一轮计划（前缀 + 未解决后缀），**不重新签发 subtask_id**。
+
+    ``inflight_subtask_ids`` 交给随后的 ``_join_subtasks`` 重算：
+    已终态的沿用项不会被再下发（join 见终态即跳过），只是继续保持可见。
+    """
+    locked_rows = [dict(row) for row in locked or []]
+    full = locked_rows + [dict(row) for row in carried or []]
+    return {
+        "subtasks": full,
+        "host_subtask_seq": int(state.get("host_subtask_seq") or 0),
+        "inflight_subtask_ids": [],
+        "plan_prefix_ids": [str(row["subtask_id"]) for row in locked_rows],
+        "recoverable_point": len(locked_rows),
+    }
+
+
+def _format_prefix_block(locked: list[dict]) -> str:
+    """前缀摘要：只给模型**只读**视图（id / type / input / tool）。"""
+    lines = []
+    for row in locked:
+        alias = str(row.get("alias") or row.get("subtask_id") or "")
+        line = f"- {alias}（{row.get('type') or 'rag'}）：{row.get('input') or ''}"
+        if row.get("tool"):
+            line += f" [tool={row['tool']}]"
+        lines.append(line)
+    return "\n".join(lines) or "（无）"
+
+
+def _plan_rows(state: LgRagState) -> list[dict]:
+    rows = []
+    for item in state.get("subtasks") or []:
+        if isinstance(item, dict) and str(item.get("subtask_id") or "").strip():
+            rows.append(item)
+    return rows
+
+
+def _terminal_index(results: list, plan_ids: set[str]) -> dict[str, dict]:
+    found: dict[str, dict] = {}
+    for row in results:
+        if not isinstance(row, dict):
+            continue
+        sid = str(row.get("subtask_id") or "").strip()
+        if sid not in plan_ids or sid in found:
+            continue
+        if "output" in row or "error" in row:
+            found[sid] = row
+    return found
+
+
+def _join_subtasks(state: LgRagState) -> dict:
+    """收口上一批：漏带回的 id 写错误终态；预算耗尽则补齐剩余 id，不再开新批。"""
+    plan = _plan_rows(state)
+    plan_ids = {str(row["subtask_id"]) for row in plan}
+    by_id = {str(row["subtask_id"]): row for row in plan}
+    done = _terminal_index(list(state.get("subtask_results") or []), plan_ids)
+    inflight = [
+        str(sid)
+        for sid in (state.get("inflight_subtask_ids") or [])
+        if str(sid) in plan_ids
+    ]
+    extras: list[dict] = []
+    for sid in inflight:
+        if sid in done:
+            continue
+        extras.append(
+            _error_terminal(by_id[sid], "工人未带回匹配的 subtask_id，已写错误终态")
+        )
+        done[sid] = extras[-1]
+    # 不可变前缀（Q8）：**读声明**，不从"有 output 的终态"反推。
+    # 反推会把"本轮刚跑完的前驱"也算成前缀，于是任何缺字段都变成
+    # prefix_touch_required —— contract_missing_field 永远走不到（死分支），
+    # 而 Q4 要的"别把坏数据喂下去"和 Q8 要的"改历史得交人"被混成一件事。
+    prefix_ids = frozenset(
+        str(sid) for sid in (state.get("plan_prefix_ids") or [])
+    )
+    updates: dict = {}
+    if is_supervisor_budget_exhausted(state):
+        for row in plan:
+            sid = str(row["subtask_id"])
+            if sid in done:
+                continue
+            extras.append(
+                _error_terminal(row, "supervisor 总步预算耗尽，未终态子任务写入错误终态")
+            )
+            done[sid] = extras[-1]
+        updates["inflight_subtask_ids"] = []
+    else:
+        ready: list[str] = []
+        blocked_meta: dict[str, int] = {}
+        for row in plan:
+            sid = str(row["subtask_id"])
+            if sid in done:
+                continue
+            deps = [str(dep) for dep in (row.get("depends_on") or [])]
+            if not all(dep in done for dep in deps):
+                continue
+            # ★ 前驱失败即终止（Q4 缺陷二）：error 终态不再算"前驱已完成"。
+            #   契约校验也在这里 —— 喂入前判，不合格一次工具都不打。
+            reason, detail = sc.gate(
+                row=row, terminals=done, by_id=by_id, prefix_ids=prefix_ids
+            )
+            if reason:
+                blocked = _error_terminal(
+                    row, f"{sc.label_of(reason)}（{detail}）"
+                )
+                blocked["blocked_by"] = reason
+                if sc.needs_hitl(reason):
+                    blocked["hitl_required"] = True
+                extras.append(blocked)
+                # 写进 done ⇒ 依赖它的后继同批级联停（不是等下一轮）
+                done[sid] = blocked
+                blocked_meta[reason] = blocked_meta.get(reason, 0) + 1
+                continue
+            ready.append(sid)
+        updates["inflight_subtask_ids"] = ready
+        if blocked_meta:
+            _record_span_metadata(
+                {
+                    "step_contract_blocked": sum(blocked_meta.values()),
+                    "step_contract_blocked_by_reason": blocked_meta,
+                }
+            )
+    if extras:
+        updates["subtask_results"] = SubtaskResultBatch(extras, plan_ids)
+    return updates
+
+
+def _bind_upstream(
+    state: LgRagState, subtask: dict
+) -> tuple[dict | None, str | None, list[str], list[str]]:
+    """按 ``consumes`` 把前驱产出注入本步（Q4 缺陷一：之前根本没串数据）。
+
+    ``type=tool`` → 注入 ``args[字段名]``（**覆盖** planner 写死的占位值）；
+    ``type=rag|extract`` → 在 input 尾部追加编排层生成的固定上下文块。
+    取哪些字段由模型声明，**怎么注入由代码决定**。
+    """
+    consumes = subtask.get("consumes_resolved") or {}
+    if not consumes:
+        return None, None, [], []
+    plan = _plan_rows(state)
+    terminals = _terminal_index(
+        list(state.get("subtask_results") or []),
+        {str(row["subtask_id"]) for row in plan},
+    )
+    sid_to_alias = {
+        str(row["subtask_id"]): str(row.get("alias") or row["subtask_id"])
+        for row in plan
+    }
+    values = sc.collect_values(
+        consumes_by_sid=consumes, terminals=terminals, sid_to_alias=sid_to_alias
+    )
+    if not values:
+        return None, None, [], []
+    if str(subtask.get("type") or "") == "tool":
+        return (
+            sc.bind_args(subtask.get("args"), values),
+            None,
+            sc.bound_field_names(values),
+            [],
+        )
+    text, included = sc.bind_input(
+        str(subtask.get("input") or ""), values, sid_to_alias=sid_to_alias
+    )
+    return None, text, included, sc.dropped_fields(values, included)
+
+
+def _worker_state(state: LgRagState, subtask: dict) -> dict:
+    task = dict(subtask)
+    args, text, bound, dropped = _bind_upstream(state, subtask)
+    if args is not None:
+        task["args"] = args
+    if text is not None:
+        task["input"] = text
+    if bound:
+        task["bound_fields"] = bound
+    # 被整块预算挤掉的字段必须说出来——静默少给等于给了一份看起来完整的数据
+    if dropped:
+        task["bound_dropped_fields"] = dropped
+    payload: dict = {
+        "messages": list(state.get("messages") or []),
+        "assigned_subtask": task,
+        "subtasks": list(state.get("subtasks") or []),
+        "supervisor_step_count": int(state.get("supervisor_step_count") or 0),
+    }
+    if state.get("supervisor_started_at") is not None:
+        payload["supervisor_started_at"] = state["supervisor_started_at"]
+    if state.get("supervisor_budget_exhausted") is True:
+        payload["supervisor_budget_exhausted"] = True
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -215,9 +724,25 @@ async def supervisor_node(state: LgRagState) -> dict:
     空 allowlist / 缺字段 → 整 plan fallback 单 rag；``type=tool`` id 须在本轮可见集内。
     选型：complete 一次 + ``parse_only``（见 ``_parse_subtasks``），
     不用 ``acomplete_structured`` 以免本波双重 LLM。
+    有非空 run_id 才签发 Host ``subtask_id``；缺失则不派工人、不用模型 id 当关联键。
     """
     bump = bump_supervisor_step(state)
     query = _last_user_text(state["messages"])
+    if not _run_id_of(state):
+        _record_span_metadata(
+            {
+                "capability_catalog_count": 0,
+                "subtask_count": 0,
+                "subtask_types": [],
+                "supervisor_fallback": True,
+                "structured_output_fallback": True,
+                "supervisor_missing_run_id": True,
+                "supervisor_raw": "",
+            }
+        )
+        return {**bump, **_missing_run_update(query)}
+    # Q8：重规划入口先算不可变前缀。空 ⇒ 首次规划，走原路径。
+    locked = _locked_prefix(state)
     caps, allowed_ids = _resolve_supervisor_visible_caps(state)
     if state.get("allowed_capability_ids") is None or not allowed_ids:
         span_meta: dict = {
@@ -230,11 +755,19 @@ async def supervisor_node(state: LgRagState) -> dict:
             "supervisor_raw": "",
         }
         _record_span_metadata(span_meta)
-        return {
-            **bump,
-            "subtasks": [{"id": "t1", "type": "rag", "input": query}],
-        }
-    system_content = _build_supervisor_system(_format_capability_catalog(caps))
+        # 已有前缀时不退化成"单 rag"：那会把已完成步骤的关联键抹掉
+        items = [] if locked else [{"id": "t1", "type": "rag", "input": query}]
+        stamped = _stamp_host_plan(state, items, locked=locked)
+        return {**bump, **stamped}
+    catalog_block = _format_capability_catalog(caps)
+    if locked:
+        system_content = _build_supervisor_suffix_system(
+            catalog_block,
+            _format_prefix_block(locked),
+            max(0, MAX_SUBTASKS - len(locked)),
+        )
+    else:
+        system_content = _build_supervisor_system(catalog_block)
     raw = ""
     subtasks: list[dict] | None = None
     invalid_tool_id = False
@@ -266,36 +799,87 @@ async def supervisor_node(state: LgRagState) -> dict:
             "lg_rag supervisor 输出非法，fallback 单 rag raw=%r", raw[:200]
         )
     if fallback:
-        subtasks = [{"id": "t1", "type": "rag", "input": query}]
-    span_meta: dict = {
+        if locked:
+            # 前缀已锁定：拿不到后缀就**沿用上一轮未解决的后缀**，
+            # 绝不退化成单 rag，也绝不把计划收缩成只剩前缀。
+            #
+            # 收缩为什么是错的（实测出来的，不是推演）：后缀一空，
+            # 那些"还没解决"的步骤就从计划里消失了 —— 它们的失败/未终态记录
+            # 随即变成**计划外 id**，observe 按 plan_ids 过滤看不见，
+            # aggregator 更看不见，于是结论写成"已覆盖全部子任务"。
+            # 失败被静默抹掉，正是外层 ReAct 要防的那一类事。
+            #
+            # 沿用而不是重签发：**不换 subtask_id**，所以已终态的失败步骤
+            # 不会被 join 重新下发（join 见终态即跳过），只是继续保持可见。
+            carried = _unresolved_suffix(state, locked)
+            logger.warning(
+                "lg_rag supervisor 重规划输出非法，沿用前缀 %d 步 + 未解决后缀 %d 步 raw=%r",
+                len(locked),
+                len(carried),
+                raw[:200],
+            )
+            if carried:
+                span_meta = {
+                    "capability_catalog_count": len(caps),
+                    "subtask_count": len(locked) + len(carried),
+                    "supervisor_fallback": True,
+                    "structured_output_fallback": True,
+                    "supervisor_raw": raw[:200],
+                    "plan_prefix_len": len(locked),
+                    "replan_suffix_only": True,
+                    "replan_carried_unresolved": len(carried),
+                }
+                _record_span_metadata(span_meta)
+                return {**bump, **_carry_plan(state, locked, carried)}
+            subtasks = []
+            fallback = False
+        else:
+            subtasks = [{"id": "t1", "type": "rag", "input": query}]
+    stamped = _stamp_host_plan(state, subtasks or [], locked=locked)
+    issued = stamped.get("subtasks") or []
+    span_meta = {
         "capability_catalog_count": len(caps),
-        "subtask_count": len(subtasks),
-        "subtask_types": [s["type"] for s in subtasks],
+        "subtask_count": len(issued),
+        "subtask_types": [s["type"] for s in issued],
         "supervisor_fallback": fallback,
         # 与 supervisor_fallback 并存（SPEC §5）
         "structured_output_fallback": fallback,
         "supervisor_raw": raw[:200],
+        # Q8 可恢复点
+        "plan_prefix_len": len(locked),
+        "recoverable_point": int(stamped.get("recoverable_point") or 0),
     }
+    if locked:
+        span_meta["replan_suffix_only"] = True
     if invalid_tool_id:
         span_meta["supervisor_invalid_tool_id"] = True
     _record_span_metadata(span_meta)
-    return {**bump, "subtasks": subtasks}
+    return {**bump, **stamped}
 
 
-def route_next_subtask(state: LgRagState) -> str:
-    """dispatch 条件边：取下一子任务按 type 分派；子任务耗尽或总预算耗尽 → aggregate。
+def route_next_subtask(state: LgRagState) -> str | list[Send]:
+    """按 inflight 一次下发多个工人；预算耗尽或没有待发 id → **observe**。
 
-    主闸：``supervisor_step_count`` / 耗尽旗标 / 墙钟（若开）触发时，
-    **即使仍有 pending 子任务** 也返回 ``"aggregate"``（禁止直跳 END）。
-    防死循环：len(subtask_results) >= len(subtasks) 即子任务耗尽（含空列表），
-    且每个 agent 节点必追加恰好一条结果，索引单调推进。
+    主闸仍是总步 / 旗标 / 墙钟：即使计划未收齐也返回 ``"observe"``，
+    不直跳 END、也不直跳 aggregate。收齐由 join 写入 inflight 为空来表达，
+    不用结果条数。
     """
     if is_supervisor_budget_exhausted(state):
-        return "aggregate"
-    subtask = _pending_subtask(state)
-    if subtask is None:
-        return "aggregate"
-    return _TYPE_TO_NODE.get(str(subtask.get("type") or ""), "rag_subtask")
+        return "observe"
+    by_id = {str(row["subtask_id"]): row for row in _plan_rows(state)}
+    sends: list[Send] = []
+    for sid in state.get("inflight_subtask_ids") or []:
+        subtask = by_id.get(str(sid))
+        if subtask is None:
+            continue
+        node = _TYPE_TO_NODE.get(str(subtask.get("type") or ""), "rag_subtask")
+        sends.append(Send(node, _worker_state(state, subtask)))
+    if not sends:
+        # ★ 不再直接 aggregate。没有待发步骤 ≠ 这一轮满足了原始问题：
+        #   可能是后缀为空、可能全被拦下、可能统统失败。
+        #   先交给 observe 做**执行层收口**，由它决定"再来一轮"还是"收工出结论"。
+        return "observe"
+    return sends
 
 
 # ---------------------------------------------------------------------------
@@ -304,11 +888,28 @@ def route_next_subtask(state: LgRagState) -> str:
 
 
 def _base_result(subtask: dict) -> dict:
-    return {
-        "id": str(subtask.get("id") or ""),
+    sid = str(subtask.get("subtask_id") or subtask.get("id") or "")
+    result = {
+        "id": sid,
+        "subtask_id": sid,
         "type": str(subtask.get("type") or ""),
         "input": str(subtask.get("input") or ""),
     }
+    if subtask.get("alias"):
+        result["alias"] = str(subtask["alias"])
+    if subtask.get("tool"):
+        result["tool"] = str(subtask["tool"])
+    if subtask.get("args") is not None:
+        result["args"] = dict(subtask["args"])
+    return result
+
+
+def _finish_worker(state: LgRagState, bump: dict, result: dict) -> dict:
+    """带回同一 subtask_id；缺 output/error 时补错误终态，避免收齐挂起。"""
+    if "output" not in result and "error" not in result:
+        result["error"] = "工人返回缺少 output 或 error"
+    plan_ids = {str(row["subtask_id"]) for row in _plan_rows(state)}
+    return {**bump, "subtask_results": SubtaskResultBatch([result], plan_ids)}
 
 
 def _step_detail_from_node_output(node_output: object) -> dict | None:
@@ -335,7 +936,7 @@ async def rag_subtask_node(state: LgRagState) -> dict:
     总步计数只计本节点入口，**不计**内部 router 子图节点。
     """
     bump = bump_supervisor_step(state)
-    subtask = _pending_subtask(state)
+    subtask = _current_subtask(state)
     if subtask is None:  # 防御：dispatch 保证不会发生；追加错误结果保推进
         return {
             **bump,
@@ -369,7 +970,7 @@ async def rag_subtask_node(state: LgRagState) -> dict:
                 acc_chain_meta: dict = {}
                 async for update in astream_router_agent(
                     result["input"],
-                    thread_id=f"lg-rag-subtask-{subtask_id or 'x'}",
+                    thread_id=str(result.get("subtask_id") or "") or "missing-subtask-id",
                 ):
                     if not isinstance(update, dict):
                         continue
@@ -403,7 +1004,7 @@ async def rag_subtask_node(state: LgRagState) -> dict:
                 result["error"] = repr(exc)
     finally:
         reset_chain_step_hook(hook_token)
-    return {**bump, "subtask_results": [result]}
+    return _finish_worker(state, bump, result)
 
 
 def _empty_extract() -> dict:
@@ -418,7 +1019,7 @@ async def info_extract_node(state: LgRagState) -> dict:
     不中断（DESIGN §8 / SPEC §5）。
     """
     bump = bump_supervisor_step(state)
-    subtask = _pending_subtask(state)
+    subtask = _current_subtask(state)
     if subtask is None:
         return {
             **bump,
@@ -447,7 +1048,7 @@ async def info_extract_node(state: LgRagState) -> dict:
             result["output"] = _empty_extract()
             result["error"] = repr(exc)
             _record_span_metadata({"structured_output_fallback": True})
-            return {**bump, "subtask_results": [result]}
+            return _finish_worker(state, bump, result)
         outcome = parse_only(raw, schema=ExtractResult)
         if not outcome.ok or outcome.data is None:
             logger.warning("lg_rag extract 输出非法，置空结构 raw=%r", (raw or "")[:200])
@@ -456,7 +1057,7 @@ async def info_extract_node(state: LgRagState) -> dict:
         else:
             result["output"] = outcome.data.model_dump()
             _record_span_metadata({"structured_output_fallback": False})
-    return {**bump, "subtask_results": [result]}
+    return _finish_worker(state, bump, result)
 
 
 async def tool_exec_node(state: LgRagState) -> dict:
@@ -469,7 +1070,7 @@ async def tool_exec_node(state: LgRagState) -> dict:
     租户：优先请求 ContextVar（F1=C），否则试点 A。
     """
     bump = bump_supervisor_step(state)
-    subtask = _pending_subtask(state)
+    subtask = _current_subtask(state)
     if subtask is None:
         return {
             **bump,
@@ -494,6 +1095,10 @@ async def tool_exec_node(state: LgRagState) -> dict:
     cap_ctx: dict = {
         "tenant_id": pilot_tenant,
         "subtask_id": result["id"],
+        # 会话维度：配额按 **run** 记，不是按子任务。
+        # 只给 subtask_id 的话，budget 只能退回去剥 run_id:seq ——剥得出来是运气，
+        # 剥不出来就退化成"一个子任务一个桶"，配额永远打不满（假门）。
+        "run_id": _run_id_of(state),
     }
     with trace_span("tool_exec", run_type="tool"):
         cap = await capability_ainvoke(tool_name, call_args, ctx=cap_ctx)
@@ -507,7 +1112,379 @@ async def tool_exec_node(state: LgRagState) -> dict:
             result["error"] = cap.error or f"未知工具: {tool_name or '(未指定)'}"
         else:
             result["output"] = cap.output
-    return {**bump, "subtask_results": [result]}
+            # ★ 降级必须让**模型**看得见。meta 里的 degraded 标记模型看不到
+            # （它只看子任务输出），所以：
+            #   1) Gateway 已把 _degraded 提示写进 output（跟着数据走）；
+            #   2) 这里再在子任务结果上打一层标，让聚合器/前端也能筛出来。
+            # 否则模型会拿着静态兜底或过期缓存当真实结果回答，语气还很确定。
+            if cap.meta.get("degraded") is True:
+                result["degraded"] = True
+                result["degraded_action"] = cap.meta.get("degraded_action")
+                logger.warning(
+                    "lg_rag 工具降级 tool=%r id=%s action=%s reason=%s",
+                    tool_name,
+                    result["id"],
+                    cap.meta.get("degraded_action"),
+                    cap.meta.get("degraded_reason"),
+                )
+    return _finish_worker(state, bump, result)
+
+
+# ---------------------------------------------------------------------------
+# Observe · 外层 ReAct 的收口（DESIGN 06 §8）
+# ---------------------------------------------------------------------------
+
+
+def _observe(state: LgRagState) -> dict:
+    """本轮观察：**只用确定性信号**。
+
+    不在这里让模型判断"够不够"——模型判断放在 ``_satisfied_by_model``，
+    而且它只能**触发**新一轮，不能放行（放行永远由这里的确定性信号 + 轮次上限决定）。
+    """
+    plan = _plan_rows(state)
+    plan_ids = {str(row["subtask_id"]) for row in plan}
+    results = list(state.get("subtask_results") or [])
+    terms = _terminal_index(results, plan_ids)
+    failed: list[str] = []
+    blocked: list[str] = []
+    hitl: list[str] = []
+    for sid, term in terms.items():
+        if "error" in term:
+            failed.append(sid)
+            if term.get("blocked_by"):
+                blocked.append(sid)
+            if term.get("hitl_required") is True:
+                hitl.append(sid)
+    pending = [str(row["subtask_id"]) for row in plan if row["subtask_id"] not in terms]
+    prefix = [str(s) for s in (state.get("plan_prefix_ids") or [])]
+    return {
+        "round": int(state.get("react_round") or 0),
+        "planned": len(plan),
+        "done": len(terms),
+        "prefix_len": len(prefix),
+        "newly_planned": max(0, len(plan) - len(prefix)),
+        "failed": sorted(failed),
+        "blocked": sorted(blocked),
+        "hitl_pending": sorted(hitl),
+        "pending": sorted(pending),
+        "unsatisfied": bool(failed or pending),
+    }
+
+
+async def _satisfied_by_model(state: LgRagState, obs: dict) -> bool | None:
+    """可选的模型侧"够不够"判断；**返回 False 只用来触发新一轮**。
+
+    默认关闭（``LG_RAG_REACT_SATISFACTION``）：默认开着等于让模型给自己打分。
+    开了之后它也不能放行——确定性信号说没做完就是没做完，
+    模型说"够了"不能让一个失败的步骤消失。
+    """
+    import os
+
+    if os.environ.get("LG_RAG_REACT_SATISFACTION", "0").strip() != "1":
+        return None
+    from app.llm.factory import get_llm_provider
+    from app.llm.schema import LlmMessage
+    from app.ops.lg_rag.nodes import _last_user_text
+    from app.ops.structured_output import parse_only
+
+    from pydantic import BaseModel
+
+    class _Verdict(BaseModel):
+        satisfied: bool
+
+    query = _last_user_text(state.get("messages") or [])
+    payload = json.dumps(obs, ensure_ascii=False, default=str)
+    try:
+        provider = get_llm_provider(_ROUTER_PROVIDER)
+        raw = await provider.complete(
+            [
+                LlmMessage(
+                    role="system",
+                    content=(
+                        "判断下面这批子任务结果**够不够**回答原始问题。"
+                        '只输出 JSON：{"satisfied": true|false}。'
+                        "有任何失败、缺失、被拦下的步骤都判 false。"
+                    ),
+                ),
+                LlmMessage(
+                    role="user",
+                    content=f"原始问题：{query}\n观察：{payload}",
+                ),
+            ],
+            model=_ROUTER_MODEL,
+        )
+        outcome = parse_only(raw, schema=_Verdict)
+        if not outcome.ok or outcome.data is None:
+            return None
+        return bool(outcome.data.satisfied)
+    except Exception as exc:  # 模型不可用 → 不因此放行，也不因此循环
+        logger.warning("lg_rag observe 模型侧满足度判断失败，按未知处理 err=%r", exc)
+        return None
+
+
+def _thread_id_of(
+    state: LgRagState, config: Optional[RunnableConfig] = None
+) -> str:
+    """恢复定位用的 thread_id。
+
+    **必须能从 config 兜底**：真实调用时 thread_id 只在 config 里，
+    state 里未必有人写。拿不到的话审批申请就是一条没有归属的记录——
+    人批完之后无从知道要恢复哪条 run。
+    """
+    direct = str(state.get("thread_id") or "").strip()
+    if direct:
+        return direct
+    try:
+        configurable = (config or {}).get("configurable") or {}
+        return str(configurable.get("thread_id") or "").strip()
+    except Exception:  # config 形态意外时不因此崩
+        return ""
+
+
+async def _persist_hitl(
+    state: LgRagState, obs: dict, *, thread_id: str = ""
+) -> tuple[list[dict], bool]:
+    """把本轮 pending 的拦截落库成审批申请。
+
+    返回 ``(申请列表, 是否有未落库的)``。**未落库必须显式带出来**：
+    "申请丢了"和"没人申请过"在观测上长得一模一样，人会一直等一个不存在的审批。
+    """
+    if not obs["hitl_pending"]:
+        return list(state.get("hitl_requests") or []), False
+    from app.ops.hitl import get_hitl_store, new_request_id
+
+    store = get_hitl_store()
+    plan = {str(row["subtask_id"]): row for row in _plan_rows(state)}
+    terms = _terminal_index(
+        list(state.get("subtask_results") or []), set(plan)
+    )
+    # ⚠️ 去重**不能只看 state**：interrupt 挂起时节点 return 的值不会进 checkpoint，
+    #   恢复后重跑 observe 时 ``state["hitl_requests"]`` 是空的（上一轮没写进去）。
+    #   于是"恢复一次就重复建一条申请" —— 人会在审批列表里看到两条一模一样的。
+    #   真相在 store 里，以 (run_id, subtask_id) 为幂等键。
+    already = {
+        str(r.get("subtask_id")): r
+        for r in (state.get("hitl_requests") or [])
+        if isinstance(r, dict)
+    }
+    run_id = _run_id_of(state)
+    try:
+        for row in await store.alist(status="pending", limit=200):
+            if str(row.get("run_id") or "") == run_id:
+                already.setdefault(str(row.get("subtask_id") or ""), row)
+    except Exception as exc:  # 拉不到就退回只认 state，不因此崩
+        logger.warning("HITL 申请去重拉取失败，退回按 state 去重 err=%r", exc)
+    created = list(state.get("hitl_requests") or [])
+    unpersisted = False
+    for sid in obs["hitl_pending"]:
+        if sid in already:
+            # 已经有 pending 了 —— 但**要把它带回返回值**，
+            # 否则恢复那一次（state 里是空的）前端就看不到在等哪条申请
+            if not any(str(r.get("subtask_id")) == sid for r in created):
+                created.append(already[sid])
+            continue
+        term = terms.get(sid) or {}
+        # 要解锁的是被它依赖的**已执行**前缀步骤（Q8 §2.4）
+        unlock = ""
+        for dep in (plan.get(sid) or {}).get("depends_on") or []:
+            if str(dep) in set(state.get("plan_prefix_ids") or []):
+                unlock = str(dep)
+                break
+        request = {
+            "id": new_request_id(),
+            "run_id": run_id,
+            "thread_id": thread_id,
+            "checkpoint_id": state.get("hitl_checkpoint_id"),
+            "tenant_id": str(term.get("tenant_id") or ""),
+            "subtask_id": sid,
+            "blocked_by": str(term.get("blocked_by") or ""),
+            "unlock_subtask_id": unlock,
+            "reason": str(term.get("error") or ""),
+            "detail": str(term.get("blocked_detail") or ""),
+            "payload": {"observation": {k: obs[k] for k in ("round", "planned", "done")}},
+            "status": "pending",
+            "created_at": time.time(),
+        }
+        saved = await store.acreate(request)
+        if saved.get("persisted") is False:
+            unpersisted = True
+            logger.error(
+                "HITL 申请**未落库**（持久化未配置）subtask=%s run=%s —— "
+                "人在等一个不存在的审批",
+                sid,
+                request["run_id"],
+            )
+        created.append(saved)
+    return created, unpersisted
+
+
+def _hitl_interrupt_payload(
+    state: LgRagState, obs: dict, requests: list[dict], *, thread_id: str = ""
+) -> dict:
+    """挂起载荷：告诉外面"这次等的是哪几条申请"。
+
+    会被序列化进 checkpoint 并透给前端，**只放关联标识，不放任何密钥**。
+    """
+    return {
+        "reason": "hitl_waiting",
+        "run_id": _run_id_of(state),
+        "thread_id": thread_id,
+        "checkpoint_id": state.get("hitl_checkpoint_id"),
+        "round": int(state.get("react_round") or 0),
+        "unpersisted": bool(requests) and all(
+            r.get("persisted") is False for r in requests
+        ),
+        "requests": [
+            {
+                "id": str(r.get("id") or ""),
+                "subtask_id": str(r.get("subtask_id") or ""),
+                "unlock_subtask_id": str(r.get("unlock_subtask_id") or ""),
+                "blocked_by": str(r.get("blocked_by") or ""),
+                "reason": str(r.get("reason") or ""),
+            }
+            for r in requests
+            if isinstance(r, dict) and r.get("status") == "pending"
+        ],
+    }
+
+
+def _apply_hitl_decision(state: LgRagState, obs: dict, resumed: Any) -> dict:
+    """把"批准"落成 state 更新：**只授权，不代劳**。
+
+    批准的**唯一**效果是解除锁定 —— 它不会自动改历史，也不会自动继续跑，
+    而是把被解锁的那一步从不可变前缀里摘出去，让下一轮重规划重新执行它。
+
+    两件必须一起做的事：
+    1. 记进 ``hitl_unlocked_ids`` ⇒ ``_locked_prefix`` 不再把它当前缀
+       ⇒ 可恢复点回退到它（这就是"从可恢复点重跑"）；
+    2. **剪掉它的旧结果**。不然 ``merge_subtask_results`` 见它已有终态就不覆盖，
+       重跑的新结果根本进不来 —— 人会看到"批准了但结果没变"。
+    """
+    payload = resumed if isinstance(resumed, dict) else {}
+    approved = {
+        str(x)
+        for x in (payload.get("approved") or [])
+        if str(x).strip()
+    }
+    decided_by = str(payload.get("decided_by") or "")
+    obs = dict(obs)
+    obs["verdict"] = "replan" if approved else "settle"
+    obs["hitl_decision"] = {
+        "approved": sorted(approved),
+        "rejected": [str(x) for x in (payload.get("rejected") or [])],
+        "decided_by": decided_by,
+    }
+
+    unlocked = set(str(s) for s in (state.get("hitl_unlocked_ids") or []))
+    unlocked |= approved
+
+    updates: dict = {
+        "react_observation": obs,
+        "hitl_unlocked_ids": sorted(unlocked),
+        "hitl_interrupt": {
+            "resumed": True,
+            "approved": sorted(approved),
+            "decided_by": decided_by,
+        },
+    }
+    if approved:
+        # 被授权重跑 ⇒ 外层的轮数归零：这是一次**被批准的全新尝试**，
+        # 不该被上一轮的轮次预算顺手掐掉。有界性由"人批一次才跑一次"保证。
+        updates["react_round"] = 0
+        plan_ids = {str(row["subtask_id"]) for row in _plan_rows(state)}
+        keep = plan_ids - approved
+        updates["subtask_results"] = SubtaskResultBatch([], keep, replace=True)
+        logger.info(
+            "HITL 已批准，解锁 %d 步并从可恢复点重跑 run=%s unlocked=%s by=%s",
+            len(approved),
+            _run_id_of(state),
+            sorted(approved),
+            decided_by or "unknown",
+        )
+    else:
+        logger.info(
+            "HITL 未获批准（驳回或无授权），收工 run=%s", _run_id_of(state)
+        )
+    return updates
+
+
+async def observe_node(
+    state: LgRagState, config: Optional[RunnableConfig] = None
+) -> dict:
+    """外层 ReAct 的"观察 + 判定"：这一轮活干完了没有？
+
+    内层是 plan-and-execute（supervisor 拆 ≤4 步、按依赖并行执行）；
+    外层是 ReAct（plan → execute → **observe** → 再 plan …）。
+
+    **为什么必须在 aggregator 之前**：``route_next_subtask`` 原本在没有待发步骤时
+    直接跳 aggregate，于是"后缀为空 / 全被拦下 / 统统失败"都会一路走到
+    aggregator 生成一份**看起来完整的结论**——中间没有任何针对性校验
+    （critic 在 aggregator 之后，而且只看有没有 error）。
+
+    判定顺序（先挡最贵的）：
+    1. 有 HITL 挂起 → 收工（**不再开新轮**：人没批之前，再来多少轮都还是同一个拦截）；
+    2. 有失败 / 被拦 / 未终态 → 再来一轮（受轮次上限）；
+    3. 否则 → 收工。
+    """
+    bump = bump_supervisor_step(state)
+    obs = _observe(state)
+    thread_id = _thread_id_of(state, config)
+    # 落库**先于**挂起：挂起期间节点 return 的值不进 checkpoint，
+    # 但申请必须在外面立刻能拉到 —— 否则人不知道有东西等他批。
+    hitl_requests, unpersisted = await _persist_hitl(state, obs, thread_id=thread_id)
+
+    # ---- 等待授权：**真的把图挂起**（不是写个标签继续走）----
+    #
+    # 为什么必须 interrupt：原来 wait_hitl 只是个字符串，route_after_react
+    # 把它按 settle 处理 ⇒ 图照样走到 aggregator 出一份"完整结论"。
+    # 用户在界面上看到答复的同时，后台躺着一条 pending 审批 ——
+    # 这正是 #3 要防的"看起来完整的答案"，只是换了个入口。
+    if obs["hitl_pending"]:
+        resumed = interrupt(
+            _hitl_interrupt_payload(state, obs, hitl_requests, thread_id=thread_id)
+        )
+        # 执行到这里只有两种可能：① 恢复后重跑，interrupt() 返回 resume 值；
+        # ② 对端没恢复 ⇒ 上一行已经抛 GraphInterrupt，根本走不到这。
+        return {
+            **bump,
+            **_apply_hitl_decision(state, obs, resumed),
+        }
+
+    model_says = await _satisfied_by_model(state, obs)
+    obs["model_satisfied"] = model_says
+
+    if obs["unsatisfied"] or model_says is False:
+        verdict = (
+            "replan"
+            if not is_react_round_exhausted(state) and not is_supervisor_budget_exhausted(state)
+            else "settle"
+        )
+    else:
+        verdict = "settle"
+    obs["verdict"] = verdict
+    obs["hitl_unpersisted"] = unpersisted
+
+    _record_span_metadata(
+        {
+            "react_round": int(state.get("react_round") or 0),
+            "react_verdict": verdict,
+            "react_unsatisfied": bool(obs["unsatisfied"]),
+            "react_hitl_pending": len(obs["hitl_pending"]),
+            "react_hitl_unpersisted": unpersisted,
+        }
+    )
+    return {
+        **bump,
+        **bump_react_round(state),
+        "react_observation": obs,
+        "hitl_requests": hitl_requests,
+    }
+
+
+def route_after_react(state: LgRagState) -> str:
+    """``"replan"`` → supervisor（再来一轮 plan→execute）；否则 → aggregator。"""
+    verdict = str((state.get("react_observation") or {}).get("verdict") or "settle")
+    return "replan" if verdict == "replan" else "settle"
 
 
 # ---------------------------------------------------------------------------

@@ -335,3 +335,112 @@ class OpsLgRagRunEvent(Base):
     event_type: Mapped[str] = mapped_column(String(64), nullable=False)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
+
+
+class OpsCapabilityReceipt(Base):
+    """副作用回执（W5）：**副作用以收据为真**。
+
+    写能力（``side_effect ∈ {write, irreversible}``）无论成败都落一行——
+    一次"失败"的写可能已经在下游生效（超时 / 半成功），不留就无从对账。
+
+    命中幂等键、**没有真正执行**的那次调用**不落**（没执行就没有副作用）。
+    """
+
+    __tablename__ = "ops_capability_receipts"
+    __table_args__ = (
+        # 同一租户内按幂等键对账（可为空：无幂等键的写能力）
+        UniqueConstraint("receipt_id", name="uq_ops_capability_receipts_receipt_id"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    #: 外部可见的回执号（由 capability.receipts.new_receipt_id() 生成）
+    receipt_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    capability_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    side_effect: Mapped[str] = mapped_column(String(16), nullable=False)
+    ok: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    #: 这次写是否在放行下执行（Host 单次放行 / env）——审计要能区分
+    write_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    subtask_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    idempotency_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    #: 按 manifest 的 receipt.capture 抓到的关键字段（如 ticketId / url）
+    captured: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+
+
+class OpsCapabilityIdempotency(Base):
+    """幂等防重表（W5）：**目标不是强幂等，而是同一个键不在本层发出两次请求**。
+
+    ``status='in_flight'`` 时由 ``lease_expires_at`` 兜底：
+    **没有租约，进程崩一次就会把该键永久卡死，而且是静默的。**
+    """
+
+    __tablename__ = "ops_capability_idempotency"
+    __table_args__ = (
+        # 幂等键的唯一性作用域：**租户内唯一**（跨租户不该互相影响）
+        UniqueConstraint(
+            "tenant_id", "idempotency_key", name="uq_ops_capability_idem_tenant_key"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    capability_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    #: in_flight | done
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    #: 租约到期时间；status=done 时无意义
+    lease_expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    #: 累计尝试次数（含接管）；>1 说明发生过重试或租约接管
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    #: 完成时关联的回执号（供 duplicate 时返回给调用方对账）
+    receipt_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+    updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
+
+
+class OpsHitlRequest(Base):
+    """人工审批申请（HITL）——**授权记录**，不是日志。
+
+    触发点只有一个：``prefix_touch_required``。它的含义是"要满足这一步，
+    得重跑一个**已执行**的步骤"，而按 Q8 §2.2，改已执行步骤的 ``args``
+    就是换一个幂等键 = 一次**新的写**。所以必须有人批。
+
+    为什么必须落库（不能只打在 LangGraph 状态里）：进程内状态重启即丢，
+    "申请丢了"和"从来没申请过"在观测上长得一模一样 —— 人会一直等一个
+    根本不存在的审批。
+
+    ``unlock_subtask_id``：审批通过要解锁的那一步。解锁 = 把它从不可变前缀里
+    摘出来 ⇒ 可恢复点回退到它 ⇒ 从那里重跑（这就是"改历史"的授权边界）。
+    """
+
+    __tablename__ = "ops_hitl_requests"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    run_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    thread_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    #: LangGraph checkpoint 标识（PG saver 才有；InMemorySaver 时为 None）
+    checkpoint_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    #: 被拦下的步骤
+    subtask_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    #: 拦截原因（当前只会是 prefix_touch_required）
+    blocked_by: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    #: 审批通过后允许重跑的**已执行**步骤
+    unlock_subtask_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    detail: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    #: pending | approved | rejected | expired
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    decision_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    decision_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+    updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)

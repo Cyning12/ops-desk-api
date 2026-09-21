@@ -49,7 +49,26 @@ def _result(answer: str, gate: str = "answer", kept: int = 1) -> ChainResult:
 
 
 def _provider(*outputs) -> SimpleNamespace:
-    return SimpleNamespace(complete=AsyncMock(side_effect=list(outputs)))
+    """按序返回；用尽后**重复最后一项**；异常实例按抛出处理。
+
+    为什么不再让 AsyncMock 抛 StopAsyncIteration：外层 ReAct 加了 observe 之后，
+    一次 run 里 supervisor / aggregator 的调用次数取决于"判定结果"，
+    把桩写死成固定条数会让**拓扑一变测试就红**，而红的原因跟被测行为无关。
+
+    保留 AsyncMock 是为了留住 ``await_count`` / ``await_args_list``：
+    "调了几次 LLM"本身是被测行为（不该多调一次模型），丢了就测不了。
+    """
+    stream = list(outputs)
+
+    async def _next(messages, model=None):
+        if not stream:
+            return ""
+        item = stream.pop(0) if len(stream) > 1 else stream[0]
+        if isinstance(item, BaseException):
+            raise item
+        return item
+
+    return SimpleNamespace(complete=AsyncMock(side_effect=_next))
 
 
 def _subtasks_json(subtasks: list[dict]) -> str:
@@ -65,9 +84,22 @@ def _build():
 async def _run(graph, query: str = _QUERY, thread_id: str = "t-p4"):
     with patch(_INTENT_COMPLETE_PATCH, new=AsyncMock(return_value=_INTENT_OK)):
         return await graph.ainvoke(
-            {"messages": [HumanMessage(content=query)]},
+            {
+                "messages": [HumanMessage(content=query)],
+                "run_id": "multirun",
+            },
             {"configurable": {"thread_id": thread_id}},
         )
+
+
+def _host_plan_ok(subtasks: list[dict], *, alias: str, type_: str, input_: str) -> None:
+    assert len(subtasks) == 1
+    row = subtasks[0]
+    assert row["alias"] == alias
+    assert row["type"] == type_
+    assert row["input"] == input_
+    assert row["id"] == row["subtask_id"]
+    assert row["subtask_id"].startswith("multirun:")
 
 
 @pytest.mark.asyncio
@@ -155,7 +187,8 @@ async def test_decompose_invalid_json_fallback_single_rag():
         patch(_CHAIN_PATCH, new=chain),
     ):
         out = await _run(_build())
-    assert out["subtasks"] == [{"id": "t1", "type": "rag", "input": _QUERY}]
+    assert out["subtasks"][0]["type"] == "rag"
+    _host_plan_ok(out["subtasks"], alias="t1", type_="rag", input_=_QUERY)
     assert len(out["subtask_results"]) == 1
     assert out["subtask_results"][0]["output"] == "兜底检索答案"
     assert out["messages"][-1].content == _AGGREGATED
@@ -173,7 +206,8 @@ async def test_decompose_llm_exception_fallback_single_rag():
         patch(_CHAIN_PATCH, new=chain),
     ):
         out = await _run(_build())
-    assert out["subtasks"] == [{"id": "t1", "type": "rag", "input": _QUERY}]
+    assert out["subtasks"][0]["type"] == "rag"
+    _host_plan_ok(out["subtasks"], alias="t1", type_="rag", input_=_QUERY)
     assert out["subtask_results"][0]["output"] == "兜底检索答案"
 
 
@@ -263,25 +297,35 @@ def test_supervisor_graph_includes_strategy_builder_node():
 
 def test_empty_subtasks_dispatch_goes_aggregate():
     """空 subtasks / 耗尽 → dispatch 直走 aggregate（防死循环）。"""
-    assert route_next_subtask({"subtasks": [], "subtask_results": []}) == "aggregate"
+    assert route_next_subtask({"subtasks": [], "subtask_results": []}) == "observe"
     assert (
         route_next_subtask(
             {
-                "subtasks": [{"id": "t1", "type": "rag", "input": "q"}],
-                "subtask_results": [{"type": "rag", "output": "a"}],
+                "subtasks": [{"id": "t1", "subtask_id": "t1", "type": "rag", "input": "q"}],
+                "subtask_results": [{"subtask_id": "t1", "type": "rag", "output": "a"}],
+                "inflight_subtask_ids": [],
             }
         )
-        == "aggregate"
+        == "observe"
     )
-    assert (
-        route_next_subtask(
-            {
-                "subtasks": [{"id": "t1", "type": "extract", "input": "q"}],
-                "subtask_results": [],
-            }
-        )
-        == "info_extract"
+    routed = route_next_subtask(
+        {
+            "subtasks": [
+                {
+                    "id": "r:1",
+                    "subtask_id": "r:1",
+                    "type": "extract",
+                    "input": "q",
+                    "depends_on": [],
+                }
+            ],
+            "subtask_results": [],
+            "inflight_subtask_ids": ["r:1"],
+        }
     )
+    assert isinstance(routed, list) and len(routed) == 1
+    assert routed[0].node == "info_extract"
+    assert routed[0].arg["assigned_subtask"]["subtask_id"] == "r:1"
 
 
 @pytest.mark.asyncio
@@ -309,9 +353,18 @@ async def test_subtask_exception_recorded_and_continues():
     ):
         out = await _run(_build())
     results = out["subtask_results"]
-    assert len(results) == 2
-    assert "chain down" in results[0]["error"]
-    assert results[1]["output"]["status"] == "healthy"
+    # 2026-09-20（Q8）：critic 回环不再整批清空结果，只裁掉"可变后缀"。
+    # 于是重规划后结果条数不再恒等于计划条数 —— 断言改成**意图**而不是条数：
+    #   · 同一个 subtask_id 不得重复（归并去重仍成立）
+    #   · rag 异常被如实记成 error
+    #   · tool 子任务照常执行出结果
+    ids = [r["subtask_id"] for r in results]
+    assert len(ids) == len(set(ids)), f"同一个 subtask_id 不得重复：{ids}"
+    assert any("chain down" in str(r.get("error") or "") for r in results)
+    assert any(
+        isinstance(r.get("output"), dict) and r["output"].get("status") == "healthy"
+        for r in results
+    )
     assert out["messages"][-1].content == _AGGREGATED
     assert out["inner_retry_count"] == 1
     assert out["critic_verdict"]["outcome"] == "end"

@@ -155,20 +155,21 @@ async def _ainvoke_with_tracing(
     *,
     thread_id: str,
     history_turns: list[dict] | None = None,
+    run_id: str | None = None,
 ) -> dict[str, Any]:
     """共享 ainvoke 外壳：历史压缩 + 本轮 query 装配 + Langfuse。"""
     config = _run_config(thread_id)
     span_cm, attr_cm = _tracing_contexts(thread_id)
     messages = assemble_graph_messages(query, history_turns)
+    payload: dict[str, Any] = {"messages": messages}
+    if run_id:
+        payload["run_id"] = run_id
     with span_cm, attr_cm:
         # 官方推荐的 trace 级属性传播：trace_name/session/tags 写到当前 span
         # 并随上下文传播给所有子 span。内层 LCEL 的 CallbackHandler 在其根
         # run 会 update_trace(name="lc-evidence-chain")，后置
         # update_current_trace 实测抢不回命名，故用 propagate_attributes。
-        return await graph.ainvoke(
-            {"messages": messages},
-            config,
-        )
+        return await graph.ainvoke(payload, config)
 
 
 async def _astream_with_tracing(
@@ -177,14 +178,18 @@ async def _astream_with_tracing(
     *,
     thread_id: str,
     history_turns: list[dict] | None = None,
+    run_id: str | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """共享 astream(updates) 外壳；yield 每个节点 update dict。"""
     config = _run_config(thread_id)
     span_cm, attr_cm = _tracing_contexts(thread_id)
     messages = assemble_graph_messages(query, history_turns)
+    payload: dict[str, Any] = {"messages": messages}
+    if run_id:
+        payload["run_id"] = run_id
     with span_cm, attr_cm:
         async for update in graph.astream(
-            {"messages": messages},
+            payload,
             config,
             stream_mode="updates",
         ):

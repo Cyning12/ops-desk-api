@@ -1,13 +1,18 @@
 # 内置 capability 目录（S3 · 五枚默认 local_fn · 对齐 defaults.py）
 # 进程内注册表清单；非跨进程注册中心。无密钥字段；仅 Host load 解析。
 # args_schema 仅参数形态；业务不变量不进 schema。
+# H4：补 side_effect（危险程度与副作用是两个维度）与 when_to_use
+#（模型选择依据，不可省——没有它模型只能靠 id 猜）。
 version: 1
 capabilities:
   - id: mock_get_issue_status
     kind: local_fn
     description: Mock：查询 issue 状态（罐头数据）
+    when_to_use: 需要查看某个 issue 的当前状态、指派人与更新时间（罐头演示数据）
+    when_not_to_use: 需要真实仓库数据时用 get_issue_by_number
     tags: [mock, issue]
     risk_level: low
+    side_effect: read
     enabled: true
     tenant_scoped: false
     args_schema:
@@ -18,8 +23,11 @@ capabilities:
   - id: mock_get_deploy_info
     kind: local_fn
     description: Mock：查询部署信息（罐头数据）
+    when_to_use: 需要查看某环境的部署版本、部署时间与健康状态（罐头演示数据）
+    when_not_to_use: 需要真实部署平台的实时状态时不要用本能力
     tags: [mock, deploy]
     risk_level: low
+    side_effect: read
     enabled: true
     tenant_scoped: false
     args_schema:
@@ -30,8 +38,11 @@ capabilities:
   - id: utc_now_iso
     kind: local_fn
     description: 只读：返回当前 UTC ISO 时间戳
+    when_to_use: 需要"现在"的绝对时间（例如判断是否超期、计算时间差）
+    when_not_to_use: 需要业务日期（如单据日期）时不要用本能力代替
     tags: [readonly, time]
     risk_level: low
+    side_effect: read
     enabled: true
     tenant_scoped: false
     args_schema:
@@ -42,8 +53,11 @@ capabilities:
   - id: get_issue_by_number
     kind: local_fn
     description: 本库只读：按 number 查 Issue 摘要（无 raw_payload）
+    when_to_use: 用户给了明确的 issue 编号，需要标题、状态等摘要信息
+    when_not_to_use: 用户只有关键词、不知道编号时，应先检索再按编号查
     tags: [lookup, issue, readonly]
     risk_level: low
+    side_effect: read
     enabled: true
     tenant_scoped: true
     args_schema:
@@ -57,8 +71,11 @@ capabilities:
   - id: get_pr_by_number
     kind: local_fn
     description: 本库只读：按 number 查 PR 摘要（无 raw_payload）
+    when_to_use: 用户给了明确的 PR 编号，需要标题、状态等摘要信息
+    when_not_to_use: 用户只有关键词、不知道编号时，应先检索再按编号查
     tags: [lookup, pr, readonly]
     risk_level: low
+    side_effect: read
     enabled: true
     tenant_scoped: true
     args_schema:

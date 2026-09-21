@@ -4,31 +4,75 @@ Database isolation: integration tests run against a dedicated ``opsdesk_test``
 database so destructive fixtures (e.g. ``clean_sync_data``) can never wipe the
 development database that holds real imported data. The test database is
 created on demand and its schema is managed via ``Base.metadata.create_all``.
+
+**这条隔离保证由 ``_assert_test_database`` 强制执行**：目标库名必须以 ``_test`` 结尾，
+否则 conftest 在 import 期直接抛错。需要换库（CI / 多实例）请设
+``OPS_TEST_DATABASE_URL``——**不要复用业务的 ``DATABASE_URL``**，.env 里那个指向开发库。
 """
+
 from __future__ import annotations
 
 import asyncio
 import os
 import random
+import re
+import sys
 from datetime import datetime, timedelta
 
 # 先于 import app.config（其 load_dotenv）关掉 tracing，避免本机 .env 的 keys 在 pytest 里误上报
 os.environ.setdefault("OPS_CHAT_TRACER", "")
 
-# 本地/CI 精简 langchain 元包可能缺 .debug；langchain_core.globals.get_debug 会 AttributeError
+# 本地/CI 精简 langchain 元包可能缺 langchain.debug，某些三方路径读它会 AttributeError。
+# 用官方 set_debug() 预热：它内部会 catch_warnings 抑制掉
+# "Importing debug from langchain root module is no longer supported" 这条告警——
+# 直接 hasattr(_langchain, "debug") / 赋值会**触发**它（走的是 langchain.__getattr__）。
+# ⚠️ 刻意从 ``langchain_core`` 取，不再从 ``langchain`` 伞包取：
+#   langchain 0.2.x 写死了 ``langchain-core>=0.2.43,<0.3.0``，与 langgraph 1.x
+#   要求的 ``langchain-core>=1.4.7`` **直接冲突**。而这里唯一要的就是
+#   langchain_core.globals 里那个 debug 开关，伞包不是必需品
+#   （LangGraph 1.0 也明确不再依赖 langchain 包）。
 try:
-    import langchain as _langchain
-
-    if not hasattr(_langchain, "debug"):
-        _langchain.debug = False
+    from langchain_core.globals import set_debug
 except ImportError:
     pass
+else:
+    set_debug(False)
 
 _TEST_DB_URL = "postgresql+asyncpg://ops:ops_password@localhost:5432/opsdesk_test"
 
+# 换测试库**只能**用这个变量（CI / 本机多实例）。
+# 刻意不复用业务的 DATABASE_URL：.env 里那个指向**开发库**，而 clean_sync_data 会 delete 全表。
+TEST_DATABASE_URL_KEY = "OPS_TEST_DATABASE_URL"
+
+_TEST_DB_SUFFIX = "_test"
+_DB_NAME_RE = re.compile(r"^[A-Za-z0-9_]+$")
+
+# PG 连不上时的真实原因。以前静默返回 False → 所有 DB 测试悄悄 SKIP，
+# 和"测试都过了"长得一模一样；至少要把原因喊出来。
+_DB_UNAVAILABLE_REASON: list[str] = []
+
+
+def _assert_test_database(url: str) -> tuple[str, str]:
+    """校验目标库是测试库，返回 ``(url, db_name)``。
+
+    不是测试库就**直接抛**，不静默、不退化。理由：``clean_sync_data`` 会
+    ``delete(OpsRepo)``，而 ops_issues / ops_pull_requests / ops_scan_snapshots /
+    ops_sync_runs / ops_graph_snapshots 五张表都是 ON DELETE CASCADE——
+    指向开发库就是在删真实导入数据。
+    """
+    name = url.rsplit("/", 1)[-1].split("?")[0]
+    if not _DB_NAME_RE.match(name) or not name.endswith(_TEST_DB_SUFFIX):
+        raise RuntimeError(
+            f"pytest 目标库名必须是合法标识符且以 '{_TEST_DB_SUFFIX}' 结尾，当前是 {name!r}。\n"
+            f"  原因：clean_sync_data 等 fixture 会 delete(OpsRepo) 并级联删掉 "
+            f"issues / PRs / snapshots——指向开发库就是在删真实导入数据。\n"
+            f"  要换库：{TEST_DATABASE_URL_KEY}=postgresql+asyncpg://user:pw@host:5432/<名字>_test"
+        )
+    return url, name
+
 
 def _setup_test_database() -> bool:
-    """Point DATABASE_URL at opsdesk_test if PostgreSQL is reachable.
+    """Point DATABASE_URL at the test DB if PostgreSQL is reachable.
 
     Must run before app modules are imported (the engine is created at import
     time). Returns whether PostgreSQL is available.
@@ -37,32 +81,44 @@ def _setup_test_database() -> bool:
 
     from app.config import settings  # noqa: PLC0415
 
+    # 先校验再连：目标库不对就该立刻炸，而不是"连上了再说"
+    target, db_name = _assert_test_database(os.environ.get(TEST_DATABASE_URL_KEY, _TEST_DB_URL))
+
     async def _prepare() -> bool:
         admin_dsn = settings.database_url.replace("+asyncpg", "").rsplit("/", 1)[0] + "/postgres"
         try:
             conn = await asyncpg.connect(admin_dsn)
-        except (OSError, asyncpg.PostgresError):
+        except (OSError, asyncpg.PostgresError) as exc:
+            _DB_UNAVAILABLE_REASON.append(f"{type(exc).__name__}: {exc}")
             return False
         try:
-            exists = await conn.fetchval(
-                "SELECT 1 FROM pg_database WHERE datname = 'opsdesk_test'"
-            )
+            exists = await conn.fetchval("SELECT 1 FROM pg_database WHERE datname = $1", db_name)
             if not exists:
-                await conn.execute("CREATE DATABASE opsdesk_test")
+                # CREATE DATABASE 不接受绑定参数；db_name 已由 _DB_NAME_RE 校验
+                await conn.execute(f'CREATE DATABASE "{db_name}"')
         finally:
             await conn.close()
         return True
 
     available = asyncio.run(_prepare())
     if available:
-        os.environ["DATABASE_URL"] = _TEST_DB_URL
         # settings is already instantiated by the import above; mutate it so
         # the engine (created on app.db.session import) targets the test DB.
-        settings.database_url = _TEST_DB_URL
+        # 同时写回 os.environ，保证 conftest 之后才 import 的东西看到同一个库。
+        os.environ["DATABASE_URL"] = target
+        settings.database_url = target
     return available
 
 
 DB_AVAILABLE = _setup_test_database()
+
+if not DB_AVAILABLE:
+    # 跳过 ≠ 通过：凭据改了而 conftest 没跟上时，这里以前完全无声。
+    print(
+        "[conftest] PostgreSQL 不可用，DB 相关用例将被**跳过**（不是通过）。原因："
+        + ("; ".join(_DB_UNAVAILABLE_REASON) or "（无：可能是超时或没走到连接）"),
+        file=sys.stderr,
+    )
 
 import pytest  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
@@ -118,11 +174,36 @@ async def _reset_engine():
     yield
 
 
+@pytest.fixture(autouse=True)
+def _reset_capability_budget():
+    """每个用例前清零 capability 的会话配额计数。
+
+    配额是**进程内全局状态**（和注册表、metrics 同源），不清就会跨用例累积；
+    而不带 ctx 的调用全部落进匿名桶 ``""``，跑满 64 次之后后面每个用例都被
+    ``policy_blocked: budget_exhausted`` 拦下——症状长得像功能坏了，实际是状态泄漏。
+    """
+    from app.ops.capability import fallback
+    from app.ops.capability.budget import reset as budget_reset
+    from app.ops.capability.circuit import reset as circuit_reset
+
+    budget_reset()
+    circuit_reset()
+    # 降级缓存也是进程内全局状态（按 (能力,租户,参数) 分桶、有界），
+    # 不清会让上一个用例的成功结果被下一个用例的 cache 降级命中——
+    # 症状是"降级莫名其妙成功了"，实际是串了数据。
+    fallback.reset()
+    yield
+    budget_reset()
+    circuit_reset()
+
+
 @pytest.fixture
 async def clean_sync_data():
     """Remove all synced repos and cascading children before a test.
 
-    Safe to delete broadly: this only runs against the opsdesk_test database.
+    Safe to delete broadly **only because** ``_assert_test_database`` 保证目标库名以
+    ``_test`` 结尾（连带级联删除 issues / PRs / snapshots 也只发生在测试库）。
+    谁要是把这道闸拆了，这个 fixture 就变成"删光开发库导入数据"的按钮。
     """
     from sqlalchemy import delete
 
@@ -162,13 +243,9 @@ async def seeded_maintainer():
         async with AsyncSessionLocal() as cleanup_db:
             from sqlalchemy import delete
 
+            await cleanup_db.execute(delete(OpsSession).where(OpsSession.user_id == user.id))
             await cleanup_db.execute(
-                delete(OpsSession).where(OpsSession.user_id == user.id)
-            )
-            await cleanup_db.execute(
-                delete(OpsInviteToken).where(
-                    OpsInviteToken.token == hash_token(plaintext_invite)
-                )
+                delete(OpsInviteToken).where(OpsInviteToken.token == hash_token(plaintext_invite))
             )
             await cleanup_db.execute(
                 delete(OpsSessionChat).where(OpsSessionChat.user_id == user.id)

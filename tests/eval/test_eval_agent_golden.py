@@ -129,6 +129,7 @@ async def test_eval_agent_supervisor_golden(case: dict[str, Any]) -> None:
             {
                 "messages": [HumanMessage(content=query)],
                 "allowed_capability_ids": allowlist,
+                "run_id": "evalrun",
             }
         )
     subtasks = out["subtasks"]
@@ -144,10 +145,14 @@ async def test_eval_agent_supervisor_golden(case: dict[str, Any]) -> None:
 
 @pytest.mark.asyncio
 async def test_eval_agent_e2e_golden() -> None:
-    """恰好 1 条：mock 全链到 END。CI 无 langchain 元包则 skip（勿挡收集）。"""
-    langchain = pytest.importorskip("langchain")
-    if not hasattr(langchain, "debug"):
-        langchain.debug = False  # 本地包缺此属性，ainvoke 会 AttributeError
+    """恰好 1 条：mock 全链到 END。
+
+    原来这里 ``importorskip("langchain")`` 并手工补 ``langchain.debug`` ——
+    那是给老环境的绕路：**伞包已移除**（它写死 langchain-core<0.3，与
+    langgraph 1.x 冲突），而实测 langchain_core / langsmith 里**没有任何地方**
+    再读 ``langchain.debug``。留着它的代价是这条 e2e 在没装伞包时**静默跳过**，
+    等于把唯一的端到端 golden 用例弄丢了。
+    """
     from langgraph.checkpoint.memory import InMemorySaver
 
     cases = _load_cases("e2e")
@@ -179,7 +184,10 @@ async def test_eval_agent_e2e_golden() -> None:
         patch(_CHAIN_PATCH, new=chain),
     ):
         out = await graph.ainvoke(
-            {"messages": [HumanMessage(content=case["query"])]},
+            {
+                "messages": [HumanMessage(content=case["query"])],
+                "run_id": "evalrun",
+            },
             {"configurable": {"thread_id": "t-eval-e2e"}},
         )
     assert expect["reached_end"] is True

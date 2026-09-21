@@ -26,7 +26,11 @@ def _full_allowlist_state(messages: list) -> dict:
     ids = [
         s.capability_id for s in list_capabilities(filter=BUILDER_CAP_FILTER)
     ]
-    return {"messages": messages, "allowed_capability_ids": ids}
+    return {
+        "messages": messages,
+        "allowed_capability_ids": ids,
+        "run_id": "structrun",
+    }
 
 
 def _span_cm():
@@ -127,7 +131,12 @@ async def test_supervisor_fallback_metadata_flag():
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
     ):
         out = await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
-    assert out["subtasks"] == [{"id": "t1", "type": "rag", "input": "复合问题"}]
+    row = out["subtasks"][0]
+    assert row["alias"] == "t1"
+    assert row["type"] == "rag"
+    assert row["input"] == "复合问题"
+    assert row["id"] == row["subtask_id"]
+    assert row["subtask_id"] == "structrun:1"
     assert recorded
     assert recorded[0]["supervisor_fallback"] is True
     assert recorded[0]["structured_output_fallback"] is True
