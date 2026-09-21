@@ -467,7 +467,11 @@ class OpsMemoryFact(Base):
             "status IN ('active', 'superseded', 'revoked', 'expired')",
             name="ck_ops_memory_facts_status",
         ),
-        CheckConstraint("kind = 'fact'", name="ck_ops_memory_facts_kind"),
+        # memory-preference-profile：放开 preference（首期显式-only · 迁移
+        # 20260922_memory_kind_preference 同步放宽落库 CHECK）
+        CheckConstraint(
+            "kind IN ('fact', 'preference')", name="ck_ops_memory_facts_kind"
+        ),
         # 召回主谓词：(tenant, user, key, status)
         Index(
             "idx_ops_memory_facts_recall",
@@ -497,7 +501,8 @@ class OpsMemoryFact(Base):
     key: Mapped[str] = mapped_column(String, nullable=False)
     #: 事实值（jsonb；闸限制为标量，见 gate.should_write）
     value: Mapped[object] = mapped_column(JSONB, nullable=False)
-    #: P0 只接受 'fact'；preference 属画像（P1+）
+    #: 'fact' 客观事实 | 'preference' 用户显式偏好（首期显式-only，见
+    #: app/ops/memory/gate.py 双向 key 域绑定 pref.*）
     kind: Mapped[str] = mapped_column(String, nullable=False, default="fact")
     #: 溯源：产生该事实的 run（可空 = 人工/系统导入）
     source_run_id: Mapped[str | None] = mapped_column(String, nullable=True)

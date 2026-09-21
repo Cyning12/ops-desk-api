@@ -1,26 +1,28 @@
-# app/ops/memory — 事实型记忆 P0 + P1（memory-facts-p0 / memory-facts-p1）
+# app/ops/memory — 事实型记忆 P0 + P1 + 画像 preference 首期（memory-facts-p0 / memory-facts-p1 / memory-preference-profile）
 
-> 上游 SPEC：`docs/spec/memory-facts-p0/SPEC-memory-facts-p0_v1.md`（signed）· `docs/spec/memory-facts-p1/SPEC-memory-facts-p1_v1.md`（signed）  
+> 上游 SPEC：`docs/spec/memory-facts-p0/SPEC-memory-facts-p0_v1.md`（signed）· `docs/spec/memory-facts-p1/SPEC-memory-facts-p1_v1.md`（signed）· `docs/spec/memory-preference-profile/SPEC-memory-preference-profile_v1.md`（signed）  
 > 设计纪律：**只记事实，不记对话**；**判据在写入时判，不在检索时筛**；**不能自证的机制等于没装**。  
-> P1 纪律：向量只解决"怎么召回"，写入判据永远闸判；抽取产物是候选不是事实；每条增强可独立关闭独立降级，**两开关全关 = P0 逐字节一致**。
+> P1 纪律：向量只解决"怎么召回"，写入判据永远闸判；抽取产物是候选不是事实；每条增强可独立关闭独立降级，**两开关全关 = P0 逐字节一致**。  
+> preference 纪律（memory-preference-profile）：**首期只收显式声明**——闸双向 key 域绑定（`kind=preference` ⟺ key 首段 `pref`），抽取管道物理不产 preference（schema 无 kind 字段 + 构造点钉死 fact），推断型偏好**无写入通路**；召回注入分节（`[已知事实]` / `[用户偏好]` 单 SystemMessage 双节）；纠错入口 `revoke_by_key`。
 
 ## 模块职责
 
 | 文件 | 职责 |
 |------|------|
-| `gate.py` | `should_write(candidate)` 写入闸**纯函数**；三判据落成显式规则，拒绝返回稳定原因码（`REJECT_REASONS`）。**闸拒 = 不落库**。 |
-| `service.py` | 状态机：`write_fact`（过闸 → 落库；同 `(tenant_id,user_id,key)` 有 active 则**同一事务**内置旧 `superseded` + 新行 `supersedes` 指旧 id）· `revoke_by_source`（按源头批量 `revoked`，幂等，审计日志记影响行数）· `sweep_expired`（过期置 `expired`）· `recall_active`（仅 active 且未过期，`updated_at desc` top-N）。 |
+| `gate.py` | `should_write(candidate)` 写入闸**纯函数**；三判据落成显式规则，拒绝返回稳定原因码（`REJECT_REASONS`）。**闸拒 = 不落库**。kind 集合 `ALLOWED_KINDS={fact, preference}`；双向 key 域绑定违反 → `key_kind_mismatch`。 |
+| `service.py` | 状态机：`write_fact`（过闸 → 落库；同 `(tenant_id,user_id,key,kind)` 有 active 则**同一事务**内置旧 `superseded` + 新行 `supersedes` 指旧 id——查重谓词含 kind，跨 kind 同 key 互不影响）· `revoke_by_source`（按源头批量 `revoked`，幂等，审计日志记影响行数）· `revoke_by_key`（按 key 一键 `revoked`，显式声明 `source_run_id` 为空的纠错入口；必带 tenant+user 谓词 · 幂等 · 审计）· `sweep_expired`（过期置 `expired`）· `recall_active`（仅 active 且未过期，`updated_at desc` top-N，**无 kind 谓词**——分节在渲染层）。 |
 | `../lg_rag/continuity.py`（注入点） | `assemble_graph_messages_with_memory`：装配 + 可选记忆注入；渲染/插入助手 `render_memory_facts_block` / `inject_memory_facts_block`。P1：`MEMORY_FACTS_VECTOR_RECALL_ENABLED=true` 时召回走 `service.recall_with_vector` 混合召回，否则 P0 确定性路径。 |
 | `extract.py`（P1） | LLM 离线候选抽取（默认关）：run 完成后后台点火 → structured_output 管道 → 候选逐条过闸 → `write_fact`（带 `source_run_id`/`source_turn`）。 |
 
-存储：`ops_memory_facts`（`app/db/models.py::OpsMemoryFact`；migration `alembic/versions/20260921_memory_facts.py`）。失效一律走状态机，**不物理删**（旧值留表供审计对账）。
+存储：`ops_memory_facts`（`app/db/models.py::OpsMemoryFact`；migration `alembic/versions/20260921_memory_facts.py`，CHECK 放宽 `kind IN ('fact','preference')` 见 `20260922_memory_kind_preference.py`——回滚须先清 preference 行）。失效一律走状态机，**不物理删**（旧值留表供审计对账）。
 
 ## key 命名约定
 
 - **小写点分层，至少两段**：`^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`，如 `project.primary_repo`、`user.display_tz`。
 - 首段为**域**（project / user / repo / pref …），其后逐级收窄；禁止大写、连字符、单段键。
+- **`pref` 域与 kind 双向绑定**（memory-preference-profile）：`pref.*` key 必须 `kind=preference`，`kind=preference` 必须 `pref.*` key；违反 → 闸拒 `key_kind_mismatch`。
 - **易失前缀拒写**：`tmp.` / `session.` / `ephemeral.` / `draft.` —— 一次性上下文不是稳定事实。
-- key 是冲突消解粒度：同 `(tenant_id, user_id, key)` 写新值 = 旧值逻辑失效（supersede）。
+- key 是冲突消解粒度：同 `(tenant_id, user_id, key, kind)` 写新值 = 旧值逻辑失效（supersede）。
 
 ## env 表
 
@@ -35,28 +37,36 @@
 | `MEMORY_BACKFILL_SLEEP_MS` | `200` | 回退 `200` + warning | 回填批间限速（ms） |
 | `MEMORY_BACKFILL_CHECKPOINT` | 空（禁用） | 指向目录回退禁用 + warning；文件损坏从头重扫 + warning | 可选 checkpoint 文件路径，**仅加速**，不作正确性依据 |
 
+memory-preference-profile **无新 env**：kind=preference 复用同一总开关 / 预算 / 值长上限（统一预算内两节混排截断）。
+
 ## 注入格式与位置
 
-开启且有命中时，装配结果插入**一条独立 SystemMessage**，位置在既有前缀系统消息之后（无前缀则置队首）：
+开启且有命中时，装配结果插入**一条独立 SystemMessage**，位置在既有前缀系统消息之后（无前缀则置队首）。块内按 kind **分节**（memory-preference-profile 方案 B1 单块双节）：
 
 ```text
 [已知事实]
 project.primary_repo=cyning/ops-desk
 user.display_tz=Asia/Shanghai
+
+[用户偏好]
+用户显式陈述的偏好，用于调整回应方式；非客观事实。无偏好时不要假设或编造。
+pref.answer_lang=中文
 ```
 
 - 每条 `key=value` 一行；str 值内换行转义为 `\n` 保住一行一条；非标量 JSON 序列化。
+- **无 preference → `[用户偏好]` 节物理不存在**（幻觉偏好红线结构断言落点）；无 fact → `[已知事实]` 节同样不出现；fact-only 输入渲染与 P0 现网逐字节一致。
 - 块与指令正文**结构隔离**：独立 SystemMessage，不掺入任何 prompt 模板。
 - 身份（`tenant_id`/`user_id`）取自请求上下文：tenant = `app/ops/tenant_context.py` ContextVar（阶段 T 头校验链路设置），user = session 用户经 `router.py` / `sse_stream.py` 显式透传；**模型产出不得参与身份构造**。supervisor 内层 `rag_subtask` 不透传 user_id ⇒ 每请求只在顶层装配注入一次。
-- 观测：span metadata `memory_facts_injected=N`（经 `app/ops/tracing.py::update_current_span_metadata`；tracing 未开时静默 no-op，同时有 log 兜底）。SSE / 用户面**不输出**原始事实。
+- 观测：span metadata `memory_facts_injected=N`；有 preference 时并列 `memory_preferences_injected=M`（经 `app/ops/tracing.py::update_current_span_metadata`；tracing 未开时静默 no-op，同时有 log 兜底）。SSE / 用户面**不输出**原始事实与偏好。
 
 ## 故障语义
 
 | 触发 | 行为 |
 |------|------|
-| 闸拒绝 | 不落库 + `GateRejectedError(reason_code)` + info 日志；调用方不得静默吞 |
+| 闸拒绝 | 不落库 + `GateRejectedError(reason_code)` + info 日志；调用方不得静默吞；kind 集合外 → `kind_not_allowed`；kind 与 key 域双向绑定违例（preference 非 `pref.*` / fact 用 `pref.*`）→ `key_kind_mismatch` |
 | 同 key 并发写 | 事务内 supersede，后写赢，旧值留表可审计 |
 | revoke 不存在的 source | 影响 0 行，幂等返回（审计日志仍记 `affected=0`） |
+| revoke_by_key（显式声明纠错） | 按 `(tenant_id, user_id, key)` 把 active 行置 `revoked`；幂等（重复调用 0 行）· 跨 tenant 0 行 · 审计日志记 affected；清除后召回零命中、注入块无该 key |
 | sweep 未跑 / 失败 | **召回仍按 `expires_at` 过滤**（双保险，不依赖任务存活） |
 | 跨 tenant 查询 | 所有 SQL 必带 `tenant_id` 谓词；跨 tenant = 空结果 |
 | 召回 DB 故障 | 记 log + span `memory_degraded`，**降级为不注入**，不拖垮 chat |
@@ -139,6 +149,6 @@ python scripts/memory_embedding_backfill.py             # 实跑
 - **中断**：SIGINT/SIGTERM 页边界响应，当前页完成后落 `status: partial` 报告再退出。
 - 回填**不挂** `MEMORY_FACTS_VECTOR_RECALL_ENABLED`（该开关管在线路径；CLI 本身即开关）。
 
-## 非范围（P0/P1）
+## 非范围（P0/P1/memory-preference-profile）
 
-画像 / preference；热路径/流中抽取；对外 HTTP 写端点；对话摘要；物理删除；跨租户共享。
+推断型 preference（行为推断 / 抽取产偏好——首期物理拒收，无写入通路；未来另案 SPEC）；热路径/流中抽取；对外 HTTP 写端点；对话摘要；物理删除；跨租户共享；偏好管理 UI（另案）。

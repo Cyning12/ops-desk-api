@@ -399,3 +399,44 @@ async def test_extract_provider_error_zero_writes(
     assert (candidates, written) == (0, 0)
     assert provider.calls == 1
     assert len(await _rows()) == before
+
+# ---------------- memory-preference-profile · 显式-only 落点（物理拒收推断型） ----------------
+
+
+def test_extraction_schema_has_no_kind_field():
+    """schema 无 kind 字段：结构化输出层面**物理产不出** preference。"""
+    from app.ops.memory.extract import ExtractedFactItem, MemoryFactExtraction
+
+    assert set(ExtractedFactItem.model_fields) == {"key", "value"}
+    assert set(MemoryFactExtraction.model_fields) == {"facts"}
+
+
+async def test_extract_constructed_candidates_are_fact_kind(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """构造点钉死：抽取候选 FactCandidate.kind 恒为 fact（变异检验 ③ 落点）。"""
+    monkeypatch.setenv("MEMORY_FACTS_EXTRACT_ENABLED", "true")
+    payload = json.dumps(
+        {"facts": [{"key": "project.primary_repo", "value": "cyning/ops-desk"}]},
+        ensure_ascii=False,
+    )
+    provider = FakeProvider(payload)
+    recorded = []
+
+    async def fake_write(candidate, **kwargs):  # 截获构造点产物，不落库
+        recorded.append(candidate)
+        return MagicMock()
+
+    monkeypatch.setattr(extract_mod, "write_fact", fake_write)
+    candidates, written = await run_memory_extraction(
+        tenant_id=_TENANT,
+        user_id="u-kind",
+        run_id="run-kind-" + uuid.uuid4().hex[:6],
+        query="我主要在 ops-desk-api 仓干活",
+        answer="好的",
+        _provider=provider,
+    )
+    assert (candidates, written) == (1, 1)
+    assert len(recorded) == 1
+    assert recorded[0].kind == "fact"  # 构造点未传 kind → 默认 fact
+

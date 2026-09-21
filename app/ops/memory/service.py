@@ -47,13 +47,19 @@ class GateRejectedError(ValueError):
 
 
 async def _write_in_session(session: AsyncSession, candidate: FactCandidate) -> OpsMemoryFact:
-    """同一事务内：旧 active 置 superseded → 插入新行（supersedes=旧 id）。"""
+    """同一事务内：旧 active 置 superseded → 插入新行（supersedes=旧 id）。
+
+    查重谓词含 `kind`（memory-preference-profile 双保险第二道）：跨 kind
+    同 key 不互相 supersede——第一道防线是闸的双向 key 域绑定，本谓词防
+    未来 key 域约定松动时的静默互冲。
+    """
     result = await session.execute(
         select(OpsMemoryFact)
         .where(
             OpsMemoryFact.tenant_id == candidate.tenant_id,
             OpsMemoryFact.user_id == candidate.user_id,
             OpsMemoryFact.key == candidate.key,
+            OpsMemoryFact.kind == candidate.kind,
             OpsMemoryFact.status == STATUS_ACTIVE,
         )
         .order_by(OpsMemoryFact.updated_at.desc(), OpsMemoryFact.created_at.desc())
@@ -153,6 +159,44 @@ async def revoke_by_source(
     # 审计日志：纠错动作本身必须可追查（含幂等 0 行）
     logger.info(
         "memory revoke_by_source source_run_id=%s affected=%d", source_run_id, count
+    )
+    return count
+
+
+async def revoke_by_key(
+    tenant_id: str,
+    user_id: str,
+    key: str,
+    *,
+    session: AsyncSession | None = None,
+) -> int:
+    """按 key 一键置 `revoked`（显式偏好/事实的纠错入口）；幂等；审计记行数。
+
+    存在理由：显式写入 `source_run_id` 为空，`revoke_by_source` 定位不到；
+    合规删除权要求用户可清除自己的偏好。**必带 tenant+user 谓词**
+    （跨 tenant = 0 行）。只动 `active` 行 ⇒ 重复调用影响 0 行（幂等）。
+    清除后召回零命中（召回只认 active），不物理删。
+    """
+    stmt = (
+        update(OpsMemoryFact)
+        .where(
+            OpsMemoryFact.tenant_id == tenant_id,
+            OpsMemoryFact.user_id == user_id,
+            OpsMemoryFact.key == key,
+            OpsMemoryFact.status == STATUS_ACTIVE,
+        )
+        .values(status=STATUS_REVOKED, updated_at=now_utc())
+    )
+    if session is not None:
+        result = await session.execute(stmt)
+        count = int(result.rowcount or 0)
+    else:
+        async with AsyncSessionLocal() as own, own.begin():
+            result = await own.execute(stmt)
+            count = int(result.rowcount or 0)
+    # 审计日志：纠错动作本身必须可追查（含幂等 0 行）
+    logger.info(
+        "memory revoke_by_key key=%s tenant=%s affected=%d", key, tenant_id, count
     )
     return count
 
