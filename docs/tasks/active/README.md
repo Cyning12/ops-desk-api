@@ -4,7 +4,8 @@
 
 | task | 说明 |
 |---|---|
-| （无进行中 task） | 2026-09-21：`task_memory_embedding_backfill`（PR #151 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
+| [task_continuity_dedup.md](task_continuity_dedup.md) | 2026-09-22：continuity 重复实现合并（S1 硬删除 + 测试收敛 · SPEC signed · HG-AUDIT-R1 pending → 30 拒开工）· 分支 `task/continuity-dedup` |
+| （其余） | 2026-09-21：`task_memory_embedding_backfill`（PR #151 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 
 > 2026-09-21 清理：两个已完成 task 归档至 `done/`；近两日开发脱离 specwave 过程，见 `docs/HANDOFF_recent-2days_v1_zh.md`；分支 `chore/upgrade-langgraph-1.2` 领先 master 29 提交，**PR 待开**
 
