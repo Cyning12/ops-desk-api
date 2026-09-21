@@ -1,6 +1,6 @@
 # Task：L7 安全硬化 W1 · 输入结构隔离槽位机制（SLOT_REGISTRY + wrap_slot 强制包装 + assert_slots_declared 装配校验）· RAG 片段/工具回执/用户内容/memory 四面收口 · `SECURITY_INPUT_ISOLATION_ENABLED` 默认关三件套 + off 三态逐字节对拍 · 越权构造「下游零请求」双断言（security-input-isolation）
 
-> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
+> **状态**：`done`（2026-09-22 · 五棒全通 · 40 PASS 验收 25/25 · PR #161 CI 全绿合并 master（c530203）· CLOSE 归档）  
 > **类型**：feature（新增安全控制面（输入结构隔离槽位机制）· 开关默认关、off 态逐字节对拍 · **无 alembic 义务**（零新表零列）· **有图谱义务按实判**（新增跨模块依赖边 lc_evidence_chain → prompts（备注级）+ lg_rag 行备注 · 人签新行留 00 代录位 · 不新增一级模块/路由/SSE 事件 · 偏离回炉条款见闸表与 graph_delta_note））  
 > **上游 SPEC**：`docs/spec/security-hardening/SPEC-security-hardening_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · commit c4d42df · 四波全景签收 · 本波只做 W1）  
 > **分支**：`task/security-hardening`（**禁止 master/main 直改 · 禁止 push**）  
@@ -303,3 +303,4 @@ SPEC §5 十条失败面全收并翻四列：两静默错（注入穿透 / 开�
 |------|------|
 | 2026-09-22 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 **25 条**逐块映射 SPEC §6 实质零差异（人工闸 1 / D1×4 / D2×4 / D3×3 / D4×5 / D5×2 / 变异检验×3 / 工程×3）· B1 旧测影响面 **11 行**实扫落盘（口径：tests 命中 37 文件 · format_evidence_block/retrieved_chunks/子任务结果 裸格式断言 grep 双零命中 · 用例计数 14 文件真跑 · pytest 基线 **1278 collected** 真跑 · 命名冲突扫零命中 · evals/security/ 不存在）· SPEC §1 锚点复核零语义偏差（nodes.py :1095-1102→:1097-1098 · :764-773→:753-835 微漂移如实记录）· 命名邻近纪律补钉（packs/render 既有 slots 语义 vs 安全槽位 · 非范围第 9 条）· HG-TASK-DRAFT/HG-AUDIT-R1 落稿时待签（10 帽不签）· HG-GRAPH-MODULES=approved（模块表已建置真读核验）+ 新签义务（lc_evidence_chain 行 +prompts 备注级 + lg_rag 行备注 + 人签新行 00 代录位 · 偏离回炉补闸）· HG-PILOT-OPSDESK-GLAYER=n/a |
 | 2026-09-22 | 40 核验 PASS（25/25 亲核）：pytest 1329/3/1（3 红 worktree @ d0e818c 实证基线环境性）· 双断言/off 逐字节对拍读码+亲跑为真 · 变异①复做（18 挂→还原绿 · 树净）· ruff 57=基线 · graph-compile 绿 · B1 抽 8 行+金样一一对应+转义机制+图谱 ratify 真读全符 · **补记 on 态边界**：非 str 结构化回执 on 态 aggregator 显式炸整单（fail-closed · 不阻塞 · 灰度前须处置 · 归 W2/灰度 task）· invoke：`invoke_20260922_40_verify_security_input_isolation.md` |
+| 2026-09-22 | **50+CLOSE**：PR [#161](https://github.com/Cyning12/ops-desk-api/pull/161) CI 全绿 merge master（`c530203`）· 归档 done/ · security-hardening SPEC 全景仍 active（W2 检测 / W3 PII 出口脱敏 / W4 真沙箱待后续波次）· 遗留：on 态非 str 结构化回执显式炸整单（fail-closed · 默认关兜住 · W2/灰度 task 处置） |
