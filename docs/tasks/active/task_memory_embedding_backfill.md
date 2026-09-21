@@ -284,9 +284,16 @@ FakeEmbedder 注入消解外网不确定性（CI 可跑）；DB 集成对齐 `te
 
 ---
 
-### 自检结论（执行者）
+### 自检结论（40 核验 · 2026-09-21）
 
-> （留 40 核验填写 · 本帽不预填 · 须含：验收逐条计数、变异检验亲自复做证据、金样轨实际走轨写明 + 回填前基线、B1 逐条处置回填核验）
+**总判定：PASS（验收 21/21 通过 · 0 FAIL · 2 WARN）** · 详见 `docs/harness/invokes/by-task/memory-embedding-backfill/invoke_20260921_40_verify_memory_embedding_backfill.md`。
+
+- **验收逐条计数**：人工闸 1/1 · D1 4/4 · D2 5/5 · D3 4/4 · D4 3/3 · 工程 4/4 = **21/21 PASS**。
+- **变异检验 40 亲自复做**：删 `_fetch_page` 扫描谓词 `status='active'` → `test_backfill_embeds_only_active_null_rows` 真 FAIL（scanned 6 != 3，inactive 行被误扫）→ 还原复跑 34 绿 → 工作树净。
+- **金样轨实际走轨**：**态② FakeEmbedder 集成夹具轨**（40 复核 `git ls-files evals/memory/` = 0 tracked）· **含回填前基线**（pre top1 确定性行、target 不命中 → 回填后 top1 命中）；证据强度弱于 live 金样（承 SPEC residual ①，签收知悉）。
+- **基线红核验**：`git worktree` @ origin/master 1bb24a8（补齐同 `.env`）复跑 = 1155 passed / 3 failed / 1 skipped，3 红与分支完全同三条（chat_ws×2 + capability proxy×1）→ 基线环境红坐实；总数差 19 = 新测 19 全绿。
+- **B1 逐条处置回填核验**：30 invoke 11 条在档（回归×8 / 新增×3 · 无删除无改编），40 抽查 #8/#11 成立。
+- **WARN×2**：W1 态②证据强度（知悉项）；W2 worktree 对照须注意未跟踪 `.env` 不分发（首次对照曾多出 1 条环境红，补齐后消解）。
 
 ---
 
@@ -294,4 +301,5 @@ FakeEmbedder 注入消解外网不确定性（CI 可跑）；DB 集成对齐 `te
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-21 | 40 核验 **PASS（21/21 · 0 FAIL · 2 WARN）**：全量 pytest 1174 passed/3 failed（worktree @ origin/master 对照坐实基线红）· ruff 67=基线零新增 · graph-compile 绿零图谱变更 · 变异检验 40 复做真 fail 还原绿 · 金样走态②夹具轨含回填前基线 · B1 11 条处置核验成立（invoke_20260921_40_verify） |
 | 2026-09-21 | 10-task 落稿 · R0–R5 全轮无 early_stop · 验收 21 条逐块映射 SPEC §6 零差异 · B1 旧测影响面 11 条实扫落盘 · 金样两态裁定：默认态② FakeEmbedder 夹具轨（`git ls-files evals/memory/`=0 tracked），资产合入切态① · HG-TASK-DRAFT=pending · HG-AUDIT-R1=pending → 30 拒开工 · HG-GRAPH-MODULES=approved（模块表已建置 · 零图谱变更 + 回炉补闸条款）· HG-PILOT-OPSDESK-GLAYER=n/a |
