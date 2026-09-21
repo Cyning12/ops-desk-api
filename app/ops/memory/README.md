@@ -65,6 +65,16 @@ migration 为仓内裸 SQL 风格，`expires_at` 直接落**部分索引**
 `WHERE status='active'`（sweep 只扫活跃行）；model `__table_args__` 以
 `postgresql_where` 对齐同一语义。另两条：`(tenant_id,user_id,key,status)` 召回主谓词、`(source_run_id)` 纠错溯源。
 
+## 测试库 schema 漂移注记（memory-fuse-tz-fix）
+
+测试库 `opsdesk_test` 由 ORM `create_all` 建表（plain `DateTime` → **naive**），
+真库由 migration 建 `timestamptz` → asyncpg 读回 **aware**。两侧 schema 不一致
+曾掩盖 naive/aware 混算故障：`now_utc()=datetime.utcnow()`（naive）与真库读回的
+aware `updated_at` 在 `_time_decay` 直接相减抛 `TypeError`，而测试库双侧同 naive
+使 P1 测试全绿。修复：`service.py::_as_utc` 在 Python 算术点前归一
+（**naive 一律视为 UTC**）；回归见 `tests/test_memory_time_decay_tz.py` 四象限。
+重建测试库为 migration schema 属仓级另议，不在本修复范围。
+
 ## P1 · 向量召回融合算法（recall_with_vector）
 
 1. **确定性 top-N**：P0 recency 语义不变（active + 未过期，`updated_at desc`，N = `MEMORY_FACTS_MAX_ITEMS`）。
