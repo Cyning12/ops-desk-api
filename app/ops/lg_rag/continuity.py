@@ -94,8 +94,13 @@ def assemble_graph_messages(
 
 # ---------------- 事实型记忆注入（memory-facts-p0 · 默认关） ----------------
 
-#: 注入块首行标记；块内每条事实 `key=value` 一行
+#: 注入块事实节首行标记；节内每条事实 `key=value` 一行
 MEMORY_FACTS_HEADER = "[已知事实]"
+#: 注入块偏好节首行标记（memory-preference-profile 方案 B1 单消息双节）
+MEMORY_PREFERENCES_HEADER = "[用户偏好]"
+#: 偏好节引导语：明示「显式陈述 / 非客观事实 / 无偏好不要假设编造」（红线③扩展；
+#: 锚点断言守「用户偏好」「非客观事实」语义，改文案不挂 CI、改变量语义必挂）
+MEMORY_PREFERENCES_GUIDE = "用户显式陈述的偏好，用于调整回应方式；非客观事实。无偏好时不要假设或编造。"
 DEFAULT_MEMORY_FACTS_MAX_ITEMS = 8
 
 _TRUTHY = ("1", "true", "yes", "on")
@@ -146,24 +151,51 @@ def _fact_key_value(item: Any) -> tuple[str, Any]:
     return str(getattr(item, "key", "") or ""), getattr(item, "value", None)
 
 
-def render_memory_facts_block(facts: list[Any]) -> str:
-    """渲染注入块：首行 `[已知事实]`，其后每条 `key=value` 一行。
+def _fact_kind(item: Any) -> str:
+    """取 kind（兼容 ORM 行与 dict）；缺省按 fact 兜底——闸 + CHECK 保证
+    落库行 kind ∈ {fact, preference}，缺 kind 的测试 dict 即旧事实语义。"""
+    if isinstance(item, Mapping):
+        return str(item.get("kind") or "fact")
+    return str(getattr(item, "kind", None) or "fact")
 
-    value 为 str 时直写（换行转义为 \\n 保住一行一条），其它标量 JSON 序列化。
-    空列表返回空串（调用方据此不注入）。
-    """
-    if not facts:
-        return ""
-    lines = [MEMORY_FACTS_HEADER]
-    for item in facts:
+
+def _render_rows(items: list[Any]) -> list[str]:
+    """每条 `key=value` 一行：str 直写（换行转义 \\n），其它标量 JSON 序列化。"""
+    rows: list[str] = []
+    for item in items:
         key, value = _fact_key_value(item)
         text = (
             value.replace("\n", "\\n")
             if isinstance(value, str)
             else json.dumps(value, ensure_ascii=False)
         )
-        lines.append(f"{key}={text}")
-    return "\n".join(lines)
+        rows.append(f"{key}={text}")
+    return rows
+
+
+def render_memory_facts_block(facts: list[Any]) -> str:
+    """渲染注入块（memory-preference-profile 方案 B1 单块双节）：`[已知事实]` 节 + `[用户偏好]` 节。
+
+    - kind=fact 行进事实节，kind=preference 行进偏好节，**互不串节**
+      （偏好污染事实通路 = 静默错，分节单测钉死）。
+    - **无 preference → 偏好节物理不存在**（幻觉偏好红线结构断言落点）；
+      无 fact → 事实节同样不出现；空集 → 空串不注入（现行为沿用）。
+    - fact-only 输入渲染与 P0 现网**逐字节一致**（对拍断言钉死）。
+    """
+    if not facts:
+        return ""
+    pref_items = [item for item in facts if _fact_kind(item) == "preference"]
+    fact_items = [item for item in facts if _fact_kind(item) != "preference"]
+    sections: list[str] = []
+    if fact_items:
+        sections.append("\n".join([MEMORY_FACTS_HEADER, *_render_rows(fact_items)]))
+    if pref_items:
+        sections.append(
+            "\n".join(
+                [MEMORY_PREFERENCES_HEADER, MEMORY_PREFERENCES_GUIDE, *_render_rows(pref_items)]
+            )
+        )
+    return ("\n" + "\n").join(sections)
 
 
 def inject_memory_facts_block(
@@ -198,7 +230,8 @@ async def assemble_graph_messages_with_memory(
     身份纪律：tenant/user 由调用方从请求 ctx 取（tenant_context ContextVar /
     阶段 T 头校验链路 / session 用户）后**显式传入**；模型产出不得参与。
     召回故障 → 记 log + span `memory_degraded`，降级为不注入（不拖垮请求）。
-    span metadata 记 `memory_facts_injected=N`（tracing 未开时静默 no-op）。
+    span metadata 记 `memory_facts_injected=N`；有 preference 时并列
+    `memory_preferences_injected=M`（tracing 未开时静默 no-op）。
     """
     messages = assemble_graph_messages(
         query,
@@ -240,5 +273,11 @@ async def assemble_graph_messages_with_memory(
         update_current_span_metadata({"memory_facts_injected": 0})
         return messages
     block = render_memory_facts_block(facts)
-    update_current_span_metadata({"memory_facts_injected": len(facts)})
+    # span 双计数（D2）：facts/preferences 分别记；preference 为 0 时不出
+    # 该 key（fact-only 流量与 P0/P1 观测面逐字节一致）
+    n_prefs = sum(1 for f in facts if _fact_kind(f) == "preference")
+    span: dict[str, Any] = {"memory_facts_injected": len(facts) - n_prefs}
+    if n_prefs:
+        span["memory_preferences_injected"] = n_prefs
+    update_current_span_metadata(span)
     return inject_memory_facts_block(messages, block)

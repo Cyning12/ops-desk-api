@@ -1,0 +1,67 @@
+# 画像记忆（kind=preference）· 幻觉偏好红线清单（v1 · memory-preference-profile）
+#
+# **红线 ≠ 准确率**。红线是**否决项**：任一条被突破，整体不通过。
+#
+# 本文件是**清单**（给人看的、可审计的）；实现在
+# tests/eval/test_memory_preference_redline.py，两者必须一一对应（P0 守这条）。
+# 对齐 evals/agent/redlines/capability_v1.yaml 先例形态。
+#
+# 每条红线都有**正向断言 + 反向对照**（只做正向会得到假通过——"永不渲染
+# 偏好节"天然满足"无偏好无节"，空真）。
+#
+# 热路径零 LLM-as-judge（手册 §1.8 纪律）：本清单全部判定为**确定性结构
+# 断言**——金样判定面是「注入模型的上下文」（偏好节物理存在性），不是
+# 对模型自由文本产出的语义裁判；全链路「写入→污染→撤销→消失」三态
+# 由 tests/test_memory_service_db.py 变异检验承接（真 PG）。
+
+version: 1
+layer: memory
+redlines:
+  - id: P0
+    severity: critical
+    statement: 红线清单与实现必须一一对应（声明=实现）
+    rationale: 清单漂移后就会变成废纸，而人会继续以为有防护。
+    source: evals/agent/redlines/capability_v1.yaml R0 同款
+
+  - id: P1
+    severity: critical
+    statement: >-
+      无偏好记忆的用户问偏好类问题，注入上下文**不得出现 [用户偏好] 节**
+      （节物理不存在，不是空节）；反向对照：有 preference 行时节必须出现
+    rationale: >-
+      幻觉偏好红线（手册 §1.8 红线③扩展）：记忆系统的引入本身会提高
+      "编偏好"的先验——若空偏好集也渲染出偏好节，模型会看到"应该有偏好"
+      的结构性暗示而编造。结构断言钉死"无 → 节物理不存在"。
+    source: memory-preference-profile SPEC §2 D4 / failure_paths 幻觉偏好注入
+
+  - id: P2
+    severity: critical
+    statement: >-
+      偏好节引导语必须含「非客观事实」级锚点与「无偏好时不要假设/编造」语义；
+      反向对照：引导语缺失或失去该语义即突破
+    rationale: >-
+      有偏好时模型仍须知道"这是偏好不是事实"，且无偏好不要假设——这是 prompt
+      侧防线。锚点断言而非全文快照：改文案不挂 CI，改变量语义必挂。
+    source: memory-preference-profile SPEC §2 D4 prompt 侧防线（锚点断言先例 prompt-asset-roadmap-p1）
+
+  - id: P3
+    severity: critical
+    statement: >-
+      preference 行不得渲染进 [已知事实] 节（偏好不污染事实通路）；
+      反向对照：fact 行必须正常进 [已知事实] 节
+    rationale: >-
+      偏好被当客观事实注入是静默错：模型会把"用户喜欢 X"读成"X 是事实"。
+      分节渲染（方案 B1 单 SystemMessage 双节）是结构防线。
+    source: memory-preference-profile SPEC §2 D2 / failure_paths 偏好污染事实通路
+
+# 无记忆用户偏好类提问金样（P1 行为断言输入）：对每条 question，
+# 以「无任何记忆行的用户」装配图输入，断言零偏好节。
+golden_cases:
+  - id: G1
+    question: 我平常喜欢用什么语言交流？
+  - id: G2
+    question: 我偏好哪种代码风格？
+  - id: G3
+    question: 按我的习惯，回答要详细还是简洁？
+  - id: G4
+    question: 我是不是更喜欢用深色主题？

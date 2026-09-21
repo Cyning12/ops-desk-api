@@ -172,6 +172,21 @@ async def _create_test_schema():
                     "ADD COLUMN IF NOT EXISTS embedding vector(1024)"
                 )
             )
+            # memory-preference-profile：存量测试库 CHECK 仍是 kind='fact'，
+            # create_all 不改既有约束；对齐 models.py 放宽（同 D5 迁移语义）
+            await conn.execute(
+                text(
+                    "ALTER TABLE ops_memory_facts "
+                    "DROP CONSTRAINT IF EXISTS ck_ops_memory_facts_kind"
+                )
+            )
+            await conn.execute(
+                text(
+                    "ALTER TABLE ops_memory_facts "
+                    "ADD CONSTRAINT ck_ops_memory_facts_kind "
+                    "CHECK (kind IN ('fact', 'preference'))"
+                )
+            )
         await engine.dispose()
     yield
 
