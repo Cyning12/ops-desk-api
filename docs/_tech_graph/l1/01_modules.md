@@ -88,7 +88,7 @@ audience: agent-30
 | HG-GRAPH-MODULES | approved | 00 代录（维护者令「授权00签收所有过程文档」· task_prompt_asset_roadmap_p1 · 30 回写） | 2026-09-22 | `memory` 行备注：extract 改调 prompts 加载器（prompt 资产化阶段一 · 依赖出边 +`prompts` 备注级）；不新增一级模块 · 不增 implementedBy |
 | HG-GRAPH-MODULES | approved | 00 代录（维护者令「授权00签收所有过程文档，接续 llm-layer-hardening」· task_llm_layer_hardening） | 2026-09-21 | `llm` 行备注：L5 硬化四块（重试退避 / provider 级熔断 / 任务分档路由 / `ops_llm_usage` 账本）· 依赖出边 +`db`；`db` 行登记新表 `ops_llm_usage`；不新增一级模块 · 不增 implementedBy（G-L2 indexes 不扩）。**00 已代录 approved（2026-09-21 · 30 交付核验后）** |
 | HG-GRAPH-MODULES | approved | 00 代录（维护者令「授权00签收所有过程文档」· task_memory_preference_profile · 30 回写内容 00 ratify） | 2026-09-22 | `memory` 行备注：kind=preference 放开（闸 `ALLOWED_KINDS` + 双向 key 域绑定 `key_kind_mismatch` + CHECK 放宽 `IN ('fact','preference')` + `revoke_by_key` + 注入分节 `[已知事实]`/`[用户偏好]` · 首期显式-only）；不新增一级模块 · 不增 implementedBy · 零新路由/表/事件类型/列/索引（零图谱变更预判成立） |
-| HG-GRAPH-MODULES | pending（30 已交付 · 留 00 代录位 · 30 不签闸） | 00 代录位（维护者令「授权00签收所有过程文档」· task_session_summary_fallback · 30 回写内容待 00 ratify） | 2026-09-22 | `db` 行登记新表 `ops_session_summaries`；`lg_rag`/`chat`/`llm` 行备注（装配面真摘要接线默认关 · `session/summary.py` · `summary` 档扩展）；不新增一级模块/路由/SSE 事件类型 · 不增 implementedBy（G-L2 indexes 不扩）；偏离回炉补闸条款在案（graph_delta_note） |
+| HG-GRAPH-MODULES | approved | 00 代录（维护者令「授权00签收所有过程文档」· task_session_summary_fallback · 30 回写内容 00 ratify 2026-09-22） | 2026-09-22 | `db` 行登记新表 `ops_session_summaries`；`lg_rag`/`chat`/`llm` 行备注（装配面真摘要接线默认关 · `session/summary.py` · `summary` 档扩展）；不新增一级模块/路由/SSE 事件类型 · 不增 implementedBy（G-L2 indexes 不扩）；偏离回炉补闸条款在案（graph_delta_note） |
 
 ## 关联
 
