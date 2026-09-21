@@ -115,7 +115,7 @@ def get_fallback_chain(provider: str) -> list[ModelInfo]:
 # 沿用现网默认」）。非法档（空/不在已知目录）/未知 task → 回退默认 + warning，
 # 不炸请求。grader 档并入既有 RAG_GRADER_MODEL 覆盖链（不破坏现网配置）。
 
-TASK_TYPES: tuple[str, ...] = ("answer", "grader", "extract", "structured")
+TASK_TYPES: tuple[str, ...] = ("answer", "grader", "extract", "structured", "summary")
 
 #: 档默认表：None = 不落档（回退 settings.ops_llm_model / provider 默认）。
 #: grader 档默认 = 现网 RAG_GRADER_MODEL 未设时的取值（契约 4b 便宜模型）。
@@ -124,6 +124,10 @@ TASK_TIER_MODELS: dict[str, str | None] = {
     "grader": "Qwen/Qwen3.6-27B",
     "extract": None,
     "structured": None,
+    # session-summary-fallback（T2 新增 summary 档）：会话摘要与 extract 延迟预算
+    # 不同（懒生成在请求路径 · extract 是 background 面），独立档独立调档；
+    # 默认 None = 不落档沿用现网默认（灰度期 OPS_LLM_TIER_SUMMARY_MODEL 调档零改码）
+    "summary": None,
 }
 
 

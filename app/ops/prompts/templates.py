@@ -1,6 +1,6 @@
 """Prompt 模板 registry（真值已迁 ``assets/*.md`` · task prompt-asset-roadmap-p1）。
 
-``TEMPLATES`` 由加载器喂：键集合 = 资产白名单（9 模板），value 含
+``TEMPLATES`` 由加载器喂：键集合 = 资产白名单（10 模板），value 含
 ``version`` / ``body``；``get_template()`` / ``render()`` 对外语义不变。
 """
 
@@ -18,6 +18,7 @@ _TEMPLATE_IDS = (
     "lg_rag.extract.system",
     "lg_rag.aggregator.system",
     "memory.extract.system",
+    "session.summary.system",
 )
 
 TEMPLATES: dict[str, dict[str, str]] = {

@@ -5,6 +5,10 @@
 `assemble_graph_messages_with_memory`：**默认关**（`MEMORY_FACTS_ENABLED`），
 关闭时输出与 `assemble_graph_messages` 逐字节一致；开启时把召回到的
 active facts 渲染为**系统消息尾部独立块**（`[已知事实]`，每条 `key=value` 一行）。
+会话真摘要（session-summary-fallback）接线在同一装配面、记忆注入**之前**：
+**默认关**（`SESSION_SUMMARY_ENABLED`），off / on-态全失败均与占位模式
+逐字节一致；占位条内容替换走 `app/ops/session/summary.py`（经 importlib
+运行期解析，守住 lg_rag 不静态依赖 session 的边界测试）。
 """
 from __future__ import annotations
 
@@ -62,19 +66,10 @@ def compress_window(
         return list(turns[-max_full_turns:])
 
 
-def assemble_graph_messages(
-    query: str,
-    history_turns: list[dict] | None = None,
-    *,
-    max_full_turns: int = DEFAULT_MAX_FULL_TURNS,
-    group_size: int = DEFAULT_GROUP_SIZE,
+def _assemble_messages_from_compressed(
+    query: str, compressed: list[dict]
 ) -> list[BaseMessage]:
-    """历史压缩后的 LC 消息 + 本轮 HumanMessage(query)。"""
-    compressed = compress_window(
-        list(history_turns or []),
-        max_full_turns=max_full_turns,
-        group_size=group_size,
-    )
+    """压缩产物 → LC 消息 + 本轮 HumanMessage(query)（assemble 共用内核）。"""
     messages: list[BaseMessage] = []
     for turn in compressed:
         role = (turn.get("role") or "user") if isinstance(turn, dict) else "user"
@@ -90,6 +85,22 @@ def assemble_graph_messages(
             messages.append(HumanMessage(content=content))
     messages.append(HumanMessage(content=query))
     return messages
+
+
+def assemble_graph_messages(
+    query: str,
+    history_turns: list[dict] | None = None,
+    *,
+    max_full_turns: int = DEFAULT_MAX_FULL_TURNS,
+    group_size: int = DEFAULT_GROUP_SIZE,
+) -> list[BaseMessage]:
+    """历史压缩后的 LC 消息 + 本轮 HumanMessage(query)。"""
+    compressed = compress_window(
+        list(history_turns or []),
+        max_full_turns=max_full_turns,
+        group_size=group_size,
+    )
+    return _assemble_messages_from_compressed(query, compressed)
 
 
 # ---------------- 事实型记忆注入（memory-facts-p0 · 默认关） ----------------
@@ -117,6 +128,24 @@ def memory_facts_enabled() -> bool:
     if raw in _FALSY:
         return False
     logger.warning("invalid MEMORY_FACTS_ENABLED=%r; fallback to false", raw)
+    return False
+
+
+def session_summary_enabled() -> bool:
+    """`SESSION_SUMMARY_ENABLED`：默认 false；非法值回退 false + warning。
+
+    会话记忆真摘要开关（session-summary-fallback D3 铁律）：回退 = 关开关
+    （零代码零迁移 · env 重读即时生效 · 进程内无缓存态）；off（未设/false/
+    非法值）→ 装配输出与占位模式**逐字节一致**（对拍断言钉死）。
+    """
+    raw = (os.getenv("SESSION_SUMMARY_ENABLED") or "").strip().lower()
+    if not raw:
+        return False
+    if raw in _TRUTHY:
+        return True
+    if raw in _FALSY:
+        return False
+    logger.warning("invalid SESSION_SUMMARY_ENABLED=%r; fallback to false", raw)
     return False
 
 
@@ -216,16 +245,72 @@ def inject_memory_facts_block(
     return [*messages[:idx], SystemMessage(content=block), *messages[idx:]]
 
 
+async def _assemble_with_session_summary(
+    query: str,
+    history_turns: list[dict] | None,
+    *,
+    thread_id: str | None,
+    max_full_turns: int,
+    group_size: int,
+) -> list[BaseMessage]:
+    """真摘要面接线（session-summary-fallback D1 · 仅在开关 on 时触达）。
+
+    结构仍由 compress_window 定（**零改动**）；占位条内容替换走
+    app.ops.session.summary。lg_rag → app.ops.session 静态 import 被边界
+    测试禁止（tests/test_lg_rag_session_continuity.py「禁止 import
+    app.ops.session / app.ops.chat」），故经 importlib **运行期解析**
+    （on 态才触达；off 态静态加载链零变化）。解析/摘要任何失败 →
+    占位模式逐字节回退 + span session_summary_degraded=N。
+    """
+    turns = list(history_turns or [])
+    compressed = compress_window(
+        turns, max_full_turns=max_full_turns, group_size=group_size
+    )
+    if not (thread_id or "").strip():
+        logger.warning(
+            "SESSION_SUMMARY_ENABLED on but thread_id missing; keep placeholders"
+        )
+    else:
+        try:
+            import importlib
+
+            session_summary = importlib.import_module("app.ops.session.summary")
+            compressed = await session_summary.summarize_placeholders(
+                compressed,
+                thread_id=(thread_id or "").strip(),
+                source_turns=turns,
+                max_full_turns=max_full_turns,
+                group_size=group_size,
+            )
+        except Exception:
+            n_placeholders = sum(
+                1
+                for t in compressed
+                if isinstance(t, dict)
+                and str(t.get("content") or "").startswith("[历史摘要 · ")
+            )
+            logger.exception("session summary face failed; keep placeholders")
+            update_current_span_metadata({"session_summary_degraded": n_placeholders})
+    return _assemble_messages_from_compressed(query, compressed)
+
+
 async def assemble_graph_messages_with_memory(
     query: str,
     history_turns: list[dict] | None = None,
     *,
     tenant_id: str | None = None,
     user_id: str | None = None,
+    thread_id: str | None = None,
     max_full_turns: int = DEFAULT_MAX_FULL_TURNS,
     group_size: int = DEFAULT_GROUP_SIZE,
 ) -> list[BaseMessage]:
-    """装配 + 可选记忆注入。**关闭时与 assemble_graph_messages 逐字节一致。**
+    """装配 + 可选真摘要 + 可选记忆注入。**开关全关时与 assemble_graph_messages 逐字节一致。**
+
+    摘要面（session-summary-fallback · `SESSION_SUMMARY_ENABLED` 默认关）：
+    接线在记忆注入**之前**；off（未设/false/非法值）→ 跳过本面，与现网
+    **逐字节一致**（off 三态对拍断言钉死）；on 态任何失败 → 该 chunk 保留
+    占位符降级（span `session_summary_degraded=N`），与 off 态逐字节一致。
+    thread_id 仅供摘要缓存 key（身份取自请求上下文既有校验链）。
 
     身份纪律：tenant/user 由调用方从请求 ctx 取（tenant_context ContextVar /
     阶段 T 头校验链路 / session 用户）后**显式传入**；模型产出不得参与。
@@ -233,12 +318,21 @@ async def assemble_graph_messages_with_memory(
     span metadata 记 `memory_facts_injected=N`；有 preference 时并列
     `memory_preferences_injected=M`（tracing 未开时静默 no-op）。
     """
-    messages = assemble_graph_messages(
-        query,
-        history_turns,
-        max_full_turns=max_full_turns,
-        group_size=group_size,
-    )
+    if session_summary_enabled():
+        messages = await _assemble_with_session_summary(
+            query,
+            history_turns,
+            thread_id=thread_id,
+            max_full_turns=max_full_turns,
+            group_size=group_size,
+        )
+    else:
+        messages = assemble_graph_messages(
+            query,
+            history_turns,
+            max_full_turns=max_full_turns,
+            group_size=group_size,
+        )
     if not memory_facts_enabled():
         return messages
     if not (tenant_id or "").strip() or not (user_id or "").strip():
