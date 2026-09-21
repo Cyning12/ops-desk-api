@@ -29,8 +29,8 @@ audience: agent-30
 | `data` | 数据视图 | `app/ops/overview.py`, `app/ops/issues.py`, `app/ops/pulls.py`, `app/ops/graph.py` | → `db` | Issue/PR/Overview 指标/Graph 快照只读查询（供 Chat / iOS 只读消费） |
 | `admin` | Admin 同步 | `app/ops/admin/**` | → `db` | 接收 GHA sync payload 并持久化到 data/chat 依赖的表；本仓 GHA sender + Bearer 机读 token（cookie maintainer 仍可用）；**2026-09-21**：`admin/capability.py` Capability 观测端点 `GET /admin/capability/{runtime,catalog,receipts,idempotency}`（`AdminSyncAuth` · 只读快照不改能力清单 · 「持久化配了吗/谁被裁了/有没有卡住的写」；capability 包内禁挂 APIRouter 有测试守护） |
 | `hitl` | HITL 人工审批 | `app/ops/hitl/**` | → `db`, `lg_rag` | 审批申请落库 `ops_hitl_requests`（`store.py`/`persistence.py`）；**双鉴权口径**：HMAC 签名面（`signature.py` · OA 拉待办 `GET /hitl/requests` + `POST /hitl/callback` 回调）与管理员面（`AdminSyncAuth` · 查询 / `POST /hitl/requests/{id}/resume` / 创建）；`resume.py` 拿 `thread_id` 找 checkpoint 喂 `Command(resume=...)` 驱动挂起的 lg_rag run 真恢复（无此步「批了」和「没批」界面一样）；恢复事件接同一 `run_id` 落盘 + replay cursor |
-| `llm` | LLM Provider | `app/llm/**` | → — | SiliconFlow / 百炼 provider 工厂；complete 路径上报 usage；grader 故障 refuse；**流式** `_stream_openai_compatible` 成功路径禁止 `aread()` 整包（真 token 流） |
-| `db` | 数据库与 ORM | `app/db/**`, `alembic/**` | —（被依赖） | SQLAlchemy models、session、migrations；**2026-09-21**：`ops_hitl_requests` 表（HITL 申请 · 2 索引 · migration head `20260920_hitl_requests`）；langgraph checkpoint 表（`checkpoints`/`checkpoint_writes`，同库不同表） |
+| `llm` | LLM Provider | `app/llm/**` | → `db` | SiliconFlow / 百炼 provider 工厂；complete 路径上报 usage；grader 故障 refuse；**流式** `_stream_openai_compatible` 成功路径禁止 `aread()` 整包（真 token 流）；**llm-layer-hardening（2026-09-21）**：`BaseProviderImpl` 边界统一韧性层——通用重试（指数退避+full jitter · 仅 `retryable=True` · 流式首 content chunk 前限定 · 4 个 `OPS_LLM_RETRY_*` env）+ provider 级熔断（pybreaker 复用 capability 模式 · 仅环境失败计数 · open 零出网 `circuit_open` · `circuit.py` snapshot/reset/trip/advance）+ 任务类型分层路由（`model_catalog.TASK_TIER_MODELS` · answer/grader/extract/structured · `OPS_LLM_TIER_*` env 覆盖 · `RAG_GRADER_MODEL` 并入 grader 档）+ usage 账本 `ops_llm_usage`（ContextVar 注入 run 上下文 · 按 run_id 聚合 · 无末帧不写 0 假账 · 落表故障不挡主答）；依赖出边 +`db`（usage 落表，函数内 lazy import） |
+| `db` | 数据库与 ORM | `app/db/**`, `alembic/**` | —（被依赖） | SQLAlchemy models、session、migrations；**2026-09-21**：`ops_hitl_requests` 表（HITL 申请 · 2 索引 · migration head `20260920_hitl_requests`）；langgraph checkpoint 表（`checkpoints`/`checkpoint_writes`，同库不同表）；**2026-09-21**：`ops_llm_usage` 表（LLM usage 账本 · llm-layer-hardening · run_id text 无 FK 双口径 · 索引 `(run_id)`/`(surface,created_at)` · migration head `20260921_llm_usage`） |
 
 ## 跨模块契约
 
@@ -85,6 +85,7 @@ audience: agent-30
 | HG-GRAPH-MODULES | approved | 00 代录（维护者令「签收」· task_memory_facts_p1） | 2026-09-21 | `memory` 行备注：P1 向量语义召回 + LLM 离线候选抽取（默认关 · 依赖出边 +`rag`/`llm`）；不新增一级模块 |
 | HG-GRAPH-MODULES | approved | 00 代录（维护者令「授权00签收后续过程文档，完成此task」· task_memory_facts_p0） | 2026-09-21 | **新增一级模块 `memory`**（事实型记忆 P0）；`lg_rag` 装配路径消费其召回注入；SPEC `docs/spec/memory-facts-p0/` signed |
 | HG-GRAPH-MODULES | approved | 00 代签（维护者令「不切分支，直接在当前分支开始」· task_tech_graph_recent_sync） | 2026-09-21 | **新增一级模块 `hitl`**；`api`/`admin`/`capability`/`lg_rag`/`db` 行备注追平 09-20~09-21 集中开发（治理层闸链/熔断/降级/配额/幂等/output_schema · 观测端点 · HITL interrupt/resume 回路 · ReAct 收口 · `ops_hitl_requests`）；不增 implementedBy（G-L2 indexes 不扩） |
+| HG-GRAPH-MODULES | pending | 待 00 代录（维护者令「授权00签收所有过程文档，接续 llm-layer-hardening」· task_llm_layer_hardening） | 2026-09-21 | `llm` 行备注：L5 硬化四块（重试退避 / provider 级熔断 / 任务分档路由 / `ops_llm_usage` 账本）· 依赖出边 +`db`；`db` 行登记新表 `ops_llm_usage`；不新增一级模块 · 不增 implementedBy（G-L2 indexes 不扩）。**30 帽不签闸，本行留 pending 待 00 代录** |
 
 ## 关联
 
