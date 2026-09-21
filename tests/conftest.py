@@ -206,6 +206,23 @@ def _reset_capability_budget():
     circuit_reset()
 
 
+@pytest.fixture(autouse=True)
+def _reset_llm_circuit():
+    """每个用例前清空 LLM provider 熔断器（llm-layer-hardening 清单 #10）。
+
+    provider 级 breaker 是**进程内单例**（与 capability 配额/熔断同源），
+    上一用例 trip 的 breaker 会污染下一用例——症状是「莫名 circuit_open」，
+    实际是状态泄漏。对齐上面 _reset_capability_budget 的先例。
+    """
+    from app.llm import circuit as llm_circuit
+    from app.llm import usage as llm_usage
+
+    llm_circuit.reset()
+    llm_usage.reset_persist_failure_count()
+    yield
+    llm_circuit.reset()
+
+
 @pytest.fixture
 async def clean_sync_data():
     """Remove all synced repos and cascading children before a test.

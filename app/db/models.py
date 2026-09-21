@@ -521,3 +521,43 @@ class OpsMemoryFact(Base):
     )
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
     updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
+
+
+class OpsLlmUsage(Base):
+    """LLM usage 账本（llm-layer-hardening D4）：**这个 run 花了多少 token 可查**。
+
+    纪律：
+    - 只存 token 计数与模型名，**不存** prompt/answer 正文（正文 I/O 仍在
+      Langfuse 侧、可关、截断）；
+    - run_id 双口径并存（chat=ops_runs.id UUID / lg_rag=uuid4().hex）→
+      text + surface 区分，**不设 FK**；无上下文调用点 run_id=NULL ·
+      surface=background；
+    - 无 usage 末帧不落行（**不写 0 假账**）；cost_est 由查询/导出侧
+      × price_table_v1.yaml（占位价 · E5 公式），表内不存金额。
+    """
+
+    __tablename__ = "ops_llm_usage"
+    __table_args__ = (
+        # 按 run 聚合查询（这个 run 的 answer+grader+extract 合计）
+        Index("idx_ops_llm_usage_run_id", "run_id"),
+        # 按入口面 + 时间扫描（成本盘点）
+        Index("idx_ops_llm_usage_surface_created", "surface", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    #: chat=ops_runs.id（UUID 字符串）/ lg_rag=uuid4().hex；无上下文 → NULL
+    run_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    #: 入口面：chat / lg_rag / background
+    surface: Mapped[str] = mapped_column(String, nullable=False, default="background")
+    #: 任务类型档：answer / grader / extract / structured；未分档 → NULL
+    task_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    provider: Mapped[str] = mapped_column(String, nullable=False, default="")
+    model: Mapped[str] = mapped_column(String, nullable=False, default="")
+    prompt_tokens: Mapped[int] = mapped_column(Integer, nullable=False)
+    completion_tokens: Mapped[int] = mapped_column(Integer, nullable=False)
+    cached_input_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    #: 传输重试后的实际尝试次数（含首次）；>1 说明发生过退避重试
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)

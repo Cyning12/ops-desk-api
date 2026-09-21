@@ -22,10 +22,13 @@ import os
 
 from pydantic import BaseModel, Field
 
+from app.llm.model_catalog import resolve_task_model
 from app.llm.schema import BaseProvider
+from app.llm.usage import use_run_context
 from app.ops.memory.gate import FactCandidate, should_write
 from app.ops.memory.service import write_fact
 from app.ops.structured_output import acomplete_structured
+from app.ops.structured_output.complete import LlmCtx
 from app.ops.tracing import update_current_span_metadata
 
 logger = logging.getLogger(__name__)
@@ -102,19 +105,25 @@ async def run_memory_extraction(
     """
     if not memory_facts_extract_enabled():
         return (0, 0)
+    # 分层路由（D3）：OPS_LLM_TIER_EXTRACT_MODEL > 档默认（None → 沿用现网默认，
+    # 未配置档时逐字节一致）；D4：usage 落表上下文（source run_id · extract 档）
+    tier_model, _route_source = resolve_task_model("extract")
+    llm_ctx = LlmCtx(model=tier_model) if tier_model else None
     try:
-        result = await asyncio.wait_for(
-            acomplete_structured(
-                system=EXTRACTION_SYSTEM_PROMPT,
-                user=_build_window(query, answer),
-                schema=MemoryFactExtraction,
-                ensure_keys=["facts"],
-                max_retries=EXTRACT_MAX_RETRIES,
-                raise_on_failure=True,
-                _provider=_provider,
-            ),
-            timeout=EXTRACT_TIMEOUT_S,
-        )
+        with use_run_context(run_id=run_id, surface="background", task_type="extract"):
+            result = await asyncio.wait_for(
+                acomplete_structured(
+                    system=EXTRACTION_SYSTEM_PROMPT,
+                    user=_build_window(query, answer),
+                    schema=MemoryFactExtraction,
+                    ensure_keys=["facts"],
+                    max_retries=EXTRACT_MAX_RETRIES,
+                    raise_on_failure=True,
+                    llm_ctx=llm_ctx,
+                    _provider=_provider,
+                ),
+                timeout=EXTRACT_TIMEOUT_S,
+            )
     except Exception:
         # LLM 失败 / 非法 JSON / 超时：零写入（候选不是事实）
         logger.warning(

@@ -9,6 +9,22 @@ from app.llm.providers.siliconflow import SiliconFlowProvider
 from app.llm.schema import LlmChunk, LlmMessage, LlmProviderError
 
 
+@pytest.fixture
+def retry_delays(monkeypatch):
+    """假时钟（llm-layer-hardening 清单 #2/#3/#4 改编）：记录退避序列，不真 sleep。
+
+    默认开重试后可重试错误会先退避至 max_attempts 再抛/换模型；monkeypatch
+    app.llm.retry.sleep 断言延迟上界，避免 CI 真等。
+    """
+    delays: list[float] = []
+
+    async def _fake_sleep(delay: float) -> None:
+        delays.append(delay)
+
+    monkeypatch.setattr("app.llm.retry.sleep", _fake_sleep)
+    return delays
+
+
 class _FakeStreamResponse:
     def __init__(self, status_code: int, lines: list[str]) -> None:
         self.status_code = status_code
@@ -263,21 +279,28 @@ class TestSiliconFlowProvider:
         assert exc_info.value.status_code == 401
 
     @pytest.mark.parametrize("status_code", [429, 500, 503])
-    async def test_retryable_errors(self, status_code, monkeypatch):
+    async def test_retryable_errors(self, status_code, monkeypatch, retry_delays):
         lines = []
-        monkeypatch.setattr(httpx, "AsyncClient", _fake_client_factory(status_code, lines))
+        factory = _fake_client_factory(status_code, lines)
+        monkeypatch.setattr(httpx, "AsyncClient", factory)
 
         provider = SiliconFlowProvider(api_key="test-key")
         with pytest.raises(LlmProviderError) as exc_info:
             async for _ in provider.complete_stream([LlmMessage(role="user", content="hi")]):
                 pass
 
+        # 错误分类断言保留；默认开重试后先退避至 max_attempts(=3) 再抛
         assert exc_info.value.retryable is True
         assert exc_info.value.status_code == status_code
+        assert len(factory.clients) == 3
+        # 退避序列上界：delay_i <= min(cap=8, base=0.5*2^i)，jitter 下界 >= 0
+        assert len(retry_delays) == 2
+        assert all(0.0 <= d <= min(8.0, 0.5 * (2**i)) for i, d in enumerate(retry_delays))
 
-    async def test_sse_parse_error_retryable(self, monkeypatch):
+    async def test_sse_parse_error_retryable(self, monkeypatch, retry_delays):
         lines = ["data: not-json"]
-        monkeypatch.setattr(httpx, "AsyncClient", _fake_client_factory(200, lines))
+        factory = _fake_client_factory(200, lines)
+        monkeypatch.setattr(httpx, "AsyncClient", factory)
 
         provider = SiliconFlowProvider(api_key="test-key")
         with pytest.raises(LlmProviderError) as exc_info:
@@ -285,11 +308,16 @@ class TestSiliconFlowProvider:
                 pass
 
         assert exc_info.value.retryable is True
+        # SSE 解析错可重试：默认退避至 max_attempts(=3) 再抛
+        assert len(factory.clients) == 3
+        assert len(retry_delays) == 2
 
-    async def test_request_error_retryable(self, monkeypatch):
+    async def test_request_error_retryable(self, monkeypatch, retry_delays):
+        created = []
+
         class _FailingClient:
             def __init__(self, *args, **kwargs):
-                pass
+                created.append(1)
 
             async def __aenter__(self):
                 raise httpx.ConnectError("connection refused")
@@ -304,8 +332,11 @@ class TestSiliconFlowProvider:
             async for _ in provider.complete_stream([LlmMessage(role="user", content="hi")]):
                 pass
 
+        # 分类断言保留；传输错默认退避重试至 max_attempts(=3) 再抛
         assert exc_info.value.retryable is True
         assert "connection refused" in str(exc_info.value)
+        assert len(created) == 3
+        assert len(retry_delays) == 2
 
     async def test_default_model(self, monkeypatch):
         captured = {}
@@ -371,8 +402,10 @@ class TestBailianProvider:
 
         assert [c.content for c in chunks] == ["ok"]
 
-    async def test_fallback_emits_event(self, mock_bailian_stream):
-        mock_bailian_stream({
+    async def test_fallback_emits_event(self, mock_bailian_stream, retry_delays):
+        # 改编（清单 #3）：默认开重试后首候选先同模型退避至耗尽（max_attempts=3），
+        # 再发 model.fallback 换下一候选；事件语义/链序不变
+        call_log = mock_bailian_stream({
             "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
             "deepseek-v4-flash": [LlmChunk(content="fallback ok")],
         })
@@ -389,9 +422,15 @@ class TestBailianProvider:
         assert chunks[0].meta["from_model"] == "deepseek-v4-pro"
         assert chunks[0].meta["to_model"] == "deepseek-v4-flash"
         assert chunks[1].content == "fallback ok"
+        # 首候选退避重试 3 次后才换模型（链内每候选走同一重试层）
+        assert call_log == ["deepseek-v4-pro"] * 3 + ["deepseek-v4-flash"]
+        assert len(retry_delays) == 2
 
-    async def test_fallback_chain_exhausted(self, mock_bailian_stream):
-        mock_bailian_stream({
+    async def test_fallback_chain_exhausted(self, mock_bailian_stream, monkeypatch, retry_delays):
+        # 改编（清单 #4）：拉高 fail_max 隔离重试语义（9 次环境失败会真熔断，
+        # 熔断行为由 tests/test_llm_circuit.py 专测覆盖）；终态断言保留
+        monkeypatch.setenv("OPS_LLM_CB_FAIL_MAX", "99")
+        call_log = mock_bailian_stream({
             "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
             "deepseek-v4-flash": LlmProviderError("503", retryable=True, status_code=503),
             "qwen3.7-plus": LlmProviderError("503", retryable=True, status_code=503),
@@ -404,6 +443,10 @@ class TestBailianProvider:
 
         assert exc_info.value.retryable is False
         assert "exhausted" in str(exc_info.value)
+        # 每候选先退避重试至耗尽：共 3 候选 × max_attempts(=3) 次出网
+        assert call_log == (
+            ["deepseek-v4-pro"] * 3 + ["deepseek-v4-flash"] * 3 + ["qwen3.7-plus"] * 3
+        )
 
     async def test_non_retryable_stops_fallback(self, mock_bailian_stream):
         mock_bailian_stream({

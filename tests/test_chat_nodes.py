@@ -192,11 +192,21 @@ class TestAnswerNode:
         from app.llm.providers.base import BaseProviderImpl
         from app.llm.schema import LlmProviderError
 
+        provider_calls = 0
+
         class FailingProvider(BaseProviderImpl):
             async def complete_stream(self, messages, model=None):
+                nonlocal provider_calls
+                provider_calls += 1
                 raise LlmProviderError("boom", retryable=True)
                 yield LlmChunk(content="")  # makes this an async generator
 
+        # 改编（清单 #6）：假时钟不假 sleep；默认开重试后 error 事件前经历
+        # max_attempts(=3) 次尝试，终态断言不变
+        async def _fake_sleep(delay: float) -> None:
+            pass
+
+        monkeypatch.setattr("app.llm.retry.sleep", _fake_sleep)
         monkeypatch.setattr("app.ops.chat.nodes.get_llm_provider", lambda: FailingProvider())
         monkeypatch.setattr("app.ops.chat.nodes.settings.ops_llm_model", "test-model")
 
@@ -206,3 +216,4 @@ class TestAnswerNode:
         assert result["answer"] == ""
         assert result["events"][-1]["event_type"] == "error"
         assert result["events"][-1]["payload"]["retryable"] is True
+        assert provider_calls == 3

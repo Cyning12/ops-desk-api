@@ -12,6 +12,8 @@ import os
 
 from app.db.session import AsyncSessionLocal
 from app.llm.factory import get_llm_provider
+from app.llm.model_catalog import resolve_task_model
+from app.llm.usage import use_run_context
 from app.ops.chat.state import ChatState
 from app.ops.rag.embedder import Embedder, get_query_embedder
 from app.ops.rag.grader import REFUSAL_TEXT, decide, grade_chunks
@@ -30,6 +32,8 @@ from app.ops.tracing import trace_span, update_current_span_metadata
 logger = logging.getLogger(__name__)
 
 GRADER_PROVIDER = os.getenv("RAG_GRADER_PROVIDER", "siliconflow")
+# 兼容常量：evals/golden/run_eval.py 仍 import 本名；运行期解析走
+# resolve_task_model("grader")（OPS_LLM_TIER_GRADER_MODEL > RAG_GRADER_MODEL > 档默认）
 GRADER_MODEL = os.getenv("RAG_GRADER_MODEL", "Qwen/Qwen3.6-27B")  # 契约 4b：每 query +1 次调用
 
 
@@ -121,9 +125,26 @@ async def grade_node(state: ChatState) -> dict:
         return _gate_result(state, action="refuse", grades=[], chunks=[], rated=False)
 
     provider = get_llm_provider(GRADER_PROVIDER)
+    # 分层路由（D3）：OPS_LLM_TIER_GRADER_MODEL > RAG_GRADER_MODEL > 档默认
+    # （= 现网 GRADER_MODEL 语义；两个 env 全不设时逐字节一致）
+    grader_model, route_source = resolve_task_model("grader")
     try:
-        with trace_span("grade_llm", run_type="llm", model=GRADER_MODEL):
-            grades = await grade_chunks(provider, state["query"], chunks, model=GRADER_MODEL)
+        with trace_span("grade_llm", run_type="llm", model=grader_model):
+            # 路由决策写 span metadata；tracing 关时 no-op
+            update_current_span_metadata(
+                {
+                    "llm_route": {
+                        "task_type": "grader",
+                        "model": grader_model,
+                        "source": route_source,
+                    }
+                }
+            )
+            # D4：usage 落表上下文（grader 档 · 同一 run_id）
+            with use_run_context(
+                run_id=state.get("run_id"), surface="chat", task_type="grader"
+            ):
+                grades = await grade_chunks(provider, state["query"], chunks, model=grader_model)
         decision = decide(grades)
         action = decision.action
         best = decision.best.value
