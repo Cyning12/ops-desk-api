@@ -366,9 +366,9 @@ _FALSY = ("0", "false", "no", "off")
 
 # 融合权重初值（SPEC R5 residual ①：初值需实测调参；改动须同步 README）
 #: 无向量相似度时的相似分地板（embedding 为 NULL 的存量行 / 未进向量 top-M）
-SIM_FLOOR = 0.5
+SIM_FLOOR = 0.3
 #: 时间衰减半衰期（天）：decay = 0.5 ** (age_days / HALF_LIFE_DAYS)
-HALF_LIFE_DAYS = 30.0
+HALF_LIFE_DAYS = 90.0
 #: 来源权重：source_run_id 为空（显式/人工）高于抽取写入
 SOURCE_WEIGHT_EXPLICIT = 1.0
 SOURCE_WEIGHT_EXTRACTED = 0.8

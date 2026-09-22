@@ -52,7 +52,7 @@ def test_time_decay_zero_age_is_one(now: datetime, fact_ts: datetime) -> None:
 
 @pytest.mark.parametrize(("now", "fact_ts"), _QUADRANTS)
 def test_time_decay_half_life(now: datetime, fact_ts: datetime) -> None:
-    """四象限：age=半衰期（30 天）→ decay≈0.5。"""
+    """四象限：age=半衰期（HALF_LIFE_DAYS 天 · 定稿 90 · 调参 task memory-fusion-weight-tuning）→ decay≈0.5。"""
     age = timedelta(days=HALF_LIFE_DAYS)
     assert _time_decay(_fact(fact_ts - age), now) == pytest.approx(0.5)
 
@@ -68,7 +68,7 @@ def test_time_decay_future_timestamp_clamps_to_zero(
 
 @pytest.mark.parametrize(("now", "fact_ts"), _QUADRANTS)
 def test_time_decay_arbitrary_age(now: datetime, fact_ts: datetime) -> None:
-    """四象限：任意 age 与公式一致（15 天 = 0.5 ** 0.5）。"""
+    """四象限：任意 age 与公式一致（期望值动态取 0.5 ** (15/HALF_LIFE_DAYS) · 半衰期定稿 90 天）。"""
     age = timedelta(days=15)
     expected = 0.5 ** (15.0 / HALF_LIFE_DAYS)
     assert _time_decay(_fact(fact_ts - age), now) == pytest.approx(expected)
@@ -83,8 +83,13 @@ def test_time_decay_naive_equals_aware_same_instant() -> None:
 
 
 def test_time_decay_aware_fact_in_non_utc_offset() -> None:
-    """aware 非 UTC 偏移（如 +08:00）与 UTC 同一时刻 → 衰减值一致（不转本地）。"""
+    """aware 非 UTC 偏移（如 +08:00）与 UTC 同一时刻 → 衰减值一致（不转本地）。
+
+    注记：age 字面量 30 天 → HALF_LIFE_DAYS 动态引用（task
+    memory-fusion-weight-tuning 2026-09-21 定稿半衰期 30→90 天，硬编码
+    30 天不再等于半衰期）；检验意图（+08:00 不转本地）不变。
+    """
     plus8 = timezone(timedelta(hours=8))
     now_utc = _AWARE_BASE
-    fact_plus8 = (_AWARE_BASE - timedelta(days=30)).astimezone(plus8)
+    fact_plus8 = (_AWARE_BASE - timedelta(days=HALF_LIFE_DAYS)).astimezone(plus8)
     assert _time_decay(_fact(fact_plus8), now_utc) == pytest.approx(0.5)
