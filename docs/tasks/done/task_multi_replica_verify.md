@@ -1,6 +1,6 @@
 # Task：L0 多副本验证（单实例 → 多实例）（track=verify 预期零生产码）· F1 双轨实证（双进程 pytest 进 CI + runbook+reports 手工实测）· P1 subprocess 双 uvicorn 真隔离（禁同进程双 app 假跨实例）· D2 状态外置（A 起 B 恢复/查询 · 跨 user 404 · 实例归属先断言 FAIL 非 skip）· D3 进程内状态边界清单 8 条目 file:line 锚点 + budget 放大实证 · D4 HITL 跨实例断言「图真的续跑」不只断 200（multi-replica-verify）
 
-> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
+> **状态**：`done`（2026-09-22 · 五棒全通 · 40 PASS 验收 26/26 · PR #165 CI 全绿合并 master（7541102）· CLOSE 归档 · 占位队列清零末棒）  
 > **类型**：verify（验证/实证类 · **预期零生产码改动**——产物是验证方案 + 双进程集成测 + runbook/实测报告 + 进程内状态边界清单；**无 alembic 义务**（零 schema 改动预期 · 迁移 diff 为空断言）· **图谱义务预期无按实判**（零新路由/零新一级模块/零新表/零新 SSE 事件 · 偏离回炉条款见闸表与 graph_delta_note）；实扫发现阻断性 bug → 另开 fix task，不在本 task 顺手修）  
 > **上游 SPEC**：`docs/spec/multi-replica-verify/SPEC-multi-replica-verify_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · 8236747 · F1 双轨 + P1 subprocess 双进程 + 验证≠投产签收锁死）  
 > **分支**：`task/multi-replica-verify`（**禁止 master/main 直改 · 禁止 push**）  
@@ -294,3 +294,4 @@ SPEC §5 十条失败面全收并翻四列：两静默错（假阳性「没真�
 |------|------|
 | 2026-09-22 | 10-task 落稿（SPEC signed 8236747 后 · 本棒由 00 委派 10-task 帽 Agent 执行）：锚点抽核（checkpointer :27/:48-53 · resume :329-340 · budget :51-62 · registry :29-40 复核一致 · tests/ uvicorn grep 零命中双进程零先例实证 · acceptance 15 脚本 · 基线 1349 collected 真跑）；验收 26 条断言化映射 SPEC §6；failure_paths 14 条（SPEC §5 十条 + 双进程基建起停不稳 + 过程三）；B1 实扫 10 行（回归×5 · 改编×0 预期 · 新增×3 · 风险对策×1 · 迁移无×1 · 删除×0）；HG-GRAPH-MODULES 真读核模块表（lg_rag :27 / hitl :31 / capability :26 / db :33 / api :20 · 签录链至 :93）+ 预期无新签义务按实判 + 偏离回炉条款；HG-TASK-DRAFT / HG-AUDIT-R1 落稿时待签 |
 | 2026-09-22 | **40 核验 PASS · 验收 26/26 通过**（invoke_20260922_40_verify_multi_replica_verify.md）：全量 pytest ×3（1358 collected=1349+9 · 1353 passed · 3 红基线对照 worktree @ d5234aa 同 .env 复现 + 第 4 红 test_reconcile_mismatch_marks_failed 判既有 flaky 时序竞态 · 单跑全绿）· 双进程 9/9 亲跑 ×2 + 归属断言/resume 断言链读码合格 · 部署报告亲读 16/16 PASS+Eureka 未覆盖如实 · 清单锚点抽核 10 处 9 中（gateway.py:81 实为 :79 偏 2 行附注）· 变异①亲复做 8 挂→还原 9/9 绿 · ruff 57=基线 · graph-compile 绿 · app//alembic/ 三点零 diff（两点非空纯因 origin/master 前进）· B1 抽核 5 条全属实 · diff 白名单吻合；问题清单 4 条（flaky 观察 · 锚点漂移 · 变异②③未亲跑 · Eureka 待补）均不阻塞 |
+| 2026-09-22 | **50+CLOSE**：PR [#165](https://github.com/Cyning12/ops-desk-api/pull/165) CI 全绿 merge master（`7541102`）· 归档 done/ · 合并前解 SPEC add/add 冲突（master #146 带入占位原件 vs 本分支 signed 版 → 取 signed 版）· 遗留：Eureka 条目未覆盖待补（外部网关）· runbook 轨结论时效须复跑 · test_reconcile_mismatch_marks_failed flaky 建议 fix task 加固 · 清单锚点 1 处偏 2 行 |

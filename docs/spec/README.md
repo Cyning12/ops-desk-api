@@ -29,6 +29,7 @@
 | `session-summary-fallback` | [`session-summary-fallback/`](./session-summary-fallback/) | **signed · 已实施**（2026-09-22 · PR #159 已合 master · 40 核验 26/26 PASS · 默认关） | 会话真摘要 M5（懒生成+缓存 · 可回退原文铁律 · 保真金样） |
 | `security-hardening` | [`security-hardening/`](./security-hardening/) | **signed · W1 已实施**（2026-09-22 · W1 PR #161 已合 master · 40 核验 25/25 PASS；W2 检测 / W3 PII 脱敏 / W4 真沙箱待后续波次） | L7 安全与合规硬化（注入/PII/脱敏/真沙箱 · 顺序钉死：隔离→检测） |
 | `memory-compliance-delete` | [`memory-compliance-delete/`](./memory-compliance-delete/) | **signed · 已实施**（2026-09-22 · PR #163 已合 master · 40 核验 22/22 PASS · 默认干跑+双闸门） | 记忆合规物理删除权 M4（purge_by_user · 两通路零残留 · 审计记动作不记内容） |
+| `multi-replica-verify` | [`multi-replica-verify/`](./multi-replica-verify/) | **signed · 已实施**（2026-09-22 · PR #165 已合 master · 40 核验 26/26 PASS · verify track 零生产码） | L0 多副本验证（双进程 pytest + 部署实测 + 进程内状态边界清单 8 条目） |
 
 ---
 
@@ -36,36 +37,11 @@
 
 > **用法**：按「建议序」选下一项 → 新会话声明「接续 <slug>」→ 10-spec 补全（R0–R5/方案对比/failure_paths/验收断言化）→ 人签 → 标准五棒流。每个占位 SPEC 内含范围草案 + 关键锚点（file 指引）+ 验收方向 + 接续指引。
 
-| 建议序 | slug | 一句话 | 类别 |
-|---|---|---|---|
-| （进行中） | `memory-golden-eval` | M1 · 抽取精度金样 + 调权（P1 开闸前置） | 放大器 · 记忆轨 |
-| 2 | [`multi-replica-verify/`](./multi-replica-verify/) | C3 · L0 多副本验证（有真实流量前必答） | 成熟度标志 |
+**占位队列已清零（2026-09-22）**：9 个占位 SPEC 全部完成五棒流并合入 master——llm-layer-hardening（#148）· memory-embedding-backfill（#151）· continuity-dedup（#153）· prompt-asset-roadmap 阶段一（#155 · 阶段二三待后续波次）· memory-preference-profile（#157）· session-summary-fallback（#159）· security-hardening W1（#161 · W2–W4 待后续波次）· memory-compliance-delete（#163）· multi-replica-verify（#165）。memory-golden-eval 经 #146 合入（维护者裁决）。
 
 > 排序原则（手册 §3.4/B.1）：缺了会不会造成**不可逆或静默**的错 → 承重墙缺角优先；放大器按迭代瓶颈排；成熟度标志等量级。
 
 ---
-
-## 占位 SPEC（待启动 · 含接续指引）
-
-> **用法**：按「建议序」选下一项 → 新会话声明「接续 <slug>」→ 10-spec 补全（R0–R5/方案对比/failure_paths/验收断言化）→ 人签 → 标准五棒流。每个占位 SPEC 内含范围草案 + 关键锚点（file 指引）+ 验收方向 + 接续指引。
-
-| 建议序 | slug | 一句话 | 类别 |
-|---|---|---|---|
-| （进行中） | `memory-golden-eval` | M1 · 抽取精度金样 + 调权（P1 开闸前置） | 放大器 · 记忆轨 |
-| 2 | [`llm-layer-hardening/`](./llm-layer-hardening/) | C1 · L5 重试退避/熔断/路由/成本按 run 聚合 | **承重墙缺角** |
-| 3 | [`memory-embedding-backfill/`](./memory-embedding-backfill/) | M2+M6 · 既有行 embedding 回填 + span 单测 | 记忆轨收尾 |
-| 4 | [`continuity-dedup/`](./continuity-dedup/) | M7 · continuity 重复实现合并（可并入小波次） | 已知债 |
-| 5 | [`prompt-asset-roadmap/`](./prompt-asset-roadmap/) | P1–P4 · Prompt 资产化三阶段（改得动→看得见→分得开） | 迭代速度 |
-| 6 | [`memory-preference-profile/`](./memory-preference-profile/) | M3 · 画像记忆（先事实型后偏好型） | 记忆轨 |
-| 7 | [`session-summary-fallback/`](./session-summary-fallback/) | M5 · 会话真摘要（铁律：可回退原文） | 记忆轨 |
-| 8 | [`security-hardening/`](./security-hardening/) | C2 · L7 注入/PII/脱敏/真沙箱（顺序：隔离→检测） | 承重墙缺角 |
-| 9 | [`memory-compliance-delete/`](./memory-compliance-delete/) | M4 · 合规物理删除权（有合规要求再做） | 成熟度标志 |
-| 10 | [`multi-replica-verify/`](./multi-replica-verify/) | C3 · L0 多副本验证（有真实流量前必答） | 成熟度标志 |
-
-> 排序原则（手册 §3.4/B.1）：缺了会不会造成**不可逆或静默**的错 → 承重墙缺角优先；放大器按迭代瓶颈排；成熟度标志等量级。
-
----
-
 ## 历史债 · 根级裸 SPEC
 
 > **已清零（2026-09-11 · `task_specwave_cleanup_2_1_3`）**：原 8 条根级裸 SPEC 全部迁入专属夹（见上表 · 夹内保留原文件名）；`spec-wave check` 零 WARN。感知通道维持：`check` WARN 再发即新增债。
