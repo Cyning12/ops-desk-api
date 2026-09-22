@@ -1,0 +1,98 @@
+task: multi-replica-verify
+track: D1 部署验证 + D4 runbook 轨（F1 双轨之手工实测轨）
+recorded_at: '2026-09-22T01:56:01.496287+00:00'
+git_sha: 7cbbd28
+image_id: sha256:33c37d2ad837bddace9d832229df3d0895e3d8833c53118c9c8ba9106078eea6
+topology:
+  instances:
+  - name: api-a
+    port: 8101
+  - name: api-b
+    port: 8102
+  shared_db: 127.0.0.1:5432/opsdesk_mrv
+  lb:
+  - port: 8199
+    mode: nginx round-robin
+    via: multi_replica_nginx.conf
+  - port: 8200
+    mode: cookie-sticky（自研 Python LB）
+    via: multi_replica_lb.py
+gateway_form: 降级 LB 双组：无亲和 = nginx:alpine round-robin（SPEC 命名降级形态 · scripts/acceptance/multi_replica_nginx.conf）；会话亲和
+  = 自研 Python LB cookie-sticky（multi_replica_lb.py · vanilla nginx 开源版不支持 cookie 亲和，亲和组支持面归自研
+  LB）。首选外部 Java 网关未覆盖：网关/Eureka 在外部仓、本仓 FastAPI 无 Eureka 客户端 —— Eureka 注册 2 实例条目：未覆盖待补。
+graph_substitution: 容器内跑 tests/dualproc_server.py 确定性替身图（与双进程 pytest 轨同一 seam）；被验证对象
+  = 状态外置链路 + 部署拓扑（全真），LLM 编排 = 替身（诚实声明）。
+commands:
+- POST http://127.0.0.1:8199/api/ops/auth/login (viewer=mr0b5a2538-viewer)
+- POST http://127.0.0.1:8101/api/ops/lg-rag/stream (thread=mr0b5a2538-t1)
+- POST http://127.0.0.1:8102/api/ops/lg-rag/stream (同 thread 续跑)
+- GET http://127.0.0.1:8199/api/ops/auth/me ×6 (rr · 同 cookie)
+- GET http://127.0.0.1:8200/api/ops/auth/me ×6 (cookie-sticky)
+- POST http://127.0.0.1:8102/api/ops/hitl/requests/hitl_742d91bcbe3a4d25b949/resume
+assertions:
+- name: 两实例健康
+  ok: true
+  detail: A=200 B=200
+- name: 实例归属：两容器两进程（name 对拍 · 容器 pid namespace 下 pid 恒 1 不可用）
+  ok: true
+  detail: A=api-a(pid 1) B=api-b(pid 1)
+- name: 两实例 env 对拍一致（配置漂移防线）
+  ok: true
+  detail: A ckpt=True B ckpt=True
+- name: LB 登录拿 cookie
+  ok: true
+  detail: code=200 upstream=192.168.65.254:8102
+- name: 鉴权 cookie 跨实例 200（无需会话亲和 · ops_sessions DB 存）
+  ok: true
+  detail: A=200 B=200
+- name: A 起 run 完成
+  ok: true
+  detail: frames=5
+- name: thread 跨实例续跑不 404（B 读得到 A 建的 thread）
+  ok: true
+  detail: B frames=5
+- name: B replay A 的 run：seq 连续且内容一致
+  ok: true
+  detail: replay=5 vs live=5
+- name: 无亲和：同会话连续请求落不同实例（两实例均有命中）
+  ok: true
+  detail: upstreams=['api-a', 'api-b']
+- name: 无亲和：语义不漂移（6/6 200 且同用户）
+  ok: true
+  detail: ok=6/6
+- name: 会话亲和：同会话落同实例（cookie-sticky）
+  ok: true
+  detail: upstreams=['api-a'] ok=6/6
+- name: D4：A 挂起（hitl.waiting + waiting_approval）
+  ok: true
+  detail: req=hitl_742d91bcbe3a4d25b949
+- name: D4：B 见申请（DbHitlStore 跨实例）
+  ok: true
+  detail: B 可见 1 条
+- name: D4：B 批准
+  ok: true
+  detail: code=200
+- name: D4：B resume 图真的续跑（state 推进 + answer 非空 · 不只断 200）
+  ok: true
+  detail: 'code=200 answer=[dualproc] resumed answer: approved=[''ef1c8c3059084eaba0c12b'
+- name: D4：恢复段帧续写同 run_id（hitl.resumed + done(resumed) · seq 连续）
+  ok: true
+  detail: types=['run.start', 'node.progress', 'hitl.waiting', 'done', 'hitl.resumed',
+    'node.progress', 'answer', 'done']
+- name: 外部 Java 网关 + Eureka 注册 2 实例
+  ok: null
+  detail: 未覆盖待补：网关/Eureka 在外部仓（ops-desk-api-java-gateway / ops-desk-eureka-server），本仓
+    FastAPI 无 Eureka 客户端；本次拓扑前置 = 宿主机自研 Python 降级 LB（registry 拉取受限，nginx/haproxy 镜像不可得）。**不得**把本降级形态读作「网关验证通过」。
+cleanup_counts:
+  checkpoint_writes: 31
+  checkpoint_blobs: 13
+  checkpoints: 15
+  ops_lg_rag_run_events: 18
+  ops_hitl_requests: 1
+  ops_lg_rag_turns: 6
+  ops_lg_rag_threads: 2
+  ops_sessions: 1
+  ops_invite_tokens: 1
+  ops_users: 1
+exit_code: 0
+verdict: pass

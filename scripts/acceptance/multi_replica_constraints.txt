@@ -1,0 +1,16 @@
+# 多副本验证 D1 · 增量镜像依赖约束（钉死到宿主 .venv 实测版本）
+# 为什么：requirements.txt 是范围钉（>=,<），镜像构建日拉到的 patch 版本与宿主
+# 已验证环境漂移（实测 langgraph 1.2.12 在容器内 SSE 首请求挂起 + psycopg
+# "another command is already in progress"；钉回宿主版本后 2/2 通过 · 2026-09-22）。
+# 宿主版本口径：.venv/bin/pip freeze（ops-desk-api 仓 · task/multi-replica-verify）。
+langgraph==1.2.11
+langgraph-checkpoint==4.2.0
+langgraph-checkpoint-postgres==3.1.2
+langgraph-prebuilt==1.1.0
+langgraph-sdk==0.4.4
+langchain-core==1.6.3
+psycopg==3.3.4
+psycopg-binary==3.3.4
+psycopg-pool==3.3.1
+fastapi==0.139.0
+uvicorn==0.51.0

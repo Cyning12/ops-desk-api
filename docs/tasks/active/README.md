@@ -4,7 +4,8 @@
 
 | task | 说明 |
 |---|---|
-| （无进行中 task） | 2026-09-22：`task_memory_compliance_delete`（PR #163 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
+| [`task_multi_replica_verify.md`](task_multi_replica_verify.md) | 2026-09-22：L0 多副本验证（track=verify · F1 双轨：双进程 pytest 进 CI + runbook/reports 手工实测 · P1 subprocess 双 uvicorn 真隔离 · 进程内状态边界清单 8 条目 · 预期零生产码）· 10 落稿待 20 审 + HG-AUDIT-R1 |
+| （无其余进行中 task） | 2026-09-22：`task_memory_compliance_delete`（PR #163 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （无进行中 task） | 2026-09-22：`task_security_input_isolation`（PR #161 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （无其余进行中 task） | 2026-09-22：`task_session_summary_fallback`（PR #159 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
 | （无其余进行中 task） | 2026-09-22：`task_memory_preference_profile`（PR #157 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |
