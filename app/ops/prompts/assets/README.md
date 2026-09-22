@@ -29,7 +29,7 @@
 | lg_rag.rewrite.system | v1 | 无 |
 | lg_rag.extract.system | v1 | 无 |
 | lg_rag.aggregator.system | v1 | 无 |
-| memory.extract.system | v1 | 无 |
+| memory.extract.system | v4 | 无 |
 | session.summary.system | v1 | 无 |
 
 新增变量 = 改调用方代码，属开发变更，不走本目录文案路径。

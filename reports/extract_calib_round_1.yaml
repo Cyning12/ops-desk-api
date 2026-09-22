@@ -1,0 +1,600 @@
+run: memory-golden-eval-20260922-092905-live
+backend: live
+golden: evals/memory/golden_v1.yaml
+thresholds:
+  extraction_precision:
+    threshold: '>= 0.9'
+    actual: 0.88
+    met: false
+  noise_write_rate:
+    threshold: <= 0.1
+    actual: 0.1429
+    met: false
+  paraphrase_top3:
+    threshold: '>= 0.8'
+    actual: 1.0
+    met: true
+  supersede_accuracy:
+    threshold: == 1.0
+    actual: 1.0
+    met: true
+all_thresholds_met: false
+threshold_note: 门槛来自 SPEC-memory-golden-eval §2 D5（签收锁死）；fake 模式为确定性管线自检，不构成开开关依据；裁决以
+  live 真跑报告为准（SPEC §8 维护者复制区）
+tenant: memory-eval
+embed: BAAI/bge-m3
+metrics:
+  extraction_precision: 0.88
+  noise_write_rate: 0.1429
+  miss_rate: 0.1429
+  paraphrase_top1: 0.9167
+  paraphrase_top3: 1.0
+  supersede_accuracy: 1.0
+  written_good: 22
+  written_noise: 3
+  errors: 0
+  cases: 50
+summary:
+  pass_by_category:
+    should_remember: 12/14
+    should_not_remember: 12/14
+    supersede: 10/10
+    paraphrase: 12/12
+  measurement_source: observed
+  confidence: low
+  comparability: not_comparable
+errors: []
+cleanup:
+  revoked: 37
+  tenant_rows_deleted: 155
+results:
+- id: SR01
+  category: should_remember
+  verdict: fail
+  detail: '漏记: [''project.primary_repo'']'
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: SR02
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: user.display_tz
+      value: Asia/Shanghai
+- id: SR03
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: deploy.target
+      value: prod-cn
+- id: SR04
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: project.owner
+      value: zhangsan
+- id: SR05
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: git.release_branch
+      value: release/v2
+- id: SR06
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: monitor.alert_channel
+      value: ops-oncall
+- id: SR07
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: db.primary_host
+      value: pg-internal-01
+- id: SR08
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: cache.backend
+      value: redis-cluster-a
+- id: SR09
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: gateway.public_domain
+      value: ops.example.cn
+- id: SR10
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: docker.base_image
+      value: ubuntu-22.04
+- id: SR11
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: queue.broker
+      value: kafka-main
+- id: SR12
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: ops.rollback_plan
+      value: helm-rollback
+- id: SR13
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: secrets.manager
+      value: vault-prod
+- id: SR14
+  category: should_remember
+  verdict: fail
+  detail: '漏记: [''log.retention_days'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: log.retention_days
+      value: '30'
+- id: NG01
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG02
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG03
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG04
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG05
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG06
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG07
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG08
+  category: should_not_remember
+  verdict: fail
+  detail: '噪声写入: [''monitor.alert_channel'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: monitor.alert_channel
+      value: 未配置
+- id: NG09
+  category: should_not_remember
+  verdict: fail
+  detail: '噪声写入: [''deploy.target'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: deploy.target
+      value: prod-cn
+- id: NG10
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG11
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG12
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG13
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG14
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: SP01
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: deploy.target
+      value: prod-cn
+    old_status: superseded
+    recalled:
+    - - deploy.target
+      - prod-cn
+- id: SP02
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: project.owner
+      value: lisi
+    old_status: superseded
+    recalled:
+    - - project.owner
+      - lisi
+- id: SP03
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: git.release_branch
+      value: release/v2
+    old_status: superseded
+    recalled:
+    - - git.release_branch
+      - release/v2
+- id: SP04
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: monitor.oncall_owner
+      value: zhaoliu
+    old_status: superseded
+    recalled:
+    - - monitor.oncall_owner
+      - zhaoliu
+- id: SP05
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: db.primary_host
+      value: pg-new-02
+    old_status: superseded
+    recalled:
+    - - db.primary_host
+      - pg-new-02
+- id: SP06
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: cache.backend
+      value: redis-cluster-a
+    old_status: superseded
+    recalled:
+    - - cache.backend
+      - redis-cluster-a
+- id: SP07
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: gateway.public_domain
+      value: ops.example.cn
+    old_status: superseded
+    recalled:
+    - - gateway.public_domain
+      - ops.example.cn
+- id: SP08
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: docker.registry
+      value: registry-new.local
+    old_status: superseded
+    recalled:
+    - - docker.registry
+      - registry-new.local
+- id: SP09
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: queue.broker
+      value: kafka-main
+    old_status: superseded
+    recalled:
+    - - queue.broker
+      - kafka-main
+- id: SP10
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: user.display_tz
+      value: Asia/Shanghai
+    old_status: superseded
+    recalled:
+    - - user.display_tz
+      - Asia/Shanghai
+- id: PR01
+  category: paraphrase
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    top1: true
+    top3: true
+    recalled_keys:
+    - project.primary_repo
+    - glossary.term_pr01_07
+    - glossary.term_pr01_03
+- id: PR02
+  category: paraphrase
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    top1: true
+    top3: true
+    recalled_keys:
+    - deploy.target
+    - glossary.term_pr02_07
+    - glossary.term_pr02_05
+- id: PR03
+  category: paraphrase
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    top1: true
+    top3: true
+    recalled_keys:
+    - user.display_tz
+    - glossary.term_pr03_00
+    - glossary.term_pr03_08
+- id: PR04
+  category: paraphrase
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    top1: true
+    top3: true
+    recalled_keys:
+    - project.owner
+    - glossary.term_pr04_08
+    - glossary.term_pr04_07
+- id: PR05
+  category: paraphrase
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    top1: true
+    top3: true
+    recalled_keys:
+    - git.release_branch
+    - glossary.term_pr05_07
+    - glossary.term_pr05_06
+- id: PR06
+  category: paraphrase
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    top1: true
+    top3: true
+    recalled_keys:
+    - monitor.alert_channel
+    - glossary.term_pr06_08
+    - glossary.term_pr06_07
+- id: PR07
+  category: paraphrase
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    top1: true
+    top3: true
+    recalled_keys:
+    - db.primary_host
+    - glossary.term_pr07_00
+    - glossary.term_pr07_05
+- id: PR08
+  category: paraphrase
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    top1: true
+    top3: true
+    recalled_keys:
+    - cache.backend
+    - glossary.term_pr08_00
+    - glossary.term_pr08_07
+- id: PR09
+  category: paraphrase
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    top1: true
+    top3: true
+    recalled_keys:
+    - ops.rollback_plan
+    - glossary.term_pr09_07
+    - glossary.term_pr09_00
+- id: PR10
+  category: paraphrase
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    top1: true
+    top3: true
+    recalled_keys:
+    - gateway.public_domain
+    - glossary.term_pr10_07
+    - glossary.term_pr10_00
+- id: PR11
+  category: paraphrase
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    top1: true
+    top3: true
+    recalled_keys:
+    - docker.base_image
+    - glossary.term_pr11_00
+    - glossary.term_pr11_07
+- id: PR12
+  category: paraphrase
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    top1: false
+    top3: true
+    recalled_keys:
+    - glossary.term_pr12_00
+    - glossary.term_pr12_07
+    - queue.broker

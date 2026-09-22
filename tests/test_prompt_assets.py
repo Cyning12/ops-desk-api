@@ -25,7 +25,8 @@ EXPECTED_IDS = {
     "lg_rag.rewrite.system": "v1",
     "lg_rag.extract.system": "v1",
     "lg_rag.aggregator.system": "v1",
-    "memory.extract.system": "v1",
+    # 抽取校准循环（task memory-extract-calibration）：v1→…→v4 定稿，同步断言
+    "memory.extract.system": "v4",
     # session-summary-fallback D1：新增摘要资产（B1 漏扫本文件集合等式断言 →
     # 处置=改编：集合等式口径不变，仅登记新模板；见 30 invoke B1 回填）
     "session.summary.system": "v1",
