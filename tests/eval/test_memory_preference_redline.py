@@ -57,6 +57,9 @@ def _load_inventory() -> dict:
 async def _assemble_with_recall(monkeypatch: pytest.MonkeyPatch, question: str, facts):
     """MEMORY_FACTS_ENABLED=true + 桩召回（无 DB），返回注入块 SystemMessage 文本集。"""
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    # 钉确定性召回通路（同 test_memory_injection._patch_recall 理由：
+    # 宿主 .env 开向量召回 + 网络可用时 recall_with_vector 与桩 dicts 不兼容）
+    monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
     monkeypatch.setattr(
         "app.ops.memory.service.recall_active", AsyncMock(return_value=facts)
     )

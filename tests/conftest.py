@@ -8,6 +8,12 @@ created on demand and its schema is managed via ``Base.metadata.create_all``.
 **这条隔离保证由 ``_assert_test_database`` 强制执行**：目标库名必须以 ``_test`` 结尾，
 否则 conftest 在 import 期直接抛错。需要换库（CI / 多实例）请设
 ``OPS_TEST_DATABASE_URL``——**不要复用业务的 ``DATABASE_URL``**，.env 里那个指向开发库。
+
+⚠️ 已知缺口（test-baseline-reds F4 · 只注记不修，另 task 议）：CI pytest workflow
+（.github/workflows/pytest.yml）的 DATABASE_URL 指向 localhost:5432 但 job **无 postgres
+service** → 本文件 ``_setup_test_database`` 连不上 → DB_AVAILABLE=False → 全部 DB 用例
+skip。即「CI 绿」对 DB 用例是 **skip 绿**（假绿），不构成真跑证据；真跑基线以本地真 PG
+（opsdesk_test）为准。修 CI（加 postgres service）不在本 task 范围。
 """
 
 from __future__ import annotations
@@ -21,6 +27,35 @@ from datetime import datetime, timedelta
 
 # 先于 import app.config（其 load_dotenv）关掉 tracing，避免本机 .env 的 keys 在 pytest 里误上报
 os.environ.setdefault("OPS_CHAT_TRACER", "")
+
+
+def _sanitize_no_proxy_env() -> None:
+    """剔除 no_proxy/NO_PROXY 中 bracketed IPv6 条目（如 [::1]）。
+
+    test-baseline-reds D1-L2：macOS 宿主常见
+    NO_PROXY=localhost,127.0.0.1,::1,[::1]，而 httpx(trust_env=True) 建
+    Client 时把 [::1] 当 URL 解析，直接抛 InvalidURL: Invalid port: ':1]'
+    ——embedder/reranker 的 httpx 调用在宿主 env 下必炸（CI runner 无此 env）。
+    裸 ::1 httpx 可解析，保留；只删 [...] 形式。须在 import app 之前生效。
+    注记：本净化只影响 loopback 旁路列表语义，不删代理本体；integration marker
+    真连用例若依赖 bracketed IPv6 no_proxy 条目（未见）须显式自理。
+    """
+    for key in ("no_proxy", "NO_PROXY"):
+        raw = os.environ.get(key)
+        if not raw:
+            continue
+        kept = [
+            token
+            for token in (t.strip() for t in raw.split(","))
+            if token and not (token.startswith("[") and token.endswith("]"))
+        ]
+        if kept:
+            os.environ[key] = ",".join(kept)
+        else:
+            os.environ.pop(key, None)
+
+
+_sanitize_no_proxy_env()
 
 # 本地/CI 精简 langchain 元包可能缺 langchain.debug，某些三方路径读它会 AttributeError。
 # 用官方 set_debug() 预热：它内部会 catch_warnings 抑制掉
@@ -185,6 +220,55 @@ async def _create_test_schema():
                     "ALTER TABLE ops_memory_facts "
                     "ADD CONSTRAINT ck_ops_memory_facts_kind "
                     "CHECK (kind IN ('fact', 'preference'))"
+                )
+            )
+            # test-baseline-reds D1-L3（schema 漂移补丁）：ops_knowledge_chunks 由
+            # alembic/versions/20260808_rag_chunks.py 裸 SQL 建，无 ORM 模型 →
+            # Base.metadata.create_all 不含此表 → retrieve 混合召回 SQL 炸
+            # UndefinedTableError。与上面 ALTER 补丁同模式：幂等 IF NOT EXISTS，
+            # 列定义逐字对齐该 migration（含 CREATE EXTENSION vector）；后续迁移
+            # 未给本表加列（sparse_embedding 仅出现在 RAG_SECOND_PATH=sparse
+            # 实验 SQL 路径，非默认召回路径，本补丁不补）。
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            await conn.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS ops_knowledge_chunks (
+                        id           bigserial PRIMARY KEY,
+                        repo         text        NOT NULL,
+                        source_type  text        NOT NULL,
+                        source_id    text        NOT NULL,
+                        chunk_index  integer     NOT NULL,
+                        content      text        NOT NULL,
+                        metadata     jsonb       NOT NULL DEFAULT '{}'::jsonb,
+                        images       jsonb       NOT NULL DEFAULT '[]'::jsonb,
+                        content_hash text        NOT NULL,
+                        embedding    vector(1024) NOT NULL,
+                        embedded_at  timestamptz NOT NULL DEFAULT now(),
+                        fts_tokens   tsvector
+                            GENERATED ALWAYS AS (to_tsvector('simple'::regconfig, content)) STORED,
+                        CONSTRAINT uq_ops_knowledge_chunks_key
+                            UNIQUE (repo, source_type, source_id, chunk_index)
+                    )
+                    """
+                )
+            )
+            await conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_ops_knowledge_chunks_source "
+                    "ON ops_knowledge_chunks (repo, source_type, source_id)"
+                )
+            )
+            await conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_ops_knowledge_chunks_embedding_hnsw "
+                    "ON ops_knowledge_chunks USING hnsw (embedding vector_cosine_ops)"
+                )
+            )
+            await conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_ops_knowledge_chunks_fts_gin "
+                    "ON ops_knowledge_chunks USING gin (fts_tokens)"
                 )
             )
         await engine.dispose()

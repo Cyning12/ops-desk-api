@@ -381,6 +381,11 @@ def test_urllib_transport_honors_explicit_capability_proxy(monkeypatch: pytest.M
     server, url = _local_json_server()
     try:
         monkeypatch.setenv("OPS_CAPABILITY_HTTP_PROXY", "http://127.0.0.1:1")
+        # test-baseline-reds D2：macOS 系统级 loopback 旁路让
+        # urllib.request.proxy_bypass("127.0.0.1") 恒 True → ProxyHandler.proxy_open
+        # 被短路，显式代理根本没用上（Linux CI 无此旁路所以绿）。打桩恒 False 做
+        # OS 隔离：断言「显式代理必被使用」与宿主 OS 旁路列表无关。
+        monkeypatch.setattr("urllib.request.proxy_bypass", lambda host: False)
         with pytest.raises(HttpCapabilityError) as ei:
             UrllibHttpTransport().request(
                 method="GET", url=url, headers={}, params={}, body=None, timeout_s=3

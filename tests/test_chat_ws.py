@@ -17,6 +17,7 @@ from app.db.models import OpsRun
 from app.db.session import AsyncSessionLocal, engine
 from app.llm.providers.base import BaseProviderImpl
 from app.llm.schema import LlmChunk
+from app.ops.rag.retrieve import RetrievedChunk
 from tests.conftest import DB_AVAILABLE
 
 
@@ -59,6 +60,63 @@ def slow_provider(monkeypatch):
         "app.ops.chat.nodes.get_llm_provider",
         lambda: SlowProvider(),
     )
+
+
+class _StubEmbedder:
+    """确定性查询向量（检索链打桩 · test-baseline-reds D1）：不触外网/本机模型。"""
+
+    name = "stub-embedder"
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        return [[0.0] * 1024 for _ in texts]
+
+
+class _StubGraderProvider:
+    """grader 打桩：恒评 exact（chunk_id 与 _STUB_CHUNK 对齐）→ 闸放行 answer。"""
+
+    async def complete(self, messages, model=None) -> str:
+        return json.dumps(
+            [{"chunk_id": 1, "relevance": "exact", "reason": "stub: 打桩恒放行"}]
+        )
+
+
+_STUB_CHUNK = RetrievedChunk(
+    id=1,
+    repo="acme/ops-desk",
+    source_type="doc",
+    source_id="docs/demo.md",
+    chunk_index=0,
+    content="Title: Demo\n打桩语料：与 query 直接相关的证据块。",
+    metadata={},
+    images=[],
+)
+
+
+@pytest.fixture
+def stub_rag_chain(monkeypatch):
+    """检索链外部依赖打桩确定化（test-baseline-reds D1 · 钉死契约：最小面）。
+
+    现行拓扑 general/overview → retrieve→grade→gate（R-3），三处外部依赖
+    全部换确定性桩，事件序列与外部世界无关：
+    - ``_get_embedder``：不打 SiliconFlow /embeddings（httpx 外网 + 宿主代理 env）
+    - ``hybrid_recall``：不查 ops_knowledge_chunks（测试库语料为空也无妨）
+    - grader 侧 ``get_llm_provider``：不调评级 LLM（恒 exact → gate=answer）
+    - ``rerank_enabled`` 恒 False：宿主 .env 可能开 RAG_RERANK_ENABLED=true，
+      开了会走 SiliconFlow /rerank 真 HTTP，低分被地板滤空 → refuse（实测踩到）
+    answer 节点 provider 在 nodes 命名空间，由 fake_provider/slow_provider 各自打。
+    """
+
+    async def _fake_recall(session, query, qvec, *, k_each=10, top_n=5, query_sparse=None):
+        return [_STUB_CHUNK]
+
+    monkeypatch.setattr(
+        "app.ops.chat.rag_nodes._get_embedder", lambda: _StubEmbedder()
+    )
+    monkeypatch.setattr("app.ops.chat.rag_nodes.hybrid_recall", _fake_recall)
+    monkeypatch.setattr(
+        "app.ops.chat.rag_nodes.get_llm_provider", lambda *a, **k: _StubGraderProvider()
+    )
+    monkeypatch.setattr("app.ops.chat.rag_nodes.rerank_enabled", lambda: False)
 
 
 @pytest.fixture
@@ -146,8 +204,15 @@ async def test_ws_disabled_when_switch_off(monkeypatch, _portal_engine) -> None:
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
-async def test_ws_message_streams_events(fake_provider, _portal_engine) -> None:
-    """A message produces the same event sequence as the SSE stream."""
+async def test_ws_message_streams_events(
+    fake_provider, stub_rag_chain, _portal_engine
+) -> None:
+    """A message produces the same event sequence as the SSE stream.
+
+    断言对齐**现行图拓扑**（test-baseline-reds D1）：general 意图走 R-3 检索链
+    retrieve→grade→gate，必多两个 tool_result；检索链由 stub_rag_chain 打桩确定化。
+    若断言改回 2026-07-18 旧期望（无 tool_result）应对现行拓扑真挂。
+    """
     fake_provider([LlmChunk(content="Hello"), LlmChunk(content="!")])
 
     events = await asyncio.to_thread(
@@ -157,8 +222,17 @@ async def test_ws_message_streams_events(fake_provider, _portal_engine) -> None:
     )
 
     event_types = [e["event_type"] for e in events]
-    assert event_types == ["run.start", "thinking", "thinking", "answer", "answer", "done"]
-    answer_event = events[3]
+    assert event_types == [
+        "run.start",
+        "thinking",  # intent
+        "tool_result",  # retrieve（stubbed hybrid_recall 命中 1 块）
+        "tool_result",  # grade（stubbed grader 恒 exact → gate=answer）
+        "thinking",  # answer 准备
+        "answer",
+        "answer",
+        "done",
+    ]
+    answer_event = next(e for e in events if e["event_type"] == "answer")
     assert answer_event["agent_role"] == "answer"
     assert answer_event["payload"]["content"] == "Hello"
     assert events[-1]["payload"]["model"]
@@ -189,8 +263,12 @@ async def test_ws_cancel_without_active_run(_portal_engine) -> None:
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
-async def test_ws_cancel_active_run(slow_provider, _portal_engine) -> None:
-    """Cancelling mid-generation emits run.cancelled and marks the run cancelled."""
+async def test_ws_cancel_active_run(slow_provider, stub_rag_chain, _portal_engine) -> None:
+    """Cancelling mid-generation emits run.cancelled and marks the run cancelled.
+
+    stub_rag_chain：cancel 竞态断言只关心 answer 节点慢生成；检索链打桩快速通过，
+    不触外网/语料表（test-baseline-reds D1）。
+    """
     events = await asyncio.to_thread(_ws_message_then_cancel, "tell me a story")
 
     event_types = [e["event_type"] for e in events]
@@ -211,9 +289,13 @@ async def test_ws_cancel_active_run(slow_provider, _portal_engine) -> None:
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
 async def test_ws_second_message_while_active_rejected(
-    slow_provider, _portal_engine
+    slow_provider, stub_rag_chain, _portal_engine
 ) -> None:
-    """A second message during an active run returns an error, not a new run."""
+    """A second message during an active run returns an error, not a new run.
+
+    stub_rag_chain：首个 run 须稳定停在 answer 慢生成段，并发拒语义才确定
+    （检索链打桩 · test-baseline-reds D1）。
+    """
     from starlette.testclient import TestClient
 
     from app.main import app

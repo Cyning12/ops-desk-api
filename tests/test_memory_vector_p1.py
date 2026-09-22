@@ -155,6 +155,9 @@ async def test_null_embedding_rows_stay_on_deterministic_path(
     monkeypatch: pytest.MonkeyPatch,
 ):
     # 开关关时写入 = P0 行为：embedding 留 NULL（既有行不回填等价态）
+    # 显式钉 off：宿主 .env 可能设 MEMORY_FACTS_VECTOR_RECALL_ENABLED=true
+    #（test-baseline-reds 全量回归 unmask：网络可用时写入路径会真嵌向量）
+    monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
     user = "u-null"
     fact = await write_fact(_candidate(user_id=user))
     assert await _embedding_of(str(fact.id)) is None

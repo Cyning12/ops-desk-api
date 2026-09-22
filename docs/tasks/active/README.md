@@ -4,6 +4,7 @@
 
 | task | 说明 |
 |---|---|
+| [`task_test_baseline_reds.md`](task_test_baseline_reds.md) | 2026-09-22 10 落稿：bugfix · 测试基线红清理（chat_ws×2 断言过期+环境三层 + capability proxy macOS 旁路 + backfill uuid/keyset flaky ≈40%）· 三缺陷已真跑复现定位 · HG-TASK-DRAFT / HG-AUDIT-R1 待签 → 30 拒开工 · 分支 `fix/test-baseline-reds` |
 | （无进行中 task） | 2026-09-22：`task_memory_extract_calibration`（校准循环 · 40 R1 泄题退回 → v4 整改达标 · 40 R2 PASS）归档至 `done/`；分支 `task/memory-extract-calibration` **PR 待开** |
 | （无进行中 task） | 2026-09-22：`task_multi_replica_verify`（PR #165 合）归档至 `done/` · **占位 SPEC 队列清零**（9/9 全链完成）；分支 `task/memory-facts-p1` 待维护者裁决 |
 | （无其余进行中 task） | 2026-09-22：`task_memory_compliance_delete`（PR #163 合）归档至 `done/`；分支 `task/memory-facts-p1` / `task/memory-golden-eval`（PR #146）待维护者裁决 |

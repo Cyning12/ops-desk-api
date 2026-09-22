@@ -252,6 +252,9 @@ async def test_continuity_on_memory_block_attributed_memory_fact(
     """memory 面并入 memory_fact 槽声明（语义不变 · 声明补全 · 渲染零改动）。"""
     monkeypatch.setenv(_ENV, "true")
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    # 钉确定性召回通路（同 test_memory_injection._patch_recall 理由：宿主 .env
+    # 开向量召回时装配改走 recall_with_vector，与 mocked recall_active 不兼容）
+    monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
     monkeypatch.setattr(
         "app.ops.memory.service.recall_active",
         AsyncMock(return_value=[{"key": "project.primary_repo", "value": "cyning/ops-desk"}]),
