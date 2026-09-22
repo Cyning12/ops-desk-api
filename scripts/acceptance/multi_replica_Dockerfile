@@ -1,0 +1,13 @@
+# 多副本验证 D1 · 增量镜像（依赖层对齐当前 requirements + 当前代码 COPY 进镜像）
+#
+# 为什么有它：仓内既有 ops-desk-api-api:latest（2026-09-20 构建）的依赖层**早于**
+# langgraph 0.2→1.2.11 升级与 pybreaker 入库 —— 直接拿旧镜像跑当前代码会
+# ModuleNotFoundError（实测 2026-09-22）。全量重建要重下 torch；增量层只补差量。
+# 约束文件把 langgraph/psycopg 族钉回宿主 .venv 实测版本（镜像日新 patch 实测踩坑，
+# 见 multi_replica_constraints.txt 头部注释）。验证对象 = 当前分支代码（COPY 进镜像）。
+FROM ops-desk-api-api:latest
+COPY requirements.txt /tmp/requirements.txt
+COPY scripts/acceptance/multi_replica_constraints.txt /tmp/constraints.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt -c /tmp/constraints.txt
+COPY app /app/app
+COPY tests/dualproc_server.py /mr/dualproc_server.py

@@ -1,0 +1,44 @@
+# 多副本验证 D1 · compose 双实例拓扑（双 service 别名 · 共享同一 PG 专用库）
+#
+# 用法（由 multi_replica_verify.sh 编排）：
+#   docker compose -p ops-desk-mrv -f scripts/acceptance/multi_replica_compose.yml up -d
+#
+# 诚实标注（报告同源）：
+# - 镜像 ops-desk-api-mrv:latest 由 multi_replica_Dockerfile 增量构建（旧镜像依赖层早于
+#   langgraph 1.2/pybreaker；COPY 当前 app/ 与 dualproc_server.py 进镜像，不 bind-mount）。
+# - 实例跑 tests/dualproc_server.py（确定性替身图 · 与双进程 pytest 轨同一 seam）：
+#   被验证的是状态外置链路与部署拓扑，不是 LLM 编排。声明见该文件 docstring。
+# - DB = 开发库同 PG 实例里的**专用库** opsdesk_mrv（不碰共享开发库 · 验证卫生钉死）。
+# - 网关：外部 Java 网关 + Eureka 在外部仓且本仓无 Eureka 客户端 → Eureka 注册条目
+#   **未覆盖待补**；前置 LB = nginx round-robin（SPEC 命名降级形态 · 无亲和组）+
+#   自研 Python LB cookie-sticky（亲和组 · vanilla nginx 不支持 cookie 亲和）。
+
+services:
+  api-a: &api
+    image: ops-desk-api-mrv:latest
+    command: ["python", "/mr/dualproc_server.py", "--host", "0.0.0.0", "--port", "8000", "--name", "api-a"]
+    ports:
+      - "8101:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ops:ops_password@host.docker.internal:5432/opsdesk_mrv
+      LG_RAG_HTTP_CHECKPOINTER: postgres
+      OPS_HITL_PERSISTENCE: db
+      OPS_CAPABILITY_PERSISTENCE: db
+      OPS_CHAT_TRACER: ""
+      OPS_DESK_SECRET: mr-desk-secret
+      OPS_ADMIN_SYNC_TOKEN: mr-admin-tok
+      OPS_HITL_CALLBACK_SECRET: mr-hitl-secret
+      QDRANT_URL: http://host.docker.internal:6333
+
+  api-b:
+    <<: *api
+    command: ["python", "/mr/dualproc_server.py", "--host", "0.0.0.0", "--port", "8000", "--name", "api-b"]
+    ports:
+      - "8102:8000"
+
+  lb:
+    image: nginx:alpine
+    ports:
+      - "8199:8000"
+    volumes:
+      - ./multi_replica_nginx.conf:/etc/nginx/nginx.conf:ro
