@@ -4,7 +4,8 @@
 - 写入先过闸（`should_write`）；**闸拒 = 不落库**，抛 `GateRejectedError`。
 - 同 `(tenant_id, user_id, key)` 已有 active → **同一事务**内置旧行
   `superseded`、新行 `supersedes` 指旧 id；后写赢，旧值留表可审计。
-- 失效走状态机（superseded / revoked / expired），**不物理删**。
+- 失效走状态机（superseded / revoked / expired），运行期**不物理删**；
+  合规物理删除只走管理面 `purge_by_user`（双闸门 · 记动作不记内容）。
 - 召回只认 `status='active'` 且未过期——**查询路径自带 `expires_at` 过滤**，
   不依赖 sweep 存活（双保险）。
 - session 纪律：传入 `session` 时调用方持有事务（本模块只 flush）；
@@ -16,10 +17,12 @@ import asyncio
 import json
 import logging
 import os
+import time
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import select, text, update
+from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import OpsMemoryFact, now_utc
@@ -47,13 +50,19 @@ class GateRejectedError(ValueError):
 
 
 async def _write_in_session(session: AsyncSession, candidate: FactCandidate) -> OpsMemoryFact:
-    """同一事务内：旧 active 置 superseded → 插入新行（supersedes=旧 id）。"""
+    """同一事务内：旧 active 置 superseded → 插入新行（supersedes=旧 id）。
+
+    查重谓词含 `kind`（memory-preference-profile 双保险第二道）：跨 kind
+    同 key 不互相 supersede——第一道防线是闸的双向 key 域绑定，本谓词防
+    未来 key 域约定松动时的静默互冲。
+    """
     result = await session.execute(
         select(OpsMemoryFact)
         .where(
             OpsMemoryFact.tenant_id == candidate.tenant_id,
             OpsMemoryFact.user_id == candidate.user_id,
             OpsMemoryFact.key == candidate.key,
+            OpsMemoryFact.kind == candidate.kind,
             OpsMemoryFact.status == STATUS_ACTIVE,
         )
         .order_by(OpsMemoryFact.updated_at.desc(), OpsMemoryFact.created_at.desc())
@@ -157,6 +166,44 @@ async def revoke_by_source(
     return count
 
 
+async def revoke_by_key(
+    tenant_id: str,
+    user_id: str,
+    key: str,
+    *,
+    session: AsyncSession | None = None,
+) -> int:
+    """按 key 一键置 `revoked`（显式偏好/事实的纠错入口）；幂等；审计记行数。
+
+    存在理由：显式写入 `source_run_id` 为空，`revoke_by_source` 定位不到；
+    合规删除权要求用户可清除自己的偏好。**必带 tenant+user 谓词**
+    （跨 tenant = 0 行）。只动 `active` 行 ⇒ 重复调用影响 0 行（幂等）。
+    清除后召回零命中（召回只认 active），不物理删。
+    """
+    stmt = (
+        update(OpsMemoryFact)
+        .where(
+            OpsMemoryFact.tenant_id == tenant_id,
+            OpsMemoryFact.user_id == user_id,
+            OpsMemoryFact.key == key,
+            OpsMemoryFact.status == STATUS_ACTIVE,
+        )
+        .values(status=STATUS_REVOKED, updated_at=now_utc())
+    )
+    if session is not None:
+        result = await session.execute(stmt)
+        count = int(result.rowcount or 0)
+    else:
+        async with AsyncSessionLocal() as own, own.begin():
+            result = await own.execute(stmt)
+            count = int(result.rowcount or 0)
+    # 审计日志：纠错动作本身必须可追查（含幂等 0 行）
+    logger.info(
+        "memory revoke_by_key key=%s tenant=%s affected=%d", key, tenant_id, count
+    )
+    return count
+
+
 async def sweep_expired(
     now: datetime | None = None,
     *,
@@ -182,6 +229,99 @@ async def sweep_expired(
     async with AsyncSessionLocal() as own, own.begin():
         result = await own.execute(stmt)
         return int(result.rowcount or 0)
+
+
+@dataclass(frozen=True)
+class PurgeReport:
+    """purge_by_user 报告（backfill 报告字段族 · 计数守恒纪律钉死）。
+
+    守恒：实删 ``deleted == scanned``（同谓词同事务无并发写入时）；
+    干跑 ``deleted == 0``；``sum(by_status.values()) == scanned``。
+    干跑/实删同谓词同计数口径（口径漂移 = 管理面 409 误拒）。
+    """
+
+    dry_run: bool
+    #: 谓词匹配行数（全 status）
+    scanned: int
+    #: 实际删除行数（干跑恒 0）
+    deleted: int
+    #: 按 status 分桶计数（干跑/实删同口径）
+    by_status: dict[str, int]
+    elapsed_s: float
+    recorded_at: datetime
+
+
+def _purge_predicate(tenant_id: str, user_id: str):
+    """purge 谓词锚点：含且仅含 tenant_id + user_id（越域防线 · 变异检验①兜底）。"""
+    return (
+        OpsMemoryFact.tenant_id == tenant_id,
+        OpsMemoryFact.user_id == user_id,
+    )
+
+
+async def _purge_in_session(
+    session: AsyncSession,
+    tenant_id: str,
+    user_id: str,
+    *,
+    dry_run: bool,
+) -> PurgeReport:
+    """同事务内：同谓词计数（总数 + by_status 分桶）→ 干跑零写 / 实删整行 DELETE。"""
+    started = time.monotonic()
+    predicate = _purge_predicate(tenant_id, user_id)
+    count_result = await session.execute(
+        select(OpsMemoryFact.status, func.count())
+        .where(*predicate)
+        .group_by(OpsMemoryFact.status)
+    )
+    by_status = {str(row_status): int(n) for row_status, n in count_result.all()}
+    scanned = sum(by_status.values())
+    deleted = 0
+    if not dry_run:
+        result = await session.execute(delete(OpsMemoryFact).where(*predicate))
+        deleted = int(result.rowcount or 0)
+    # 审计日志：记动作不记内容（无 key/value · revoke 先例同形 · 含幂等 0 行）
+    logger.info(
+        "memory purge_by_user tenant=%s user=%s dry_run=%s affected=%d",
+        tenant_id,
+        user_id,
+        dry_run,
+        deleted,
+    )
+    return PurgeReport(
+        dry_run=dry_run,
+        scanned=scanned,
+        deleted=deleted,
+        by_status=by_status,
+        elapsed_s=time.monotonic() - started,
+        recorded_at=now_utc(),
+    )
+
+
+async def purge_by_user(
+    tenant_id: str,
+    user_id: str,
+    *,
+    dry_run: bool = True,
+    session: AsyncSession | None = None,
+) -> PurgeReport:
+    """按 ``(tenant_id, user_id)`` **全 status 整行物理删除**（合规删除权 · 管理面唯一入口）。
+
+    - 谓词含且仅含 tenant+user（revoke_by_key 谓词纪律钉死 · 跨 tenant = 0 行）。
+    - **全 status 无差别整行 DELETE**（active/superseded/revoked/expired ·
+      embedding 列随行消失；向量 SQL 查表本身，行零残留 = 两通路零残留）。
+    - ``dry_run=True``（**默认**）：同谓词只读计数（总数 + by_status 分桶），**零写**；
+      实删与干跑同谓词保证计数口径一致。
+    - 幂等：DELETE 天然幂等，重复实删第二次 ``deleted == 0``（revoke 幂等语义同形）。
+    - 单条 DELETE 语句单事务原子执行（无半删中间态）；session 纪律同模块先例
+      （传入 session 调用方持事务只 flush；不传自开 ``AsyncSessionLocal`` 并 commit）。
+    - 审计 ``logger.info`` 记动作不记内容（无 key/value · revoke 先例同形 ·
+      含幂等 0 行）；管理面入口与 expected_count 双闸门见 ``app/ops/admin/memory.py``。
+    """
+    if session is not None:
+        return await _purge_in_session(session, tenant_id, user_id, dry_run=dry_run)
+    async with AsyncSessionLocal() as own, own.begin():
+        return await _purge_in_session(own, tenant_id, user_id, dry_run=dry_run)
 
 
 async def recall_active(

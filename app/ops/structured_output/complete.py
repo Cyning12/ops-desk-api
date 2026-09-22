@@ -15,7 +15,9 @@ from typing import Any, Generic, TypeVar
 from pydantic import BaseModel
 
 from app.llm.factory import get_llm_provider
+from app.llm.model_catalog import resolve_task_model
 from app.llm.schema import BaseProvider, LlmMessage
+from app.llm.usage import ensure_task_type
 from app.ops.structured_output.parse import parse_only
 
 T = TypeVar("T", bound=BaseModel)
@@ -96,7 +98,12 @@ def _resolve_provider(
         model = llm_ctx.model if llm_ctx else None
         return provider_override, model
     ctx = llm_ctx or LlmCtx()
-    return get_llm_provider(ctx.provider), ctx.model
+    # 分层路由（D3 · structured 档）：显式 model > OPS_LLM_TIER_STRUCTURED_MODEL
+    # > 档默认（None → 沿用现网默认 model=None，逐字节一致）
+    model = ctx.model
+    if model is None:
+        model, _route_source = resolve_task_model("structured")
+    return get_llm_provider(ctx.provider), model
 
 
 async def acomplete_structured(
@@ -134,34 +141,36 @@ async def acomplete_structured(
     last_raw: str | None = None
     attempts_done = 0
 
-    for attempt in range(max_attempts):
-        raw = await provider.complete(working, model=model)
-        attempts_done = attempt + 1
-        last_raw = raw
-        outcome = parse_only(
-            raw,
-            schema=schema,
-            ensure_keys=ensure_keys,
-            validate=validate,
-        )
-        if outcome.ok and outcome.data is not None:
-            return outcome.data
+    # D4：usage 落表 task_type=structured；外层已声明（如 extract 档）时不覆盖
+    with ensure_task_type("structured"):
+        for attempt in range(max_attempts):
+            raw = await provider.complete(working, model=model)
+            attempts_done = attempt + 1
+            last_raw = raw
+            outcome = parse_only(
+                raw,
+                schema=schema,
+                ensure_keys=ensure_keys,
+                validate=validate,
+            )
+            if outcome.ok and outcome.data is not None:
+                return outcome.data
 
-        last_error = outcome.error or "validation failed"
+            last_error = outcome.error or "validation failed"
 
-        # 敏感规则：不把隐藏规则 / reason 写入 correction，直接失败
-        if no_retry:
-            break
+            # 敏感规则：不把隐藏规则 / reason 写入 correction，直接失败
+            if no_retry:
+                break
 
-        # 预算内：注入 correction，进入下一次完整重生成
-        if attempt + 1 >= max_attempts:
-            break
-        correction = _build_correction_user_content(last_error)
-        working = [
-            *working,
-            LlmMessage(role="assistant", content=raw),
-            LlmMessage(role="user", content=correction),
-        ]
+            # 预算内：注入 correction，进入下一次完整重生成
+            if attempt + 1 >= max_attempts:
+                break
+            correction = _build_correction_user_content(last_error)
+            working = [
+                *working,
+                LlmMessage(role="assistant", content=raw),
+                LlmMessage(role="user", content=correction),
+            ]
 
     failure: StructuredFailure[T] = StructuredFailure(
         error=last_error,

@@ -21,6 +21,27 @@
 | `langfuse-sdk-v4-migration` | [`langfuse-sdk-v4-migration/`](./langfuse-sdk-v4-migration/) | draft · DEF-001 挂起 | Langfuse SDK v4 迁移（2026-09-11 归位） |
 | `qdrant-migration` | [`qdrant-migration/`](./qdrant-migration/) | accepted · 已实施 | Qdrant 迁移（2026-09-11 归位） |
 | `rag-reranker-p0` | [`rag-reranker-p0/`](./rag-reranker-p0/) | signed · 已实施 | RAG Reranker P0（2026-09-11 归位） |
+| `llm-layer-hardening` | [`llm-layer-hardening/`](./llm-layer-hardening/) | **signed · 已实施**（2026-09-21 · PR #148 已合 master · 40 核验 24/24 PASS） | L5 模型层硬化：重试退避 / provider 熔断 / 分档路由 / `ops_llm_usage` 账本 |
+| `memory-embedding-backfill` | [`memory-embedding-backfill/`](./memory-embedding-backfill/) | **signed · 已实施**（2026-09-21 · PR #151 已合 master · 40 核验 21/21 PASS） | 存量行 embedding 回填 CLI（幂等断点续跑 · 限速报告）+ span 单测 |
+| `continuity-dedup` | [`continuity-dedup/`](./continuity-dedup/) | **signed · 已实施**（2026-09-22 · PR #153 已合 master · 40 核验 17/17 PASS） | M7 · continuity 重复实现合并（硬删除 + 测试收敛 · 真源零 diff） |
+| `prompt-asset-roadmap` | [`prompt-asset-roadmap/`](./prompt-asset-roadmap/) | **signed · 阶段一已实施**（2026-09-22 · P1 PR #155 已合 master · 40 核验 20/20 PASS；阶段二「看得见」/阶段三「分得开」待后续波次） | Prompt 资产化三阶段（改得动→看得见→分得开 · 顺序不可跳） |
+| `memory-preference-profile` | [`memory-preference-profile/`](./memory-preference-profile/) | **signed · 已实施**（2026-09-22 · PR #157 已合 master · 40 核验 27/27 PASS） | 画像记忆 kind=preference（首期显式-only · 双节注入 · revoke_by_key · 幻觉红线金样） |
+| `session-summary-fallback` | [`session-summary-fallback/`](./session-summary-fallback/) | **signed · 已实施**（2026-09-22 · PR #159 已合 master · 40 核验 26/26 PASS · 默认关） | 会话真摘要 M5（懒生成+缓存 · 可回退原文铁律 · 保真金样） |
+| `security-hardening` | [`security-hardening/`](./security-hardening/) | **signed · W1 已实施**（2026-09-22 · W1 PR #161 已合 master · 40 核验 25/25 PASS；W2 检测 / W3 PII 脱敏 / W4 真沙箱待后续波次） | L7 安全与合规硬化（注入/PII/脱敏/真沙箱 · 顺序钉死：隔离→检测） |
+| `memory-compliance-delete` | [`memory-compliance-delete/`](./memory-compliance-delete/) | **signed · 已实施**（2026-09-22 · PR #163 已合 master · 40 核验 22/22 PASS · 默认干跑+双闸门） | 记忆合规物理删除权 M4（purge_by_user · 两通路零残留 · 审计记动作不记内容） |
+
+---
+
+## 占位 SPEC（待启动 · 含接续指引）
+
+> **用法**：按「建议序」选下一项 → 新会话声明「接续 <slug>」→ 10-spec 补全（R0–R5/方案对比/failure_paths/验收断言化）→ 人签 → 标准五棒流。每个占位 SPEC 内含范围草案 + 关键锚点（file 指引）+ 验收方向 + 接续指引。
+
+| 建议序 | slug | 一句话 | 类别 |
+|---|---|---|---|
+| （进行中） | `memory-golden-eval` | M1 · 抽取精度金样 + 调权（P1 开闸前置） | 放大器 · 记忆轨 |
+| 2 | [`multi-replica-verify/`](./multi-replica-verify/) | C3 · L0 多副本验证（有真实流量前必答） | 成熟度标志 |
+
+> 排序原则（手册 §3.4/B.1）：缺了会不会造成**不可逆或静默**的错 → 承重墙缺角优先；放大器按迭代瓶颈排；成熟度标志等量级。
 
 ---
 

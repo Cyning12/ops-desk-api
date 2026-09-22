@@ -12,6 +12,8 @@ from app.llm.schema import LlmChunk, LlmMessage
 class SiliconFlowProvider(BaseProviderImpl):
     """SiliconFlow API provider (OpenAI-compatible)."""
 
+    PROVIDER_NAME = "siliconflow"
+
     def __init__(self, base_url: str | None = None, api_key: str | None = None) -> None:
         self.base_url = base_url or settings.siliconflow_base_url
         self.api_key = api_key or settings.siliconflow_api_key

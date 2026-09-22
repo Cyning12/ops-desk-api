@@ -12,11 +12,17 @@ from app.config import settings
 from app.db.models import OpsIssue
 from app.db.session import AsyncSessionLocal
 from app.llm.factory import get_llm_provider
+from app.llm.model_catalog import resolve_task_model
 from app.llm.schema import LlmMessage, LlmProviderError, LlmUsage
+from app.llm.usage import use_run_context
 from app.ops.chat.state import ChatState
 from app.ops.rag.grader import REFUSAL_TEXT
 from app.ops.rag.prefix import strip_doc_context_prefix
-from app.ops.tracing import trace_span, update_current_generation_usage
+from app.ops.tracing import (
+    trace_span,
+    update_current_generation_usage,
+    update_current_span_metadata,
+)
 
 # 与 _build_messages 注入的「资料」块 + 契约 4c 引用/拒答对齐
 _SYSTEM_PROMPT = (
@@ -185,7 +191,10 @@ def _build_messages(state: ChatState) -> list[LlmMessage]:
 async def answer_node(state: ChatState) -> dict:
     """调用 LLM 流式生成最终回答；token/fallback/error 均写入 events。"""
     provider = get_llm_provider()
-    model = state.get("model") or settings.ops_llm_model
+    # 分层路由（D3）：显式 model > OPS_LLM_TIER_ANSWER_MODEL > 档默认 > 全局默认；
+    # 未分档/未配置档时与现网逐字节一致（state.model or settings.ops_llm_model）
+    tier_model, route_source = resolve_task_model("answer", state.get("model"))
+    model = tier_model or settings.ops_llm_model
     messages = _build_messages(state)
 
     events: list[dict] = [
@@ -201,31 +210,39 @@ async def answer_node(state: ChatState) -> dict:
         # 手动 generation 观测：自研 provider 不走 LangChain LLM 类，
         # CallbackHandler 抓不到这次调用，需显式包裹（Langfuse 技能基线：LLM 调用必须是 generation）
         with trace_span("answer_llm", run_type="llm", model=model):
-            async for chunk in provider.complete_stream(messages, model=model):
-                # include_usage 末帧：上报 token 用量到 generation（观测基线）
-                if chunk.meta and chunk.meta.get("usage"):
-                    parsed = LlmUsage.from_provider_usage(chunk.meta["usage"])
-                    if parsed is not None:
-                        update_current_generation_usage(parsed)
-                    continue
-                # Provider 可能在流中插入 fallback 元事件，与正文 chunk 分流
-                if chunk.meta and chunk.meta.get("event_type") == "model.fallback":
-                    events.append(
-                        {
-                            "event_type": "model.fallback",
-                            "agent_role": "answer",
-                            "payload": chunk.meta,
-                        }
-                    )
-                else:
-                    answer_parts.append(chunk.content)
-                    events.append(
-                        {
-                            "event_type": "answer",
-                            "agent_role": "answer",
-                            "payload": {"content": chunk.content},
-                        }
-                    )
+            # 路由决策（task → model/档来源）写 span metadata；tracing 关时 no-op
+            update_current_span_metadata(
+                {"llm_route": {"task_type": "answer", "model": model, "source": route_source}}
+            )
+            # D4：usage 落表上下文（run_id/surface/task_type 经 ContextVar 传给 provider 钩点）
+            with use_run_context(
+                run_id=state.get("run_id"), surface="chat", task_type="answer"
+            ):
+                async for chunk in provider.complete_stream(messages, model=model):
+                    # include_usage 末帧：上报 token 用量到 generation（观测基线）
+                    if chunk.meta and chunk.meta.get("usage"):
+                        parsed = LlmUsage.from_provider_usage(chunk.meta["usage"])
+                        if parsed is not None:
+                            update_current_generation_usage(parsed)
+                        continue
+                    # Provider 可能在流中插入 fallback 元事件，与正文 chunk 分流
+                    if chunk.meta and chunk.meta.get("event_type") == "model.fallback":
+                        events.append(
+                            {
+                                "event_type": "model.fallback",
+                                "agent_role": "answer",
+                                "payload": chunk.meta,
+                            }
+                        )
+                    else:
+                        answer_parts.append(chunk.content)
+                        events.append(
+                            {
+                                "event_type": "answer",
+                                "agent_role": "answer",
+                                "payload": {"content": chunk.content},
+                            }
+                        )
     except Exception as exc:
         retryable = isinstance(exc, LlmProviderError) and exc.retryable
         events.append(

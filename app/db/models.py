@@ -344,6 +344,40 @@ class OpsLgRagRunEvent(Base):
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
 
 
+class OpsSessionSummary(Base):
+    """会话历史真摘要缓存（session-summary-fallback D2 · C1 独立表）。
+
+    与原文 SoT（ops_lg_rag_turns / ops_runs）**物理分表**——摘要绝不写回
+    turns 表（防摘要的摘要失真复利 + 原文可查对账）。
+    key 铁律：（thread_id, chunk_hash）唯一；chunk_hash 必含
+    内容哈希 + prompt_version + model——窗口滑动内容变 → hash 变 →
+    自然 miss，**无主动失效逻辑**。
+    """
+
+    __tablename__ = "ops_session_summaries"
+    __table_args__ = (
+        UniqueConstraint(
+            "thread_id", "chunk_hash", name="uq_ops_session_summaries_thread_chunk"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    thread_id: Mapped[str] = mapped_column(
+        String(255), ForeignKey("ops_lg_rag_threads.id", ondelete="CASCADE"), nullable=False
+    )
+    #: sha256(prompt_version + model + chunk turns canonical JSON)
+    chunk_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    prompt_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    model: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    turn_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    #: 恒 "llm"（预留未来 heuristic 来源）
+    source: Mapped[str] = mapped_column(String(16), nullable=False, default="llm")
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+
+
 class OpsCapabilityReceipt(Base):
     """副作用回执（W5）：**副作用以收据为真**。
 
@@ -467,7 +501,11 @@ class OpsMemoryFact(Base):
             "status IN ('active', 'superseded', 'revoked', 'expired')",
             name="ck_ops_memory_facts_status",
         ),
-        CheckConstraint("kind = 'fact'", name="ck_ops_memory_facts_kind"),
+        # memory-preference-profile：放开 preference（首期显式-only · 迁移
+        # 20260922_memory_kind_preference 同步放宽落库 CHECK）
+        CheckConstraint(
+            "kind IN ('fact', 'preference')", name="ck_ops_memory_facts_kind"
+        ),
         # 召回主谓词：(tenant, user, key, status)
         Index(
             "idx_ops_memory_facts_recall",
@@ -497,7 +535,8 @@ class OpsMemoryFact(Base):
     key: Mapped[str] = mapped_column(String, nullable=False)
     #: 事实值（jsonb；闸限制为标量，见 gate.should_write）
     value: Mapped[object] = mapped_column(JSONB, nullable=False)
-    #: P0 只接受 'fact'；preference 属画像（P1+）
+    #: 'fact' 客观事实 | 'preference' 用户显式偏好（首期显式-only，见
+    #: app/ops/memory/gate.py 双向 key 域绑定 pref.*）
     kind: Mapped[str] = mapped_column(String, nullable=False, default="fact")
     #: 溯源：产生该事实的 run（可空 = 人工/系统导入）
     source_run_id: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -521,3 +560,43 @@ class OpsMemoryFact(Base):
     )
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
     updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
+
+
+class OpsLlmUsage(Base):
+    """LLM usage 账本（llm-layer-hardening D4）：**这个 run 花了多少 token 可查**。
+
+    纪律：
+    - 只存 token 计数与模型名，**不存** prompt/answer 正文（正文 I/O 仍在
+      Langfuse 侧、可关、截断）；
+    - run_id 双口径并存（chat=ops_runs.id UUID / lg_rag=uuid4().hex）→
+      text + surface 区分，**不设 FK**；无上下文调用点 run_id=NULL ·
+      surface=background；
+    - 无 usage 末帧不落行（**不写 0 假账**）；cost_est 由查询/导出侧
+      × price_table_v1.yaml（占位价 · E5 公式），表内不存金额。
+    """
+
+    __tablename__ = "ops_llm_usage"
+    __table_args__ = (
+        # 按 run 聚合查询（这个 run 的 answer+grader+extract 合计）
+        Index("idx_ops_llm_usage_run_id", "run_id"),
+        # 按入口面 + 时间扫描（成本盘点）
+        Index("idx_ops_llm_usage_surface_created", "surface", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    #: chat=ops_runs.id（UUID 字符串）/ lg_rag=uuid4().hex；无上下文 → NULL
+    run_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    #: 入口面：chat / lg_rag / background
+    surface: Mapped[str] = mapped_column(String, nullable=False, default="background")
+    #: 任务类型档：answer / grader / extract / structured；未分档 → NULL
+    task_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    provider: Mapped[str] = mapped_column(String, nullable=False, default="")
+    model: Mapped[str] = mapped_column(String, nullable=False, default="")
+    prompt_tokens: Mapped[int] = mapped_column(Integer, nullable=False)
+    completion_tokens: Mapped[int] = mapped_column(Integer, nullable=False)
+    cached_input_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    #: 传输重试后的实际尝试次数（含首次）；>1 说明发生过退避重试
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)

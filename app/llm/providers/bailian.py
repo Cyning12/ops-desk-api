@@ -12,6 +12,12 @@ from app.llm.schema import LlmChunk, LlmMessage, LlmProviderError
 class BailianProvider(BaseProviderImpl):
     """Alibaba Bailian / DashScope provider (OpenAI-compatible)."""
 
+    PROVIDER_NAME = "bailian"
+
+    #: 边界包装关闭：fallback 链内**逐候选**走 _resilient_stream（先同模型
+    #: 退避重试、再换模型）；链语义 / 顺序 / test_only 过滤不变。
+    _boundary_resilience = False
+
     def __init__(self, base_url: str | None = None, api_key: str | None = None) -> None:
         self.base_url = base_url or settings.bailian_base_url
         self.api_key = api_key or settings.bailian_api_key
@@ -44,11 +50,16 @@ class BailianProvider(BaseProviderImpl):
                     },
                 )
             try:
-                async for chunk in self._stream_openai_compatible(
-                    base_url=self.base_url,
-                    api_key=api_key,
+                # 链内每个候选走同一韧性层：先同模型退避重试（首 content
+                # chunk 前限定），耗尽再换下一候选（上面已发 model.fallback）
+                async for chunk in self._resilient_stream(
+                    lambda c=candidate: self._stream_openai_compatible(
+                        base_url=self.base_url,
+                        api_key=api_key,
+                        model=c.id,
+                        messages=messages,
+                    ),
                     model=candidate.id,
-                    messages=messages,
                 ):
                     yield chunk
                 return

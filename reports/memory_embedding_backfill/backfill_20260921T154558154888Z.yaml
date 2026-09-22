@@ -1,0 +1,15 @@
+status: pass
+dry_run: true
+scanned: 0
+embedded: 0
+skipped: 0
+failed: 0
+failed_ids: []
+failed_ids_truncated: false
+embedder_name: BAAI/bge-m3
+batch_size: 32
+sleep_ms: 200
+remaining_null_active: null
+interrupted: false
+elapsed_s: 0.044
+recorded_at: '2026-09-21T15:45:58.154772+00:00'

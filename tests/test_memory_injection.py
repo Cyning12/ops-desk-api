@@ -8,6 +8,8 @@ from langchain_core.messages import BaseMessage, SystemMessage
 
 from app.ops.lg_rag.continuity import (
     MEMORY_FACTS_HEADER,
+    MEMORY_PREFERENCES_GUIDE,
+    MEMORY_PREFERENCES_HEADER,
     assemble_graph_messages,
     assemble_graph_messages_with_memory,
     inject_memory_facts_block,
@@ -165,3 +167,222 @@ async def test_recall_failure_degrades_to_no_injection(
         )
     assert _shape(out) == _shape(baseline)
     assert "degrade to no injection" in caplog.text
+
+# ---------------- span `memory_facts_injected` 专门单测（memory-embedding-backfill D3） ----------------
+# capture-list 模式对齐 tests/test_llm_routing.py:176；发射点 continuity.py:237-243。
+
+
+def _capture_span(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
+    """monkeypatch continuity 命名空间内的 update_current_span_metadata，返回捕获列表。"""
+    from app.ops.lg_rag import continuity
+
+    captured: list[dict] = []
+    monkeypatch.setattr(
+        continuity, "update_current_span_metadata", lambda m: captured.append(m)
+    )
+    return captured
+
+
+def _patch_recall(monkeypatch: pytest.MonkeyPatch, *, facts=None, error=None):
+    """patch 装配链路实际调用的 memory service 召回（默认确定性通路）。"""
+    from unittest.mock import AsyncMock
+
+    mock = (
+        AsyncMock(side_effect=error)
+        if error is not None
+        else AsyncMock(return_value=facts or [])
+    )
+    monkeypatch.setattr("app.ops.memory.service.recall_active", mock)
+    return mock
+
+
+async def test_span_memory_facts_injected_count(monkeypatch: pytest.MonkeyPatch):
+    """有 facts：span 收到 {"memory_facts_injected": N} 且 N == 实际注入条数。"""
+    monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    captured = _capture_span(monkeypatch)
+    facts = [
+        {"key": "project.primary_repo", "value": "cyning/ops-desk"},
+        {"key": "user.display_tz", "value": "Asia/Shanghai"},
+    ]
+    _patch_recall(monkeypatch, facts=facts)
+
+    out = await assemble_graph_messages_with_memory(
+        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    assert captured == [{"memory_facts_injected": 2}]
+    # N 与实际注入条数一致（注入块真含两条）
+    blocks = [str(m.content) for m in out if isinstance(m, SystemMessage)]
+    assert any("project.primary_repo=cyning/ops-desk" in b for b in blocks)
+    assert any("user.display_tz=Asia/Shanghai" in b for b in blocks)
+
+
+async def test_span_memory_facts_injected_zero(monkeypatch: pytest.MonkeyPatch):
+    """零 facts：span 收到 {"memory_facts_injected": 0}（continuity.py:240 分支）。"""
+    monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    captured = _capture_span(monkeypatch)
+    _patch_recall(monkeypatch, facts=[])
+
+    out = await assemble_graph_messages_with_memory(
+        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    assert captured == [{"memory_facts_injected": 0}]
+    assert not any(
+        isinstance(m, SystemMessage) and str(m.content).startswith(MEMORY_FACTS_HEADER)
+        for m in out
+    )
+
+
+async def test_span_memory_degraded_on_recall_failure(monkeypatch: pytest.MonkeyPatch):
+    """召回故障：span 收到 {"memory_degraded": True} 且全程无 memory_facts_injected。"""
+    monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    captured = _capture_span(monkeypatch)
+    _patch_recall(monkeypatch, error=RuntimeError("db down"))
+
+    out = await assemble_graph_messages_with_memory(
+        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    assert captured == [{"memory_degraded": True}]
+    assert all("memory_facts_injected" not in m for m in captured)
+    baseline = assemble_graph_messages("q", _fixture_turns())
+    assert _shape(out) == _shape(baseline)
+
+
+async def test_span_disabled_zero_calls(monkeypatch: pytest.MonkeyPatch):
+    """开关关闭：零 span 调用（与既有逐字节一致断言并存）。"""
+    monkeypatch.delenv("MEMORY_FACTS_ENABLED", raising=False)
+    captured = _capture_span(monkeypatch)
+
+    history = _fixture_turns()
+    baseline = assemble_graph_messages("q", history)
+    out = await assemble_graph_messages_with_memory(
+        "q", history, tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    assert captured == []
+    assert _shape(out) == _shape(baseline)
+
+# ---------------- memory-preference-profile · 分节渲染（方案 B1 单块双节） ----------------
+
+
+def test_render_fact_only_byte_identical_to_legacy():
+    """fact 节与现网**逐字节一致**（对拍 · 一次性钉串）：显式 kind=fact 与
+    缺省 kind（旧 dict 语义）渲染结果完全相同。"""
+    facts = [
+        {"key": "project.primary_repo", "value": "cyning/ops-desk"},
+        {"key": "user.retry_limit", "value": 3},
+        {"key": "user.multiline", "value": "a\nb"},
+    ]
+    expected = (
+        "[已知事实]\n"
+        "project.primary_repo=cyning/ops-desk\n"
+        "user.retry_limit=3\n"
+        "user.multiline=a\\nb"
+    )
+    assert render_memory_facts_block(facts) == expected
+    with_kind = [dict(f, kind="fact") for f in facts]
+    assert render_memory_facts_block(with_kind) == expected  # 显式 fact 同字节
+
+
+def test_render_sections_no_cross_contamination():
+    """分节互不串：fact 行进 [已知事实] 节、preference 行进 [用户偏好] 节。"""
+    facts = [
+        {"key": "project.primary_repo", "value": "cyning/ops-desk"},
+        {"key": "pref.answer_lang", "value": "中文", "kind": "preference"},
+    ]
+    block = render_memory_facts_block(facts)
+    lines = block.split("\n")
+    pref_idx = lines.index(MEMORY_PREFERENCES_HEADER)
+    fact_idx = lines.index(MEMORY_FACTS_HEADER)
+    # 事实节在偏好节之前；各行归属正确
+    assert fact_idx < pref_idx
+    fact_section = lines[fact_idx:pref_idx]
+    pref_section = lines[pref_idx:]
+    assert "project.primary_repo=cyning/ops-desk" in fact_section
+    assert "pref.answer_lang=中文" in pref_section
+    assert not any(line.startswith("pref.") for line in fact_section)  # 偏好不污染事实节
+    assert not any(line.startswith("project.") for line in pref_section)
+
+
+def test_render_no_preference_section_physically_absent():
+    """红线结构断言：无 preference → 偏好节**物理不存在**（非空节）。"""
+    facts = [{"key": "project.primary_repo", "value": "cyning/ops-desk"}]
+    block = render_memory_facts_block(facts)
+    assert MEMORY_PREFERENCES_HEADER not in block
+    assert MEMORY_PREFERENCES_GUIDE not in block
+
+
+def test_render_preference_only_no_fact_section():
+    """对称结构断言：无 fact → 事实节物理不存在，偏好节独立成块。"""
+    facts = [{"key": "pref.answer_lang", "value": "中文", "kind": "preference"}]
+    block = render_memory_facts_block(facts)
+    assert MEMORY_FACTS_HEADER not in block
+    assert block.startswith(MEMORY_PREFERENCES_HEADER)
+
+
+def test_render_preference_section_anchors():
+    """锚点断言（非全文快照）：偏好节含「用户偏好」节名与「非客观事实」级
+    锚点 + 「无偏好不要假设/编造」语义；改文案不挂，改变量语义必挂。"""
+    facts = [{"key": "pref.answer_lang", "value": "中文", "kind": "preference"}]
+    block = render_memory_facts_block(facts)
+    assert "[用户偏好]" in block
+    assert "非客观事实" in block
+    assert "无偏好" in block and ("假设" in block or "编造" in block)
+
+
+async def test_span_dual_counts_mixed_kinds(monkeypatch: pytest.MonkeyPatch):
+    """span 双计数：facts/preferences 分别记；注入仍是**单条** SystemMessage 双节。"""
+    monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    captured = _capture_span(monkeypatch)
+    facts = [
+        {"key": "project.primary_repo", "value": "cyning/ops-desk"},
+        {"key": "pref.answer_lang", "value": "中文", "kind": "preference"},
+    ]
+    _patch_recall(monkeypatch, facts=facts)
+
+    out = await assemble_graph_messages_with_memory(
+        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    assert captured == [{"memory_facts_injected": 1, "memory_preferences_injected": 1}]
+    memory_msgs = [
+        m
+        for m in out
+        if isinstance(m, SystemMessage) and MEMORY_FACTS_HEADER in str(m.content)
+    ]
+    assert len(memory_msgs) == 1  # 单条 SystemMessage
+    content = str(memory_msgs[0].content)
+    assert MEMORY_PREFERENCES_HEADER in content  # 双节同块
+
+
+async def test_span_fact_only_no_preferences_key(monkeypatch: pytest.MonkeyPatch):
+    """fact-only：span 不带 memory_preferences_injected key（与 P0/P1 观测面一致）。"""
+    monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    captured = _capture_span(monkeypatch)
+    _patch_recall(
+        monkeypatch, facts=[{"key": "project.primary_repo", "value": "cyning/ops-desk"}]
+    )
+    await assemble_graph_messages_with_memory(
+        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    assert captured == [{"memory_facts_injected": 1}]
+
+
+async def test_span_preference_only_facts_zero(monkeypatch: pytest.MonkeyPatch):
+    """preference-only：facts=0 / preferences=1 并列计数；注入块无事实节。"""
+    monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    captured = _capture_span(monkeypatch)
+    _patch_recall(
+        monkeypatch,
+        facts=[{"key": "pref.answer_lang", "value": "中文", "kind": "preference"}],
+    )
+    out = await assemble_graph_messages_with_memory(
+        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    assert captured == [{"memory_facts_injected": 0, "memory_preferences_injected": 1}]
+    memory_msgs = [
+        str(m.content)
+        for m in out
+        if isinstance(m, SystemMessage) and MEMORY_PREFERENCES_HEADER in str(m.content)
+    ]
+    assert len(memory_msgs) == 1
+    assert MEMORY_FACTS_HEADER not in memory_msgs[0]
+
+

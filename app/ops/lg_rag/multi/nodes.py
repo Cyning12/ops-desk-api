@@ -61,6 +61,13 @@ from app.ops.lg_rag.state import (
     unresolved_suffix_ids,
 )
 from app.ops.prompts import render
+from app.ops.prompts.slots import (
+    SlotIsolationError,
+    assert_slots_declared,
+    declare_slots,
+    security_input_isolation_enabled,
+    wrap_slot,
+)
 from app.ops.structured_output import parse_only
 from app.ops.tenant_context import current_tenant_or_default
 from app.ops.tracing import score_current_trace, trace_span, tracing_enabled
@@ -80,26 +87,6 @@ _TYPE_TO_NODE = {
 # Supervisor planner filter：与 Builder **共用同一份基线**（见 capability.baseline），
 # 再 ∩ state.allowed_capability_ids（S1）。
 _SUPERVISOR_CAP_FILTER = baseline_filter(node_role="supervisor")
-
-_EXTRACT_SYSTEM = (
-    "你是信息抽取器。从用户给出的文本中抽取结构化信息，只输出 JSON：\n"
-    '{"dates": ["..."], "versions": ["..."], "people": ["..."]}\n'
-    "- dates：出现的日期/时间点（原文表述）；\n"
-    "- versions：出现的版本号（如 v1.2.3、2.0）；\n"
-    "- people：出现的人名/负责人。\n"
-    "没有的类别给空数组。只输出一个 JSON 对象，不要输出其他文字。"
-)
-
-_AGGREGATOR_SYSTEM = (
-    "你是 Ops Desk 运维知识库助手的答案综合器（Aggregator）。"
-    "用户提出了一个复合问题，各子任务的执行结果以 JSON 形式给出"
-    "（含 type/input/output 或 error）。请综合全部子任务结果，"
-    "输出结构化 markdown 答案：\n"
-    "1. 按子任务分节，每节标注来源"
-    "（rag 检索 / 信息抽取 / 工具查询，失败子任务如实说明）；\n"
-    "2. 末尾给一节「综合结论」，串联各子任务结果回答原始问题。\n"
-    "不要编造子任务结果中没有的事实。"
-)
 
 # Mock / lookup 已迁入 Capability Gateway（defaults + lookups）；
 # tool_exec_node 主路径 await ainvoke（P-13，禁止在 async 节点同步打 PG）。
@@ -1038,7 +1025,7 @@ async def info_extract_node(state: LgRagState) -> dict:
             provider = get_llm_provider(_ROUTER_PROVIDER)
             raw = await provider.complete(
                 [
-                    LlmMessage(role="system", content=_EXTRACT_SYSTEM),
+                    LlmMessage(role="system", content=render("lg_rag.extract.system")),
                     LlmMessage(role="user", content=result["input"]),
                 ],
                 model=_ROUTER_MODEL,
@@ -1111,7 +1098,26 @@ async def tool_exec_node(state: LgRagState) -> dict:
             )
             result["error"] = cap.error or f"未知工具: {tool_name or '(未指定)'}"
         else:
-            result["output"] = cap.output
+            output = cap.output
+            # security-input-isolation D2 · 工具回执面：on 态自由文本回执在
+            # 回注 subtask_results 前走 wrap_slot("tool_result", ...)（边界标记
+            # + 不可信声明 + 伪造标记转义）；非 str 结构化 output 保持原结构
+            # （下游 consumes 绑定按字段取数，改成文本会破坏编排语义——非范围）。
+            # 包装机制自身故障 → 本子任务降级 off 态原文 + input_isolation_degraded
+            # 标记（跟数据走，aggregator 见标记整单退 off 态装配）。
+            if security_input_isolation_enabled() and isinstance(output, str):
+                try:
+                    output = str(wrap_slot("tool_result", output))
+                except Exception:
+                    logger.exception(
+                        "input isolation wrap failed tool=%r id=%s; degrade to raw output",
+                        tool_name,
+                        result["id"],
+                    )
+                    _record_span_metadata({"input_isolation_degraded": True})
+                    result["input_isolation_degraded"] = True
+                    output = cap.output
+            result["output"] = output
             # ★ 降级必须让**模型**看得见。meta 里的 degraded 标记模型看不到
             # （它只看子任务输出），所以：
             #   1) Gateway 已把 _degraded 提示写进 output（跟着数据走）；
@@ -1492,6 +1498,71 @@ def route_after_react(state: LgRagState) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _aggregator_plain_messages(query: str, payload: str) -> list[LlmMessage]:
+    """off 态装配（现网形态 · 逐字节对拍基准）。"""
+    return [
+        LlmMessage(role="system", content=render("lg_rag.aggregator.system")),
+        LlmMessage(
+            role="user",
+            content=f"原始问题：{query}\n子任务结果：{payload}",
+        ),
+    ]
+
+
+def _aggregator_isolated_messages(
+    query: str, results: list[dict], payload: str
+) -> list[LlmMessage]:
+    """on 态装配（security-input-isolation D2 · 工具回执面收口进槽位）。
+
+    - 原始问题走 `user_query` 槽；工具回执段（tool_exec 已逐条
+      `wrap_slot("tool_result", ...)`）在 payload 内自带边界标记；
+      指令资产归 `system_instruction`。
+    - 装配校验 `assert_slots_declared` 在发往 LLM 前执行：声明了
+      `tool_result` 而 payload 无边界标记（绕过 wrap_slot 直拼 / 未声明段）
+      → :class:`SlotIsolationError` 显式炸，**请求不发出**（下游零请求）
+      + span `input_isolation_rejected`。
+    - 机制故障（含上游 tool_exec 已降级的 `input_isolation_degraded` 结果）
+      → 整单退 off 态装配 + span `input_isolation_degraded`——机制事故退旧
+      路径与内容违例不发出**语义分立**。
+    """
+    tool_outputs = [
+        r
+        for r in results
+        if isinstance(r, dict)
+        and str(r.get("type") or "") == "tool"
+        and r.get("output") is not None
+    ]
+    if any(r.get("input_isolation_degraded") for r in tool_outputs):
+        logger.warning("input isolation degraded upstream; aggregator keeps off-state assembly")
+        return _aggregator_plain_messages(query, payload)
+    try:
+        system_msg = LlmMessage(
+            role="system",
+            content=wrap_slot("system_instruction", render("lg_rag.aggregator.system")),
+        )
+        user_msg = LlmMessage(
+            role="user",
+            content=f"原始问题：{wrap_slot('user_query', query)}\n子任务结果：{payload}",
+        )
+        declared = ["user_query"]
+        if tool_outputs:
+            declared.append("tool_result")
+        declare_slots(user_msg, declared)
+        assert_slots_declared([system_msg, user_msg])
+        return [system_msg, user_msg]
+    except SlotIsolationError:
+        _record_span_metadata({"input_isolation_rejected": True})
+        logger.warning(
+            "aggregator input isolation rejected undeclared content; request not sent",
+            exc_info=True,
+        )
+        raise
+    except Exception:
+        logger.exception("aggregator input isolation failed; degrade to off-state assembly")
+        _record_span_metadata({"input_isolation_degraded": True})
+        return _aggregator_plain_messages(query, payload)
+
+
 async def aggregator_node(state: LgRagState) -> dict:
     """LLM 综合全部 subtask_results → 分节结构化 markdown，追加最终 AIMessage。
 
@@ -1504,17 +1575,15 @@ async def aggregator_node(state: LgRagState) -> dict:
     payload = json.dumps(results, ensure_ascii=False, default=str)
     provider = get_llm_provider(_ROUTER_PROVIDER)
     with trace_span("aggregator", run_type="chain"):
+        if security_input_isolation_enabled():
+            messages = _aggregator_isolated_messages(query, results, payload)
+        else:
+            messages = _aggregator_plain_messages(query, payload)
         # T5：SSE 路径经 token sink 逐 chunk 上屏（answer delta 帧）；
         # 无 sink / 流式异常时桥内降级整段 complete（T2 行为）+ 日志。
         text = await complete_answer_streaming(
             provider,
-            [
-                LlmMessage(role="system", content=_AGGREGATOR_SYSTEM),
-                LlmMessage(
-                    role="user",
-                    content=f"原始问题：{query}\n子任务结果：{payload}",
-                ),
-            ],
+            messages,
             model=_ROUTER_MODEL,
             node="aggregator",
         )

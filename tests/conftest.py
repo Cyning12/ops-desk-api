@@ -172,6 +172,21 @@ async def _create_test_schema():
                     "ADD COLUMN IF NOT EXISTS embedding vector(1024)"
                 )
             )
+            # memory-preference-profile：存量测试库 CHECK 仍是 kind='fact'，
+            # create_all 不改既有约束；对齐 models.py 放宽（同 D5 迁移语义）
+            await conn.execute(
+                text(
+                    "ALTER TABLE ops_memory_facts "
+                    "DROP CONSTRAINT IF EXISTS ck_ops_memory_facts_kind"
+                )
+            )
+            await conn.execute(
+                text(
+                    "ALTER TABLE ops_memory_facts "
+                    "ADD CONSTRAINT ck_ops_memory_facts_kind "
+                    "CHECK (kind IN ('fact', 'preference'))"
+                )
+            )
         await engine.dispose()
     yield
 
@@ -204,6 +219,23 @@ def _reset_capability_budget():
     yield
     budget_reset()
     circuit_reset()
+
+
+@pytest.fixture(autouse=True)
+def _reset_llm_circuit():
+    """每个用例前清空 LLM provider 熔断器（llm-layer-hardening 清单 #10）。
+
+    provider 级 breaker 是**进程内单例**（与 capability 配额/熔断同源），
+    上一用例 trip 的 breaker 会污染下一用例——症状是「莫名 circuit_open」，
+    实际是状态泄漏。对齐上面 _reset_capability_budget 的先例。
+    """
+    from app.llm import circuit as llm_circuit
+    from app.llm import usage as llm_usage
+
+    llm_circuit.reset()
+    llm_usage.reset_persist_failure_count()
+    yield
+    llm_circuit.reset()
 
 
 @pytest.fixture

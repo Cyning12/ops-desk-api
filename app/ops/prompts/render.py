@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from string import Template
 from typing import Any
 
 from app.ops.prompts.templates import TEMPLATES
@@ -42,7 +43,7 @@ def render(
     tmpl = get_template(template_id)
     vars_map = dict(variables or {})
     try:
-        text = tmpl.body.format(**vars_map)
+        text = Template(tmpl.body).substitute(vars_map)
     except KeyError as exc:
         raise KeyError(f"模板 {template_id} 缺少变量: {exc}") from exc
     if slots:

@@ -24,6 +24,7 @@ from app.ops.lc_evidence_chain.chain import ainvoke_evidence_answer
 from app.ops.lg_rag.answer_stream import complete_answer_streaming
 from app.ops.lg_rag.schemas import RouteDecision
 from app.ops.lg_rag.state import LgRagState
+from app.ops.prompts import render
 from app.ops.rag.grader import REFUSAL_TEXT
 from app.ops.structured_output import parse_only
 from app.ops.tracing import trace_span, tracing_enabled
@@ -42,23 +43,6 @@ ROUTES = ("rag", "direct", "refuse")
 DEFAULT_ROUTE = "rag"  # fallback：宁检索勿错杀（DESIGN §4）
 
 _ISSUE_NO_RE = re.compile(r"#\d+")
-
-_ROUTER_SYSTEM = (
-    "你是 Ops Desk 运维知识库助手的意图分类器。把用户问题分为三类，只输出 JSON：\n"
-    '- {"route": "rag"}：与项目/运维/issue/PR/故障相关的技术问题，需要查知识库；\n'
-    '- {"route": "direct"}：与助手自身的闲聊、问候、身份/能力元问题，不需要查知识库；\n'
-    '- {"route": "refuse"}：明确要求泄密、违法、或与运维知识库完全无关且不应回答的内容。\n'
-    "注意：凡涉及产品/项目功能、用法、配置、故障的问题（包括「有没有某功能」"
-    "「怎么做到某事」），一律选 rag，不要选 direct。\n"
-    "只输出一个 JSON 对象，不要输出其他文字。"
-)
-
-_DIRECT_SYSTEM = (
-    "你是 Ops Desk 运维知识库助手。用户在进行闲聊或元问题对话。"
-    "用一两句话简短友好地回答，并自然地把话题引回运维知识库可以帮忙的方向。"
-    "不要编造项目事实；不知道就说不知道。"
-)
-
 
 def _last_user_text(messages: list[BaseMessage]) -> str:
     for m in reversed(messages):
@@ -97,7 +81,7 @@ async def _classify_route(query: str) -> tuple[str, str, bool]:
     provider = get_llm_provider(_ROUTER_PROVIDER)
     raw = await provider.complete(
         [
-            LlmMessage(role="system", content=_ROUTER_SYSTEM),
+            LlmMessage(role="system", content=render("lg_rag.router.system")),
             LlmMessage(role="user", content=query),
         ],
         model=_ROUTER_MODEL,
@@ -219,16 +203,6 @@ def route_by_quality(state: LgRagState) -> str:
     return "end"
 
 
-_REWRITE_SYSTEM = (
-    "你是检索查询改写器。用户的问题在运维知识库中没有检索到足够证据。"
-    "知识库为 GitHub issue/PR 文档（中英混排），全文包裹的长句检索效果差。"
-    "请把问题改写为**核心可检索关键词组合**："
-    "保留函数名 / 错误码 / 组件名 / issue 编号等精确词，去掉叙述性包裹，"
-    "可中英混合；复合问题保留各侧面的关键词。"
-    "只输出关键词组合（单行），不要输出完整句子，不要解释。"
-)
-
-
 async def rewrite_node(state: LgRagState) -> dict:
     """LLM 单查询改写（DESIGN §4）。
 
@@ -242,7 +216,7 @@ async def rewrite_node(state: LgRagState) -> dict:
         try:
             raw = await provider.complete(
                 [
-                    LlmMessage(role="system", content=_REWRITE_SYSTEM),
+                    LlmMessage(role="system", content=render("lg_rag.rewrite.system")),
                     LlmMessage(role="user", content=original),
                 ],
                 model=_ROUTER_MODEL,
@@ -287,7 +261,7 @@ async def direct_answer_node(state: LgRagState) -> dict:
         text = await complete_answer_streaming(
             provider,
             [
-                LlmMessage(role="system", content=_DIRECT_SYSTEM),
+                LlmMessage(role="system", content=render("lg_rag.direct.system")),
                 LlmMessage(role="user", content=query),
             ],
             model=_ROUTER_MODEL,

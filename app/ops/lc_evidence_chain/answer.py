@@ -13,7 +13,14 @@ from app.config import settings
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage
 from app.ops.lc_evidence_chain.types import EvidenceItem
-from app.ops.tracing import trace_span
+from app.ops.prompts.slots import (
+    SlotIsolationError,
+    assert_slots_declared,
+    declare_slots,
+    security_input_isolation_enabled,
+    wrap_slot,
+)
+from app.ops.tracing import trace_span, update_current_span_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +94,36 @@ def _answer_model() -> str | None:
     return (os.getenv("RAG_LC_ANSWER_MODEL") or "").strip() or settings.ops_llm_model
 
 
+def _assemble_isolated_messages(
+    ver: str,
+    query: str,
+    retrieved_chunks: list[EvidenceItem],
+    gate_action: str | None,
+) -> list[LlmMessage]:
+    """on 态装配（security-input-isolation D2 · RAG 面）：检索片段/问题走槽位。
+
+    - 片段块走 `wrap_slot("rag_evidence", ...)`：`[{i}] {anchor}` 引用格式保留，
+      节首加不可信声明 + 边界标记；query 走 `user_query` 槽；指令资产归
+      `system_instruction`（trusted · 逐字节不变）。
+    - 装配校验 `assert_slots_declared` 在发往 LLM 前执行：内容违例（未声明/
+      未包装段）→ :class:`SlotIsolationError` 显式炸，**请求不发出**（下游
+      零请求）；机制自身故障由调用方降级 off 态装配（与本异常语义分立）。
+    """
+    system = answer_system_prompt(ver)
+    user = answer_user_template(ver).format(
+        question=str(wrap_slot("user_query", query)),
+        retrieved_chunks=str(wrap_slot("rag_evidence", format_evidence_block(retrieved_chunks))),
+    )
+    if (gate_action or "").strip() == "answer_partial":
+        system = f"{system}\n{PARTIAL_GATE_SYSTEM_NOTE}"
+        user = f"仅部分证据。\n\n{user}"
+    system_msg = LlmMessage(role="system", content=wrap_slot("system_instruction", system))
+    user_msg = LlmMessage(role="user", content=user)
+    declare_slots(user_msg, ["user_query", "rag_evidence"])
+    assert_slots_declared([system_msg, user_msg])
+    return [system_msg, user_msg]
+
+
 async def answer_question(
     query: str,
     retrieved_chunks: list[EvidenceItem],
@@ -115,15 +152,35 @@ async def answer_question(
     provider_name = (os.getenv("RAG_LC_ANSWER_PROVIDER") or "").strip() or None
     provider = get_llm_provider(provider_name)
     model = _answer_model()
-    # 自研 provider 不走 LangChain LLM 类，CallbackHandler 抓不到 → 显式 generation
-    with trace_span("answer_llm", run_type="llm", model=model):
-        text = await provider.complete(
-            [
+    if security_input_isolation_enabled():
+        try:
+            messages = _assemble_isolated_messages(ver, query, retrieved_chunks, gate_action)
+            update_current_span_metadata({"slots_wrapped": 3})
+        except SlotIsolationError:
+            # 内容违例（未声明/未包装段）→ 显式炸，**请求不发出**（下游零请求），
+            # 与机制故障降级（except Exception 支路）语义分立。
+            update_current_span_metadata({"input_isolation_rejected": True})
+            logger.warning(
+                "answer: input isolation rejected undeclared content; request not sent",
+                exc_info=True,
+            )
+            raise
+        except Exception:
+            # 机制故障 → 该请求降级 off 态装配（与 off 态逐字节一致）+ span + log。
+            logger.exception("answer: input isolation mechanism failed; degrade to off-state")
+            update_current_span_metadata({"input_isolation_degraded": True})
+            messages = [
                 LlmMessage(role="system", content=system),
                 LlmMessage(role="user", content=user),
-            ],
-            model=model,
-        )
+            ]
+    else:
+        messages = [
+            LlmMessage(role="system", content=system),
+            LlmMessage(role="user", content=user),
+        ]
+    # 自研 provider 不走 LangChain LLM 类，CallbackHandler 抓不到 → 显式 generation
+    with trace_span("answer_llm", run_type="llm", model=model):
+        text = await provider.complete(messages, model=model)
     logger.info(
         "answer: prompt=%s gate=%s model=%s query=%r evidence=%d chars=%d",
         ver,

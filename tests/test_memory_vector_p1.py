@@ -320,3 +320,47 @@ def test_vector_recall_env_invalid_fallback(monkeypatch: pytest.MonkeyPatch, cap
     assert "MEMORY_FACTS_VECTOR_RECALL_ENABLED" in caplog.text
     monkeypatch.setenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", "1")
     assert memory_facts_vector_recall_enabled() is True
+
+# ---------------- memory-preference-profile · 向量通路召回的 preference 进偏好节 ----------------
+
+
+async def test_vector_recalled_preference_lands_in_preference_section(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """向量通路捞回的 preference 同样进 `[用户偏好]` 节（SQL 不加 kind 谓词，
+    渲染层分 kind）；确定性 top-1 漏掉它 → 证明真走向量通路。"""
+    monkeypatch.setenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", "true")
+    fake = FakeEmbedder()
+    user = "u-pref-vec"
+    pref = await write_fact(
+        _candidate(
+            user_id=user, key="pref.deploy_tone", value="极简", kind="preference"
+        ),
+        embedder=fake,
+    )
+    distractor = await write_fact(
+        _candidate(user_id=user, key="project.favorite_color", value="blue"),
+        embedder=fake,
+    )
+    base = now_utc()
+    await _pin_updated_at(str(pref.id), base)
+    await _pin_updated_at(str(distractor.id), base + timedelta(seconds=1))
+
+    deterministic = await recall_active(_TENANT, user, limit=1)
+    assert [f.key for f in deterministic] == ["project.favorite_color"]  # 前提：确定性漏掉
+
+    fused = await recall_with_vector(_TENANT, user, "部署风格如何", limit=1, embedder=fake)
+    assert [f.key for f in fused] == ["pref.deploy_tone"]
+    assert fused[0].kind == "preference"
+
+    from app.ops.lg_rag.continuity import (
+        MEMORY_FACTS_HEADER,
+        MEMORY_PREFERENCES_HEADER,
+        render_memory_facts_block,
+    )
+
+    block = render_memory_facts_block(fused)
+    assert MEMORY_PREFERENCES_HEADER in block
+    assert "pref.deploy_tone=极简" in block
+    assert MEMORY_FACTS_HEADER not in block  # 向量捞回的 preference 不污染事实节
+
