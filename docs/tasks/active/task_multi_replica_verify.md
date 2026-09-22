@@ -1,6 +1,6 @@
 # Task：L0 多副本验证（单实例 → 多实例）（track=verify 预期零生产码）· F1 双轨实证（双进程 pytest 进 CI + runbook+reports 手工实测）· P1 subprocess 双 uvicorn 真隔离（禁同进程双 app 假跨实例）· D2 状态外置（A 起 B 恢复/查询 · 跨 user 404 · 实例归属先断言 FAIL 非 skip）· D3 进程内状态边界清单 8 条目 file:line 锚点 + budget 放大实证 · D4 HITL 跨实例断言「图真的续跑」不只断 200（multi-replica-verify）
 
-> **状态**：`active`（2026-09-22 · 10-task 落稿 · 待 20-task-audit → HG-AUDIT-R1 人签）  
+> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
 > **类型**：verify（验证/实证类 · **预期零生产码改动**——产物是验证方案 + 双进程集成测 + runbook/实测报告 + 进程内状态边界清单；**无 alembic 义务**（零 schema 改动预期 · 迁移 diff 为空断言）· **图谱义务预期无按实判**（零新路由/零新一级模块/零新表/零新 SSE 事件 · 偏离回炉条款见闸表与 graph_delta_note）；实扫发现阻断性 bug → 另开 fix task，不在本 task 顺手修）  
 > **上游 SPEC**：`docs/spec/multi-replica-verify/SPEC-multi-replica-verify_v1.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-22 · 8236747 · F1 双轨 + P1 subprocess 双进程 + 验证≠投产签收锁死）  
 > **分支**：`task/multi-replica-verify`（**禁止 master/main 直改 · 禁止 push**）  
@@ -35,8 +35,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 落稿时待签（00 验收代录/人签 · 本帽不签） |
-| HG-AUDIT-R1 | pending | **30** | 落稿时待签（20 审后人签/授权代录）→ **30 拒开工** |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | 2026-09-22 · 00 验收 10-task 稿通过（维护者本窗授权 00 签收过程文档 · 原话留痕 SPEC 状态行） |
+| HG-AUDIT-R1 | approved | **30** | 2026-09-22 · 20-task-audit R1 PASS 零阻塞零退回（`docs/harness/reviews/task_multi_replica_verify_audit_R1_20260922.md` · 变异相容性核验成立 · B1 抽 5 亲跑）· 维护者本窗授权 00 代录签收 |
 | HG-GRAPH-MODULES | approved | **30** | 2026-09-22 本帽**真读** `docs/_tech_graph/l1/01_modules.md`：模块表已建置（bootstrap 签 2026-07-16 · 签录链完整至 :93 memory-compliance-delete 行）；`lg_rag` 行 :27（checkpointer/事件表/replay 在案）· `hitl` 行 :31（resume 驱动 + 申请落库）· `capability` 行 :26（**进程内注册表**明示非跨进程注册中心）· `db` 行 :33（checkpoint 表 checkpoints/checkpoint_writes 同库不同表已在案）· `api` 行 :20 均在表。SPEC §2 D5 判**预期无图谱义务按实判**：零新路由/零新一级模块/零新表/零新 SSE 事件——无新签义务，**不阻塞 30 开工形态预判**；**若 30 形态偏离（新增观测端点/新路由/新表/新 SSE 事件/改被验证对象语义）→ 本闸转有义务回炉补闸**（见 graph_delta_note，不得沿用本裁定） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 物理分层试点改码 | 本 task 不涉物理分层试点 |
 
