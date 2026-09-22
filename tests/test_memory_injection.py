@@ -184,8 +184,17 @@ def _capture_span(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
 
 
 def _patch_recall(monkeypatch: pytest.MonkeyPatch, *, facts=None, error=None):
-    """patch 装配链路实际调用的 memory service 召回（默认确定性通路）。"""
+    """patch 装配链路实际调用的 memory service 召回（默认确定性通路）。
+
+    连带钉 off 向量召回开关（test-baseline-reds 全量回归 unmask）：宿主 .env
+    若设 MEMORY_FACTS_VECTOR_RECALL_ENABLED=true 且网络可用，装配会改走
+    recall_with_vector（真 embed + 向量 SQL + 与 mocked dicts 融合崩溃 →
+    memory_degraded），与「本文件只测确定性装配通路」意图不符。向量通路
+    有 test_memory_vector_p1.py 的 FakeEmbedder 专测覆盖。
+    """
     from unittest.mock import AsyncMock
+
+    monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
 
     mock = (
         AsyncMock(side_effect=error)

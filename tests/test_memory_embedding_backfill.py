@@ -551,12 +551,17 @@ async def test_reconcile_mismatch_marks_failed(monkeypatch: pytest.MonkeyPatch, 
         if text_value == PREFLIGHT_PROBE_TEXT or inserted["done"]:
             return
         inserted["done"] = True
+        # test-baseline-reds D3：注入行用确定性小 id，恒落在 keyset 水位前，
+        # 消除「uuid4 随机落点 × id > last_id 翻页」竞态（约 40% 翻车）。
+        # PG uuid 按字节序比较：v4 uuid 第 6 字节高位必为 0x4_，而
+        # UUID(int=1) 前 15 字节全 0 → 恒小于任何 v4 uuid（两个种子行 id 均 v4），
+        # 下一页 id > last_id 永远扫不到它 → remaining=1 / embedded=2 恒成立。
         _sync_execute(
             "INSERT INTO ops_memory_facts "
             "(id, tenant_id, user_id, key, value, kind, status, created_at, updated_at) "
             "VALUES (%s, %s, %s, %s, %s::jsonb, 'fact', 'active', now(), now())",
             (
-                str(uuid.uuid4()),
+                str(uuid.UUID(int=1)),
                 _TENANT,
                 user,
                 "project.concurrent_fact",
