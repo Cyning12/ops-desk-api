@@ -1,6 +1,6 @@
 # Task：bugfix · 测试基线红清理（chat_ws×2 + capability proxy×1 + backfill flaky）
 
-> **状态**：`draft`（2026-09-22 10-task 落稿 · 三条缺陷已真跑复现 + 读码定位根因 · 修复方向已裁定）  
+> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
 > **类型**：**bugfix**（双轨：可跳 SPEC · 各 40 invoke 观察项 ≈ mini-SPEC）  
 > **依据**：`docs/harness/invokes/by-task/llm-layer-hardening/invoke_20260921_40_verify_llm_layer_hardening.md`（3 红 + master 同错复现）· `invoke_20260921_50_close_llm_layer_hardening.md`（「另开 fix task」指令）· `docs/harness/invokes/by-task/security-input-isolation/invoke_20260922_50_close_security_input_isolation.md`（3 红 + backfill flaky · fix 候选清单）· `docs/harness/invokes/by-task/memory-compliance-delete/invoke_20260922_40_verify_memory_compliance_delete.md`（3 红同款）· `docs/harness/invokes/by-task/tenant-readonly-predicate/invoke_20260918_40_verify_tenant-readonly-predicate.md`（PG 表缺失 hydrate 失败首记）· 本 task 10 帽复现 invoke：`docs/harness/invokes/by-task/test-baseline-reds/`  
 > **分支**：`fix/test-baseline-reds`（base：`master`）
@@ -34,8 +34,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 落稿时待签 · 维护者签后 00 代录 |
-| HG-AUDIT-R1 | pending | 30 | 落稿时待签 · 20 R1 零阻塞后维护者签 · 00 代录 |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | 2026-09-22 · 00 验收 10-task 稿通过（维护者授权 00 代录 · 承队列授权令延续） |
+| HG-AUDIT-R1 | approved | 30 | 2026-09-22 · 20-task-audit R1 PASS 零阻塞零退回（`docs/harness/reviews/task_test_baseline_reds_audit_R1_20260922.md` · 三根因亲跑复核一致 · CI 假绿核验属实）· 维护者授权 00 代录签收 |
 | HG-GRAPH-MODULES | approved | 30 | 2026-09-22 00 代录 · `graph_change_layer=none`（bugfix · 只改 tests/ · 实扫无图谱改动） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 非物理分层试点 task |
 
