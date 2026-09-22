@@ -309,17 +309,21 @@ def test_patched_fusion_constants_override_and_restore():
         memory_service.SIM_FLOOR,
         memory_service.SOURCE_WEIGHT_EXTRACTED,
     )
-    # 默认常量：90 天陈化目标被衰减压掉（不在 top3）
+    # 调参定稿注记（task memory-fusion-weight-tuning · 2026-09-21 达标定稿 90d/0.3/0.8）：
+    # 新默认常量下 90 天陈化目标不再被衰减压掉（实证：目标 score=1.0×0.5^(90/90)×0.8=0.4
+    # > 地板干扰 0.3×1×1.0=0.3，排 top3 首位）。旧期望「默认下不在 top3」对应旧默认
+    # 30d/0.5（score=1.0×0.5^3×0.8=0.1 < 0.5 地板），随定稿如实翻转。
     default_rank = _rank_scenario(aged90, limit=3, now=now)
-    assert aged90.target_id not in default_rank
+    assert default_rank[0] == aged90.target_id  # 新默认（90d 半衰）：陈化目标排首
     assert defaults[0] == memory_service.HALF_LIFE_DAYS  # 未 patch 不漂移
 
-    # 覆盖（90d 半衰 + 低地板 + 抽取等权）：同一真 _fuse_recall 排名翻转
+    # 覆盖（抑制性反向 patch：7d 半衰 + 高地板）：同一真 _fuse_recall 排名翻转
+    # （实证：0.5^(90/7)≈1.3e-4 压出 top3；保留「patch 可翻转排名」的检验意图）
     with patched_fusion_constants(
-        half_life_days=90.0, sim_floor=0.3, source_weight_extract=1.0
+        half_life_days=7.0, sim_floor=0.7, source_weight_extract=1.0
     ):
         patched_rank = _rank_scenario(aged90, limit=3, now=now)
-        assert patched_rank[0] == aged90.target_id
+        assert aged90.target_id not in patched_rank
     # with 块外现场恢复（零生产默认值改动）
     assert defaults == (
         memory_service.HALF_LIFE_DAYS,

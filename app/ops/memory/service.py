@@ -16,7 +16,7 @@ import asyncio
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import select, text, update
@@ -226,9 +226,9 @@ _FALSY = ("0", "false", "no", "off")
 
 # 融合权重初值（SPEC R5 residual ①：初值需实测调参；改动须同步 README）
 #: 无向量相似度时的相似分地板（embedding 为 NULL 的存量行 / 未进向量 top-M）
-SIM_FLOOR = 0.5
+SIM_FLOOR = 0.3
 #: 时间衰减半衰期（天）：decay = 0.5 ** (age_days / HALF_LIFE_DAYS)
-HALF_LIFE_DAYS = 30.0
+HALF_LIFE_DAYS = 90.0
 #: 来源权重：source_run_id 为空（显式/人工）高于抽取写入
 SOURCE_WEIGHT_EXPLICIT = 1.0
 SOURCE_WEIGHT_EXTRACTED = 0.8
@@ -342,9 +342,21 @@ def _source_weight(fact: OpsMemoryFact) -> float:
     return SOURCE_WEIGHT_EXTRACTED if fact.source_run_id else SOURCE_WEIGHT_EXPLICIT
 
 
+def _as_utc(value: datetime) -> datetime:
+    """tz 归一：**naive 一律视为 UTC**（不转本地时区、不把 aware 转 naive）。
+
+    真库列由 migration 建 timestamptz → 读回 aware；`now_utc()` 与测试库
+    （create_all plain DateTime）为 naive。两侧混算前统一归一到 aware-UTC，
+    语义无损（PG 对 naive→timestamptz 的解释同为 UTC）。
+    """
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value
+
+
 def _time_decay(fact: OpsMemoryFact, now: datetime) -> float:
     """指数半衰：decay = 0.5 ** (age_days / HALF_LIFE_DAYS)；未来时间戳按 0 天。"""
-    age_seconds = max(0.0, (now - fact.updated_at).total_seconds())
+    age_seconds = max(0.0, (_as_utc(now) - _as_utc(fact.updated_at)).total_seconds())
     return 0.5 ** ((age_seconds / 86400.0) / HALF_LIFE_DAYS)
 
 

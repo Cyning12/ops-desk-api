@@ -65,15 +65,25 @@ migration 为仓内裸 SQL 风格，`expires_at` 直接落**部分索引**
 `WHERE status='active'`（sweep 只扫活跃行）；model `__table_args__` 以
 `postgresql_where` 对齐同一语义。另两条：`(tenant_id,user_id,key,status)` 召回主谓词、`(source_run_id)` 纠错溯源。
 
+## 测试库 schema 漂移注记（memory-fuse-tz-fix）
+
+测试库 `opsdesk_test` 由 ORM `create_all` 建表（plain `DateTime` → **naive**），
+真库由 migration 建 `timestamptz` → asyncpg 读回 **aware**。两侧 schema 不一致
+曾掩盖 naive/aware 混算故障：`now_utc()=datetime.utcnow()`（naive）与真库读回的
+aware `updated_at` 在 `_time_decay` 直接相减抛 `TypeError`，而测试库双侧同 naive
+使 P1 测试全绿。修复：`service.py::_as_utc` 在 Python 算术点前归一
+（**naive 一律视为 UTC**）；回归见 `tests/test_memory_time_decay_tz.py` 四象限。
+重建测试库为 migration schema 属仓级另议，不在本修复范围。
+
 ## P1 · 向量召回融合算法（recall_with_vector）
 
 1. **确定性 top-N**：P0 recency 语义不变（active + 未过期，`updated_at desc`，N = `MEMORY_FACTS_MAX_ITEMS`）。
 2. **向量 top-M**：写入时经 `Embedder`（rag 协议，同步接口 `asyncio.to_thread` 线程卸载，对齐 rag_nodes 先例）计算 embedding 落 `embedding` 列；召回时对 query 嵌入，裸 SQL `embedding <=> :qvec`（cosine）取 top-M，**必带 tenant_id + user_id + active + 未过期谓词**。M 初值 = N。
 3. **去重融合**：两路按 fact id 取并集。
-4. **排序**：`score = 向量相似 × 时间衰减 × 来源权重`（初值，SPEC R5 residual ① 需实测调参）：
-   - 相似 = `1 - cosine_distance`（截到 [0,1]）；无向量分（embedding NULL 存量行 / 未进 top-M）取 `SIM_FLOOR=0.5`；
-   - 衰减 = `0.5 ** (age_days / HALF_LIFE_DAYS=30)`；
-   - 来源权重：`source_run_id` 为空（显式/人工）= 1.0，抽取写入 = 0.8。
+4. **排序**：`score = 向量相似 × 时间衰减 × 来源权重`（2026-09-21 调参定稿，task memory-fusion-weight-tuning · 扫参 27 组 + 连续 2 轮全量 live top3=1.0 达标 · 日志 evals/memory/tuning_log_20260921.md）：
+   - 相似 = `1 - cosine_distance`（截到 [0,1]）；无向量分（embedding NULL 存量行 / 未进 top-M）取 `SIM_FLOOR=0.3`；
+   - 衰减 = `0.5 ** (age_days / HALF_LIFE_DAYS=90)`；
+   - 来源权重：`source_run_id` 为空（显式/人工）= 1.0，抽取写入 = `SOURCE_WEIGHT_EXTRACTED=0.8`。
 5. **截断**：按 score desc 截到预算，截低分不随机；并列按 `updated_at desc, created_at desc, id desc` 兜底（确定性 tiebreak）。
 
 降级：embedder / 向量查询 / 列不存在任何失败 → 回退 P0 确定性召回 + span/log `memory_vector_degraded`，不拖垮请求。写入侧嵌入失败不阻断写入：该行 `embedding=NULL`，只走确定性通路（log 标记）。model 列 `deferred=True`：普通 SELECT 不带向量列，migration 未跑时 P0 读通路 SQL 不含它。

@@ -1,0 +1,789 @@
+run: memory-golden-eval-20260921-222154-live
+backend: live
+golden: evals/memory/golden_v1.yaml
+thresholds:
+  extraction_precision:
+    threshold: '>= 0.9'
+    actual: 0.2581
+    met: false
+  noise_write_rate:
+    threshold: <= 0.1
+    actual: 0.2857
+    met: false
+  paraphrase_top3:
+    threshold: '>= 0.8'
+    actual: null
+    met: false
+  supersede_accuracy:
+    threshold: == 1.0
+    actual: 0.4
+    met: false
+all_thresholds_met: false
+threshold_note: 门槛来自 SPEC-memory-golden-eval §2 D5（签收锁死）；fake 模式为确定性管线自检，不构成开开关依据；裁决以
+  live 真跑报告为准（SPEC §8 维护者复制区）
+tenant: memory-eval
+embed: BAAI/bge-m3
+metrics:
+  extraction_precision: 0.2581
+  noise_write_rate: 0.2857
+  miss_rate: 0.7143
+  paraphrase_top1: null
+  paraphrase_top3: null
+  supersede_accuracy: 0.4
+  written_good: 8
+  written_noise: 23
+  errors: 12
+  cases: 50
+summary:
+  pass_by_category:
+    should_remember: 4/14
+    should_not_remember: 10/14
+    supersede: 4/10
+    paraphrase: 0/0
+  measurement_source: observed
+  confidence: low
+  comparability: not_comparable
+errors:
+- id: PR01
+  error: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+- id: PR02
+  error: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+- id: PR03
+  error: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+- id: PR04
+  error: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+- id: PR05
+  error: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+- id: PR06
+  error: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+- id: PR07
+  error: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+- id: PR08
+  error: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+- id: PR09
+  error: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+- id: PR10
+  error: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+- id: PR11
+  error: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+- id: PR12
+  error: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+cleanup:
+  revoked: 49
+  tenant_rows_deleted: 161
+results:
+- id: SR01
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: project.primary_repo
+      value: cyning/ops-desk
+- id: SR02
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: user.display_tz
+      value: Asia/Shanghai
+- id: SR03
+  category: should_remember
+  verdict: fail
+  detail: '漏记: [''deploy.target'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: deployment.target
+      value: prod-cn
+- id: SR04
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: project.owner
+      value: zhangsan
+- id: SR05
+  category: should_remember
+  verdict: fail
+  detail: '漏记: [''git.release_branch'']'
+  written_good: 0
+  written_noise: 2
+  extra:
+    written:
+    - key: project.release_branch
+      value: release/v2
+    - key: project.hotfix_branch
+      value: release/v2
+- id: SR06
+  category: should_remember
+  verdict: fail
+  detail: '漏记: [''monitor.alert_channel'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: alert.channel
+      value: ops-oncall
+- id: SR07
+  category: should_remember
+  verdict: fail
+  detail: '漏记: [''db.primary_host'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: database.primary_host
+      value: pg-internal-01
+- id: SR08
+  category: should_remember
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: cache.backend
+      value: redis-cluster-a
+- id: SR09
+  category: should_remember
+  verdict: fail
+  detail: '漏记: [''gateway.public_domain'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: gateway.external_domain
+      value: ops.example.cn
+- id: SR10
+  category: should_remember
+  verdict: fail
+  detail: '漏记: [''docker.base_image'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: service.base_image
+      value: ubuntu-22.04
+- id: SR11
+  category: should_remember
+  verdict: fail
+  detail: '漏记: [''queue.broker'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: project.messaging.broker
+      value: kafka-main
+- id: SR12
+  category: should_remember
+  verdict: fail
+  detail: '漏记: [''ops.rollback_plan'']'
+  written_good: 0
+  written_noise: 2
+  extra:
+    written:
+    - key: rollback.standard_method
+      value: helm-rollback
+    - key: rollback.target
+      value: previous release
+- id: SR13
+  category: should_remember
+  verdict: fail
+  detail: '漏记: [''secrets.manager'']'
+  written_good: 0
+  written_noise: 2
+  extra:
+    written:
+    - key: security.secret_manager
+      value: vault-prod
+    - key: security.hardcoded_secrets_forbidden
+      value: true
+- id: SR14
+  category: should_remember
+  verdict: fail
+  detail: '漏记: [''log.retention_days'']'
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG01
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG02
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG03
+  category: should_not_remember
+  verdict: fail
+  detail: '噪声写入: [''python.first_release_year'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: python.first_release_year
+      value: 1991
+- id: NG04
+  category: should_not_remember
+  verdict: fail
+  detail: '噪声写入: [''user.lisi.timezone'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: user.lisi.timezone
+      value: America/New_York
+- id: NG05
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG06
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG07
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG08
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG09
+  category: should_not_remember
+  verdict: fail
+  detail: '噪声写入: [''deployment.target'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: deployment.target
+      value: prod-cn
+- id: NG10
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG11
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG12
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: NG13
+  category: should_not_remember
+  verdict: fail
+  detail: '噪声写入: [''etcd.default_client_port'']'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: etcd.default_client_port
+      value: 2379
+- id: NG14
+  category: should_not_remember
+  verdict: pass
+  detail: ''
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+- id: SP01
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: deploy.target
+      value: prod-cn
+    old_status: superseded
+    recalled:
+    - - deploy.target
+      - prod-cn
+- id: SP02
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: project.owner
+      value: lisi
+    old_status: superseded
+    recalled:
+    - - project.owner
+      - lisi
+- id: SP03
+  category: supersede
+  verdict: fail
+  detail: '新值未写入; 召回非仅新值: [(''git.release_branch'', ''release/v1'')]; 旧值状态: active'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: project.current_release_branch
+      value: release/v2
+    old_status: active
+    recalled:
+    - - git.release_branch
+      - release/v1
+- id: SP04
+  category: supersede
+  verdict: fail
+  detail: '新值未写入; 召回非仅新值: [(''monitor.oncall_owner'', ''wangwu'')]; 旧值状态: active'
+  written_good: 0
+  written_noise: 2
+  extra:
+    written:
+    - key: duty.primary_owner
+      value: zhaoliu
+    - key: duty.previous_owner
+      value: wangwu
+    old_status: active
+    recalled:
+    - - monitor.oncall_owner
+      - wangwu
+- id: SP05
+  category: supersede
+  verdict: fail
+  detail: '新值未写入; 召回非仅新值: [(''db.primary_host'', ''pg-old-01'')]; 旧值状态: active'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: database.primary_host
+      value: pg-new-02
+    old_status: active
+    recalled:
+    - - db.primary_host
+      - pg-old-01
+- id: SP06
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: cache.backend
+      value: redis-cluster-a
+    old_status: superseded
+    recalled:
+    - - cache.backend
+      - redis-cluster-a
+- id: SP07
+  category: supersede
+  verdict: fail
+  detail: '新值未写入; 召回非仅新值: [(''gateway.public_domain'', ''ops-old.example.cn'')]; 旧值状态:
+    active'
+  written_good: 0
+  written_noise: 0
+  extra:
+    written: []
+    old_status: active
+    recalled:
+    - - gateway.public_domain
+      - ops-old.example.cn
+- id: SP08
+  category: supersede
+  verdict: fail
+  detail: '新值未写入; 召回非仅新值: [(''docker.registry'', ''registry-old.local'')]; 旧值状态: active'
+  written_good: 0
+  written_noise: 2
+  extra:
+    written:
+    - key: image.registry.new_endpoint
+      value: registry-new.local
+    - key: image.registry.old_status
+      value: readonly_archive
+    old_status: active
+    recalled:
+    - - docker.registry
+      - registry-old.local
+- id: SP09
+  category: supersede
+  verdict: fail
+  detail: '新值未写入; 召回非仅新值: [(''queue.broker'', ''rabbitmq-main'')]; 旧值状态: active'
+  written_good: 0
+  written_noise: 1
+  extra:
+    written:
+    - key: project.queue_broker
+      value: kafka-main
+    old_status: active
+    recalled:
+    - - queue.broker
+      - rabbitmq-main
+- id: SP10
+  category: supersede
+  verdict: pass
+  detail: ''
+  written_good: 1
+  written_noise: 0
+  extra:
+    written:
+    - key: user.display_tz
+      value: Asia/Shanghai
+    old_status: superseded
+    recalled:
+    - - user.display_tz
+      - Asia/Shanghai
+- id: PR01
+  category: paraphrase
+  verdict: error
+  detail: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+  written_good: 0
+  written_noise: 0
+  extra: {}
+- id: PR02
+  category: paraphrase
+  verdict: error
+  detail: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+  written_good: 0
+  written_noise: 0
+  extra: {}
+- id: PR03
+  category: paraphrase
+  verdict: error
+  detail: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+  written_good: 0
+  written_noise: 0
+  extra: {}
+- id: PR04
+  category: paraphrase
+  verdict: error
+  detail: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+  written_good: 0
+  written_noise: 0
+  extra: {}
+- id: PR05
+  category: paraphrase
+  verdict: error
+  detail: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+  written_good: 0
+  written_noise: 0
+  extra: {}
+- id: PR06
+  category: paraphrase
+  verdict: error
+  detail: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+  written_good: 0
+  written_noise: 0
+  extra: {}
+- id: PR07
+  category: paraphrase
+  verdict: error
+  detail: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+  written_good: 0
+  written_noise: 0
+  extra: {}
+- id: PR08
+  category: paraphrase
+  verdict: error
+  detail: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+  written_good: 0
+  written_noise: 0
+  extra: {}
+- id: PR09
+  category: paraphrase
+  verdict: error
+  detail: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+  written_good: 0
+  written_noise: 0
+  extra: {}
+- id: PR10
+  category: paraphrase
+  verdict: error
+  detail: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+  written_good: 0
+  written_noise: 0
+  extra: {}
+- id: PR11
+  category: paraphrase
+  verdict: error
+  detail: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+  written_good: 0
+  written_noise: 0
+  extra: {}
+- id: PR12
+  category: paraphrase
+  verdict: error
+  detail: 'TypeError: can''t subtract offset-naive and offset-aware datetimes'
+  written_good: 0
+  written_noise: 0
+  extra: {}
+sweep:
+  grid:
+    half_life_days:
+    - 7.0
+    - 30.0
+    - 90.0
+    sim_floor:
+    - 0.3
+    - 0.5
+    - 0.7
+    source_weight_extract:
+    - 0.6
+    - 0.8
+    - 1.0
+  scenario_count: 39
+  combos:
+  - half_life_days: 7.0
+    sim_floor: 0.3
+    source_weight_extract: 0.6
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 7.0
+    sim_floor: 0.3
+    source_weight_extract: 0.8
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 7.0
+    sim_floor: 0.3
+    source_weight_extract: 1.0
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 7.0
+    sim_floor: 0.5
+    source_weight_extract: 0.6
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 7.0
+    sim_floor: 0.5
+    source_weight_extract: 0.8
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 7.0
+    sim_floor: 0.5
+    source_weight_extract: 1.0
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 7.0
+    sim_floor: 0.7
+    source_weight_extract: 0.6
+    paraphrase_top1: 0.0
+    paraphrase_top3: 0.0
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 7.0
+    sim_floor: 0.7
+    source_weight_extract: 0.8
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 7.0
+    sim_floor: 0.7
+    source_weight_extract: 1.0
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 30.0
+    sim_floor: 0.3
+    source_weight_extract: 0.6
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.3333
+    meets_internal_bar: false
+  - half_life_days: 30.0
+    sim_floor: 0.3
+    source_weight_extract: 0.8
+    paraphrase_top1: 0.6667
+    paraphrase_top3: 0.6667
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 30.0
+    sim_floor: 0.3
+    source_weight_extract: 1.0
+    paraphrase_top1: 0.6667
+    paraphrase_top3: 0.6667
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 30.0
+    sim_floor: 0.5
+    source_weight_extract: 0.6
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 30.0
+    sim_floor: 0.5
+    source_weight_extract: 0.8
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 30.0
+    sim_floor: 0.5
+    source_weight_extract: 1.0
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 30.0
+    sim_floor: 0.7
+    source_weight_extract: 0.6
+    paraphrase_top1: 0.0
+    paraphrase_top3: 0.0
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 30.0
+    sim_floor: 0.7
+    source_weight_extract: 0.8
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 30.0
+    sim_floor: 0.7
+    source_weight_extract: 1.0
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 90.0
+    sim_floor: 0.3
+    source_weight_extract: 0.6
+    paraphrase_top1: 0.6667
+    paraphrase_top3: 0.6667
+    recency_top1: 1.0
+    meets_internal_bar: false
+  - half_life_days: 90.0
+    sim_floor: 0.3
+    source_weight_extract: 0.8
+    paraphrase_top1: 1.0
+    paraphrase_top3: 1.0
+    recency_top1: 1.0
+    meets_internal_bar: true
+  - half_life_days: 90.0
+    sim_floor: 0.3
+    source_weight_extract: 1.0
+    paraphrase_top1: 1.0
+    paraphrase_top3: 1.0
+    recency_top1: 0.3333
+    meets_internal_bar: true
+  - half_life_days: 90.0
+    sim_floor: 0.5
+    source_weight_extract: 0.6
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.6667
+    meets_internal_bar: false
+  - half_life_days: 90.0
+    sim_floor: 0.5
+    source_weight_extract: 0.8
+    paraphrase_top1: 0.6667
+    paraphrase_top3: 0.6667
+    recency_top1: 0.6667
+    meets_internal_bar: false
+  - half_life_days: 90.0
+    sim_floor: 0.5
+    source_weight_extract: 1.0
+    paraphrase_top1: 0.6667
+    paraphrase_top3: 0.6667
+    recency_top1: 0.3333
+    meets_internal_bar: false
+  - half_life_days: 90.0
+    sim_floor: 0.7
+    source_weight_extract: 0.6
+    paraphrase_top1: 0.0
+    paraphrase_top3: 0.0
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 90.0
+    sim_floor: 0.7
+    source_weight_extract: 0.8
+    paraphrase_top1: 0.3333
+    paraphrase_top3: 0.3333
+    recency_top1: 0.0
+    meets_internal_bar: false
+  - half_life_days: 90.0
+    sim_floor: 0.7
+    source_weight_extract: 1.0
+    paraphrase_top1: 0.6667
+    paraphrase_top3: 0.6667
+    recency_top1: 0.0
+    meets_internal_bar: false
+  recommended:
+    params:
+      half_life_days: 90.0
+      sim_floor: 0.3
+      source_weight_extract: 0.8
+    scores:
+      paraphrase_top1: 1.0
+      paraphrase_top3: 1.0
+      recency_top1: 1.0
+    reason: 复述 top3 → 时效性 top1 → 复述 top1 字典序最优；排序键与聚合理由见 reasons
+  current_defaults:
+    half_life_days: 90.0
+    sim_floor: 0.3
+    source_weight_extract: 0.8
+  note: 只出建议 · 改值另 task 按报告裁决（SPEC §2 D3）；本扫参未改任何代码常量
+  reasons:
+  - '按 half_life 聚合复述 top3 均值: 7d=0.2963, 30d=0.3704, 90d=0.5926'
+  - '按 sim_floor 聚合复述 top3 均值: 0.3=0.5926, 0.5=0.4074, 0.7=0.2592'
+  - '按 source_weight_extract 聚合时效性 top1 均值: 0.6=0.2222, 0.8=0.1852, 1=0.0741'
