@@ -209,7 +209,7 @@ D1=断言对齐现行拓扑+检索链打桩+conftest 双补丁（env 净化/建�
 
 ### 自检结论（执行者）
 
-> （30 交付后由 40 独立核验回填；落稿时为空）
+> **40 核验：PASS（2026-09-22 · 零阻塞）**。A1–A6 全过：全量 pytest 双态（宿主 env 现状 / 净 env delenv 场景）+ 三连跑均 1367 passed / 0 failed；origin/master worktree 对照亲跑前红（D1 2f/4p · D2 1f/1p · D3 3f/10）与「httpx InvalidURL 假绿」（净 env 下 7 红逐字复现）均成立；flaky 20 连跑零复发；D1 变异复做真挂已还原；diff 仅 tests/ · ruff 零新增 · graph-compile 绿。证据：`docs/harness/invokes/by-task/test-baseline-reds/invoke_20260922_40_verify.md`。观察项 1 条（capability 文件单文件独立跑 4 红为 master 同源预存顺序依赖 · 非本 task 范围 · 另议）。
 
 ---
 
@@ -218,3 +218,4 @@ D1=断言对齐现行拓扑+检索链打桩+conftest 双补丁（env 净化/建�
 | 日期 | 说明 |
 |------|------|
 | 2026-09-22 | 10-task 落稿（bugfix 双轨 · 三缺陷真跑复现+读码定位 · early_stop at R3）· HG-TASK-DRAFT / HG-AUDIT-R1 待签 → 30 拒开工 |
+| 2026-09-22 | 40 核验 PASS（A1–A6 全过 · 双态全量 1367/0 ×3 · master 对照前红+假绿复现 · 变异复做）· 自检结论回填 |
