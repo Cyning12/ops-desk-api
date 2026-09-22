@@ -11,6 +11,7 @@
 | `golden_v1.yaml` | 金样集 v1（50 条四类 · ops-desk 运维域） |
 | `run_eval.py` | 双模式离线 runner（fake 默认 / live 真跑）+ 27 组扫参 |
 | `README.md` | 本文件（schema + 标注指南 + 用法） |
+| `extract_calib_log_20260922.md` | 抽取校准日志（task memory-extract-calibration · 逐轮 version↔指标 · 定稿 v3 依据） |
 
 ## 金样 schema（golden_v1.yaml）
 

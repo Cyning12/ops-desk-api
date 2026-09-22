@@ -57,6 +57,7 @@ from app.db.models import OpsMemoryFact, now_utc  # noqa: E402
 from app.ops.memory import service as memory_service  # noqa: E402
 from app.ops.memory.extract import MemoryFactExtraction  # noqa: E402
 from app.ops.memory.gate import FactCandidate, should_write  # noqa: E402
+from app.ops.prompts import get_template  # noqa: E402
 from app.ops.structured_output import extract_json_object  # noqa: E402
 
 logger = logging.getLogger("memory_golden_eval")
@@ -1207,6 +1208,7 @@ def build_report(
     run_id: str,
     backend: str,
     golden_path: Path,
+    prompt_version: str,
     results: list[CaseResult],
     metrics: dict[str, Any],
     embed_name: str,
@@ -1223,6 +1225,8 @@ def build_report(
         "run": run_id,
         "backend": backend,
         "golden": str(golden_path),
+        # 报告能看出命中哪版 prompt（task memory-extract-calibration 契约）
+        "prompt_version": prompt_version,
         # 头部写死 SPEC §2 D5 门槛与达成情况（防"假绿"引用 · failure_paths）
         "thresholds": thresholds,
         "all_thresholds_met": all(t["met"] for t in thresholds.values()),
@@ -1315,6 +1319,7 @@ def main(argv: list[str] | None = None) -> int:
         run_id=run_id,
         backend=args.backend,
         golden_path=args.golden,
+        prompt_version=get_template("memory.extract.system").version,
         results=results,
         metrics=metrics,
         embed_name=embed_name,
