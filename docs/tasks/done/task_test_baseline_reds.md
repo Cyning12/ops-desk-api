@@ -1,6 +1,6 @@
 # Task：bugfix · 测试基线红清理（chat_ws×2 + capability proxy×1 + backfill flaky）
 
-> **状态**：`signed`（2026-09-22 · R1 PASS 零阻塞 · HG-TASK-DRAFT/HG-AUDIT-R1=approved（维护者授权 00 代录）· 可 30）  
+> **状态**：`done`（2026-09-22 · 五棒全通（bugfix 轨）· 40 PASS A1–A6 双态 · PR #169 CI 全绿合并 master（9a46f48）· CLOSE 归档）  
 > **类型**：**bugfix**（双轨：可跳 SPEC · 各 40 invoke 观察项 ≈ mini-SPEC）  
 > **依据**：`docs/harness/invokes/by-task/llm-layer-hardening/invoke_20260921_40_verify_llm_layer_hardening.md`（3 红 + master 同错复现）· `invoke_20260921_50_close_llm_layer_hardening.md`（「另开 fix task」指令）· `docs/harness/invokes/by-task/security-input-isolation/invoke_20260922_50_close_security_input_isolation.md`（3 红 + backfill flaky · fix 候选清单）· `docs/harness/invokes/by-task/memory-compliance-delete/invoke_20260922_40_verify_memory_compliance_delete.md`（3 红同款）· `docs/harness/invokes/by-task/tenant-readonly-predicate/invoke_20260918_40_verify_tenant-readonly-predicate.md`（PG 表缺失 hydrate 失败首记）· 本 task 10 帽复现 invoke：`docs/harness/invokes/by-task/test-baseline-reds/`  
 > **分支**：`fix/test-baseline-reds`（base：`master`）
@@ -219,3 +219,4 @@ D1=断言对齐现行拓扑+检索链打桩+conftest 双补丁（env 净化/建�
 |------|------|
 | 2026-09-22 | 10-task 落稿（bugfix 双轨 · 三缺陷真跑复现+读码定位 · early_stop at R3）· HG-TASK-DRAFT / HG-AUDIT-R1 待签 → 30 拒开工 |
 | 2026-09-22 | 40 核验 PASS（A1–A6 全过 · 双态全量 1367/0 ×3 · master 对照前红+假绿复现 · 变异复做）· 自检结论回填 |
+| 2026-09-22 | **50+CLOSE**：PR [#169](https://github.com/Cyning12/ops-desk-api/pull/169) CI 全绿 merge master（`9a46f48`）· 归档 done/ · 全量 pytest 1367/0 failed 双态三连跑 · 遗留：CI 假绿（无 PG 服务 DB 用例全 skip）另 task 议 · capability 单文件独立跑 4 红（顺序依赖×宿主 env）另 task 议 · 测试库 schema 漂移根治属仓级议题 |
