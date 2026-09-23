@@ -17,3 +17,4 @@
 |---|---|---|
 | 2026-08-26 | [2026-08-26_lg-rag-agent-capability-architecture.md](./2026-08-26_lg-rag-agent-capability-architecture.md) | lg_rag 质量闸 / 多智能体 / 能力网关 / output-control 对照 → [agent-infra SPEC](../spec/agent-infra/) |
 | 2026-08-26 | [2026-08-26_agent-host-architecture-phase-summary.md](./2026-08-26_agent-host-architecture-phase-summary.md) | **阶段性总结** + 架构图例 → [`02_agent_host_plan_v0`](../spec/agent-infra/02_agent_host_plan_v0.md) |
+| 2026-09-23 | [2026-09-23_agent-host-full-framework-outline_v0.md](./2026-09-23_agent-host-full-framework-outline_v0.md) | **Agent Host 完整框架大纲**：主线裁定（复杂 Agent 进化）· 五层 34 模块对照（已有/雏形/缺失/不适用）· 三道防线映射 · 废弃/休眠清单 · 大模块方向（不落地）→ [`01_modules.md`](../_tech_graph/l1/01_modules.md) |

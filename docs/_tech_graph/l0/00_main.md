@@ -1,13 +1,13 @@
 ---
 graph_id: 00_main
-version: 2026-08-24
-generated_at: sha256-588a664adc8f86c5
+version: 2026-09-23
+generated_at: sha256-f41174be4a57581b
 source: 00_main.graph.yaml
 ---
 
 # ops-desk-api 顶层流程总图
 
-Ops Desk 后端 API 的架构总图：FastAPI 入口、各业务路由、LangGraph Chat 流程、数据库表与外部依赖的关系。
+Ops Desk 后端 API 的架构总图：FastAPI 入口、各业务路由、LangGraph Chat 流程、数据库表与外部依赖的关系。2026-09-23 主线裁定：lg_rag supervisor 为复杂 Agent 进化主线（对齐 docs/discussions/2026-09-23_agent-host-full-framework-outline_v0.md）；chat 为 legacy 旧主线（/chat/stream 已 410 · 非默认读）。
 
 ## Mermaid
 
@@ -23,7 +23,7 @@ flowchart TB
     pulls["Pulls 路由"]
     graph["Graph 快照路由"]
     admin_sync["Admin Sync 路由"]
-    chat_router["Chat 路由（SSE + WS）"]
+    chat_router["Chat 路由（legacy · /chat/stream 410 · WS/models/sessions 保留）"]
     lc_evidence_router["LC Evidence 路由"]
     lg_rag_router["LG RAG 路由"]
     chat_flow[">../l1/10_flow_chat.md"]
@@ -101,7 +101,7 @@ flowchart TB
 | pulls | Pulls 路由 | flow |
 | graph | Graph 快照路由 | flow |
 | admin_sync | Admin Sync 路由 | flow |
-| chat_router | Chat 路由（SSE + WS） | flow |
+| chat_router | Chat 路由（legacy · /chat/stream 410 · WS/models/sessions 保留） | flow |
 | lc_evidence_router | LC Evidence 路由 | flow |
 | lg_rag_router | LG RAG 路由 | flow |
 | chat_flow | >../l1/10_flow_chat.md | external |

@@ -1,8 +1,8 @@
 schema_version: "inform_graph.v3"
 graph_id: "00_main"
 title: "ops-desk-api 顶层流程总图"
-description: "Ops Desk 后端 API 的架构总图：FastAPI 入口、各业务路由、LangGraph Chat 流程、数据库表与外部依赖的关系。"
-version: "2026-08-24"
+description: "Ops Desk 后端 API 的架构总图：FastAPI 入口、各业务路由、LangGraph Chat 流程、数据库表与外部依赖的关系。2026-09-23 主线裁定：lg_rag supervisor 为复杂 Agent 进化主线（对齐 docs/discussions/2026-09-23_agent-host-full-framework-outline_v0.md）；chat 为 legacy 旧主线（/chat/stream 已 410 · 非默认读）。"
+version: "2026-09-23"
 layer: "G-L0"
 primary_layer: "G-L0"
 depth: "framework"
@@ -50,7 +50,7 @@ nodes:
     kind: flow
 
   - id: "chat_router"
-    label: "Chat 路由（SSE + WS）"
+    label: "Chat 路由（legacy · /chat/stream 410 · WS/models/sessions 保留）"
     kind: flow
 
   - id: "lc_evidence_router"

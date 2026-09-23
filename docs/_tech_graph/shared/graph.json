@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260921_V1",
-  "generated_at": "2026-09-21T23:13:51Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20260923_V1",
+  "generated_at": "2026-09-23T08:54:01Z",
   "graphs": [
     {
       "id": "00_main",
@@ -23,7 +23,7 @@
     },
     {
       "id": "10_flow_chat",
-      "title": "Chat 流式对话流程",
+      "title": "Chat 流式对话流程（legacy · 非主线 · 非默认读）",
       "source_yaml_path": "l1/10_flow_chat.graph.yaml",
       "layer": "G-L1"
     },
@@ -112,7 +112,7 @@
     {
       "graph_id": "00_main",
       "id": "chat_router",
-      "label": "Chat 路由（SSE + WS）"
+      "label": "Chat 路由（legacy · /chat/stream 410 · WS/models/sessions 保留）"
     },
     {
       "graph_id": "00_main",
