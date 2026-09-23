@@ -39,6 +39,7 @@
 | 2026-09-11 | [`task_specwave_cleanup_2_1_3.md`](./task_specwave_cleanup_2_1_3.md) | 8 根级 SPEC 归位 + cursor rules 命令替换（R3 PASS） · PR #133/#134 |
 | 2026-09-17 | [`task_specwave_upgrade_2_4_2.md`](./task_specwave_upgrade_2_4_2.md) | spec-wave 2.1.3→2.4.2 + 旧命令字面收编（R1 PWN · 验收 14/14） · PR #136 |
 | 2026-09-18 | [`task_specwave_upgrade_3_0_0.md`](./task_specwave_upgrade_3_0_0.md) | spec-wave 2.4.2→3.0.0 major（R1 PWN · 验收 13/13） · PR #139 |
+| 2026-09-23 | [`task_specwave_upgrade_3_0_1.md`](./task_specwave_upgrade_3_0_1.md) | spec-wave 3.0.0→3.0.1 patch + 长程任务反馈 F-1~F-4（R1 PASS · 机械闸全绿） · PR #172 |
 
 ---
 
