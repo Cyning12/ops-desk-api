@@ -37,11 +37,13 @@ import time
 from typing import Any
 
 from app.ops.capability import circuit
+from app.ops.capability import delegation
 from app.ops.capability import fallback as fallback_mod
 from app.ops.capability.budget import check as budget_check
 from app.ops.capability.budget import count as budget_count
 from app.ops.capability.errors import (
     DISABLED,
+    PERMISSION_DENIED,
     UNKNOWN_ID,
     UPSTREAM_ERROR,
     format_error,
@@ -255,6 +257,69 @@ def _blocked_result(
     return result
 
 
+def _delegation_gate(
+    capability_id: str,
+    *,
+    args: Any,
+    ctx: dict[str, Any] | None,
+) -> CapabilityResult | None:
+    """委派令牌验签门（Host V1-A）：闸链最前，**lookup 之前**。
+
+    触发口径：仅 ctx 携 _delegation_required=True 且模式非 off 时强制
+    （委派链路专用 · tool_exec_node 注入）；非委派调用方零影响。
+    三档模式：off = 短路（零 diff）；observe = 完整验签只记 would_block
+    不拦；enforce = 拒。六类拒绝全部 ok=False **不抛异常、不落回执**
+    （被闸门拦下 = 没执行 = 不留回执，承 _blocked_result 先例）。
+    """
+    if delegation.delegation_mode() == delegation.MODE_OFF:
+        return None
+    if not ctx or ctx.get("_delegation_required") is not True:
+        return None
+    cid = capability_id or ""
+    subject = {
+        key: (ctx or {}).get(key)
+        for key in ("tenant_id", "user_id", "run_id", "subtask_id")
+    }
+    verdict = delegation.verify_serialized(
+        ctx.get("_delegation_token"),
+        secret=delegation.delegation_secret(),
+        capability_id=cid,
+        args=args,
+        subject=subject,
+    )
+    if verdict.ok:
+        delegation.audit_delegation(
+            delegation.AUDIT_TOKEN_VERIFIED,
+            capability_id=cid,
+            subtask_id=subject.get("subtask_id"),
+        )
+        return None
+    action = f"{delegation.AUDIT_TOKEN_REJECTED}:{verdict.reject_class}"
+    observe = delegation.delegation_mode() == delegation.MODE_OBSERVE
+    delegation.audit_delegation(
+        action,
+        capability_id=cid,
+        detail=verdict.detail,
+        would_block=True if observe else None,
+    )
+    if observe:
+        return None
+    result = CapabilityResult(
+        ok=False,
+        error=format_error(
+            PERMISSION_DENIED, f"delegation {verdict.reject_class}"
+        ),
+        capability_id=cid,
+        duration_ms=0.0,
+        meta={
+            "delegation_blocked": True,
+            "delegation_reject_class": verdict.reject_class,
+        },
+    )
+    _write_span_metadata(result, kind="", risk_level=None, args=args, ctx=ctx)
+    return result
+
+
 def _prepare_call(
     capability_id: str,
     *,
@@ -265,6 +330,10 @@ def _prepare_call(
     """lookup + enabled + Policy + args_schema；失败返回 CapabilityResult。"""
     cid = capability_id or ""
     started = time.perf_counter()
+    # ---- Host V1-A：委派令牌验签门（lookup 之前——无有效令牌连注册表都不查）----
+    delegation_reject = _delegation_gate(cid, args=args, ctx=ctx)
+    if delegation_reject is not None:
+        return delegation_reject
     entry = _registry.get(cid)
     if entry is None:
         result = CapabilityResult(
