@@ -36,3 +36,7 @@ class SubtasksPlan(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     subtasks: list[Any] = Field(..., min_length=1)
+    # A2 声明式 scope（Host V1-A）：模型**可声明收窄**，不声明=None。
+    # 只收窄不放宽：有效 scope = 声明 ∩ allowlist（Builder「声明∩裁剪」）；
+    # 声明不写入任何 Policy 键（Host 权威）。
+    requested_scope: list[str] | None = None

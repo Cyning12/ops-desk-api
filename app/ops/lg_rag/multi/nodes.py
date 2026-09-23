@@ -31,8 +31,10 @@ from pydantic import ValidationError
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage
 from app.ops.capability import CapabilityFilter, list_capabilities
-from app.ops.capability.baseline import baseline_filter
 from app.ops.capability import ainvoke as capability_ainvoke
+from app.ops.capability import delegation as dl
+from app.ops.capability import get_registry as _cap_registry
+from app.ops.capability.baseline import baseline_filter
 from app.ops.capability.types import CapabilitySpec
 from app.ops.lc_evidence_chain.step_hook import (
     reset_chain_step_hook,
@@ -68,6 +70,7 @@ from app.ops.prompts.slots import (
     security_input_isolation_enabled,
     wrap_slot,
 )
+from app.ops.strategy.builder import effective_scope_from_requested
 from app.ops.structured_output import parse_only
 from app.ops.tenant_context import current_tenant_or_default
 from app.ops.tracing import score_current_trace, trace_span, tracing_enabled
@@ -239,6 +242,87 @@ def _current_subtask(state: LgRagState) -> dict | None:
 
 def _run_id_of(state: LgRagState) -> str:
     return str(state.get("run_id") or "").strip()
+
+
+# ---------------------------------------------------------------------------
+# Host V1-A · 委派令牌（签发审批 / 有效 scope / 分发签发）
+# ---------------------------------------------------------------------------
+
+
+def _delegation_active() -> bool:
+    """委派令牌面是否启用（off = 现状逐字节零 diff · 默认 off）。"""
+    return dl.delegation_mode() != dl.MODE_OFF
+
+
+def _parse_requested_scope(raw: str) -> Any:
+    """从 supervisor LLM 输出取 plan 级 requested_scope（A2）；解析失败 → None（视同未声明）。"""
+    outcome = parse_only(raw, schema=SubtasksPlan)
+    if not outcome.ok or outcome.data is None:
+        return None
+    return outcome.data.requested_scope
+
+
+def _effective_scope(state: LgRagState) -> frozenset[str]:
+    """本轮有效 scope：声明∩裁剪已写 state 则用；缺键 = 未声明 = 隐式 allowlist。
+
+    只收窄不放宽：返回值恒为 allowed_capability_ids 的子集（声明∩裁剪在
+    supervisor 写入时已完成；这里的 allowlist 兜底同样取自 state）。
+    """
+    declared = state.get("delegation_scope")
+    if isinstance(declared, list):
+        return frozenset(str(c) for c in declared)
+    return frozenset(str(c) for c in (state.get("allowed_capability_ids") or []))
+
+
+def _delegation_issue_block_reason(state: LgRagState, row: dict) -> str | None:
+    """签发审批口径（Q2 裁定：只读自动 · 其余 HITL）；需审批 → 原因，自动放行 → None。
+
+    有效 scope 内空集（模型声明收窄把 tool 自己裁掉）**不走 HITL**：不签发，
+    tool_exec 直接 ok=False 走既有未知/无授权路径（SPEC §2 D5）。
+    """
+    tool = str(row.get("tool") or "").strip()
+    if not tool:
+        return None
+    scope = _effective_scope(state)
+    if tool not in scope:
+        return None
+    entry = _cap_registry().get(tool)
+    if entry is None:
+        return "委派签发审批：capability 未注册，无法判定审批口径（安全默认交人）"
+    ok, why = dl.auto_approve_ok([entry[0]], effective_scope=scope)
+    if ok:
+        return None
+    return f"委派签发需人工审批（{why}）"
+
+
+def _issue_delegation_token(state: LgRagState, subtask: dict) -> dict | None:
+    """为待分发 tool 子任务签发令牌（序列化 dict · 随 Send 载荷注入 state）。
+
+    空集不签发（SPEC §2 D5）；缺密钥 / 非法约束 → 拒绝签发（安全默认）。
+    同 subtask 重签发 = 新例生效 + 旧 nonce 作废（禁续期 · 签发序号单调）。
+    """
+    tool = str(subtask.get("tool") or "").strip()
+    scope = _effective_scope(state)
+    capability_set = {tool} & set(scope) if tool else set()
+    sid = str(subtask.get("subtask_id") or "")
+    if not capability_set:
+        logger.info(
+            "delegation 有效 scope 内空集，不签发 subtask=%s tool=%s", sid, tool
+        )
+        return None
+    token = dl.issue_token(
+        capability_set=capability_set,
+        subject_binding={
+            # tenant 取自 ContextVar（阶段 T · C6）；身份不取模型产出
+            "tenant_id": current_tenant_or_default(),
+            "user_id": str(state.get("user_id") or ""),
+            "run_id": _run_id_of(state),
+            "subtask_id": sid,
+        },
+    )
+    if token is None:
+        return None
+    return dl.token_to_dict(token)
 
 
 def _missing_run_update(query: str) -> dict:
@@ -621,6 +705,25 @@ def _join_subtasks(state: LgRagState) -> dict:
                 done[sid] = blocked
                 blocked_meta[reason] = blocked_meta.get(reason, 0) + 1
                 continue
+            # Host V1-A：委派签发审批（Q2：只读自动 · 其余 HITL_REQUIRED）。
+            # off 模式整段短路（现状零 diff）；审批拦截复用既有 HITL 回路留痕。
+            if _delegation_active() and str(row.get("type") or "") == "tool":
+                issue_reason = _delegation_issue_block_reason(state, row)
+                if issue_reason:
+                    blocked = _error_terminal(row, issue_reason)
+                    blocked["blocked_by"] = "delegation_issue_hitl_required"
+                    blocked["hitl_required"] = True
+                    extras.append(blocked)
+                    done[sid] = blocked
+                    blocked_meta["delegation_issue_hitl_required"] = (
+                        blocked_meta.get("delegation_issue_hitl_required", 0) + 1
+                    )
+                    dl.audit_delegation(
+                        dl.AUDIT_TOKEN_ISSUE_HITL_REQUIRED,
+                        subtask_id=sid,
+                        tool=str(row.get("tool") or ""),
+                    )
+                    continue
             ready.append(sid)
         updates["inflight_subtask_ids"] = ready
         if blocked_meta:
@@ -824,6 +927,25 @@ async def supervisor_node(state: LgRagState) -> dict:
             subtasks = [{"id": "t1", "type": "rag", "input": query}]
     stamped = _stamp_host_plan(state, subtasks or [], locked=locked)
     issued = stamped.get("subtasks") or []
+    # Host V1-A · A2：声明∩裁剪（只收窄不放宽 · off 模式整段短路零 diff）。
+    # 有效 scope 写 state，作签发 capability_set 上界；越界剔除 + 截断留痕。
+    scope_span: dict = {}
+    if _delegation_active() and not fallback and subtasks:
+        requested_scope = _parse_requested_scope(raw)
+        # 已声明 → 声明∩裁剪后写 state；未声明 → 不写键（隐式 allowlist 兼容现状）
+        if isinstance(requested_scope, list):
+            scope, stripped, truncated = effective_scope_from_requested(
+                requested_scope, allowed_ids
+            )
+            stamped["delegation_scope"] = scope
+            scope_span = {
+                "delegation_scope_declared": True,
+                "delegation_scope_count": len(scope),
+            }
+            if stripped:
+                scope_span["delegation_scope_stripped"] = stripped
+            if truncated:
+                scope_span["delegation_scope_truncated"] = len(truncated)
     span_meta = {
         "capability_catalog_count": len(caps),
         "subtask_count": len(issued),
@@ -840,6 +962,7 @@ async def supervisor_node(state: LgRagState) -> dict:
         span_meta["replan_suffix_only"] = True
     if invalid_tool_id:
         span_meta["supervisor_invalid_tool_id"] = True
+    span_meta.update(scope_span)
     _record_span_metadata(span_meta)
     return {**bump, **stamped}
 
@@ -854,13 +977,24 @@ def route_next_subtask(state: LgRagState) -> str | list[Send]:
     if is_supervisor_budget_exhausted(state):
         return "observe"
     by_id = {str(row["subtask_id"]): row for row in _plan_rows(state)}
+    delegation_on = _delegation_active()
     sends: list[Send] = []
     for sid in state.get("inflight_subtask_ids") or []:
         subtask = by_id.get(str(sid))
         if subtask is None:
             continue
         node = _TYPE_TO_NODE.get(str(subtask.get("type") or ""), "rag_subtask")
-        sends.append(Send(node, _worker_state(state, subtask)))
+        payload = _worker_state(state, subtask)
+        # Host V1-A：分发路径逐子任务签发（off = 不签发零 diff）；
+        # 重发 / replan 走到这里一律重签发新例（旧 nonce 作废 · 禁续期）。
+        if delegation_on and node == "tool_exec":
+            # Send 载荷即工人所见的全部 state：主体绑定的 run_id 必须随载荷
+            # 下发，否则验签侧 ctx.run_id 为空 ⇒ R-f 误拒（非篡改）。
+            payload["run_id"] = _run_id_of(state)
+            token_payload = _issue_delegation_token(state, subtask)
+            if token_payload is not None:
+                payload["delegation_token"] = token_payload
+        sends.append(Send(node, payload))
     if not sends:
         # ★ 不再直接 aggregate。没有待发步骤 ≠ 这一轮满足了原始问题：
         #   可能是后缀为空、可能全被拦下、可能统统失败。
@@ -1087,6 +1221,15 @@ async def tool_exec_node(state: LgRagState) -> dict:
         # 剥不出来就退化成"一个子任务一个桶"，配额永远打不满（假门）。
         "run_id": _run_id_of(state),
     }
+    # Host V1-A：委派链路注入令牌 + 强制标记（仅模式非 off；off 零 diff）。
+    # 无令牌（空集未签发）也标记 required —— enforce 下由验签门按 R-a 拒。
+    if _delegation_active():
+        cap_ctx["_delegation_required"] = True
+        # 委派主体绑定四元组补 user_id（与签发侧同源 · 非模型产出）
+        cap_ctx["user_id"] = str(state.get("user_id") or "")
+        raw_token = state.get("delegation_token")
+        if raw_token:
+            cap_ctx["_delegation_token"] = raw_token
     with trace_span("tool_exec", run_type="tool"):
         cap = await capability_ainvoke(tool_name, call_args, ctx=cap_ctx)
         if not cap.ok:

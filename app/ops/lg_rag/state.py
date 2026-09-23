@@ -243,6 +243,12 @@ class LgRagState(MessagesState):
     hitl_interrupt：图挂起时的载荷（等待授权的申请 / 恢复后的决定）。
         挂起期间节点 return 的值**不会**进 checkpoint，所以这个字段只能由
         恢复那一次写入——观测与前端读它来知道"这次等的是哪条申请"。
+    delegation_scope（Host V1-A · A2）：supervisor 写入的本轮**有效 scope**
+        （requested_scope ∩ allowlist · 只收窄不放宽）；缺键 = 未声明 =
+        兼容现状隐式 allowlist。仅在委派令牌模式非 off 时写入。
+    delegation_token（Host V1-A）：subtask_join 分发路径签发的委派令牌
+        （序列化 dict · Send 载荷 · tool_exec 自取注入 capability ctx）；
+        老 checkpoint 无此键：.get 返回 None → 验签门按 R-a 处理。
     thread_id / hitl_checkpoint_id：**恢复定位用的关联标识**。
         必须真的在 schema 里——不在的话 StateGraph 会把它们丢掉，
         审批申请里的 thread_id 永远是空，人批完之后无从定位要恢复哪条 run。
@@ -268,6 +274,8 @@ class LgRagState(MessagesState):
     hitl_requests: list[dict]
     hitl_unlocked_ids: list[str]
     hitl_interrupt: dict
+    delegation_scope: list[str]
+    delegation_token: dict
     thread_id: str
     hitl_checkpoint_id: str
     allowed_capability_ids: list[str]

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from app.ops.capability import list_capabilities
 from app.ops.capability.baseline import baseline_filter
@@ -57,6 +58,51 @@ def build_allowlist_from_candidates(
             stripped,
         )
     return allowed, stripped
+
+
+# A2 声明集上限（承 step_contract MAX_FIELDS 纪律 · SPEC FP-7）：超出截断+审计
+MAX_SCOPE_IDS = 64
+
+
+def effective_scope_from_requested(
+    requested_scope: Any,
+    allowlist: list[str] | frozenset[str] | set[str],
+) -> tuple[list[str], list[str], list[str]]:
+    """「声明∩裁剪」（Host V1-A · A2）：有效 scope = 声明 ∩ allowlist。
+
+    返回 (scope, stripped, truncated)：
+
+    - 未声明（None / 非 list）→ **兼容现状**：隐式 allowlist 原样返回
+      （stripped / truncated 为空；承 subtasks cap 外宽容纪律，
+      非 list 视同未声明）；
+    - 已声明 → 逐项清洗（去空白去重保序），越 allowlist 的 id **剔除**
+      （stripped · 审计 scope_stripped · 只收窄不放宽）；
+    - 声明超 MAX_SCOPE_IDS → 截断（truncated 为被截掉的 id · 审计）。
+    """
+    allowed_set = {str(cid) for cid in allowlist}
+    if not isinstance(requested_scope, list):
+        return list(allowlist), [], []
+    declared: list[str] = []
+    for item in requested_scope:
+        token = str(item or "").strip()
+        if token and token not in declared:
+            declared.append(token)
+    truncated = declared[MAX_SCOPE_IDS:]
+    declared = declared[:MAX_SCOPE_IDS]
+    scope = [cid for cid in declared if cid in allowed_set]
+    stripped = [cid for cid in declared if cid not in allowed_set]
+    if stripped:
+        logger.warning(
+            "strategy_builder scope_stripped：声明越出 allowlist 的 capability id 已剔除: %s",
+            stripped,
+        )
+    if truncated:
+        logger.warning(
+            "strategy_builder scope_truncated：声明超 MAX_SCOPE_IDS=%d 已截断: %s",
+            MAX_SCOPE_IDS,
+            truncated,
+        )
+    return scope, stripped, truncated
 
 
 def _record_builder_span(metadata: dict) -> None:
