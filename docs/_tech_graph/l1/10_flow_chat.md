@@ -1,11 +1,11 @@
 ---
 graph_id: 10_flow_chat
-version: 2026-08-31
-generated_at: sha256-1868b40f1dafb371
+version: 2026-09-23
+generated_at: sha256-786ecdb1a8677c4f
 source: 10_flow_chat.graph.yaml
 ---
 
-# Chat 流式对话流程
+# Chat 流式对话流程（legacy · 非主线 · 非默认读）
 
 用户通过 SSE 与后端对话的完整流程：HTTP 入口、LangGraph StateGraph 执行（含 RAG 检索链）、LLM 调用、事件归档。deprecated（T6 · 2026-08-31）：POST /api/ops/chat/stream 已 410 下线（迁移 POST /api/ops/lg-rag/stream）；节点/边保留作历史拓扑，WS /chat/ws 与 GET /chat/models、GET /chat/sessions/latest 仍在服务。
 
