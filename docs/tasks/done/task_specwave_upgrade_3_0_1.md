@@ -1,6 +1,6 @@
 # Task：spec-wave 升级 3.0.1（3.0.0 → 3.0.1 · patch · 过程轨）
 
-> **状态**：`done`（2026-09-23 · 钉版四面齐 3.0.1 · 机械闸全绿：check 零 WARN / verify PASS / lint-wiki-delta PASS / graph-compile exit 0 / pytest 32 passed · FEEDBACK F-1~F-4 落盘 · 待维护者定夺推送/PR）  
+> **状态**：`done`（2026-09-23 · 钉版四面齐 3.0.1 · 机械闸全绿：check 零 WARN / verify PASS / lint-wiki-delta PASS / graph-compile exit 0 / pytest 32 passed · FEEDBACK F-1~F-4 落盘 · PR #172 合并 master · CLOSE 归档 done/）  
 > **类型**：基础设施 / harness 过程轨升级（patch · 默认路径零破坏）  
 > **前置**：manifest / package 钉 `3.0.0`（`task_specwave_upgrade_3_0_0` done · PR #139）；npm 最新 **`3.0.1`**  
 > **分支**：`task/specwave-3-0-1`（base：`origin/master` 6ddd9c7 · 与 agent-host-framework-alignment 分支隔离）  
