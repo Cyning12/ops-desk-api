@@ -100,6 +100,7 @@
 | 2026-09-08 | [`task_lg_rag_sse_subtask_steps.md`](./task_lg_rag_sse_subtask_steps.md) | §10.7 step 里程碑 + provider 真流式（删 aread 假缓冲） · PR #127 |
 | 2026-09-08 | [`task_lg_rag_sse_subtask_message.md`](./task_lg_rag_sse_subtask_message.md) | §10.7 subtask.progress 可选可读 `message`（确定性模板 ≤200 字） · PR #130 |
 | 2026-09-18 | [`task_supervisor_budget_h_beta.md`](./task_supervisor_budget_h_beta.md) | 阶段 H β · supervisor 总预算（默认 32 · 耗尽→aggregate · 墙钟默认关） · PR #141 |
+| 2026-09-23 | [`task_host_v1_delegation_token.md`](./task_host_v1_delegation_token.md) | **Agent Host V1-A** · 委派令牌（六字段 HMAC 令牌 + 验签门 + 签发审批 + requested_scope 声明∩裁剪 · 三档模式默认 off） · PR #179 |
 
 ---
 
@@ -139,6 +140,7 @@
 | 2026-09-01 | CLOSE C4 `#120`（host-obs-comms-ui 归档 done/ · Hub 补登）· **串行波次 T4–C4 全 CLOSE** |
 | 2026-09-07 | CLOSE idle-keepalive `#123`（lg-rag-sse-idle-keepalive 归档 done/ · Hub 补登） |
 | 2026-09-18 | CLOSE H β supervisor-budget（Hub 补登 · commit/PR 同轮） |
+| 2026-09-23 | CLOSE **V1-A host-v1-delegation-token** `#179`（Agent Host v1.0 五波之首 · 归档 done/ · Hub 补登 · 00 代录签录链完整：HG-SPEC-SIGNOFF/HG-TASK-DRAFT/HG-AUDIT-R1/HG-GRAPH-MODULES） |
 
 ## 给维护者
 
