@@ -1,6 +1,6 @@
 # Task：Agent Host 完整框架大纲（复杂 Agent 进化主线裁定）+ _tech_graph 主线/legacy/dormant 标记追平（agent-host-framework-alignment）
 
-> **状态**：`in_progress`（2026-09-23 · 维护者本窗直令开工：「更新当前项目 _tech_graph …结合 mermaid 进行框架分析大纲，针对大模块的思考，后续再考虑落地」）  
+> **状态**：`done`（2026-09-23 · 六项验收全达成 · graph-compile exit 0 · PR #171 合并 master · CLOSE 归档 done/）  
 > **类型**：docs-only（图谱维护 + 讨论稿 · **零代码改动** · 零新路由/表/SSE 事件类型/列/索引）  
 > **变更请求**：维护者本窗原话（即本 task 立项依据 · 承 task_tech_graph_recent_sync 「维护者令」先例）  
 > **分支**：`task/agent-host-framework-alignment`（**禁止 master/main 直改**）
