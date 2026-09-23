@@ -20,6 +20,7 @@
 | **L0 传输/会话轨** | [`05_lg_rag_transport_and_session_plan_v0.md`](./05_lg_rag_transport_and_session_plan_v0.md) | lg-rag SSE 主线 · Session · Obs-I/O 优先级（**active · T0 签收**） | 实现细节 |
 | **L0 沟通边界** | [`06_host_comms_boundary_spec_v0.md`](./06_host_comms_boundary_spec_v0.md) | Host C0 comms vs product 边界（**signed**） | 实现细节 |
 | **L0 Host v1.0 规划** | [`07_host_v1_landing_plan_v0.md`](./07_host_v1_landing_plan_v0.md) | 大版本落地：M0 四组缺口 + M1 硬化五波 V1-A~E（**draft** · 待 HG-SPEC-SIGNOFF） | 实现细节 |
+| **L0 v1.0 SPEC 大纲** | [`08_host_v1_wave_spec_outlines_v0.md`](./08_host_v1_wave_spec_outlines_v0.md) | 五波 10-spec 种子稿：范围/非范围/failure_paths/开放裁定/R0–R5 预判（**draft**） | 实现细节 |
 | **L1 域夹** | `capability/` · `structured-output/` · `strategy/` · `eval/` · `session/` 等 | 该域 README + 现行 SPEC + 域 ROADMAP | 跨域总序（回指 L0） |
 | **L2 现行契约** | `*/SPEC-*_v0.md` | 已签收、P0–P3 已落地的接口与失败语义 | 未开工升级设想 |
 | **L2 升级路线** | `*/ROADMAP_*_v0.md` | 下一波可拆 task 的升级规格 | 直接授权 30 |
@@ -35,6 +36,7 @@ docs/spec/agent-infra/
 ├── 05_lg_rag_transport_and_session_plan_v0.md  # L0 传输/会话（lg-rag SSE · draft）
 ├── 06_host_comms_boundary_spec_v0.md            # L0 沟通边界（signed）
 ├── 07_host_v1_landing_plan_v0.md                # L0 Host v1.0 落地规划（draft · V1-A~E）
+├── 08_host_v1_wave_spec_outlines_v0.md           # L0 v1.0 五波 SPEC 大纲（draft · 10-spec 种子）
 ├── orchestration/                         # L1 · H1
 ├── session/                               # L1 · Session（主线 lg-rag；H3 chat 归档参考）
 ├── prompt/                                # L1 · H4
