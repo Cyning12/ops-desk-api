@@ -105,7 +105,7 @@ flowchart LR
 | **agent-host-executor** | 执行面 #15-19：意图/护栏/orchestrator/specialist/反馈生成 | 调 control（裁剪/令牌）、llm-gateway（推理）、provider（invoke）、bus（事件） | 无（checkpoint/thread 在 PG） | LLM 密集 · 按并发水平扩 |
 | **llm-gateway** | LLM 工厂 #20-26：模型注册/路由/降级/推理缓存/预算/评测/过滤 | 对 executor 暴露 unified complete/stream（OpenAI-compatible 超集） | 模型目录、usage 账本、缓存 | 按 token 吞吐扩 · 独立计费 |
 | **capability-provider-*** | #27-30 垂域服务群 | invoke 协议（C4 契约网络化）· 各自独立校验 | 各自垂域数据 | 按垂域独立交付/扩缩 |
-| **memory-service** | #9 分层记忆 + #32 成功案例沉淀 | bus consumer（异步写）+ 召回查询 API | 记忆库（PG+向量） | 写走 bus · 读可缓存 |
+| **memory-service** | #9 分层记忆 + #32 成功案例沉淀 | bus consumer（异步写）+ 召回查询 API | 记忆库（PG+向量）· **写冲突底座：事件溯源 + CRDT + 乐观锁**（见功能面大纲 §6 D3） | 写走 bus · 读可缓存 |
 | **event-bus** | #31-34 反馈闭环载体：run_events/失败模式/规则回写 | Kafka/NATS 等 | 事件流 | 基础设施 |
 | **企业侧既有** | SSO/tenant 网关、可观测栈（Langfuse→OTel）、CI/CD | — | — | 复用企业平台 |
 

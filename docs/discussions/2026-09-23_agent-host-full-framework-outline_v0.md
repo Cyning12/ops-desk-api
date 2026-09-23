@@ -1,6 +1,6 @@
-# 2026-09-23 · Agent Host 完整框架大纲（复杂 Agent 进化 · 大模块对照 v0）
+# 2026-09-23 · Agent Host 完整框架大纲（复杂 Agent 进化 · 大模块对照 v0.1）
 
-> **状态**：讨论稿 v0 · **非 freeze 契约**；落地以 `docs/spec/` + `docs/tasks/active/` 为准。  
+> **状态**：讨论稿 v0.1（三方测评六点补强）· **非 freeze 契约**；落地以 `docs/spec/` + `docs/tasks/active/` 为准。  
 > **立项**：维护者令 2026-09-23「当前主线已经不再是简单的 rag agent，而是在向着一个复杂 Agent 进化」。  
 > **范围排除**：**旧业务（admin sync → data 只读面）与系统报警业务场景先不考虑**——原 mermaid 中「旧系统层 / Jev 报警分类 / 根因分析」链路整体不在本大纲内。  
 > **上游素材**：维护者所给 mermaid + 《Agent Host 完整模块清单》（五层 34 模块）。  
@@ -129,11 +129,11 @@ flowchart TD
 | 6 | 委派网关 | supervisor→工人分发 + `subtask_join` step_contract 闸（consumes/produces · prefix_touch_required→hitl_required）| 雏形 | 缺**授权令牌签发**（能力集/TTL/一次性/参数绑定/主体绑定）——当前委派是图内分发，无独立授权产物 |
 | 7 | 执行网关（六道门） | `capability/_prepare_call` 闸链：lookup→enabled→Policy→熔断→配额/kill switch→args_schema | **已有** | 顺序与目标六道门几乎一致（熔断先于配额、参数最后）；Policy 拒不计配额已落实 |
 | 8 | Policy 硬闸 | capability Policy 门：高危/sandbox/cli 默认 blocked · Host-only 策略键 · `tenant_scoped` · args_schema 形态校验 | 雏形 | 缺「危险程度→副作用→危险形态→输入完整性」四维判定的体系化与可撤销性维度 |
-| 9 | 记忆管理（分层） | `memory`（事实/偏好 · 确定性∪向量融合 · 离线抽取 · 状态机）+ `session/`（历史/真摘要）+ threads/turns | 雏形 | 已有≈语义记忆+会话记忆两层；缺**情景记忆**（成功/失败模式沉淀）与共享记忆总线（Pub/Sub · 跨进程时议） |
+| 9 | 记忆管理（分层） | `memory`（事实/偏好 · 确定性∪向量融合 · 离线抽取 · 状态机）+ `session/`（历史/真摘要）+ threads/turns | 雏形 | 已有≈语义记忆+会话记忆两层；缺**情景记忆**（成功/失败模式沉淀）与共享记忆总线（Pub/Sub · 跨进程时议 · 同步机制见 §6 D3） |
 | 10 | 评估与验证 | `evals/agent/redlines/capability_v1.yaml`（行为红线 R0–R15）+ memory 金样校准循环 | 雏形 | 缺 Golden Test Set 作为一级资产、运行时任务完成率指标、失败模式聚类管线 |
-| 11 | 可观测性 | `tracing.py`（Langfuse）+ capability `metrics.py`/`visibility.py` + admin 观测端点 + run_events 落盘/replay | 雏形 | 缺四大黄金信号与 SLI/SLO 的显式定义；审计日志分散（logger 面）未成台账 |
+| 11 | 可观测性 | `tracing.py`（Langfuse）+ capability `metrics.py`/`visibility.py` + admin 观测端点 + run_events 落盘/replay | 雏形 | 缺四大黄金信号与 SLI/SLO 的显式定义；审计日志分散（logger 面）未成台账——**审计台账应含**：能力调用 / HITL 审批 / 紧急停用 / Policy 拦截 / 可见集裁剪剔除项；**SLI/SLO 候选**：端到端延迟 P99 / 任务完成率 / 能力命中率 / Cost per Successful Task |
 | 12 | 成本控制 | `ops_llm_usage` 账本（run 级聚合 · task_type 归因）+ 任务分档路由 | 雏形 | **记账有、闸门无**：缺会话/任务级预算硬闸与预算耗尽降级链（→规则引擎/缓存） |
-| 13 | 沙箱隔离 | Policy 中 sandbox/cli 类默认 blocked（H2 标记位） | 不适用→缺失 | 单进程内 microVM/独立沙箱不成立；触发条件=执行不可信代码或跨进程部署 |
+| 13 | 沙箱隔离 | Policy 中 sandbox/cli 类默认 blocked（H2 标记位） | 不适用→缺失 | 单进程内以 Policy 默认 blocked 替代（够用）；触发条件=执行不可信代码或跨进程部署；跨进程时 microVM 隔离 + 网络策略默认拒绝（仅允许访问网关） |
 | 14 | 安全策略（HITL 分级） | `hitl`：interrupt 真挂起 + `Command(resume)` 真恢复 + HMAC/管理员双口径 + step_contract→hitl_required | 雏形 | 已有单档 HITL_REQUIRED 等价物；缺 PRE_AUTHORIZED / HITL_EXEMPT 分级与 `max_reversal_latency` 可撤销性声明 |
 
 ### 3.2 执行面（调用 LLM）
@@ -153,10 +153,10 @@ flowchart TD
 | 20 | 模型注册与版本 | `llm/model_catalog.py`（TASK_TIER_MODELS · answer/grader/extract/structured/summary 档） | 雏形 | 缺能力标签（推理/分类/Embedding）元数据与版本号管理 |
 | 21 | 模型路由 | 任务分档路由 + `OPS_LLM_TIER_*` env 覆盖 | 雏形 | 路由规则已纯代码；缺按能力标签的声明式路由 |
 | 22 | 降级与容错 | `BaseProviderImpl`：指数退避+jitter 重试 + provider 级熔断（pybreaker · open 零出网）；capability `fallback.py` 降级链（声明才降级 · 必带 `degraded` 标记） | **已有** | 缺「大模型→小模型→规则引擎」跨档降级的显式链（当前是同档重试+熔断） |
-| 23 | 推理缓存 | — | **缺失** | 高频意图 plan 模板/高频能力参数模板缓存；命中→跳过 LLM |
-| 24 | Token 预算与配额 | `ops_llm_usage` 账本 + capability 会话配额/kill switch | 雏形 | usage 是账本不是预算；缺预算耗尽→降级闭环与 Cost per Successful Task 指标 |
+| 23 | 推理缓存 | — | **缺失** | 缓存对象=高频意图 plan 模板 + 高频能力参数模板；命中→跳过 LLM 直接返回（缓存键=intent/capability+参数哈希 · 失效随模型/prompt 版本 bump） |
+| 24 | Token 预算与配额 | `ops_llm_usage` 账本 + capability 会话配额/kill switch | 雏形 | usage 是账本不是预算；缺预算硬闸与耗尽降级闭环（路径：小模型档→规则引擎/缓存）与 Cost per Successful Task 指标 |
 | 25 | 模型评测 A/B | memory 抽取校准循环（version bump 归因 · 金样 50）局部成立 | 雏形 | 缺全任务面 Golden Test Set 与模型更新回归机制 |
-| 26 | 模型安全 | slots 输入隔离（雏形）· grader 故障 refuse | 雏形 | 缺输出侧敏感信息过滤 |
+| 26 | 模型安全 | slots 输入隔离（雏形）· grader 故障 refuse | 雏形 | 缺输出侧敏感信息过滤——应入 LLM 工厂统一出口（与安全护栏检测联动 · 非各调用点自管） |
 
 ### 3.4 能力提供方（本仓域）
 
@@ -206,21 +206,22 @@ flowchart TD
 按「缺口价值 × 与主线距离」分组排序，均不超出现有包边界哲学（能入既有模块就不开新一级模块）：
 
 ### 组 A · 委派与授权（距主线最近）
-- **A1 委派令牌**：step_contract 闸之后补「授权产物」——能力集/TTL/一次性/参数绑定的签发与核验；先图内（subtask_id 绑定）后跨进程。
+- **A1 委派令牌**：step_contract 闸之后补「授权产物」——令牌内容：**能力集 / TTL / 一次性 / 参数约束 / 主体绑定 / 签名**；**签发本身是高危操作，必须走 HITL 或安全域审批**；先图内（subtask_id 绑定）后跨进程。
 - **A2 requested_scope 显式化**：supervisor plan 输出携带声明式 scope，Builder 从「隐式 allowlist」升级为「声明∩裁剪」。
 
 ### 组 B · 可见集与安全策略
 - **B1 场景维裁剪**：意图/风险级别驱动的第二阶段裁剪，安全默认「宁可退化成无工具」。
-- **B2 HITL 分级**：HITL_REQUIRED / PRE_AUTHORIZED / HITL_EXEMPT 三档声明式兜底 + 可撤销性（reversible / max_reversal_latency）进 manifest 声明面。
+- **B2 HITL 分级**：HITL_REQUIRED / PRE_AUTHORIZED / HITL_EXEMPT 三档声明式兜底 + **可撤销性声明进 manifest**：`reversible: true/false` · `execution_type: instant/target/process` · `max_reversal_latency` · `requires_stop_support`——这些字段直接决定预授权模型与撤销窗口。
 
 ### 组 C · LLM 工厂闭环
 - **C1 预算硬闸**：usage 账本 → 会话/任务级预算 → 耗尽降级（小模型档→规则/缓存）；Cost per Successful Task 指标。
 - **C2 推理缓存**：高频意图 plan 模板 + 高频能力参数模板（命中跳过 LLM）。
-- **C3 跨档降级链**：大模型超时→小模型档的显式路由（当前同档重试+熔断之上）。
+- **C3 跨档降级链**：大模型超时→小模型档→规则引擎的显式路由（当前同档重试+熔断之上）；**路由层声明式降级策略**——档级 fallback 声明进模型目录（`model_catalog`），不散落在调用点。
 
 ### 组 D · 记忆与反馈
 - **D1 情景记忆**：成功/失败模式沉淀（与事实记忆分库分闸）。
 - **D2 失败模式库 → 规则回写**：聚类管线 + 高频模式沉淀 redlines/manifest 的半自动回路。
+- **D3 记忆跨进程同步**（触发条件与 `multi-replica-verify` 对齐）：多 Agent 共享记忆的冲突底座三件套——**事件溯源**（仅追加日志 + 确定性投影）· **CRDT**（G-Counter / OR-Set / LWW-Register 按数据形态选型）· **乐观锁**（版本号检测 + 冲突重试）；单进程期不建，多副本实证后立项。
 
 ### 组 E · 跨进程（触发条件驱动，当前不适用）
 - 注册中心同步/紧急停用通道/microVM 沙箱：以 `multi-replica-verify` 结论为前置；单进程期一律不建。
@@ -229,6 +230,13 @@ flowchart TD
 - 动态 StateGraph compile；模型可选「校验 tool」（SO/Policy 必须 Host 权威）；完整 Skill 执行引擎；生产级无限制 sandbox。
 
 ---
+
+## 修订记录
+
+| 日期 | 版本 | 内容 |
+|---|---|---|
+| 2026-09-23 | v0 | 初版（维护者令 · 五层 34 模块对照） |
+| 2026-09-23 | v0.1 | 三方测评补强六点：① 组 D 增 **D3 记忆跨进程同步**（事件溯源 + CRDT + 乐观锁 · 触发条件对齐 multi-replica-verify）· ② LLM 工厂细化（#23 缓存对象与命中机制 · #24 耗尽降级路径 · #26 输出侧过滤入统一出口 · C3 声明式降级策略）· ③ #11 审计台账内容清单 + SLI/SLO 候选 · ④ B2 可撤销性四字段进 manifest（reversible / execution_type / max_reversal_latency / requires_stop_support）· ⑤ A1 令牌六字段 + 签发走高危审批 · ⑥ #13 沙箱单进程替代与跨进程形态写清 |
 
 ## 7. 关联
 
