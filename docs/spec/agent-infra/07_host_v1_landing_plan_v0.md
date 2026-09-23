@@ -1,7 +1,7 @@
 # Agent Host v1.0 · 大版本落地规划（v0 · draft）
 
 > **层级**：L0 规划（接 02 编号序列 · 02 轨 H1–H5 的继任者）  
-> **状态**：`draft`（2026-09-23 · **待 HG-SPEC-SIGNOFF 维护者签收** · 本文不授权任何 30 改码）  
+> **状态**：`signed`（2026-09-23 · HG-SPEC-SIGNOFF=**approved** · 00 代录 · 维护者本窗令「签收，并生成对此长程任务的00启动Prompt，新窗口执行，授权00签收所有过程文档，完整落地1.0版本内容」· 启动 invoke：[`../../harness/invokes/by-task/host-v1-landing/invoke_20260923_00_host-v1-landing.md`](../../harness/invokes/by-task/host-v1-landing/invoke_20260923_00_host-v1-landing.md)）  
 > **上游**：[`../../discussions/2026-09-23_agent-host-full-framework-outline_v0.md`](../../discussions/2026-09-23_agent-host-full-framework-outline_v0.md)（功能面 34 模块对照 **v0.1** · 三方测评六点已补强）· [`../../discussions/2026-09-23_agent-host-multi-service-engineering-architecture_v0.md`](../../discussions/2026-09-23_agent-host-multi-service-engineering-architecture_v0.md)（工程面 P0–P3 / C1–C7 / M0–M5）  
 > **前置轨**：[`02_agent_host_plan_v0.md`](./02_agent_host_plan_v0.md)（**completed** · H1–H5 CLOSE）· [`../multi-replica-verify/SPEC-multi-replica-verify_v1.md`](../multi-replica-verify/SPEC-multi-replica-verify_v1.md)（**signed** · V1-E 直接前置）· [`06_host_comms_boundary_spec_v0.md`](./06_host_comms_boundary_spec_v0.md)（signed）  
 > **Open Folder**：`ops-desk-api/`
@@ -22,7 +22,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | **pending** | 待维护者签收本规划；签收后 00 方可拆 V1-A task |
+| **HG-SPEC-SIGNOFF** | **approved** | 2026-09-23 · 00 代录 · 维护者令「签收……授权00签收所有过程文档，完整落地1.0版本内容」（原话留痕见头部状态行与启动 invoke）；00 可拆 V1-A task |
 
 ---
 

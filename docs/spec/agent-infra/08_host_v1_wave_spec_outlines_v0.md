@@ -1,7 +1,7 @@
 # Agent Host v1.0 · 五波 SPEC 大纲拆解（v0 · draft · 长程落地流程方向）
 
 > **层级**：L0 规划配套（07 的下游 · 每波 10-spec 的**种子稿**）  
-> **状态**：`draft`（2026-09-23 · 维护者令「针对 1.0 进行 spec 的详细大纲拆解……此次先做每一步的大纲，细节交由后续每一个 10-spec 再次完善」）  
+> **状态**：`signed`（2026-09-23 · 00 代录 · 维护者令「签收……授权00签收所有过程文档，完整落地1.0版本内容」· **方向签收**：各波正式 SPEC 仍以独立 HG-SPEC-SIGNOFF 为准（由 00 按本授权代录）· 初稿维护者令「针对 1.0 进行 spec 的详细大纲拆解……细节交由后续每一个 10-spec 再次完善」）  
 > **上游**：[`07_host_v1_landing_plan_v0.md`](./07_host_v1_landing_plan_v0.md)（draft · 待 HG-SPEC-SIGNOFF）· 功能面大纲 v0.2 · 工程架构方案（`docs/discussions/2026-09-23_*`）  
 > **性质声明**：本文是**大纲**不是 SPEC——每波开工时由 10-spec 以对应章节为种子展开为完整 SPEC（`docs/spec/host-v1-<wave>/SPEC-..._v0.md`），走标准流程（10-spec → HG-SPEC-SIGNOFF → 10-task → 20-task-audit → HG-AUDIT-R1 → 30 → 40 → PR → 图谱回写）。**本文不授权任何 30 改码**。
 
