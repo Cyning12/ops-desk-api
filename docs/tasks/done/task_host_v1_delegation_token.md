@@ -1,6 +1,6 @@
 # Task：Agent Host V1-A · 委派令牌（DelegationToken 六字段 + 签发点 + 验签门 + 审批口径 + 审计台账 + requested_scope 声明∩裁剪）（host-v1-delegation-token）
 
-> **状态**：`active`（2026-09-23 · 20-task-audit R1 **PASS-WITH-NITS**（零阻塞 · N1–N5 已微修留痕）· HG-AUDIT-R1=**approved** 00 代录 · 30 可委派开工）  
+> **状态**：`done`（2026-09-23 · 五棒全通 · PR [#179](https://github.com/Cyning12/ops-desk-api/pull/179) MERGED（CI 三绿：check · lint-wiki-delta · pytest）· merge commit d605092 · 图谱回写 00 代录 HG-GRAPH-MODULES · CLOSE 归档 done/）  
 > **类型**：feature（图内化新安全面 · **零 alembic 义务**（零新表零列 · 进程内令牌形态 · SPEC §3 锁死）· **有图谱义务按实判**（capability/lg_rag 行备注 + 人签新行 00 代录位 · Q3 裁定不新增一级模块））  
 > **上游 SPEC**：`docs/spec/host-v1-delegation-token/SPEC-host-v1-delegation-token_v0.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-23 · 00 代录 · 维护者令原话留痕 SPEC 状态行；Q1 HMAC-SHA256 / Q2 只读自动·其余 HITL / Q3 不新增一级模块签收锁死）  
 > **长程上下文**：Agent Host v1.0 五波之首（[`../spec/agent-infra/07_host_v1_landing_plan_v0.md`](../spec/agent-infra/07_host_v1_landing_plan_v0.md) signed）；启动 invoke：`docs/harness/invokes/by-task/host-v1-landing/invoke_20260923_00_host-v1-landing.md`  
@@ -20,7 +20,7 @@
 | **test_strategy_note** | 六类拒绝断言（R-a~R-f + 篡改）· 全链路携令牌断言（fake adapter）· 审批留痕断言（只读自动 / 写能力 HITL 双路径）· replan 重签发断言（旧 nonce 作废）· 三档模式断言（off 零 diff / observe would_block / enforce 拒）· requested_scope 声明∩裁剪矩阵；pytest 单测为主不开服务 |
 | **code_quality_bar** | `L2_backend` |
 | **graph_change_layer** | `G-L1` 行备注（Q3 裁定**不新增一级模块**：`capability` 行备注 delegation 令牌模型+验签门 · `lg_rag` 行备注 subtask_join 签发接线+requested_scope；HG-GRAPH-MODULES 人签新行随 30 交付落盘 00 代录位；不增 implementedBy · G-L2 indexes 不扩） |
-| **graph_delta** | 有（capability/lg_rag 两行备注 + 人签新行 · 零新一级模块 · 零新跨模块边——`lg_rag→capability` 既有边复用） |
+| **graph_delta** | `docs/_tech_graph/l1/01_modules.md`（capability 与 lg_rag 两行备注 + 人签新行 · 零新一级模块 · 零新跨模块边——lg_rag→capability 既有边复用） |
 | **graph_delta_note** | **回炉补闸条款**：若 30 实现形态偏离本预判（新增一级模块 · 新增表/列触发 alembic · 新增 SSE 事件类型 · 新增 HTTP 路由 · 改 freeze 契约 · 改六道闸既有语义），不得沿用本裁定——退回 10-spec/10-task 补闸 + `docs/_tech_graph/` 如实登记后续做（承 invoke §6 形态偏离回炉条款） |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 契约真值在 SPEC `host-v1-delegation-token`；capability 模块 docstring/README 同步属 D4 范围项非 wiki |
@@ -102,12 +102,12 @@
 
 ## 范围（单 task 直通 · SPEC §2 D1–D6）
 
-- [ ] **D1 · 令牌模型（必做 · 核心）**：`capability/delegation.py` —— `DelegationToken` frozen dataclass + canonical 序列化 + HMAC-SHA256 签名/验签纯函数 + 参数约束校验子集（enum/max_len/pattern · 未知类型拒签发）+ nonce 消费 registry（进程内 TTL 清理）
-- [ ] **D5 · requested_scope（必做 · A2）**：`SubtasksPlan` 增 `requested_scope`；Builder 升级「声明∩裁剪」（越界剔除+审计 · 未声明兼容现状 · MAX_SCOPE_IDS=64）；有效 scope 写 state 作签发到上界
-- [ ] **D2 · 签发点（必做）**：`subtask_join` 分发路径签发 + 审批口径（只读自动 / 其余 HITL_REQUIRED 复用 hitl 回路）+ 签发序号单调 + supersede 审计 + env 密钥纪律
-- [ ] **D3 · 验签门（必做）**：`_prepare_call` lookup 前插验签门（`_delegation_required` 口径）+ 六类拒绝 + 三档模式开关 + `tool_exec_node` ctx 注入令牌
-- [ ] **D4 · 审计（必做）**：五类动作进 logger + span metadata（记动作不记内容 · 字段哈希化）
-- [ ] **D6 · 测试与图谱（必做 · 否决面）**：SPEC §2 D6 八组断言全落 + 图谱两行备注 + HG-GRAPH-MODULES 人签新行（00 代录）+ graph-compile 绿
+- [x] **D1 · 令牌模型（必做 · 核心）**：`capability/delegation.py` —— `DelegationToken` frozen dataclass + canonical 序列化 + HMAC-SHA256 签名/验签纯函数 + 参数约束校验子集（enum/max_len/pattern · 未知类型拒签发）+ nonce 消费 registry（进程内 TTL 清理）
+- [x] **D5 · requested_scope（必做 · A2）**：`SubtasksPlan` 增 `requested_scope`；Builder 升级「声明∩裁剪」（越界剔除+审计 · 未声明兼容现状 · MAX_SCOPE_IDS=64）；有效 scope 写 state 作签发到上界
+- [x] **D2 · 签发点（必做）**：`subtask_join` 分发路径签发 + 审批口径（只读自动 / 其余 HITL_REQUIRED 复用 hitl 回路）+ 签发序号单调 + supersede 审计 + env 密钥纪律
+- [x] **D3 · 验签门（必做）**：`_prepare_call` lookup 前插验签门（`_delegation_required` 口径）+ 六类拒绝 + 三档模式开关 + `tool_exec_node` ctx 注入令牌
+- [x] **D4 · 审计（必做）**：五类动作进 logger + span metadata（记动作不记内容 · 字段哈希化）
+- [x] **D6 · 测试与图谱（必做 · 否决面）**：SPEC §2 D6 八组断言全落 + 图谱两行备注 + HG-GRAPH-MODULES 人签新行（00 代录）+ graph-compile 绿
 
 **竖切结论**：D1→D5→D2→D3→D4→D6 同 task 一次提交；令牌模型不配验签门 = 授权产物无强制面；不配签发审批 = 高危面裸奔；不配六类拒绝断言 = 违反「不能自证的机制等于没装」。耦合面可控（一个新模块文件 + 三处接线 + 测试/图谱），单 PR 可控。
 
@@ -138,48 +138,48 @@
 
 ## 验收标准
 
-- [ ] 人工闸：HG-AUDIT-R1 approved 后方可勾选下列码项（HG-GRAPH-MODULES 模块表已建置 approved · 图谱新签义务随 30 交付落盘 00 代录；**若 30 偏离预判（新模块/新表/新 SSE 事件/新路由/freeze 变更）→ 回炉补闸条款生效**）
+- [x] 人工闸：HG-AUDIT-R1 approved 后方可勾选下列码项（HG-GRAPH-MODULES 模块表已建置 approved · 图谱新签义务随 30 交付落盘 00 代录；**若 30 偏离预判（新模块/新表/新 SSE 事件/新路由/freeze 变更）→ 回炉补闸条款生效**）
 
 ### D1 · 令牌模型（映射 SPEC §6-1/4）
 
-- [ ] `DelegationToken` frozen dataclass 落 `capability/delegation.py`；六字段 + token_id/version/kid/issued_at/expires_at/nonce 齐全
-- [ ] 篡改断言：改 `capability_set`/`expires_at`/`subject_binding` 任一字段 → 验签必拒（**缺本条则「验签通过」是假通过**）
-- [ ] 参数约束：enum/max_len/pattern 三态断言；未知约束类型 → 拒绝签发断言
-- [ ] 令牌可序列化/反序列化 round-trip（checkpoint 形态）断言
+- [x] `DelegationToken` frozen dataclass 落 `capability/delegation.py`；六字段 + token_id/version/kid/issued_at/expires_at/nonce 齐全
+- [x] 篡改断言：改 `capability_set`/`expires_at`/`subject_binding` 任一字段 → 验签必拒（**缺本条则「验签通过」是假通过**）
+- [x] 参数约束：enum/max_len/pattern 三态断言；未知约束类型 → 拒绝签发断言
+- [x] 令牌可序列化/反序列化 round-trip（checkpoint 形态）断言
 
 ### D2 · 签发点 + 审批（映射 SPEC §6-3）
 
-- [ ] 只读委派（side_effect none/read · scope 内 · 非沙箱 cli）→ 自动签发 + `token_issued` 台账断言
-- [ ] 写能力/越界/沙箱类委派 → `token_issue_hitl_required` 台账断言（审批留痕可查）
-- [ ] 同 subtask 重签发 → 新例生效 + 旧 nonce 验签拒 R-d + `token_superseded` 审计断言
-- [ ] enforce 缺密钥 → 拒绝签发 + 告警断言
+- [x] 只读委派（side_effect none/read · scope 内 · 非沙箱 cli）→ 自动签发 + `token_issued` 台账断言
+- [x] 写能力/越界/沙箱类委派 → `token_issue_hitl_required` 台账断言（审批留痕可查）
+- [x] 同 subtask 重签发 → 新例生效 + 旧 nonce 验签拒 R-d + `token_superseded` 审计断言
+- [x] enforce 缺密钥 → 拒绝签发 + 告警断言
 
 ### D3 · 验签门（映射 SPEC §6-1/2/5）
 
-- [ ] 六类拒绝断言：R-a 无令牌 · R-b 越集 · R-c 过期 · R-d 重用 · R-e 参数越约束 · R-f 主体不符——全部 `ok=False` 不抛异常 · 不落回执
-- [ ] 全链路携令牌断言：supervisor 分发 → tool_exec 携令牌 → capability 验签通过（fake adapter）
-- [ ] 三档模式：`off` = 现状零 diff（既有用例零改动全绿即证）；`observe` = 越权放行但 `would_block` 台账可查；`enforce` = 越权拒
-- [ ] 非委派调用方（ctx 无 `_delegation_required`）零影响断言
+- [x] 六类拒绝断言：R-a 无令牌 · R-b 越集 · R-c 过期 · R-d 重用 · R-e 参数越约束 · R-f 主体不符——全部 `ok=False` 不抛异常 · 不落回执
+- [x] 全链路携令牌断言：supervisor 分发 → tool_exec 携令牌 → capability 验签通过（fake adapter）
+- [x] 三档模式：`off` = 现状零 diff（既有用例零改动全绿即证）；`observe` = 越权放行但 `would_block` 台账可查；`enforce` = 越权拒
+- [x] 非委派调用方（ctx 无 `_delegation_required`）零影响断言
 - 注记（承 SPEC FP-3 · 不计验收计数 · R1 审查 N3）：验签朴素计时 smoke 并入新测试文件（<1ms/次量级声明 · 不设硬 CI 阈值）
 
 ### D5 · requested_scope（映射 SPEC §6-6）
 
-- [ ] 声明∩裁剪矩阵：声明越界 id 剔除 + `scope_stripped` 审计断言；未声明 → 兼容现状断言；声明收窄生效断言
-- [ ] 只收窄不放宽：声明含 allowlist 外 id → 不进入有效 scope（断言）
-- [ ] MAX_SCOPE_IDS=64 截断 + 审计断言
+- [x] 声明∩裁剪矩阵：声明越界 id 剔除 + `scope_stripped` 审计断言；未声明 → 兼容现状断言；声明收窄生效断言
+- [x] 只收窄不放宽：声明含 allowlist 外 id → 不进入有效 scope（断言）
+- [x] MAX_SCOPE_IDS=64 截断 + 审计断言
 
 ### D6 · 图谱 / 工程（映射 SPEC §6-7/8/9）
 
-- [ ] 零 alembic（迁移 diff 为空断言）；`docs/_tech_graph/l1/01_modules.md`：capability 行备注 + lg_rag 行备注 + HG-GRAPH-MODULES 人签新行（00 代录）；`./scripts/graph-compile.sh` 绿
-- [ ] 全量 `pytest tests` 绿（基线 **1368 collected** · 2026-09-23 本帽真跑；**无既有用例删除**，新增守护用例数如实入 40 记录）；`ruff check app tests` 绿
-- [ ] 生产路径 diff 白名单：`git diff master -- app/` 只含 capability/delegation.py 新增 + gateway.py 验签门 + multi（签发接线 + tool_exec 注入）+ schemas/subtasks.py + strategy/builder.py + **state.py（delegation_scope/delegation_token 两 state channel · Send 载荷必需 · 00 裁定确认白名单扩列 · 2026-09-23 留痕）** + 测试/图谱/文档
+- [x] 零 alembic（迁移 diff 为空断言）；`docs/_tech_graph/l1/01_modules.md`：capability 行备注 + lg_rag 行备注 + HG-GRAPH-MODULES 人签新行（00 代录）；`./scripts/graph-compile.sh` 绿
+- [x] 全量 `pytest tests` 绿（基线 **1368 collected** · 2026-09-23 本帽真跑；**无既有用例删除**，新增守护用例数如实入 40 记录）；`ruff check app tests` 绿
+- [x] 生产路径 diff 白名单：`git diff master -- app/` 只含 capability/delegation.py 新增 + gateway.py 验签门 + multi（签发接线 + tool_exec 注入）+ schemas/subtasks.py + strategy/builder.py + **state.py（delegation_scope/delegation_token 两 state channel · Send 载荷必需 · 00 裁定确认白名单扩列 · 2026-09-23 留痕）** + 测试/图谱/文档
 - 注记（承 SPEC §6-8/9 · 不计验收计数 · R1 审查 N4）：SSE 零新事件类型由 B1 组 6 回归 + off 零 diff 断言覆盖；PR+CI 绿+merge 由 orchestration 流程承载（承「PR 过 CI 自动 merge」先例）
 
 ### 变异检验（不验收空真规则）
 
-- [ ] ① **签名可检**：临时验签恒真 → 六类拒绝断言必挂；恢复后全绿
-- [ ] ② **一次性可检**：临时跳过 nonce 消费登记 → R-d 重用断言必挂；恢复后全绿
-- [ ] ③ **审计可检**：临时去掉 `token_issued` 台账 → caplog/台账断言必挂；恢复后全绿
+- [x] ① **签名可检**：临时验签恒真 → 六类拒绝断言必挂；恢复后全绿
+- [x] ② **一次性可检**：临时跳过 nonce 消费登记 → R-d 重用断言必挂；恢复后全绿
+- [x] ③ **审计可检**：临时去掉 `token_issued` 台账 → caplog/台账断言必挂；恢复后全绿
 
 ### 旧测影响面清单（B1 · 2026-09-23 10-task 实扫落盘）
 
@@ -274,10 +274,26 @@ SPEC §5 七条失败面全收并翻四列，加过程三条与 Host 权威面�
 
 ---
 
+### KPI（kpi_aggregator=CLOSE · 2026-09-23 00 核验）
+
+Task_KPI%: 100 · D1 范围钉死（D1–D6 全交付 · SPEC §2 映射）· D2 闸齐（HG-SPEC-SIGNOFF/HG-TASK-DRAFT/HG-AUDIT-R1/HG-GRAPH-MODULES 全 00 代录 approved · 维护者令原话留痕）· D3 过程档齐（invoke 10/20/30/40 + R1 审查文 PASS-WITH-NITS）· D4 图谱回写随 #179 入 master（不新增一级模块）· D5 关账补登（归档 done/ · Hub 行）
+
+| 指标 | 值 |
+|---|---|
+| 新增测试 | +52 用例（1368→1420 collected · 零既有删除） |
+| 全量测试 | 1267 passed / 11 failed（全实证基线环境性 PG 5432 · master+同 .env 复跑同挂）/ 142 skipped；CI pytest **pass** |
+| lint | ruff 净增 0（改动文件 7 errors 与 master 同数 · 新文件全绿）；task lint PASS；spec-wave verify PASS |
+| 变异检验 | 3/3「破坏→必挂→恢复绿」留痕（签名/一次性/审计） |
+| 图谱 | graph-compile 绿 · 不新增一级模块（Q3）· HG-GRAPH-MODULES 00 代录 |
+| 交付 | PR #179 MERGED（CI 三绿 · d605092）· 当日起落（10-spec→merge 同窗） |
+
+---
+
 ## 修订记录
 
 | 日期 | 摘要 |
 |------|------|
 | 2026-09-23 | 10-task 落稿（SPEC signed 后 · 00 亲起 · 承 harness-00-delegate-only「无初稿时起草第一步」例外）：锚点逐个复核（gateway :258 · graph :94-102 · nodes :1050-1091 · subtasks schema · builder :38-59）· 命名冲突扫零命中 · pytest 基线 1368 真跑 · B1 八组落盘 · HG-TASK-DRAFT 00 代录 approved（维护者令原话留痕）· HG-AUDIT-R1 pending 待 20-task-audit |
+| 2026-09-23 | **00 CLOSE**：PR [#179](https://github.com/Cyning12/ops-desk-api/pull/179) MERGED（CI 三绿 · d605092）；无 Alembic；图谱回写 capability/lg_rag 行备注 + HG-GRAPH-MODULES 00 代录行随 PR 入 master；归档 done/ · Hub 补登 · 40 invoke 留痕；**V1-A CLOSE → 下一波 V1-B**（visibility-scenario-policy · 依赖本波 requested_scope） |
 | 2026-09-23 | **40 核验（00 独立复核）**：全量 pytest 1420 collected（+52 新增 · 零既有删除）· 1267 passed / 11 failed / 142 skipped——**11 红全部实证为基线环境性**（本地 PG 5432 未起 · master+同 .env worktree 复跑同 8+3 全挂 · 与本 diff 无关）；ruff 改动文件 7 errors 与 master 同数（净增 0 · 新增三文件全绿）；`graph-compile.sh` 绿；alembic diff 为空；**state.py 白名单偏离确认**（Send 载荷必须是 state channel · 最小必需增量 · 钉死契约无改义） |
 | 2026-09-23 | 20-task-audit R1 **PASS-WITH-NITS**（零阻塞 · 审查文 `docs/harness/reviews/task_host_v1_delegation_token_audit_R1_20260923.md` · 子 Agent 执行）；N1–N5 微修留痕：N1 先例行号修正（result_contract.py:23/:44/:61-62 + errors.py:102-103）· N2 failure_paths 计数 10→12（7+3+2 点名额外面）· N3 计时 smoke 注记（不计验收计数）· N4 SPEC §6-8/9 映射显式化注记 · N5 B1 组 5/6 双计去重注记；**00 代录 HG-AUDIT-R1=approved**（维护者令原话+日期留痕 · 本窗追认令「授权00可以签收所有过程文档」）· 30 可委派开工（分支 `task/host-v1-delegation-token`） |
