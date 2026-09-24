@@ -1,10 +1,10 @@
 # Task：Host v1.0 出口跟进 · SLI 四项定稿（定义 / 有数 / 看板）（host-v1-sli-four-metrics）
 
-> **状态**：`active`（2026-09-24 · 00 10-task 起草 · 出口复核 G1）  
-> **类型**：observability / eval follow-up（**优先 docs+聚合口径+看板；热路径埋点按实判最小 diff**）  
+> **状态**：`done`（2026-09-24 · 五棒全通 · PR [#193](https://github.com/Cyning12/ops-desk-api/pull/193) MERGED（CI 四绿 · b2896c6）· 40 验收 PASS · 出口 G1 **closed** · CLOSE 归档 done/）  
+> **类型**：observability / eval follow-up（**docs-only** · 零 `app/` 生产改动 · `graph_change_layer=none`）  
 > **依据**：`docs/reports/host_v1_exit_review/REPORT_host_v1_exit_review_20260924_v1_zh.md` · GAP G1 · 07 §4 指标面  
 > **上游**：`docs/spec/agent-infra/07_host_v1_landing_plan_v0.md` §4 · `docs/spec/agent-infra/04_eval_and_observability_plan_v0.md` · `docs/spec/agent-infra/eval/ROADMAP_eval_observability_v0.md` §3 · V1-C Cost 落点  
-> **分支**：`task/host-v1-sli-four-metrics`（**禁止 master 直改 · 30 由 00 委派**）  
+> **分支**：`task/host-v1-sli-four-metrics`（已合入 master）  
 > **10 注**：2026-09-24 · 00 亲起（出口复核授权开最早跟进 · 承 harness-00-delegate-only「无初稿起草第一步」）
 
 ---
@@ -185,8 +185,7 @@ HG-TASK-DRAFT=approved（00 代录）；HG-AUDIT-R1=pending → 禁 30。
 | D5 | `pytest tests/eval/test_host_v1_sli.py` + `tests/test_llm_budget.py` → **37 passed** · `ruff check evals/agent/sli tests/eval/test_host_v1_sli.py` 净增 0 |
 | 触 app/ | **否**（`git diff master -- app/` 空） |
 | 40 验收 | **PASS**（2026-09-24 独立真跑）· invoke `invoke_20260924_40_host-v1-sli-four-metrics.md` |
-| G1 CLOSE | **hold** · 出口报告已注「40 验收 PASS · 待 merge 后 closed」· **未**归档 |
-| commit | **未**（维护者未令） |
+| G1 CLOSE | **closed** · PR #193 MERGED · 归档 done/ |
 
 ---
 
@@ -199,3 +198,16 @@ HG-TASK-DRAFT=approved（00 代录）；HG-AUDIT-R1=pending → 禁 30。
 | 2026-09-24 | 20-task-audit R1 **PASS-WITH-NITS** 微修（不改范围实质）：成功口径承 V1-C 锁死（去「建议」）· 补 E1 对齐提示/D4→B1 钉死 · failure_paths +2 · 验收条件 B1 · R3/R4 计数同步；审查文 `docs/harness/reviews/task_host_v1_sli_four_metrics_audit_R1_20260924.md` |
 | 2026-09-24 | **30**：D1–D5 交付 · docs-only · invoke `invoke_20260924_30_host-v1-sli-four-metrics.md` |
 | 2026-09-24 | **40 PASS**：verify/pytest/ruff 真跑绿 · `app/` diff 空 · invoke `invoke_20260924_40_…` · G1 注待 merge 后 closed · 未 CLOSE |
+| 2026-09-24 | **00 CLOSE**：PR [#193](https://github.com/Cyning12/ops-desk-api/pull/193) MERGED · G1 closed · 归档 done/ · Hub |
+
+---
+
+### KPI（kpi_aggregator=CLOSE · 2026-09-24）
+
+| 指标 | 值 |
+|---|---|
+| pytest | `test_host_v1_sli` + Cost 对拍相关 **37 passed**（40 真跑） |
+| app/ diff | 空（docs-only） |
+| CI | PR #193 四绿（check · import-linter · lint-wiki-delta · pytest） |
+| 交付 | SLI 定义/yaml · aggregate_sli · Langfuse GUIDE · 出口报告 G1 closed |
+| merge | `b2896c6` |
