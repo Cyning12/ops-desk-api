@@ -249,6 +249,10 @@ class LgRagState(MessagesState):
     delegation_token（Host V1-A）：subtask_join 分发路径签发的委派令牌
         （序列化 dict · Send 载荷 · tool_exec 自取注入 capability ctx）；
         老 checkpoint 无此键：.get 返回 None → 验签门按 R-a 处理。
+    intent_fallback（Host V1-B）：intent_node 写入的意图健康度标记
+        （SO/LLM 成功=False · 失败/异常=True）；场景维裁剪 S1 的输入
+        （fallback=意图不可信 → 可见集退化为空集 · 安全默认）。
+        老 checkpoint 无此键：.get 返回 None → bool(None)=False（现状语义）。
     thread_id / hitl_checkpoint_id：**恢复定位用的关联标识**。
         必须真的在 schema 里——不在的话 StateGraph 会把它们丢掉，
         审批申请里的 thread_id 永远是空，人批完之后无从定位要恢复哪条 run。
@@ -281,6 +285,7 @@ class LgRagState(MessagesState):
     allowed_capability_ids: list[str]
     allowed_skill_ids: list[str]
     intent: dict
+    intent_fallback: bool
     critic_verdict: dict
     inner_retry_count: int
     rebinding_count: int
