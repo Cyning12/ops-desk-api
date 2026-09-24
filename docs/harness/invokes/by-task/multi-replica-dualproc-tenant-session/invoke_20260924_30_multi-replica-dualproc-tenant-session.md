@@ -24,7 +24,7 @@
 3. ✅ `pytest tests/test_multi_replica_dualproc.py` → **9 passed** · 无 `tenant_id` / `NotNullViolation`  
 4. ✅ `git diff origin/master -- app/` 空（本地 `master` 落后于 origin，以 origin 为准）  
 5. ✅ FINDINGS #1 → closed + 修订行  
-6. ✅ commit + push + PR（见修订）
+6. ✅ commit `1aaf11c` + push + **[PR #191](https://github.com/Cyning12/ops-desk-api/pull/191)**（repo 未开 auto-merge 权限，未启用）
 
 ## 禁（遵守）
 
@@ -35,4 +35,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-09-24 | 00 下发 30 |
-| 2026-09-24 | 30 落地：fixture + FINDINGS closed · 值=`ops-desk-pilot` · SHA `1aaf11c` · PR 待开后补录 |
+| 2026-09-24 | 30 落地：fixture + FINDINGS closed · 值=`ops-desk-pilot` · SHA `1aaf11c` · [PR #191](https://github.com/Cyning12/ops-desk-api/pull/191) |
