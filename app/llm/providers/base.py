@@ -10,9 +10,16 @@ from contextlib import suppress
 import httpx
 import pybreaker
 
+from app.llm import budget as llm_budget
 from app.llm import circuit as llm_circuit
+from app.llm import infer_cache as llm_infer_cache
 from app.llm import retry as llm_retry
 from app.llm import usage as llm_usage
+from app.llm.model_catalog import (
+    RULE_TIER_PREFIX,
+    resolve_fallback_chain,
+    rule_tier_text,
+)
 from app.llm.schema import BaseProvider, LlmChunk, LlmMessage, LlmProviderError, LlmUsage
 
 logger = logging.getLogger(__name__)
@@ -29,27 +36,127 @@ class BaseProviderImpl(BaseProvider):
     _boundary_resilience: bool = True
 
     def __init_subclass__(cls, **kwargs) -> None:
-        """给每个子类的 complete_stream 统一套韧性边界（llm-layer-hardening）。
+        """给每个子类的 complete_stream 统一套边界（complete/stream 统一入口）。
 
-        施加面钉死在 BaseProviderImpl 边界：所有继承本类并实现
-        complete_stream 的 provider（含测试 fake）自动获得
-        熔断 guard + 退避重试 + usage 落表观测；_boundary_resilience=False
-        的子类（Bailian）在 fallback 链内逐候选自走 _resilient_stream。
+        两层包装施加面钉死在 BaseProviderImpl 边界：
+
+        - **预算检查点**（外层 · 全子类含 Bailian · host-v1-llm-factory-closure
+          D1/D2）：complete/complete_stream 调用前 check_budget（默认 off =
+          零行为直通）；enforce 超限在下一次调用前拦截并走 catalog 声明
+          降级链（调用点零硬编码降级模型 · 降级带 degraded 标记）。
+        - **韧性边界**（内层 · llm-layer-hardening）：所有继承本类并实现
+          complete_stream 的 provider（含测试 fake）自动获得
+          熔断 guard + 退避重试 + usage 落表观测；_boundary_resilience=False
+          的子类（Bailian）在 fallback 链内逐候选自走 _resilient_stream
+          （链语义不变，仅外层多一道默认关闭的预算检查点）。
         """
         super().__init_subclass__(**kwargs)
         fn = cls.__dict__.get("complete_stream")
-        if fn is None or not getattr(cls, "_boundary_resilience", True):
+        if fn is None:
             return
+
+        stream_fn = fn
+        if getattr(cls, "_boundary_resilience", True):
+            inner_fn = stream_fn
+
+            @functools.wraps(inner_fn)
+            async def resilient_stream(self, messages, model=None):  # noqa: ANN001,ANN202
+                async for chunk in self._resilient_stream(
+                    lambda: inner_fn(self, messages, model=model),
+                    model=model or "",
+                ):
+                    yield chunk
+
+            stream_fn = resilient_stream
+
+        guarded_fn = stream_fn
 
         @functools.wraps(fn)
         async def complete_stream(self, messages, model=None):  # noqa: ANN001,ANN202
-            async for chunk in self._resilient_stream(
-                lambda: fn(self, messages, model=model),
-                model=model or "",
+            async for chunk in self._budget_guarded_stream(
+                guarded_fn, messages, model=model
             ):
                 yield chunk
 
         cls.complete_stream = complete_stream
+
+    async def _budget_guarded_stream(
+        self,
+        stream_fn: Callable[..., AsyncIterator[LlmChunk]],
+        messages: Iterable[LlmMessage],
+        *,
+        model: str | None,
+    ) -> AsyncIterator[LlmChunk]:
+        """预算检查点 + 耗尽降级链 walker（host-v1-llm-factory-closure D1/D2）。
+
+        - off / observe：直通（observe 仅 verdict 进 span · would_block 不拦）；
+        - enforce 超限：**下一次调用前拦截**（不截进行中流 · FP-1）→ catalog
+          声明降级链（TASK_TIER_FALLBACKS · **调用点零硬编码降级模型**）：
+          小模型档 → rule:<name> 固定文案档；链内某一档首 chunk 前失败 →
+          走下一档；每次降级带 degraded=true + degrade_reason +
+          degrade_chain 标记**跟数据走**（并入首个正文 chunk 的 meta ·
+          ok=True 也可能降级 · SSE 零新事件）；
+        - 链末端（规则档文案缺失 / 无声明链）：LlmProviderError
+          （budget_exhausted · retryable=False）+ degraded 标记进 span ·
+          **不伪造成功**（承 capability/fallback 链末端先例 · FP-3）。
+        """
+        ctx = llm_usage.current_run_context()
+        verdict = llm_budget.check_budget(ctx.task_type, ctx=ctx)
+        llm_budget.report_verdict(verdict)
+        if verdict.allowed:
+            async for chunk in stream_fn(self, messages, model=model):
+                yield chunk
+            return
+
+        task_type = ctx.task_type or ""
+        chain_used: list[str] = []
+        for entry in resolve_fallback_chain(task_type):
+            marker = llm_budget.degraded_meta(task_type, [*chain_used, entry])
+            if entry.startswith(RULE_TIER_PREFIX):
+                text = rule_tier_text(entry[len(RULE_TIER_PREFIX):])
+                if text is None:
+                    # 规则档声明了但文案未登记 = 本档失败 · 继续走链（不伪造）
+                    chain_used.append(entry)
+                    continue
+                llm_budget.report_span({f"llm_{k}": v for k, v in marker.items()})
+                yield LlmChunk(content=text, meta=marker)
+                return
+            # 小模型档：prime 首 chunk 成功才认这一档（首 chunk 前失败 / 空流
+            # → 本档失败走下一档；正文已吐后出错照常上抛，不伪造）
+            agen = stream_fn(self, messages, model=entry)
+            try:
+                first = await agen.__anext__()
+            except StopAsyncIteration:
+                chain_used.append(entry)
+                continue
+            except LlmProviderError:
+                with suppress(Exception):
+                    await agen.aclose()
+                chain_used.append(entry)
+                continue
+            llm_budget.report_span({f"llm_{k}": v for k, v in marker.items()})
+            yield LlmChunk(content=first.content, meta={**(first.meta or {}), **marker})
+            try:
+                async for chunk in agen:
+                    yield chunk
+            finally:
+                with suppress(Exception):
+                    await agen.aclose()
+            return
+
+        # 链末端：ok=False + degraded 不伪造成功
+        final_marker = llm_budget.degraded_meta(task_type, chain_used)
+        llm_budget.report_span(
+            {f"llm_{k}": v for k, v in final_marker.items()} | {"llm_degraded_ok": False}
+        )
+        raise LlmProviderError(
+            "llm budget exhausted; degrade chain ended without success "
+            f"({llm_budget.META_DEGRADED}=true "
+            f"{llm_budget.META_DEGRADE_REASON}="
+            f"{llm_budget.DEGRADE_REASON_BUDGET_EXHAUSTED} "
+            f"{llm_budget.META_DEGRADE_CHAIN}={final_marker[llm_budget.META_DEGRADE_CHAIN]})",
+            retryable=False,
+        )
 
     def _provider_name(self) -> str:
         return self.PROVIDER_NAME or type(self).__name__
@@ -150,6 +257,18 @@ class BaseProviderImpl(BaseProvider):
             )
         except Exception:  # pragma: no cover - record_llm_usage 已内 catch，此为兜底
             logger.warning("ops_llm_usage record hook failed", exc_info=True)
+        # host-v1-llm-factory-closure D1/D5：usage 末帧同源钩点——预算调用后
+        # 真实记账（真实值覆盖预估 · off 模式零行为）+ 估算成本进 span
+        # （缺单价 unknown 不伪造 0 · 估算口径非对账）
+        ctx = llm_usage.current_run_context()
+        llm_budget.record_actual(
+            ctx.task_type,
+            parsed.prompt_tokens + parsed.completion_tokens,
+            ctx=ctx,
+        )
+        llm_budget.report_estimated_cost(
+            model, parsed.prompt_tokens, parsed.completion_tokens
+        )
 
     @staticmethod
     def _messages_to_openai(messages: Iterable[LlmMessage]) -> list[dict]:
@@ -167,7 +286,35 @@ class BaseProviderImpl(BaseProvider):
         messages: Iterable[LlmMessage],
         model: str | None = None,
     ) -> str:
-        """聚合 complete_stream：拼正文，usage / I/O 末帧副作用上报。"""
+        """聚合 complete_stream：拼正文，usage / I/O 末帧副作用上报。
+
+        host-v1-llm-factory-closure D3 推理缓存（**默认关 · 关 = 零 diff**）：
+        只缓存 CACHEABLE_TASK_TYPES（structured 档结构化产物 · Q2 裁定
+        **终答 answer 不缓存**）；命中跳过 LLM 调用，命中/未命中进 span
+        （infer_cache_hit / infer_cache_key_prefix · 不记内容）。
+        """
+        messages = list(messages)
+        cache_key: str | None = None
+        if llm_infer_cache.infer_cache_enabled():
+            ctx = llm_usage.current_run_context()
+            task = (ctx.task_type or "").strip().lower()
+            if task in llm_infer_cache.CACHEABLE_TASK_TYPES:
+                cache_key = llm_infer_cache.make_key(
+                    task,
+                    model,
+                    input_parts=[f"{m.role}: {m.content}" for m in messages],
+                )
+                cached = llm_infer_cache.get(cache_key)
+                llm_infer_cache.report_span(
+                    {
+                        "infer_cache_hit": cached is not None,
+                        "infer_cache_key_prefix": cache_key[:12],
+                    }
+                )
+                if cached is not None:
+                    self._report_complete_io(messages, cached)
+                    return cached
+
         parts: list[str] = []
         usage_meta: object | None = None
         async for chunk in self.complete_stream(messages, model=model):
@@ -175,10 +322,15 @@ class BaseProviderImpl(BaseProvider):
             if meta.get("usage"):
                 usage_meta = meta["usage"]
                 continue
+            if meta.get(llm_budget.META_DEGRADED):
+                # D2 降级标记跟数据走：complete 聚合面同样进 span（U3 观测）
+                llm_budget.report_span({f"llm_{k}": v for k, v in meta.items()})
             if meta.get("event_type") == "model.fallback":
                 continue
             parts.append(chunk.content)
         text = "".join(parts)
+        if cache_key is not None and text:
+            llm_infer_cache.put(cache_key, text)
         if usage_meta is not None:
             self._report_complete_usage(usage_meta)
         self._report_complete_io(messages, text)
