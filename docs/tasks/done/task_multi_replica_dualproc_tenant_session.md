@@ -1,6 +1,6 @@
 # Task：bugfix · dualproc `_create_user` 补 `ops_sessions.tenant_id`（fix-multi-replica-dualproc-tenant-session）
 
-> **状态**：`active`（2026-09-24 · 10 落稿 · 闸全 **approved** 00 代录 · 30 可委派）  
+> **状态**：`done`（2026-09-24 · PR [#190](https://github.com/Cyning12/ops-desk-api/pull/190) MERGED（8f8427e）· dualproc 9 passed · FINDINGS #1 closed · CLOSE 归档 done/）  
 > **类型**：**bugfix**（可跳独立 SPEC · 依据=V1-E D5 FINDINGS #1）  
 > **依据**：`docs/reports/host_v1_splittability_hardening/FINDINGS_open_elsewhere_v1.md` #1 · V1-E CLOSE 遗留  
 > **分支**：`fix/multi-replica-dualproc-tenant-session` · worktree `/private/tmp/opsdesk-wt-fix-dualproc`  
@@ -90,11 +90,11 @@ V1-E 双进程回归：`_create_user` 裸 SQL INSERT `ops_sessions` **未写 `te
 
 ## 验收标准
 
-- [ ] INSERT `ops_sessions` 含 `tenant_id`（值对齐 dualproc）
-- [ ] `pytest tests/test_multi_replica_dualproc.py`：无 `tenant_id` NOT NULL ERROR（有 PG 时用例绿）
-- [ ] `git diff master -- app/` 为空
-- [ ] FINDINGS #1 → closed
-- [ ] ruff 净增 0（触及文件）
+- [x] INSERT `ops_sessions` 含 `tenant_id`（值对齐 dualproc）
+- [x] `pytest tests/test_multi_replica_dualproc.py`：无 `tenant_id` NOT NULL ERROR（有 PG 时用例绿）
+- [x] `git diff master -- app/` 为空
+- [x] FINDINGS #1 → closed
+- [x] ruff 净增 0（触及文件）
 
 ---
 
@@ -156,8 +156,22 @@ pytest dualproc 文件 + `git diff master -- app/` 空。
 
 ---
 
+---
+
+### KPI（CLOSE · 2026-09-24）
+
+| 指标 | 值 |
+|---|---|
+| pytest | `test_multi_replica_dualproc.py` **9 passed** · 无 NotNullViolation |
+| app/ diff | 空 |
+| tenant 值 | `ops-desk-pilot`（∈ ALLOWED_TENANTS；字面 dualproc → 422） |
+| FINDINGS #1 | closed |
+| 交付 | PR #190 MERGED |
+
+
 ## 修订记录
 
 | 日期 | 摘要 |
 |------|------|
 | 2026-09-24 | 00 10 落稿 + 三闸代录 approved · 委派 30 |
+| 2026-09-24 | **00 CLOSE**：PR #190 MERGED · 归档 done/ · Hub · FINDINGS #1 closed |

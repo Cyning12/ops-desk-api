@@ -15,4 +15,4 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-09-24 | 30 落盘：双进程 tenant_id 环境/fixture 漂移 1 条 |
-| 2026-09-24 | **#1 closed**：`_create_user` INSERT 补 `tenant_id='ops-desk-pilot'`（∈ `ALLOWED_TENANTS`；`dualproc_server` 的 `"dualproc"` 是 HITL store 字段，非 session 租户——字面 `dualproc` 会 `422 unknown_tenant`）· SHA/PR 待本 fix 提交后补录 |
+| 2026-09-24 | **#1 closed**：`_create_user` INSERT 补 `tenant_id='ops-desk-pilot'`（∈ ALLOWED_TENANTS）· PR [#190](https://github.com/Cyning12/ops-desk-api/pull/190) · merge `8f8427e` |
