@@ -89,4 +89,6 @@ async def intent_node(state: LgRagState) -> dict:
                 "intent_needs_tool": intent.get("needs_tool"),
             }
         )
-        return {**bump, "intent": intent}
+        # Host V1-B：intent_fallback 同步进 state channel（区分「模型明判 low」
+        # 与「fallback 默认 low」——场景维裁剪 S1 的输入 · 堵 fallback 裂缝）。
+        return {**bump, "intent": intent, "intent_fallback": fallback}

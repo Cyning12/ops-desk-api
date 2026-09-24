@@ -40,6 +40,11 @@ DEFAULT_CLASSIFICATION = "internal"
 # 可见性声明里的通配
 VISIBILITY_ANY = "all"
 
+# 可撤销性声明（V1-B）：execution_type 三值词表（Q3 裁定 · 与 side_effect/
+# risk_level 正交不代理——instant 瞬时 / target 作用目标有可逆窗口 / process
+# 持续进程需 stop 支持）
+EXECUTION_TYPES: frozenset[str] = frozenset({"instant", "target", "process"})
+
 
 def classification_rank(value: str) -> int:
     """密级序号；未知值按最低（public）处理，不抛异常。"""
@@ -109,6 +114,16 @@ class CapabilitySpec:
     # 但会在 span 上留 ``visibility_undeclared`` 痕，让遗漏可度量。
     # kind=http 的**对外接入**能力必须声明（加载期 V9）。
     visibility: dict[str, Any] | None = None
+    # ---- 可撤销性声明（V1-B · 默认 None=未声明 · 四字段一体）----
+    # 直接决定预授权模型与撤销窗口；缺失不报错（向后兼容），运行时按
+    # OPS_CAPABILITY_REVERSIBILITY_MODE 三档派生（见 manifest 加载面）。
+    reversible: bool | None = None
+    # instant | target | process（None=未声明）
+    execution_type: str | None = None
+    # 最大可接受撤销时延（秒 · 非负）
+    max_reversal_latency: int | None = None
+    # 持续进程类能力是否需要 stop 支持
+    requires_stop_support: bool | None = None
     # ---- 降级声明（P1 · 八问 Q3 下半）----
     # 「打不通时给什么」是**业务决策**，必须由清单声明（走 Git + PR + 人闸），
     # 框架只忠实执行，绝不自己发明降级结果。形状见 fallback 模块：
