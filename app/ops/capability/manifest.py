@@ -26,7 +26,7 @@ import json
 import logging
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +40,7 @@ from app.ops.capability.errors import STABLE_ERROR_CODES
 from app.ops.capability.gateway import get_registry, register, unregister
 from app.ops.capability.types import (
     CLASSIFICATION_LEVELS,
+    EXECUTION_TYPES,
     RISK_LEVELS,
     SIDE_EFFECTS,
     WRITE_SIDE_EFFECTS,
@@ -589,6 +590,11 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
             ):
                 raise ManifestError(f"{loc}.visibility.{dim} 必须是 list 或 str")
 
+    # 可撤销性四字段（V1-B）：类型/词表合法才收；非法 → ManifestError 整文件失败
+    reversible, execution_type, max_reversal_latency, requires_stop_support = (
+        _parse_reversibility(raw, loc=loc)
+    )
+
     spec = CapabilitySpec(
         capability_id=cid,
         kind=kind,
@@ -619,9 +625,16 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
             dict(visibility_raw) if isinstance(visibility_raw, dict) else None
         ),
         fallback=dict(fallback_raw) if isinstance(fallback_raw, dict) else None,
+        # 可撤销性四字段（V1-B）：声明了必须合法；缺字段不报错（向后兼容）
+        reversible=reversible,
+        execution_type=execution_type,
+        max_reversal_latency=max_reversal_latency,
+        requires_stop_support=requires_stop_support,
     )
     adapter = _build_adapter(spec, raw=raw, loc=loc)
     _validate_invariants(spec, loc=loc)
+    _validate_reversibility(spec, loc=loc)
+    spec = _apply_reversibility_default(spec, loc=loc)
     return _PendingEntry(spec=spec, adapter=adapter)
 
 
@@ -692,6 +705,114 @@ def _validate_http_block(
                 f"{loc} 模板变量未声明: {{{{{match.group(1)}}}}}"
                 f"（须在 args_schema.properties 或以 _ 开头）"
             )
+
+
+# ---- 可撤销性四字段（V1-B）----
+# 缺失默认 HITL 三档灰度（FP-3）：off=无行为 · observe=台账 · enforce=派生
+ENV_REVERSIBILITY_MODE = "OPS_CAPABILITY_REVERSIBILITY_MODE"
+
+
+def _reversibility_mode() -> str:
+    """三档：off|observe|enforce；默认 off；非法值回退 off（承 delegation 先例）。"""
+    raw = os.environ.get(ENV_REVERSIBILITY_MODE, "").strip().lower()
+    return raw if raw in ("off", "observe", "enforce") else "off"
+
+
+def _parse_reversibility(
+    raw: dict[str, Any], *, loc: str
+) -> tuple[bool | None, str | None, int | None, bool | None]:
+    """解析可撤销性四字段；声明了就必须合法，非法 → ManifestError 整文件失败。
+
+    缺字段不报错（向后兼容 · manifest 演进）；四字段一体声明，
+    任一为 None 即「该字段未声明」。
+    """
+    reversible = raw.get("reversible")
+    if reversible is not None and not isinstance(reversible, bool):
+        raise ManifestError(f"{loc} reversible 必须是 bool: {reversible!r}")
+    execution_type = raw.get("execution_type")
+    if execution_type is not None:
+        execution_type = str(execution_type).strip()
+        if execution_type not in EXECUTION_TYPES:
+            raise ManifestError(
+                f"{loc} execution_type 非法"
+                f"（仅 {'/'.join(sorted(EXECUTION_TYPES))}）: {execution_type or '(空)'}"
+            )
+    max_reversal_latency = raw.get("max_reversal_latency")
+    if max_reversal_latency is not None and (
+        not isinstance(max_reversal_latency, int)
+        or isinstance(max_reversal_latency, bool)
+        or max_reversal_latency < 0
+    ):
+        raise ManifestError(
+            f"{loc} max_reversal_latency 必须是非负 int: {max_reversal_latency!r}"
+        )
+    requires_stop_support = raw.get("requires_stop_support")
+    if requires_stop_support is not None and not isinstance(requires_stop_support, bool):
+        raise ManifestError(
+            f"{loc} requires_stop_support 必须是 bool: {requires_stop_support!r}"
+        )
+    return reversible, execution_type, max_reversal_latency, requires_stop_support
+
+
+def _validate_reversibility(spec: CapabilitySpec, *, loc: str) -> None:
+    """跨字段一致性硬规则（Q3 裁定）；其余组合只观测不拒（契约不推测）。
+
+    - 矛盾声明拒绝：side_effect=irreversible 且 reversible=true → ManifestError；
+    - process 必须声明 stop 支持：execution_type=process 且
+      requires_stop_support 非 true → ManifestError。
+    """
+    if spec.side_effect == "irreversible" and spec.reversible is True:
+        raise ManifestError(
+            f"{loc} 矛盾声明：side_effect=irreversible 且 reversible=true"
+        )
+    if spec.execution_type == "process" and spec.requires_stop_support is not True:
+        raise ManifestError(
+            f"{loc} execution_type=process 必须 requires_stop_support: true"
+        )
+
+
+def _reversibility_declared(spec: CapabilitySpec) -> bool:
+    """四字段任一有显式声明即视为已声明（声明优先 · FP-7：显式合法 → 不派生）。"""
+    return any(
+        value is not None
+        for value in (
+            spec.reversible,
+            spec.execution_type,
+            spec.max_reversal_latency,
+            spec.requires_stop_support,
+        )
+    )
+
+
+def _apply_reversibility_default(spec: CapabilitySpec, *, loc: str) -> CapabilitySpec:
+    """缺失默认 HITL 三档（FP-3 灰度 · FP-7 声明优先 · 执行侧既有消费不改语义）。
+
+    off=无行为；observe=台账 reversibility_undeclared would_default_hitl 不派生；
+    enforce=未声明能力 hitl_required 派生 True（记动作不记内容：只记 id）。
+    """
+    mode = _reversibility_mode()
+    if mode == "off" or _reversibility_declared(spec):
+        return spec
+    if mode == "observe":
+        logger.warning(
+            "capability reversibility_undeclared would_default_hitl id=%s loc=%s",
+            spec.capability_id,
+            loc,
+        )
+        update_current_span_metadata(
+            {
+                "reversibility_undeclared": True,
+                "would_default_hitl": True,
+                "capability_id": spec.capability_id,
+            }
+        )
+        return spec
+    logger.warning(
+        "capability reversibility_undeclared 派生 hitl_required=True（enforce）id=%s loc=%s",
+        spec.capability_id,
+        loc,
+    )
+    return replace(spec, hitl_required=True)
 
 
 def _validate_invariants(spec: CapabilitySpec, *, loc: str) -> None:
