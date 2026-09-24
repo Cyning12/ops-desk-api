@@ -14,6 +14,11 @@ from app.ops.capability.types import CapabilityFilter, CapabilitySpec
 from app.ops.lg_rag.multi.budget import bump_supervisor_step
 from app.ops.lg_rag.state import LgRagState
 from app.ops.strategy.config import get_candidate_capability_ids
+from app.ops.strategy.scenario import (
+    audit_scenario_stripped,
+    scenario_mode,
+    scenario_trim,
+)
 from app.ops.tracing import trace_span, tracing_enabled, update_current_span_metadata
 
 logger = logging.getLogger(__name__)
@@ -105,6 +110,28 @@ def effective_scope_from_requested(
     return scope, stripped, truncated
 
 
+def _apply_scenario_stage(
+    visible: list[CapabilitySpec], state: LgRagState
+) -> list[CapabilitySpec]:
+    """stage 2 场景维（Host V1-B）：基线 → scenario_trim → 有效可见集。
+
+    off = 短路（现状零 diff · 零日志）；observe = 计算剔除但**不生效**
+    （台账记 would_strip）；enforce = 剔除生效（台账记 stripped）。
+    裁剪键只取 state.intent + state.intent_fallback（Host 权威 · Q2 裁定）。
+    """
+    mode = scenario_mode()
+    if mode == "off":
+        return visible
+    final, stripped = scenario_trim(
+        visible, state.get("intent"), bool(state.get("intent_fallback"))
+    )
+    if mode == "observe":
+        audit_scenario_stripped(stripped, would_strip=True)
+        return visible
+    audit_scenario_stripped(stripped)
+    return final
+
+
 def _record_builder_span(metadata: dict) -> None:
     if not tracing_enabled():
         return
@@ -129,6 +156,10 @@ async def strategy_builder_node(state: LgRagState) -> dict:
     bump = bump_supervisor_step(state)
     with trace_span("strategy_builder", run_type="chain"):
         visible = get_policy_visible_catalog()
+        # Host V1-B 两阶段：基线（stage 1）→ 场景维（stage 2）→ 有效可见集。
+        # allowlist 求交输入随之收窄 ⇒ supervisor 规划与 delegation_scope
+        # 交集（nodes.py effective_scope_from_requested 处）天然不越场景维。
+        visible = _apply_scenario_stage(visible, state)
         visible_ids = frozenset(s.capability_id for s in visible)
         intent = state.get("intent") or {}
         needs_tool = intent.get("needs_tool")
