@@ -6,7 +6,7 @@
 > **直接执行真值（D1）**：`docs/spec/multi-replica-verify/SPEC-multi-replica-verify_v1.md`（**signed** · 其 §2/§6 **原样映射**；历史独立 task 已 CLOSE，本波 D1=承继+回归+V1-A~D 后补扫，见钉死契约）  
 > **前置**：V1-A~D **全 CLOSE**（关账 PR #186 · master `ff3cfbe`+）· multi-replica-verify **已 CLOSE**（PR #165 · 双进程基建/边界清单/runbook 已在仓）  
 > **分支**：`task/host-v1-splittability-hardening`（**禁止 master/main 直改 · 30 由 00 委派子 Agent 执行**）  
-> **10 注**：2026-09-24 · 本棒由 00 委派 10-task 帽 Agent 执行；**本帽不签 HG-AUDIT-R1**；HG-TASK-DRAFT 落稿待 00 代录（维护者长程授权口径预留见闸表）
+> **10/20 注**：2026-09-24 · 10-task 落稿后 **HG-TASK-DRAFT 已 00 代录 approved**；**HG-AUDIT-R1 仍 pending**（20 书面审后由 00 代录 · 本帽不签）· **禁 30**
 
 ---
 
@@ -69,7 +69,7 @@
 | PG checkpointer / HITL resume | `app/ops/lg_rag/checkpointer.py` · `app/ops/hitl/resume.py` | 承 multi-replica 锚点：同开关同库同版本才跨实例；resume 零进程内定位 · fail-closed 503 |
 | capability registry（**D3 落点**） | `app/ops/capability/registry.py`（`CapabilityRegistry` · `_entries` dict）· `gateway.py:81-89`（`_registry` 单例 · `get_registry`/`register`/`unregister`） | 进程内单例 · 拒绝覆盖；调用方经 gateway/manifest/admin/defaults/probes；**无 RegistryReader/Writer 协议**（命名冲突扫零命中） |
 | 调用点（D3 注入面） | `gateway.py` · `manifest.py` · `defaults.py` · `probes.py` · `admin/capability.py` · `lg_rag/multi/nodes.py`（`get_registry`） | 改面向协议注入 · 最小侵入 · 对拍零 diff |
-| V1-A~D 进程内新增（**D1 补扫义务**） | `app/ops/capability/delegation.py:320+`（`_NonceRegistry` / `_nonce_registry`）· `app/llm/budget.py:83-85`（`_LOCK`/`_SESSIONS` · snapshot `scope: process-local`）· `app/llm/infer_cache.py:187-189`（`_LOCK`/`_CACHE` LRU） | 多副本失真形态须入边界清单补条目（现接受/何时外置） |
+| V1-A~D 进程内新增（**D1 补扫义务**） | `app/ops/capability/delegation.py:320+`（`_NonceRegistry` / `_nonce_registry`）· `app/llm/budget.py:83-85`（`_LOCK`/`_SESSIONS`）· `budget.py:387/:407`（`snapshot()` · `scope: process-local`）· `app/llm/infer_cache.py:187-189`（`_LOCK`/`_CACHE` LRU） | 多副本失真形态须入边界清单补条目（现接受/何时外置） |
 | import 闸（**D2 落点**） | 仓根 **无** `.importlinter`；`requirements.txt`/`pyproject.toml` **无** import-linter；CI workflows：`pytest.yml`/`tech-graph.yml`/`lint-wiki-delta.yml` 等 · **无** import-linter job | Q1 裁定工具=import-linter · contracts 真值=`01_modules` 出边列 |
 | 模块出边（contracts 真值） | `docs/_tech_graph/l1/01_modules.md` 模块表「依赖方向」列 | 例：`capability`→— · `llm`→`db` · `lg_rag`→四边 · `memory`→`db,rag,llm,prompts` · `hitl`→`db,lg_rag` · 控制面禁反向/越权边以出边为准生成 forbidden contracts |
 | 策略/档级面（**D4 试点建议面**） | `app/llm/model_catalog.py:113+`（`TASK_TIER_MODELS`/`TASK_TIER_FALLBACKS`/`resolve_task_model` · 解析序 explicit>env>`OPS_LLM_TIER_*`>档默认）· `MODEL_UNIT_PRICES` | 试点一面建议=llm 档级/单价；env 覆盖优先不变 |
@@ -226,7 +226,7 @@
 3. SPEC `docs/spec/host-v1-splittability-hardening/SPEC-host-v1-splittability-hardening_v0.md`（§2 D1–D5 / §3 / §4 Q1–Q2 / §5 FP / §6）
 4. `docs/spec/multi-replica-verify/SPEC-multi-replica-verify_v1.md`（D1 §2/§6 原样）
 5. `docs/standards/CODING_BACKEND_L2_v1_zh.md`
-6. 代码：`app/ops/capability/registry.py` · `gateway.py:81+` · `delegation.py:320+` · `app/llm/budget.py:83+` · `infer_cache.py:187+` · `model_catalog.py:113+`
+6. 代码：`app/ops/capability/registry.py` · `gateway.py:81+` · `delegation.py:320+` · `app/llm/budget.py:83+`（状态桶）· `budget.py:387+`（snapshot scope）· `infer_cache.py:187+` · `model_catalog.py:113+`
 7. 既有：`docs/guides/GUIDE_process_local_state_boundaries_v1.md` · `tests/test_multi_replica_dualproc.py`
 8. `docs/harness/prompts/FRAGMENT_30_gate_verify_v1_zh.md`
 9. `docs/spec/agent-infra/07_host_v1_landing_plan_v0.md` §4（CLOSE 前 00 八面复核）
@@ -238,7 +238,7 @@
 | 轮 | 结论 | early_stop | reason（early_stop） | residual_risks |
 |----|------|------------|----------------------|----------------|
 | R0 | SPEC signed（HG-SPEC-SIGNOFF=approved 2026-09-23 00 代录）；V1-A~D CLOSE+#186；multi-replica 已 CLOSE(#165)→D1 承继口径；锚点真扫：无 import-linter · 无 Reader/Writer · 边界清单缺 V1-C/D 进程内项 · 基线承 1587 | no | — | 本帽 collect 未真跑（venv 缺 pytest）→ 30 须复核 collected 数 |
-| R1 | 开工闸：HG-TASK-DRAFT **pending**（00 代录位预留）· HG-AUDIT-R1 **pending**（blocks 30）· HG-GRAPH-MODULES=approved（真读 · 预期无新签按实判） | no | — | 无 |
+| R1 | 开工闸：HG-TASK-DRAFT **approved**（00 代录）· HG-AUDIT-R1 **pending**（blocks 30）· HG-GRAPH-MODULES=approved（真读 · 预期无新签按实判） | no | — | 无 |
 | R2 | 竖切：D2→D3→D4→D1→D5；方案对比继承 SPEC Q1/Q2（import-linter · 盘点+试点），不重演；D1 不重做基建 | no | — | 无 |
 | R3 | failure_paths **12 条** = SPEC FP-1~7 + multi-replica 假阳性 + 清单漏补扫 + 过程三；最锋利=对拍零 diff 与不顺手修 | no | — | ① 白名单消账若过宽则闸空真 ② 策略试点面选错爆炸半径 |
 | R4 | 验收按 D1§6 映射 + D2/D3/D4/D5/工程 + 变异×3；B1 八行三态齐全（回归×5 · 新增×2 · 迁移无×1） | no | — | 无 |
@@ -252,7 +252,7 @@ V1-E 是收尾硬化波：验证轨（D1）历史已交付须承继回归并补�
 
 ### R1 · 开工闸
 
-HG-TASK-DRAFT pending（00 代录位预留长程授权原话）；HG-AUDIT-R1 pending → 30 拒开工；HG-GRAPH-MODULES 真读通过（出边列作 import contracts 真值 · 预期无新签按实判）。
+HG-TASK-DRAFT **approved**（00 代录 · 长程授权原话见闸表）；HG-AUDIT-R1 **pending** → 30 拒开工；HG-GRAPH-MODULES 真读通过（出边列作 import contracts 真值 · 预期无新签按实判）。
 
 ### R2 · 竖切
 
@@ -282,3 +282,4 @@ D1 映射 multi-replica §6（承继勾选）；D2/D3/D4 各配否定性断言�
 |------|------|
 | 2026-09-24 | 10-task 落稿（SPEC signed · 00 委派）：D1 裁定为承继 multi-replica CLOSE(#165)+回归+V1-A~D 边界补扫（清单真读确认缺 llm budget/infer_cache/delegation）；D2–D5 按 SPEC 钉死；B1 八行落盘；基线承 V1-D 1587 collected（本帽 collect 未真跑注明）；HG-TASK-DRAFT pending（00 代录位预留）· **HG-AUDIT-R1 pending**（本帽不签）· HG-GRAPH-MODULES 真读 approved |
 | 2026-09-24 | **00 代录 HG-TASK-DRAFT=approved**（长程授权原话留痕）· 状态 draft→active · 委派 20-task-audit · **HG-AUDIT-R1 仍 pending（禁 30）** |
+| 2026-09-24 | **20-task-audit R1 NITS 微修**（审查文 PASS-WITH-NITS）：N1 思考轮 R1 闸态同步为 HG-TASK-DRAFT=approved · N2 头部 10/20 注去陈旧「待代录」· N3 llm budget snapshot 行号拆至 :387/:407；**HG-AUDIT-R1 仍 pending（本帽不签）** |

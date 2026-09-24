@@ -20,3 +20,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-09-24 | 00 下发 20（HG-TASK-DRAFT 已代录 approved） |
+| 2026-09-24 | **20-task-audit R1 完成**：结论 **PASS-WITH-NITS** · 审查文 `docs/harness/reviews/task_host_v1_splittability_hardening_audit_R1_20260924.md` · NITS 微修 task（N1 思考轮闸态 · N2 10/20 注 · N3 budget snapshot 行号）· **HG-AUDIT-R1 仍 pending**（建议 00 代录）· 未附 30 Prompt |
