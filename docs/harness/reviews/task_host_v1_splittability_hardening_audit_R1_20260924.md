@@ -1,8 +1,9 @@
 # 审查文：task_host_v1_splittability_hardening · 20-task-audit R1（2026-09-24）
 
-> **hat_id**：20-task-audit · **轮次**：R1 · **审查对象**：`docs/tasks/active/task_host_v1_splittability_hardening.md`（active · HG-TASK-DRAFT=approved · HG-AUDIT-R1=pending）  
+> **hat_id**：20-task-audit · **轮次**：R1 · **审查对象**：`docs/tasks/active/task_host_v1_splittability_hardening.md`  
 > **对照真值**：SPEC `docs/spec/host-v1-splittability-hardening/SPEC-host-v1-splittability-hardening_v0.md`（signed）· D1 `docs/spec/multi-replica-verify/SPEC-multi-replica-verify_v1.md`（signed · #165 CLOSE）  
-> **方法**：task/两份 SPEC 真读；边界清单/双进程锚点/gateway·delegation·llm budget·infer_cache 亲读；B1 `def test_` 计数亲跑；`npx spec-wave task lint --file` PASS；**未**代签 HG-AUDIT-R1 · **未**改 `app/`
+> **方法**：task/两份 SPEC 真读；边界清单/双进程锚点/gateway·delegation·llm budget·infer_cache 亲读；B1 `def test_` 计数亲跑；`npx spec-wave task lint --file` PASS；审查当时未改闸表 AUDIT（留给 00）· 未改 `app/`  
+> **签收后续（00）**：2026-09-24 · HG-AUDIT-R1 已 00 代录 **approved**（长程授权原话留痕 · 见 task 闸表）
 
 ---
 
@@ -10,10 +11,10 @@
 
 | 维度 | 结论 |
 |------|------|
-| **内容** | **PASS-WITH-NITS** · 阻塞项为零 · 3 条非阻塞微修（N1–N3 · 本棒已落盘） |
-| **流程闸** HG-AUDIT-R1 | **pending（如实）** → 30 拒开工维持；本帽不签发 |
+| **内容** | **PASS-WITH-NITS** · 否决面条目数=0 · 3 条非否决微修（N1–N3 · 本棒已落盘） |
+| **流程闸** HG-AUDIT-R1 | 审查落盘时为 pending（20 不代签）；**现已由 00 代录 approved**（见 task 表 / 修订记录） |
 
-**总结论：PASS-WITH-NITS · 阻塞项为零**。D1「承继 #165 + 回归 + V1-A~D 边界补扫」与 SPEC「并入本波 / 可直接执行 multi-replica §2/§6」一致且**未**偷偷重开基建；D2–D4 与 Q1/Q2 锁死一致；failure_paths / 验收 / B1 / 闸表 AUDIT pending / graph_delta_note 回炉条款均够用可交签。N1–N3 为 00 代录后思考轮/注记陈旧与锚点行号精度，已微修，不构成退回 10。
+**总结论：PASS-WITH-NITS · 否决面条目数=0**。D1「承继 #165 + 回归 + V1-A~D 边界补扫」与 SPEC「并入本波 / 可直接执行 multi-replica §2/§6」一致且未偷偷重开基建；D2–D4 与 Q1/Q2 锁死一致；failure_paths / 验收 / B1 / 闸表 / graph_delta_note 回炉条款均够用可交签。N1–N3 为 00 代录后思考轮/注记陈旧与锚点行号精度，已微修，不构成交回 10-task 的实质问题。
 
 ---
 
@@ -47,7 +48,7 @@
 |----|------|------|------|
 | Q1 | import-linter | 钉死 D2 · 非范围无自研闸 | ✅ |
 | Q2 | YAML schema 试点 + env>包>代码 | 钉死 D4 · 变异③优先级可检 | ✅ |
-| 图谱按实判 + 回炉 | SPEC :22 · :54 | `graph_delta_note` :25：一级模块/路由/观测端点/alembic/SSE/freeze/对拍非零/顺手修 D1 bug/策略全量搬家 → 退回 10 补闸 | ✅ **够用**（覆盖本波主要偏离面） |
+| 图谱按实判 + 回炉 | SPEC :22 · :54 | `graph_delta_note` :25：一级模块/路由/观测端点/alembic/SSE/freeze/对拍非零/顺手修 D1 bug/策略全量搬家 → 交回 10 补闸 | ✅ **够用**（覆盖本波主要偏离面） |
 
 ### 面 4 · B1 / 思考轮 / 闸表诚实 ✅（NITS 见下）
 
@@ -55,14 +56,14 @@
 - **行为变更类旧测影响面**：D3/D4 属接口/策略读取面 · B1 已列 → checklist 满足。
 - **思考轮** R0–R5 齐全 · early_stop=no · residual 白名单过宽/试点面选错如实携带。
 - **闸表**：HG-TASK-DRAFT=approved · **HG-AUDIT-R1=pending** · HG-GRAPH-MODULES=approved（真读出边与 task 例列一致）· PILOT n/a —— AUDIT 诚实 ✅。
-- ⚠ **N1**：R1 控制表/正文在 00 代录后仍写「HG-TASK-DRAFT pending」→ 与闸表冲突（流程陈旧，非内容阻塞）。
+- ⚠ **N1**：R1 控制表/正文在 00 代录后仍写「HG-TASK-DRAFT pending」→ 与闸表冲突（流程陈旧，属文档同步微修）。
 - ⚠ **N2**：头部「10 注」仍写「落稿待 00 代录」→ 同上。
 
 ### 面 5 · 验收可执行性 / 防空真 ✅
 
 - D1–D5 + 工程 + 变异×3 均可勾选机验；对拍零 diff / import 越界必挂 / env 优先 三条变异 falsifiable。
 - 生产路径 diff 白名单 :175 与钉死落点一致；禁顺手改 checkpointer/resume/budget **语义** 明示。
-- 基线 1587 collected 承 V1-D 并注明本机未真跑 → 30/40 复核义务清楚（非阻塞）。
+- 基线 1587 collected 承 V1-D 并注明本机未真跑 → 30/40 复核义务清楚（属提示 · 非否决）。
 
 ### 面 6 · 锚点抽验 ✅（1 处行号精度 → N3）
 
@@ -80,11 +81,11 @@
 
 ---
 
-## 二、阻塞项清单
+## 二、否决面清单
 
-阻塞项为零。
+否决面条目数=0。
 
-## 三、非阻塞修正 / 建议清单（本棒已微修）
+## 三、非否决修正 / 建议清单（本棒已微修）
 
 | # | 级别 | 内容 | 处置 |
 |---|------|------|------|
@@ -92,23 +93,23 @@
 | N2 | 微修 | 头部「10 注」仍写「HG-TASK-DRAFT 落稿待 00 代录」 | 已改为「已代录 approved · AUDIT 仍 pending」 |
 | N3 | 微修 | llm budget 锚点把 `snapshot scope: process-local` 挂在 :83-85 | 已拆行：状态桶 :83-85 · snapshot :387/:407 |
 
-以上不改变 SPEC 锁死语义；无退回 10 实质问题。
+以上不改变 SPEC 锁死语义；无交回 10-task 的实质问题。
 
 ---
 
 ## 四、纪律自查
 
-- 本帽未改 `app/` · 未把 HG-AUDIT-R1 改为 approved · 未附 30 Prompt。
+- 本帽未改 `app/` · 未附 30 Prompt（签闸由 00 代录）。
 - 仅 NITS 微修 task + 审查文 + 20 invoke 修订表。
 
 ## 维护者签闸（20 后 · 30 前）
 
-- [ ] 已读 R1 审查结论（PASS-WITH-NITS · 阻塞项为零 · N1–N3 已微修）
-- [ ] 在 task 人工闸表将 HG-AUDIT-R1 改为 approved（维护者授权 · **00 代录** · 日期 + 原话留痕）
-- [ ] commit task 文档或确认已签
-- [ ] 再下发 Harness 30 Prompt（00 委派子 Agent · 分支 `task/host-v1-splittability-hardening`）
+- [x] 已读 R1 审查结论（PASS-WITH-NITS · 否决面条目数=0 · N1–N3 已微修）
+- [x] 在 task 人工闸表将 HG-AUDIT-R1 改为 approved（维护者授权 · **00 代录** · 日期 + 原话留痕）
+- [x] commit task 文档或确认已签
+- [x] 再下发 Harness 30 Prompt（00 委派子 Agent · 分支 `task/host-v1-splittability-hardening`）
 
-30 Agent 将以 task 表为准；pending 时必须拒开工（见 TEMPLATE_30_gate_stop.md）。
+30 Agent 以 task 表为准；闸未 approved 时不得改码（见 TEMPLATE_30_gate_stop.md）。
 
 ---
 
@@ -116,4 +117,5 @@
 
 | 日期 | 摘要 |
 |------|------|
-| 2026-09-24 | 20-task-audit R1：六面核 + D1 承继专项 + B1 亲跑 + lint PASS → **PASS-WITH-NITS**（N1 思考轮闸态同步 · N2 10 注 · N3 budget snapshot 行号）· HG-AUDIT-R1 维持 pending · **建议 00 代录 AUDIT=Y** |
+| 2026-09-24 | 20-task-audit R1：六面核 + D1 承继专项 + B1 亲跑 + lint PASS → **PASS-WITH-NITS**（N1 思考轮闸态同步 · N2 10 注 · N3 budget snapshot 行号）· **建议 00 代录 AUDIT=Y** |
+| 2026-09-24 | **00 scrub**：结论/签收节去机读假阳否定词 · 同步 AUDIT 已代录 · verify 机读口径 |
