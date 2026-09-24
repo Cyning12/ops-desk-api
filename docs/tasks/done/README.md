@@ -102,6 +102,8 @@
 | 2026-09-18 | [`task_supervisor_budget_h_beta.md`](./task_supervisor_budget_h_beta.md) | 阶段 H β · supervisor 总预算（默认 32 · 耗尽→aggregate · 墙钟默认关） · PR #141 |
 | 2026-09-23 | [`task_host_v1_delegation_token.md`](./task_host_v1_delegation_token.md) | **Agent Host V1-A** · 委派令牌（六字段 HMAC 令牌 + 验签门 + 签发审批 + requested_scope 声明∩裁剪 · 三档模式默认 off） · PR #179 |
 | 2026-09-23 | [`task_host_v1_visibility_scenario_policy.md`](./task_host_v1_visibility_scenario_policy.md) | **Agent Host V1-B** · 可见集两阶段（scenario_trim 场景维+剔除台账+intent_fallback channel）+ manifest 可撤销性四字段（加载期三硬规则+缺失三档派生） · PR #181 |
+| 2026-09-23 | [`task_host_v1_llm_factory_closure.md`](./task_host_v1_llm_factory_closure.md) | **Agent Host V1-C** · LLM 工厂闭环（预算硬闸 + 耗尽降级链 degraded + 推理缓存 + 档级 fallback + Cost per Successful Task） · PR #183 |
+| 2026-09-24 | [`task_host_v1_episodic_memory_feedback.md`](./task_host_v1_episodic_memory_feedback.md) | **Agent Host V1-D** · 情景记忆闸/库分离 + `[相似经验]` 召回 + 指纹规则聚类建议面（`ops_memory_episodes`） · PR #184 |
 
 ---
 
@@ -143,6 +145,8 @@
 | 2026-09-18 | CLOSE H β supervisor-budget（Hub 补登 · commit/PR 同轮） |
 | 2026-09-23 | CLOSE **V1-B host-v1-visibility-scenario-policy** `#181`（可见集两阶段+manifest 四字段 · R1 FAIL→10-spec 澄清→R2 PASS 轨迹 · 归档 done/ · Hub 补登 · 00 代录签录链完整） |
 | 2026-09-23 | CLOSE **V1-A host-v1-delegation-token** `#179`（Agent Host v1.0 五波之首 · 归档 done/ · Hub 补登 · 00 代录签录链完整：HG-SPEC-SIGNOFF/HG-TASK-DRAFT/HG-AUDIT-R1/HG-GRAPH-MODULES） |
+| 2026-09-24 | CLOSE **V1-C host-v1-llm-factory-closure** `#183`（LLM 工厂闭环 · 码已合入 · 本 PR 补登 40 invoke + 归档 done/ · Hub 补登） |
+| 2026-09-24 | CLOSE **V1-D host-v1-episodic-memory-feedback** `#184`（情景记忆 + 失败模式库 · 过程档 SPEC/审查/invokes 补登 · 归档 done/ · Hub 补登 · **V1-A~D 全 CLOSE · V1-E 可启**） |
 
 ## 给维护者
 

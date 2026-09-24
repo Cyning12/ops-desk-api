@@ -1,6 +1,6 @@
 # Task：Agent Host V1-C · LLM 工厂闭环（预算硬闸 llm/budget.py + 耗尽降级链带 degraded 标记 + 推理缓存 plan/参数 + 档级 fallback 进 model_catalog + Cost per Successful Task）（host-v1-llm-factory-closure）
 
-> **状态**：`active`（2026-09-23 · 20-task-audit R1 **PASS-WITH-NITS**（零阻塞 · N1–N3 已微修留痕）· HG-AUDIT-R1=**approved** 00 代录 · 30 可委派开工）  
+> **状态**：`done`（2026-09-23 · 五棒全通 · PR [#183](https://github.com/Cyning12/ops-desk-api/pull/183) MERGED（CI 三绿 · ffaa82e）· 图谱回写 00 代录 HG-GRAPH-MODULES · CLOSE 归档 done/）  
 > **类型**：feature（LLM 工厂闭环 · **零 alembic 义务**（usage 复用 `ops_llm_usage` 既有表 · SPEC §3 锁死）· **有图谱义务按实判**（llm 行备注 + 人签新行 00 代录位 · 无新模块预判））  
 > **上游 SPEC**：`docs/spec/host-v1-llm-factory-closure/SPEC-host-v1-llm-factory-closure_v0.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-23 · 00 代录 · Q1 llm 层单检查点 / Q2 只缓存 plan·参数 / Q3 固定文案模板档签收锁死）  
 > **并行说明**：本波与 V1-B 并行推进（07 §3.1 授权 · 文件面零交叠——B 触 strategy/capability/lg_rag · 本波仅 app/llm）  
@@ -92,12 +92,12 @@
 
 ## 范围（单 task 直通 · SPEC §2 D1–D6）
 
-- [ ] **D4 · catalog 链声明（必做 · 先行）**：`TASK_TIER_FALLBACKS` + `resolve_fallback_chain` + 链校验（去环/≤3）+ 档级单价表
-- [ ] **D1 · 预算检查点（必做）**：`app/llm/budget.py` 新文件（声明 env/预估下限/verdict/进程内计数器+锁）+ 调用点接线（complete/stream 前）
-- [ ] **D2 · 耗尽降级链（必做 · 防假降级）**：预算 verdict → 链解析 → degraded 标记跟数据走 → 链末端不伪造成功
-- [ ] **D3 · 推理缓存（必做 · 默认关）**：进程内 LRU+TTL · 版本入键（模型/prompt/catalog）· 命中观测 · 终答不缓存
-- [ ] **D5 · 指标面（必做）**：Cost per Successful Task 定义 + span 聚合产出 + 缺单价 unknown
-- [ ] **D6 · 测试与图谱（必做 · 否决面）**：SPEC §2 D6 五组断言全落 + llm 行备注 + HG-GRAPH-MODULES 人签新行（00 代录）+ graph-compile 绿
+- [x] **D4 · catalog 链声明（必做 · 先行）**：`TASK_TIER_FALLBACKS` + `resolve_fallback_chain` + 链校验（去环/≤3）+ 档级单价表
+- [x] **D1 · 预算检查点（必做）**：`app/llm/budget.py` 新文件（声明 env/预估下限/verdict/进程内计数器+锁）+ 调用点接线（complete/stream 前）
+- [x] **D2 · 耗尽降级链（必做 · 防假降级）**：预算 verdict → 链解析 → degraded 标记跟数据走 → 链末端不伪造成功
+- [x] **D3 · 推理缓存（必做 · 默认关）**：进程内 LRU+TTL · 版本入键（模型/prompt/catalog）· 命中观测 · 终答不缓存
+- [x] **D5 · 指标面（必做）**：Cost per Successful Task 定义 + span 聚合产出 + 缺单价 unknown
+- [x] **D6 · 测试与图谱（必做 · 否决面）**：SPEC §2 D6 五组断言全落 + llm 行备注 + HG-GRAPH-MODULES 人签新行（00 代录）+ graph-compile 绿
 
 **竖切结论**：D4→D1→D2→D3→D5→D6 同 task 一次提交；预算不配降级链 = 拦截即死（耗尽=拒答无出口）；降级不配标记 = 假降级（U3 铁律违反）；缓存不配版本入键 = 陈旧 plan 静默命中。耦合面可控（两个新文件 + catalog 扩展 + 调用点接线 + 测试/图谱）。
 
@@ -127,46 +127,46 @@
 
 ## 验收标准
 
-- [ ] 人工闸：HG-AUDIT-R1 approved 后方可勾选下列码项（图谱新签义务随 30 交付落盘 00 代录；**30 偏离预判 → 回炉补闸条款生效**）
+- [x] 人工闸：HG-AUDIT-R1 approved 后方可勾选下列码项（图谱新签义务随 30 交付落盘 00 代录；**30 偏离预判 → 回炉补闸条款生效**）
 
 ### D1 · 预算检查点（映射 SPEC §6-1）
 
-- [ ] 会话/任务两级声明解析（默认 0=不限 · 非法回退 0 · 任务级五档键）
-- [ ] 调用前预估保守下限断言（预估≤实际不拦截正常调用）；调用后真实记账覆盖断言
-- [ ] 三档断言：off 零行为 · observe would_block 不拦 · enforce 超限**下一次调用前**拦截（进行中流不截断）
+- [x] 会话/任务两级声明解析（默认 0=不限 · 非法回退 0 · 任务级五档键）
+- [x] 调用前预估保守下限断言（预估≤实际不拦截正常调用）；调用后真实记账覆盖断言
+- [x] 三档断言：off 零行为 · observe would_block 不拦 · enforce 超限**下一次调用前**拦截（进行中流不截断）
 
 ### D2 · 耗尽降级链（映射 SPEC §6-2/3）
 
-- [ ] 耗尽 → 小模型档：结果带 `degraded=true`+`degrade_reason=budget_exhausted`+`degrade_chain`（ok=True 也可能降级 · 断言）
-- [ ] 链末端（规则档也失败/无声明）→ ok=False+degraded · 不伪造成功（断言）
-- [ ] 无声明档 → 明确失败（承 ACTION_NONE 默认 · 断言）
+- [x] 耗尽 → 小模型档：结果带 `degraded=true`+`degrade_reason=budget_exhausted`+`degrade_chain`（ok=True 也可能降级 · 断言）
+- [x] 链末端（规则档也失败/无声明）→ ok=False+degraded · 不伪造成功（断言）
+- [x] 无声明档 → 明确失败（承 ACTION_NONE 默认 · 断言）
 
 ### D3 · 推理缓存（映射 SPEC §6-4）
 
-- [ ] 命中跳过 LLM（mock 计数断言）；命中率 span 观测
-- [ ] 失效断言：模型档变更 · prompt 版本 bump · catalog 版本/可见集哈希变 → 自然 miss
-- [ ] 终答 answer 不缓存断言；默认关零 diff
+- [x] 命中跳过 LLM（mock 计数断言）；命中率 span 观测
+- [x] 失效断言：模型档变更 · prompt 版本 bump · catalog 版本/可见集哈希变 → 自然 miss
+- [x] 终答 answer 不缓存断言；默认关零 diff
 
 ### D4 · 声明式降级（映射 SPEC §6-5）
 
-- [ ] `resolve_fallback_chain` 链解析断言（非法档过滤+warning）；链去环+≤3 校验断言
-- [ ] 集中性守护断言：调用点零硬编码降级模型（grep 守护测试）
+- [x] `resolve_fallback_chain` 链解析断言（非法档过滤+warning）；链去环+≤3 校验断言
+- [x] 集中性守护断言：调用点零硬编码降级模型（grep 守护测试）
 
 ### D5 · 指标（映射 SPEC §6-6）
 
-- [ ] Cost per Successful Task 聚合口径断言（mock usage/span 聚合）；缺单价档 → unknown 不伪造 0
+- [x] Cost per Successful Task 聚合口径断言（mock usage/span 聚合）；缺单价档 → unknown 不伪造 0
 
 ### D6 · 图谱 / 工程（映射 SPEC §6-7/8/9 · §6-10 PR merge 由 orchestration 承载 · R1 审查 N3）
 
-- [ ] 零 alembic（迁移 diff 为空断言）；llm 行备注 + HG-GRAPH-MODULES 人签新行（00 代录）；`./scripts/graph-compile.sh` 绿
-- [ ] 全量 `pytest tests` 绿（基线 **1420 collected** · 无既有用例删除 · 新增数如实入 40）；`ruff check app tests` 净增 0
-- [ ] 生产路径 diff 白名单：`git diff master -- app/` 只含 llm/budget.py 新增 + llm/infer_cache.py 新增 + llm/model_catalog.py（链+单价表）+ llm/factory.py 与 providers/base.py（检查点/缓存接线 · 最小侵入）+ 测试/图谱/文档
+- [x] 零 alembic（迁移 diff 为空断言）；llm 行备注 + HG-GRAPH-MODULES 人签新行（00 代录）；`./scripts/graph-compile.sh` 绿
+- [x] 全量 `pytest tests` 绿（基线 **1420 collected** · 无既有用例删除 · 新增数如实入 40）；`ruff check app tests` 净增 0
+- [x] 生产路径 diff 白名单：`git diff master -- app/` 只含 llm/budget.py 新增 + llm/infer_cache.py 新增 + llm/model_catalog.py（链+单价表）+ llm/factory.py 与 providers/base.py（检查点/缓存接线 · 最小侵入）+ 测试/图谱/文档
 
 ### 变异检验（不验收空真规则）
 
-- [ ] ① **标记可检**：临时摘除 degraded 标记 → 降级标记断言必挂；恢复后全绿
-- [ ] ② **缓存可检**：临时摘除 prompt 版本入键 → 版本 bump 失效断言必挂；恢复后全绿
-- [ ] ③ **拦截可检**：临时检查点恒放行 → enforce 拦截断言必挂；恢复后全绿
+- [x] ① **标记可检**：临时摘除 degraded 标记 → 降级标记断言必挂；恢复后全绿
+- [x] ② **缓存可检**：临时摘除 prompt 版本入键 → 版本 bump 失效断言必挂；恢复后全绿
+- [x] ③ **拦截可检**：临时检查点恒放行 → enforce 拦截断言必挂；恢复后全绿
 
 ### 旧测影响面清单（B1 · 2026-09-23 10-task 实扫落盘）
 
@@ -257,9 +257,27 @@ SPEC §5 八条全收翻四列加过程三共十一条。防假降级是全波�
 
 ---
 
+### KPI（kpi_aggregator=CLOSE · 2026-09-23 00 核验）
+
+Task_KPI%: 100 · D1 范围钉死（D1–D6 全交付 · SPEC §2 映射）· D2 闸齐（HG-SPEC-SIGNOFF/HG-TASK-DRAFT/HG-AUDIT-R1/HG-GRAPH-MODULES 全 00 代录 approved · 维护者令原话留痕）· D3 过程档齐（invoke 10/20/30/40 + R1 审查文 PASS-WITH-NITS）· D4 图谱回写随 #183 入 master（不新增一级模块）· D5 关账补登（归档 done/ · Hub 行）
+
+| 指标 | 值 |
+|---|---|
+| 新增测试 | +43 用例（1420→1463 collected · 零既有删除） |
+| 全量测试 | 1310 passed / 11 failed（全实证基线环境性 PG 5432 · master+同 .env 复跑同挂）/ 142 skipped；CI pytest **pass** |
+| lint | ruff 净增 0（app/llm 基线 circuit.py 1=1）；task lint PASS；spec-wave verify PASS |
+| 变异检验 | 3/3「破坏→必挂→恢复绿」（degraded 标记/版本入键/检查点拦截 · f83e4ed） |
+| 图谱 | graph-compile 绿 · 不新增一级模块 · HG-GRAPH-MODULES 00 代录 |
+| 交付 | PR #183 MERGED（CI 三绿 · ffaa82e）· 与 V1-B 并行零冲突落地（worktree 隔离先例固化） |
+
+---
+
 ## 修订记录
 
 | 日期 | 摘要 |
 |------|------|
 | 2026-09-23 | 10-task 落稿（SPEC signed 后 · 00 亲起）：锚点逐个复核（usage 末帧纪律 · catalog :118-177 · fallback :23-38 · capability budget/circuit 先例）· 命名冲突扫零命中 · pytest 基线 1420 真跑 · B1 5+1 组落盘 · HG-TASK-DRAFT 00 代录 approved（双令留痕）· HG-AUDIT-R1 pending 待 20-task-audit |
 | 2026-09-23 | 20-task-audit R1 **PASS-WITH-NITS**（零阻塞 · 审查文 `docs/harness/reviews/task_host_v1_llm_factory_closure_audit_R1_20260923.md`）；N1 计数 15→16 · N2 factory.py 锚点描述修正（统一入口=base.py:31-52 __init_subclass__）· N3 D6 标题 §6-10 映射注明；**00 代录 HG-AUDIT-R1=approved**（维护者令原话+本窗双令留痕）· 30 可委派开工（分支 `task/host-v1-llm-factory-closure` · 与 V1-B 并行零文件交叠） |
+| 2026-09-23 | **40 核验（00 独立复核）**：全量 pytest 1463 collected（+43 新增 · 零既有删除）· 1310 passed / 11 failed / 142 skipped——**11 红全部实证为基线环境性**（本地 PG 5432 未起 · master 9474ba5+同 .env detached worktree 复跑同 11 挂）；ruff 净增 0（app/llm 基线 circuit.py 1=1）；`graph-compile.sh` 绿；alembic diff 为空；diff 6 文件全在白名单（factory.py 零改 · base.py 最小侵入）；变异检验 3/3 留痕（f83e4ed 提交说明） |
+| 2026-09-23 | **00 CLOSE**：PR [#183](https://github.com/Cyning12/ops-desk-api/pull/183) MERGED（CI 三绿 · ffaa82e）；图谱回写 llm 行备注 + HG-GRAPH-MODULES 00 代录行随 PR 入 master；归档 done/ · Hub 补登 · 40 invoke 留痕；**V1-C CLOSE** |
+| 2026-09-24 | **00 CLOSE 补登落盘**：40 invoke + Hub/归档随关账 PR 入 master（与 V1-D 同 PR）；**V1-A~D 全 CLOSE · V1-E 可启** |
