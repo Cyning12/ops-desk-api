@@ -291,9 +291,12 @@ def _create_user(prefix: str, name: str) -> tuple[str, str]:
     )
     asyncio.run(
         _db_exec(
-            "INSERT INTO ops_sessions (id, user_id, token_hash, expires_at, created_at)"
-            " VALUES ($1, $2, $3, $4, $5)",
-            uuid.uuid4(), user_id, hash_token(token), expires, now,
+            "INSERT INTO ops_sessions"
+            " (id, user_id, token_hash, expires_at, created_at, tenant_id)"
+            " VALUES ($1, $2, $3, $4, $5, $6)",
+            # session 真源须 ∈ ALLOWED_TENANTS；dualproc_server 的 "dualproc" 是 HITL
+            # store 字段，不是 session 租户（否则 normalize_tenant → 422 unknown_tenant）
+            uuid.uuid4(), user_id, hash_token(token), expires, now, "ops-desk-pilot",
         )
     )
     return str(user_id), token

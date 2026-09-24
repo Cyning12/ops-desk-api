@@ -5,21 +5,34 @@
 > **闸**：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved · graph_change_layer=none  
 > **目录**：`/private/tmp/opsdesk-wt-fix-dualproc` · 分支 `fix/multi-replica-dualproc-tenant-session`
 
-## 必做
+## GATE_VERIFY
 
-1. `npx spec-wave verify --task docs/tasks/active/task_multi_replica_dualproc_tenant_session.md` → PASS  
-2. 改 `_create_user`：`INSERT INTO ops_sessions` 增加 `tenant_id` 列，值 **`"dualproc"`**（对齐 `dualproc_server` HITL/租户）  
-3. `pytest tests/test_multi_replica_dualproc.py`（Python：主仓 `.venv`）；确认无 `tenant_id` NOT NULL  
-4. `git diff master -- app/` 必须空  
-5. FINDINGS #1 → `closed` + 修订行  
-6. commit + push + **可开 PR**（本 fix 小 · 40 可同棒或紧随）；标题建议 `fix(test): dualproc fixture 补 ops_sessions.tenant_id`
+| gate | status | blocks_30 |
+|------|--------|-----------|
+| HG-TASK-DRAFT | approved | — |
+| HG-AUDIT-R1 | approved | ✅ |
+| HG-GRAPH-MODULES | approved | ✅ |
 
-## 禁
+`npx spec-wave verify` → **PASS**（tip ≥ `0c91134`）
 
-改 `app/` · 改模型/迁移 · 重写 dualproc 基建
+## 必做（执行结果）
+
+1. ✅ verify PASS  
+2. ✅ `_create_user` INSERT 补 `tenant_id`  
+   - **值**：`ops-desk-pilot`（非字面 `dualproc`）  
+   - **原因**：`dualproc_server` 的 `"dualproc"` 是 HITL store 行字段；session 真源须 ∈ `ALLOWED_TENANTS`（`ops-desk-pilot` / `ops-desk-pilot-b`）。字面 `dualproc` → `normalize_tenant` → **422 unknown_tenant**（5 failed）。task 逃生口：「若测需与 ORM 默认一致须在 commit 说明」  
+3. ✅ `pytest tests/test_multi_replica_dualproc.py` → **9 passed** · 无 `tenant_id` / `NotNullViolation`  
+4. ✅ `git diff origin/master -- app/` 空（本地 `master` 落后于 origin，以 origin 为准）  
+5. ✅ FINDINGS #1 → closed + 修订行  
+6. ✅ commit + push + PR（见修订）
+
+## 禁（遵守）
+
+未改 `app/` · 未改模型/迁移 · 未重写 dualproc 基建
 
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-09-24 | 00 下发 30 |
+| 2026-09-24 | 30 落地：fixture + FINDINGS closed · 值改 `ops-desk-pilot`（实证）· SHA/PR 补录 |
