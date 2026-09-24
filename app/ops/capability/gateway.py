@@ -36,11 +36,12 @@ import os
 import time
 from typing import Any
 
-from app.ops.capability import circuit
-from app.ops.capability import delegation
+from app.ops.capability import circuit, delegation
 from app.ops.capability import fallback as fallback_mod
 from app.ops.capability.budget import check as budget_check
 from app.ops.capability.budget import count as budget_count
+from app.ops.capability.circuit import CircuitOpen
+from app.ops.capability.circuit import check as circuit_check
 from app.ops.capability.errors import (
     DISABLED,
     PERMISSION_DENIED,
@@ -57,9 +58,13 @@ from app.ops.capability.receipts import (
     build_receipt,
     record_receipt,
 )
-from app.ops.capability.circuit import CircuitOpen, check as circuit_check
+from app.ops.capability.registry import (
+    CapabilityAdapter,
+    CapabilityRegistry,
+    RegistryReader,
+    RegistryWriter,
+)
 from app.ops.capability.result_contract import validate as validate_result_contract
-from app.ops.capability.registry import CapabilityAdapter, CapabilityRegistry
 from app.ops.capability.schema_validate import validate_capability_args
 from app.ops.capability.types import (
     WRITE_SIDE_EFFECTS,
@@ -78,12 +83,24 @@ _ERROR_TRUNCATE = 200
 _ARGS_SUMMARY_MAX = 160
 _ENV_FORCE_ARGS_SCHEMA = "OPS_CAPABILITY_FORCE_ARGS_SCHEMA"
 
-_registry = CapabilityRegistry()
+# 默认本地 dict；测试 / 未来远程客户端经 ``set_registry`` 协议注入
+_registry: CapabilityRegistry = CapabilityRegistry()
 
 
 def get_registry() -> CapabilityRegistry:
-    """进程内单例注册表（测试可 ``clear`` / 重注册）。"""
+    """进程内单例注册表（测试可 ``clear`` / 重注册；协议面见 ``RegistryReader``）。"""
     return _registry
+
+
+def set_registry(registry: RegistryReader | RegistryWriter | CapabilityRegistry) -> None:
+    """协议注入点（mock / 远程客户端可替换）；须同时满足读写协议或为本类。"""
+    global _registry
+    if not isinstance(registry, CapabilityRegistry):
+        # 允许纯 Protocol mock：包装为具备 clear 的薄壳仅当已是 CapabilityRegistry
+        # mock 直接赋值（调用方保证 get/list/register 语义）
+        _registry = registry  # type: ignore[assignment]
+        return
+    _registry = registry
 
 
 def register(spec: CapabilitySpec, adapter: CapabilityAdapter) -> None:

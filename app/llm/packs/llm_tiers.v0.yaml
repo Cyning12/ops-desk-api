@@ -1,0 +1,29 @@
+# LLM 档级策略包 schema v0 · 试点面（host-v1-splittability-hardening D4）
+# 优先级：env > 本包 > 代码默认（model_catalog）
+# 缺省不加载（OPS_LLM_STRATEGY_PACK 未设）= 现状逐字节
+schema_version: "0"
+surface: llm_tiers
+task_tier_models:
+  answer: null
+  grader: "Qwen/Qwen3.6-27B"
+  extract: null
+  structured: null
+  summary: null
+task_tier_fallbacks:
+  answer:
+    - "deepseek-ai/DeepSeek-V4-Flash"
+    - "rule:static_refusal"
+  grader: []
+  extract: []
+  structured: []
+  summary: []
+model_unit_prices:
+  "deepseek-ai/DeepSeek-V4-Flash":
+    input: 0.001
+    output: 0.002
+  "deepseek-ai/DeepSeek-V4-Pro":
+    input: 0.004
+    output: 0.008
+  "Qwen/Qwen3.6-27B":
+    input: 0.002
+    output: 0.004

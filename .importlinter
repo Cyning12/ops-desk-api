@@ -1,0 +1,364 @@
+# import-linter · contracts 真值 = docs/_tech_graph/l1/01_modules.md「依赖方向」列
+# D2 · host-v1-splittability-hardening · 2026-09-24
+#
+# 纪律：forbidden 由出边推导；ignore_imports 逐条有理由（禁大水漫灌）。
+
+[importlinter]
+root_packages =
+    app
+include_external_packages = False
+
+[importlinter:contract:capability-outbound]
+name = capability 出边为空（禁 lg_rag/llm/hitl/memory/…；db 白名单见下）
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    app.ops.capability
+forbidden_modules =
+    app.ops.lg_rag
+    app.ops.strategy
+    app.ops.prompts
+    app.ops.skill_registry
+    app.llm
+    app.ops.hitl
+    app.ops.memory
+    app.ops.rag
+    app.ops.lc_evidence_chain
+    app.ops.structured_output
+    app.ops.chat
+    app.ops.session
+    app.ops.admin
+    app.ops.auth
+    app.ops.deps
+    app.ops.security
+    app.db
+ignore_imports =
+    # DbIdempotencyStore 需 AsyncSession 工厂（持久化装配面）
+    app.ops.capability.idempotency -> app.db.session
+    # 本库 issue/PR lookup ORM
+    app.ops.capability.lookups -> app.db.models
+    app.ops.capability.lookups -> app.db.session
+    # 副作用回执落库
+    app.ops.capability.receipts -> app.db.session
+
+[importlinter:contract:llm-outbound]
+name = llm 仅允许 → db（禁 lg_rag/strategy/capability/…）
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    app.llm
+forbidden_modules =
+    app.ops.lg_rag
+    app.ops.strategy
+    app.ops.prompts
+    app.ops.skill_registry
+    app.ops.capability
+    app.ops.hitl
+    app.ops.memory
+    app.ops.rag
+    app.ops.lc_evidence_chain
+    app.ops.structured_output
+    app.ops.chat
+    app.ops.session
+    app.ops.admin
+    app.ops.auth
+    app.ops.deps
+    app.ops.security
+
+[importlinter:contract:structured-output-outbound]
+name = structured_output 仅允许 → llm
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    app.ops.structured_output
+forbidden_modules =
+    app.ops.lg_rag
+    app.ops.strategy
+    app.ops.prompts
+    app.ops.skill_registry
+    app.ops.capability
+    app.ops.hitl
+    app.ops.memory
+    app.ops.rag
+    app.ops.lc_evidence_chain
+    app.ops.chat
+    app.ops.session
+    app.ops.admin
+    app.db
+    app.ops.auth
+    app.ops.deps
+    app.ops.security
+ignore_imports =
+    # 域 schema 物理落在 lg_rag/schemas；SO 内核 re-export（图谱备注）
+    app.ops.structured_output.schemas -> app.ops.lg_rag.schemas
+    app.ops.structured_output.schemas.extract -> app.ops.lg_rag.schemas.extract
+    app.ops.structured_output.schemas.route -> app.ops.lg_rag.schemas.route
+    app.ops.structured_output.schemas.subtasks -> app.ops.lg_rag.schemas.subtasks
+
+[importlinter:contract:rag-outbound]
+name = rag 仅允许 → db
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    app.ops.rag
+forbidden_modules =
+    app.ops.lg_rag
+    app.ops.strategy
+    app.ops.prompts
+    app.ops.skill_registry
+    app.ops.capability
+    app.ops.hitl
+    app.ops.memory
+    app.ops.lc_evidence_chain
+    app.ops.structured_output
+    app.ops.chat
+    app.ops.session
+    app.ops.admin
+    app.llm
+    app.ops.auth
+    app.ops.deps
+    app.ops.security
+ignore_imports =
+    # grader 共用 llm.schema 类型（历史耦合 · 出边未列 llm）
+    app.ops.rag.grader -> app.llm.schema
+
+[importlinter:contract:memory-outbound]
+name = memory 允许 → db/rag/llm（prompts/SO 白名单）
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    app.ops.memory
+forbidden_modules =
+    app.ops.lg_rag
+    app.ops.strategy
+    app.ops.skill_registry
+    app.ops.capability
+    app.ops.hitl
+    app.ops.lc_evidence_chain
+    app.ops.chat
+    app.ops.session
+    app.ops.admin
+    app.ops.auth
+    app.ops.deps
+    app.ops.security
+    app.ops.prompts
+    app.ops.structured_output
+ignore_imports =
+    # extract 经 prompts 加载器（图谱 memory 行备注级 +prompts）
+    app.ops.memory.extract -> app.ops.prompts.render
+    # extract 走 SO complete 管道
+    app.ops.memory.extract -> app.ops.structured_output
+    app.ops.memory.extract -> app.ops.structured_output.complete
+
+[importlinter:contract:lc-evidence-outbound]
+name = lc_evidence_chain 允许 → rag/llm/db
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    app.ops.lc_evidence_chain
+forbidden_modules =
+    app.ops.lg_rag
+    app.ops.strategy
+    app.ops.skill_registry
+    app.ops.capability
+    app.ops.hitl
+    app.ops.memory
+    app.ops.structured_output
+    app.ops.chat
+    app.ops.session
+    app.ops.admin
+    app.ops.auth
+    app.ops.deps
+    app.ops.security
+    app.ops.prompts
+ignore_imports =
+    # answer 装配 slots（图谱备注级 +prompts）
+    app.ops.lc_evidence_chain.answer -> app.ops.prompts.slots
+    # HTTP 路由鉴权 deps
+    app.ops.lc_evidence_chain.router -> app.ops.deps
+
+[importlinter:contract:hitl-outbound]
+name = hitl 允许 → db/lg_rag
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    app.ops.hitl
+forbidden_modules =
+    app.ops.capability
+    app.ops.memory
+    app.ops.rag
+    app.ops.lc_evidence_chain
+    app.ops.structured_output
+    app.ops.chat
+    app.ops.session
+    app.ops.admin
+    app.llm
+    app.ops.strategy
+    app.ops.prompts
+    app.ops.skill_registry
+    app.ops.auth
+    app.ops.deps
+    app.ops.security
+ignore_imports =
+    app.ops.hitl.router -> app.ops.deps
+
+[importlinter:contract:lg-rag-outbound]
+name = lg_rag 族允许 → lc_evidence/llm/structured_output/capability
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    app.ops.lg_rag
+    app.ops.strategy
+    app.ops.prompts
+    app.ops.skill_registry
+forbidden_modules =
+    app.ops.hitl
+    app.ops.memory
+    app.ops.rag
+    app.ops.chat
+    app.ops.session
+    app.ops.admin
+    app.db
+    app.ops.auth
+    app.ops.deps
+    app.ops.security
+ignore_imports =
+    app.ops.lg_rag.router -> app.ops.deps
+    app.ops.lg_rag.event_store -> app.db.models
+    app.ops.lg_rag.event_store -> app.db.session
+    app.ops.lg_rag.router -> app.db.models
+    app.ops.lg_rag.thread_store -> app.db.models
+    app.ops.lg_rag.thread_store -> app.db.session
+    # 记忆装配/抽取（图谱 memory 消费方 · 出边未列）
+    app.ops.lg_rag.continuity -> app.ops.memory.episode_gate
+    app.ops.lg_rag.continuity -> app.ops.memory.episode_service
+    app.ops.lg_rag.continuity -> app.ops.memory.service
+    app.ops.lg_rag.router -> app.ops.memory.extract
+    app.ops.lg_rag.sse_stream -> app.ops.memory.extract
+    # basic 模式 grader
+    app.ops.lg_rag.nodes -> app.ops.rag.grader
+    # HITL interrupt 挂起侧
+    app.ops.lg_rag.multi.nodes -> app.ops.hitl
+
+[importlinter:contract:chat-outbound]
+name = chat/session 允许 → llm/db/rag
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    app.ops.chat
+    app.ops.session
+forbidden_modules =
+    app.ops.lg_rag
+    app.ops.strategy
+    app.ops.skill_registry
+    app.ops.capability
+    app.ops.hitl
+    app.ops.memory
+    app.ops.lc_evidence_chain
+    app.ops.structured_output
+    app.ops.admin
+    app.ops.auth
+    app.ops.deps
+    app.ops.security
+    app.ops.prompts
+ignore_imports =
+    app.ops.chat.router -> app.ops.deps
+    app.ops.session.summary -> app.ops.prompts
+    app.ops.session.summary -> app.ops.prompts.render
+
+[importlinter:contract:admin-outbound]
+name = admin 允许 → db（capability/memory/deps 观测面白名单）
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    app.ops.admin
+forbidden_modules =
+    app.ops.lg_rag
+    app.ops.strategy
+    app.ops.prompts
+    app.ops.skill_registry
+    app.ops.hitl
+    app.ops.rag
+    app.ops.lc_evidence_chain
+    app.ops.structured_output
+    app.ops.chat
+    app.ops.session
+    app.llm
+    app.ops.auth
+    app.ops.deps
+    app.ops.security
+    app.ops.capability
+    app.ops.memory
+ignore_imports =
+    app.ops.admin.sync -> app.ops.deps
+    app.ops.admin.capability -> app.ops.deps
+    app.ops.admin.memory -> app.ops.deps
+    app.ops.admin.capability -> app.ops.capability
+    app.ops.admin.capability -> app.ops.capability.baseline
+    app.ops.admin.capability -> app.ops.capability.budget
+    app.ops.admin.capability -> app.ops.capability.circuit
+    app.ops.admin.capability -> app.ops.capability.fallback
+    app.ops.admin.capability -> app.ops.capability.idempotency
+    app.ops.admin.capability -> app.ops.capability.metrics
+    app.ops.admin.capability -> app.ops.capability.persistence
+    app.ops.admin.capability -> app.ops.capability.receipts
+    app.ops.admin.capability -> app.ops.capability.types
+    app.ops.admin.memory -> app.ops.memory.service
+
+[importlinter:contract:data-outbound]
+name = data 视图允许 → db
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    app.ops.overview
+    app.ops.issues
+    app.ops.pulls
+    app.ops.graph
+forbidden_modules =
+    app.ops.lg_rag
+    app.ops.strategy
+    app.ops.prompts
+    app.ops.skill_registry
+    app.ops.capability
+    app.ops.hitl
+    app.ops.memory
+    app.ops.rag
+    app.ops.lc_evidence_chain
+    app.ops.structured_output
+    app.ops.chat
+    app.ops.session
+    app.llm
+    app.ops.auth
+    app.ops.deps
+    app.ops.security
+    app.ops.admin
+ignore_imports =
+    app.ops.overview -> app.ops.deps
+    app.ops.issues -> app.ops.deps
+    app.ops.pulls -> app.ops.deps
+    app.ops.graph -> app.ops.deps
+    app.ops.overview -> app.ops.admin.service
+
+[importlinter:contract:auth-outbound]
+name = auth 仅允许 → db
+type = forbidden
+allow_indirect_imports = True
+source_modules =
+    app.ops.auth
+    app.ops.deps
+    app.ops.security
+forbidden_modules =
+    app.ops.lg_rag
+    app.ops.strategy
+    app.ops.prompts
+    app.ops.skill_registry
+    app.ops.capability
+    app.ops.hitl
+    app.ops.memory
+    app.ops.rag
+    app.ops.lc_evidence_chain
+    app.ops.structured_output
+    app.ops.chat
+    app.ops.session
+    app.ops.admin
+    app.llm

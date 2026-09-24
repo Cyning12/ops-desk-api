@@ -3,12 +3,16 @@
 重复 id 行为（P0 钉死）：
 - ``register`` 时若 ``capability_id`` 已存在 → **拒绝覆盖**，raise ``ValueError``。
 - 需要替换：先 ``unregister(id)`` 再 ``register``；禁止静默覆盖，以免重复注册掩盖启动/测试 bug。
+
+V1-E（host-v1-splittability-hardening · D3）：读写分离协议
+``RegistryReader`` / ``RegistryWriter``；本地 dict 实现仍为本类
+（语义原样 · 对拍零 diff）。远程注册中心客户端属 v2.0，本波只留接口。
 """
 
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import Any, Protocol
+from typing import Any, Protocol, runtime_checkable
 
 from app.ops.capability.types import (
     WRITE_SIDE_EFFECTS,
@@ -25,8 +29,34 @@ class CapabilityAdapter(Protocol):
     def invoke(self, args: Any, *, ctx: dict[str, Any] | None = None) -> Any: ...
 
 
+@runtime_checkable
+class RegistryReader(Protocol):
+    """读侧协议（本地缓存 / 未来远程只读客户端形态）。"""
+
+    def get(
+        self, capability_id: str
+    ) -> tuple[CapabilitySpec, CapabilityAdapter] | None: ...
+
+    def list_specs(
+        self, *, filter: CapabilityFilter | None = None
+    ) -> list[CapabilitySpec]: ...
+
+    def snapshot(self) -> dict[str, Any]: ...
+
+
+@runtime_checkable
+class RegistryWriter(Protocol):
+    """写侧协议（注册中心客户端形态 · 本地 dict 默认同义封装）。"""
+
+    def register(self, spec: CapabilitySpec, adapter: CapabilityAdapter) -> None: ...
+
+    def unregister(self, capability_id: str) -> bool: ...
+
+    def reload(self) -> None: ...
+
+
 class CapabilityRegistry:
-    """进程内注册表（单例见 ``gateway`` 模块）。"""
+    """进程内注册表（单例见 ``gateway`` 模块）· 默认 ``RegistryReader``+``RegistryWriter``。"""
 
     def __init__(self) -> None:
         self._entries: dict[str, tuple[CapabilitySpec, CapabilityAdapter]] = {}
@@ -60,8 +90,22 @@ class CapabilityRegistry:
             return list(specs)
         return [s for s in specs if _match_filter(s, filter)]
 
+    def snapshot(self) -> dict[str, Any]:
+        """只读摘要（id 有序列表 + 计数）；不暴露 adapter。"""
+        ids = sorted(self._entries.keys())
+        return {
+            "capability_ids": ids,
+            "count": len(ids),
+            "backend": "local_dict",
+            "scope": "process-local",
+        }
+
+    def reload(self) -> None:
+        """本地 dict：清空条目（远程实现将拉取并重建；本波不实现远程）。"""
+        self._entries.clear()
+
     def clear(self) -> None:
-        """测试用：清空注册表。"""
+        """测试用：清空注册表（与 ``reload`` 同义 · 保留历史调用面）。"""
         self._entries.clear()
 
 

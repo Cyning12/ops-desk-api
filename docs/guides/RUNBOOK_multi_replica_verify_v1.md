@@ -59,3 +59,7 @@ bind-mount 挂当前工作区代码（镜像只提供依赖层）——验证对
 
 runbook 轨结论随时间贬值（checkpointer/resume/事件表语义漂移时双进程 pytest 在 CI
 兜核心语义，本轨须复跑）；镜像重建后须复核 digest 断言与依赖层一致性。
+
+## V1-E 回归留痕（2026-09-24）
+
+见 `reports/multi_replica_verify/REGRESSION_host_v1_splittability_hardening_20260924.md`（环境性 BLOCKED · FINDINGS #1）。

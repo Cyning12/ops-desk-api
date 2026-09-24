@@ -2,32 +2,47 @@
 
 > **日期**：2026-09-24  
 > **帽**：30（**00 委派子 Agent** · 00 不亲自 30）  
-> **闸态**：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 **approved**（00 代录）· `npx spec-wave verify` 须 PASS  
+> **闸态**：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 **approved**（00 代录）· `npx spec-wave verify` **PASS**（tip `4e6d28d` 对齐后）  
 > **task**：`docs/tasks/active/task_host_v1_splittability_hardening.md`  
 > **SPEC**：`docs/spec/host-v1-splittability-hardening/SPEC-…_v0.md`（signed）+ D1 真值 `docs/spec/multi-replica-verify/SPEC-…_v1.md`  
-> **分支 / 工作目录**：`task/host-v1-splittability-hardening` · `/private/tmp/opsdesk-wt-master40`（可另建隔离 worktree；禁 master 直改）
+> **分支 / 工作目录**：`task/host-v1-splittability-hardening` · `/private/tmp/opsdesk-wt-master40`
 
-## 实现序（钉死）
+## 实现序（钉死）· 完成度
 
-1. **D2** import-linter + `.importlinter`（contracts←`01_modules` 出边）+ 白名单逐条理由 + CI job  
-2. **D3** RegistryReader/Writer + 本地 dict 默认 + 调用点注入 + 对拍零 diff  
-3. **D4** env 全仓清单文档 + 策略包 YAML schema v0 单面试点（建议 llm 档级）+ 优先级断言  
-4. **D1** 双进程回归 + 边界清单补扫（≥ delegation nonce / llm budget / infer_cache · file:line）+ 报告/runbook 可复核 · **验证轨 app/ 零生产码 diff**  
-5. **D5** 「发现即另开」条目（可空表）+ 变异检验 + 图谱按实判
+| 块 | 状态 | 摘要 |
+|----|------|------|
+| D2 | ✅ | `.importlinter` 12 contracts KEPT（`allow_indirect_imports=True` 直边）· ignore 逐条理由 · CI `import-linter.yml` · dep 入 requirements/pyproject |
+| D3 | ✅ | `RegistryReader`/`RegistryWriter` + `CapabilityRegistry` 本地 dict · `set_registry` 注入 · mock/变异测 · 对拍（B1 子集绿） |
+| D4 | ✅ | `GUIDE_env_inventory_v1.md`（83 键）· `llm_tiers.v0.yaml` + `strategy_pack.py` · env>pack>code · 缺省零 diff |
+| D1 | ⚠ | GUIDE 补扫 9–11 已落；双进程 **9 ERROR**（`ops_sessions.tenant_id` NOT NULL · fixture 未写 · **环境/基建漂移** → D5 #1）· 未改 app/ 生产语义 |
+| D5 | ✅ | FINDINGS 表 1 条另开建议 · 变异①②③ 测在 `test_splittability_hardening.py` · 图谱 capability 备注已落 · **人签待 00 代录** |
 
-## 红线
+## 验证留痕
 
-- 不重写 #165 双进程基建 · 不外置进程内状态 · 不远程注册中心 · 不全量策略搬家  
-- 零 alembic / 零新路由/SSE / 零 freeze 动 · 顺手修 bug→D5 另开  
-- 对拍零 diff · ruff 净增 0 · 基线 collect 真跑复核（承 1587）  
-- **不 push 实现码到 master · 可 push 本分支 · 不开 PR**（40 做）
+| 项 | 结果 |
+|----|------|
+| `npx spec-wave verify --task …` | PASS |
+| `lint-imports` | 12 kept, 0 broken |
+| `pytest --collect-only` | **1594** collected（承 1587 + 本波新增 7） |
+| `pytest tests/test_splittability_hardening.py` | **7 passed** |
+| B1 子集（capability gateway/manifest/visibility + llm budget + infer_cache + model_catalog） | **115 passed, 1 skipped** |
+| `pytest tests/test_multi_replica_dualproc.py` | **9 ERROR**（FINDINGS #1 · 环境性实证） |
+| `ruff check app tests` | **56** errors（开工基线约 57 · **净增 ≤0**） |
+| `./scripts/graph-compile.sh` | 绿 |
 
-## Python
+## 交付 SHA
 
-`/Users/cyning/Desktop/Ops-desk/ops-desk-api/.venv/bin/python`（主仓 venv）
+（commit 后回填 · 见修订表）
+
+## 红线自检
+
+- 未重写 #165 双进程基建 · 未外置状态 · 未远程 registry · 未全量策略搬家  
+- 零 alembic / 零新路由/SSE / 零 freeze  
+- 可 push 本分支 · **不开 PR**
 
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-09-24 | 00 下发 30（AUDIT 代录 approved · verify 后开工） |
+| 2026-09-24 | 30 交付回写：D2–D5 · collect 1594 · dualproc 环境红 · 图谱待 00 代录 |
