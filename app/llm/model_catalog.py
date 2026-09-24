@@ -175,3 +175,133 @@ def resolve_task_model(
     if tier:
         return tier, "tier_default"
     return None, "default"
+
+
+# --- 档级 fallback 链声明（host-v1-llm-factory-closure D4 · 声明式降级） ---
+#
+# 纪律（SPEC §2 D4 锁死）：
+# - **集中不散落**：降级链只在这里声明；调用点（providers/base.py 预算闸）
+#   只问 catalog 要链，**禁止在调用点写死降级模型**（D6 grep 守护断言）。
+# - **声明才降级**（防假降级 U3 承 capability/fallback B1-B4）：无声明档 =
+#   明确失败（承 ACTION_NONE 默认），框架绝不猜降级目标。
+# - 链元素两类：① 已知目录内 model id（小模型档）；② 规则档标记
+#   ``rule:<name>``（Q3 裁定：固定文案模板档，文案见 RULE_TIER_TEMPLATES）。
+# - 链序 = 预算耗尽 → 小模型档 → 规则/缓存档；链长 ≤ 3 且无环（承 B3，FP-8）。
+
+#: 规则档标记前缀（``rule:<name>`` · name 须在 RULE_TIER_TEMPLATES 词表内）
+RULE_TIER_PREFIX = "rule:"
+
+#: 规则档词表（Q3 固定文案模板档 · 零逻辑）：name → 静态兜底文案。
+#: 词表即声明面：新增规则档 = 在此登记文案（走 Git + PR + 人闸）。
+RULE_TIER_TEMPLATES: dict[str, str] = {
+    "static_refusal": (
+        "当前服务负载/预算已触上限，暂时无法完成本次回答。"
+        "请稍后重试；若持续出现请联系管理员调整额度。"
+    ),
+}
+
+#: 档级 fallback 链：task_type → (降级目标, ...)，大 → 小 → ``rule:<name>``。
+#: **空 tuple = 无声明 = 预算耗尽时明确失败**（承 fallback ACTION_NONE 默认 ·
+#: 业务档位是否配降级链由本声明显式决定，框架不猜）。
+TASK_TIER_FALLBACKS: dict[str, tuple[str, ...]] = {
+    # answer 是终答面：耗尽先退小模型档，再退固定文案（标记 degraded 跟数据走）
+    "answer": ("deepseek-ai/DeepSeek-V4-Flash", "rule:static_refusal"),
+    # 背景档无声明：grader/extract/structured/summary 耗尽 = 明确失败
+    "grader": (),
+    "extract": (),
+    "structured": (),
+    "summary": (),
+}
+
+#: 降级链长度上限（承 capability/fallback B3 链条有界 · SPEC FP-8）
+FALLBACK_CHAIN_MAX_LEN = 3
+
+
+def resolve_fallback_chain(task_type: str) -> tuple[str, ...]:
+    """任务类型 → 校验后的降级链（纯函数 · 非法档过滤 + warning，不炸请求）。
+
+    校验（承 :157-167 回退纪律 · SPEC FP-8）：
+    - 未知 task_type → warning + 空链（= 明确失败，不静默放行）；
+    - 非法元素（不在已知模型目录、且非词表内 ``rule:<name>``）→ warning + 过滤；
+    - 去环：链内重复元素只保留首次出现（warning）；
+    - 链长截断到 FALLBACK_CHAIN_MAX_LEN（warning）。
+    """
+    task = (task_type or "").strip().lower()
+    if task not in TASK_TYPES:
+        _logger.warning(
+            "unknown llm task_type=%r; fallback chain empty (explicit failure)", task_type
+        )
+        return ()
+    declared = TASK_TIER_FALLBACKS.get(task) or ()
+    known_ids = _known_model_ids()
+    chain: list[str] = []
+    seen: set[str] = set()
+    for entry in declared:
+        item = (entry or "").strip()
+        if not item:
+            continue
+        if item in seen:
+            _logger.warning(
+                "fallback chain task=%s 含重复元素 %r（成环风险）· 已去重", task, item
+            )
+            continue
+        if item.startswith(RULE_TIER_PREFIX):
+            rule_name = item[len(RULE_TIER_PREFIX):]
+            if rule_name not in RULE_TIER_TEMPLATES:
+                _logger.warning(
+                    "fallback chain task=%s 规则档 %r 不在 RULE_TIER_TEMPLATES 词表 · 已过滤",
+                    task,
+                    item,
+                )
+                continue
+        elif item not in known_ids:
+            _logger.warning(
+                "fallback chain task=%s 元素 %r 不在已知模型目录 · 已过滤", task, item
+            )
+            continue
+        seen.add(item)
+        chain.append(item)
+        if len(chain) >= FALLBACK_CHAIN_MAX_LEN:
+            if len(declared) > FALLBACK_CHAIN_MAX_LEN:
+                _logger.warning(
+                    "fallback chain task=%s 超过链长上限 %d · 已截断",
+                    task,
+                    FALLBACK_CHAIN_MAX_LEN,
+                )
+            break
+    return tuple(chain)
+
+
+def rule_tier_text(name: str) -> str | None:
+    """规则档静态文案；未声明 → None（链末端明确失败 · 不伪造成功）。"""
+    return RULE_TIER_TEMPLATES.get((name or "").strip())
+
+
+# --- 档级单价表（host-v1-llm-factory-closure D4/D5 · 估算口径 · 非对账） ---
+#
+# 纪律（SPEC §2 D5 / FP-7 锁死）：
+# - **仅估算口径**：单位「元/1K tokens」，用于 Cost per Successful Task 估算与
+#   span 观测，**不是计费对账**（跨 provider 对账是 v2.0 非范围）。
+# - 缺单价档 → estimate_cost 返回 None → 聚合标 ``unknown``，**不伪造 0**
+#   （承「不写 0 假账」铁律）。
+
+#: model id → {"input": 元/1K input tokens, "output": 元/1K output tokens}
+MODEL_UNIT_PRICES: dict[str, dict[str, float]] = {
+    "deepseek-ai/DeepSeek-V4-Flash": {"input": 0.001, "output": 0.002},
+    "deepseek-ai/DeepSeek-V4-Pro": {"input": 0.004, "output": 0.008},
+    "Qwen/Qwen3.6-27B": {"input": 0.002, "output": 0.004},
+}
+
+
+def estimate_cost(
+    model: str | None, prompt_tokens: int, completion_tokens: int
+) -> float | None:
+    """按档级单价表估算本次调用成本（元）；缺单价 → None（unknown 不伪造 0）。"""
+    price = MODEL_UNIT_PRICES.get((model or "").strip())
+    if price is None:
+        return None
+    return (
+        max(0, int(prompt_tokens)) / 1000.0 * price["input"]
+        + max(0, int(completion_tokens)) / 1000.0 * price["output"]
+    )
+
