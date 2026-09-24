@@ -19,6 +19,10 @@ capabilities:
       type: [string, object]
       properties: {}
       additionalProperties: true
+    reversible: true
+    execution_type: instant
+    max_reversal_latency: 0
+    requires_stop_support: false
     adapter: local_fn:app.ops.capability.defaults:mock_get_issue_status
   - id: mock_get_deploy_info
     kind: local_fn
@@ -34,6 +38,10 @@ capabilities:
       type: [string, object]
       properties: {}
       additionalProperties: true
+    reversible: true
+    execution_type: instant
+    max_reversal_latency: 0
+    requires_stop_support: false
     adapter: local_fn:app.ops.capability.defaults:mock_get_deploy_info
   - id: utc_now_iso
     kind: local_fn
@@ -49,6 +57,10 @@ capabilities:
       type: [string, object, "null"]
       properties: {}
       additionalProperties: true
+    reversible: true
+    execution_type: instant
+    max_reversal_latency: 0
+    requires_stop_support: false
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
   - id: get_issue_by_number
     kind: local_fn
@@ -67,6 +79,10 @@ capabilities:
           type: [integer, string]
           description: issue/PR 号
       additionalProperties: true
+    reversible: true
+    execution_type: instant
+    max_reversal_latency: 0
+    requires_stop_support: false
     adapter: local_fn:app.ops.capability.lookups:get_issue_by_number
   - id: get_pr_by_number
     kind: local_fn
@@ -85,4 +101,8 @@ capabilities:
           type: [integer, string]
           description: issue/PR 号
       additionalProperties: true
+    reversible: true
+    execution_type: instant
+    max_reversal_latency: 0
+    requires_stop_support: false
     adapter: local_fn:app.ops.capability.lookups:get_pr_by_number
