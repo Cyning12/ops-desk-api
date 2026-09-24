@@ -5,8 +5,8 @@
 > **前置 30**：[V1-E 30 实现收口](88d8c578-e399-4cf7-a51c-6881fee6de43) · tip `5bed0ae` / feat `41fca32`  
 > **图谱**：HG-GRAPH-MODULES 人签行已 **00 代录 approved**  
 > **工作目录**：`/private/tmp/opsdesk-wt-master40` · 分支 `task/host-v1-splittability-hardening`  
-> **核验 tip**：`a1d8e98`（图谱 00 代录 + 本 invoke 初稿）· 本修订 commit 随后 push  
-> **PR**：见修订表（创建后回填 URL）· **不做 CLOSE**
+> **核验 tip**：核验摘要入 squash `164f3fc`（#187）；本文件终稿随 docs 跟进 PR  
+> **PR**：[https://github.com/Cyning12/ops-desk-api/pull/187](https://github.com/Cyning12/ops-desk-api/pull/187) **MERGED**（merge `164f3fc` · 2026-09-24T03:23:37Z）· **CLOSE 留给 00**
 
 ## 40 必做
 
@@ -23,7 +23,7 @@
 5. 盯 CI；**不做 CLOSE**（留给 00）  
 6. 回写本 invoke：摘要 · PR URL · CI · dualproc 结论口径
 
-## 40 核验结论（独立 · tip `a1d8e98`）
+## 40 核验结论（独立 · tip `a1d8e98` → 回写入 #187）
 
 | 面 | 证据 | 结论 |
 |---|---|---|
@@ -45,13 +45,18 @@
 
 ## CI 态
 
-| check | 初态（PR 创建后） | 终态 |
-|---|---|---|
-| （PR 创建后回填） | pending | — |
+| check | 终态（#187） |
+|---|---|
+| lint-wiki-delta | **pass** |
+| import-linter | **pass** |
+| check（tech-graph） | **pass** |
+| pytest | **pass**（1m46s） |
+
+> 注：merge 时刻（03:23:37Z）pytest 仍可能 IN_PROGRESS；仓先例 check+lint 绿后即可 squash。pytest 终态随后 **pass**。
 
 ## 修订
 
 | 日期 | 说明 |
 |---|---|
 | 2026-09-24 | 00 下发 40（图谱已代录 · dualproc 红须如实标注） |
-| 2026-09-24 | 40 独立核验 PASS（D2–D5 / ruff≤0 / graph / 白名单）· dualproc 9 ERROR 经 master+同.env 实证为基线漂移 · PR 创建中 · **不做 CLOSE** |
+| 2026-09-24 | 40 独立核验 PASS（D2–D5 / ruff≤0 / graph / 白名单）· dualproc 9 ERROR 经 master+同.env 实证为基线漂移 · **PR #187 MERGED** · CI 四绿 · docs 跟进回填 · **不做 CLOSE** |
