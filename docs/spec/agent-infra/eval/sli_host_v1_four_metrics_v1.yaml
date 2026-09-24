@@ -1,0 +1,42 @@
+# Host v1.0 出口 SLI 四项 · 机读定义（与 SLI_host_v1_four_metrics_v1.md 同真）
+version: "1"
+task_slug: host-v1-sli-four-metrics
+success_task_basis: "supervisor run terminal status=done (run_events); same as cost_per_successful_task"
+cost_unknown_policy: "missing unit price → unknown; never fabricate 0"
+
+metrics:
+  - sli_id: e2e_p99
+    display_name: 端到端延迟 P99
+    dict_key: latency.e2e_p99_ms
+    formula: "P99 nearest-rank of root/e2e span duration_ms"
+    labels: ["module=e2e"]
+    success_basis: "latency face includes failed runs; optional filter"
+    data_source: "Langfuse trace latency / exported duration_ms"
+  - sli_id: task_completion
+    display_name: 任务完成率
+    dict_key: avail.success
+    formula: "count(terminal=done) / count(runs with terminal)"
+    labels: ["avail"]
+    success_basis: "numerator only done (V1-C)"
+    data_source: "run_events terminal / optional score avail.success"
+  - sli_id: capability_hit
+    display_name: 能力命中率
+    dict_key: avail.capability_ok
+    formula: "mean(ok) over capability call rows; missing ok → unknown"
+    labels: ["avail"]
+    success_basis: "ok=true per capability invocation"
+    data_source: "span metadata ok (buried) / optional score avail.capability_ok"
+  - sli_id: cost_per_success
+    display_name: Cost per Successful Task
+    dict_key: host.cost_per_successful_task
+    formula: "sum(successful run LLM cost) / successful_tasks"
+    labels: ["cost", "host"]
+    success_basis: "done run_id set (V1-C)"
+    data_source: "usage ledger × model_catalog; app.llm.budget.cost_per_successful_task"
+
+e1_alignment:
+  avail.success: task_completion
+  avail.capability_ok: capability_hit
+  latency.e2e_p99_ms: e2e_p99  # E1 §3.2 extension
+  host.cost_per_successful_task: cost_per_success  # not cost.usd_est
+  cost.usd_est: "E5 optional score; not Host v1.0 Cost SLI"

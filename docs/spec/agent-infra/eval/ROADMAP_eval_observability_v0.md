@@ -94,8 +94,9 @@
 
 | score name | 维度 | 取值 | 状态 |
 |---|---|---|---|
-| `avail.success` | 可用性 | 0/1 请求是否正常 END | 缺口 |
-| `avail.capability_ok` | 可用性 | 0/1 该次 tool 调用 | 缺口（metadata `ok` 已有） |
+| `avail.success` | 可用性 | 0/1 请求是否正常 END | 缺口（Host v1.0 SLI 出口键 · 见 [`SLI_host_v1_four_metrics_v1.md`](./SLI_host_v1_four_metrics_v1.md)；有数可走 run 终态聚合） |
+| `avail.capability_ok` | 可用性 | 0/1 该次 tool 调用 | 缺口（metadata `ok` 已有 · Host v1.0 SLI 出口键） |
+| `latency.e2e_p99_ms` | 延迟 | 端到端 P99（ms · nearest-rank） | **观察**（Host v1.0 扩展 · E1 原无 latency score；聚合面 / Langfuse latency；热路径 score 默认不写） |
 | `acc.route_match` | 准确性 | 0/1 vs 金标 | 缺口 · E2 |
 | `acc.plan_match` | 准确性 | 0/1 或分项 | 缺口 · E2 |
 | `acc.strategy.allowlist_match` | 准确性 | 0/1 vs 金标 allowlist | 缺口 · E2 |
@@ -163,3 +164,4 @@
 | 2026-08-29 | **E5 开工**：`eval-token-cost-ledger`；E4 归档 #95 |
 | 2026-08-31 | **E5 DONE**：[#96](https://github.com/Cyning12/ops-desk-api/pull/96) MERGED；task 归档补登 |
 | 2026-08-30 | **交叉引用**：Generation 内容 I/O 优先级见 L0 [`../05_lg_rag_transport_and_session_plan_v0.md`](../05_lg_rag_transport_and_session_plan_v0.md) §3；**不**在 Eval 轨单开 Obs-I/O task |
+| 2026-09-24 | **Host v1.0 SLI**：§3.2 增 `latency.e2e_p99_ms`；`avail.success` / `avail.capability_ok` 标注出口键；真值 [`SLI_host_v1_four_metrics_v1.md`](./SLI_host_v1_four_metrics_v1.md) · GUIDE [`GUIDE_host_v1_sli_dashboard_v1.md`](./GUIDE_host_v1_sli_dashboard_v1.md) |

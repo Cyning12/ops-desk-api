@@ -1,0 +1,49 @@
+{
+  "window": "fixture-2026-09-24",
+  "note": "mock export; durations ms; terminals from run_events projection",
+  "e2e_latency": [
+    {"run_id": "r1", "duration_ms": 100},
+    {"run_id": "r2", "duration_ms": 200},
+    {"run_id": "r3", "duration_ms": 150},
+    {"run_id": "r4", "duration_ms": 300},
+    {"run_id": "r5", "duration_ms": 120},
+    {"run_id": "r6", "duration_ms": 180},
+    {"run_id": "r7", "duration_ms": 220},
+    {"run_id": "r8", "duration_ms": 90},
+    {"run_id": "r9", "duration_ms": 400},
+    {"run_id": "r10", "duration_ms": 250}
+  ],
+  "task_terminals": [
+    {"run_id": "r1", "terminal_status": "done"},
+    {"run_id": "r2", "terminal_status": "done"},
+    {"run_id": "r3", "terminal_status": "error"},
+    {"run_id": "r4", "terminal_status": "done"},
+    {"run_id": "r5", "terminal_status": "cancelled"}
+  ],
+  "capability_calls": [
+    {"capability_id": "search", "ok": true},
+    {"capability_id": "search", "ok": true},
+    {"capability_id": "write", "ok": false},
+    {"capability_id": "read", "ok": true}
+  ],
+  "cost_rows": [
+    {
+      "run_id": "r1",
+      "model": "deepseek-ai/DeepSeek-V4-Flash",
+      "prompt_tokens": 1000,
+      "completion_tokens": 1000
+    },
+    {
+      "run_id": "r1",
+      "model": "deepseek-ai/DeepSeek-V4-Flash",
+      "prompt_tokens": 1000,
+      "completion_tokens": 1000
+    },
+    {
+      "run_id": "r2",
+      "model": "Qwen/Qwen3.6-27B",
+      "prompt_tokens": 1000,
+      "completion_tokens": 0
+    }
+  ]
+}
