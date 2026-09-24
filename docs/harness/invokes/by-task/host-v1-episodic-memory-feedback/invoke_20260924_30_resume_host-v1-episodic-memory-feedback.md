@@ -28,7 +28,7 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-09-24 | 00 接手扫盘：WIP 未提交 + 落后 master → 委派 30-resume 收口 |
-| 2026-09-24 | **30-resume 收口完成（本帽）**：merge master=`ffaa82e` fast-forward · 零冲突 · stash pop 净；D1–D6 齐；`graph-compile` 绿；ruff `app tests`=57（=master 净增 0）；三新增测文件 **84 collected / 84 passed**；B1 抽 `test_memory_gate`+`test_memory_injection`+`test_memory_service_db` **80 passed**；全量 collect **1587**（merge 后基线，含 V1-B/C）；变异①互写→断言挂（facts 1≠0）→恢复绿 · ②闸恒放行→DID NOT RAISE→恢复绿 · ③摘`[相似经验]`头→分节断言挂→恢复绿；HG-GRAPH-MODULES 人签行 **pending / 待 00 代录签**（memory/db 备注文已落）；**未 push / 未开 PR**。commits `d4bc8d7` / `fec4f63` / `39e7ace`。 |
+| 2026-09-24 | **30-resume 收口完成（本帽）**：merge master=`ffaa82e` fast-forward · 零冲突 · stash pop 净；D1–D6 齐；`graph-compile` 绿；ruff `app tests`=57（=master 净增 0）；三新增测文件 **84 collected / 84 passed**；B1 抽 `test_memory_gate`+`test_memory_injection`+`test_memory_service_db` **80 passed**；全量 collect **1587**（merge 后基线，含 V1-B/C）；变异①互写→断言挂（facts 1≠0）→恢复绿 · ②闸恒放行→DID NOT RAISE→恢复绿 · ③摘`[相似经验]`头→分节断言挂→恢复绿；HG-GRAPH-MODULES 人签行 **pending / 待 00 代录签**（memory/db 备注文已落）；**未 push / 未开 PR**。commits `d4bc8d7` / `fec4f63` / `0c5b787`。 |
 
 ### 交付 SHA / 核验摘要
 
@@ -37,7 +37,7 @@
 | merge tip | `ffaa82e`（master） |
 | feat commit | `d4bc8d7` |
 | test commit | `fec4f63` |
-| docs commit | `39e7ace` |
+| docs commit | `0c5b787` |
 | collected 全量 | 1587 |
 | 新增用例（三文件） | 84 |
 | pytest 新增三文件 | 84 passed |
