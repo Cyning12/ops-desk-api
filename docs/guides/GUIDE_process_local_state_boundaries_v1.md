@@ -8,7 +8,7 @@
 
 ---
 
-## 判定总表（8 条目最小集 + 实证结论）
+## 判定总表（8 条目最小集 + V1-A~D 补扫 3 条 + 实证结论）
 
 | # | 状态 | 锚点（file:line · 2026-09-22 复核） | 多副本失真形态 | 既有自首 | 处置建议 | 实证 |
 |---|------|----------------------------------|----------------|----------|----------|------|
@@ -20,6 +20,11 @@
 | 6 | idempotency / receipts（防重与回执） | `app/ops/capability/persistence.py:1-13`（装配表：`db`/`memory`/默认 `null` 不防重告警「不能上生产」）· `app/ops/capability/idempotency.py:45-52`（`DbIdempotencyStore` (tenant,key) 唯一约束跨实例 · 租约判定交 DB 时钟 `now()` —— 多实例时钟偏差坑明示） | `=db` 跨实例防重成立（唯一约束兜底）；`=null`/`memory` 多副本下**防重时有时无**；配置漂移（A=db B=null）= 静默错 | 装配 docstring「显式选不自动探测」+ Null 告警 | **多副本生产必须显式 `db`**（纪律项）；时钟偏差由 DB 时钟化解已在案 | ✅ 双进程前置断言 `capability_persistence.mode == db` 且 `idempotency.scope == cross_instance`（两实例同） |
 | 7 | HITL store（审批申请） | `app/ops/hitl/persistence.py:1-13`（装配表同纪律：默认 `null` 不落库告警「不能上生产」）· `persistence.py:28`（`_STORE` 进程级装配点） | `=db` → `DbHitlStore` 跨实例跨重启（申请 B 可见）；`=null` 进程内不落库 → 多副本下「人在等一个不存在的审批」；A=db B=null = 审批时有时无静默错 | Null 告警 + docstring | **多副本生产必须显式 `db`**（纪律项） | ✅ `test_hitl_cross_instance_resume`：A 挂起申请 → B 签名拉待办可见 → B 批准 → B resume 续跑 |
 | 8 | SSE live 流（在飞帧） | `app/ops/lg_rag/sse_stream.py:20-22`（docstring：PG checkpointer 整个流期间持有 · 挂起帧翻译）· live 帧只在服务该连接的进程内 | live 中途换实例 = 断连；断连后 replay 走 PG 事件表 cursor 续传（**非无缝** · 既有设计兜底 · 无缝化另案非范围） | replay 通道 + cursor 机制既有 | **现接受**（断连重连语义既有）；无缝迁移另案 | ✅ `test_cross_instance_replay`：A 的 run 帧 B 经事件表 replay 全程一致（续传成立的实证面） |
+
+
+| 9 | delegation nonce registry（委派令牌一次性 nonce） | `app/ops/capability/delegation.py:320`（`_NonceRegistry`）· `:352`（`_nonce_registry` 模块级单例）· `:337-345`（`consume` 进程内 TTL） | **A 验过的 nonce B 可再验**：跨实例重放窗口按副本分家；签发序号/supersede 同理进程内 | docstring「进程内 TTL 缓存 · 防重放窗口 = 进程生命周期」 | **现接受**（V1-A 默认 off 零 diff；enforce 多副本前须外置或会话亲和）· 改造另开 | 本波 V1-E 补扫（双进程回归绿 · 非本条专测） |
+| 10 | llm budget 会话/任务计数器 | `app/llm/budget.py:83-85`（`_LOCK`/`_SESSIONS`）· `:87-92`（`_TASKS`/`_SAMPLES`/`_BLOCKED`）· `snapshot()` `:387` · `scope: process-local` `:407` | **配额按实例数放大**（与 capability budget 同形）；会话跳实例 = 计数重置；`OPS_LLM_BUDGET_MODE=off` 默认零 diff | snapshot 显式 `scope: process-local` | **现接受**（默认 off；硬限额外置另开 SPEC） | 本波 V1-E 补扫 |
+| 11 | llm infer_cache LRU | `app/llm/infer_cache.py:187-189`（`_LOCK`/`_CACHE` OrderedDict）· `snapshot()` `:245` · `scope: process-local` `:262` · 默认关 `OPS_LLM_INFER_CACHE_ENABLED` | **A 命中的 structured 缓存 B 未命中** → 同输入两副本可「缓存命中/实时推理」分叉；重启失效 | snapshot 显式 scope；默认关 | **现接受**（默认关零 diff；一致性敏感场景保持关或外置另开） | 本波 V1-E 补扫 |
 
 ## 对照实测定量记录（双进程 pytest · 2026-09-22）
 
@@ -50,6 +55,11 @@
 | `ContextVar` 族（`app/llm/usage.py:44` · `app/ops/tenant_context.py:16` · `lc_evidence_chain/step_hook.py:18` · `answer_stream`/`progress_stream` sink） | 不适用 | 请求/task 级上下文（每请求独立）· 非跨请求进程状态 |
 | 其余模块级 dict/list（`_PROVIDERS`/`_GRADER_PROMPTS`/`_TASK_DIRS`/`_DEFAULT_*`/`_PROBE_SPECS`/`_TYPE_MAP`/schema 常量等） | 不适用 | 启动期常量表（只读 · 同镜像一致） |
 
+
+| `app/ops/capability/delegation.py:320+`（`_NonceRegistry`/`_nonce_registry`） | **已盘点**（条目 9 · V1-E 补扫） | 委派 nonce 进程内 |
+| `app/llm/budget.py:83-85`（`_LOCK`/`_SESSIONS`）· snapshot `:387/:407` | **已盘点**（条目 10 · V1-E 补扫） | LLM 预算进程内 |
+| `app/llm/infer_cache.py:187-189`（`_LOCK`/`_CACHE`）· snapshot `:245/:262` | **已盘点**（条目 11 · V1-E 补扫） | 推理缓存 LRU 进程内 |
+
 **漏项兜底结论**：扫描命中的**可变跨请求**进程内状态 = 清单 8 条目 + fallback 降级缓存（本表补录）；其余均为启动期常量 / 请求级 contextvar / 观测回显，逐条标注如上。
 
 ## 跨实例成立面（对照 · 非进程内）
@@ -70,3 +80,4 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-09-22 | v1 落盘（task multi-replica-verify D3 · 8 条目 + fallback 缓存补录 + 扫描基线兜底 + 双进程实证结论） |
+| 2026-09-24 | V1-E（host-v1-splittability-hardening D1）补扫：delegation nonce / llm budget / infer_cache 三条（file:line）入表；扫描基线同步 |

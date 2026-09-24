@@ -1,0 +1,31 @@
+# D2 · host-v1-splittability-hardening · import-linter 机械闸
+name: import-linter
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  import-linter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.11.7"
+          enable-cache: true
+
+      - name: Install import-linter
+        run: |
+          uv python install 3.11
+          uv venv --python 3.11
+          uv pip install "import-linter>=2.1,<3"
+
+      - name: Run contracts
+        run: .venv/bin/lint-imports --config .importlinter

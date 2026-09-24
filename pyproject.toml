@@ -46,6 +46,8 @@ dev = [
     "httpx>=0.27,<1",
     "ruff>=0.5,<1",
     "mypy>=1.10,<2",
+    "import-linter>=2.1,<3",
+    "PyYAML>=6,<7",
 ]
 
 # 熔断状态跨实例共享时才需要（OPS_CAPABILITY_CB_BACKEND=redis）。

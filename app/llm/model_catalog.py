@@ -110,10 +110,12 @@ def get_fallback_chain(provider: str) -> list[ModelInfo]:
 
 # --- 任务类型分层路由（llm-layer-hardening D3） ---
 #
-# 解析序（钉死）：显式 model= > env 档覆盖 OPS_LLM_TIER_<TASK>_MODEL > 档默认
+# 解析序（钉死 · V1-E 增策略包层）：显式 model= > env 档覆盖
+# OPS_LLM_TIER_<TASK>_MODEL > 策略包（OPS_LLM_STRATEGY_PACK）> 档默认
 # > settings.ops_llm_model（由调用方兜底，本函数返回 None 表示「本层无意见，
 # 沿用现网默认」）。非法档（空/不在已知目录）/未知 task → 回退默认 + warning，
 # 不炸请求。grader 档并入既有 RAG_GRADER_MODEL 覆盖链（不破坏现网配置）。
+# 策略包缺省未设 = 现状逐字节（不读 YAML）。
 
 TASK_TYPES: tuple[str, ...] = ("answer", "grader", "extract", "structured", "summary")
 
@@ -147,8 +149,9 @@ def resolve_task_model(
     """任务类型 → 模型档解析。返回 (model 或 None, source)。
 
     None 表示分层路由**无意见**：调用方沿用现网默认解析（逐字节一致）。
-    source ∈ explicit / env_tier / rag_grader_model / tier_default / default /
-    unknown_task（观测：写 span metadata 与 usage 行 task_type 的依据）。
+    source ∈ explicit / env_tier / rag_grader_model / strategy_pack /
+    tier_default / default / unknown_task（观测：写 span metadata 与 usage
+    行 task_type 的依据）。
     """
     if explicit_model and explicit_model.strip():
         return explicit_model.strip(), "explicit"
@@ -171,6 +174,17 @@ def resolve_task_model(
         legacy = (os.getenv("RAG_GRADER_MODEL") or "").strip()
         if legacy:
             return legacy, "rag_grader_model"
+    # 策略包层（V1-E）：仅当 OPS_LLM_STRATEGY_PACK 设置且声明该档时覆盖代码默认
+    from app.llm.strategy_pack import _MISSING, pack_tier_model
+
+    pack_val = pack_tier_model(task)
+    if pack_val is not _MISSING:
+        if pack_val is None:
+            return None, "strategy_pack"
+        model = str(pack_val).strip()
+        if model in _known_model_ids():
+            return model, "strategy_pack"
+        _logger.warning("strategy_pack tier %s=%r 不在已知模型目录；回退代码默认", task, model)
     tier = TASK_TIER_MODELS[task]
     if tier:
         return tier, "tier_default"
@@ -232,7 +246,10 @@ def resolve_fallback_chain(task_type: str) -> tuple[str, ...]:
             "unknown llm task_type=%r; fallback chain empty (explicit failure)", task_type
         )
         return ()
-    declared = TASK_TIER_FALLBACKS.get(task) or ()
+    from app.llm.strategy_pack import pack_tier_fallbacks
+
+    pack_fb = pack_tier_fallbacks(task)
+    declared = pack_fb if pack_fb is not None else (TASK_TIER_FALLBACKS.get(task) or ())
     known_ids = _known_model_ids()
     chain: list[str] = []
     seen: set[str] = set()
@@ -296,8 +313,15 @@ MODEL_UNIT_PRICES: dict[str, dict[str, float]] = {
 def estimate_cost(
     model: str | None, prompt_tokens: int, completion_tokens: int
 ) -> float | None:
-    """按档级单价表估算本次调用成本（元）；缺单价 → None（unknown 不伪造 0）。"""
-    price = MODEL_UNIT_PRICES.get((model or "").strip())
+    """按档级单价表估算本次调用成本（元）；缺单价 → None（unknown 不伪造 0）。
+
+    单价解析：策略包 ``model_unit_prices``（若已加载且声明）> 代码
+    ``MODEL_UNIT_PRICES``。
+    """
+    mid = (model or "").strip()
+    from app.llm.strategy_pack import pack_unit_price
+
+    price = pack_unit_price(mid) or MODEL_UNIT_PRICES.get(mid)
     if price is None:
         return None
     return (
