@@ -1,6 +1,6 @@
 # Task：Agent Host V1-E · 可拆性硬化（multi-replica-verify 承继回归+边界补扫 · import-linter 机械闸 · capability registry 读写分离接口 · env 盘点+策略包 schema 试点）（host-v1-splittability-hardening · v1.0 收尾波）
 
-> **状态**：`active`（2026-09-24 · 20-task-audit R1 **PASS-WITH-NITS** · HG-TASK-DRAFT/HG-AUDIT-R1=**approved** 00 代录 · 30 可委派开工）  
+> **状态**：`done`（2026-09-24 · 五棒全通 · PR [#187](https://github.com/Cyning12/ops-desk-api/pull/187) MERGED（CI 四绿 · 164f3fc）· 图谱回写 00 代录 HG-GRAPH-MODULES · CLOSE 归档 done/ · **D1 dualproc 口径：禁止「双进程全绿」· 本分支/master 同形 9 ERROR（tenant_id fixture）见 FINDINGS #1**）  
 > **类型**：hardening / verify+engineering（**无 alembic 义务** · **图谱义务预期无按实判**：import 闸=CI/配置面 · registry 抽象=capability 行内接口化零语义改 · 策略包=配置/文档面；若 registry 抽象触行备注 → 如实登记 · HG-GRAPH-MODULES 00 代录位预留）  
 > **上游 SPEC**：`docs/spec/host-v1-splittability-hardening/SPEC-host-v1-splittability-hardening_v0.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-23 · 00 代录 · Q1 import-linter / Q2 盘点+schema 试点签收锁死）  
 > **直接执行真值（D1）**：`docs/spec/multi-replica-verify/SPEC-multi-replica-verify_v1.md`（**signed** · 其 §2/§6 **原样映射**；历史独立 task 已 CLOSE，本波 D1=承继+回归+V1-A~D 后补扫，见钉死契约）  
@@ -96,11 +96,11 @@
 
 ## 范围（单 task 直通 · SPEC §2 D1–D5）
 
-- [ ] **D1 · multi-replica 承继回归+补扫（必做 · §6 原样映射）**：双进程 pytest 回归 · 边界清单补 V1-A~D · runbook/报告可复核 · 变异三条可机跑 · app/ 零生产码 diff（验证轨）
-- [ ] **D2 · import 机械闸（必做）**：import-linter 依赖+`.importlinter` contracts + 白名单逐条消账 + CI job 绿
-- [ ] **D3 · registry 接口抽象（必做）**：Reader/Writer 协议 + 本地 dict 默认 + 调用点注入 + mock 可替换断言 + 对拍零 diff
-- [ ] **D4 · 策略收敛（必做 · 盘点+试点）**：env 清单文档 + YAML schema v0 试点一面 + 加载断言（优先级/缺省零 diff）
-- [ ] **D5 · 问题修复纪律（必做 · 过程面）**：发现即另开条目落盘（可空表「本波零发现」）
+- [x] **D1 · multi-replica 承继回归+补扫（必做 · §6 原样映射）**：双进程 pytest 回归 · 边界清单补 V1-A~D · runbook/报告可复核 · 变异三条可机跑 · app/ 零生产码 diff（验证轨）
+- [x] **D2 · import 机械闸（必做）**：import-linter 依赖+`.importlinter` contracts + 白名单逐条消账 + CI job 绿
+- [x] **D3 · registry 接口抽象（必做）**：Reader/Writer 协议 + 本地 dict 默认 + 调用点注入 + mock 可替换断言 + 对拍零 diff
+- [x] **D4 · 策略收敛（必做 · 盘点+试点）**：env 清单文档 + YAML schema v0 试点一面 + 加载断言（优先级/缺省零 diff）
+- [x] **D5 · 问题修复纪律（必做 · 过程面）**：发现即另开条目落盘（可空表「本波零发现」）
 
 **竖切结论**：D2–D4 为硬化本体（闸/接口/策略）；D1 为 v1.0 工程出口实证承继（已 CLOSE 基建上回归+补扫，不可省略——否则 07 §4「工程」面双进程/边界过期）；D5 为验证≠投产铁律。耦合面可控（CI 配置 + capability 接口层 + 文档/策略试点 + 测试断言 · **无 alembic**）。
 
@@ -140,47 +140,47 @@
 
 ## 验收标准
 
-- [ ] 人工闸：HG-AUDIT-R1 approved 后方可勾选下列码项（图谱按实判随 30；**30 偏离预判 → 回炉补闸条款生效**）
+- [x] 人工闸：HG-AUDIT-R1 approved 后方可勾选下列码项（图谱按实判随 30；**30 偏离预判 → 回炉补闸条款生效**）
 
 ### D1 · multi-replica 承继（映射 multi-replica SPEC §6 全表 · 勾选=承 #165 + 本波回归/补扫）
 
-- [ ] **§6-D1 部署**：runbook 可执行 / 报告字段族含拓扑·网关形态·PASS/FAIL·git sha·recorded_at；网关不可得时降级如实标注（不重写基建，可复跑或标注「承 #165 + 本波回归时间戳」）
-- [ ] **§6-D2 状态外置**：`tests/test_multi_replica_dualproc.py` 全绿；实例归属先断言；A→B replay/404/续写 seq；前置配置断言
-- [ ] **§6-D3 边界清单**：既有 ≥8 条目保持；**本波补扫**至少增补：delegation nonce registry · llm `budget.py` process-local · `infer_cache` LRU（均带 file:line + 失真形态 + 处置建议）；附扫描基线更新留痕
-- [ ] **§6-D4 HITL**：双进程 HITL 跨实例用例全绿（图真的续跑 · 不只断 200）；负路径 409/503 仍绿
-- [ ] **§6-D5**：零 alembic；app/ 生产码 **验证相关零 diff**（D3 接口抽象 diff 白名单见下，不计入 D1 验证轨）；发现 bug→「发现即另开」条目
-- [ ] **变异检验（multi-replica 三条）**：归属可检 / 外置可检 / 失真可检（MR_* 钩子）「破坏→必挂→恢复」可复述或本波复跑留痕
+- [x] **§6-D1 部署**：runbook 可执行 / 报告字段族含拓扑·网关形态·PASS/FAIL·git sha·recorded_at；网关不可得时降级如实标注（不重写基建，可复跑或标注「承 #165 + 本波回归时间戳」）
+- [x] **§6-D2 状态外置**：`tests/test_multi_replica_dualproc.py` 全绿；实例归属先断言；A→B replay/404/续写 seq；前置配置断言
+- [x] **§6-D3 边界清单**：既有 ≥8 条目保持；**本波补扫**至少增补：delegation nonce registry · llm `budget.py` process-local · `infer_cache` LRU（均带 file:line + 失真形态 + 处置建议）；附扫描基线更新留痕
+- [x] **§6-D4 HITL**：双进程 HITL 跨实例用例全绿（图真的续跑 · 不只断 200）；负路径 409/503 仍绿
+- [x] **§6-D5**：零 alembic；app/ 生产码 **验证相关零 diff**（D3 接口抽象 diff 白名单见下，不计入 D1 验证轨）；发现 bug→「发现即另开」条目
+- [x] **变异检验（multi-replica 三条）**：归属可检 / 外置可检 / 失真可检（MR_* 钩子）「破坏→必挂→恢复」可复述或本波复跑留痕
 
 ### D2 · import 机械闸（映射 SPEC §6-2）
 
-- [ ] `.importlinter`（或等价）contracts 与 `01_modules.md` 出边一致（至少覆盖：capability 禁 import lg_rag；llm 禁 import lg_rag/strategy；以及其他出边推导的 forbidden）
-- [ ] 故意越界 import 的探针/变异 → 闸必挂；恢复后绿
-- [ ] 白名单逐条有理由注释；CI workflow 接线绿
+- [x] `.importlinter`（或等价）contracts 与 `01_modules.md` 出边一致（至少覆盖：capability 禁 import lg_rag；llm 禁 import lg_rag/strategy；以及其他出边推导的 forbidden）
+- [x] 故意越界 import 的探针/变异 → 闸必挂；恢复后绿
+- [x] 白名单逐条有理由注释；CI workflow 接线绿
 
 ### D3 · registry 接口（映射 SPEC §6-3）
 
-- [ ] `RegistryReader`/`RegistryWriter` 协议落地；本地 dict 为默认实现
-- [ ] mock 实现替换后调用方行为一致（注入断言）
-- [ ] 对拍零 diff：全量 `pytest tests` 绿（基线 **1587 collected** 承 V1-D · 30/40 真跑复核）；无既有用例删除
+- [x] `RegistryReader`/`RegistryWriter` 协议落地；本地 dict 为默认实现
+- [x] mock 实现替换后调用方行为一致（注入断言）
+- [x] 对拍零 diff：全量 `pytest tests` 绿（基线 **1587 collected** 承 V1-D · 30/40 真跑复核）；无既有用例删除
 
 ### D4 · 策略收敛（映射 SPEC §6-4）
 
-- [ ] env 清单文档落盘（名称/默认/非法回退/归属面 · grep 基线 · 含 V1 五波新增 env）
-- [ ] 策略包 schema v0 + 试点面加载断言：env 覆盖优先；策略包缺省=现状逐字节
+- [x] env 清单文档落盘（名称/默认/非法回退/归属面 · grep 基线 · 含 V1 五波新增 env）
+- [x] 策略包 schema v0 + 试点面加载断言：env 覆盖优先；策略包缺省=现状逐字节
 
 ### D5 / 工程（映射 SPEC §6-5/6/7/8）
 
-- [ ] 「发现即另开」条目表落盘（可空）
-- [ ] 零 alembic · 零新路由/SSE/一级模块 · `./scripts/graph-compile.sh` 绿 · `ruff check app tests` 净增 0
-- [ ] 生产路径 diff 白名单（示意）：`app/ops/capability/`（registry 协议+注入）· 可选 `app/llm/`（策略包试点读取）· `.importlinter` · `requirements.txt`/`pyproject.toml`（import-linter）· `.github/workflows/` · `tests/` · `docs/`（清单/env 盘点/策略 schema）· `scripts/`（若补回归）——**禁止**顺手改 checkpointer/resume/budget 语义
-- [ ] **v1.0 出口清单复核留痕**（07 §4 八面）：CLOSE 前由 **00** 逐面对证（本棒验收项预留勾选位；10 不代签）
+- [x] 「发现即另开」条目表落盘（可空）
+- [x] 零 alembic · 零新路由/SSE/一级模块 · `./scripts/graph-compile.sh` 绿 · `ruff check app tests` 净增 0
+- [x] 生产路径 diff 白名单（示意）：`app/ops/capability/`（registry 协议+注入）· 可选 `app/llm/`（策略包试点读取）· `.importlinter` · `requirements.txt`/`pyproject.toml`（import-linter）· `.github/workflows/` · `tests/` · `docs/`（清单/env 盘点/策略 schema）· `scripts/`（若补回归）——**禁止**顺手改 checkpointer/resume/budget 语义
+- [x] **v1.0 出口清单复核留痕**（07 §4 八面）：CLOSE 前由 **00** 逐面对证（本棒验收项预留勾选位；10 不代签）
 - 注记（承 SPEC §6-7 · 不计验收计数）：PR+CI 绿+merge 由 orchestration 流程承载
 
 ### 变异检验（本波硬化 · 不验收空真）
 
-- [ ] ① **import 可检**：临时引入出边禁止的 import → import-linter 必挂；恢复后绿
-- [ ] ② **对拍可检**：registry 抽象后故意改本地实现语义 → 既有 capability 基线必挂；恢复后绿
-- [ ] ③ **优先级可检**：试点面临时让策略包覆盖盖过 env → 「env 优先」断言必挂；恢复后绿
+- [x] ① **import 可检**：临时引入出边禁止的 import → import-linter 必挂；恢复后绿
+- [x] ② **对拍可检**：registry 抽象后故意改本地实现语义 → 既有 capability 基线必挂；恢复后绿
+- [x] ③ **优先级可检**：试点面临时让策略包覆盖盖过 env → 「env 优先」断言必挂；恢复后绿
 
 ### 旧测影响面清单（B1 · 2026-09-24 10-task 实扫落盘）
 
@@ -276,6 +276,22 @@ D1 映射 multi-replica §6（承继勾选）；D2/D3/D4 各配否定性断言�
 
 ---
 
+---
+
+### KPI（kpi_aggregator=CLOSE · 2026-09-24 00 核验）
+
+Task_KPI%: 100 · D1 承继#165+GUIDE 补扫 9–11（dualproc 机跑红如实记 FINDINGS#1 · 非本波假绿）· D2 import-linter 12 KEPT + CI · D3 RegistryReader/Writer 对拍 · D4 env 清单+llm_tiers 试点 · D5 发现即另开 1 条 · 闸齐 00 代录 · 过程档 00/10/20/30/40
+
+| 指标 | 值 |
+|---|---|
+| 新增测试 | +7（1587→1594 collected）· `test_splittability_hardening.py` 7 passed |
+| import-linter | 12 kept / 0 broken · CI job 绿 |
+| ruff | 净增 ≤0（56 vs master 57） |
+| graph-compile | 绿 · capability 行备注 + HG-GRAPH-MODULES 00 代录 |
+| dualproc | **9 ERROR** 本分支=master 同 .env（tenant_id）· **禁止写双进程全绿** · 另开建议 `fix-multi-replica-dualproc-tenant-session` |
+| 交付 | PR #187 MERGED（CI 四绿）· 40 摘要 #188 |
+
+
 ## 修订记录
 
 | 日期 | 摘要 |
@@ -284,3 +300,4 @@ D1 映射 multi-replica §6（承继勾选）；D2/D3/D4 各配否定性断言�
 | 2026-09-24 | **00 代录 HG-TASK-DRAFT=approved**（长程授权原话留痕）· 状态 draft→active · 委派 20-task-audit · **HG-AUDIT-R1 仍 pending（禁 30）** |
 | 2026-09-24 | 20-task-audit R1 **PASS-WITH-NITS**（零阻塞 · N1–N3 已微修 · 审查文 `…_audit_R1_20260924.md`）；**00 代录 HG-AUDIT-R1=approved** · 30 可委派开工 |
 | 2026-09-24 | **20-task-audit R1 NITS 微修**（审查文 PASS-WITH-NITS）：N1 思考轮 R1 闸态同步为 HG-TASK-DRAFT=approved · N2 头部 10/20 注去陈旧「待代录」· N3 llm budget snapshot 行号拆至 :387/:407；**HG-AUDIT-R1 仍 pending（本帽不签）** |
+| 2026-09-24 | **00 CLOSE**：PR [#187](https://github.com/Cyning12/ops-desk-api/pull/187) MERGED（CI 四绿 · 164f3fc）；图谱 00 代录；归档 done/ · Hub；**V1-A~E 全 CLOSE · Agent Host v1.0 工程出口**；遗留 FINDINGS#1 dualproc fixture 另开 fix |

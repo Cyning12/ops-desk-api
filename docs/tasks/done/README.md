@@ -104,6 +104,7 @@
 | 2026-09-23 | [`task_host_v1_visibility_scenario_policy.md`](./task_host_v1_visibility_scenario_policy.md) | **Agent Host V1-B** · 可见集两阶段（scenario_trim 场景维+剔除台账+intent_fallback channel）+ manifest 可撤销性四字段（加载期三硬规则+缺失三档派生） · PR #181 |
 | 2026-09-23 | [`task_host_v1_llm_factory_closure.md`](./task_host_v1_llm_factory_closure.md) | **Agent Host V1-C** · LLM 工厂闭环（预算硬闸 + 耗尽降级链 degraded + 推理缓存 + 档级 fallback + Cost per Successful Task） · PR #183 |
 | 2026-09-24 | [`task_host_v1_episodic_memory_feedback.md`](./task_host_v1_episodic_memory_feedback.md) | **Agent Host V1-D** · 情景记忆闸/库分离 + `[相似经验]` 召回 + 指纹规则聚类建议面（`ops_memory_episodes`） · PR #184 |
+| 2026-09-24 | [`task_host_v1_splittability_hardening.md`](./task_host_v1_splittability_hardening.md) | **Agent Host V1-E** · 可拆性硬化（import-linter · registry 协议 · 策略包试点 · multi-replica 承继+边界补扫）· PR #187 · **v1.0 收尾** |
 
 ---
 
@@ -147,6 +148,7 @@
 | 2026-09-23 | CLOSE **V1-A host-v1-delegation-token** `#179`（Agent Host v1.0 五波之首 · 归档 done/ · Hub 补登 · 00 代录签录链完整：HG-SPEC-SIGNOFF/HG-TASK-DRAFT/HG-AUDIT-R1/HG-GRAPH-MODULES） |
 | 2026-09-24 | CLOSE **V1-C host-v1-llm-factory-closure** `#183`（LLM 工厂闭环 · 码已合入 · 本 PR 补登 40 invoke + 归档 done/ · Hub 补登） |
 | 2026-09-24 | CLOSE **V1-D host-v1-episodic-memory-feedback** `#184`（情景记忆 + 失败模式库 · 过程档 SPEC/审查/invokes 补登 · 归档 done/ · Hub 补登 · **V1-A~D 全 CLOSE · V1-E 可启**） |
+| 2026-09-24 | CLOSE **V1-E host-v1-splittability-hardening** `#187`（可拆性硬化 · CI 四绿含 import-linter · dualproc 环境红如实记 FINDINGS#1 · 归档 done/ · Hub · **V1-A~E 全 CLOSE · Agent Host v1.0 工程出口**） |
 
 ## 给维护者
 
