@@ -107,7 +107,7 @@ audience: agent-30
 | HG-GRAPH-MODULES | approved | 00 代录（维护者令 2026-09-23「签收，并生成对此长程任务的00启动Prompt，新窗口执行，授权00签收所有过程文档，完整落地1.0版本内容」+ 本窗「授权00可以签收所有过程文档」「继续，完成后自行进行下一波，无特殊情况无需停下等待接收命令」· task_host_v1_llm_factory_closure · 30 回写内容 00 ratify） | 2026-09-23 | **Agent Host V1-C LLM 工厂回写**：`llm` 行备注（budget.py 预算硬闸+耗尽降级链 degraded 标记+infer_cache.py 推理缓存+档级 fallback 声明/单价表）；**不新增一级模块** · 零新跨模块边 · 不增 implementedBy · 零新路由/表/SSE 事件类型；偏离回炉补闸条款在案（graph_delta_note） |
 | HG-GRAPH-MODULES | approved | 00 代录（维护者令 2026-09-23「签收，并生成对此长程任务的00启动Prompt，新窗口执行，授权00签收所有过程文档，完整落地1.0版本内容」+ 本窗「授权00可以签收所有过程文档」「继续，完成后自行进行下一波，无特殊情况无需停下等待接收命令」· task_host_v1_episodic_memory_feedback · 30 回写内容 00 ratify 2026-09-24） | 2026-09-24 | **Agent Host V1-D 情景记忆回写**：`memory` 行备注（episode 闸/库分离 + `[相似经验]` 召回分节 + 失败模式指纹聚类建议面）+ `db` 行登记新表 `ops_memory_episodes`（migration head `20260923_memory_episodes`）；**不新增一级模块** · 零新跨模块边 · 不增 implementedBy · 零新路由/SSE 事件类型；偏离回炉补闸条款在案（graph_delta_note） |
 
-| HG-GRAPH-MODULES | approved（内容已落盘 · **人签待 00 代录**） | 待 00 代录 | 2026-09-24 | **Agent Host V1-E 可拆性硬化回写**：`capability` 行备注（RegistryReader/Writer 接口化 · 本地 dict 默认 · set_registry 注入）；**不新增一级模块** · 零新跨模块边 · 不增 implementedBy · 零新路由/表/SSE；人签行待 00 代录 |
+| HG-GRAPH-MODULES | approved | 00 代录（维护者令 2026-09-23「签收，并生成对此长程任务的00启动Prompt，新窗口执行，授权00签收所有过程文档，完整落地1.0版本内容」+ 本窗「授权00可以签收所有过程文档」「继续，完成后自行进行下一波，无特殊情况无需停下等待接收命令」· task_host_v1_splittability_hardening · 30 回写内容 00 ratify 2026-09-24） | 2026-09-24 | **Agent Host V1-E 可拆性硬化回写**：`capability` 行备注（RegistryReader/Writer 接口化 · 本地 dict 默认 · set_registry 注入）；**不新增一级模块** · 零新跨模块边 · 不增 implementedBy · 零新路由/表/SSE |
 
 ## 关联
 
