@@ -135,7 +135,7 @@
 
 | ID | 面 | 缺口 | 建议 slug | 优先级 |
 |---|---|---|---|---|
-| G1 | 指标 | 四项 SLI：钉死定义 + 数据落点 + Langfuse/导出看板（Cost 补看板；其余三项从零） | **`host-v1-sli-four-metrics`** | **P0 · 本窗已开** · **40 验收 PASS · 待 merge 后 closed** |
+| G1 | 指标 | 四项 SLI：钉死定义 + 数据落点 + Langfuse/导出看板（Cost 补看板；其余三项从零） | **`host-v1-sli-four-metrics`** | **closed** · PR [#193](https://github.com/Cyning12/ops-desk-api/pull/193) MERGED · 40 PASS |
 | G2 | 工程 | 补写 post-#190 dualproc `REGRESSION_*`（result=PASS · 引 git sha / recorded_at） | 可并入 G1 非范围外的 docs 微修，或随 G1 同窗 docs-only | P2 |
 
 **明确不做**：重开 V1-A~E · 开 v2.0 拆分 · 本窗改 `app/`。
@@ -159,3 +159,4 @@
 |---|---|
 | 2026-09-24 | 00 首版出口复核 · EXIT=PASS-WITH-GAP · 开 G1 task |
 | 2026-09-24 | 40 验收 `host-v1-sli-four-metrics` **PASS** · G1 注「待 merge 后 closed」· 未提前 CLOSE |
+| 2026-09-24 | **G1 closed**：PR #193 MERGED（CI 四绿 · b2896c6）· task 归档 done/ |
