@@ -39,7 +39,7 @@
 |---------------|--------|-------------|------|
 | HG-TASK-DRAFT | **approved** | 20-R1, 30 | 2026-09-24 · **00 代录**（维护者令原话：「签收，并生成对此长程任务的00启动Prompt，新窗口执行，授权00签收所有过程文档，完整落地1.0版本内容」+ 本窗令「继续，完成后自行进行下一波，无特殊情况无需停下等待接收命令」）；10-task lint PASS · D1 承继#165+边界补扫裁定可交 20 |
 | HG-AUDIT-R1 | **approved** | **30** | 2026-09-24 · **00 代录**（维护者令原话：「签收，并生成对此长程任务的00启动Prompt，新窗口执行，授权00签收所有过程文档，完整落地1.0版本内容」+ 本窗令「授权00可以签收所有过程文档」「继续，完成后自行进行下一波，无特殊情况无需停下等待接收命令」）；依据：20-task-audit R1 **PASS-WITH-NITS** 零阻塞（`docs/harness/reviews/task_host_v1_splittability_hardening_audit_R1_20260924.md`） |
-| HG-GRAPH-MODULES | **approved**（模块表已建置 · 本帽真读） | **30** | 2026-09-24 **真读** `docs/_tech_graph/l1/01_modules.md`：模块表已建置；签录链完整至 2026-09-24 V1-D 回写行（episodic memory）；一级模块齐全（含 `capability`/`llm`/`lg_rag`/`hitl`/`db`/`memory`）；**依赖出边列=本波 D2 import-linter contracts 真值**（例：`capability`→— · `llm`→`db` · `lg_rag`→`lc_evidence_chain,llm,structured_output,capability` · `hitl`→`db,lg_rag`）。本 task **预期无图谱新签义务按实判**（零新一级模块/零新路由/零新表/零新 SSE）；若 30 触 `capability` 行备注（接口化）→ 人签新行 **00 代录位**随交付落盘；偏离回炉见 graph_delta_note |
+| HG-GRAPH-MODULES | approved | **30** | 2026-09-24 **真读** `docs/_tech_graph/l1/01_modules.md`：模块表已建置；签录链完整至 2026-09-24 V1-D 回写行（episodic memory）；一级模块齐全（含 `capability`/`llm`/`lg_rag`/`hitl`/`db`/`memory`）；**依赖出边列=本波 D2 import-linter contracts 真值**（例：`capability`→— · `llm`→`db` · `lg_rag`→`lc_evidence_chain,llm,structured_output,capability` · `hitl`→`db,lg_rag`）。本 task **预期无图谱新签义务按实判**（零新一级模块/零新路由/零新表/零新 SSE）；若 30 触 `capability` 行备注（接口化）→ 人签新行 **00 代录位**随交付落盘；偏离回炉见 graph_delta_note |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 物理分层试点改码 | 本 task 不涉物理分层试点改码 |
 
 ---
