@@ -32,7 +32,8 @@
 
 ## 交付 SHA
 
-（commit 后回填 · 见修订表）
+- **tip**：`41fca32`（`feat(host-v1): V1-E 可拆性硬化 D2–D5…`）
+- 基线 tip（开工）：`4e6d28d`（verify PASS）
 
 ## 红线自检
 
