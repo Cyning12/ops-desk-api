@@ -1,6 +1,6 @@
 # Task：Agent Host V1-B · 可见集两阶段 + manifest 可撤销性四字段（场景维裁剪 scenario_trim + 剔除台账 + 四字段 schema/加载期校验/缺失默认 HITL）（host-v1-visibility-scenario-policy）
 
-> **状态**：`active`（2026-09-23 · 20-task-audit **R2 PASS-WITH-NITS**（零阻塞 · N-R2-1 已微修）· HG-AUDIT-R1=**approved** 00 代录 · 30 可委派开工）  
+> **状态**：`done`（2026-09-23 · 五棒全通 · PR [#181](https://github.com/Cyning12/ops-desk-api/pull/181) MERGED（CI 三绿 · 8aecab9）· 图谱回写 00 代录 HG-GRAPH-MODULES · CLOSE 归档 done/）  
 > **类型**：feature（治理面增强 · **零 alembic 义务**（零新表零列 · SPEC §3 锁死）· **有图谱义务按实判**（capability/lg_rag 行备注 + 人签新行 00 代录位 · 不新增一级模块））  
 > **上游 SPEC**：`docs/spec/host-v1-visibility-scenario-policy/SPEC-host-v1-visibility-scenario-policy_v0.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-23 · 00 代录 · Q1 3 档对齐 03 / Q2 仅意图+健康度 / Q3 execution_type 正交映射签收锁死）  
 > **前波**：`docs/tasks/done/task_host_v1_delegation_token.md`（V1-A CLOSE · PR #179 · requested_scope 是本波裁剪输入）  
@@ -97,11 +97,11 @@
 
 ## 范围（单 task 直通 · SPEC §2 D1–D5）
 
-- [ ] **D1 · intent_fallback channel（必做）**：`intent_node` 返回增 `intent_fallback`；`state.py` 增 channel；span 同名对齐（:86 已有）
-- [ ] **D4 · manifest 四字段（必做）**：CapabilitySpec 扩字段 + manifest.py 加载校验（非法/矛盾/process-stop 三硬规则）+ 缺失派生三档 + builtin.v1.yaml 全量补齐
-- [ ] **D2 · 场景维裁剪（必做 · 核心）**：`strategy/scenario.py` 新纯函数 + Builder 接线（stage 2：基线→有效可见集）+ supervisor 接线（`nodes.py:933-948` 交集输入改有效可见集）+ 三档模式
-- [ ] **D3 · 剔除台账（必做）**：logger + span 双通道（id+reason+计数）
-- [ ] **D5 · 测试与图谱（必做 · 否决面）**：SPEC §2 D5 八组断言全落 + 图谱两行备注 + HG-GRAPH-MODULES 人签新行（00 代录）+ graph-compile 绿
+- [x] **D1 · intent_fallback channel（必做）**：`intent_node` 返回增 `intent_fallback`；`state.py` 增 channel；span 同名对齐（:86 已有）
+- [x] **D4 · manifest 四字段（必做）**：CapabilitySpec 扩字段 + manifest.py 加载校验（非法/矛盾/process-stop 三硬规则）+ 缺失派生三档 + builtin.v1.yaml 全量补齐
+- [x] **D2 · 场景维裁剪（必做 · 核心）**：`strategy/scenario.py` 新纯函数 + Builder 接线（stage 2：基线→有效可见集）+ supervisor 接线（`nodes.py:933-948` 交集输入改有效可见集）+ 三档模式
+- [x] **D3 · 剔除台账（必做）**：logger + span 双通道（id+reason+计数）
+- [x] **D5 · 测试与图谱（必做 · 否决面）**：SPEC §2 D5 八组断言全落 + 图谱两行备注 + HG-GRAPH-MODULES 人签新行（00 代录）+ graph-compile 绿
 
 **竖切结论**：D1→D4→D2→D3→D5 同 task 一次提交；scenario_trim 不配安全默认（S1/S3）= 裁剪无底线；不配台账 = 剔除不可复盘（#11 清单落空）；四字段不配加载校验 = 声明面裸奔。耦合面可控（两个新文件 + 四处接线 + manifest 数据 + 测试/图谱）。
 
@@ -132,42 +132,42 @@
 
 ## 验收标准
 
-- [ ] 人工闸：HG-AUDIT-R1 approved 后方可勾选下列码项（图谱新签义务随 30 交付落盘 00 代录；**30 偏离预判 → 回炉补闸条款生效**）
+- [x] 人工闸：HG-AUDIT-R1 approved 后方可勾选下列码项（图谱新签义务随 30 交付落盘 00 代录；**30 偏离预判 → 回炉补闸条款生效**）
 
 ### D1 · intent_fallback（映射 SPEC §6-1/2）
 
-- [ ] `intent_node` 写 `intent_fallback` channel；SO 成功=False · SO 失败/异常=True（断言）
-- [ ] IntentV1 字段零改动（schema diff 为空断言）
+- [x] `intent_node` 写 `intent_fallback` channel；SO 成功=False · SO 失败/异常=True（断言）
+- [x] IntentV1 字段零改动（schema diff 为空断言）
 
 ### D2 · 场景维裁剪（映射 SPEC §6-1/2）
 
-- [ ] 裁剪矩阵断言：S1 fallback→∅ · S2 needs_tool=False→∅ · S3 unknown+needs_tool→∅ · S4 high→剔 medium 留 low · S5 low/medium 不追加；含 requested_scope 交集叠加
-- [ ] 畸形 intent：缺 risk_hint→视同 high；缺 domain→视同 unknown（断言）
-- [ ] 三档模式：off=现状零 diff · observe=would_strip 不生效 · enforce=剔除生效
+- [x] 裁剪矩阵断言：S1 fallback→∅ · S2 needs_tool=False→∅ · S3 unknown+needs_tool→∅ · S4 high→剔 medium 留 low · S5 low/medium 不追加；含 requested_scope 交集叠加
+- [x] 畸形 intent：缺 risk_hint→视同 high；缺 domain→视同 unknown（断言）
+- [x] 三档模式：off=现状零 diff · observe=would_strip 不生效 · enforce=剔除生效
 
 ### D3 · 剔除台账（映射 SPEC §6-3）
 
-- [ ] 剔除项 id+reason+计数进 logger（caplog 断言）+ span metadata 断言；不含 query/intent 原文；off 零日志
+- [x] 剔除项 id+reason+计数进 logger（caplog 断言）+ span metadata 断言；不含 query/intent 原文；off 零日志
 
 ### D4 · manifest 四字段（映射 SPEC §6-4/5/6）
 
-- [ ] 非法值（execution_type 词表外/类型错/负时延）→ ManifestError 整文件失败
-- [ ] 矛盾声明（irreversible+reversible=true）→ ManifestError；process 无 stop → ManifestError
-- [ ] 缺失默认 HITL 三档：off 无行为 · observe 台账 · enforce 派生 hitl_required=True 且显式声明不派生
-- [ ] builtin.v1.yaml 四字段全覆盖断言
+- [x] 非法值（execution_type 词表外/类型错/负时延）→ ManifestError 整文件失败
+- [x] 矛盾声明（irreversible+reversible=true）→ ManifestError；process 无 stop → ManifestError
+- [x] 缺失默认 HITL 三档：off 无行为 · observe 台账 · enforce 派生 hitl_required=True 且显式声明不派生
+- [x] builtin.v1.yaml 四字段全覆盖断言
 
 ### D5 · 图谱 / 工程（映射 SPEC §6-7/8/9/10）
 
-- [ ] 零 alembic（迁移 diff 为空断言）；capability/lg_rag 行备注 + HG-GRAPH-MODULES 人签新行（00 代录）；`./scripts/graph-compile.sh` 绿
-- [ ] 全量 `pytest tests` 绿（基线 **1420 collected** · 无既有用例删除 · 新增数如实入 40）；`ruff check app tests` 净增 0
-- [ ] 生产路径 diff 白名单：`git diff master -- app/` 只含 strategy/scenario.py 新增 + strategy/intent.py（fallback channel）+ strategy/builder.py（stage 2 接线）+ lg_rag/multi/nodes.py（:933-948 交集输入改有效可见集 · R1 审查 B-1 补列）+ lg_rag/state.py（channel）+ capability/types.py（四字段）+ capability/manifest.py（校验+派生）+ manifests/builtin.v1.yaml（数据补齐）+ 测试/图谱/文档
+- [x] 零 alembic（迁移 diff 为空断言）；capability/lg_rag 行备注 + HG-GRAPH-MODULES 人签新行（00 代录）；`./scripts/graph-compile.sh` 绿
+- [x] 全量 `pytest tests` 绿（基线 **1420 collected** · 无既有用例删除 · 新增数如实入 40）；`ruff check app tests` 净增 0
+- [x] 生产路径 diff 白名单：`git diff master -- app/` 只含 strategy/scenario.py 新增 + strategy/intent.py（fallback channel）+ strategy/builder.py（stage 2 接线）+ lg_rag/multi/nodes.py（:933-948 交集输入改有效可见集 · R1 审查 B-1 补列）+ lg_rag/state.py（channel）+ capability/types.py（四字段）+ capability/manifest.py（校验+派生）+ manifests/builtin.v1.yaml（数据补齐）+ 测试/图谱/文档
 - 注记（承 SPEC §6-8/§6-10 · 不计验收计数 · R1 审查 N4）：SSE 零新事件/零新路由由 off 零 diff + B1 组 5 回归覆盖；PR+CI 绿+merge 由 orchestration 流程承载（承「PR 过 CI 自动 merge」先例）
 
 ### 变异检验（不验收空真规则）
 
-- [ ] ① **安全默认可检**：临时 S1 规则放行（fallback 不空集）→ 安全默认断言必挂；恢复后全绿
-- [ ] ② **校验可检**：临时摘除矛盾声明校验 → ManifestError 断言必挂；恢复后全绿
-- [ ] ③ **台账可检**：临时摘除剔除台账 → caplog 断言必挂；恢复后全绿
+- [x] ① **安全默认可检**：临时 S1 规则放行（fallback 不空集）→ 安全默认断言必挂；恢复后全绿
+- [x] ② **校验可检**：临时摘除矛盾声明校验 → ManifestError 断言必挂；恢复后全绿
+- [x] ③ **台账可检**：临时摘除剔除台账 → caplog 断言必挂；恢复后全绿
 
 ### 旧测影响面清单（B1 · 2026-09-23 10-task 实扫落盘）
 
@@ -259,10 +259,27 @@ SPEC §5 八条全收翻四列，加过程三条与畸形 intent 安全默认一
 
 ---
 
+### KPI（kpi_aggregator=CLOSE · 2026-09-23 00 核验）
+
+Task_KPI%: 100 · D1 范围钉死（D1–D5 全交付 · SPEC §2 映射含 R1 B-1 澄清）· D2 闸齐（HG-SPEC-SIGNOFF/HG-TASK-DRAFT/HG-AUDIT-R1/HG-GRAPH-MODULES 全 00 代录 approved · 维护者令原话留痕）· D3 过程档齐（invoke 10/20/30/40 + R1/R2 审查文 · R1 FAIL→澄清→R2 PASS 轨迹完整）· D4 图谱回写随 #181 入 master（不新增一级模块）· D5 关账补登（归档 done/ · Hub 行）
+
+| 指标 | 值 |
+|---|---|
+| 新增测试 | +40 用例（1420→1460 collected · 零既有删除） |
+| 全量测试 | 1307 passed / 11 failed（全实证基线环境性 PG 5432 · master+同 .env 复跑同挂）/ 142 skipped；CI pytest **pass** |
+| lint | ruff 净增 0（9=9）；task lint PASS；spec-wave verify PASS |
+| 变异检验 | 3/3「破坏→必挂→恢复绿」（安全默认/矛盾校验/台账 · d9e28b2） |
+| 图谱 | graph-compile 绿 · 不新增一级模块 · HG-GRAPH-MODULES 00 代录 |
+| 交付 | PR #181 MERGED（CI 三绿 · 8aecab9）· B-1 回炉澄清成 process 资产 |
+
+---
+
 ## 修订记录
 
 | 日期 | 摘要 |
 |------|------|
 | 2026-09-23 | 10-task 落稿（SPEC signed 后 · 00 亲起）：锚点逐个复核（risk_hint :25-28 · fallback :22-24 · builder :74-80 · types :72-118 · manifest 校验面）· 命名冲突扫零真冲突（irreversible 子串排除）· pytest 基线 1420 真跑 · B1 6+1 组落盘 · HG-TASK-DRAFT 00 代录 approved（双令留痕）· HG-AUDIT-R1 pending 待 20-task-audit |
 | 2026-09-23 | **R1 审查 FAIL 回填**（审查文 `docs/harness/reviews/task_host_v1_visibility_scenario_policy_audit_R1_20260923.md`）：**B-1 阻塞处置**——00 亲验代码真值（交集在 supervisor `nodes.py:933-948` 非 Builder）→ 回 10-spec 澄清（SPEC D2 管线段落+FP-6 措辞勘正 · 三重交集交换律等价语义零改 · 00 代录同令留痕）→ task 落点/白名单/锚点同步（Builder stage 2 + supervisor 交集输入改有效可见集 · 白名单补 nodes.py）；N1 计数 11→12 · N2 计数 16→14 · N3 锚点行号修正（builder :39-60/:63-75）· N4 §6-8/§6-10 映射注记 · N5 03 轨 risk_hint 真值载体精确化（S2 PR #80 + 代码）；重交 **R2** |
+| 2026-09-23 | **40 核验（00 独立复核）**：全量 pytest 1460 collected（+40 新增 · 零既有删除）· 1307 passed / 11 failed / 142 skipped——**11 红全部实证为基线环境性**（本地 PG 5432 未起 · master+同 .env detached worktree 复跑同 11 挂 · 与本 diff 无关）；ruff 改动文件 9 errors 与 master 同数（净增 0）；`graph-compile.sh` 绿；alembic diff 为空；diff 10 文件全在白名单内；变异检验 3/3 留痕（d9e28b2 提交说明） |
+| 2026-09-23 | **00 CLOSE**：PR [#181](https://github.com/Cyning12/ops-desk-api/pull/181) MERGED（CI 三绿 · 8aecab9）；图谱回写 capability/lg_rag 行备注 + HG-GRAPH-MODULES 00 代录行随 PR 入 master；归档 done/ · Hub 补登 · 40 invoke 留痕；**V1-B CLOSE → V1-C/D 在轨并行 · V1-E 最后** |
 | 2026-09-23 | **R2 审查 PASS-WITH-NITS**（零阻塞 · 审查文 `docs/harness/reviews/task_host_v1_visibility_scenario_policy_audit_R2_20260923.md` · B-1 消解三方一致+交换律数学核验 · N1–N5 闭环）；N-R2-1 微修（R0 行锚点 :74-80→:39-75+nodes.py · 闸行措辞）；**00 代录 HG-AUDIT-R1=approved**（维护者令原话+本窗双令留痕）· 30 可委派开工（分支 `task/host-v1-visibility-scenario-policy`） |
