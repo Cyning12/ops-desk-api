@@ -9,6 +9,12 @@ active facts 渲染为**系统消息尾部独立块**（`[已知事实]`，每�
 **默认关**（`SESSION_SUMMARY_ENABLED`），off / on-态全失败均与占位模式
 逐字节一致；占位条内容替换走 `app/ops/session/summary.py`（经 importlib
 运行期解析，守住 lg_rag 不静态依赖 session 的边界测试）。
+情景记忆召回注入（host-v1-episodic-memory-feedback D3）在同一装配面、事实
+注入**之后**：**默认关**（`MEMORY_EPISODES_ENABLED`），off = 装配逐字节
+零 diff；on 时把同 tenant + success + active + fingerprint 匹配的相似成功
+经验渲染为**独立 SystemMessage 分节**（`[相似经验]`，与 `[已知事实]`/
+`[用户偏好]` 物理分节），三闸预算（条数默认 3 · 单条 ≤200 · 整块 ≤800
+尾部截断）；召回失败降级不注入。
 """
 from __future__ import annotations
 
@@ -179,6 +185,59 @@ def memory_facts_max_items() -> int:
     return n
 
 
+# ---------------- 情景记忆召回注入（host-v1-episodic-memory-feedback D3 · 默认关） ----------------
+
+#: 注入块经验节首行标记；与 [已知事实]/[用户偏好] **物理分节**（独立 SystemMessage）
+MEMORY_EPISODES_HEADER = "[相似经验]"
+DEFAULT_MEMORY_EPISODES_MAX_ITEMS = 3
+#: 三闸预算（SPEC Q3 裁定）：单条 ≤200（承 MAX_VALUE_CHARS）· 整块 ≤800
+#:（承 step_contract MAX_CONTEXT_BLOCK_CHARS：单值截断挡不住累加，故设整块闸）
+EPISODE_ITEM_MAX_CHARS = 200
+EPISODE_BLOCK_MAX_CHARS = 800
+
+
+def memory_episodes_enabled() -> bool:
+    """`MEMORY_EPISODES_ENABLED`：默认 false；非法值回退 false + warning。
+
+    情景记忆召回注入开关（host-v1-episodic-memory-feedback D3 纪律 2 双开关
+    之一；写开关 MEMORY_EPISODES_WRITE_ENABLED 在 episode_service）：off →
+    装配输出与现网**逐字节一致**（对拍断言钉死）。
+    """
+    raw = (os.getenv("MEMORY_EPISODES_ENABLED") or "").strip().lower()
+    if not raw:
+        return False
+    if raw in _TRUTHY:
+        return True
+    if raw in _FALSY:
+        return False
+    logger.warning("invalid MEMORY_EPISODES_ENABLED=%r; fallback to false", raw)
+    return False
+
+
+def memory_episodes_max_items() -> int:
+    """`MEMORY_EPISODES_MAX_ITEMS`：默认 3；非法或 ≤0 回退 3 + warning。"""
+    raw = (os.getenv("MEMORY_EPISODES_MAX_ITEMS") or "").strip()
+    if not raw:
+        return DEFAULT_MEMORY_EPISODES_MAX_ITEMS
+    try:
+        n = int(raw)
+    except ValueError:
+        logger.warning(
+            "invalid MEMORY_EPISODES_MAX_ITEMS=%r; fallback to %d",
+            raw,
+            DEFAULT_MEMORY_EPISODES_MAX_ITEMS,
+        )
+        return DEFAULT_MEMORY_EPISODES_MAX_ITEMS
+    if n <= 0:
+        logger.warning(
+            "MEMORY_EPISODES_MAX_ITEMS=%r <= 0; fallback to %d",
+            raw,
+            DEFAULT_MEMORY_EPISODES_MAX_ITEMS,
+        )
+        return DEFAULT_MEMORY_EPISODES_MAX_ITEMS
+    return n
+
+
 def _fact_key_value(item: Any) -> tuple[str, Any]:
     """兼容 ORM 行与 dict（service 返回 ORM；测试可传 dict）。"""
     if isinstance(item, Mapping):
@@ -231,6 +290,51 @@ def render_memory_facts_block(facts: list[Any]) -> str:
             )
         )
     return ("\n" + "\n").join(sections)
+
+
+def _episode_summary_tools(item: Any) -> tuple[str, list[str]]:
+    """取 (plan_summary, tool_sequence)（兼容 ORM 行与 dict，承 _fact_key_value 先例）。"""
+    if isinstance(item, Mapping):
+        summary = str(item.get("plan_summary") or "")
+        tools = item.get("tool_sequence")
+    else:
+        summary = str(getattr(item, "plan_summary", "") or "")
+        tools = getattr(item, "tool_sequence", None)
+    tool_ids = [str(t) for t in tools if isinstance(t, str)] if isinstance(tools, list) else []
+    return summary, tool_ids
+
+
+def render_memory_episodes_block(episodes: list[Any]) -> str:
+    """渲染 `[相似经验]` 独立分节块（host-v1-episodic-memory-feedback D3 · Q3 三闸预算）。
+
+    - 每条经验一行：`- {plan_summary}｜工具: {id1,id2}`（结构元数据非用户内容；
+      摘要内换行转义 \\n 保住一行一条）。
+    - **单条闸**：行 >200 字符 → 尾部截断加 …（承 MAX_VALUE_CHARS 先例）。
+    - **整块闸**：header+各行 >800 字符 → 从尾部丢低优先级行（召回序 =
+      created_at desc，尾部即最旧）；首条都装不下时硬截进预算
+      （宁少给，不超预算 · 承 step_contract :28-30 先例）。
+    - 空集 → 空串不注入；本块与 [已知事实]/[用户偏好] **物理分节**
+      （独立 SystemMessage · 分节断言钉死）。
+    """
+    if not episodes:
+        return ""
+    lines = [MEMORY_EPISODES_HEADER]
+    used = len(MEMORY_EPISODES_HEADER)
+    for item in episodes:
+        summary, tool_ids = _episode_summary_tools(item)
+        line = f"- {summary.replace(chr(10), chr(92) + 'n')}｜工具: {','.join(tool_ids)}"
+        if len(line) > EPISODE_ITEM_MAX_CHARS:
+            line = line[: EPISODE_ITEM_MAX_CHARS - 1] + "…"
+        if used + len(line) + 1 > EPISODE_BLOCK_MAX_CHARS:
+            if len(lines) == 1:
+                room = EPISODE_BLOCK_MAX_CHARS - used - 1
+                lines.append(line[: max(0, room - 1)] + "…")
+            break
+        lines.append(line)
+        used += len(line) + 1
+    if len(lines) == 1:
+        return ""
+    return "\n".join(lines)
 
 
 def inject_memory_facts_block(
@@ -307,6 +411,9 @@ async def _assemble_graph_messages_with_memory_impl(
     tenant_id: str | None = None,
     user_id: str | None = None,
     thread_id: str | None = None,
+    task_domain: str | None = None,
+    intent_features: dict | None = None,
+    tool_sequence: list[str] | None = None,
     max_full_turns: int = DEFAULT_MAX_FULL_TURNS,
     group_size: int = DEFAULT_GROUP_SIZE,
 ) -> list[BaseMessage]:
@@ -339,48 +446,82 @@ async def _assemble_graph_messages_with_memory_impl(
             max_full_turns=max_full_turns,
             group_size=group_size,
         )
-    if not memory_facts_enabled():
+    if memory_facts_enabled():
+        if not (tenant_id or "").strip() or not (user_id or "").strip():
+            logger.warning(
+                "MEMORY_FACTS_ENABLED on but tenant/user missing; skip injection"
+            )
+        else:
+            try:
+                # 延迟 import：continuity 保持纯函数可独立加载；memory 依赖 db
+                from app.ops.memory import service as memory_service
+
+                if memory_service.memory_facts_vector_recall_enabled():
+                    # P1 混合召回（默认关）：确定性 top-N ∪ 向量 top-M → 融合排序；
+                    # 向量通路失败内部回退确定性 + memory_vector_degraded
+                    facts = await memory_service.recall_with_vector(
+                        tenant_id.strip(),
+                        user_id.strip(),
+                        query,
+                        limit=memory_facts_max_items(),
+                    )
+                else:
+                    facts = await memory_service.recall_active(
+                        tenant_id.strip(),
+                        user_id.strip(),
+                        limit=memory_facts_max_items(),
+                    )
+            except Exception:
+                logger.exception("memory facts recall failed; degrade to no injection")
+                update_current_span_metadata({"memory_degraded": True})
+            else:
+                if not facts:
+                    update_current_span_metadata({"memory_facts_injected": 0})
+                else:
+                    block = render_memory_facts_block(facts)
+                    # span 双计数（D2）：facts/preferences 分别记；preference 为 0 时不出
+                    # 该 key（fact-only 流量与 P0/P1 观测面逐字节一致）
+                    n_prefs = sum(1 for f in facts if _fact_kind(f) == "preference")
+                    span: dict[str, Any] = {"memory_facts_injected": len(facts) - n_prefs}
+                    if n_prefs:
+                        span["memory_preferences_injected"] = n_prefs
+                    update_current_span_metadata(span)
+                    messages = inject_memory_facts_block(messages, block)
+
+    # ---------------- 情景记忆召回注入（D3 · 默认关 · 独立分节） ----------------
+    if not memory_episodes_enabled():
         return messages
-    if not (tenant_id or "").strip() or not (user_id or "").strip():
+    if not (tenant_id or "").strip():
         logger.warning(
-            "MEMORY_FACTS_ENABLED on but tenant/user missing; skip injection"
+            "MEMORY_EPISODES_ENABLED on but tenant missing; skip episode injection"
         )
         return messages
     try:
-        # 延迟 import：continuity 保持纯函数可独立加载；memory 依赖 db
-        from app.ops.memory import service as memory_service
+        # 延迟 import（同 memory service 先例）：off 态静态加载链零变化
+        from app.ops.memory import episode_gate, episode_service
 
-        if memory_service.memory_facts_vector_recall_enabled():
-            # P1 混合召回（默认关）：确定性 top-N ∪ 向量 top-M → 融合排序；
-            # 向量通路失败内部回退确定性 + memory_vector_degraded
-            facts = await memory_service.recall_with_vector(
-                tenant_id.strip(),
-                user_id.strip(),
-                query,
-                limit=memory_facts_max_items(),
-            )
-        else:
-            facts = await memory_service.recall_active(
-                tenant_id.strip(),
-                user_id.strip(),
-                limit=memory_facts_max_items(),
-            )
+        # 当前意图 fingerprint 与写入同规则计算（domain+意图特征+工具序列骨架）
+        fingerprint = episode_gate.compute_context_fingerprint(
+            task_domain or "", intent_features, tool_sequence
+        )
+        episodes = await episode_service.recall_success_episodes(
+            tenant_id.strip(),
+            fingerprint,
+            limit=memory_episodes_max_items(),
+        )
     except Exception:
-        logger.exception("memory facts recall failed; degrade to no injection")
-        update_current_span_metadata({"memory_degraded": True})
+        # 召回失败降级不注入（承 :369 事实召回先例），不拖垮请求
+        logger.exception("memory episodes recall failed; degrade to no injection")
+        update_current_span_metadata({"memory_episodes_degraded": True})
         return messages
-    if not facts:
-        update_current_span_metadata({"memory_facts_injected": 0})
+    if not episodes:
+        update_current_span_metadata({"memory_episodes_injected": 0})
         return messages
-    block = render_memory_facts_block(facts)
-    # span 双计数（D2）：facts/preferences 分别记；preference 为 0 时不出
-    # 该 key（fact-only 流量与 P0/P1 观测面逐字节一致）
-    n_prefs = sum(1 for f in facts if _fact_kind(f) == "preference")
-    span: dict[str, Any] = {"memory_facts_injected": len(facts) - n_prefs}
-    if n_prefs:
-        span["memory_preferences_injected"] = n_prefs
-    update_current_span_metadata(span)
-    return inject_memory_facts_block(messages, block)
+    episode_block = render_memory_episodes_block(episodes)
+    # span 记注入条数（tracing 未开时静默 no-op，承 memory_facts_injected 先例）
+    update_current_span_metadata({"memory_episodes_injected": len(episodes)})
+    # 独立 SystemMessage 分节：插在前缀系统消息（含事实块）之后
+    return inject_memory_facts_block(messages, episode_block)
 
 
 # ---------------- 输入结构隔离边界（security-input-isolation W1 · 默认关） ----------------
@@ -401,6 +542,7 @@ def _attribute_isolation_slots(messages: list[BaseMessage]) -> list[BaseMessage]
         if isinstance(msg, SystemMessage) and (
             content.startswith(MEMORY_FACTS_HEADER)
             or content.startswith(MEMORY_PREFERENCES_HEADER)
+            or content.startswith(MEMORY_EPISODES_HEADER)
         ):
             slot_id = "memory_fact"
         elif i == last and isinstance(msg, HumanMessage):
@@ -418,6 +560,9 @@ async def assemble_graph_messages_with_memory(
     tenant_id: str | None = None,
     user_id: str | None = None,
     thread_id: str | None = None,
+    task_domain: str | None = None,
+    intent_features: dict | None = None,
+    tool_sequence: list[str] | None = None,
     max_full_turns: int = DEFAULT_MAX_FULL_TURNS,
     group_size: int = DEFAULT_GROUP_SIZE,
 ) -> list[BaseMessage]:
@@ -441,6 +586,9 @@ async def assemble_graph_messages_with_memory(
         tenant_id=tenant_id,
         user_id=user_id,
         thread_id=thread_id,
+        task_domain=task_domain,
+        intent_features=intent_features,
+        tool_sequence=tool_sequence,
         max_full_turns=max_full_turns,
         group_size=group_size,
     )

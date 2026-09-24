@@ -562,6 +562,64 @@ class OpsMemoryFact(Base):
     updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
 
 
+class OpsMemoryEpisode(Base):
+    """情景记忆（host-v1-episodic-memory-feedback D1 · Q1 run 级）：**经验≠事实**。
+
+    U4 铁律：与事实记忆（ops_memory_facts）**物理分表 · 闸分立 · 召回路径
+    分立 · 零互写**——事实是主体绑定的可验证标量，经验是 run 级模式归纳
+    （plan 摘要 + 工具序列 + 成败标签）。写入须经
+    app.ops.memory.episode_gate.should_write_episode 过闸，闸拒 = 不落库。
+    失效走逻辑 revoked（revoke_by_run 一键纠错），**不物理删**；
+    召回只认 status='active' 且 outcome='success'（污染放大防线第一层）。
+    """
+
+    __tablename__ = "ops_memory_episodes"
+    __table_args__ = (
+        CheckConstraint(
+            "outcome IN ('success', 'failure', 'partial')",
+            name="ck_ops_memory_episodes_outcome",
+        ),
+        CheckConstraint(
+            "status IN ('active', 'revoked')",
+            name="ck_ops_memory_episodes_status",
+        ),
+        # 召回主谓词：(tenant, outcome, status)
+        Index(
+            "idx_ops_memory_episodes_recall",
+            "tenant_id",
+            "outcome",
+            "status",
+        ),
+        # 聚类键 + 召回指纹匹配
+        Index("idx_ops_memory_episodes_fingerprint", "context_fingerprint"),
+        # revoke_by_run 纠错溯源
+        Index("idx_ops_memory_episodes_run", "run_id"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    #: 与 Principal 同源；代码从请求 ctx 构造，禁止取模型产出
+    tenant_id: Mapped[str] = mapped_column(String, nullable=False)
+    #: run 归因（V1-A 主体绑定同源；Q1 裁定 run 级，一 run 至多一条）
+    run_id: Mapped[str] = mapped_column(String, nullable=False)
+    #: 任务域（承 IntentV1 domain 词表；unknown 允许）
+    task_domain: Mapped[str] = mapped_column(String, nullable=False)
+    #: 上下文指纹（确定性哈希：domain+意图特征+工具序列骨架；聚类键）
+    context_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    #: plan 摘要（结构元数据非用户内容；≤200 字符，闸拒超长）
+    plan_summary: Mapped[str] = mapped_column(Text, nullable=False)
+    #: 工具序列骨架（capability id 数组；≤16，闸拒超长）
+    tool_sequence: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    #: success | failure | partial 成败标签
+    outcome: Mapped[str] = mapped_column(String, nullable=False)
+    #: 失败分类词表（failure 必填合法 · Q2 聚类键；success/partial 可空）
+    failure_class: Mapped[str | None] = mapped_column(String, nullable=True)
+    #: active | revoked（逻辑失效不物理删，承事实记忆先例）
+    status: Mapped[str] = mapped_column(String, nullable=False, default="active")
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+
+
 class OpsLlmUsage(Base):
     """LLM usage 账本（llm-layer-hardening D4）：**这个 run 花了多少 token 可查**。
 
