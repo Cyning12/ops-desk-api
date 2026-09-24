@@ -1,6 +1,6 @@
 # Task：Agent Host V1-D · 情景记忆 + 失败模式库（ops_memory_episodes + should_write_episode 独立闸 + [相似经验] 分节召回 + 指纹规则聚类 → 建议人工确认）（host-v1-episodic-memory-feedback）
 
-> **状态**：`active`（2026-09-23 · 20-task-audit R1 **PASS-WITH-NITS**（零阻塞 · N1–N3 已微修留痕）· HG-AUDIT-R1=**approved** 00 代录 · 30 可委派开工）  
+> **状态**：`done`（2026-09-24 · 五棒全通 · PR [#184](https://github.com/Cyning12/ops-desk-api/pull/184) MERGED（CI 三绿 · 669e76a）· 图谱回写 00 代录 HG-GRAPH-MODULES · CLOSE 归档 done/）  
 > **类型**：feature（记忆分层扩展 · **有 alembic 义务**（新表 `ops_memory_episodes` · upgrade/downgrade 可逆 · off 态不读不写 drop 安全 · 承 session_summaries 先例）· **有图谱义务**（memory/db 行 + 人签新行 00 代录位 · 不新增一级模块））  
 > **上游 SPEC**：`docs/spec/host-v1-episodic-memory-feedback/SPEC-host-v1-episodic-memory-feedback_v0.md`（**signed** · HG-SPEC-SIGNOFF=approved 2026-09-23 · 00 代录 · Q1 run 级 / Q2 指纹规则聚类 / Q3 三闸预算签收锁死）  
 > **前置**：V1-A CLOSE（run 归因载体）· V1-B/C 并行在轨（本波文件面=memory/db/scripts · 与 B（strategy/capability）· C（llm）零交叠）  
@@ -94,12 +94,12 @@
 
 ## 范围（单 task 直通 · SPEC §2 D1–D6）
 
-- [ ] **D1 · 表+迁移+模型（必做 · 本波唯一 alembic）**：`ops_memory_episodes` migration（upgrade/downgrade 可逆）+ models.py 增 OpsMemoryEpisode + off 态 drop 安全
-- [ ] **D2 · 独立闸+service（必做 · U4 核心）**：episode_gate.py + episode_service.py（零互写 · import 守护）
-- [ ] **D3 · 召回注入（必做 · 默认关）**：continuity.py 装配面 `[相似经验]` 独立分节 + 三闸预算 + 双开关
-- [ ] **D4 · 聚类脚本（必做 · 离线）**：scripts/episode_pattern_mine.py + 报告字段族 + 频次阈值
-- [ ] **D5 · 建议面（必做 · 人工确认闸）**：suggested_rule 报告字段 · 零自动回写守护
-- [ ] **D6 · 测试与图谱（必做 · 否决面）**：SPEC §2 D6 九组断言全落 + memory/db 行备注 + HG-GRAPH-MODULES 人签新行（00 代录）+ graph-compile 绿
+- [x] **D1 · 表+迁移+模型（必做 · 本波唯一 alembic）**：`ops_memory_episodes` migration（upgrade/downgrade 可逆）+ models.py 增 OpsMemoryEpisode + off 态 drop 安全
+- [x] **D2 · 独立闸+service（必做 · U4 核心）**：episode_gate.py + episode_service.py（零互写 · import 守护）
+- [x] **D3 · 召回注入（必做 · 默认关）**：continuity.py 装配面 `[相似经验]` 独立分节 + 三闸预算 + 双开关
+- [x] **D4 · 聚类脚本（必做 · 离线）**：scripts/episode_pattern_mine.py + 报告字段族 + 频次阈值
+- [x] **D5 · 建议面（必做 · 人工确认闸）**：suggested_rule 报告字段 · 零自动回写守护
+- [x] **D6 · 测试与图谱（必做 · 否决面）**：SPEC §2 D6 九组断言全落 + memory/db 行备注 + HG-GRAPH-MODULES 人签新行（00 代录）+ graph-compile 绿
 
 **竖切结论**：D1→D2→D3→D4→D5→D6 同 task 一次提交；episode 不配独立闸 = U4 铁律落空；召回不配分节/预算 = 注入面污染风险；聚类不配人工确认闸 = 全自动回写破口。耦合面可控（一表一迁移 + 两个新文件 + 装配面分节 + 一脚本 + 测试/图谱）。
 
@@ -128,45 +128,45 @@
 
 ## 验收标准
 
-- [ ] 人工闸：HG-AUDIT-R1 approved 后方可勾选下列码项（图谱新签义务随 30 交付落盘 00 代录；**30 偏离预判 → 回炉补闸条款生效**）
+- [x] 人工闸：HG-AUDIT-R1 approved 后方可勾选下列码项（图谱新签义务随 30 交付落盘 00 代录；**30 偏离预判 → 回炉补闸条款生效**）
 
 ### D1 · 表+迁移（映射 SPEC §6-8 · R1 审查 N1 修正）
 
-- [ ] migration upgrade 建表（列/索引齐全断言）· downgrade 可逆断言；off 态（表不存在）读写路径不炸断言
+- [x] migration upgrade 建表（列/索引齐全断言）· downgrade 可逆断言；off 态（表不存在）读写路径不炸断言
 
 ### D2 · 独立闸+service（映射 SPEC §6-1/2/7）
 
-- [ ] 零互写断言：write_episode 后 ops_memory_facts 计数零变化 · write_fact 后 episodes 计数零变化；episode_gate/episode_service 不 import 事实记忆写面（import 守护）
-- [ ] 闸五判据逐条（缺归因/非法 outcome/超长序列/超长摘要/failure 缺 class **或 class 词表非法** 全拒不落库 · R1 审查 N3 对齐 SPEC「必填合法」）
-- [ ] revoke_by_run：召回零命中 · 表内仍可查 · 审计日志记动作（caplog）
+- [x] 零互写断言：write_episode 后 ops_memory_facts 计数零变化 · write_fact 后 episodes 计数零变化；episode_gate/episode_service 不 import 事实记忆写面（import 守护）
+- [x] 闸五判据逐条（缺归因/非法 outcome/超长序列/超长摘要/failure 缺 class **或 class 词表非法** 全拒不落库 · R1 审查 N3 对齐 SPEC「必填合法」）
+- [x] revoke_by_run：召回零命中 · 表内仍可查 · 审计日志记动作（caplog）
 
 ### D3 · 召回注入（映射 SPEC §6-3/4）
 
-- [ ] `[相似经验]` 独立分节断言（与 [已知事实]/[用户偏好] 物理分节）；off 零 diff
-- [ ] 三闸预算断言：条数默认 3 · 单条 ≤200 · 整块 ≤800 尾部截断
-- [ ] 跨租户零召回断言；召回失败降级不注入断言
+- [x] `[相似经验]` 独立分节断言（与 [已知事实]/[用户偏好] 物理分节）；off 零 diff
+- [x] 三闸预算断言：条数默认 3 · 单条 ≤200 · 整块 ≤800 尾部截断
+- [x] 跨租户零召回断言；召回失败降级不注入断言
 
 ### D4 · 聚类（映射 SPEC §6-5）
 
-- [ ] 报告产出字段族齐全（pattern_id/failure_class/fingerprint/count/sample_run_ids≤5/first_seen/last_seen/suggested_rule）
-- [ ] 频次阈值断言（<3 不成模式）；确定性可重放断言（同输入同报告）
+- [x] 报告产出字段族齐全（pattern_id/failure_class/fingerprint/count/sample_run_ids≤5/first_seen/last_seen/suggested_rule）
+- [x] 频次阈值断言（<3 不成模式）；确定性可重放断言（同输入同报告）
 
 ### D5 · 建议面（映射 SPEC §6-6）
 
-- [ ] 聚类跑完后 redlines yaml 与 manifest 文件零 diff（git 守护断言 · 建议未确认零生效）
+- [x] 聚类跑完后 redlines yaml 与 manifest 文件零 diff（git 守护断言 · 建议未确认零生效）
 
 ### D6 · 图谱 / 工程（映射 SPEC §6-9/10/11）
 
-- [ ] memory/db 行备注 + HG-GRAPH-MODULES 人签新行（00 代录）；`./scripts/graph-compile.sh` 绿；迁移 head 入 db 行登记
-- [ ] 全量 `pytest tests` 绿（基线 **1420 collected** · 无既有用例删除 · 新增数如实入 40）；`ruff check app tests` 净增 0
-- [ ] 生产路径 diff 白名单：`git diff master -- app/` 只含 memory/episode_gate.py 新增 + memory/episode_service.py 新增 + lg_rag/continuity.py（分节接线）+ db/models.py（OpsMemoryEpisode）+ alembic/versions/ 新迁移 + scripts/episode_pattern_mine.py + 测试/图谱/文档
+- [x] memory/db 行备注 + HG-GRAPH-MODULES 人签新行（00 代录）；`./scripts/graph-compile.sh` 绿；迁移 head 入 db 行登记
+- [x] 全量 `pytest tests` 绿（基线 **1420 collected** · 无既有用例删除 · 新增数如实入 40）；`ruff check app tests` 净增 0
+- [x] 生产路径 diff 白名单：`git diff master -- app/` 只含 memory/episode_gate.py 新增 + memory/episode_service.py 新增 + lg_rag/continuity.py（分节接线）+ db/models.py（OpsMemoryEpisode）+ alembic/versions/ 新迁移 + scripts/episode_pattern_mine.py + 测试/图谱/文档
 - 注记（承 SPEC §6-11 · 不计验收计数 · R1 审查 N2）：PR+CI 绿+merge 由 orchestration 流程承载（承「PR 过 CI 自动 merge」先例 · V1-B R2 注记同款）
 
 ### 变异检验（不验收空真规则）
 
-- [ ] ① **互写可检**：临时让 episode_service 写一行 ops_memory_facts → 零互写断言必挂；恢复后全绿
-- [ ] ② **闸可检**：临时闸恒放行 → 「拒绝=不落库」断言必挂；恢复后全绿
-- [ ] ③ **分节可检**：临时把经验注入并入事实块（摘 `[相似经验]` 头）→ 分节断言必挂；恢复后全绿
+- [x] ① **互写可检**：临时让 episode_service 写一行 ops_memory_facts → 零互写断言必挂；恢复后全绿
+- [x] ② **闸可检**：临时闸恒放行 → 「拒绝=不落库」断言必挂；恢复后全绿
+- [x] ③ **分节可检**：临时把经验注入并入事实块（摘 `[相似经验]` 头）→ 分节断言必挂；恢复后全绿
 
 ### 旧测影响面清单（B1 · 2026-09-23 10-task 实扫落盘）
 
@@ -259,9 +259,26 @@ SPEC §5 七条全收翻四列加过程三共十条。污染放大三层防线�
 
 ---
 
+---
+
+### KPI（kpi_aggregator=CLOSE · 2026-09-24 00 核验）
+
+Task_KPI%: 100 · D1 范围钉死（D1–D6 全交付 · SPEC §2 映射）· D2 闸齐（HG-SPEC-SIGNOFF/HG-TASK-DRAFT/HG-AUDIT-R1/HG-GRAPH-MODULES 全 00 代录 approved）· D3 过程档齐（invoke 10/20/30/30-resume/40 + R1 审查文 PASS-WITH-NITS）· D4 图谱回写随 #184 入 master（不新增一级模块）· D5 关账补登（归档 done/ · Hub 行）
+
+| 指标 | 值 |
+|---|---|
+| 新增测试 | +84 用例（1503→1587 collected · 零既有删除） |
+| 全量测试 | 1574 passed / 0 failed / 1 skipped / 12 errors（12 ERROR 实证为基线环境性 · master+同 .env 同挂 · `ops_sessions.tenant_id`）；CI pytest **pass** |
+| lint | ruff 净增 0（57=57）；graph-compile 绿 |
+| 变异检验 | 3/3「破坏→必挂→恢复绿」（互写/闸恒放行/分节摘头 · fec4f63） |
+| 图谱 | graph-compile 绿 · 不新增一级模块 · HG-GRAPH-MODULES 00 代录 |
+| 交付 | PR #184 MERGED（CI 三绿 · 669e76a）· 40 invoke 经 #185 入 master |
+
+
 ## 修订记录
 
 | 日期 | 摘要 |
 |------|------|
 | 2026-09-23 | 10-task 落稿（SPEC signed 后 · 00 亲起）：锚点逐个复核（gate :115-147 · continuity :115-117/:236 · step_contract :23-30 · 迁移 head 20260922_session_summaries）· 命名冲突扫零命中 · pytest 基线 1420 真跑 · B1 6+1 组落盘 · HG-TASK-DRAFT 00 代录 approved（双令留痕）· HG-AUDIT-R1 pending 待 20-task-audit |
 | 2026-09-23 | 20-task-audit R1 **PASS-WITH-NITS**（零阻塞 · 审查文 `docs/harness/reviews/task_host_v1_episodic_memory_feedback_audit_R1_20260923.md`）；N1 D1 映射标注 §6-8/9→§6-8 · N2 SPEC §6-11 映射注记（承 V1-B R2 先例）· N3 闸判据⑤对齐「必填合法」（非法 failure_class 同拒断言）；**00 代录 HG-AUDIT-R1=approved**（维护者令原话+本窗双令留痕）· 30 可委派开工（分支 `task/host-v1-episodic-memory-feedback` · worktree 隔离承 B/C 先例） |
+| 2026-09-24 | **00 CLOSE**：PR [#184](https://github.com/Cyning12/ops-desk-api/pull/184) MERGED（CI 三绿 · 669e76a）；图谱人签 00 代录；过程档（SPEC/审查/invokes 10–40）补登；归档 done/ · Hub 补登；**V1-D CLOSE → V1-E 可启** |
