@@ -115,17 +115,44 @@ V1-E 双进程回归：`_create_user` 裸 SQL INSERT `ops_sessions` **未写 `te
 
 ## 思考轮控制
 
-| 轮 | 结论 | early_stop | residual_risks |
-|----|------|------------|----------------|
-| R0 | 单点 fixture NOT NULL · 根因清楚 | no | — |
-| R1 | 闸 00 代录全 approved · 可 30 | no | — |
-| R2 | 最小改 INSERT 一列 | yes | 本地无 PG 时须 CI 实证 |
+| 轮 | 结论 | early_stop | reason（early_stop） | residual_risks |
+|----|------|------------|----------------------|----------------|
+| R0 | 单点 fixture NOT NULL · 根因清楚（FINDINGS #1） | no | — | 无 |
+| R1 | 闸 00 代录全 approved · graph=none · 可 30 | no | — | 无 |
+| R2 | 竖切=唯一方案：INSERT 补 `tenant_id='dualproc'` | no | — | 本地无 PG 时须 CI 实证 |
+| R3 | failure_paths 三条（改 app 拒收 / 仍 NOT NULL 拒收 / 租户不一致重跑） | no | — | 无 |
+| R4 | 验收可机跑（diff app 空 + dualproc 无 NOT NULL） | no | — | 无 |
+| R5 | 可交 30；单点测试基建无需加轮 | yes | 方案唯一 · 锚点已钉 · 无方案分叉 | 见 R2 |
 
-**actual_last_round**：R2 · **early_stop**：yes · 原因：单点测试基建 · 方案唯一
+**actual_last_round**：R5 · **early_stop**：yes · **residual_risks**：见 R2
+
+### R0 · 问题框定
+
+FINDINGS #1：dualproc `_create_user` 裸 SQL 漏 `tenant_id` → NOT NULL → 9 ERROR。
+
+### R1 · 开工闸
+
+三闸 approved（00 代录）· verify 须 PASS 后 30。
+
+### R2 · 竖切
+
+只改 tests fixture 一处 INSERT；tenant=`dualproc` 对齐 dualproc_server。
+
+### R3 · 失败语义
+
+见 failure_paths 表。
+
+### R4 · 可测性
+
+pytest dualproc 文件 + `git diff master -- app/` 空。
+
+### R5 · 交付判定
+
+可委派 30。
 
 ### 自检结论
 
-本稿：范围仅 fixture 一列 · 非范围锁死零 app/ · 验收可机跑 · failure_paths 三条 · 闸表三行 approved（00 代录 · bugfix 单点）· 思考轮 early_stop 正当。可委派 30。
+本稿：范围仅 fixture 一列 · 非范围锁死零 app/ · 验收可机跑 · failure_paths 三条 · 闸表三行 approved（00 代录 · bugfix 单点）· 思考轮 R0–R5 齐全 · early_stop 于 R5 正当。可委派 30。
 
 ---
 
