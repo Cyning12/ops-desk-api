@@ -35,4 +35,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-09-24 | 00 下发 30 |
-| 2026-09-24 | 30 落地：fixture + FINDINGS closed · 值改 `ops-desk-pilot`（实证）· SHA/PR 补录 |
+| 2026-09-24 | 30 落地：fixture + FINDINGS closed · 值=`ops-desk-pilot` · SHA `1aaf11c` · PR 待开后补录 |
