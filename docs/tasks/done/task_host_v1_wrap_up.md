@@ -1,6 +1,6 @@
 # Task：Agent Host v1.0 收尾 · D1 文档闭环四件 + BACKLOG 登记（host-v1-wrap-up）
 
-> **状态**：`active`（2026-09-24 · 10 立稿 · 三闸 00 代录 approved · docs-only 无 30 改码面）  
+> **状态**：`done`（2026-09-24 · D1 四件 + D4 BACKLOG 全落盘 · PR [#196](https://github.com/Cyning12/ops-desk-api/pull/196) MERGED（e02b4e1 · CI 四绿）· 20-task-audit R1 PASS-WITH-NITS 零阻塞 · CLOSE 归档 done/）  
 > **类型**：**docs-only**（文档闭环 · 零 `app/` 改动 · `graph_change_layer=none`）  
 > **依据**：`docs/spec/host-v1-wrap-up/SPEC-host-v1-wrap-up_v0.md`（**signed** · HG-SPEC-SIGNOFF approved 00 代录）§2 D1 + D4  
 > **启动 invoke**：`docs/harness/invokes/by-task/host-v1-wrap-up/invoke_20260924_00_host-v1-wrap-up.md`  
@@ -20,7 +20,7 @@
 | **test_strategy_note** | 验收=文件存在+字段族+diff 白名单断言：`git diff master --stat` 全 `docs/`/`reports/` · 旧文件仅追加行（状态行翻转/修订行追加为授权动作）· 零 `app/` diff · `npx spec-wave verify --task` PASS；graph-compile 未触图谱可略 |
 | **code_quality_bar** | `L2_backend`（docs-only · 无码面） |
 | **graph_change_layer** | `none` |
-| **graph_delta** | `n/a` |
+| **graph_delta** | `none` |
 | **graph_delta_note** | 纯文档/报告面 · 零新模块/路由/表/SSE 事件 |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 文档闭环不触 standards/wiki 真值 |
@@ -88,14 +88,14 @@ v1.0 全轨（V1-A~E + dualproc fix + 出口复核 + SLI 跟进）已 CLOSE，�
 
 ## 验收标准
 
-- [ ] D1-1：07 状态行 completed（含 #179~#195 PR 链引证）+ 修订行（00 代录 · 维护者令原话+日期）
-- [ ] D1-2：`reports/multi_replica_verify/REGRESSION_dualproc_post_fix_20260924.md` 落盘 · result=PASS · 字段族齐（task/git_sha/recorded_at/topology/gateway_form/result/evidence/note + 命令 · 承旧报告字段族）· 旧报告零改动
-- [ ] D1-3：multi-replica SPEC 状态行+修订行含「已实施（V1-E #187 + fix #190/#192 · 2026-09-24）」
-- [ ] D1-4：landing invoke 修订行含完整 PR 链（五波 CLOSE + G1 closed #193/#194 + 三方验收 #195）
-- [ ] D4：BACKLOG 三条目落盘
-- [ ] `git diff master --stat` 全 `docs/`/`reports/` · 零 `app/` · 旧文件仅追加（抽查 diff 无正文删改）
-- [ ] `npx spec-wave verify --task` PASS
-- [ ] PR 到 master 经 CI 绿后 merge
+- [x] D1-1：07 状态行 completed（含 #179~#195 PR 链引证）+ 修订行（00 代录 · 维护者令原话+日期）
+- [x] D1-2：`reports/multi_replica_verify/REGRESSION_dualproc_post_fix_20260924.md` 落盘 · result=PASS · 字段族齐（task/git_sha/recorded_at/topology/gateway_form/result/evidence/note + 命令 · 承旧报告字段族）· 旧报告零改动
+- [x] D1-3：multi-replica SPEC 状态行+修订行含「已实施（V1-E #187 + fix #190/#192 · 2026-09-24）」
+- [x] D1-4：landing invoke 修订行含完整 PR 链（五波 CLOSE + G1 closed #193/#194 + 三方验收 #195）
+- [x] D4：BACKLOG 三条目落盘
+- [x] `git diff master --stat` 全 `docs/`/`reports/` · 零 `app/` · 旧文件仅追加（抽查 diff 无正文删改）
+- [x] `npx spec-wave verify --task` PASS
+- [x] PR 到 master 经 CI 绿后 merge
 
 ---
 
@@ -160,8 +160,26 @@ v1.0 全轨（V1-A~E + dualproc fix + 出口复核 + SLI 跟进）已 CLOSE，�
 
 ---
 
+### KPI（CLOSE · 2026-09-24）
+
+| 指标 | 值 |
+|---|---|
+| D1-1 | 07 状态行 `completed`（引证 #179/#181/#183/#184/#187 + 三方验收 #195 · signed 原态留痕）+ 修订记录节 |
+| D1-2 | `reports/multi_replica_verify/REGRESSION_dualproc_post_fix_20260924.md` result=**PASS**（9 passed @ `1cae38f`）· 旧 BLOCKED-ENV 报告零删改 |
+| D1-3 | multi-replica SPEC 状态行+修订行「已实施（V1-E #187 + fix #190（CLOSE #192）· 2026-09-24）」 |
+| D1-4 | landing invoke 终条（长程令全链路闭合） |
+| D4 | `BACKLOG_register_20260924.md` 三条目落盘（只登记不消化） |
+| diff | +605/-2（两处删除=授权状态行翻转）· 零 `app/` |
+| 机械闸 | `spec-wave verify --task` PASS · `task lint` PASS · `lint-wiki-delta` PASS（144 scanned · 0 missing） |
+| 审查 | 20-task-audit R1 PASS-WITH-NITS（流程闸 7/7 · 内容 10/10 · nit 2：N1 已澄清 #192 角色 · N2 按实判） |
+| 交付 | PR [#196](https://github.com/Cyning12/ops-desk-api/pull/196) MERGED（e02b4e1 · CI 四绿：check/import-linter/lint-wiki-delta/pytest） |
+
+
 ## 修订记录
 
 | 日期 | 摘要 |
 |------|------|
 | 2026-09-24 | 10 立稿：D1 四件 + D4 BACKLOG 范围钉死 · 三闸 00 代录 approved（维护者令原话：「签收，生成00 Prompt，在新窗口开始D1统筹」2026-09-24 + 承 2026-09-23 长程令留痕）· docs-only 无 30 面 |
+| 2026-09-24 | 20-task-audit R1 **PASS-WITH-NITS**（零阻塞 · nit 2 已处置）· D1 四件 + D4 执行落盘 |
+| 2026-09-24 | **00 CLOSE**：PR #196 MERGED（CI 四绿 · e02b4e1）· 验收 8/8 勾选 · 归档 done/ · Hub 补登 · 40 invoke 落盘（00 代录 · 维护者令原话留痕同头部双令） |
+| 2026-09-24 | CLOSE 预检留痕：`close_pr_merged` 按当前 CLOSE 分支名（`docs/close-host-v1-wrap-up`）解析不到 PR → 以 `--allow-no-pr-merge` 执行；关联 PR 真值 = **#196 MERGED（e02b4e1）**（`gh pr view 196` 可核）· `graph_delta` 值对齐机械闸字面集改 `none`（原 `n/a`/`无` 均被当路径解析 · close-guards GRAPH_DELTA_LITERALS={'none'}） |

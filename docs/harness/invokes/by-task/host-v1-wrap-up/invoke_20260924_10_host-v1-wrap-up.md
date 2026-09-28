@@ -3,7 +3,7 @@
 > **日期**：2026-09-24 · **帽**：10-task（00 亲起 · 无初稿第一步 · 本棒 docs-only 无 30 改码面）  
 > **维护者令（原话留痕）**：「签收，生成00 Prompt，在新窗口开始D1统筹」（2026-09-24）· 承长程令「签收，并生成对此长程任务的00启动Prompt，新窗口执行，授权00签收所有过程文档，完整落地1.0版本内容」（2026-09-23）  
 > **SPEC 真值**：`docs/spec/host-v1-wrap-up/SPEC-host-v1-wrap-up_v0.md`（signed）  
-> **产出**：`docs/tasks/active/task_host_v1_wrap_up.md`
+> **产出**：`docs/tasks/active/task_host_v1_wrap_up.md`（CLOSE 后归档：`docs/tasks/done/task_host_v1_wrap_up.md` · 2026-09-24）
 
 ## 起稿要点
 
