@@ -1,6 +1,6 @@
 # SPEC：L0 多副本验证（单实例 → 多实例）（v1）
 
-> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved** · 2026-09-22 · 维护者授权 00 本窗代录签收 · 原话「此spec完成后继续把完成后续spec，一个个进行，每次PR到main通过CI后自动merge」承前令「授权00签收所有过程文档」）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved** · 2026-09-22 · 维护者授权 00 本窗代录签收 · 原话「此spec完成后继续把完成后续spec，一个个进行，每次PR到main通过CI后自动merge」承前令「授权00签收所有过程文档」）· **已实施**（V1-E PR #187 + dualproc fix #190（CLOSE 归档 #192）· 2026-09-24 · 双进程 9 passed @ master `1cae38f` 三方验收亲跑 · 00 代录 · 维护者令原话：「签收，生成00 Prompt，在新窗口开始D1统筹」2026-09-24）
 > **track**：`verify`（验证/实证类 · **预期零生产码改动**——产物是验证方案 + 实测证据 + 进程内状态边界清单；**无 alembic 义务** · **图谱义务预期无**（按实判见 §2 D5）：零新路由/零新表/零新事件；若实扫发现阻断性 bug → 另开 fix task，不在本 SPEC 顺手修）
 > **上游**：`../ops-desk-workspace/docs/08-interview/07_agent-memory-prompt-module-landscape_v1_zh.md`（手册 L0 行 :369/:506 · §3.4 第三类「成熟度标志」）
 > **格式基准**：`docs/spec/memory-compliance-delete/SPEC-memory-compliance-delete_v1.md`（signed · 机读纪律同款）
@@ -252,3 +252,4 @@ SPEC：docs/spec/multi-replica-verify/SPEC-multi-replica-verify_v1.md（draft-co
 |---|---|
 | 2026-09-21 | 占位稿（范围草案 + 锚点 + 验收方向 + 接续指引） |
 | 2026-09-22 | 10-spec 补全：锚点逐个实扫（checkpointer 单开关同库 · event_store PG 表归属反查 · **hitl/resume 零进程内定位状态——A 挂起 B resume 结构上天然成立，前提=两副本同开 PG 开关+同库+同版本（stranded_checkpoint 409 证明版本漂移真实）** · capability 进程内状态八条目盘点（registry 启动注册零运行时写端点 · budget 配额按实例数放大 · circuit 默认 process-local(degraded) · metrics 进程内 · idempotency/HITL store 须 =db） · 部署面：仓内 Dockerfile+compose 单 api+GHA，零 k8s，Java 网关+Eureka 在外部仓 · auth 会话 DB 存无需亲和 · 先例：hitl_persistence_smoke/qdrant reconcile，双进程 pytest 仓内无先例）；**track 裁定 `verify`**（实证类 · 预期零生产码改动 · 发现阻断性 bug 另开 fix task）；**F1 双轨裁定**（双进程 pytest 核心语义 + runbook+实测报告部署面 · 弃 F2 纯手工零回归 · 弃 F3 网关 CI 外部依赖越界）；**P1 subprocess 双进程裁定**（弃 P2 同进程双 app 假跨实例）；failure_paths 10 条（假阳性「没真跨实例」与进程内状态失真未发现两静默错防线钉死）；R0–R5 回填；HG-SPEC-SIGNOFF 保持待签 |
+| 2026-09-24 | **实施态登记**：已实施（V1-E #187 + dualproc fix #190（CLOSE 归档 #192）· 双进程 9 passed @ master `1cae38f` 三方验收亲跑）· 状态行补注「已实施」· 00 代录（维护者令原话：「签收，生成00 Prompt，在新窗口开始D1统筹」2026-09-24 · 承 2026-09-23 长程令） |

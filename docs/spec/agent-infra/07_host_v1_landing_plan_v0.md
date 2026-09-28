@@ -1,7 +1,7 @@
 # Agent Host v1.0 · 大版本落地规划（v0 · draft）
 
 > **层级**：L0 规划（接 02 编号序列 · 02 轨 H1–H5 的继任者）  
-> **状态**：`signed`（2026-09-23 · HG-SPEC-SIGNOFF=**approved** · 00 代录 · 维护者本窗令「签收，并生成对此长程任务的00启动Prompt，新窗口执行，授权00签收所有过程文档，完整落地1.0版本内容」· 启动 invoke：[`../../harness/invokes/by-task/host-v1-landing/invoke_20260923_00_host-v1-landing.md`](../../harness/invokes/by-task/host-v1-landing/invoke_20260923_00_host-v1-landing.md)）  
+> **状态**：`completed`（2026-09-24 · 规划真值 · HG-SPEC-SIGNOFF **approved** · **V1-A~E 五波全 CLOSE + 三方验收 PASS** · 00 代录 · 维护者令原话：「签收，生成00 Prompt，在新窗口开始D1统筹」（2026-09-24）· 引证：五波 CLOSE PR #179/#181/#183/#184/#187（过程 PR #180/#182/#186/#188/#189）+ dualproc fix #190/#192 + 出口复核 G1 closed #193/#194 + 三方验收 #195 · 原 signed 签录留痕：2026-09-23 · 00 代录 · 维护者本窗令「签收，并生成对此长程任务的00启动Prompt，新窗口执行，授权00签收所有过程文档，完整落地1.0版本内容」· 启动 invoke：[`../../harness/invokes/by-task/host-v1-landing/invoke_20260923_00_host-v1-landing.md`](../../harness/invokes/by-task/host-v1-landing/invoke_20260923_00_host-v1-landing.md)）  
 > **上游**：[`../../discussions/2026-09-23_agent-host-full-framework-outline_v0.md`](../../discussions/2026-09-23_agent-host-full-framework-outline_v0.md)（功能面 34 模块对照 **v0.1** · 三方测评六点已补强）· [`../../discussions/2026-09-23_agent-host-multi-service-engineering-architecture_v0.md`](../../discussions/2026-09-23_agent-host-multi-service-engineering-architecture_v0.md)（工程面 P0–P3 / C1–C7 / M0–M5）  
 > **前置轨**：[`02_agent_host_plan_v0.md`](./02_agent_host_plan_v0.md)（**completed** · H1–H5 CLOSE）· [`../multi-replica-verify/SPEC-multi-replica-verify_v1.md`](../multi-replica-verify/SPEC-multi-replica-verify_v1.md)（**signed** · V1-E 直接前置）· [`06_host_comms_boundary_spec_v0.md`](./06_host_comms_boundary_spec_v0.md)（signed）  
 > **Open Folder**：`ops-desk-api/`
@@ -128,3 +128,12 @@ V1-A ──► V1-B ──┐
 - 前置：`../multi-replica-verify/`（signed · V1-E）· `02_agent_host_plan_v0.md`（completed）· `06_host_comms_boundary_spec_v0.md`（signed）
 - 在轨对齐：`03_strategy_and_intent_plan_v0.md` · `04_eval_and_observability_plan_v0.md` · `05_lg_rag_transport_and_session_plan_v0.md`
 - 图谱：`docs/_tech_graph/l1/01_modules.md`（模块出边 = 服务边界真值）
+
+---
+
+## 修订记录
+
+| 日期 | 说明 |
+|---|---|
+| 2026-09-23 | signed（HG-SPEC-SIGNOFF approved · 00 代录 · 维护者令原话：「签收，并生成对此长程任务的00启动Prompt，新窗口执行，授权00签收所有过程文档，完整落地1.0版本内容」）· 启动 invoke 落盘 |
+| 2026-09-24 | **转 `completed`**：V1-A~E 五波全 CLOSE（#179/#181/#183/#184/#187 · 过程 PR #180/#182/#186/#188/#189）+ dualproc fix #190/#192 + 出口复核 PASS-WITH-GAP → G1 closed（#193/#194）+ 三方验收 PASS（#195）· §4 出口八面经三方验收独立重验全 PASS · 00 代录（维护者令原话：「签收，生成00 Prompt，在新窗口开始D1统筹」2026-09-24 · 承 02 轨 completed 先例）· 状态行翻转，signed 原态留痕于状态行括注与本行 |
