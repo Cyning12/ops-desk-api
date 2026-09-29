@@ -1,0 +1,30 @@
+# 委派令牌闸观察报告模板（SPEC §2 D2 钉死字段族 · 复制为 delegation_token_<yyyymmdd_period>.yaml 填实）
+# 纪律：记动作不记内容 · 单/双通道如实标注 · 结论三选一 · 宁停勿闯
+gate: delegation_token
+mode: observe
+period: <YYYY-MM-DD..YYYY-MM-DD · 起=冒烟断言通过时刻>
+channels: [app_log]            # 单通道如实写；有 Langfuse 对拍则加 langfuse_span
+traffic:
+  token_issued: <n>
+  token_verified: <n>
+  note: <流量形态一句话 · 例：纯 RAG 问答 · 能力集=检索/查询类>
+would_block:
+  total: <n>
+  by_class:
+    no_token: <n>
+    signature_invalid: <n>
+    secret_missing: <n>
+    out_of_set: <n>
+    expired: <n>
+    nonce_reused: <n>
+    param_violation: <n>
+    subject_mismatch: <n>
+coverage_declare: <覆盖面声明 · 例：S5/S7-S9 自然命中为零 · 已由合成演练 S1-S9 补 · 或：未演练 · 外推受限>
+misjudge_samples:              # ≤10 · 记动作不记内容
+  - class: <reject_class>
+    capability_id: <id>
+    verdict: <真阳性|误判>
+    note: <一句话 · 不写参数原值>
+misjudge_rate: <0 或如实>
+conclusion: <维持 observe | 可 enforce | 需修>   # enforce 前置：零误判 + SECRET 已配
+recorded_at: <ISO 8601>

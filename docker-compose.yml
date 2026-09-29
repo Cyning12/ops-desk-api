@@ -58,6 +58,11 @@ services:
       BAILIAN_MODEL: ${BAILIAN_MODEL:-qwen-plus}
       OPS_DESK_SECRET: ${OPS_DESK_SECRET:-change-me}
       OPS_DESK_AUTH_MODE: ${OPS_DESK_AUTH_MODE:-db}
+      # Host V1-A 委派令牌验签门（默认 off 零 diff · 本地观察灰度见
+      # docs/guides/RUNBOOK_delegation_token_observe_local_v1_zh.md）
+      LG_RAG_DELEGATION_TOKEN_MODE: ${LG_RAG_DELEGATION_TOKEN_MODE:-off}
+      LG_RAG_DELEGATION_TOKEN_SECRET: ${LG_RAG_DELEGATION_TOKEN_SECRET:-}
+      LG_RAG_DELEGATION_TOKEN_TTL_SECONDS: ${LG_RAG_DELEGATION_TOKEN_TTL_SECONDS:-600}
       # 默认 qdrant；回退设 RAG_VECTOR_BACKEND=pgvector
       RAG_VECTOR_BACKEND: ${RAG_VECTOR_BACKEND:-qdrant}
       RAG_QDRANT_SHADOW_WRITE: ${RAG_QDRANT_SHADOW_WRITE:-true}
