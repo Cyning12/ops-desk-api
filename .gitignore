@@ -43,6 +43,8 @@ node_modules/
 # 1.11+ 现行落盘根 .coding-kit/；.cyning-harness/ 为 legacy 只读
 .coding-kit/local.json
 .coding-kit/backups/
+# spec-wave verify/close 本机审计事件流（G7 guard 本地读 · 勿入库）
+.coding-kit/events/
 .cyning-harness/local.json
 # refresh-ide-blocks 本地备份（勿入库）
 .cyning-harness/backups/
