@@ -1,6 +1,6 @@
 # Task：D2 委派令牌闸 · 本地观察准备（RUNBOOK + compose env 配置面）（host-v1-delegation-token-observe）
 
-> **状态**：`active`（2026-09-24 · 10 立稿 · 三闸 00 代录 approved · 配置面+docs · 零 app/ 码改）  
+> **状态**：`done`（2026-09-24 · 四件全落盘 · PR [#198](https://github.com/Cyning12/ops-desk-api/pull/198) MERGED（95c0c91 · CI 四绿）· 20-task-audit R1 PASS 零阻塞 · CLOSE 归档 done/）  
 > **类型**：**config+docs**（部署配置透传 + 灰度 runbook · 零 `app/` 改动 · `graph_change_layer=none`）  
 > **依据**：`docs/spec/host-v1-wrap-up/SPEC-host-v1-wrap-up_v0.md`（signed）§2 D2——「本 SPEC 只立框架与第一闸（委派令牌）task 化准备」  
 > **维护者令（原话留痕）**：「仓内改动也可以吧，LG_RAG_DELEGATION_TOKEN_SECRET本地如何生成？落盘一份完成的本地checklist」（2026-09-24 · D2 推进窗口）· 承「签收，生成00 Prompt，在新窗口开始D1统筹」（2026-09-24）与 2026-09-23 长程令  
@@ -84,12 +84,12 @@ SPEC §2 D2 六闸灰度框架第一闸=委派令牌（`LG_RAG_DELEGATION_TOKEN_
 
 ## 验收标准
 
-- [ ] D1：RUNBOOK 落盘 · 含 SECRET 生成命令（openssl/python 双法）· 冒烟断言节（`docker compose logs` 见 `delegation token_` 行）· 报告模板节 · 复位节
-- [ ] D2：compose api environment 含三键透传且默认值=`off`/空/600 · 注释指 RUNBOOK
-- [ ] D3：`.env.example` LG_RAG 区块含三键注释样例（无真实密钥值）
-- [ ] D4：`reports/gate_observe/_TEMPLATE_delegation_token.yaml` 字段族与 SPEC §2 D2 钉死格式一致
-- [ ] `git diff master --stat -- app/` 为空 · 仓内全文件 grep 无真实 SECRET 值
-- [ ] `npx spec-wave verify --task` PASS · PR 经 CI 绿后 merge
+- [x] D1：RUNBOOK 落盘 · 含 SECRET 生成命令（openssl/python 双法）· 冒烟断言节（`docker compose logs` 见 `delegation token_` 行）· 报告模板节 · 复位节
+- [x] D2：compose api environment 含三键透传且默认值=`off`/空/600 · 注释指 RUNBOOK
+- [x] D3：`.env.example` LG_RAG 区块含三键注释样例（无真实密钥值）
+- [x] D4：`reports/gate_observe/_TEMPLATE_delegation_token.yaml` 字段族与 SPEC §2 D2 钉死格式一致
+- [x] `git diff master --stat -- app/` 为空 · 仓内全文件 grep 无真实 SECRET 值
+- [x] `npx spec-wave verify --task` PASS · PR 经 CI 绿后 merge
 
 ---
 
@@ -152,8 +152,28 @@ SPEC §2 D2 六闸灰度框架第一闸=委派令牌（`LG_RAG_DELEGATION_TOKEN_
 
 ---
 
+### KPI（CLOSE · 2026-09-24）
+
+Task_KPI%: 100（验收 6/6 · R1 PASS 零阻塞 · 机械闸全绿 · PR #198 MERGED）
+
+| 指标 | 值 |
+|---|---|
+| D1 RUNBOOK | `docs/guides/RUNBOOK_delegation_token_observe_local_v1_zh.md` 落盘（§0-§10 · 含冒烟断言/复位/故障排查） |
+| D2 compose 透传 | 三键默认 `off`/空/600 · `docker compose config` 渲染实证（默认关零 diff） |
+| D3 env 样例 | `.env.example` LG_RAG 区块三键注释（只写命令 · grep 无真实密钥值） |
+| D4 报告模板 | `reports/gate_observe/_TEMPLATE_delegation_token.yaml`（SPEC §2 D2 字段族） |
+| diff | 零 `app/` · 5 文件（+1 过程档提交） |
+| 机械闸 | `spec-wave verify --task` PASS · `task lint` PASS |
+| 审查 | 20-task-audit R1 **PASS**（流程闸 6/6 · 内容 14/14 · nit 3 已处置） |
+| 交付 | PR [#198](https://github.com/Cyning12/ops-desk-api/pull/198) MERGED（95c0c91 · CI 四绿：check/import-linter/lint-wiki-delta/pytest） |
+| 下一棒 | 观察期执行 + 首份 `reports/gate_observe/delegation_token_<period>.yaml`（维护者本地按 RUNBOOK 跑 · 落盘另行登记） |
+
+
 ## 修订记录
 
 | 日期 | 摘要 |
 |------|------|
 | 2026-09-24 | 10 立稿：D2 第一闸本地观察准备四件（RUNBOOK/compose 透传/env 样例/报告模板）· 三闸 00 代录 approved（维护者令原话留痕见头部） |
+| 2026-09-24 | 20-task-audit R1 **PASS**（零阻塞 · nit 3 已处置：N1 行号勘误 · N2 10 invoke 补录 · N3 白盒脚本归下一棒）· 四件执行落盘 |
+| 2026-09-24 | **00 CLOSE**：PR #198 MERGED（CI 四绿 · 95c0c91）· 验收 6/6 勾选 · 归档 done/ · Hub 补登 · 40 invoke 落盘（00 代录 · 维护者令原话留痕同头部） |
+| 2026-09-24 | CLOSE 预检留痕：`close_pr_merged` 按 CLOSE 分支名解析不到 PR → `--allow-no-pr-merge` 执行；关联 PR 真值 = **#198 MERGED（95c0c91）**（`gh pr view 198` 可核） |

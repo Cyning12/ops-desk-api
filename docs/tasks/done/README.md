@@ -108,6 +108,7 @@
 | 2026-09-24 | [`task_multi_replica_dualproc_tenant_session.md`](./task_multi_replica_dualproc_tenant_session.md) | **bugfix** · dualproc fixture 补 `ops_sessions.tenant_id`（FINDINGS #1）· PR #190 |
 | 2026-09-24 | [`task_host_v1_sli_four_metrics.md`](./task_host_v1_sli_four_metrics.md) | **出口跟进 G1** · SLI 四项定稿（定义/有数/看板）· docs-only · PR #193 |
 | 2026-09-24 | [`task_host_v1_wrap_up.md`](./task_host_v1_wrap_up.md) | **v1.0 收尾 D1** · 文档闭环四件（07 转 completed · REGRESSION PASS · SPEC 实施态 · invoke 终条）+ BACKLOG 登记 · docs-only · PR #196 |
+| 2026-09-24 | [`task_host_v1_delegation_token_observe.md`](./task_host_v1_delegation_token_observe.md) | **D2 第一闸** · 委派令牌本地观察准备（RUNBOOK checklist + compose env 透传默认 off + 报告模板）· config+docs · PR #198 |
 
 ---
 
@@ -155,6 +156,7 @@
 | 2026-09-24 | CLOSE **V1-E host-v1-splittability-hardening** `#187`（可拆性硬化 · CI 四绿含 import-linter · dualproc 环境红如实记 FINDINGS#1 · 归档 done/ · Hub · **V1-A~E 全 CLOSE · Agent Host v1.0 工程出口**） |
 | 2026-09-24 | CLOSE **host-v1-sli-four-metrics** `#193`（出口复核 G1 · SLI 四项定稿 · docs-only · 归档 done/ · Hub · **G1 closed**） |
 | 2026-09-24 | CLOSE **host-v1-wrap-up** `#196`（v1.0 文档闭环 D1 四件 + D4 BACKLOG · docs-only · CI 四绿 · R1 PASS-WITH-NITS · 归档 done/ · Hub 补登 · **07 规划转 completed · 长程令全链路闭合**） |
+| 2026-09-24 | CLOSE **host-v1-delegation-token-observe** `#198`（D2 六闸灰度第一闸 · 本地观察准备 · compose 透传默认 off 零 diff · R1 PASS · 归档 done/ · Hub 补登 · **观察期执行与首份报告归下一棒**） |
 
 ## 给维护者
 
