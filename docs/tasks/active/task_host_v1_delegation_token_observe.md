@@ -105,7 +105,7 @@ SPEC §2 D2 六闸灰度框架第一闸=委派令牌（`LG_RAG_DELEGATION_TOKEN_
 
 1. 本 task · SPEC §2 D2 · RUNBOOK 成稿
 2. `app/ops/capability/gateway.py:287-323` · `app/ops/capability/delegation.py:41-102`
-3. `docker-compose.yml` api environment 块（:51-65 白名单形态）
+3. `docker-compose.yml` api environment 块（:51-70 白名单形态 · 含本棒新增三键）
 
 ---
 
