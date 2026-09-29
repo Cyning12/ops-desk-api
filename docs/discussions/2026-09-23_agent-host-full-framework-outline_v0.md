@@ -271,3 +271,5 @@ flowchart TD
 - 相关讨论：`2026-08-26_lg-rag-agent-capability-architecture.md` · `2026-08-26_agent-host-architecture-phase-summary.md`
 - 本 task：`docs/tasks/active/task_agent_host_framework_alignment.md`
 - 代码入口：`app/ops/lg_rag/multi/`（supervisor）· `app/ops/capability/`（执行网关）· `app/ops/strategy/`（Builder/Intent/Critic）· `app/llm/`（LLM 工厂雏形）
+- **当前架构对照（2026-09-24）**：[2026-09-24_agent-host_current_architecture_v1_zh.md](./2026-09-24_agent-host_current_architecture_v1_zh.md) · [分模块 M01–M34](./agent-host-current-architecture/)
+- **扩展策略（2026-09-24）**：[2026-09-24_agent-host_extension_strategy_v1_zh.md](./2026-09-24_agent-host_extension_strategy_v1_zh.md)（名实分离 · N0–N5 · 高 ROI 能力）
