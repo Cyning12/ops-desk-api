@@ -30,6 +30,7 @@
 | `security-hardening` | [`security-hardening/`](./security-hardening/) | **signed · W1 已实施**（2026-09-22 · W1 PR #161 已合 master · 40 核验 25/25 PASS；W2 检测 / W3 PII 脱敏 / W4 真沙箱待后续波次） | L7 安全与合规硬化（注入/PII/脱敏/真沙箱 · 顺序钉死：隔离→检测） |
 | `memory-compliance-delete` | [`memory-compliance-delete/`](./memory-compliance-delete/) | **signed · 已实施**（2026-09-22 · PR #163 已合 master · 40 核验 22/22 PASS · 默认干跑+双闸门） | 记忆合规物理删除权 M4（purge_by_user · 两通路零残留 · 审计记动作不记内容） |
 | `multi-replica-verify` | [`multi-replica-verify/`](./multi-replica-verify/) | **signed · 已实施**（2026-09-22 · PR #165 已合 master · 40 核验 26/26 PASS · verify track 零生产码） | L0 多副本验证（双进程 pytest + 部署实测 + 进程内状态边界清单 8 条目） |
+| `chat-history-hitl-ux` | [`chat-history-hitl-ux/`](./chat-history-hitl-ux/) | draft（2026-09-30 · 20-spec-audit → HG-SPEC-SIGNOFF） | 会话历史 + 中断续看 + HITL 审批面（事件表真源 · SSE 零动 · 前端专项 SPEC 另立） |
 
 ---
 
