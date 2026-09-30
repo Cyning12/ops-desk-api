@@ -1,0 +1,10 @@
+# 本地观察 override（D2 闸灰度 · 承 RUNBOOK_delegation_token_observe_local_v1_zh.md）
+# 用法：docker compose -f docker-compose.yml -f docker-compose.observe.yml up -d --build api
+# 作用：仅替换 api 启动命令为 scripts/serve_observe.py（root INFO 放开 app 台账）；
+#       闸开关三键仍由 .env 经主 compose 白名单透传（默认 off 零 diff）。
+services:
+  api:
+    volumes:
+      - ./scripts/serve_observe.py:/app/serve_observe.py:ro
+    command: >
+      sh -c "alembic upgrade head && python /app/serve_observe.py"
