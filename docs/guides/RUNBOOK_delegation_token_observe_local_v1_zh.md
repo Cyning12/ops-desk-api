@@ -17,8 +17,8 @@ cat >> .env <<'EOF'
 LG_RAG_DELEGATION_TOKEN_MODE=observe
 LG_RAG_DELEGATION_TOKEN_SECRET=<上一步生成的 hex>
 EOF
-# 3. 起栈
-docker compose up -d --build api
+# 3. 起栈（observe override：放开 INFO 台账 · 仓内文件 · 勿用 /tmp 临时文件——会被系统清理致启动失败）
+docker compose -f docker-compose.yml -f docker-compose.observe.yml up -d --build api
 # 4. 冒烟：触发一次带工具调用的 chat，确认台账行出现
 docker compose logs -f api | grep 'delegation token_'
 # 5. 观察期结束 → 聚合 → 填报告（§6/§7）
@@ -53,14 +53,14 @@ python3 -c "import secrets; print(secrets.token_hex(32))"  # 等价备选
 |---|---|---|
 | **A · `.env`（推荐）** | `.env` 追加 `LG_RAG_DELEGATION_TOKEN_MODE=observe` + `LG_RAG_DELEGATION_TOKEN_SECRET=<hex>` → `docker compose up -d --build api` | compose 透传已仓内置备（默认 off）· `.env` gitignored · 最简 |
 | B · shell export | `export LG_RAG_DELEGATION_TOKEN_MODE=observe LG_RAG_DELEGATION_TOKEN_SECRET=<hex>` 后同 A 起栈 | 不落盘 · 关 shell 即失效 |
-| C · `/tmp` override（零本地文件残留） | `/tmp/docker-compose.observe.yml` 写 api.environment 三键 → `docker compose -f docker-compose.yml -f /tmp/docker-compose.observe.yml up -d --build api` | 适合临时一次性 · 命令长 |
+| C · 仓内 observe override（**推荐配合 A**） | `docker compose -f docker-compose.yml -f docker-compose.observe.yml up -d --build api` | 换启动命令放开 INFO 台账（uvicorn 默认 root=WARNING 会吞 `delegation token_` 审计行 · 见 §10）· **勿放 /tmp**（系统清理后挂载源消失 → 容器 exit 127 起不来 · 2026-09-30 实战） |
 
 > 注意：compose api 服务是**显式 environment 白名单**（无 `env_file:`）——本棒已把三键加进白名单（默认 `off`/空/600），在此之前的 checkout 上 `.env` 写了也进不了容器。
 
 ## §4 起栈与冒烟（**「闸真活了」断言 · 不可省**）
 
-- [ ] `docker compose up -d --build api`（compose 启动自动 `alembic upgrade head`）
-- [ ] 触发一次**会下发工具调用的 chat**（委派链路 = supervisor 图工人 `tool_exec` · 注入点 `multi/nodes.py:1230-1236`）
+- [ ] `docker compose -f docker-compose.yml -f docker-compose.observe.yml up -d --build api`（compose 启动自动 `alembic upgrade head` · observe override 放开 INFO 台账）
+- [ ] 触发一次**会走 capability 网关的工具调用 chat**——冒烟查询用**工具类问题**（如「调用工具查一下当前的部署信息」→ `mock_get_deploy_info`）；**纯知识库检索类问题走 rag 链路不过委派闸，零台账**（2026-09-29 实战 · 注入点 `multi/nodes.py:1230-1236` 仅在 `tool_exec` 工人路径）
 - [ ] **断言台账行出现**：`docker compose logs api | grep 'delegation token_'` 能见到 `token_issued` / `token_verified`（合法调用）
   - 看不到 → §10 故障排查（先查 env 是否真进容器：`docker compose exec api printenv LG_RAG_DELEGATION_TOKEN_MODE`）
 - [ ] 记录冒烟时间 = 观察期起点
@@ -125,6 +125,11 @@ docker compose up -d api
 | 全是 `secret_missing` | SECRET 没配/没进容器（§2 · 同 printenv 查） |
 | 全是 `no_token` | 签发侧未发令牌（requested_scope 空/签发闸未过）——如实记，属观察发现不是故障 |
 | 日志行有但 grep 聚合为空 | 时间窗 `--since` 起算点写错 · 或日志被 json 转义（调整 grep 模式） |
+| 登录/请求 500 且 traceback 路径是 `.venv/`（宿主机） | **host 侧旧 uvicorn 抢 `127.0.0.1:8000`** 阴影 docker api（宿主占用优先于 docker 通配绑定）· `lsof -nP -iTCP:8000 -sTCP:LISTEN` 找出杀掉；同坑：Homebrew PG 占 `127.0.0.1:5432` 阴影 docker db（host 脚本连空库）→ db 脚本一律 `docker compose exec api python ...` 容器内跑 |
+| 容器里零 `delegation token_` 行但 env 是对的 | **uvicorn 默认 root=WARNING 吞掉 app INFO 台账** → 必须用 `-f docker-compose.observe.yml` 起栈（`scripts/serve_observe.py` 放开 INFO） |
+| 冒烟时零台账（纯 RAG 问题） | 检索走 rag 链路不经委派闸 → 换工具类查询（注册能力见 `GET /api/ops/admin/capability/catalog`） |
+| api 容器 exit 127 起不来 | override 挂载源被 /tmp 清理 → **override 用仓内 `docker-compose.observe.yml`**（勿 /tmp）· 若已坏：`rm -rf /tmp/serve_observe.py` 残留目录后重建 |
+| run 工具调完无终答 | 多半是 **HITL 挂起**（`done{status:waiting_approval}`）非失败：查 `ops_lg_rag_run_events` 末帧；批准=签名 callback（`OPS_HITL_CALLBACK_SECRET` 本地算 HMAC）+ `POST /api/ops/hitl/requests/<id>/resume`（cookie maintainer 可过）；**观察期建议 `.env` 补 `OPS_HITL_PERSISTENCE=db`**（默认 null 进程内 store · api 重启丢挂起申请） |
 
 ---
 
@@ -133,3 +138,4 @@ docker compose up -d api
 | 日期 | 说明 |
 |---|---|
 | 2026-09-24 | 初版：本地 observe 全流 checklist（§0-§10）· 维护者令原话留痕见头部 · 00 代录 |
+| 2026-09-30 | 实战补丁：override 收编仓内（`docker-compose.observe.yml` + `scripts/serve_observe.py` · /tmp 方案被系统清理致 exit 127）· §4 冒烟改工具类查询 · §10 补五坑（8000/5432 宿主抢占 · WARNING 吞台账 · 纯 RAG 零触发 · /tmp 清理 · HITL 挂起批准链）· 00 代录 |
