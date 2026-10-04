@@ -1,10 +1,16 @@
-"""lg-rag SSE 事件落盘 / 按 after_seq 加载（T4 · 不依赖 chat/session）。"""
+"""lg-rag SSE 事件落盘 / 按 after_seq 加载（T4 · 不依赖 chat/session）。
+
+chat-history-api（B1）：追加**只读**历史查询面——按 user 列 thread
+（GROUP BY 聚合 + keyset 分页）、按 thread 拉全量事件（聚合在
+``history.py`` 纯函数层完成）。零新表/迁移/写路径。
+"""
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 
 from app.db.models import OpsLgRagRunEvent
 from app.db.session import AsyncSessionLocal
@@ -126,3 +132,117 @@ async def load_events_after(
         )
         for row in rows
     ]
+
+
+# ---------------------------------------------------------------------------
+# chat-history-api（B1）· 只读历史查询面
+# ---------------------------------------------------------------------------
+
+
+async def thread_owner(thread_id: str) -> str | None:
+    """该 thread 的归属用户；无任何已落盘帧返回 ``None``。
+
+    与 ``run_owner`` 同语义：历史面的归属真源 = 事件表 ``user_id`` 列，
+    跨用户/未知一律由调用方映射 404（不泄露存在性）。
+    """
+    if not thread_id:
+        return None
+    async with AsyncSessionLocal() as db:
+        row = (
+            await db.execute(
+                select(OpsLgRagRunEvent.user_id)
+                .where(OpsLgRagRunEvent.thread_id == thread_id)
+                .limit(1)
+            )
+        ).first()
+    return str(row[0]) if row else None
+
+
+async def list_thread_activity_page(
+    user_id: str,
+    *,
+    limit: int,
+    after: tuple[datetime, str] | None = None,
+) -> list[dict[str, Any]]:
+    """当前用户 thread 活动一页（keyset 分页）。
+
+    排序：``last_activity_at``（= 该 thread 末帧 ``created_at``）倒序，
+    并列按 ``thread_id`` 升序（稳定键）。``after=(last_activity_at, thread_id)``
+    为上一页末条的 keyset 游标。返回 ``[{thread_id, last_activity_at, run_count}]``。
+    """
+    last_activity = func.max(OpsLgRagRunEvent.created_at)
+    stmt = (
+        select(
+            OpsLgRagRunEvent.thread_id,
+            last_activity.label("last_activity_at"),
+            func.count(func.distinct(OpsLgRagRunEvent.run_id)).label("run_count"),
+        )
+        .where(OpsLgRagRunEvent.user_id == user_id)
+        .group_by(OpsLgRagRunEvent.thread_id)
+    )
+    if after is not None:
+        after_ts, after_tid = after
+        stmt = stmt.having(
+            or_(
+                last_activity < after_ts,
+                and_(
+                    last_activity == after_ts,
+                    OpsLgRagRunEvent.thread_id > after_tid,
+                ),
+            )
+        )
+    stmt = stmt.order_by(
+        last_activity.desc(), OpsLgRagRunEvent.thread_id.asc()
+    ).limit(limit)
+    async with AsyncSessionLocal() as db:
+        rows = (await db.execute(stmt)).all()
+    return [
+        {
+            "thread_id": str(row.thread_id),
+            "last_activity_at": row.last_activity_at,
+            "run_count": int(row.run_count),
+        }
+        for row in rows
+    ]
+
+
+async def fetch_events_for_threads(
+    user_id: str,
+    thread_ids: list[str],
+) -> dict[str, list[dict[str, Any]]]:
+    """按 thread 分组返回当前用户已落盘事件（``created_at, seq`` 升序原始行）。
+
+    只读；聚合（标题/状态/消息视图）在 ``history.py`` 纯函数层完成，
+    这里只负责把行按 ``(created_at, seq)`` 排好——与落盘时序真源一致。
+    """
+    if not user_id or not thread_ids:
+        return {}
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(OpsLgRagRunEvent)
+            .where(
+                OpsLgRagRunEvent.user_id == user_id,
+                OpsLgRagRunEvent.thread_id.in_(list(thread_ids)),
+            )
+            .order_by(
+                OpsLgRagRunEvent.created_at.asc(),
+                OpsLgRagRunEvent.seq.asc(),
+            )
+        )
+        rows = result.scalars().all()
+    grouped: dict[str, list[dict[str, Any]]] = {tid: [] for tid in thread_ids}
+    for row in rows:
+        grouped.setdefault(row.thread_id, []).append(
+            {
+                "run_id": row.run_id,
+                "seq": row.seq,
+                "user_id": str(row.user_id),
+                "thread_id": row.thread_id,
+                "ts_ms": row.ts_ms,
+                "agent_role": row.agent_role,
+                "event_type": row.event_type,
+                "payload": row.payload or {},
+                "created_at": row.created_at,
+            }
+        )
+    return grouped
