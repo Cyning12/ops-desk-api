@@ -1,6 +1,6 @@
 # Task：B1 会话历史只读 API（事件表真源 · threads + thread 完整历史）（chat-history-api）
 
-> **状态**：`ready`（裁定 A/B 已定夺；20 R2 **通过**（0 阻塞 · R1 退回项 5/5 闭合）；`HG-TASK-DRAFT`/`HG-AUDIT-R1` 维护者已签 approved 2026-09-30 → **30 可开工**；`HG-GRAPH-MODULES` 随交付签录）
+> **状态**：`ready`（裁定 A/B 已定夺；20 R2 **通过**（0 阻塞 · R1 退回项 5/5 闭合）；三闸维护者已签 approved 2026-09-30（`HG-GRAPH-MODULES` 签「图谱在册」· 端点备注随 30 交付落盘复核）→ **30 可开工**）
 > **类型**：**码面**（新增只读 REST 端点 · 零表结构 · 默认零 SSE 帧改动）
 > **依据 SPEC**：`docs/spec/chat-history-hitl-ux/SPEC-chat-history-hitl-ux_v0.md`（signed 2026-09-30 · §2 B1 · §4 Q1/Q6 · §5 FP-1/2/4 · §6 B1）
 > **审查承接**：`docs/harness/reviews/spec_chat_history_hitl_ux_audit_R1_20260930.md`（PASS-WITH-NITS · N3 阈值本 task 钉；N4 亡端点不计入可用面） · task R1：`docs/harness/reviews/task_chat_history_api_audit_R1_20260930.md`（**退回 10-task** · 唯一阻塞=缺「旧测 grep 影响面」；nit N1-N4 已回填，见修订记录）
@@ -38,7 +38,7 @@
 |---|---|---|---|
 | HG-TASK-DRAFT | approved | 20-R1, 30 | 10 初稿经 20 R1/R2 复审闭合 · 维护者签 2026-09-30 |
 | HG-AUDIT-R1 | approved | 30 | 20-task-audit R2 通过（0 阻塞）· 维护者签 2026-09-30 |
-| HG-GRAPH-MODULES | pending | 30 | 新增 REST 路由 → G-L1 备注 + 签录（真值 `docs/_tech_graph/l1/01_modules.md`） |
+| HG-GRAPH-MODULES | approved | 30 | 维护者签「图谱在册」2026-09-30：现有 G-L1 模块覆盖本次改动面；新端点备注随 30 交付落盘 `01_modules.md`/`10_flow_lg_rag.md` 并交付时复核 |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 复用既有 G-L1 模块，不涉物理分层试点新增 |
 
 ---

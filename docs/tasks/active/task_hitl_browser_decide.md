@@ -1,6 +1,6 @@
 # Task：B2 HITL 浏览器决策面（cookie maintainer pending + decide · 复用 resume）（hitl-browser-decide）
 
-> **状态**：`ready`（裁定 D/E 已按「安全推荐」落定；20 R1 **通过**（0 阻塞 · 4 nit 转 30）；`HG-TASK-DRAFT`/`HG-AUDIT-R1` 维护者已签 approved 2026-09-30 → **30 可开工**；`HG-GRAPH-MODULES` 随交付签录；按 SPEC 与 B1 串行）
+> **状态**：`ready`（裁定 D/E 已按「安全推荐」落定；20 R1 **通过**（0 阻塞 · 4 nit 转 30）；三闸维护者已签 approved 2026-09-30（`HG-GRAPH-MODULES` 签「图谱在册」· 端点备注随 30 交付落盘复核）→ **30 可开工**；按 SPEC 与 B1 串行）
 > **类型**：**码面**（新增 cookie 端点 · 复用既有 store/resume · 零表结构 · 零 SSE 事件）
 > **依据 SPEC**：`docs/spec/chat-history-hitl-ux/SPEC-chat-history-hitl-ux_v0.md`（signed 2026-09-30 · §2 B2 · §4 Q2/Q5 · §5 FP-3/FP-6 · §6 B2）
 > **审查承接**：`docs/harness/reviews/spec_chat_history_hitl_ux_audit_R1_20260930.md`（PASS-WITH-NITS · N2 持久化路径本 task test_strategy 显式覆盖）
@@ -38,7 +38,7 @@
 |---|---|---|---|
 | HG-TASK-DRAFT | approved | 20-R1, 30 | 10 初稿经 20 R1 审查闭合 · 维护者签 2026-09-30 |
 | HG-AUDIT-R1 | approved | 30 | 20-task-audit R1 通过（0 阻塞 · 4 nit 转 30）· 维护者签 2026-09-30 |
-| HG-GRAPH-MODULES | pending | 30 | 新增 REST 路由 → G-L1 备注 + 签录（真值 `docs/_tech_graph/l1/01_modules.md`） |
+| HG-GRAPH-MODULES | approved | 30 | 维护者签「图谱在册」2026-09-30：现有 G-L1 模块覆盖本次改动面；新端点备注随 30 交付落盘 `01_modules.md` 并交付时复核 |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 复用既有 G-L1 模块，不涉物理分层试点新增 |
 
 ---
