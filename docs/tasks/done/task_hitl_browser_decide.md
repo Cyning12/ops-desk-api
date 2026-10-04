@@ -1,6 +1,6 @@
 # Task：B2 HITL 浏览器决策面（cookie maintainer pending + decide · 复用 resume）（hitl-browser-decide）
 
-> **状态**：`ready`（裁定 D/E 已按「安全推荐」落定；20 R1 **通过**（0 阻塞 · 4 nit 转 30）；三闸维护者已签 approved 2026-09-30（`HG-GRAPH-MODULES` 签「图谱在册」· 端点备注随 30 交付落盘复核）→ **30 可开工**；按 SPEC 与 B1 串行）
+> **状态**：`done`（2026-09-30 · 验收 14/14 勾选 · 20 R1 通过（4 nit 已随 30 闭合）· 三闸维护者签 · PR [#204](https://github.com/Cyning12/ops-desk-api/pull/204) MERGED（eb22a66 · CI 四绿）· CLOSE 归档 done/）
 > **类型**：**码面**（新增 cookie 端点 · 复用既有 store/resume · 零表结构 · 零 SSE 事件）
 > **依据 SPEC**：`docs/spec/chat-history-hitl-ux/SPEC-chat-history-hitl-ux_v0.md`（signed 2026-09-30 · §2 B2 · §4 Q2/Q5 · §5 FP-3/FP-6 · §6 B2）
 > **审查承接**：`docs/harness/reviews/spec_chat_history_hitl_ux_audit_R1_20260930.md`（PASS-WITH-NITS · N2 持久化路径本 task test_strategy 显式覆盖）
@@ -112,20 +112,20 @@ D2 冒烟实证：run 挂在 `waiting_approval`，后端已发 `hitl.waiting` + 
 
 ## 验收标准
 
-- [ ] `GET /hitl/pending`：cookie maintainer 200，仅含 `run_owner==当前用户` 的 pending；字段族齐（`id`/`run_id`/`thread_id`/`reason`/`blocked_by`/`created_at`）
-- [ ] 非 maintainer（viewer fixture）→ **403**；未登录 → **401**（对齐 `tests/conftest.py` `override_auth_viewer/maintainer`）
-- [ ] 异 owner 的 pending **不出现**在列表（裁定 E1）
-- [ ] `POST .../decide` `approved` → 200 · store 行 `status=approved` · `decision_by=当前用户` · `decided_at` 非空；语义等价 callback
-- [ ] 重复 decide / 已决申请 → **409**；未知 id → **404**；非法 `decision` → **422**
-- [ ] 集成：挂起 run → `decide(approved)` → 既有 `POST .../resume` → 终帧 `done{completed}`（对齐 `tests/test_hitl_resume.py` 图替身）
-- [ ] `decide(rejected)` → `resume` → 收工出结论（带「没批」语义 · 不解锁 · 承 resume 既有设计）
-- [ ] 越权：他人 run 的 `request_id` → **404**
-- [ ] **N2 持久化路径**：`OPS_HITL_PERSISTENCE=db` 下 decide 落库 → 重建 store（模拟重启）→ resume 读到已决（`DB_AVAILABLE` 门控 · 无库则 skip 并留痕）
-- [ ] OA 签名面回归：`tests/test_hitl.py` 全绿；`POST /hitl/callback` HMAC 校验与既有行为零 diff；`app/ops/hitl/signature.py` 零 diff
-- [ ] `.venv/bin/pytest tests -q --tb=short` 绿
-- [ ] `.venv/bin/lint-imports --config .importlinter` 绿
-- [ ] `./scripts/graph-compile.sh` exit 0；G-L1 备注落盘 + `HG-GRAPH-MODULES` 签录
-- [ ] `npx --yes spec-wave@3.0.1 task lint-wiki-delta --target .` 通过
+- [x] `GET /hitl/pending`：cookie maintainer 200，仅含 `run_owner==当前用户` 的 pending；字段族齐（`id`/`run_id`/`thread_id`/`reason`/`blocked_by`/`created_at`）
+- [x] 非 maintainer（viewer fixture）→ **403**；未登录 → **401**（对齐 `tests/conftest.py` `override_auth_viewer/maintainer`）
+- [x] 异 owner 的 pending **不出现**在列表（裁定 E1）
+- [x] `POST .../decide` `approved` → 200 · store 行 `status=approved` · `decision_by=当前用户` · `decided_at` 非空；语义等价 callback
+- [x] 重复 decide / 已决申请 → **409**；未知 id → **404**；非法 `decision` → **422**
+- [x] 集成：挂起 run → `decide(approved)` → 既有 `POST .../resume` → 终帧 `done{completed}`（对齐 `tests/test_hitl_resume.py` 图替身）
+- [x] `decide(rejected)` → `resume` → 收工出结论（带「没批」语义 · 不解锁 · 承 resume 既有设计）
+- [x] 越权：他人 run 的 `request_id` → **404**
+- [x] **N2 持久化路径**：`OPS_HITL_PERSISTENCE=db` 下 decide 落库 → 重建 store（模拟重启）→ resume 读到已决（`DB_AVAILABLE` 门控 · 无库则 skip 并留痕）
+- [x] OA 签名面回归：`tests/test_hitl.py` 全绿；`POST /hitl/callback` HMAC 校验与既有行为零 diff；`app/ops/hitl/signature.py` 零 diff
+- [x] `.venv/bin/pytest tests -q --tb=short` 绿
+- [x] `.venv/bin/lint-imports --config .importlinter` 绿
+- [x] `./scripts/graph-compile.sh` exit 0；G-L1 备注落盘 + `HG-GRAPH-MODULES` 签录
+- [x] `npx --yes spec-wave@3.0.1 task lint-wiki-delta --target .` 通过
 
 ---
 
@@ -201,3 +201,4 @@ fixtures（maintainer/viewer）+ 图替身（既有 `test_hitl_resume.py`）可�
 | 2026-09-30 | 10-task 立稿：拆自 SPEC chat-history-hitl-ux §2 B2；锚点真读后把「cookie maintainer 依赖口径」与「pending 归属过滤」上抛为裁定 D/E；N2 持久化路径钉进 test_strategy |
 | 2026-09-30 | 维护者令「冲突部分安全推荐方案进行」→ 裁定 D 采纳 D1（`MaintainerUser`）· 裁定 E 采纳 E1（owner 过滤）；阻塞解除 |
 | 2026-09-30 | **20-task-audit R1 通过**（0 阻塞 · 4 nit 转 30 · 审查文 `docs/harness/reviews/task_hitl_browser_decide_audit_R1_20260930.md`）→ 维护者签 `HG-TASK-DRAFT`/`HG-AUDIT-R1` = approved；30 可开工（与 B1 串行） |
+| 2026-09-30 | **CLOSE**：30/40 交付（`c39e659` · 5 件 +941/-5 · 验收 14/14 机断全绿 · 4 nit 随 30 闭合 · OA 签名面/`signature.py`/resume 零 diff 实测 · N2 真 PG 重启链真跑）→ 维护者令单 PR → PR [#204](https://github.com/Cyning12/ops-desk-api/pull/204) MERGED（`eb22a66` · CI 四绿）→ 归档 done/ · Hub 补登 |

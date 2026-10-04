@@ -1,6 +1,6 @@
 # Task：B1 会话历史只读 API（事件表真源 · threads + thread 完整历史）（chat-history-api）
 
-> **状态**：`ready`（裁定 A/B 已定夺；20 R2 **通过**（0 阻塞 · R1 退回项 5/5 闭合）；三闸维护者已签 approved 2026-09-30（`HG-GRAPH-MODULES` 签「图谱在册」· 端点备注随 30 交付落盘复核）→ **30 可开工**）
+> **状态**：`done`（2026-09-30 · 验收 14/14 勾选 · 20 R2 通过 · 三闸维护者签 · PR [#204](https://github.com/Cyning12/ops-desk-api/pull/204) MERGED（eb22a66 · CI 四绿）· CLOSE 归档 done/）
 > **类型**：**码面**（新增只读 REST 端点 · 零表结构 · 默认零 SSE 帧改动）
 > **依据 SPEC**：`docs/spec/chat-history-hitl-ux/SPEC-chat-history-hitl-ux_v0.md`（signed 2026-09-30 · §2 B1 · §4 Q1/Q6 · §5 FP-1/2/4 · §6 B1）
 > **审查承接**：`docs/harness/reviews/spec_chat_history_hitl_ux_audit_R1_20260930.md`（PASS-WITH-NITS · N3 阈值本 task 钉；N4 亡端点不计入可用面） · task R1：`docs/harness/reviews/task_chat_history_api_audit_R1_20260930.md`（**退回 10-task** · 唯一阻塞=缺「旧测 grep 影响面」；nit N1-N4 已回填，见修订记录）
@@ -121,20 +121,20 @@ D2 观察期实战：用户刷新后历史会话消失、无列表可回；挂�
 
 ## 验收标准
 
-- [ ] H1：造 2 run 同 thread + 1 run 异 thread（同用户）→ 列表 2 thread；字段族齐（`thread_id`/`title`/`last_activity_at`/`run_count`/`latest_run_status`）；`waiting_approval` 最新态可识别；按 `last_activity_at` 倒序
-- [ ] H1 分页：默认 `limit=20`；`limit>100` → **422**；`limit`+`cursor` 不重不漏（造 >limit 条 thread 断言）
-- [ ] H2：完整重建 query + answer 聚合 + subtask 摘要 + `done.status` + `hitl.waiting` requests；run 升序 · 帧序（seq）正确
-- [ ] answer 聚合：终帧 `{"content","final":true}` 优先；无终帧回退 delta 按 seq 拼接；超 `32000` 字符截断并标 `answer_truncated=true`（N3 阈值钉）
-- [ ] 跨用户访问 → **404**（不 403 · 不泄露存在性）
-- [ ] 缺 query 老 run / `waiting_approval` run：标题降级不阻塞（FP-4）
-- [ ] 聚合超时阈值 `10s` → 504（FP-2 · 常量可注入）
-- [ ] SSE 面按 A1：仅 `run.start` payload +可选 `query` 键且**零新 event_type**；`app/ops/lg_rag/sse_stream.py` 其余 diff 为空（`hitl.waiting`/`done`/`answer`/`subtask.progress` 帧语义零改动）
-- [ ] `app/ops/chat/**` 零 diff（裁定 B1）
-- [ ] `.venv/bin/pytest tests -q --tb=short` 绿（新增 `tests/test_chat_history_api.py`）
-- [ ] **旧测 grep 影响面**：清点 `run.start` 既有断言面（`tests/test_lg_rag_sse_stream.py:101-102` · `tests/test_lg_rag_session_continuity.py:166-167` · `tests/test_multi_replica_dualproc.py:420-424` · `tests/test_lg_rag_sse_token_stream.py:183/254` · `tests/test_chat_ws.py:226/275`）并列入回归；新增可选 `query` 键 **subset-安全**（既有断言取子集字段、排序对拍双端一致，不断言 payload 恰等三键）
-- [ ] `app/ops/lg_rag/history_router.py` 鉴权 import 走同族间接取（或显式 `ignore_imports` 授权）；`.venv/bin/lint-imports --config .importlinter` 绿
-- [ ] `./scripts/graph-compile.sh` exit 0；G-L1 备注落盘 + `HG-GRAPH-MODULES` 签录
-- [ ] `npx --yes spec-wave@3.0.1 task lint-wiki-delta --target .` 通过
+- [x] H1：造 2 run 同 thread + 1 run 异 thread（同用户）→ 列表 2 thread；字段族齐（`thread_id`/`title`/`last_activity_at`/`run_count`/`latest_run_status`）；`waiting_approval` 最新态可识别；按 `last_activity_at` 倒序
+- [x] H1 分页：默认 `limit=20`；`limit>100` → **422**；`limit`+`cursor` 不重不漏（造 >limit 条 thread 断言）
+- [x] H2：完整重建 query + answer 聚合 + subtask 摘要 + `done.status` + `hitl.waiting` requests；run 升序 · 帧序（seq）正确
+- [x] answer 聚合：终帧 `{"content","final":true}` 优先；无终帧回退 delta 按 seq 拼接；超 `32000` 字符截断并标 `answer_truncated=true`（N3 阈值钉）
+- [x] 跨用户访问 → **404**（不 403 · 不泄露存在性）
+- [x] 缺 query 老 run / `waiting_approval` run：标题降级不阻塞（FP-4）
+- [x] 聚合超时阈值 `10s` → 504（FP-2 · 常量可注入）
+- [x] SSE 面按 A1：仅 `run.start` payload +可选 `query` 键且**零新 event_type**；`app/ops/lg_rag/sse_stream.py` 其余 diff 为空（`hitl.waiting`/`done`/`answer`/`subtask.progress` 帧语义零改动）
+- [x] `app/ops/chat/**` 零 diff（裁定 B1）
+- [x] `.venv/bin/pytest tests -q --tb=short` 绿（新增 `tests/test_chat_history_api.py`）
+- [x] **旧测 grep 影响面**：清点 `run.start` 既有断言面（`tests/test_lg_rag_sse_stream.py:101-102` · `tests/test_lg_rag_session_continuity.py:166-167` · `tests/test_multi_replica_dualproc.py:420-424` · `tests/test_lg_rag_sse_token_stream.py:183/254` · `tests/test_chat_ws.py:226/275`）并列入回归；新增可选 `query` 键 **subset-安全**（既有断言取子集字段、排序对拍双端一致，不断言 payload 恰等三键）
+- [x] `app/ops/lg_rag/history_router.py` 鉴权 import 走同族间接取（或显式 `ignore_imports` 授权）；`.venv/bin/lint-imports --config .importlinter` 绿
+- [x] `./scripts/graph-compile.sh` exit 0；G-L1 备注落盘 + `HG-GRAPH-MODULES` 签录
+- [x] `npx --yes spec-wave@3.0.1 task lint-wiki-delta --target .` 通过
 
 ---
 
@@ -212,3 +212,4 @@ H1/H2 两端点 + H3 纯函数 + H5 查询复用；模块归属见裁定 B1。
 | 2026-09-30 | 维护者令「冲突部分安全推荐方案进行」→ 裁定 A 采纳 A1（`run.start` 增可选 `query` 键）· 裁定 B 采纳 B1（路由落 `lg_rag/history_router.py`）；阻塞解除 |
 | 2026-09-30 | **20-task-audit R1 退回 10-task**（唯一阻塞：行为变更类缺「旧测 grep 影响面」）→ 回填：验收+test_strategy 增旧测影响面（`run.start` 断言面清点 · subset-安全）· 钉 import 间接取纪律（N1）· 分页默认 20/超限 422（N2）· 更正 R1/R5 陈旧文字（N3）· A1 errata 落独立便签（N4）；待 R2 复审 |
 | 2026-09-30 | **20-task-audit R2 通过**（0 阻塞 · R1 退回项 5/5 闭合 · 审查文 `docs/harness/reviews/task_chat_history_api_audit_R2_20260930.md`）→ 维护者签 `HG-TASK-DRAFT`/`HG-AUDIT-R1` = approved；30 可开工 |
+| 2026-09-30 | **CLOSE**：30/40 交付（`9904f81` · 11 件 +1562/-12 · 验收 14/14 机断全绿 · 旧测 grep 影响面 105 用例全绿 · `app/ops/chat/**` 与 SSE freeze 零越界）→ 维护者令单 PR → PR [#204](https://github.com/Cyning12/ops-desk-api/pull/204) MERGED（`eb22a66` · CI 四绿）→ 归档 done/ · Hub 补登 |
