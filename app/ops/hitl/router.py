@@ -6,6 +6,14 @@
 | ``GET /api/ops/hitl/requests/{id}`` | 运维 / 前端 | 管理员 |
 | ``POST /api/ops/hitl/callback`` | OA 回调审批结果 | HMAC 签名 |
 | ``POST /api/ops/hitl/requests/{id}/resume`` | 运维 / 前端 | 管理员 |
+| ``GET /api/ops/hitl/pending`` | 浏览器审批列表 | cookie maintainer |
+| ``POST /api/ops/hitl/requests/{id}/decide`` | 浏览器批准 / 驳回 | cookie maintainer |
+
+**浏览器决策面（B2）为什么与 OA 签名面并列存在**：签名面是给外部系统
+（OA）的机读通道，浏览器拿不到 HMAC 密钥就永远看不到待审批列表。
+cookie 面只做两件事——列出**归属当前用户**的 pending、把申请置为已决；
+密钥不出服务器，置已决与 callback 同语义（复用 ``store.adecide``），
+恢复仍只有 ``resume`` 一个入口（decide **不自动 resume**，两步钉死）。
 
 **恢复这一半为什么单独有驱动器（``hitl/resume.py``）**：
 ``observe_node`` 用 ``interrupt()`` 把图挂起后，前端停在"等待授权"那一帧、
@@ -23,12 +31,13 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Body, Header, HTTPException, Query, Request, status
+from pydantic import BaseModel
 
 from app.db.models import OpsUser
-from app.ops.deps import AdminSyncAuth
+from app.ops.deps import AdminSyncAuth, MaintainerUser
 from app.ops.hitl import get_hitl_store, new_request_id
 from app.ops.hitl.persistence import describe_hitl_persistence
 from app.ops.hitl.resume import ResumeError, resume_hitl_run
@@ -93,6 +102,134 @@ async def get_request(
     if row is None:
         raise HTTPException(status_code=404, detail="申请不存在")
     return row
+
+
+# ---------------------------------------------------------------------------
+# 浏览器决策面（cookie maintainer · 裁定 D1/E1 · 与 OA 签名面零交集）
+# ---------------------------------------------------------------------------
+
+
+class _DecidePayload(BaseModel):
+    """decide 请求体。``decision`` 只收两种值，非法值由 Pydantic 直接挡成 422。"""
+
+    decision: Literal["approved", "rejected"]
+    note: str = ""
+
+
+async def _run_owner_of(row: dict[str, Any]) -> str | None:
+    """申请 → run 归属用户（裁定 E1 真源：``lg_rag.event_store.run_owner``）。
+
+    HITL 申请行里**没有 user_id**，归属只能经 ``run_id`` 反查事件表。
+    解析不到（没 run_id / run 没落过事件帧 / 反查本身失败）→ 返回 ``None``
+    并打 **error 日志**；调用方按「排除 / 404」处理，**绝不猜一个 user_id**
+    （猜错就是把别人的审批面开给当前用户），也不许因此 500。
+    """
+    from app.ops.lg_rag.event_store import run_owner
+
+    run_id = str(row.get("run_id") or "").strip()
+    if not run_id:
+        logger.error("HITL 归属反查：申请 %s 没有 run_id，归属不可判定", row.get("id"))
+        return None
+    try:
+        owner = await run_owner(run_id)
+    except Exception:
+        logger.exception("HITL 归属反查失败 run=%s request=%s", run_id, row.get("id"))
+        return None
+    if not owner:
+        logger.error(
+            "HITL 归属反查：run %s 查不到归属用户（没落过事件帧？）request=%s",
+            run_id,
+            row.get("id"),
+        )
+        return None
+    return str(owner)
+
+
+_PENDING_FIELDS = ("id", "run_id", "thread_id", "reason", "blocked_by", "created_at")
+
+
+@router.get("/pending")
+async def list_pending(user: OpsUser = MaintainerUser) -> dict[str, Any]:
+    """**浏览器审批列表**：当前 maintainer 可见的 pending 申请（cookie 鉴权）。
+
+    与 OA 签名面 ``GET /requests`` 的差别：这条走 cookie + maintainer 角色，
+    且**只返回归属当前用户**的申请（裁定 E1）。归属解析不到的申请
+    **排除 + error 日志**——不 500、不泄露；store 本身故障同样降级空列表。
+    """
+    store = get_hitl_store()
+    try:
+        rows = await store.alist(status=STATUS_PENDING, limit=200)
+    except Exception:
+        logger.exception("HITL pending 列表：store.alist 失败，按空列表降级（不 500）")
+        return {"items": [], "count": 0}
+    me = str(user.id)
+    items: list[dict[str, Any]] = []
+    for row in rows:
+        owner = await _run_owner_of(row)
+        if owner is None or owner != me:
+            continue
+        items.append({key: row.get(key) for key in _PENDING_FIELDS})
+    return {"items": items, "count": len(items)}
+
+
+@router.post("/requests/{request_id}/decide")
+async def decide_request(
+    request_id: str, payload: _DecidePayload, user: OpsUser = MaintainerUser
+) -> dict[str, Any]:
+    """**浏览器置已决**：把一条 pending 申请置为 approved / rejected。
+
+    与 OA ``callback`` 同语义（复用 ``store.adecide`` 的 pending 守卫），
+    但鉴权是 cookie maintainer——**密钥不出服务器**。
+
+    **两步钉死（SPEC Q2）**：本端点只置已决，**不自动 resume**——图还挂在
+    checkpoint 里；客户端第二步调既有 ``POST /requests/{id}/resume``
+    才真正把 run 跑完。响应里的 ``resume`` 块把第二步说出来。
+
+    边界（与 failure_paths 对齐）：
+    - 未知 id / 归属他人 / 归属不可判定 → **404**（不泄露存在性，FP-1 口径）；
+    - 重复 decide / 已决 → **409**（与 callback 同一判据：``adecide`` 返回 None）；
+    - 审计日志只记动作锚点（id/decision/by/at），**不记内容**（SPEC 纪律 #4）。
+    """
+    store = get_hitl_store()
+    row = await store.aget(request_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="申请不存在")
+    owner = await _run_owner_of(row)
+    if owner is None or owner != str(user.id):
+        # 归属不可判定视同非本人：宁可拒掉本人，也不把别人的申请开出来
+        raise HTTPException(status_code=404, detail="申请不存在")
+    decided = await store.adecide(
+        request_id,
+        decision=payload.decision,
+        by=str(user.username or user.id),
+        note=payload.note,
+    )
+    if decided is None:
+        # adecide 只受理 pending，而上面 aget 已证明 id 存在 ⇒ 必已决 —— 与 callback 同语义
+        existing = await store.aget(request_id)
+        if existing is None:
+            raise HTTPException(status_code=404, detail="申请不存在")
+        raise HTTPException(
+            status_code=409,
+            detail=f"申请已是 {existing.get('status')}，不接受重复决定",
+        )
+    logger.info(
+        "HITL 浏览器决策 request=%s decision=%s by=%s at=%s",
+        request_id,
+        payload.decision,
+        user.username,
+        time.time(),
+    )
+    return {
+        "ok": True,
+        "request": decided,
+        # decide 不自动 resume：恢复是客户端的第二个显式动作（复用既有 resume 端点）
+        "resume": {
+            "required": True,
+            "method": "POST",
+            "endpoint": f"/api/ops/hitl/requests/{request_id}/resume",
+        },
+    }
 
 
 @router.post("/callback")
