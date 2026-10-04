@@ -157,6 +157,8 @@
 | 2026-09-24 | CLOSE **host-v1-sli-four-metrics** `#193`（出口复核 G1 · SLI 四项定稿 · docs-only · 归档 done/ · Hub · **G1 closed**） |
 | 2026-09-24 | CLOSE **host-v1-wrap-up** `#196`（v1.0 文档闭环 D1 四件 + D4 BACKLOG · docs-only · CI 四绿 · R1 PASS-WITH-NITS · 归档 done/ · Hub 补登 · **07 规划转 completed · 长程令全链路闭合**） |
 | 2026-09-24 | CLOSE **host-v1-delegation-token-observe** `#198`（D2 六闸灰度第一闸 · 本地观察准备 · compose 透传默认 off 零 diff · R1 PASS · 归档 done/ · Hub 补登 · **观察期执行与首份报告归下一棒**） |
+| 2026-09-30 | CLOSE **chat-history-api**（B1）`#204`（会话历史只读 API · 事件表真源 · 20 R1 退回→R2 通过 · 裁定 A1/B1 · SSE freeze 对拍锁死 · 验收 14/14 · 归档 done/ · Hub 补登） |
+| 2026-09-30 | CLOSE **hitl-browser-decide**（B2）`#204`（HITL 浏览器决策面 · cookie maintainer pending+decide · 20 R1 通过 4 nit 随 30 闭合 · 裁定 D1/E1 · OA 签名面零 diff · 验收 14/14 · 归档 done/ · Hub 补登 · **SPEC chat-history-hitl-ux §2 B1/B2 双双闭合 · 前端 F1/F2 另立 SPEC**） |
 
 ## 给维护者
 
