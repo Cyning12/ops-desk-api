@@ -1,13 +1,13 @@
 ---
 graph_id: 10_flow_lg_rag
-version: 2026-09-21
-generated_at: sha256-c869a2e3f924e931
+version: 2026-09-30
+generated_at: sha256-420f552c29d51f3f
 source: 10_flow_lg_rag.graph.yaml
 ---
 
 # LG RAG 旁路三模式流程（basic / router / supervisor · Critic）
 
-POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。T5：终答 answer 多帧 delta（{delta}）+ 终帧 {content, final:true}（aggregator / direct_answer 经 answer_stream.py contextvar token sink 桥 complete_stream；降级整段）。T5.1：persist 后台调度不阻塞 SSE yield。§10.6：等待 update 期间 SSE comment keepalive（不落盘、不占 seq）。§10.7：子任务 running 起步帧 + step 里程碑（progress_stream · rag_subtask astream_router + evidence step_hook · status=running/step/done）；§10.7 增补：running/step/done 帧可选 message 中文短句（subtask_message.py 确定性模板 · 截断 200 · 生成失败降级帧仍发 · 旧客户端忽略未知键）。2026-09-21：supervisor 增 subtask_join（ready=依赖全终态+步骤契约闸 consumes/produces · prefix_touch_required→hitl_required）与 observe 执行层收口（没有待发步骤不再直连 aggregator；hitl_required 真 interrupt() 挂起 → /hitl/* 批准 → hitl/resume.py Command(resume) 恢复 · 事件接同一 run_id + replay cursor）；外层 ReAct replan→supervisor / settle→aggregator 有界 LG_RAG_REACT_MAX_ROUNDS=2（Policy 类拒绝不触发 HITL）。
+POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。T5：终答 answer 多帧 delta（{delta}）+ 终帧 {content, final:true}（aggregator / direct_answer 经 answer_stream.py contextvar token sink 桥 complete_stream；降级整段）。T5.1：persist 后台调度不阻塞 SSE yield。§10.6：等待 update 期间 SSE comment keepalive（不落盘、不占 seq）。§10.7：子任务 running 起步帧 + step 里程碑（progress_stream · rag_subtask astream_router + evidence step_hook · status=running/step/done）；§10.7 增补：running/step/done 帧可选 message 中文短句（subtask_message.py 确定性模板 · 截断 200 · 生成失败降级帧仍发 · 旧客户端忽略未知键）。2026-09-21：supervisor 增 subtask_join（ready=依赖全终态+步骤契约闸 consumes/produces · prefix_touch_required→hitl_required）与 observe 执行层收口（没有待发步骤不再直连 aggregator；hitl_required 真 interrupt() 挂起 → /hitl/* 批准 → hitl/resume.py Command(resume) 恢复 · 事件接同一 run_id + replay cursor）；外层 ReAct replan→supervisor / settle→aggregator 有界 LG_RAG_REACT_MAX_ROUNDS=2（Policy 类拒绝不触发 HITL）。2026-09-30 chat-history-api（B1 · task_chat_history_api）：新增只读历史端点 GET /api/ops/chat/threads 与 GET /api/ops/chat/threads/{thread_id}/history（lg_rag/history_router.py · 事件表 ops_lg_rag_run_events 真源 · 当前用户聚合 · 跨用户 404 · cursor/limit 分页 · 聚合超时 10s→504 · answer 截断 32000）；裁定 A1：run.start payload 增可选 query 键（非新 event_type · freeze lg-rag-sse-v1 语义不动 · 存量旧 run 无键按 FP-4 标题降级）；聚合纯函数 lg_rag/history.py + event_store.py 只读扩展；零新表/迁移/SSE 事件类型。
 
 ## Mermaid
 

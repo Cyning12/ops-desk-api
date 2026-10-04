@@ -343,7 +343,10 @@ async def _iter_lg_rag_sse_core(
     yield await emit(
         "run.start",
         "system",
-        {"run_id": rid, "thread_id": thread_id, "mode": mode},
+        # chat-history-api 裁定 A1（维护者 2026-09-30 · errata 已签）：payload
+        # 增**可选** ``query`` 键（非新 event_type · 承 T4 顶层 cursor 增键先例）；
+        # 历史面以此为 query/标题真源，存量旧 run 无键按 FP-4 降级。其余帧零改动。
+        {"run_id": rid, "thread_id": thread_id, "mode": mode, "query": query},
     )
 
     if astream_fn is None:
