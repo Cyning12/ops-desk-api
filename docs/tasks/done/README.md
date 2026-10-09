@@ -109,6 +109,7 @@
 | 2026-09-24 | [`task_host_v1_sli_four_metrics.md`](./task_host_v1_sli_four_metrics.md) | **出口跟进 G1** · SLI 四项定稿（定义/有数/看板）· docs-only · PR #193 |
 | 2026-09-24 | [`task_host_v1_wrap_up.md`](./task_host_v1_wrap_up.md) | **v1.0 收尾 D1** · 文档闭环四件（07 转 completed · REGRESSION PASS · SPEC 实施态 · invoke 终条）+ BACKLOG 登记 · docs-only · PR #196 |
 | 2026-09-24 | [`task_host_v1_delegation_token_observe.md`](./task_host_v1_delegation_token_observe.md) | **D2 第一闸** · 委派令牌本地观察准备（RUNBOOK checklist + compose env 透传默认 off + 报告模板）· config+docs · PR #198 |
+| 2026-10-09 | [`task_compose_hitl_persistence_env.md`](./task_compose_hitl_persistence_env.md) | **config** · compose 透传 `OPS_HITL_PERSISTENCE`（默认空零 diff · 解锁全 docker 形态 HITL db 持久化验收通道）· 40 核验 7/7 · PR #207 |
 
 ---
 
@@ -159,6 +160,7 @@
 | 2026-09-24 | CLOSE **host-v1-delegation-token-observe** `#198`（D2 六闸灰度第一闸 · 本地观察准备 · compose 透传默认 off 零 diff · R1 PASS · 归档 done/ · Hub 补登 · **观察期执行与首份报告归下一棒**） |
 | 2026-09-30 | CLOSE **chat-history-api**（B1）`#204`（会话历史只读 API · 事件表真源 · 20 R1 退回→R2 通过 · 裁定 A1/B1 · SSE freeze 对拍锁死 · 验收 14/14 · 归档 done/ · Hub 补登） |
 | 2026-09-30 | CLOSE **hitl-browser-decide**（B2）`#204`（HITL 浏览器决策面 · cookie maintainer pending+decide · 20 R1 通过 4 nit 随 30 闭合 · 裁定 D1/E1 · OA 签名面零 diff · 验收 14/14 · 归档 done/ · Hub 补登 · **SPEC chat-history-hitl-ux §2 B1/B2 双双闭合 · 前端 F1/F2 另立 SPEC**） |
+| 2026-10-09 | CLOSE **compose-hitl-persistence-env** `#207`（config 小 task · compose api.environment 透传 `OPS_HITL_PERSISTENCE` 默认空零 diff · 三闸维护者签（00 代录）· 40 核验 7/7 · CI 四绿 merge `61e44a8` · 归档 done/ · Hub 补登 · **验收阶段 5 全链复走留维护者另行组织**） |
 
 ## 给维护者
 

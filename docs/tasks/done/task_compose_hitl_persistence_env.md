@@ -1,6 +1,6 @@
 # Task：config · compose 透传 OPS_HITL_PERSISTENCE（解锁全 docker 形态 HITL db 持久化验收）
 
-> **状态**：`draft`（2026-10-09 · 10-task 落稿 · 人工闸全 pending · 30 拒开工）  
+> **状态**：`done`（2026-10-09 · 验收 A1–A5 逐项独立复跑全 PASS · 40 核验 7/7 · 三闸维护者签（00 代录）· PR [#207](https://github.com/Cyning12/ops-desk-api/pull/207) MERGED（`61e44a8` · CI 四绿）· CLOSE 归档 done/）  
 > **类型**：**config 小 task**（免 SPEC · 依据=验收偏差登记）  
 > **依据**：`docs/acceptance/20261009_chat-history-hitl-ux_local_acceptance.md` 偏差/遗留登记第 2 行（`:46`）：阶段 5（重启持久化 · `OPS_HITL_PERSISTENCE=db`）未走本机验收，处置令「compose `api.environment` 补 `OPS_HITL_PERSISTENCE` 透传 → 另立 task」——本 task 即该 task  
 > **分支**：`fix/compose-hitl-persistence-env`（base：`master` `57fbf84` · worktree `d1-compose-hitl-persistence`）
@@ -72,7 +72,7 @@
 
 ## 范围
 
-- [ ] **F1 · compose 透传**：`docker-compose.yml` api.environment 块增加 `OPS_HITL_PERSISTENCE: ${OPS_HITL_PERSISTENCE:-}` + 对齐 LG_RAG_DELEGATION_TOKEN_* 风格的中文注释（默认空=不落库 · 设 `db` 生产落库 · 指向 `app/ops/hitl/persistence.py` 语义表）
+- [x] **F1 · compose 透传**：`docker-compose.yml` api.environment 块增加 `OPS_HITL_PERSISTENCE: ${OPS_HITL_PERSISTENCE:-}` + 对齐 LG_RAG_DELEGATION_TOKEN_* 风格的中文注释（默认空=不落库 · 设 `db` 生产落库 · 指向 `app/ops/hitl/persistence.py` 语义表）
 
 ### 非范围
 
@@ -99,13 +99,13 @@
 
 ## 验收标准
 
-- [ ] 人工闸：HG-AUDIT-R1 approved 后方可勾选下列码项
-- [ ] **A1（渲染对拍 · 两态机断）**：① 设 `OPS_HITL_PERSISTENCE=db docker compose config` 渲染结果 api.environment 含 `OPS_HITL_PERSISTENCE: db`（`docker compose config --format json` 或 grep 可断言）；② 不设该 env 时渲染为 `OPS_HITL_PERSISTENCE: ''`（空串）或缺省，且与 master `57fbf84` 的渲染 diff **仅**此一键（`diff <(git show master:docker-compose.yml 渲染) <(本分支渲染)` 其余键零变动）
-- [ ] **A2（db 态端点机断）**：`OPS_HITL_PERSISTENCE=db docker compose up -d api`（db healthy · 必要时先 `docker compose build api`）后，maintainer cookie 下 `GET /api/ops/hitl/runtime` 返回 `{"mode": "db", "store": "DbHitlStore", "persists": true}`（jq 三键断言）
-- [ ] **A3（默认零 diff 行为）**：不传该 env `docker compose up -d api` 后 `/api/ops/hitl/runtime` 返回 `mode=null` / `store=NullHitlStore` / `persists=false`，与 master 直起（无此键）行为一致；启动日志出现 `HITL 持久化未配置` 告警（`persistence.py:54-57` 既有语义不变）
-- [ ] **A4（改动边界）**：`git diff master --stat` 仅 `docker-compose.yml`（+ task/invoke 文档）；`app/` `tests/` `alembic/` `.github/` 零 diff
-- [ ] **A5（回归零新增红）**：`pytest tests` 全量结果与 master 基线一致（本 task 不动测试面，预期零变化；CI DB skip 现状按 test-baseline-reds F4 注记不视为真跑）
-- [ ] `npx spec-wave task lint --file docs/tasks/active/task_compose_hitl_persistence_env.md` PASS
+- [x] 人工闸：HG-AUDIT-R1 approved 后方可勾选下列码项
+- [x] **A1（渲染对拍 · 两态机断）**：① 设 `OPS_HITL_PERSISTENCE=db docker compose config` 渲染结果 api.environment 含 `OPS_HITL_PERSISTENCE: db`（`docker compose config --format json` 或 grep 可断言）；② 不设该 env 时渲染为 `OPS_HITL_PERSISTENCE: ''`（空串）或缺省，且与 master `57fbf84` 的渲染 diff **仅**此一键（`diff <(git show master:docker-compose.yml 渲染) <(本分支渲染)` 其余键零变动）
+- [x] **A2（db 态端点机断）**：`OPS_HITL_PERSISTENCE=db docker compose up -d api`（db healthy · 必要时先 `docker compose build api`）后，maintainer cookie 下 `GET /api/ops/hitl/runtime` 返回 `{"mode": "db", "store": "DbHitlStore", "persists": true}`（jq 三键断言）
+- [x] **A3（默认零 diff 行为）**：不传该 env `docker compose up -d api` 后 `/api/ops/hitl/runtime` 返回 `mode=null` / `store=NullHitlStore` / `persists=false`，与 master 直起（无此键）行为一致；启动日志出现 `HITL 持久化未配置` 告警（`persistence.py:54-57` 既有语义不变）
+- [x] **A4（改动边界）**：`git diff master --stat` 仅 `docker-compose.yml`（+ task/invoke 文档）；`app/` `tests/` `alembic/` `.github/` 零 diff
+- [x] **A5（回归零新增红）**：`pytest tests` 全量结果与 master 基线一致（本 task 不动测试面，预期零变化；CI DB skip 现状按 test-baseline-reds F4 注记不视为真跑）
+- [x] `npx spec-wave task lint --file docs/tasks/active/task_compose_hitl_persistence_env.md` PASS（40 复跑于 active 期 · CLOSE 归档后改判 done/ 路径复跑）
 
 ---
 
@@ -182,3 +182,4 @@
 |------|------|
 | 2026-10-09 | 10-task 落稿（config 小 task · 免 SPEC · 依据=验收偏差登记第 2 行处置令 · 锚点实读：docker-compose.yml:51-70 / persistence.py:22,40 / router.py:74-79 · early_stop at R3）· HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 pending → 30 拒开工 |
 | 2026-10-09 | 40 核验回填「自检结论（执行者）」段：A1–A5 逐项独立复跑全 PASS（含 A2/A3 docker 端点复跑 · 端口 override 18000 不动 8000 残留 uvicorn · 环境已复原）· 详见 40 invoke |
+| 2026-10-09 | **CLOSE**：30/40 交付（`77382b8` · docker-compose.yml +3 行透传 · 验收 A1–A5 逐项独立复跑全 PASS · 40 核验 7/7 · 默认空零 diff 实测 · db/null 双态端点机断 · `app/`/`tests/`/`alembic/`/`.github/` 零 diff）→ PR [#207](https://github.com/Cyning12/ops-desk-api/pull/207) MERGED（`61e44a8` · CI 四绿）→ 归档 done/ · Hub 补登 · CLOSE invoke 留档；**留转**：验收 checklist 阶段 5（重启持久化全链复走）由维护者按 `docs/acceptance/20261009_chat-history-hitl-ux_local_acceptance.md` 另行组织，本 task 只解锁 compose 形态 env 透传通道 |
