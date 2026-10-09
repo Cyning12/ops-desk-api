@@ -30,7 +30,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | **pending** | 本 SPEC 须先经 20-spec-audit R2 书面审（结论落盘 `docs/harness/reviews/`），再维护者人签（00 依「授权00签收所有过程文档」代录留痕）；人签前 **00 不得拆 task、30 不得改码** |
+| **HG-SPEC-SIGNOFF** | **approved** | 维护者人签 · 00 代录（授权「授权00签收所有过程文档」2026-10-09）· 2026-10-10 · 依据：20-spec-audit R2 PASS-WITH-NITS（`docs/harness/reviews/spec_hitl-approval-consumption_audit_R2_20261010.md` · 裁定 8/0/0 · R2-N1~N3 携拆 task）|
 
 ---
 
