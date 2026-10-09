@@ -164,7 +164,15 @@
 
 ### 自检结论（执行者）
 
-> （待 40 回填：A1 渲染对拍两态 · A2 db 态 /runtime 三键断言 · A3 默认零 diff · A4 diff --stat · A5 pytest 回归）
+> 40 核验帽回填（2026-10-09 · 逐项独立复跑，不采信 30 自报；证据见 `docs/harness/invokes/by-task/compose-hitl-persistence-env/invoke_20261009_40_verify_compose-hitl-persistence-env.md`）：
+
+| 验收项 | 结论 | 40 复跑证据 |
+|--------|------|-------------|
+| A1（渲染对拍两态） | **PASS** | ① `OPS_HITL_PERSISTENCE=db` 渲染 `.services.api.environment` 含 `"OPS_HITL_PERSISTENCE": "db"`，键名与 `persistence.py:22` 常量逐字一致；② 不设 env 与 master `57fbf84` 渲染 diff（environment 块 + 全量）**仅此一键**（空串形 `""`，task R3 residual_risk 兼容断言命中） |
+| A2（db 态端点机断） | **PASS** | 40 复跑：`-p ops-desk-api` 复用既有健康 db/qdrant + 端口 override 18000（不动 8000 残留 uvicorn）`up -d api` → maintainer cookie 下 `/api/ops/hitl/runtime` 三键 `{"mode":"db","store":"DbHitlStore","persists":true}` jq 断言 true |
+| A3（默认零 diff 行为） | **PASS** | 40 复跑：不设 env `up -d api` 后 `/runtime` 三键 `{"mode":"null","store":"NullHitlStore","persists":false}` 断言 true；启动日志告警「HITL 持久化未配置（OPS_HITL_PERSISTENCE 未设）：**审批申请不会落库**，不可上生产」与 `persistence.py:54-57` 逐字一致 |
+| A4（改动边界） | **PASS** | 40 复跑 `git diff master --stat`：`docker-compose.yml` +3 行 + 本 task harness 文档 6 件；`app/` `tests/` `alembic/` `.github/` 零 diff（name-only 计数=0） |
+| A5（回归零新增红） | **PASS** | 40 复跑 `pytest tests -k hitl -q`：**98 passed, 1550 deselected**（与 30 自报一致）；并按审查文 N3 注记化裁量成立：`tests/` 对 docker-compose grep 零命中（40 复跑）+ `tests/` 零 diff（A4）+ 全量回归由 PR CI 兜底 |
 
 ---
 
@@ -173,3 +181,4 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-10-09 | 10-task 落稿（config 小 task · 免 SPEC · 依据=验收偏差登记第 2 行处置令 · 锚点实读：docker-compose.yml:51-70 / persistence.py:22,40 / router.py:74-79 · early_stop at R3）· HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 pending → 30 拒开工 |
+| 2026-10-09 | 40 核验回填「自检结论（执行者）」段：A1–A5 逐项独立复跑全 PASS（含 A2/A3 docker 端点复跑 · 端口 override 18000 不动 8000 残留 uvicorn · 环境已复原）· 详见 40 invoke |
