@@ -35,9 +35,9 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 初稿人扫 · 待 20-task-audit R1 后维护者签（00 代录） |
-| HG-AUDIT-R1 | **pending** | 30 | 20-task-audit R1 落盘后人签（00 代录）· pending 即 30 **拒开工** |
-| HG-GRAPH-MODULES | **pending** | 30 | G-L1 行备注在册 · 随 30 回写由 00 代录 · pending 即 30 **拒开工** |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | 维护者签 · 00 代录 2026-10-10（授权「授权00签收所有过程文档」） · lint PASS |
+| HG-AUDIT-R1 | **approved** | 30 | 维护者签 · 00 代录 2026-10-10（授权「授权00签收所有过程文档」） · 依据 R1 审查 FAIL→修复→增量复核 PASS（reviews/task_hitl_approval_consumption_loop_audit_R1_20261010.md · commit 45fec13 · 残留 NIT 计数口径已顺手回改） |
+| HG-GRAPH-MODULES | **approved** | 30 | 维护者签「在册」（capability/lg_rag/hitl 行备注段）· 00 代录 2026-10-10 · 30 回写义务在案 |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 非物理分层试点 task |
 
 ---
@@ -83,7 +83,7 @@ SPEC v1 §1 两实证缺口（均已在 master `4d905e0` 复核成立）：
 | **时效（Q5 + R1-N3）** | `decided_at + TTL < now` → 不消费（读时判过期 · **不写回单据状态**）。env `OPS_HITL_APPROVAL_CONSUMPTION_TTL_SECONDS` 默认 3600，**合法域 [1, 86400]**（承 delegation.py:107 `_env_int` 先例），非法/越界回退默认。授权效力 = 读取时刻的活状态，非缓存快照 |
 | **decided_at 归一（R1-N1）** | 消费端输入类型 = **float（InMemory :98）| ISO 8601 str（Db `_row_to_dict` :249）**；归一为可比时间戳后再做 TTL 比较；归一函数落消费助手内；**InMemory + Db 双 store 各一组 TTL 断言**（缺 str 分支 = 未履约） |
 | **单据类型守卫** | 仅消费 `blocked_by=delegation_issue_hitl_required` 类单据；`prefix_touch_required` 语义一行不动 |
-| **async 化裁定（R1-N2 扩面 · 10 裁定留 20 复核）** | **甲案（选定）**：`_delegation_issue_block_reason` → `async`（函数内先做 sync 纯判定，判出需审批后再 async 消费读）；`_join_subtasks` → `async` 节点（LangGraph `add_node` 原生兼容 async 节点函数 · graph.py:94 注册行零改动）；全部 sync 直调点随改（测试点 `async def` 化 · `asyncio_mode=auto` 自动接管；`scripts/acceptance/capability_step_contract_gate.py:152` 补 `await` · 清单见 B1 表 15 处）。**否乙案**（sync 核心 + 外层 async 包装节点事后修补：须摘除已落 blocked 终态、回卷 `blocked_meta` 计数与已发出的 `AUDIT_TOKEN_ISSUE_HITL_REQUIRED` 审计 · 双写面风险大于测试改动面）；**否丙案**（sync-over-async 桥：违反 P-13 异步一致性与 store「只有异步接口」纪律，store.py:1-10 模块 docstring 明示） |
+| **async 化裁定（R1-N2 扩面 · 10 裁定留 20 复核）** | **甲案（选定）**：`_delegation_issue_block_reason` → `async`（函数内先做 sync 纯判定，判出需审批后再 async 消费读）；`_join_subtasks` → `async` 节点（LangGraph `add_node` 原生兼容 async 节点函数 · graph.py:94 注册行零改动）；全部 sync 直调点随改（测试点 `async def` 化 · `asyncio_mode=auto` 自动接管；`scripts/acceptance/capability_step_contract_gate.py:152` 补 `await` · 清单见 B1 表 14 处）。**否乙案**（sync 核心 + 外层 async 包装节点事后修补：须摘除已落 blocked 终态、回卷 `blocked_meta` 计数与已发出的 `AUDIT_TOKEN_ISSUE_HITL_REQUIRED` 审计 · 双写面风险大于测试改动面）；**否丙案**（sync-over-async 桥：违反 P-13 异步一致性与 store「只有异步接口」纪律，store.py:1-10 模块 docstring 明示） |
 | **`auto_approve_ok` 零 IO** | 纯函数逐字节零 diff；消费读写在 nodes.py 编排层 async 助手，**不进 capability 包**（Q2）；capability 包 import 面零变化 |
 | **unlock 回填形态守卫（Q3）** | `_persist_hitl`（:1440-1445）：当 `depends_on ∩ plan_prefix_ids` 为空 **且** `blocked_by=delegation_issue_hitl_required` → `unlock_subtask_id = 被拦 sid 自身`（批准=授权（重）下发该被拦步骤 · 与 D1 消费配对成环）；`prefix_touch_required` 类空 unlock **维持现状**（router 409 保留 · 人可解的明确报错 · 不静默放行） |
 | **409 守卫保留** | `router.py:404-411` 一行不动；验收含「prefix_touch 空 unlock 仍 409」保留断言 |
@@ -98,7 +98,7 @@ SPEC v1 §1 两实证缺口（均已在 master `4d905e0` 复核成立）：
 
 - [ ] **F1 · payload 增记 capability_id**：`_persist_hitl`（nodes.py:1446-1460）申请行 `payload` jsonb 增记 `capability_id`（取 `term.get("tool")` · 缺省空串不落键或落空串由 30 定并留痕 · 消费端缺键 fail-closed 语义不变）；零迁移 · 既有读取兼容
 - [ ] **F2 · 消费助手（async）**：nodes.py 编排层新增 async 消费判定（store 读 → `blocked_by` 守卫 → 三元组匹配 → decided_at 归一 → TTL 判过期 → 命中返回放行 + `delegation_approval_consumed` 台账；异常 → warning + 维持拦截）；TTL env 解析承 `_env_int` low/high 先例
-- [ ] **F3 · async 化波及面随改**：`_delegation_issue_block_reason` 与 `_join_subtasks` async 化；B1 表 15 处 sync 直调点全部随改（测试点 `async def` 化 · scripts 门禁脚本补 `await`；含 `test_capability_testing_write.py:488-493`「设计真态钉死」段语义改写 · 见 B1）
+- [ ] **F3 · async 化波及面随改**：`_delegation_issue_block_reason` 与 `_join_subtasks` async 化；B1 表 14 处 sync 直调点全部随改（测试点 `async def` 化 · scripts 门禁脚本补 `await`；含 `test_capability_testing_write.py:488-493`「设计真态钉死」段语义改写 · 见 B1）
 - [ ] **F4 · unlock 空形态回填**：`_persist_hitl` :1440-1445 增形态守卫回填（仅 delegation_issue 类 · unlock=被拦 sid 自身）
 - [ ] **F5 · 测试**：验收 TA1–TA7 逐条断言化（新增消费/回填用例 + B1 旧测全绿亲跑）
 - [ ] **F6 · 图谱同步**：`docs/_tech_graph/l1/01_modules.md` lg_rag / hitl / capability 三行在册备注回写（G-L1 · HG-GRAPH-MODULES 随 30 回写由 00 代录）
@@ -127,7 +127,7 @@ SPEC v1 §1 两实证缺口（均已在 master `4d905e0` 复核成立）：
 | FP-4 | unlock=自身被误用到其他 blocked_by | 形态守卫仅 `delegation_issue_hitl_required`；`prefix_touch_required` 空 unlock 维持 router 409（保留断言） | 是 | 是（409 detail） |
 | FP-6 | 同批多申请部分批准 | `_collect_decisions`（router.py:287-316）既有汇总不动；消费逐条三元组匹配；重复 decide 409 原样绿 | 是 | 否 |
 | FP-7 | delegation off / observe 模式 | off：消费零触达（无 store 读 · 无新台账 · spy 断言）；observe：本就不拦 · 不记假台账；仅 enforce 下改变判定 | 是 | 否 |
-| 实操-A | **async 化漏改 sync 直调**（R1-N2 扩面 · 15 处） | `TypeError: coroutine … never awaited` / 断言拿到 coroutine 对象假绿——B1 清单逐点随改（测试 `async def` 化 / 脚本补 `await`）+ 全量 pytest 亲跑零新增红；**禁只改 import 不改调用**；**影响面 grep 范围须含 `scripts/`**（非仅 `app/`+`tests/`——`capability_step_contract_gate.py:152` 漏网实证 · R1 审查 B-1） | 是 | 否 |
+| 实操-A | **async 化漏改 sync 直调**（R1-N2 扩面 · 14 处） | `TypeError: coroutine … never awaited` / 断言拿到 coroutine 对象假绿——B1 清单逐点随改（测试 `async def` 化 / 脚本补 `await`）+ 全量 pytest 亲跑零新增红；**禁只改 import 不改调用**；**影响面 grep 范围须含 `scripts/`**（非仅 `app/`+`tests/`——`capability_step_contract_gate.py:152` 漏网实证 · R1 审查 B-1） | 是 | 否 |
 | 实操-B | **decided_at 归一漏 str 分支**（R1-N1） | Db store 实收 ISO 8601 str（`_row_to_dict` :249），归一函数只处理 float → TTL 比较 TypeError 或误判过期/新鲜——双 store 各一组 TTL 断言兜底（Db 组必经 `alist/aget` 真读路径，禁构造 float 绕过） | 是 | 否 |
 | 实操-C | 旧单据 payload 缺 capability_id | fail-closed 不消费（**不得视作匹配放行**）；断言化：缺键 approved 单据存在时仍拦截 | 是 | 否 |
 | 实操-D | 消费放行后被误当「全链放行」 | 消费只作用于 delegation 签发判定；重下发后 gateway 验签门/Policy 写闸/可见性闸全链仍在——断言「消费命中但 Policy 拒绝场景仍被 Policy 裁」 | 是 | 否 |
@@ -138,7 +138,7 @@ SPEC v1 §1 两实证缺口（均已在 master `4d905e0` 复核成立）：
 
 ## B1 · 旧测影响面（10 已实扫落盘 · 20-audit 核查清单 · 30 亲跑义务）
 
-**sync→async 随改清单（15 处 · 实操-A 对应 · 全绿亲跑义务）**：
+**sync→async 随改清单（14 处 · 实操-A 对应 · 全绿亲跑义务）**：
 
 | 文件 | 随改点 | 说明 |
 |------|--------|------|
@@ -172,7 +172,7 @@ SPEC v1 §1 两实证缺口（均已在 master `4d905e0` 复核成立）：
 - [ ] **TA5（off 零 diff · SPEC A6 本 task 面）**：`LG_RAG_DELEGATION_TOKEN_MODE=off` 下消费路径零触达（store 读 spy 断言零调用 · 无 `delegation_approval_consumed` 台账）；既有 delegation/hitl 测试原样绿
 - [ ] **TA6（decide 落库不动 · SPEC A7 本 task 面）**：`store.py` `adecide`/`_DECIDE` git diff 为空；重复 decide 409 守卫原样绿（`test_hitl_pending_decide`）；`router.py:404-411` 409 守卫保留断言（prefix_touch 类空 unlock 仍 409）
 - [ ] **TA7（工程面 · SPEC A8 本 task 面）**：`pytest tests` 全绿；`ruff check app tests` 触及路径零新增；`./scripts/graph-compile.sh` EXIT=0；图谱 lg_rag/hitl/capability 三行备注回写 + HG-GRAPH-MODULES 00 代录行
-- [ ] B1 表 15 处 sync→async/补 `await` 随改全绿亲跑记录（命令 + 结果 · 含 `capability_acceptance.sh` 门禁亲跑）落 40 invoke
+- [ ] B1 表 14 处 sync→async/补 `await` 随改全绿亲跑记录（命令 + 结果 · 含 `capability_acceptance.sh` 门禁亲跑）落 40 invoke
 - [ ] `npx spec-wave task lint --file docs/tasks/active/task_hitl_approval_consumption_loop.md` PASS；`npx --yes spec-wave@3.0.1 task lint-wiki-delta --target .` PASS
 
 ---
@@ -223,7 +223,7 @@ SPEC v1 已签收（HG-SPEC-SIGNOFF=approved 2026-10-10），D1/D2/D4 的范围�
 
 **SPEC 裁定存续（不重开）**：Q1 三元组消费键（S2 弱校验/S3 半径爆炸已弃）· Q2 编排层消费（S2 进 capability 包破纯函数纪律已弃）· Q3 unlock=sid+形态守卫（S2 router 放行空 unlock=静默按驳回收工已弃）· Q5 读时 TTL（S2 永久后门/S3 写回状态越非范围已弃）。
 
-**新增裁定一 · async 化路径（R1-N2 扩面 · 甲乙丙三案）**。实证矛盾：SPEC Q2 S1 估「波及面仅 nodes.py:711 + test 一处」，但 `_delegation_issue_block_reason` 唯一生产调用方 `_join_subtasks`（nodes.py:644）是 **sync 节点**，其 sync 直调点另有 14 处（B1 清单 · 含 `scripts/acceptance` 门禁脚本 1 处）。三案：**甲**（`_delegation_issue_block_reason` + `_join_subtasks` 皆 async 化 · 15 处随改）**选定**——LangGraph `add_node` 原生兼容 async 节点（graph.py:94 注册零改动），消费读在拦截/审计落痕**之前**完成（单一写面），`asyncio_mode=auto` 使测试随改纯机械；**乙**（sync 核心不动 + 外层 async 包装节点事后修补）**否**——须摘除已落 `done/extras` 的 blocked 终态、回卷 `blocked_meta` 计数，且 `AUDIT_TOKEN_ISSUE_HITL_REQUIRED` 审计已在 sync 核心内发出无法回卷，双写面风险大于 15 处机械改动；**丙**（sync 判定内 sync-over-async 桥读 store）**否**——违反 P-13 与 store.py:1-10「只有异步接口 · 同步路径一律显式失败」纪律。
+**新增裁定一 · async 化路径（R1-N2 扩面 · 甲乙丙三案）**。实证矛盾：SPEC Q2 S1 估「波及面仅 nodes.py:711 + test 一处」，但 `_delegation_issue_block_reason` 唯一生产调用方 `_join_subtasks`（nodes.py:644）是 **sync 节点**，其 sync 直调点另有 13 处（B1 清单 · 含 `scripts/acceptance` 门禁脚本 1 处）· 加 `_delegation_issue_block_reason` 1 处共 14 处。三案：**甲**（`_delegation_issue_block_reason` + `_join_subtasks` 皆 async 化 · 14 处随改）**选定**——LangGraph `add_node` 原生兼容 async 节点（graph.py:94 注册零改动），消费读在拦截/审计落痕**之前**完成（单一写面），`asyncio_mode=auto` 使测试随改纯机械；**乙**（sync 核心不动 + 外层 async 包装节点事后修补）**否**——须摘除已落 `done/extras` 的 blocked 终态、回卷 `blocked_meta` 计数，且 `AUDIT_TOKEN_ISSUE_HITL_REQUIRED` 审计已在 sync 核心内发出无法回卷，双写面风险大于 14 处机械改动；**丙**（sync 判定内 sync-over-async 桥读 store）**否**——违反 P-13 与 store.py:1-10「只有异步接口 · 同步路径一律显式失败」纪律。
 
 **新增裁定二 · decided_at 归一输入类型钉（R1-N1 锚点精度）**。SPEC 表述「Db store 为 datetime（store.py:159-163）」指 SQL 层；消费端经 `alist/aget` 实收 `_row_to_dict` 输出（:249）为 **ISO 8601 字符串**。归一函数输入类型钉 **float | str**，Db 组 TTL 断言必须经真读路径（禁构造 float 绕过 str 分支）。
 
@@ -231,7 +231,7 @@ SPEC v1 已签收（HG-SPEC-SIGNOFF=approved 2026-10-10），D1/D2/D4 的范围�
 
 ### R3 · 交叉验证
 
-- **波及面实证**：`grep -rn '_join_subtasks' app tests scripts` + `grep -rn '_delegation_issue_block_reason' app tests scripts` 全量落 B1（15 处 · 含 eval 默认跑 1 处注记 · **grep 范围须含 `scripts/`**——`capability_step_contract_gate.py:152` 系 R1 审查补网）。
+- **波及面实证**：`grep -rn '_join_subtasks' app tests scripts` + `grep -rn '_delegation_issue_block_reason' app tests scripts` 全量落 B1（14 处 · 含 eval 默认跑 1 处注记 · **grep 范围须含 `scripts/`**——`capability_step_contract_gate.py:152` 系 R1 审查补网）。
 - **归一精度实证**：实读 `store.py:83-99`（InMemory float :98）vs `:159-163,249`（Db SQL now() → `_row_to_dict` ISO str）——SPEC 表述与消费端实收类型的落差落钉死契约。
 - **unlock 回填不波及其他形态**：`prefix_touch_required` 由步骤契约闸（:693-707）产出，其空 unlock 仍走 router 409——形态守卫条件 `blocked_by==delegation_issue_hitl_required` 在 `_persist_hitl` 单点判定，无第二路径。
 - **off 零 diff 论证**：`_delegation_active()`（nodes.py:252-254）mode!=off 才启用 → off 时 :710-726 整段短路，消费助手位于该段内 → 天然零触达；spy 断言兜底。observe：`auto_approve_ok` 判出需审批才进消费读 · observe 语义不拦（既有行为）→ 不记假台账。
@@ -243,7 +243,7 @@ SPEC FP-1~FP-7 逐条落机制（FP-5 属 T3 env 口面 · 本 task 不承载；
 
 ### R5 · 验收口径机断化收敛
 
-TA1–TA7 逐条映射 SPEC A 编号并落到可对命令输出/断言机断的形态（台账断言 · 双 store TTL · diff 空 · spy 零调用 · 409 保留 · EXIT=0）；B1 15 处随改与旧测清单全绿亲跑义务落 40 invoke。无残留方案分叉（SPEC 裁定存续 + 新增三裁定各有实证排除岔路）→ early_stop。
+TA1–TA7 逐条映射 SPEC A 编号并落到可对命令输出/断言机断的形态（台账断言 · 双 store TTL · diff 空 · spy 零调用 · 409 保留 · EXIT=0）；B1 14 处随改与旧测清单全绿亲跑义务落 40 invoke。无残留方案分叉（SPEC 裁定存续 + 新增三裁定各有实证排除岔路）→ early_stop。
 
 ---
 
@@ -258,4 +258,5 @@ TA1–TA7 逐条映射 SPEC A 编号并落到可对命令输出/断言机断的�
 | 日期 | 说明 |
 |------|------|
 | 2026-10-10 | 10-task 落稿（骨架先行增量落盘 · SPEC v1 signed 承接 · R0–R5 · HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 pending → 30 拒开工） |
+| 2026-10-10 | 00 代录三闸 approved（R1 增量复核 PASS · commit 45fec13）+ 计数口径顺手回改「15 处」→「14 处」（真值=B1 表枚举 join 13 + block_reason 1 · R2 审查自引更正） |
 | 2026-10-10 | 10-task 修订（20-task-audit R1 退回 B-1 修复 · **仅文档口径补齐 · 裁定结构不动**）：① B1 随改清单补第 15 处 `scripts/acceptance/capability_step_contract_gate.py:152`（`async def _drive` 内 sync 直调 `_join_subtasks` · 补 `await` · 被 `capability_acceptance.sh:165` 真跑 · 本地验收九层门禁）② 「14 处」→「15 处」全文统一（R1-N2 锚点/R2/R3 内「13 处」同步→「14 处」）③ B1 redline 行「非默认跑（eval marker）」改「默认跑（pyproject 无 addopts 排除 · conftest 无 deselect · CI pytest.yml:47 无 `-m` 排除）· 必须随改亲跑」（删「30 注记是否随改」可选措辞 · R3 residual 同步）④ 实操-A 补「grep 范围须含 `scripts/`」提醒 |
