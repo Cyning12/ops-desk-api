@@ -110,6 +110,7 @@
 | 2026-09-24 | [`task_host_v1_wrap_up.md`](./task_host_v1_wrap_up.md) | **v1.0 收尾 D1** · 文档闭环四件（07 转 completed · REGRESSION PASS · SPEC 实施态 · invoke 终条）+ BACKLOG 登记 · docs-only · PR #196 |
 | 2026-09-24 | [`task_host_v1_delegation_token_observe.md`](./task_host_v1_delegation_token_observe.md) | **D2 第一闸** · 委派令牌本地观察准备（RUNBOOK checklist + compose env 透传默认 off + 报告模板）· config+docs · PR #198 |
 | 2026-10-09 | [`task_compose_hitl_persistence_env.md`](./task_compose_hitl_persistence_env.md) | **config** · compose 透传 `OPS_HITL_PERSISTENCE`（默认空零 diff · 解锁全 docker 形态 HITL db 持久化验收通道）· 40 核验 7/7 · PR #207 |
+| 2026-10-09 | [`task_testing_write_capability.md`](./task_testing_write_capability.md) | **D2 可审对象** · 注册非只读测试 capability（testing.v1.yaml 罐头 write + env 门控 allow_write_tags_any 放行口径 + 裁定四 loader V1 放宽 · 三层显式打开 · off 零 diff）· 40 核验 PASS 带偏差登记（A1 三段 live 可达 · done 末段 409 另立 task）· PR #209 |
 
 ---
 
@@ -161,6 +162,7 @@
 | 2026-09-30 | CLOSE **chat-history-api**（B1）`#204`（会话历史只读 API · 事件表真源 · 20 R1 退回→R2 通过 · 裁定 A1/B1 · SSE freeze 对拍锁死 · 验收 14/14 · 归档 done/ · Hub 补登） |
 | 2026-09-30 | CLOSE **hitl-browser-decide**（B2）`#204`（HITL 浏览器决策面 · cookie maintainer pending+decide · 20 R1 通过 4 nit 随 30 闭合 · 裁定 D1/E1 · OA 签名面零 diff · 验收 14/14 · 归档 done/ · Hub 补登 · **SPEC chat-history-hitl-ux §2 B1/B2 双双闭合 · 前端 F1/F2 另立 SPEC**） |
 | 2026-10-09 | CLOSE **compose-hitl-persistence-env** `#207`（config 小 task · compose api.environment 透传 `OPS_HITL_PERSISTENCE` 默认空零 diff · 三闸维护者签（00 代录）· 40 核验 7/7 · CI 四绿 merge `61e44a8` · 归档 done/ · Hub 补登 · **验收阶段 5 全链复走留维护者另行组织**） |
+| 2026-10-09 | CLOSE **testing-write-capability**（D2）`#209`（behavior 小 task · 注册非只读测试 capability 补齐 HITL 全链可审对象 · 30 GATE_STOP→裁定四=乙（manifest 顶层 idempotency_key · loader V1 二选一放宽）→ 20 R2 PASS → 维护者重签（00 代录）· 40 核验 PASS 带偏差登记（A1 三段 live 可达 · done 末段 resume 409=既有链设计缺口）· CI 四绿 merge `ca4148f` · 归档 done/ · Hub 补登 · **留转：签发审批消费回路另立 task + SPEC 起草中**） |
 
 ## 给维护者
 

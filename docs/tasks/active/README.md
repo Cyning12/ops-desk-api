@@ -4,6 +4,7 @@
 
 | task | 说明 |
 |---|---|
+| （无进行中 task） | 2026-10-09：`task_testing_write_capability`（PR #209 合 · D2 注册非只读测试 capability · 40 核验 PASS 带偏差登记 · A1 三段 live 可达 · done 末段 409=既有链设计缺口另立 task）归档至 `done/`；worktree `d2-testing-write-capability` 与分支 `task/testing-write-capability` 清理待维护者裁决 |
 | （无进行中 task） | 2026-10-09：`task_compose_hitl_persistence_env`（PR #207 合 · compose 透传 `OPS_HITL_PERSISTENCE` 默认空零 diff · 40 核验 7/7）归档至 `done/`；worktree `d1-compose-hitl-persistence` 与分支 `fix/compose-hitl-persistence-env` 清理待维护者裁决 |
 | （无进行中 task） | 2026-09-22：`task_test_baseline_reds`（PR #169 合 · 本地基线红清零）归档至 `done/`；分支 `task/memory-facts-p1` 待维护者裁决 |
 | （无进行中 task） | 2026-09-22：`task_memory_extract_calibration`（校准循环 · 40 R1 泄题退回 → v4 整改达标 · 40 R2 PASS）归档至 `done/`；分支 `task/memory-extract-calibration` **PR 待开** |

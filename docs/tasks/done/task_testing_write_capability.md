@@ -1,6 +1,6 @@
 # Task：testing-write-capability（D2 · 注册非只读测试 capability · 补齐 HITL 全链可审对象）
 
-> **状态**：`draft`（2026-10-09 · 10-task 落稿 → 30 GATE_STOP（loader V1/V2 夹击 · 未改码）→ 10-task 修订：R2 裁定四（乙）落盘 · HG-TASK-DRAFT / HG-AUDIT-R1 回退 pending 待 20 R2 复审 + 维护者重签 → 30 拒开工）  
+> **状态**：`done`（2026-10-09 · 验收 A1–A8 · 40 核验 PASS 带偏差登记（A1 三段 live 可达 · done 末段 resume 409=既有链设计缺口 · 另立 task）· 三闸维护者签（00 代录 · 含 R2 重签）· PR [#209](https://github.com/Cyning12/ops-desk-api/pull/209) MERGED（`ca4148f` · CI 四绿）· CLOSE 归档 done/）  
 > **类型**：**behavior**（小 task · 免 SPEC · 依据=验收登记偏差项）  
 > **依据**：`docs/acceptance/20261009_chat-history-hitl-ux_local_acceptance.md` 偏差登记 #1/#2 区：「阶段 3 真实图挂起 → decide → resume 解锁全链未验（全只读能力面无可审对象）→ 注册非只读测试 capability → 另立 task」——本 task 即该 task  
 > **分支**：`task/testing-write-capability`（base：`master` 57fbf84）
@@ -85,13 +85,13 @@
 
 ## 范围
 
-- [ ] **F1 · manifest**：新增 `app/ops/capability/manifests/testing.v1.yaml`（version: 1 · 单枚条目 · 字段族逐字段对齐 builtin 范式 · 头注释明写「测试专用 · 仅 OPS_CAPABILITY_EXTRA_MANIFESTS 显式加载 · 语义 mock 无真实写」）
-- [ ] **F2 · adapter**：`app/ops/capability/defaults.py` 增罐头函数（纯函数罐头 dict）；**不进 `_DEFAULT_SPECS`**（注册只经 manifest 加载路径）
-- [ ] **F3 · 可见性放行口径**：`types.py` `CapabilityFilter` 增 `allow_write_tags_any: frozenset[str] | None = None`（与 `allow_tags_any` 对称 · docstring 写明方向=豁免 deny_write 一层且不豁免 deny_high_risk）；`registry._match_filter` 在 deny_write 判定处加豁免分支（命中 `allow_write_tags_any ∩ spec.tags` 则跳过本层）；`baseline.py` `baseline_filter()` 读 `OPS_CAPABILITY_ALLOW_WRITE_TAGS`（逗号分隔 · 默认空 → 字段为 None）透传
-- [ ] **F4 · 测试**：新增/扩展 pytest（见验收 A4 / A8）；旧测影响面按 B1 清单亲跑
-- [ ] **F5 · 图谱同步**：`docs/_tech_graph/l1/01_modules.md` capability 模块条目增量（graph_change_layer=l1）
-- [ ] **F6 · 验收链证据**：enforce 全链本地实跑记录落 invoke（40 或验收人执行 · 命令与断言见 A1）
-- [ ] **F7 · loader V1 放宽（裁定四=乙）**：`manifest.py` 解析 manifest **顶层 `idempotency_key`** 字段（缺省 None · CapabilitySpec 增可选字段承载）；V1（manifest.py:826-830）放宽为「`http.idempotency_key` **或**顶层 `idempotency_key` 任一非空即满足」（**仅 write 强制** · read 不受影响）；V8（:870-874）对称适配（read 误声明顶层键同样 ManifestError，延续「只读不需要幂等键」语义）；V2/V7 语义不动；schema 字段族文档同步；loader 校验单测见验收 A8
+- [x] **F1 · manifest**：新增 `app/ops/capability/manifests/testing.v1.yaml`（version: 1 · 单枚条目 · 字段族逐字段对齐 builtin 范式 · 头注释明写「测试专用 · 仅 OPS_CAPABILITY_EXTRA_MANIFESTS 显式加载 · 语义 mock 无真实写」）
+- [x] **F2 · adapter**：`app/ops/capability/defaults.py` 增罐头函数（纯函数罐头 dict）；**不进 `_DEFAULT_SPECS`**（注册只经 manifest 加载路径）
+- [x] **F3 · 可见性放行口径**：`types.py` `CapabilityFilter` 增 `allow_write_tags_any: frozenset[str] | None = None`（与 `allow_tags_any` 对称 · docstring 写明方向=豁免 deny_write 一层且不豁免 deny_high_risk）；`registry._match_filter` 在 deny_write 判定处加豁免分支（命中 `allow_write_tags_any ∩ spec.tags` 则跳过本层）；`baseline.py` `baseline_filter()` 读 `OPS_CAPABILITY_ALLOW_WRITE_TAGS`（逗号分隔 · 默认空 → 字段为 None）透传
+- [x] **F4 · 测试**：新增/扩展 pytest（见验收 A4 / A8）；旧测影响面按 B1 清单亲跑
+- [x] **F5 · 图谱同步**：`docs/_tech_graph/l1/01_modules.md` capability 模块条目增量（graph_change_layer=l1）
+- [x] **F6 · 验收链证据**：enforce 全链本地实跑记录落 invoke（40 或验收人执行 · 命令与断言见 A1）
+- [x] **F7 · loader V1 放宽（裁定四=乙）**：`manifest.py` 解析 manifest **顶层 `idempotency_key`** 字段（缺省 None · CapabilitySpec 增可选字段承载）；V1（manifest.py:826-830）放宽为「`http.idempotency_key` **或**顶层 `idempotency_key` 任一非空即满足」（**仅 write 强制** · read 不受影响）；V8（:870-874）对称适配（read 误声明顶层键同样 ManifestError，延续「只读不需要幂等键」语义）；V2/V7 语义不动；schema 字段族文档同步；loader 校验单测见验收 A8
 
 ### 非范围
 
@@ -140,17 +140,17 @@
 
 ## 验收标准
 
-- [ ] 人工闸：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved 后方可勾选下列码项
-- [ ] **A1（enforce 全链 · 补齐 2026-10-09 验收唯一未验项）**：env 组 `OPS_CAPABILITY_EXTRA_MANIFESTS=<repo-relative manifest path>` + `OPS_CAPABILITY_ALLOW_WRITE_TAGS=testing` + `LG_RAG_DELEGATION_TOKEN_MODE=enforce` 下起服务（env 须在 import app 前生效）：plans 含该 tool 的 run → SSE/状态断言 `hitl.waiting` 挂起（blocked_by=`delegation_issue_hitl_required`）→ `GET /api/ops/hitl/pending`（cookie maintainer）可见该 request → `POST /api/ops/hitl/requests/{id}/decide` approved → resume → 终态 `done{completed}`。证据（命令 + 响应摘录）落 40 invoke
-- [ ] **A2（off 零 diff · 默认 off 纪律）**：三 env 皆不设：① registry snapshot 不含 testing 条目（count 不变）② `list_capabilities(filter=baseline_filter(...))` 可见集仍 8 枚且不含该条目 ③ `capability_manifest_count == 5` 断言原样绿 ④ 全量 `pytest tests` 与 master 基线零新增红
-- [ ] **A3（加载≠可见 · deny_write 不全局松）**：只设 EXTRA_MANIFESTS 不设 ALLOW_WRITE_TAGS：注册表含该条目（snapshot 可见）但 baseline 可见集**不含**（deny_write 仍生效）；`test_allow_tags_does_not_waive_deny_write` 原样绿
-- [ ] **A4（新增测试）**：① `allow_write_tags_any` 命中→豁免 deny_write / 未命中→仍裁 / high risk 即使命中仍裁（deny_high_risk 无豁免口）三例单测 ② manifest 显式加载后 registry 含该条目且 adapter 可调 ③ 罐头 adapter 返回罐头 dict 且零 IO 断言 ④ enforce + 放行 env 下 delegation 签发审批集成断言（可复用 hitl fixture 图替身段，真实挂起段由 A1 本地链兜底）
-- [ ] **A5（adapter 罐头防线）**：`grep` 函数体无 `requests`/`httpx`/`subprocess`/`open(`/`.write`/`Path` IO 调用；docstring 含「语义 mock」；40 逐行核
-- [ ] **A6（字段钉死）**：manifest 条目 `side_effect: write` · `kind: local_fn` · `hitl.required: true` · 顶层 `idempotency_key` 非空 · `risk_level != high` · tags 含 `testing` · `enabled: true`（加载后经 registry 断言）
-- [ ] **A7（B1 旧测清单）**：B1 表 10 个文件全绿亲跑记录（命令 + 结果）落 40 invoke
-- [ ] **A8（loader 校验 · 裁定四）**：新增单测断言——① write+local_fn 且 http 块键与顶层键**皆缺** → 仍 ManifestError（V1 不放松）② write+local_fn + 顶层 `idempotency_key` → 可加载 ③ read 条目（无顶层键）加载路径与 master 基线零 diff（既有 manifest 测试原样绿）④ read 误声明顶层 `idempotency_key` → ManifestError（V8 对称适配）
-- [ ] `ruff check app tests` 触及路径绿；`./scripts/graph-compile.sh` 绿（F5 图谱同步后）
-- [ ] `npx spec-wave task lint --file docs/tasks/active/task_testing_write_capability.md` PASS
+- [x] 人工闸：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved 后方可勾选下列码项
+- [x] **A1（enforce 全链 · 补齐 2026-10-09 验收唯一未验项）**：env 组 `OPS_CAPABILITY_EXTRA_MANIFESTS=<repo-relative manifest path>` + `OPS_CAPABILITY_ALLOW_WRITE_TAGS=testing` + `LG_RAG_DELEGATION_TOKEN_MODE=enforce` 下起服务（env 须在 import app 前生效）：plans 含该 tool 的 run → SSE/状态断言 `hitl.waiting` 挂起（blocked_by=`delegation_issue_hitl_required`）→ `GET /api/ops/hitl/pending`（cookie maintainer）可见该 request → `POST /api/ops/hitl/requests/{id}/decide` approved → resume → 终态 `done{completed}`。证据（命令 + 响应摘录）落 40 invoke。**40 实录**：三段 live 可达——挂起（blocked_by=`delegation_issue_hitl_required`）→ pending 可见 → decide(approved) HTTP 200 全真达成；`done{completed}` 末段 resume 409（unlock_subtask_id 为空 · router.py:404-410）=**既有链设计缺口 · 非本 task 回归 · 另立 task**（签发审批消费回路），机制段由 A4④ 集成测兜底
+- [x] **A2（off 零 diff · 默认 off 纪律）**：三 env 皆不设：① registry snapshot 不含 testing 条目（count 不变）② `list_capabilities(filter=baseline_filter(...))` 可见集仍 8 枚且不含该条目 ③ `capability_manifest_count == 5` 断言原样绿 ④ 全量 `pytest tests` 与 master 基线零新增红
+- [x] **A3（加载≠可见 · deny_write 不全局松）**：只设 EXTRA_MANIFESTS 不设 ALLOW_WRITE_TAGS：注册表含该条目（snapshot 可见）但 baseline 可见集**不含**（deny_write 仍生效）；`test_allow_tags_does_not_waive_deny_write` 原样绿
+- [x] **A4（新增测试）**：① `allow_write_tags_any` 命中→豁免 deny_write / 未命中→仍裁 / high risk 即使命中仍裁（deny_high_risk 无豁免口）三例单测 ② manifest 显式加载后 registry 含该条目且 adapter 可调 ③ 罐头 adapter 返回罐头 dict 且零 IO 断言 ④ enforce + 放行 env 下 delegation 签发审批集成断言（可复用 hitl fixture 图替身段，真实挂起段由 A1 本地链兜底）
+- [x] **A5（adapter 罐头防线）**：`grep` 函数体无 `requests`/`httpx`/`subprocess`/`open(`/`.write`/`Path` IO 调用；docstring 含「语义 mock」；40 逐行核
+- [x] **A6（字段钉死）**：manifest 条目 `side_effect: write` · `kind: local_fn` · `hitl.required: true` · 顶层 `idempotency_key` 非空 · `risk_level != high` · tags 含 `testing` · `enabled: true`（加载后经 registry 断言）
+- [x] **A7（B1 旧测清单）**：B1 表 10 个文件全绿亲跑记录（命令 + 结果）落 40 invoke
+- [x] **A8（loader 校验 · 裁定四）**：新增单测断言——① write+local_fn 且 http 块键与顶层键**皆缺** → 仍 ManifestError（V1 不放松）② write+local_fn + 顶层 `idempotency_key` → 可加载 ③ read 条目（无顶层键）加载路径与 master 基线零 diff（既有 manifest 测试原样绿）④ read 误声明顶层 `idempotency_key` → ManifestError（V8 对称适配）
+- [x] `ruff check app tests` 触及路径绿；`./scripts/graph-compile.sh` 绿（F5 图谱同步后）（40 曾登记新测文件一枚 UP038 偏差 · `ddd515e` 修复闭环）
+- [x] `npx spec-wave task lint --file docs/tasks/active/task_testing_write_capability.md` PASS（40 复跑于 active 期 · CLOSE 归档后改判 done/ 路径复跑）
 
 ---
 
@@ -256,3 +256,4 @@ A1 全链逐段对应既有路由真值（pending/decide/resume · router.py:5-1
 |------|------|
 | 2026-10-09 | 10-task 落稿（behavior 小 task · 免 SPEC · R0–R5 全轮 · early_stop at R5）· HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 pending → 30 拒开工 |
 | 2026-10-09 | 10-task 修订（承接 30 GATE_STOP · 维护者裁定四=乙）：R2 增裁定四（manifest 顶层 idempotency_key · loader V1 放宽为二选一 · 甲乙丙丁裁决理由）· 钉死契约补 hitl.required: true + 顶层幂等键 · 范围增 F7 · failure_paths 增 loader 拦截行（表 10 行）· 验收 A6 更新 + 新增 A8 · off 零 diff 论证补强 · HG-TASK-DRAFT / HG-AUDIT-R1 回退 pending（待 20 R2 复审 + 维护者重签）· HG-GRAPH-MODULES 维持 approved 在册（备注补裁定四 schema 面扩大）· 顺手勘正 20 R1 观察项 O1（builtin 行窗 :8-26）/ O2（strategy/ 路径段 + 第四调用点 evals runner.py:120）/ O4（计数勘正） |
+| 2026-10-09 | **CLOSE**：链路 10 落稿 → 20 R1（PASS）→ 30 GATE_STOP（loader V1/V2 夹击 · 未改码）→ 10 修订（裁定四=乙 · 顶层 idempotency_key + V1 二选一放宽）→ 20 R2 复审 PASS → 维护者重签（00 代录）→ 30 R2 交付 → 40 核验 **PASS 带偏差登记**（验收 A1–A8 逐项独立复跑 · A1 三段 live 可达 · `done{completed}` 末段 resume 409=既有链设计缺口 · 另立 task · 偏差 #1 闭环裁定 · UP038 偏差 `ddd515e` 修复闭环）→ PR [#209](https://github.com/Cyning12/ops-desk-api/pull/209) MERGED（`ca4148f` · CI 四绿）→ 归档 done/ · Hub 补登 · CLOSE invoke 留档；**留转**：① 签发审批消费回路（resume 409 缺口 + strategy 候选 map env 口第四道门）另立 task 由维护者裁定；② SPEC（chat-history-hitl-ux 后续 · 审批消费回路）起草中 |
