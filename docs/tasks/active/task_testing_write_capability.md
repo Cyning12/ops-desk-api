@@ -34,8 +34,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 2026-10-09 曾 approved（维护者口头人签 · 00 代录）；30 GATE_STOP 后 10-task 修订（R2 裁定四 · 内容实质变更）→ **回退 pending**，待 20 R2 复审后维护者重签；R1 审查文见 `docs/harness/reviews/task_testing_write_capability_audit_R1_20261009.md` |
-| HG-AUDIT-R1 | pending | 30 | 2026-10-09 曾 approved（R1 审查文 `task_testing_write_capability_audit_R1_20261009.md` 结论 PASS 零阻塞 · 维护者口头人签 · 00 代录）；R1 审查**未覆盖** loader V1/V2 冲突（30 实证发现）→ 修订后**回退 pending**，待 20-task-audit R2 复审裁定四后维护者重签 |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | 2026-10-09 曾 approved（维护者口头人签 · 00 代录）；30 GATE_STOP 后 10-task 修订（R2 裁定四 · 内容实质变更）→ 回退 pending；20 R2 复审 PASS 后维护者重签：**signer=维护者（Cyning）· 代录=00 · 日期=2026-10-09**（授权链：2026-10-09「全部签收，继续执行，授权00签收后续文档」· 重签 invoke `docs/harness/invokes/by-task/testing-write-capability/invoke_20261009_00_human-gate-resign_testing-write-capability.md`）；R1 审查文见 `docs/harness/reviews/task_testing_write_capability_audit_R1_20261009.md` |
+| HG-AUDIT-R1 | approved | 30 | 2026-10-09 曾 approved（R1 审查文 `task_testing_write_capability_audit_R1_20261009.md` 结论 PASS 零阻塞 · 维护者口头人签 · 00 代录）；R1 审查**未覆盖** loader V1/V2 冲突（30 实证发现）→ 修订后回退 pending；维护者重签：**signer=维护者（Cyning）· 代录=00 · 日期=2026-10-09**；备注：**R2 复审 PASS（裁定四=乙 · loader V1 二选一放宽）**· 审查文 `task_testing_write_capability_audit_R2_20261009.md`（零阻塞 · O5–O7 非阻塞）· 授权链见重签 invoke `invoke_20261009_00_human-gate-resign_testing-write-capability.md` |
 | HG-GRAPH-MODULES | approved | 30 | signer=维护者（Cyning）· 代录=00（delegate-only 窗）· 2026-10-09 · `graph_change_layer=l1`（capability 模块内增量）· 维护者口头人签「在册」（2026-09-30 先例），00 代录；30 交付时须同步 `docs/_tech_graph/l1/01_modules.md` 新增 capability/filter/env 符号并随交付落盘在册备注；**裁定四扩大 schema 面（manifest 顶层 idempotency_key + loader V1 放宽）· 仍在 l1 模块内增量 · 30 同步 01_modules.md 义务不变** |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 非物理分层试点 task |
 
