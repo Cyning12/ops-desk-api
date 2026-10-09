@@ -36,3 +36,21 @@
 |------|------|
 | `npx spec-wave task lint --file docs/tasks/active/task_hitl_approval_consumption_loop.md` | **PASS**（EXIT=0 · `LINT: PASS · task_hitl_approval_consumption_loop.md`） |
 | `npx spec-wave verify --target . --task docs/tasks/active/task_hitl_approval_consumption_loop.md` | **EXIT=2 符合预期**（VERIFY: BLOCKED · 三闸 pending 属实时序 · HG-AUDIT-R1 待维护者签） |
+
+## 增量复核轮（10-task 修复 commit `0c5d148` · 2026-10-10）
+
+退回四项逐点核对（仅核修复点 · 未重走全轮 · diff stat 确认裁定结构零改）：
+
+| # | 退回项 | 结论 |
+|---|--------|------|
+| 1 | B1 补 scripts/acceptance/capability_step_contract_gate.py:152 | ✅（补 await 一行 · 门禁真跑后果写明） |
+| 2 | 计数口径统一 | ⚠️ 残留 NIT（非阻塞）：R1-N2/R2 作「14 处」正确（join 13 + block_reason 1 · 20 逐枚复枚），但 B1 标题/F3/实操-A/R5/验收末行作「15 处」差 1——本 NIT 系 20 首轮退回清单以「声称数+1」为口径未枚举所致，20 自引并更正（真值 14 · B1 表枚举为准）；建议 10-task 顺手回改 · 不单独退回 |
+| 3 | redline「非默认跑」→「默认跑 · 必须随改亲跑」 | ✅（B1 行 + R3 residual + R1-N2 标注三处同步） |
+| 4 | 实操-A 补 grep 范围含 scripts/ | ✅（R3 grep 命令同步补） |
+
+**增量裁定：内容转 PASS**（审查文「结论」节已按机读口径改为以「结论」起首 · PASS 落节内）。
+
+| 增量复跑 | 结果 |
+|----------|------|
+| `npx spec-wave task lint --file docs/tasks/active/task_hitl_approval_consumption_loop.md` | **PASS**（EXIT=0 · 20 亲跑） |
+| `npx spec-wave verify --target . --task docs/tasks/active/task_hitl_approval_consumption_loop.md` | **EXIT=2 符合预期**（VERIFY: BLOCKED · 三闸 pending 属实时序） |

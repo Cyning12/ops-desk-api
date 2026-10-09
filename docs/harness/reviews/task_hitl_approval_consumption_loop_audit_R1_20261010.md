@@ -8,12 +8,14 @@
 
 ---
 
-## 结论摘要
+## 结论（R1 终态 · 增量复核后）
 
 | 维度 | 结论 | 说明 |
 |------|------|------|
-| **内容** | **FAIL · 退回 10-task**（1 项阻塞 · 修复面极小） | B-1：B1 影响面漏 `scripts/acceptance/capability_step_contract_gate.py:152` 一处 sync 直调 + redline「非默认跑」表述失准（详见阻塞项）；其余范围/钉死契约/验收映射/思考轮均核对成立 |
+| **内容** | **PASS**（首轮 FAIL · 退回 B-1 四项修复经增量复核成立 · 10-task commit `0c5d148`；残留 1 条非阻塞 NIT 见文末增量节） | 首轮 B-1（B1 漏 scripts/acceptance 调用点 + redline「非默认跑」失准）已修复；范围/钉死契约/验收映射/思考轮/锚点 17 组均核对成立 |
 | **流程闸** | HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 均 pending（属实时序 · 非阻塞 · 如实登记） | 见文末签闸清单 |
+
+> 首轮 FAIL 结论与退回清单留档于下文「阻塞项 / 非阻塞项」与「回填清单」节（历史留痕不改写）；增量复核记录见文末「R1 增量复核」节。 |
 
 ---
 
@@ -103,7 +105,23 @@
 
 ---
 
-## 维护者签闸（20 后 · 30 前）
+## R1 增量复核（B-1 修复 · 10-task commit `0c5d148` · 2026-10-10）
+
+按退回清单四项逐点核对（仅核修复点 · 未重走全轮 · 裁定结构确认零改：commit diff stat 仅 task 文件 13+/11-）：
+
+| # | 退回项 | 复核结论 | 实证 |
+|---|--------|----------|------|
+| 1 | B1 随改清单补 scripts/acceptance 调用点 | ✅ | B1 表新增 `scripts/acceptance/capability_step_contract_gate.py` 行（:152 · 补 `await` 一行 · `_drive` 已是 async :140 · 被 `capability_acceptance.sh:165` 真跑 · 漏改后果写明）；R1-N2 锚点行同步补列 |
+| 2 | 计数口径全文统一 | ⚠️ **方向修对 · 数值差 1（残留 NIT · 非阻塞）** | R1-N2/R2 已作「直调点 14 处」（**正确**：20 逐枚复枚 join=13（test_step_contract×7 + wiring×3 + testing_write:433×1 + redlines×1 + scripts×1）+ block_reason :492×1 = **14**）；但 B1 标题/F3/实操-A/R5/验收末行作「**15 处**」，与 B1 表实列 14 点不符，且 R2 段内「14 处直调点 / 15 处随改」自相矛盾。溯源：原稿声称 13 实列 12（原稿自身差 1），本 20 首轮退回清单以「声称 14+1=15」为口径未逐枚枚举——**本 NIT 由 20 引起，在此自引并更正：真值=14 处（B1 表枚举为真值）**。非阻塞（清单本体完整正确 · 30 按表施工不受影响）；建议 10-task 顺手把 5 处「15 处」回改「14 处」（可与维护者签闸同批 · 不单独退回） |
+| 3 | redline「非默认跑」措辞修正 | ✅ | B1 redline 行改「默认跑（pyproject 无 addopts 排除 · conftest 无 deselect · CI pytest.yml:47 无 `-m` 排除）· 必须随改亲跑」+ 建议另跑 `pytest -m redline` 留证；R3 residual 同步钉死；R1-N2 行标注同步 |
+| 4 | 实操-A 补「grep 范围须含 scripts/」 | ✅ | 实操-A 行补提醒（含漏网实证引注 · R1 审查 B-1 溯源）；R3 波及面实证行 grep 命令同步补 `scripts` |
+| 5 | （附带）修订记录 + lint 自报 | ✅ | 修订表新增 10-task 修订行（「仅文档口径补齐 · 裁定结构不动」如实）；20 复跑 lint/verify 见下 |
+
+**增量复跑（20 亲跑）**：`npx spec-wave task lint --file docs/tasks/active/task_hitl_approval_consumption_loop.md` → **PASS（EXIT=0）**；`npx spec-wave verify --target . --task docs/tasks/active/task_hitl_approval_consumption_loop.md` → **EXIT=2**（三闸 pending 属实时序 · 预期内）。
+
+**增量裁定**：B-1 阻塞解除 → **内容 PASS**（残留 NIT 一条非阻塞：计数口径 15→14 回改建议移交 10-task 顺手修 · 不挡签收）。
+
+---
 
 - [ ] 已读 R1 审查结论
 - [ ] 在 task 人工闸表将 HG-AUDIT-R1 改为 approved（维护者 · 日期）
@@ -118,4 +136,5 @@
 
 | 日期 | 说明 |
 |------|------|
-| 2026-10-10 | R1 骨架落盘（骨架先行 · 逐节增量）→ 全文填充：**内容 FAIL（B-1 阻塞 · 退回 10-task 补 B1 第 15 处 + redline 措辞）· 流程闸 pending 属实时序** · 锚点 17 组实读 · TA1–TA7↔SPEC A 映射全对上 |
+| 2026-10-10 | R1 骨架落盘（骨架先行 · 逐节增量）→ 全文填充：**内容 FAIL（B-1 阻塞 · 退回 10-task 补 B1 漏点 + redline 措辞）· 流程闸 pending 属实时序** · 锚点 17 组实读 · TA1–TA7↔SPEC A 映射全对上 |
+| 2026-10-10 | R1 增量复核（10-task 修复 commit `0c5d148`）：四项退回点 3✅+1⚠️（计数口径残留 NIT · 真值 14 处 · 20 自引并更正）→ **内容转 PASS** · lint 复跑 PASS · verify EXIT=2 预期内 · 「结论」节机读口径修正（节名改以「结论」起首） |
