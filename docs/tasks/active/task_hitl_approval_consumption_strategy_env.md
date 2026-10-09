@@ -206,7 +206,8 @@ TC1（逐字节对拍+追加+解析四例+覆盖口隔离）/TC2（FP-5+diff 空
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+- **30 自检**：见 [30 invoke](../../harness/invokes/by-task/hitl-approval-consumption-strategy-env/invoke_20261010_30_implement_hitl-approval-consumption-strategy-env.md)「自检结论」段——改动面单文件+图谱行备注 · 钉死契约七行逐条落地 · TC1–TC3 全机断绿 · B1 八文件亲跑绿 · 非范围零触碰。
+- **40 核验（2026-10-10 · 独立复跑不采信自报）**：**PASS**。diff 面仅 config.py+新测试文件（registry/policy/builder 零 diff）· 18 枚抽跑全绿 · TC2 层1 真实 builder 路径选型充分 · 全量 1679 passed（SILICONFLOW_API_KEY=dummy-probe）· ruff 触及路径零新增 · graph-compile/verify/task lint/lint-wiki-delta 全 EXIT=0 · B1 八文件 114 passed（显式含 eval golden）· 图谱 lg_rag 行 35+闸表行 114 实证在案 · nit×3 吸收复核通过。详见 [40 invoke](../../harness/invokes/by-task/hitl-approval-consumption-strategy-env/invoke_20261010_40_verify_hitl-approval-consumption-strategy-env.md)——**可进 PR 队列**（分支字段差异留转 00/维护者随 PR 裁定）。
 
 ---
 
