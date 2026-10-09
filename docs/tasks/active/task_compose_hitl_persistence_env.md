@@ -49,7 +49,7 @@
 
 | 锚点 | 实证 |
 |------|------|
-| `docker-compose.yml:51-70` | api.environment 块 19 个键，**无 `OPS_HITL_PERSISTENCE`**（全文件 grep 零命中）→ 全 docker 形态下该 env 无法进容器 |
+| `docker-compose.yml:51-70` | api.environment 块 16 个键，**无 `OPS_HITL_PERSISTENCE`**（全文件 grep 零命中）→ 全 docker 形态下该 env 无法进容器 |
 | `docker-compose.yml:61-65` | 既有透传范式先例：LG_RAG_DELEGATION_TOKEN_* 三键带「默认 off 零 diff」两行注释块（`:61-62`） |
 | `app/ops/hitl/persistence.py:22` | `ENV_PERSISTENCE = "OPS_HITL_PERSISTENCE"` 常量 |
 | `app/ops/hitl/persistence.py:40` | `os.environ.get(ENV_PERSISTENCE, "").strip().lower() or MODE_NULL`——**空串与缺省同归 `null`**，故 `${OPS_HITL_PERSISTENCE:-}` 空默认对行为零 diff |
