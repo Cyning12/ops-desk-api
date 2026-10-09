@@ -34,9 +34,9 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 10-task 落稿待 00/维护者签 |
-| HG-AUDIT-R1 | pending | 30 | 20-task-audit R1 审查文落盘 + 人签后方可 30 |
-| HG-GRAPH-MODULES | pending | 30 | `graph_change_layer=l1`（capability 模块内增量）· 人签图谱同步口径 |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | signer=维护者（Cyning）· 代录=00（delegate-only 窗）· 2026-10-09 · 维护者口头人签，00 代录；10-task commit 与 20-task-audit R1 审查文结论见 `docs/harness/reviews/` |
+| HG-AUDIT-R1 | approved | 30 | signer=维护者（Cyning）· 代录=00（delegate-only 窗）· 2026-10-09 · 维护者口头人签，00 代录；10-task commit 与 20-task-audit R1 审查文结论见 `docs/harness/reviews/`（审查文 `task_testing_write_capability_audit_R1_20261009.md` 结论 PASS 零阻塞） |
+| HG-GRAPH-MODULES | approved | 30 | signer=维护者（Cyning）· 代录=00（delegate-only 窗）· 2026-10-09 · `graph_change_layer=l1`（capability 模块内增量）· 维护者口头人签「在册」（2026-09-30 先例），00 代录；30 交付时须同步 `docs/_tech_graph/l1/01_modules.md` 新增 capability/filter/env 符号并随交付落盘在册备注 |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 非物理分层试点 task |
 
 ---
