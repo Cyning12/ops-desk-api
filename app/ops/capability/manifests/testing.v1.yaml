@@ -1,0 +1,48 @@
+# 测试专用 capability 清单（testing-write-capability · D2 · 2026-10-09）
+#
+# 用途：注册一枚 side_effect=write 的**语义 mock** 能力，使
+# LG_RAG_DELEGATION_TOKEN_MODE=enforce 下「plans 含该 tool → hitl.waiting 挂起
+# → pending 可见 → decide(approved) → resume → done{completed}」全链有真实
+# 可审对象（全只读能力面下该验收链不可达——只读按 Q2 裁定自动放行）。
+#
+# 纪律（钉死）：
+# - 测试专用 · **不进默认加载面**：仅经 OPS_CAPABILITY_EXTRA_MANIFESTS 显式加载
+#   （既有两层「显式打开」纪律的第三层 · 默认空=off 零 diff）；
+# - 语义 mock 无真实写：adapter 指向 defaults.py 罐头纯函数
+#   （零 IO · 零 DB · 零外网 · 零文件写 · 零 subprocess）；
+# - 可见性须再经 OPS_CAPABILITY_ALLOW_WRITE_TAGS=testing 放行
+#   （只豁免 deny_write 一层 · deny_high_risk 永不豁免）；
+# - 顶层 idempotency_key 是 local_fn write 的合法幂等键声明位（裁定四 ·
+#   loader V1「http 块键 或 顶层键」二选一 · V7 禁 local_fn 声明 http 块）；
+#   **当前对 local_fn 无运行期消费方**（加载期护栏/声明位 · 语义如实）。
+# 字段族对齐 builtin.v1.yaml 范式（逐字段齐）。
+version: 1
+capabilities:
+  - id: testing.write.echo
+    kind: local_fn
+    description: 测试专用：写操作语义 mock（罐头回显 · 无真实写）
+    when_to_use: 需要验收/演示「写能力委派签发需人工审批（HITL）」全链时使用（测试专用 · 语义 mock）
+    when_not_to_use: 任何真实业务写操作都不要用本能力（语义 mock · 零真实写 · 不产任何单据）
+    tags: [testing, mock, write]
+    risk_level: medium
+    side_effect: write
+    enabled: true
+    tenant_scoped: false
+    hitl:
+      required: true
+    idempotency_key: "{{request_id}}"
+    args_schema:
+      type: [string, object]
+      properties:
+        request_id:
+          type: string
+          description: 幂等键声明引用的请求标识（加载期护栏/声明位 · 无运行期消费方）
+        note:
+          type: string
+          description: 任意备注（罐头回显）
+      additionalProperties: true
+    reversible: true
+    execution_type: instant
+    max_reversal_latency: 0
+    requires_stop_support: false
+    adapter: local_fn:app.ops.capability.defaults:testing_write_echo

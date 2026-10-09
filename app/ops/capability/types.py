@@ -151,6 +151,7 @@ class CapabilityFilter:
     |---|---|---|
     | ``tags_any`` | **收窄** | 只看带这些 tag 的能力（交集） |
     | ``allow_tags_any`` | **放宽** | 命中这些 tag 的能力**豁免 ``kinds`` 裁剪** |
+    | ``allow_write_tags_any`` | **放宽** | 命中这些 tag 的能力**只豁免 ``deny_write`` 一层** |
 
     为什么需要 ``allow_tags_any``：新 kind（如 ``http``）一次性放开风险大，
     按**业务域**逐批放开更稳，而"域"天然落在 ``tags`` 上。用法::
@@ -170,6 +171,11 @@ class CapabilityFilter:
     deny_high_risk: bool = False
     # 与 deny_high_risk 对称：可见集裁剪阶段就把写能力挡在模型视野之外
     deny_write: bool = False
+    # 命中任一 tag → **只豁免 deny_write 一层**（env 门控 tag 白名单放行口径 ·
+    # testing-write-capability · 默认 None=判序零 diff）。
+    # **永不豁免 deny_high_risk**：判序上高危判定在本层之前，高危写即使命中
+    # tag 也仍被裁（「一个 tag 不能换全部豁免」纪律延续到写维度）。
+    allow_write_tags_any: frozenset[str] | None = None
 
 
 @dataclass
