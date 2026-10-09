@@ -97,6 +97,14 @@ class CapabilitySpec:
     # *_map 模板 / idempotency_key / tenant_param / success_when / error_map）。
     # **只存引用（环境变量名、凭证名），不存密钥值。**
     http: dict[str, Any] | None = None
+    # 顶层幂等键（testing-write-capability · 裁定四）：manifest **顶层**
+    # idempotency_key，供 local_fn write 声明幂等键（V7 禁 local_fn 用 http
+    # 块，顶层键是其唯一合法声明位）；http 能力仍走 http.idempotency_key 不变。
+    # 缺省 None=未声明（向后兼容 · 存量 read 清单零 diff）。
+    # 定位=加载期护栏/声明位：V1 对 write 强制「http 块键 或 顶层键」二选一，
+    # V8 对 read 对称拦截；**当前对 local_fn 无运行期消费方**
+    #（未来 local_fn 接真实写时消费面另立 task）。
+    idempotency_key: str | None = None
     # 高危写需单次人工确认（加载期强校验：write/irreversible/high 必须为 True）
     hitl_required: bool = False
     # 单次确认时冻结进快照的字段（复核「参数变了则旧审批作废」用）
