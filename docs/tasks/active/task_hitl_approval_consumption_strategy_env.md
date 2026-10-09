@@ -3,7 +3,7 @@
 > **状态**：`draft`  
 > **类型**：**SPEC 承接**（SPEC v1 · HG-SPEC-SIGNOFF=approved 2026-10-10）  
 > **依据**：`docs/spec/hitl-approval-consumption/SPEC-hitl-approval-consumption_v1.md`（**SPEC 文档当前在 `spec/hitl-approval-consumption` 分支 · 随首个实现 PR 一并带入 master**）——本 task 承接 D3（strategy 候选 map env 口 · 最小独立）· Q4 · FP-5 · A4（+ A5/A8 存续面）  
-> **分支**：`task/hitl-approval-consumption-strategy-env`（base：`master` 4d905e0 · 禁止 master 直改）  
+> **分支**：`task/hitl-approval-consumption`（00 裁定合流 · 2026-10-10 · base：`master` 4d905e0 · 禁止 master 直改）  
 > **拆分**：T3（本）与 T1/T2 **无依赖 · 可插队先行**
 
 ---
@@ -13,7 +13,7 @@
 | 字段 | 值 |
 |------|-----|
 | **task_slug** | `hitl-approval-consumption-strategy-env` |
-| **git_branch** | `task/hitl-approval-consumption-strategy-env` |
+| **git_branch** | `task/hitl-approval-consumption`（00 裁定合流 · 2026-10-10：本 PR 含三 task 文档 + 全部审查/签录 + T3 实现；T1/T2 实现后续从 master 切新分支） |
 | **implement_repo** | `ops-desk-api` |
 | **test_strategy** | `required` |
 | **test_strategy_note** | pytest 单测为主：env 不设时 `get_candidate_capability_ids` 各 key（含未知 key）解析结果对 master 逐字节零 diff 断言 + 设 env 后追加/去空去重/strip 语义断言 + 未知 key 追加断言 + FP-5 断言（env 含高危/写 id 仍被下游 ∩visible/deny_high_risk/Policy 裁）+ env 读取时机断言（调用点读取 · 禁 import 时固化）；全量 pytest 回归零新增红 |
