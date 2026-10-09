@@ -232,7 +232,21 @@ A1 全链逐段对应既有路由真值（pending/decide/resume · router.py:5-1
 
 ### 自检结论（执行者）
 
-> **待 40 回填**（draft 占位 · A1–A7 核验结论 + 证据 invoke 链接）。
+> 40 核验回填（2026-10-09 · 独立复跑不采信自报 · 证据 invoke：`docs/harness/invokes/by-task/testing-write-capability/invoke_20261009_40_verify_testing-write-capability.md`；30 交付证据：`invoke_20261009_30_implement_r2_testing-write-capability.md`）。
+
+| 验收 | 40 独立复跑结论 |
+|------|------------------|
+| **A1**（enforce 全链） | **三段达成 · 末段 409 如实登记**：三 env 组 live 实跑（env 前置 import app 前）——hitl.waiting 挂起 ✓（blocked_by=`delegation_issue_hitl_required` · SSE 帧实证）→ `GET /api/ops/hitl/pending`（cookie maintainer）可见 ✓ → `decide(approved)` HTTP 200 ✓（重复 decide 409 守卫 ✓）→ `resume` **HTTP 409「已批准但拿不到待解锁的步骤（unlock_subtask_id 为空）」**（router.py:404-410 · 与 30 invoke 实证逐字一致）→ `done{completed}` 未达成。**裁定：既有链设计缺口 · 非本 task 回归**（判定逻辑零改动纪律下本 task 不触碰）；机制段由 A4④ 集成测兜底（40 亲跑绿）。**40 新发现**：三 env 组之外有第四道门——`strategy/config.py` `CAPABILITY_ALLOWLIST_BY_KEY["supervisor"]` 静态候选 map 不含 testing.write.echo → 生产路径 plans 永不含该 tool；live 链以测试等价 shim（`CANDIDATE_CAPABILITY_IDS` 运行期覆盖 · 仓内代码零改动）补位后全链三段可达 |
+| **A2**（off 零 diff） | ✅ PASS（`test_a2_off_zero_diff` 亲跑绿 + 全量 1661 passed 0 failed 对拍零新增红） |
+| **A3**（加载≠可见） | ✅ PASS（`test_a3_*` 亲跑绿 + `test_allow_tags_does_not_waive_deny_write` 钉死语义原样绿） |
+| **A4**（新增测试） | ✅ PASS（14 枚全绿亲跑 · 含 enforce 机制段集成 `test_a4_enforce_chain_suspend_pending_decide_resume`） |
+| **A5**（罐头防线） | ✅ PASS（AST 断言亲跑绿 + 40 逐行亲核 `defaults.py::testing_write_echo`：纯 dict 返回 · 零 IO · docstring 含「语义 mock」） |
+| **A6**（字段钉死） | ✅ PASS（manifest 逐字段对钉死契约：write / local_fn / hitl.required=true / 顶层 idempotency_key 非空 / risk=medium / tags 含 testing / enabled=true） |
+| **A7**（B1 旧测） | ✅ PASS（十二处 14 文件亲跑 234 passed 1 skipped · 与 30 自报一致） |
+| **A8**（loader 校验） | ✅ PASS（四断言亲跑绿 · V1/V8 raise 文案对 master 逐字节零改动 · golden eval 9 passed 对拍） |
+| ruff / graph-compile / lint / verify | graph-compile EXIT=0 · task lint PASS · verify PASS · **ruff 偏差登记**：app 触及面零新增（manifest.py 三枚全 master 基线既有），但新测文件 tests/test_capability_testing_write.py:257 一枚新增 UP038（CI ruff 步骤注释中 · 不阻合并 · 建议顺手修） |
+
+**偏差 #1 闭环裁定（40）**：可审对象已注册且「挂起 → pending 可见 → decide 置决」三段全真可达，偏差 #1 处置路径（注册非只读测试 capability）达成其目的；`done{completed}` 末段缺口（resume 409 + 审批不消费回路）属既有链设计缺口，**另立 task 由维护者裁定**（建议并入 strategy 候选 map env 口第四道门）。30 无造假 · 复跑全过 · **40 结论 PASS（带偏差登记 · 可进 PR 队列）**。
 
 ---
 
