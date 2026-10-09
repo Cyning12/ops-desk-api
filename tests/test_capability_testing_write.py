@@ -254,7 +254,7 @@ def test_a5_canned_adapter_zero_io():
     assert not [
         n
         for n in ast.walk(ast.Module(body=body, type_ignores=[]))
-        if isinstance(n, (ast.Import, ast.ImportFrom))
+        if isinstance(n, ast.Import | ast.ImportFrom)
     ]
     assert _testing_write_echo.__doc__ is not None
     assert "语义 mock" in _testing_write_echo.__doc__
