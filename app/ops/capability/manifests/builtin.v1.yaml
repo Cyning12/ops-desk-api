@@ -3,6 +3,11 @@
 # args_schema 仅参数形态；业务不变量不进 schema。
 # H4：补 side_effect（危险程度与副作用是两个维度）与 when_to_use
 #（模型选择依据，不可省——没有它模型只能靠 id 猜）。
+# 裁定四（2026-10-09 · testing-write-capability）：字段族增**顶层**
+# idempotency_key（非 http 块）——local_fn write 的合法幂等键声明位
+#（V7 禁 local_fn 用 http 块）；http 能力仍走 http.idempotency_key。
+# 缺省 None=未声明；loader V1 对 write 强制「http 块键 或 顶层键」二选一，
+# V8 对 read 对称拦截。本清单五枚全 read，不声明该字段（声明即 V8）。
 version: 1
 capabilities:
   - id: mock_get_issue_status

@@ -114,6 +114,8 @@ def _match_filter(spec: CapabilitySpec, f: CapabilityFilter) -> bool:
 
     判序：形态 → 风险 → 副作用 → 标签收窄。``allow_tags_any`` 只作用于**第一层**
     （豁免 kinds 裁剪），不放宽后面的 deny_* —— 否则它就成了「一个 tag 换全部豁免」。
+    ``allow_write_tags_any``（testing-write-capability）同理只作用于
+    **deny_write 一层**，且判序在其前的 ``deny_high_risk`` **永不豁免**。
     """
     if not spec.enabled:
         return False
@@ -126,7 +128,12 @@ def _match_filter(spec: CapabilitySpec, f: CapabilityFilter) -> bool:
     if f.deny_high_risk and spec.risk_level == "high":
         return False
     if f.deny_write and spec.side_effect in WRITE_SIDE_EFFECTS:
-        return False
+        exempt = bool(
+            f.allow_write_tags_any
+            and f.allow_write_tags_any.intersection(spec.tags)
+        )
+        if not exempt:
+            return False
     # node_role / mode：P0 仅占位字段，不裁剪（无 tags 绑定时全放行）
     if f.tags_any is None:
         return True

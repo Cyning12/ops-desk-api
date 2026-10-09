@@ -20,6 +20,8 @@
 
 from __future__ import annotations
 
+import os
+
 from app.ops.capability.types import CapabilityFilter
 
 #: 模型可见的**基础 kind**（进程内能力）。新 kind 不进这里，走域放行。
@@ -28,6 +30,21 @@ DEFAULT_KINDS: frozenset[str] = frozenset({"local_fn"})
 #: 域放行标签：命中任一 tag 的能力豁免 `DEFAULT_KINDS` 裁剪。
 #: 逐批放开的单一入口——加域只改这一行。
 DOMAIN_ALLOW_TAGS: frozenset[str] = frozenset({"oa"})
+
+#: 写能力放行标签（env 门控 · testing-write-capability）：命中任一 tag 的
+#: 能力**只豁免 `deny_write` 一层**；默认空 = `None` = 判序零 diff。
+#: **永不豁免 `deny_high_risk`**（判序在其前，高危写恒裁）。
+#: ⚠ 生效时机：`baseline_filter()` **调用时**读取；BUILDER/SUPERVISOR
+#: filter 是模块级常量（import 时固化）——env 须在 import app 之前设置，
+#: 测试内须显式重建 filter（对齐钉死契约，禁止依赖 import 顺序巧合）。
+ENV_ALLOW_WRITE_TAGS = "OPS_CAPABILITY_ALLOW_WRITE_TAGS"
+
+
+def _allow_write_tags_from_env() -> frozenset[str] | None:
+    """读 `OPS_CAPABILITY_ALLOW_WRITE_TAGS`（逗号分隔）；空/未设 → None。"""
+    raw = os.environ.get(ENV_ALLOW_WRITE_TAGS, "")
+    tags = frozenset(t.strip() for t in raw.split(",") if t.strip())
+    return tags or None
 
 
 def baseline_filter(*, node_role: str) -> CapabilityFilter:
@@ -41,4 +58,7 @@ def baseline_filter(*, node_role: str) -> CapabilityFilter:
         # Policy 的写闸是第二道（拦截），两道都要有——只裁剪防不住幻觉 id，
         # 只拦截则会把写能力暴露给模型（信息泄露 + 选择困难）。
         deny_write=True,
+        # env 门控写放行（默认空=零 diff）：只豁免 deny_write 一层，
+        # deny_high_risk 永不豁免（判序在其前）。
+        allow_write_tags_any=_allow_write_tags_from_env(),
     )
