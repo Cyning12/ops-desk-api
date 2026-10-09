@@ -35,9 +35,9 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 初稿人扫 · 待 20-task-audit R1 后维护者签（00 代录） |
-| HG-AUDIT-R1 | **pending** | 30 | 20-task-audit R1 落盘后人签（00 代录）· pending 即 30 **拒开工** |
-| HG-GRAPH-MODULES | **pending** | 30 | G-L1 行备注在册 · 随 30 回写由 00 代录 · pending 即 30 **拒开工** |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | 维护者签 · 00 代录 2026-10-10（授权「授权00签收所有过程文档」） · lint PASS |
+| HG-AUDIT-R1 | **approved** | 30 | 维护者签 · 00 代录 2026-10-10（授权「授权00签收所有过程文档」） · 依据 R1 审查 PASS（reviews/task_hitl_approval_consumption_auto_resume_audit_R1_20261010.md · N-1~N-3 非阻塞 · N-1 补偿扫描兜 OA 批准单语义明示留 30）· **另：T1 merge 前 30 仍拒开工** |
+| HG-GRAPH-MODULES | **approved** | 30 | 维护者签「在册」（hitl/lg_rag 行备注段）· 00 代录 2026-10-10 · 30 回写义务在案 |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 非物理分层试点 task |
 
 ---
