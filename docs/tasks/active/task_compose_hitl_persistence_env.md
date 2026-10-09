@@ -34,9 +34,9 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 待维护者验收 10-task 稿 |
-| HG-AUDIT-R1 | pending | 30 | 待 20-task-audit R1 PASS + 维护者签；**人签前 30 拒开工** |
-| HG-GRAPH-MODULES | pending | 30 | `graph_change_layer=none` 待 00 代录核验（预期只改 docker-compose.yml） |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | signer=维护者（Cyning）· 代录=00（delegate-only 窗）· 2026-10-09 · 维护者口头人签，00 代录；10-task commit 结论见 docs/harness/reviews/ 与 git 记录 |
+| HG-AUDIT-R1 | approved | 30 | signer=维护者（Cyning）· 代录=00（delegate-only 窗）· 2026-10-09 · 维护者口头人签，00 代录；20-task-audit R1 审查文结论（PASS-WITH-NITS · 零内容阻塞）见 docs/harness/reviews/task_compose_hitl_persistence_env_audit_R1_20261009.md |
+| HG-GRAPH-MODULES | approved | 30 | signer=维护者（Cyning）· 代录=00（delegate-only 窗）· 2026-10-09 · 本 task 零图谱改动（纯 compose config · `graph_change_layer=none`），签「在册·无图谱变更」 |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 非物理分层试点 task |
 
 ---
