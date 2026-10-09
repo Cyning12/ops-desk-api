@@ -4,6 +4,7 @@
 
 | task | 说明 |
 |---|---|
+| （T1/T2 在途） | 2026-10-10：`task_hitl_approval_consumption_strategy_env`（T3 · PR #213 合 · strategy 候选 map env 追加口 `OPS_STRATEGY_EXTRA_CANDIDATE_CAPABILITY_IDS` 默认不设零 diff · 40 核验 PASS 七项全绿）归档至 `done/`；分支 `task/hitl-approval-consumption` 与 worktree `task-hitl-approval-consumption` 清理留维护者裁决（T1 已切 `task/hitl-approval-consumption-loop` 自立 · T2 后续自 master 新切） |
 | （无进行中 task） | 2026-10-09：`task_testing_write_capability`（PR #209 合 · D2 注册非只读测试 capability · 40 核验 PASS 带偏差登记 · A1 三段 live 可达 · done 末段 409=既有链设计缺口另立 task）归档至 `done/`；worktree `d2-testing-write-capability` 与分支 `task/testing-write-capability` 清理待维护者裁决 |
 | （无进行中 task） | 2026-10-09：`task_compose_hitl_persistence_env`（PR #207 合 · compose 透传 `OPS_HITL_PERSISTENCE` 默认空零 diff · 40 核验 7/7）归档至 `done/`；worktree `d1-compose-hitl-persistence` 与分支 `fix/compose-hitl-persistence-env` 清理待维护者裁决 |
 | （无进行中 task） | 2026-09-22：`task_test_baseline_reds`（PR #169 合 · 本地基线红清零）归档至 `done/`；分支 `task/memory-facts-p1` 待维护者裁决 |
