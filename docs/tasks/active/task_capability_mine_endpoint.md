@@ -31,9 +31,9 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **approved**（2026-10-11 · 00 代录 · 授权 m01606/m00255） | 30 | R2 PASS（daa6871 · B-1 f6c041f 闭合） |
-| HG-AUDIT-R1 | **approved**（同上代录） | 30 | R1 BLOCKER→修订→R2 PASS |
-| HG-GRAPH-MODULES | **approved**（同上代录 · 按实判） | 30 | 新 REST 路由 → G-L1 modules.md 行备注义务随 30 交付回填（缺失 PR 拦） |
+| HG-TASK-DRAFT | approved | 30 | approved 2026-10-11 · 00 代录 · 授权 m01606/m00255 · R2 PASS（daa6871 · B-1 f6c041f 闭合） |
+| HG-AUDIT-R1 | approved | 30 | approved 2026-10-11 · 00 代录（同上授权）· R1 BLOCKER→修订→R2 PASS |
+| HG-GRAPH-MODULES | approved | 30 | approved 2026-10-11 · 00 代录（同上授权 · 按实判）· 新 REST 路由 → G-L1 modules.md 行备注义务随 30 交付回填（缺失 PR 拦） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 无外部试点面 |
 
 ## 背景与目标
@@ -195,3 +195,4 @@ TC1–TC7 全部 pytest 机断：401 / 九键齐+对拍一致 / ⊆ / 空集 200
 | 2026-10-11 | 10 落稿骨架（全节标题 + TBD · commit ba4a078） |
 | 2026-10-11 | B-1 修订（commit f6c041f）：补自检结论节 + n-1/n-2 回填 → R2 PASS（daa6871）· 三闸 00 代录 approved（授权 m01606/m00255） |
 | 2026-10-11 | 10 逐节回填完成：SPEC B1 裁定承接 · N1–N3 回填钉死（锚点 :163-214 · deps :18-115 · roles=frozenset({user.role})）· 钉死契约八条 · TC1–TC7 · 三闸 pending 不代签 · 落点/baseline 两候选开放留 30 |
+| 2026-10-11 | 30 期机读归一（00 裁定 · B2 先行同处置）：闸表 status 单元格归一为纯 approved（去粗体去括注 · 注解移说明列）· 零语义改动——实证根因 spec-wave 解析器不吃粗体+中文括注 status 单元格（30 invoke 记实证） |
