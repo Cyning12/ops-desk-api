@@ -32,9 +32,9 @@
 
 | 闸 | 状态 | 说明 |
 |---|---|---|
-| HG-TASK-DRAFT | pending | 10 落稿完成 · 20 R1 审查后维护者签 · 10 不代签 |
-| HG-AUDIT-R1 | pending | 20-task-audit R1 书面审 · 维护者签 |
-| HG-GRAPH-MODULES | pending | 预判无图谱变更（照实判定）· 若 30 实证新增机制面则回写 hitl 行备注后签 |
+| HG-TASK-DRAFT | approved | 10 落稿 7022e20 · 维护者授权 00 代录（2026-10-10 · 授权在案 m00059/m00255） |
+| HG-AUDIT-R1 | approved | 20 R1 PASS-WITH-NITS（b7639ce · N-1~N-3 非阻塞留 30 照登）· 维护者授权 00 代录（2026-10-10） |
+| HG-GRAPH-MODULES | approved | 在册 · 预判无图谱变更（照实判定 · 00 代录 2026-10-10）· 若 30 实证新增机制面/env/台账键则 hitl 行备注回写（N-2 在案） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 无外部试点面 |
 
 ## 背景与目标
