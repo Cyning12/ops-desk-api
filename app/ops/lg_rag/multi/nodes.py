@@ -628,16 +628,25 @@ def _issue_plan(
 
 
 def _stamp_host_plan(
-    state: LgRagState, items: list[dict], locked: list[dict] | None = None
+    state: LgRagState,
+    items: list[dict],
+    locked: list[dict] | None = None,
+    preserved: list[dict] | None = None,
 ) -> dict:
-    """校验后的项换成 Host id；``locked`` 前缀原样保留在最前面。"""
+    """校验后的项换成 Host id；``locked`` 前缀原样保留在最前面。
+
+    ``preserved``（hitl-replan-carry-and-persist-guard 契约二）：HITL 解锁步
+    的保号行，置 locked 之后、LLM 新后缀之前；plan_prefix_ids / recoverable_point
+    仍仅随 locked。空 preserved 时输出与此前逐字节一致（契约三）。
+    """
     run_id = _run_id_of(state)
     if not run_id:
         query = str(items[0].get("input") or "") if items else ""
         return _missing_run_update(query)
     locked_rows = [dict(row) for row in (locked or [])]
+    preserved_rows = [dict(row) for row in (preserved or [])]
     seq = int(state.get("host_subtask_seq") or 0)
-    cap = max(0, MAX_SUBTASKS - len(locked_rows))
+    cap = max(0, MAX_SUBTASKS - len(locked_rows) - len(preserved_rows))
     alias_prefix = "s" if locked_rows else "t"
     plan, errors, seq = _issue_plan(
         items,
@@ -647,7 +656,7 @@ def _stamp_host_plan(
         cap=cap,
         locked=locked_rows,
     )
-    full = locked_rows + plan
+    full = locked_rows + preserved_rows + plan
     out: dict = {
         "subtasks": full,
         "host_subtask_seq": seq,
@@ -657,7 +666,7 @@ def _stamp_host_plan(
         "plan_prefix_ids": [str(row["subtask_id"]) for row in locked_rows],
         "recoverable_point": len(locked_rows),
     }
-    if locked_rows:
+    if locked_rows or preserved_rows:
         # 重规划**成功**：新后缀已经替代了旧后缀，被替代的步骤连结果一起剪掉。
         # 不剪的话，上一轮那个失败步骤的记录会一直挂在 results 里：
         # critic 见 error 就 retry、aggregator 见 error 就写"部分失败"——
@@ -732,6 +741,32 @@ def _carry_plan(
         "plan_prefix_ids": [str(row["subtask_id"]) for row in locked_rows],
         "recoverable_point": len(locked_rows),
     }
+
+
+def _unlocked_preserved_rows(state: LgRagState, locked: list[dict]) -> list[dict]:
+    """replan 保号集合（hitl-replan-carry-and-persist-guard 契约一）：
+    hitl_unlocked_ids ∩ **无任何终态**的计划步骤，原行原 subtask_id 带回。
+
+    approved 步的旧结果已被 _apply_hitl_decision 剪掉 ⇒ 天然无终态；
+    FP-8 防御：凡有终态（成功或失败）的 unlocked 步一律**不保号** ——
+    带终态回计划会被跳过执行，授权语义被架空。保号行置于 locked 前缀
+    之后、LLM 新后缀之前（_stamp_host_plan 负责落位）；LLM 不知晓
+    保号行，故新后缀不得 depends_on 保号行（契约允许）。
+    """
+    unlocked = {str(s) for s in (state.get("hitl_unlocked_ids") or [])}
+    if not unlocked:
+        return []
+    rows = _plan_rows(state)
+    plan_ids = {str(row["subtask_id"]) for row in rows}
+    terminal = _terminal_index(list(state.get("subtask_results") or []), plan_ids)
+    locked_ids = {str(row.get("subtask_id") or "") for row in locked or []}
+    return [
+        dict(row)
+        for row in rows
+        if str(row["subtask_id"]) in unlocked
+        and str(row["subtask_id"]) not in terminal
+        and str(row["subtask_id"]) not in locked_ids
+    ]
 
 
 def _format_prefix_block(locked: list[dict]) -> str:
@@ -959,6 +994,8 @@ async def supervisor_node(state: LgRagState) -> dict:
         return {**bump, **_missing_run_update(query)}
     # Q8：重规划入口先算不可变前缀。空 ⇒ 首次规划，走原路径。
     locked = _locked_prefix(state)
+    # hitl-replan-carry-and-persist-guard：HITL 解锁步保号集合（契约一·P=unlocked∩无终态）。
+    preserved = _unlocked_preserved_rows(state, locked)
     caps, allowed_ids = _resolve_supervisor_visible_caps(state)
     if state.get("allowed_capability_ids") is None or not allowed_ids:
         span_meta: dict = {
@@ -973,7 +1010,7 @@ async def supervisor_node(state: LgRagState) -> dict:
         _record_span_metadata(span_meta)
         # 已有前缀时不退化成"单 rag"：那会把已完成步骤的关联键抹掉
         items = [] if locked else [{"id": "t1", "type": "rag", "input": query}]
-        stamped = _stamp_host_plan(state, items, locked=locked)
+        stamped = _stamp_host_plan(state, items, locked=locked, preserved=preserved)
         return {**bump, **stamped}
     catalog_block = _format_capability_catalog(caps)
     if locked:
@@ -1051,7 +1088,7 @@ async def supervisor_node(state: LgRagState) -> dict:
             fallback = False
         else:
             subtasks = [{"id": "t1", "type": "rag", "input": query}]
-    stamped = _stamp_host_plan(state, subtasks or [], locked=locked)
+    stamped = _stamp_host_plan(state, subtasks or [], locked=locked, preserved=preserved)
     issued = stamped.get("subtasks") or []
     # Host V1-A · A2：声明∩裁剪（只收窄不放宽 · off 模式整段短路零 diff）。
     # 有效 scope 写 state，作签发 capability_set 上界；越界剔除 + 截断留痕。
@@ -1520,6 +1557,56 @@ def _thread_id_of(
         return ""
 
 
+async def _approved_fresh_for_subtask(
+    state: LgRagState, *, subtask_id: str, capability_id: str
+) -> bool:
+    """``_persist_hitl`` 建单前检查（hitl-replan-carry-and-persist-guard 契约四）：
+
+    同 (run_id, subtask_id, capability_id) 存在新鲜 approved 单据 → True
+    （跳过建单）。匹配语义镜像 ``_approval_consumed``：blocked_by 守卫 +
+    三元组精确匹配 + 缺 capability_id 键不匹配 + ``_decided_at_ts`` 归一 +
+    ``_approval_consumption_ttl_seconds`` TTL —— 同一实现复用，禁第二份
+    （auto_resume.py 复用先例）。**fail-open**（契约五）：读异常 → False
+    （照建单）+ ``hitl_persist_guard_read_failed`` warning 台账（键名钉死）。
+    """
+    run_id = _run_id_of(state)
+    if not (run_id and subtask_id and capability_id):
+        return False
+    from app.ops.hitl import get_hitl_store
+
+    try:
+        rows = await get_hitl_store().alist(status="approved", limit=200)
+    except Exception as exc:  # FP-4：fail-open 照建单 + warning（钉死键名）
+        logger.warning(
+            "hitl_persist_guard_read_failed subtask=%s capability=%s err=%r",
+            subtask_id,
+            capability_id,
+            exc,
+        )
+        return False
+    now = time.time()
+    ttl = _approval_consumption_ttl_seconds()
+    for row in rows:  # 匹配循环镜像 _approval_consumed（契约四 · 同一守卫语义）
+        if str(row.get("blocked_by") or "") != _BLOCKED_BY_DELEGATION_ISSUE:
+            continue
+        if str(row.get("run_id") or "") != run_id:
+            continue
+        if str(row.get("subtask_id") or "") != subtask_id:
+            continue
+        payload = row.get("payload")
+        if not isinstance(payload, dict):
+            continue
+        if str(payload.get("capability_id") or "") != capability_id:
+            continue
+        decided_ts = _decided_at_ts(row.get("decided_at"))
+        if decided_ts is None:  # FP-3：异常时间戳不匹配（不扩面）
+            continue
+        if ttl - (now - decided_ts) <= 0:
+            continue
+        return True
+    return False
+
+
 async def _persist_hitl(
     state: LgRagState, obs: dict, *, thread_id: str = ""
 ) -> tuple[list[dict], bool]:
@@ -1583,6 +1670,14 @@ async def _persist_hitl(
         capability_id = str(term.get("tool") or "").strip()
         if capability_id:
             payload["capability_id"] = capability_id
+        # hitl-replan-carry-and-persist-guard 契约四：同 (run_id, subtask_id,
+        # capability_id) 已有新鲜 approved 单据 ⇒ 跳过建单（防 resume 重放
+        # 孤儿 pending）；命中不产新行也不伪造行（契约八 · interrupt 语义不动）。
+        if await _approved_fresh_for_subtask(
+            state, subtask_id=sid, capability_id=capability_id
+        ):
+            logger.info("hitl_persist_guard_skip subtask=%s run=%s", sid, run_id)
+            continue
         request = {
             "id": new_request_id(),
             "run_id": run_id,
