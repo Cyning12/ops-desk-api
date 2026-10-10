@@ -24,7 +24,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | pending | 20-spec-audit 落盘后维护者签 |
+| **HG-SPEC-SIGNOFF** | **approved**（2026-10-11 · 00 代录 · 授权 m01606「授权 00 签收所有过程文档」· 依据 R1 PASS-WITH-NITS docs/harness/reviews/spec_tool-catalog-page_audit_R1_20261011.md · nit N1–N5 拆 task 携带回填） | 20-spec-audit 落盘后维护者签 |
 
 ---
 
