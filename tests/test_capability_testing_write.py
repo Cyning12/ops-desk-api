@@ -20,10 +20,10 @@
   `_persist_hitl`/`observe_node`/`resume_hitl_run`）：挂起（blocked_by=
   delegation_issue_hitl_required）→ pending 可见 → decide(approved) →
   resume（图真恢复 · verdict=replan · 解锁留痕）。
-  **如实钉死设计真态**（30 实证）：批准后**重下发同 tool 仍再拦**
-  （`auto_approve_ok` 不消费审批结果 · 判定逻辑零改动是钉死契约）——
-  「decide(approved) → resume → done{completed}」的 done 段在 enforce+写能力下
-  依赖重plan收敛，live HTTP 全链证据由 A1 留 40/验收人。
+  **设计真态**（hitl-approval-consumption-loop T1 落地后）：批准后重下发同 tool
+  经消费门放行（匹配 approved 单据 → 签发判定 None）；无消费形态仍拦——
+  双断言钉死于 A4④ 末段，边界否定全组由 tests/test_hitl_approval_consumption.py
+  TA2 承接。live HTTP 全链证据留 40 复跑。
 """
 
 from __future__ import annotations
@@ -396,10 +396,10 @@ async def test_a4_enforce_chain_suspend_pending_decide_resume(monkeypatch):
     （真 _persist_hitl）→ decide(approved)（真 store.adecide）→ resume
     （真 resume_hitl_run + 真 observe_node · verdict=replan · 解锁留痕）。
 
-    **如实钉死设计真态**（30 实证）：批准后重下发同 tool 仍再拦——
-    `auto_approve_ok` 不消费审批结果（判定逻辑零改动是钉死契约，本 task 不动）；
-    且单步无前缀计划 unlock_subtask_id 为空（HTTP resume 端点对此形态 409，
-    见 router.py:404-410）。done{completed} 终态段的 live HTTP 证据留 A1（40/验收人）。
+    **D1/D2 落地后设计真态**（hitl-approval-consumption-loop T1）：批准后重下发
+    同 tool 经消费门放行（匹配 approved 单据 · 三元组+TTL）；单步无前缀计划
+    unlock_subtask_id 回填为被拦 sid 自身（delegation_issue 类形态守卫），
+    HTTP resume 端点对该形态不再 409。live HTTP 全链证据留 40 复跑。
     """
     monkeypatch.setenv(dl.ENV_MODE, "enforce")
     monkeypatch.setenv(dl.ENV_SECRET, "testing-write-secret")
@@ -430,7 +430,7 @@ async def test_a4_enforce_chain_suspend_pending_decide_resume(monkeypatch):
     }
 
     # ① 挂起：真判定链（auto_approve_ok 条件②不放行 → 委派签发需人工审批）
-    joined = _join_subtasks({**state, "inflight_subtask_ids": []})
+    joined = await _join_subtasks({**state, "inflight_subtask_ids": []})
     assert sid not in joined.get("inflight_subtask_ids", [])
     blocked = [r for r in joined["subtask_results"] if r.get("hitl_required") is True]
     assert len(blocked) == 1
@@ -485,9 +485,17 @@ async def test_a4_enforce_chain_suspend_pending_decide_resume(monkeypatch):
     assert final["hitl_unlocked_ids"] == [sid]
     assert final["react_observation"]["hitl_decision"]["decided_by"] == "验收"
 
-    # 设计真态钉死（非缺陷 · 本 task 不改判定逻辑）：批准不等于放行签发——
-    # 重下发同 tool 时 auto_approve_ok 仍判非只读 → 再拦（HITL 审批逐次有效）。
+    # 设计真态钉死（D1 消费门落地后语义 · 双断言 · 边界否定由 TA2 全组承接）：
+    # ① 有消费形态（匹配 approved 单据 · 三元组命中 · decided_at 新鲜）→
+    #   重下发同 tool 放行签发（None）——批准接成可消费的授权；
+    # ② 无消费形态（消费键不命中：换 run_id）→ auto_approve_ok 仍判非只读 →
+    #   再拦（无匹配单据时审批逐次有效语义不变）。
     post = dict(merged)
     post["hitl_unlocked_ids"] = final["hitl_unlocked_ids"]
-    reason = _delegation_issue_block_reason(post, merged["subtasks"][0])
-    assert reason is not None and "非只读" in reason
+    reason = await _delegation_issue_block_reason(post, merged["subtasks"][0])
+    assert reason is None
+    post_mismatch = {**post, "run_id": f"{run_id}-other"}
+    reason_mismatch = await _delegation_issue_block_reason(
+        post_mismatch, merged["subtasks"][0]
+    )
+    assert reason_mismatch is not None and "非只读" in reason_mismatch
