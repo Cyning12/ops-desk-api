@@ -107,6 +107,11 @@ _LAST_META: dict[str, Any] = {
 # 每个文件实际注册了哪些 id（reload 时只注销**本文件**的，避免误伤别的清单）
 _FILE_IDS: dict[str, tuple[str, ...]] = {}
 
+# 加载失败集（path → error）：如实反映「当前在册表是怎么来的」。
+# load_capability_manifests 逐文件失败即留存；该文件任何一次成功 _commit
+# （load/reload）即清除其记录。禁无理由自动清零（契约3 · catalog-manifest-errors-surface）。
+_MANIFEST_LOAD_ERRORS: dict[str, str] = {}
+
 
 class ManifestError(ValueError):
     """整文件失败：非法 manifest（不半套注册）。"""
@@ -145,6 +150,18 @@ class _PendingEntry:
 def get_capability_manifest_metadata() -> dict[str, Any]:
     """模块级 metadata：最近一次成功 load/reload 的 version + count。"""
     return dict(_LAST_META)
+
+
+def get_manifest_load_errors() -> list[dict[str, str]]:
+    """当前 manifest 加载失败集（[{path, error}]），按 path 排序（多副本对拍稳定）。
+
+    只读视图：不改内部状态；失败原因原样留存（不透 adapter/local_fn 装配细节，
+    校验报错本身就不含这些子串）。
+    """
+    return [
+        {"path": path, "error": _MANIFEST_LOAD_ERRORS[path]}
+        for path in sorted(_MANIFEST_LOAD_ERRORS)
+    ]
 
 
 def extra_manifest_paths() -> tuple[Path, ...]:
@@ -197,6 +214,7 @@ def load_capability_manifests(
             loaded.append(_commit(target, version, pending, replace=False))
         except ManifestError as exc:
             failed.append((str(target), str(exc)))
+            _MANIFEST_LOAD_ERRORS[str(target)] = str(exc)
             logger.error("manifest 加载失败（已跳过该文件）: %s: %s", target, exc)
     return MultiManifestLoadResult(loaded=tuple(loaded), failed=tuple(failed))
 
@@ -243,6 +261,8 @@ def _commit(
         registered.append(cid)
 
     _FILE_IDS[str(target)] = tuple(registered)
+    # 本文件加载成功 → 其历史失败记录失效（契约3：reload 成功清该文件记录）
+    _MANIFEST_LOAD_ERRORS.pop(str(target), None)
     _LAST_META["version"] = version
     _LAST_META["capability_manifest_count"] = enabled_count
     update_current_span_metadata(

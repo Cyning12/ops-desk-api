@@ -183,7 +183,7 @@ def test_tc4_failure_isolation_lifecycle_and_meta(tmp_path: Path):
     try:
         # 失败域隔离存续：好文件照常注册、坏文件整文件失败
         assert not result.ok
-        assert [s.capability_id for s in result.loaded] == ["tc4.good.cap"]
+        assert [r.registered_ids for r in result.loaded] == [("tc4.good.cap",)]
         assert [p for p, _e in result.failed] == [str(bad)]
         # 故障记录 = failed 集（path→error），与好文件无关
         records = {e["path"]: e["error"] for e in get_manifest_load_errors()}

@@ -299,6 +299,8 @@ ignore_imports =
     app.ops.admin.capability -> app.ops.capability.circuit
     app.ops.admin.capability -> app.ops.capability.fallback
     app.ops.admin.capability -> app.ops.capability.idempotency
+    # manifest 故障可见性（catalog 顶层两键 · catalog-manifest-errors-surface · 00 裁定授权）
+    app.ops.admin.capability -> app.ops.capability.manifest
     app.ops.admin.capability -> app.ops.capability.metrics
     app.ops.admin.capability -> app.ops.capability.persistence
     app.ops.admin.capability -> app.ops.capability.receipts
