@@ -70,3 +70,4 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-10-11 | 10 落稿（**00 代笔** · 首棒长读卡滞 interrupt 留痕 · 授权 m01606 过程文档代签）：SPEC §9 序2 逐字承接 · app/ 零初始化精确口径（55 getLogger · main.py 49 行）· D1-D4 候选开放 · TC1-TC5 · 三闸 pending |
+| 2026-10-11 | **40 自检结论回填：PASS-WITH-NITS**（invoke_20261011_40_verify.md · commits 6bd4cec/268e46c/642a4d0）——TC2 坑位1 反转实证成立（after app.* INFO 钉死格式可见 · before wrapper grep 空）· TC3 compose 零 diff 照登 · TC4 4 请求 4 access 行零双行 · TC5 对拍零新增红归因本 diff（master 基线 4 红逐名吻合 · 同 env A/B 两侧同红 chat×8 环境敏感 · memory×4 瞬态复跑全绿）· OPS_LOG_LEVEL 四组探针+BOGUS live 回退告警实证 · N-40-1 import 窗口裸格式 nit 留后续裁定。偏差：8021→8022（launchd 占用）· 三键全链缺真 LLM key 照登 |
