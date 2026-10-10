@@ -27,9 +27,9 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20, 30 | 初稿人扫（00 代录） |
-| HG-AUDIT-R1 | pending | 30 | 20 R1 落盘后人签（00 代录） |
-| HG-GRAPH-MODULES | pending | PR | 图谱 n/a 预判按实判（00 代录） |
+| HG-TASK-DRAFT | **approved**（2026-10-11 · 00 代录 · 授权 m01606/m00255） | 20, 30 | R2 PASS-WITH-NITS（docs/audits/task-review/20261011_specwave-verify-baseline_r2.md · 559d24a） |
+| HG-AUDIT-R1 | **approved**（同上代录） | 30 | R1 BLOCKER B-1→fe51492 修订→R2 PASS 闭合 · N-4 照登已吸收 |
+| HG-GRAPH-MODULES | **approved**（同上代录 · 按实判） | PR | 图谱 n/a 照实（纯文档面 · 模块清单零增删） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 无外部试点面 |
 
 ## 1. 背景与实证（2026-10-11 实跑真值 · base cae745e）
@@ -89,7 +89,7 @@
 - [ ] TC4 诚实性抽查：豁免/补录档注记措辞如实（维护者抽 5 档可读）。
 - [ ] TC5 反回归：全量 pytest 零新增红（master 基线对拍）· 既有档 git diff 零。
 
-## 6. 非范围
+## 非范围
 
 - verify 工具本体（spec-wave 上游）规则改动——如须豁免机制而上游无口，仓内承载并文档化，不改上游。
 - 古早档内容质量重审（超出 chore 面）。
@@ -106,3 +106,4 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-10-11 | 10 落稿（**00 代笔** · 首棒卡滞 interrupt 留痕 · 授权 m01606 过程文档代签）：实跑真值 EXIT=2/93 缺口三类分账（52+36+5）· D1 倾向 C 混合 · 管道吞码坑钉 D3 · 三闸 pending |
+| 2026-10-11 | B-1 修订（00 · commit fe51492）：E3 节名去编号+TC 勾选化 · E4 失败路径节 · E5 自检结论占位 · E8 wiki_delta 行 · 闸表 4 列化 · N-1 155→154 → R2 PASS-WITH-NITS（559d24a）· N-4 顺手吸收（节去编号+本行补录）· 三闸 00 代录 approved |
