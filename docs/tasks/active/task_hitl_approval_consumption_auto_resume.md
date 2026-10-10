@@ -235,7 +235,16 @@ TB1–TB8 逐条映射 SPEC A 编号与 FP 断言：台账计数（triggered==1/
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+**40 核验结论（2026-10-10 · invoke_20261010_40）**：**PASS（带偏差登记 · 可进 PR 队列）**——独立复跑不采信自报：
+
+- **TB1**：pytest 机制段绿 + **live 段复跑达成机制全链**——六 env 组 + `OPS_HITL_AUTO_RESUME=auto` 起服务 :8030，run `dbc0fc74…`：hitl.waiting（unlock=sid 回填）→ pending 可见 → decide(approved) 200 persisted（auto 形态 resume 块 `{required:false, auto_triggered:true}` live 实证）→ **不调 resume** → 台账 `triggered`→`claimed` → 同源恢复执行（解锁 :1 · hitl.resumed 帧 · 恢复完成 replay=:13）；**末段 `done{completed}` 未达成，如实登记**——命中 T1 40 已登记的 replan 重盖章偏差（sid :1→:2 · 无 `delegation_approval_consumed` 台账 · 再拦新 pending :2）。**非 T2 回归 · T2 机制面（decide→自动派发→同源恢复→图继续）live 全达**。
+- **TB2–TB7**：39 枚新测抽跑全绿（Db 组 4 枚真 PG 非 skip · SKIP LOCKED 并发断言亲读为真锁语义 · InMemory 组无行锁假断言）；store.py 纯新增 68 行（删除行=0）· registry/policy/nodes/delegation diff 空 · 恢复段抽取同源（`await resume_hitl_run(` 调用点==1 机断钉）。
+- **TB8**：全量 1748 passed · 1 skipped · **4 failed=基线环境性**（capability_lookups×3+lg_rag_multi×1 · `delegation no_token` · 与 T1 40 钉案同签名 · 失败文件均非本分支触及 · 零新增红）；ruff 触及六路径零新增（base 3f6a630 影子对拍同绿）；graph-compile EXIT=0（freeze/日期噪音已 checkout 还原）；verify EXIT=0 · task lint PASS · lint-wiki-delta PASS。
+- **台账三动作 live 全实证**：triggered/claimed（decide 链）+ compensated（播种「崩溃遗留」approved 单据 · 启动扫描补触发 · ttl_remaining 逐轮递减实证）。
+- **40 附带观察（登记上抛 T1/SPEC v2 视野 · 非 T2 归因）**：resume 时 `observe_node` 重放致 `_persist_hitl`（nodes.py:1727 · 落库先于挂起）在 `interrupt()` 返回前为已批准 sid 重建**孤儿 pending**（live 实证 `hitl_5cefb116…:1`）——LangGraph 节点重放语义使然，手动/自动路径同源共有，nodes.py 本 task diff 空。
+- 基点注记：本地 master 实指 `94cb1c6`（含 PR #217 T1 close chore），本分支自 `3f6a630` 切出——`git diff master` 混含 T1 归档面，对拍基线以 merge-base `3f6a630` 为准（40 invoke 有实证）。
+- HG-GRAPH-MODULES 在册行（T2 行 · 00 代录措辞承 T1 先例形态）实证在案 → 留 00 ratify。
+
 
 ---
 
