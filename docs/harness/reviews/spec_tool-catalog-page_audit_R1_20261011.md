@@ -39,16 +39,23 @@
 
 ## 阻塞清单
 
-（待回填）
+无。范围/非范围边界清晰可执行，D 组注册面与本 SPEC 观测面互不越界，Q1–Q4 裁定闭合且维护者三裁定原话与立项令逐字一致，FP-1~FP-6 与验收标准均可机断，19 项实证抽查与代码真值一致。未发现需退回 10-spec 的实质缺口。
 
 ## 非阻塞清单（nits · 不阻签收 · 建议 00 拆 task 时顺手处理）
 
-（待回填）
+| # | 级别 | 内容 | 建议 |
+|---|---|---|---|
+| N1 | 文献 nit | SPEC :40 锚点 `capability.py:199-215` 未含返回字典起始行（return 实起 :192，函数体 :163-214） | 实现 task 引用时改为 `:163-214`（或 `:192-214`）；SPEC 本体无需为此升版 |
+| N2 | 文献 nit | SPEC §8 锚点 `deps.py:56-115` 未含 `get_current_user` 本体（:18-53 · B1 鉴权实际入口） | 实现 task 引用时改为 `:18-115`；SPEC 本体无需为此升版 |
+| N3 | 交付提示 | Q3 `CurrentUser` 口径下 viewer 的 Principal 构造未钉死：`OpsUser.role` 为单值（deps.py:58 实证），映射到 `Principal.roles` 集合的口径属实现细节 | B1 task 钉 roles 映射（如 `roles={user.role}`）并固化 viewer fixture ⊆ maintainer 对拍断言（§6 已要求，机断可行） |
+| N4 | 交付提示 | B2 `manifest_errors` 落点 SPEC 留「实现 task 裁定」——现状 `get_capability_manifest_metadata` 仅回 version+count（manifest.py:145-147），故障仅 `logger.error`（:200） | B2 task 在两候选落点（summary 增 `manifest_errors` 键 / 扩既有 meta 面）中裁一，验收以故障注入断言为准（§6 已钉，机断可行） |
+| N5 | 观察 | 上游终局文档 `docs/guides/DESIGN_agent_contribution_endgame_v0_zh.md` 不在本 worktree 分支（居 `docs/agent-contribution-roadmap` · 维护者令 D2 收口后合入），C18 对齐核对基于主仓副本只读；另 Q4 引原话「B2可以先用方案2」系承前批选项编号，与本文 Q4 S1/S2 编号不直接对应 | 00 知悉即可；拆 task 时勿将「方案2」误读为本文 Q4 S2（弃选项），其义为承 chat-history-hitl-ux Q4 同款分仓策略（即本文 S1） |
 
 ## HG-SPEC-SIGNOFF 建议
 
-（待回填）
+建议签收（pass）。本帽不代签 human_gate；维护者签录后可由 00 起草后端 task（B1/B2 可先并行拆 · invoke_slug=`tool-catalog-page`），前端 F1 依 Q4 由前端专项 SPEC 另立（ops-desk-web 仓）。拆 task 时携带 N1–N4 回填。
 
-## 结论：R1（待回填）
+## 结论：R1 PASS-WITH-NITS
 
-（待回填）
+R1 书面审 **PASS-WITH-NITS**：19 项核对全数通过，六组实证锚点与代码真值一致（catalog 简略出站 · manifest 字段族在册 · 可见性求值完备 · 故障静默缺口 · 鉴权依赖 · 8 枚全只读可见集），Q1–Q4 裁定闭合且维护者原话留痕无误，failure_paths 与验收标准均可机断执行，与终局文档 A 面观测面定位对齐；五条非阻塞 nits（两处锚点行号微偏 / viewer principal 映射 / manifest_errors 落点 / 上游文档跨分支与承前批编号）移交 task 阶段处理，不影响 HG-SPEC-SIGNOFF 进入人签。
+
