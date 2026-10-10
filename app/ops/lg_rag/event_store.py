@@ -90,6 +90,41 @@ async def last_seq(run_id: str) -> int:
     return int(row[0] or 0) if row else 0
 
 
+async def run_is_terminal(run_id: str) -> bool:
+    """run 是否已到**终态**（T2 实操-E · 补偿扫描「run 未终态」判定的只读真源）。
+
+    真源裁定（30 留痕）：终态 = 事件表存在终结帧，与 `history.run_terminal_status`
+    同口径——
+    - `error` 帧 → 终态；
+    - `done` 帧且 `payload.status != 'waiting_approval'`（缺省按 completed）→ 终态；
+    - `done{waiting_approval}` 是**挂起等待**而非终态（恰是待恢复形态，排除）；
+    - 无任何帧 → 非终态。
+
+    红线：禁读进程内存态 · 禁以 checkpoint 存在性近似终态。
+    """
+    if not run_id:
+        return False
+    status_expr = func.coalesce(OpsLgRagRunEvent.payload["status"].as_string(), "completed")
+    async with AsyncSessionLocal() as db:
+        row = (
+            await db.execute(
+                select(OpsLgRagRunEvent.seq)
+                .where(
+                    OpsLgRagRunEvent.run_id == run_id,
+                    or_(
+                        OpsLgRagRunEvent.event_type == "error",
+                        and_(
+                            OpsLgRagRunEvent.event_type == "done",
+                            status_expr != "waiting_approval",
+                        ),
+                    ),
+                )
+                .limit(1)
+            )
+        ).first()
+    return row is not None
+
+
 async def assert_run_owned(run_id: str, user_id: str) -> None:
     """确认 run 存在且归属当前用户；否则 ``LgRagRunNotFoundError``。"""
     if not run_id or not user_id:

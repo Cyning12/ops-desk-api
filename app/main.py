@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.ops.hitl import auto_resume
 from app.ops.router import router as ops_router
 from app.ops.tracing import log_tracing_startup
 
@@ -13,7 +14,16 @@ from app.ops.tracing import log_tracing_startup
 async def lifespan(app: FastAPI):
     """Application lifespan."""
     log_tracing_startup()
-    yield
+    # T2 补偿扫描挂点（FP-9 崩溃兜底）：仅 auto 模式创建（manual 默认**零创建**——
+    # TestClient 经 lifespan 的既有测试面零 diff · 实操-D）；shutdown 须 cancel。
+    scan_started = auto_resume.auto_resume_mode() == auto_resume.MODE_AUTO
+    if scan_started:
+        auto_resume.start_compensation_scanner()
+    try:
+        yield
+    finally:
+        if scan_started:
+            await auto_resume.stop_compensation_scanner()
 
 
 app = FastAPI(
