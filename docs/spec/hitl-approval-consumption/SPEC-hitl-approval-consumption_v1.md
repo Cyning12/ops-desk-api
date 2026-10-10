@@ -251,9 +251,32 @@ delegation 签发审批的自动放行判定 `auto_approve_ok`（`app/ops/capabi
 - 代码锚点：`delegation.py:488-514,107` · `nodes.py:277-295,550-567,711,1397-1471` · `router.py:287-316,404-411` · `store.py:89-94,98,130-138,159-163` · `strategy/config.py:14-45` · `builder.py:177-182` · `registry.py:112-140` · `policy.py:96-105` · `models.py:449-487`
 - 图谱：`docs/_tech_graph/l1/01_modules.md`（capability/lg_rag/hitl/strategy 行 · 回写义务见 Harness 元信息）
 
+## 9. 后续议题登记（2026-10-11 · 全链收口后维护者令「遗留的三项都写入当前spec文档中，根据当前整体进度排序」00 代录）
+
+> 消费回路 SPEC v1 全链（T3+T1+T2+保号+竞态）落地后，历 task CLOSE 钉案与验收文档中留转的三项仓级议题，按当前整体进度排序如下；立案/排期裁定权留维护者。
+
+### 序 1 · LLM 盲循环 + approved 恒 replan（消费回路血统直接延续 · 功能缺口 · 建议下一棒）
+
+- **现象**：approved 步骤「自然完成」双重结构性不可达——① LLM 不知晓保号行（observe 剪结果 · 盲循环需多轮 approve 推进）② `router.py:328-357` _collect_decisions approved 非空恒 replan。T1/T2/保号 40 live 与验收链均撞（孪生 subtasks `:1`/`:2` 签名 · replan 每轮重盖章）。
+- **源钉案**：保号 task CLOSE 钉案②（`docs/tasks/close/close_hitl_replan_carry_and_persist_guard_20261010.md`）· 验收文档语义边界登记（`docs/acceptance/20261010_hitl-consumption-loop_local_acceptance.md`）。
+- **建议方向**：replan 质量专题（LLM 可见保号行 / _collect_decisions 终态判定放宽）· 涉 nodes.py+router.py · 立案时另起 task。
+
+### 序 2 · 仓级 logging 初始化缺失（可观测性基建 · 阻塞一切 live 核验与验收台账观测）
+
+- **现象**：全仓零 `logging.basicConfig`（`app/main.py` 无 logging 配置 · 各模块仅 `getLogger(__name__)`）——裸 uvicorn 只配自身 logger 吞 app INFO，`hitl_auto_resume_*`/`delegation_approval_consumed`/`hitl_persist_guard_skip` 等台账链全不可见；live 核验/验收必须自写带 basicConfig 的启动器（验收便签坑位 1 · 维护者复跑亲撞）。
+- **建议方向**：`logging.basicConfig(level=INFO)` 收进 `app/main.py`（或 lifespan 早期），裸 uvicorn / 启动器 / compose 三形态台账口径一致；仓级小 task 可收。
+- **源钉案**：D1 CLOSE 改进建议 #1（`docs/tasks/close/close_hitl_auto_resume_claim_race_20261010.md` 第九节）。
+
+### 序 3 · 仓级 verify 缺口基线（chore · 文档债）
+
+- **现象**：`npx spec-wave verify` EXIT=2 BLOCKED（done/ 遗留档 reviews 缺口 92 项 · 主仓 master 同 · 非任一在途 task 归因）——历 task 30/40/CLOSE 均照登基线不新增。
+- **建议方向**：另立 chore task 批量补登缺口，或 verify 配置标 baseline 豁免遗留档。
+- **源钉案**：历 CLOSE 文档钉案（保号 / D1 同钉）。
+
 ## 修订记录
 
 | 日期 | 版本 | 内容 |
 |---|---|---|
+| 2026-10-11 | v1（§9 增补） | 全链收口后维护者令登记后续议题三条（序 1 LLM 盲循环+恒 replan · 序 2 仓级 logging 初始化 · 序 3 仓级 verify 缺口基线）· 按当前整体进度排序 · 立案裁定权留维护者 · 00 代录 |
 | 2026-10-09 | v0 | 10-spec 初稿：三实证缺口锚定 30/40 invoke 行号展开 D1–D4；Q1–Q5；FP-1~FP-7；A1–A8；R0–R5；HG-SPEC-SIGNOFF=pending（20-spec-audit R1 PASS-WITH-NITS · 留转六条全 PASS · N1–N4） |
 | 2026-10-10 | v1 | handoff 令退回修订：补终局 §4 两裁定——D5 批准后自动继续可配置面（触发器=进程内后台任务+PG 行锁认领+补偿扫描 · 全局 env `OPS_HITL_AUTO_RESUME` 默认 manual + decide 载荷可选键 `resume_mode` 白名单 fail-closed）+ 无状态恢复纪律锁死（设计纪律 6）；Q6/Q7；FP-8~FP-11；A9（auto 全链 done{completed} · handoff 验收令）/A10（无状态恢复钉死组）；吸收 R1-N3（TTL 域 [1,86400]）/N4（decided_at 双 store 归一 · A2 双断言）；N1/N2 移交 task 阶段；骨架子 Agent 落盘 + 全文 00 代笔（卡滞留痕见修订 invoke） |
