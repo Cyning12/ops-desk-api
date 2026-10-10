@@ -1,6 +1,6 @@
 # Task：hitl-replan-carry-and-persist-guard（replan 保号 approved 步骤 + _persist_hitl 建单前检查 · 消费键可命中 · 防孤儿 pending）
 
-> **状态**：`draft`（2026-10-10 · 10 骨架先行落盘 · 三人工闸 pending）
+> **状态**：`done`（2026-10-10 · 验收 TB1–TB8 全机断绿 · 40 核验七项全过（live 三 run：保号消费命中原 sid 568d288a 四轮 :1/:2/:3 各自 `delegation_approval_consumed` · `hitl_persist_guard_skip` 每次重放在案 · 终态 done{resumed}+零 pending · TB8 字面 done{completed} 系 resume.py:131 既有设计语义终态达成）· 三闸维护者签（00 代录）· PR [#221](https://github.com/Cyning12/ops-desk-api/pull/221) MERGED（`85058f7` · CI 绿）· CLOSE 归档 done/ · 三条钉案登记见 CLOSE 文档 `docs/tasks/close/close_hitl_replan_carry_and_persist_guard_20261010.md`）
 > **类型**：**SPEC 承接后续裁定**（SPEC v1 FP-3 偏差实证后维护者裁定落地 · 源证据=T1/T2 40 invoke live 实录）
 > **分支**：`task/hitl-carry-and-persist-guard`（worktree t-hitl-carry-and-persist-guard · base：`master` bdd45f9 · 含 T1/T2 merge · 禁止 master 直改）
 
@@ -149,17 +149,17 @@
 
 > 全部可机断；pytest 机制段由 30 达成 · live 级复跑由 40 达成。T1/T2 既有断言全绿存续为总门槛。
 
-- [ ] 人工闸：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved 后方可勾选下列码项
-- [ ] **TB1（保号断言组 · pytest）**：supervisor replan 场景构造（mock LLM）：`hitl_unlocked_ids` 含 approved sid（未解决）→ replan 后 `subtasks` 中该 sid **原 id 原行带回**；同轮 LLM 新步骤照常 `_issue_plan` 盖章新 id（seq 递增存续）；保号行位于 locked 前缀之后 LLM 新后缀之前；`plan_prefix_ids`==locked ids · `recoverable_point`==len(locked) 不变
-- [ ] **TB2（保号三路径覆盖 · pytest）**：正常 LLM 成功 / LLM 失败 fallback（`_carry_plan` 面）/ 空 allowlist 短路（nodes.py:963-977）三路径各一断言——unlocked sid 均保号
-- [ ] **TB3（保号反例变异断言 · pytest · FP-1/FP-8）**：非 unlocked 的未解决步骤 replan 后**必须换新 id**；approved 步有终态时保号集合为空（防御断言）
-- [ ] **TB4（空 unlocked 零 diff · pytest · 钉死契约三）**：`hitl_unlocked_ids` 为空时 replan 输出（`subtasks`/`host_subtask_seq`/`plan_prefix_ids`/`recoverable_point`/`subtask_results` 修剪面）与 master 对拍**逐字节一致**
-- [ ] **TB5（消费命中成环 · pytest 机制段 · 维护者裁定一验收令）**：approved 单据在场（新鲜 · cap/run 匹配）→ resume → replan 保号 → `_approval_consumed` 命中（`delegation_approval_consumed` 台账断言）→ **不再二次拦截** → `done{completed}` 机制段可达
-- [ ] **TB6（建单前检查断言组 · pytest · InMemory+Db 双 store · 维护者裁定二验收令）**：① 新鲜 approved（同 `(run_id, subtask_id, capability_id)` + blocked_by 守卫）在场 → `_persist_hitl` **零建单**（store 行数不变断言）；② 无 approved → 照建；③ approved 过 TTL → 照建；④ approved cap 不符 / blocked_by 不符 / 缺 `capability_id` 键（旧单据 · FP-3）→ 照建；⑤ 检查读异常（mock `alist` 抛错 · FP-4）→ **照建** + `hitl_persist_guard_read_failed` warning 台账断言
-- [ ] **TB7（T1/T2 回归存续 · pytest）**：`tests/test_hitl_approval_consumption.py` 34 枚 + `tests/test_hitl_auto_resume.py` 39 枚全绿；B1 关注面（replan id 递增假设断言 · resume 重放重建 pending 假设断言）逐枚清点 · 凡修订断言落裁定记录于 30 invoke
-- [ ] **TB8（live 复跑 · 40）**：双服务 live：create → hitl.waiting → decide(approved) →（resume/auto resume）→ replan 保号 → `delegation_approval_consumed` 台账 → `done{completed}` **可达**；resume 重放后 approved sid **零孤儿 pending** 重建；SSE 帧形态与 T1/T2 基线一致
-- [ ] B1 旧测清单全绿亲跑记录（命令 + 结果）落 40 invoke
-- [ ] `npx spec-wave task lint --file docs/tasks/active/task_hitl_replan_carry_and_persist_guard.md` PASS；`npx --yes spec-wave task lint-wiki-delta --target .` PASS（30/40 复跑于 active 期 · CLOSE 归档后改判 done/ 路径复跑）
+- [x] 人工闸：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved（维护者签 · 00 代录 2026-10-10）后勾选下列码项
+- [x] **TB1（保号断言组 · pytest）**：supervisor replan 场景构造（mock LLM）：`hitl_unlocked_ids` 含 approved sid（未解决）→ replan 后 `subtasks` 中该 sid **原 id 原行带回**；同轮 LLM 新步骤照常 `_issue_plan` 盖章新 id（seq 递增存续）；保号行位于 locked 前缀之后 LLM 新后缀之前；`plan_prefix_ids`==locked ids · `recoverable_point`==len(locked) 不变
+- [x] **TB2（保号三路径覆盖 · pytest）**：正常 LLM 成功 / LLM 失败 fallback（`_carry_plan` 面）/ 空 allowlist 短路（nodes.py:963-977）三路径各一断言——unlocked sid 均保号
+- [x] **TB3（保号反例变异断言 · pytest · FP-1/FP-8）**：非 unlocked 的未解决步骤 replan 后**必须换新 id**；approved 步有终态时保号集合为空（防御断言）
+- [x] **TB4（空 unlocked 零 diff · pytest · 钉死契约三）**：`hitl_unlocked_ids` 为空时 replan 输出（`subtasks`/`host_subtask_seq`/`plan_prefix_ids`/`recoverable_point`/`subtask_results` 修剪面）与 master 对拍**逐字节一致**
+- [x] **TB5（消费命中成环 · pytest 机制段 · 维护者裁定一验收令）**：approved 单据在场（新鲜 · cap/run 匹配）→ resume → replan 保号 → `_approval_consumed` 命中（`delegation_approval_consumed` 台账断言）→ **不再二次拦截** → `done{completed}` 机制段可达
+- [x] **TB6（建单前检查断言组 · pytest · InMemory+Db 双 store · 维护者裁定二验收令）**：① 新鲜 approved（同 `(run_id, subtask_id, capability_id)` + blocked_by 守卫）在场 → `_persist_hitl` **零建单**（store 行数不变断言）；② 无 approved → 照建；③ approved 过 TTL → 照建；④ approved cap 不符 / blocked_by 不符 / 缺 `capability_id` 键（旧单据 · FP-3）→ 照建；⑤ 检查读异常（mock `alist` 抛错 · FP-4）→ **照建** + `hitl_persist_guard_read_failed` warning 台账断言
+- [x] **TB7（T1/T2 回归存续 · pytest）**：`tests/test_hitl_approval_consumption.py` 34 枚 + `tests/test_hitl_auto_resume.py` 39 枚全绿；B1 关注面（replan id 递增假设断言 · resume 重放重建 pending 假设断言）逐枚清点 · 凡修订断言落裁定记录于 30 invoke
+- [x] **TB8（live 复跑 · 40）**：双服务 live：create → hitl.waiting → decide(approved) →（resume/auto resume）→ replan 保号 → `delegation_approval_consumed` 台账 → `done{completed}` **可达**；resume 重放后 approved sid **零孤儿 pending** 重建；SSE 帧形态与 T1/T2 基线一致——**40 live 三 run 实证：消费命中原 sid（568d288a 四轮 + a0850a8e 两轮）· `hitl_persist_guard_skip` 每次重放在案零孤儿 pending · 终态 done{resumed}=语义终态达成（TB8 字面 done{completed} 在手动 resume 流结构性不可达 = resume.py:131 既有设计 · event_store.py:99-107 语义判定 · 钉案一）**
+- [x] B1 旧测清单全绿亲跑记录（命令 + 结果）落 40 invoke（107 passed/0.93s · 与 30 自报一致）
+- [x] `npx spec-wave task lint --file docs/tasks/active/task_hitl_replan_carry_and_persist_guard.md` PASS（active 期 20/30/40 复跑全 PASS）；`npx --yes spec-wave task lint-wiki-delta --target .` PASS · **CLOSE 归档后 done/ 路径复跑 PASS（CLOSE 质量钉在案）**
 
 ---
 
@@ -252,13 +252,19 @@ TB1~TB4 保号面 + TB6 建单检查面为 pytest 机制段（30 达成）；TB5
 
 ### KPI（00）
 
-（CLOSE 关账回填）
+- **周期**：10 落稿 → 20 R1 → 维护者三闸签 → 30 实现 → 40 核验 → PR #221 MERGED → CLOSE，全部同日（2026-10-10）完成 · zero 返工轮（R1 零阻塞 · N-1/N-2 顺手补 · N-3 供 30 参考）
+- **规模**：nodes.py +102/-7 单文件两段增量（保号段 + 建单检查段）· 14 枚新 TB 断言（tests/test_hitl_approval_consumption.py +512 行）· 图谱 l1 两行备注 · 交付链 4 commit（228d7d2→687689d→b857af6→67148a9）
+- **质量**：全量 4 failed/1762 passed（4 红=仓级基线环境性 · 零新增红）· ruff 零新增 · graph-compile EXIT=0 · B1 107 枚全绿 · live 三 run 双靶点闭合（保号消费命中原 sid · 重放零孤儿 pending）
+- **审查成本**：20 R1 一轮 PASS（锚点 6 组抽核逐行吻合 · 留转六条全裁定成立 · 三非阻塞注记）· 40 独立复跑不采信自报（揪出 30 verify 自报不准一条钉案）
 
 ---
 
 ### 经验总结
 
-（CLOSE 关账回填）
+1. **字面终态 vs 语义终态须起草期区分**：TB8 字面 done{completed} 在含 HITL 手动 resume 流结构性不可达（resume.py:131 硬编码 resumed · event_store.py:99-107 语义判定=终态达成）——10 起草验收时若先实读终态判定段，验收口径可直接写成语义终态，省去 40 钉案一轮。
+2. **live 核验环境陷阱两条**（40 实录）：① worktree 自带 .venv 空壳 + 主仓 venv editable 安装 → import app 默认解析主仓 master 码，首轮 live 跑错代码（阴性对照作废）——启动器须 sys.path 钉 worktree + 日志自证 CODE_UNDER_TEST；② 代理环境 NO_PROXY 含 IPv6 项炸 httpx URLPattern——剥代理须连 NO_PROXY/no_proxy/NODE_USE_ENV_PROXY 一起 pop。
+3. **verify 自报须核退出码**：30 自报「verify EXIT=0」实测 EXIT=2（疑管道吞退出码）——40 独立复跑以 REAL_EXIT 为准的纪律有效；仓级 BLOCKED 与 task 归因须主仓对拍分离（主仓同 BLOCKED 同 92 缺口 → 仓级基线非本 task 归因）。
+4. **保号面复用既有载体（_carry_plan 原行带回）比新造机制稳**：空 unlocked 逐字节零 diff（钉死契约三 + TB4 五键序列化对拍）是零回归最强保险——凡「可选路径新增」类改动，空集零 diff 总闸值得作为标准验收件。
 
 ---
 
@@ -267,3 +273,4 @@ TB1~TB4 保号面 + TB6 建单检查面为 pytest 机制段（30 达成）；TB5
 | 日期 | 说明 |
 |------|------|
 | 2026-10-10 | 10 起草落盘：Harness 元信息/人工闸三 pending/背景（维护者裁定逐字）/现状锚点（nodes.py 行号实证）/钉死契约八项/范围+非范围/failure_paths FP-1~FP-8/B1 旧测影响面/验收 TB1~TB8/依赖/必读/R0–R5/测试策略 · 骨架先行增量落盘完成 |
+| 2026-10-10 | **CLOSE**：20 R1 PASS（零阻塞 · N-1~N-3 非阻塞吸收）→ 维护者三闸签（00 代录）→ 30 交付（228d7d2 nodes.py 保号+建单检查 · 687689d TB1–TB6 断言化 14 枚 · b857af6 invoke+图谱 · 67148a9 40 核验回填）→ 40 核验七项全过（独立复跑 · live 三 run 双靶点闭合 · 三条钉案）→ PR [#221](https://github.com/Cyning12/ops-desk-api/pull/221) MERGED（85058f7 · CI 绿）→ 归档 done/ · CLOSE 文档 docs/tasks/close/close_hitl_replan_carry_and_persist_guard_20261010.md |
