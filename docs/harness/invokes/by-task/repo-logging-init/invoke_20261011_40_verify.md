@@ -62,7 +62,10 @@ date: 2026-10-11
 - **主仓 master@cae745e 带 .env 全量 pytest**：`4 failed, 1764 passed, 1 skipped in 56.93s`
   - 红集逐名：tests/test_capability_lookups.py::test_tool_exec_lookup_ainvoke_and_error_continues / ::test_tool_exec_prefers_args_over_input_no_db / ::test_tool_exec_prefers_args_over_input + tests/test_lg_rag_multi.py::test_unknown_tool_at_invoke_recorded_and_continues
   - 与 task 契约3「本地 4 红=master 基线环境性（capability_lookups×3+lg_rag_multi×1）」逐名吻合 ✅
-- **下半（worktree 码 + 主仓 .env env 全量 pytest）**：跑批中……
+- **下半（worktree 码 + 主仓 .env set -a source 全量 pytest · job bash-876）**：`16 failed, 1755 passed, 1 skipped in 64.71s`。红集=基线 4 + chat_service×5 + chat_ws×3 + memory×4（memory_purge_db×3 + memory_service_db×1）。
+- **A/B 归因（同 env 主仓复跑 · job bash-935）**：主仓 master + 同一 source env → `12 failed, 1756 passed`，红集=基线 4 + **同一 chat×8**（test_chat_service TestRunChatStream×5 + test_chat_ws×3）→ chat×8 系 source env 口径（set -a 导出 vs load_dotenv）的环境敏感面，两侧完全同红，非本 task diff 引入。
+- **memory×4 复跑归因**：worktree 同 env 单点复跑 4 条 → `4 passed in 6.24s` → bash-876 的 memory 红系跑批与 40 并行 live server 窗口（8023/8024/8025 起停 + create_initial_user 写库）叠加的瞬态，非码因。
+- ✅ 结论：**零新增红可归因于本 task diff**（对拍两侧同 env 同红；瞬态红复跑即绿）。
 
 ## OPS_LOG_LEVEL live 组（父令第 5 项）
 
@@ -75,4 +78,16 @@ date: 2026-10-11
 
 ## 裁定
 
-（待 TC4 计数 / DEBUG live / TC5 下半完成后落定）
+**PASS-WITH-NITS**（2026-10-11 02:10 · 40-verify）
+
+| 核验面 | 结论 | 证据 |
+| --- | --- | --- |
+| TC2 裸 uvicorn app INFO 可见（核心） | ✅ | after /tmp/tc2_after3.log：app.ops.hitl.persistence / app.ops.rag.embedder INFO 钉死格式落 stderr；before wrapper 复现 grep 空、access 仍 3 → 坑位1 反转成立 |
+| TC3 compose 零 diff | ✅ | git diff cae745e -- docker-compose.yml（及 scripts/ evals/ alembic/ requirements.txt）= 空；compose 与裸 uvicorn 同 import 期初始化路径，照登 |
+| TC4 access 不双行 | ✅ | /tmp/tc4b.log：4 请求→4 条 access 行，root handler 重格式化=0，双行=0 |
+| TC5 master 基线对拍 | ✅ | 主仓 4 failed/1764 passed 与契约3 逐名吻合；同 env A/B 两侧同红（chat×8 环境敏感），memory×4 瞬态复跑全绿 → 零新增红归因本 diff |
+| OPS_LOG_LEVEL live | ✅ | UNSET/DEBUG/debug/BOGUS 裸探针四组全中；BOGUS live 告警行格式化可见且回退后 app INFO 仍可见；DEBUG live 无发射点触达（口径说明非偏差） |
+
+NIT：**N-40-1**（import 窗口裸格式，见上节）——app/main.py:9-12 import 链先于 :38 初始化，窗口内 WARNING+ 走 lastResort 裸格式、INFO 被吞；验收三键请求期发射不受影响，nit 级，留后续 task 裁定（修法候选：初始化挪 import 链之前）。
+
+偏差登记：8021→8022（launchd 占用）；三键全链缺真 LLM key 照登；DEBUG live 无 DEBUG 发射点，env 生效以裸探针为权威。
