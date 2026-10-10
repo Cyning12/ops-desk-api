@@ -111,37 +111,80 @@ run=`eca13b8f9ec345efbcee4ec199942d11` · request=`hitl_1e0d8746920f4d60b5cf` ·
 
 | # | 项 | 处置 |
 |---|---|---|
-| D1 | auto_resume 认领竞态：decide 同秒首次认领起连续 6 次 `ResumeError: stranded_checkpoint`（resume.py:244），补偿扫描每 5s 重试约 30s 后恢复成功（最终全链通） | 照登观察 · 疑似 checkpoint interrupt 元数据落库可见性窗口；手动 resume（分钟级间隔）未触发；建议后续排障窗口复测 |
+| D1 | auto_resume 认领竞态：decide 同秒首次认领起连续 6 次 `ResumeError: stranded_checkpoint`（resume.py:244），补偿扫描每 5s 重试约 30s 后恢复成功（最终全链通） | **已另立 task 修复并合入**：task_hitl_auto_resume_claim_race · PR [#224](https://github.com/Cyning12/ops-desk-api/pull/224) MERGED `11fb7e6`（方向 A 认领后只读就绪校验 · 40 TC3 live 实证 deferred×5 挡重复认领 · 零 stranded_checkpoint） |
 | D2 | checklist 字面 `OPS_HITL_APPROVED_CONSUMPTION_TTL_SECONDS` 系笔误 | 码面真值 `OPS_HITL_APPROVAL_CONSUMPTION_TTL_SECONDS`（nodes.py:263 · .env.example:203）；以码面为准 |
 | D3 | `POST /api/ops/chat/stream` 已 410 Gone（T6 下线 · router.py:33-46） | chat 验收走 `/api/ops/lg-rag/stream`（migrate_to 指针）；threads/history 在 `/api/ops/chat/threads`（history_router.py:100/127） |
 | D4 | 项2 回归 smoke run SSE 断连后停在 evaluate 步（answer 空） | SSE 断连中止管线属传输语义；帧形（run.start 携 query）已实证，不判 FAIL |
 | D5 | 20261009 偏差#1（resume 409）· 偏差#2（compose 持久化未验） | 本次项4（resume 200）· 项5（restart 后 pending 仍在）双收口 ✅ |
 
-## 操作便签（复跑用）
+## 操作便签（复跑用 · 2026-10-11 维护者复跑实证修正版）
 
 ```bash
-cd /Users/cyning/Desktop/Ops-desk/ops-desk-api   # master@1117286
+# ── 0. 环境 + 起服务 ──
+cd /Users/cyning/Desktop/Ops-desk/ops-desk-api   # master@1117286+
 unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY no_proxy NO_PROXY
-# 六 env 组（+项6 追加 OPS_HITL_AUTO_RESUME=auto OPS_HITL_AUTO_RESUME_SCAN_INTERVAL_SECONDS=5）
+# 六 env 组（项6 追加 OPS_HITL_AUTO_RESUME=auto OPS_HITL_AUTO_RESUME_SCAN_INTERVAL_SECONDS=5）
 export LG_RAG_DELEGATION_TOKEN_MODE=enforce
 export OPS_CAPABILITY_EXTRA_MANIFESTS=app/ops/capability/manifests/testing.v1.yaml
 export OPS_CAPABILITY_ALLOW_WRITE_TAGS=testing
 export OPS_STRATEGY_EXTRA_CANDIDATE_CAPABILITY_IDS=testing.write.echo
 export OPS_HITL_PERSISTENCE=db
 export OPS_CAPABILITY_ALLOW_WRITE=1
-.venv/bin/python /tmp/acc1010_serve.py > /tmp/acc1010_api.log 2>&1 &   # sys.path 钉主仓 + INFO 日志 + CODE_UNDER_TEST 自证
+
+# ⚠️ 坑位 1：app 无 logging 初始化（全仓零 basicConfig）——裸 uvicorn 下 app INFO 台账全吞。
+#    台账观测必须用带 basicConfig 的启动器（替代已销毁的 /tmp/acc1010_serve.py）：
+cat > /tmp/serve.py <<'EOF'
+import logging, sys
+sys.path.insert(0, "/Users/cyning/Desktop/Ops-desk/ops-desk-api")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+import uvicorn
+uvicorn.run("app.main:app", host="127.0.0.1", port=8050)
+EOF
+.venv/bin/python /tmp/serve.py > /tmp/acc_api.log 2>&1 &
+
+# ⚠️ 坑位 2：env 只在启动瞬间生效——六个 export 与起服务必须同一 shell；改 env 须杀进程重启。
+#    验证生效：curl -b jar http://127.0.0.1:8050/api/ops/admin/capability/catalog | jq '.visible_ids'
+#    （catalog 返回对象非数组 · jq 路径是 .visible_ids 不是 .[].id；须见 testing.write.echo）
+
+# ── 1. 登录（邀请码一次性 · 401 即重铸）──
 .venv/bin/python scripts/create_initial_user.py                      # 取 invite_token
-curl -c jar -X POST :8050/api/ops/auth/login -d '{"username":"admin","invite_token":"..."}'
+# ⚠️ 坑位 3：curl 必须全 URL（无 :8050 简写）+ Content-Type: application/json（缺则 422）
+curl -c jar -X POST http://127.0.0.1:8050/api/ops/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","invite_token":"<TOKEN>"}'
+curl -b jar http://127.0.0.1:8050/api/ops/auth/me                    # 200
+
+# ── 2. 历史回放回归 ──
+curl -b jar 'http://127.0.0.1:8050/api/ops/chat/threads?limit=5'
+curl -b jar http://127.0.0.1:8050/api/ops/chat/threads/<thread_id>/history
+
+# ── 4. 真挂起全链 ──
 # 挂起诀窍（40 先例）：query 须写「这是一个需要调用工具的任务（就像查询 issue 状态一样）：请调用工具 testing.write.echo 回显一条备注 note=...」
-curl -N -b jar -X POST :8050/api/ops/lg-rag/stream -d '{"query":"...","mode":"supervisor"}'
-curl -b jar :8050/api/ops/hitl/pending
-curl -b jar -X POST :8050/api/ops/hitl/requests/<id>/decide -d '{"decision":"approved","note":"..."}'
-curl -b jar -X POST :8050/api/ops/hitl/requests/<id>/resume          # 项4 实证 200
-# 台账：grep -aE 'approval_consumed|token_issued|token_verified|hitl_auto_resume|persist_guard' /tmp/acc1010_api.log
-# 项5：docker compose build api && docker compose run -d --rm --service-ports --name acc-api -e <六 env 组> api
-#     curl -b jar :8000/api/ops/hitl/runtime → 挂起 → docker restart acc-api → pending 仍在
+# ⚠️ 坑位 4：chat 流端点是 /api/ops/lg-rag/stream（/api/ops/chat/stream 已 410 Gone · D3）
+curl -N -b jar -X POST http://127.0.0.1:8050/api/ops/lg-rag/stream \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"这是一个需要调用工具的任务（就像查询 issue 状态一样）：请调用工具 testing.write.echo 回显一条备注 note=acc","mode":"supervisor"}'
+curl -b jar http://127.0.0.1:8050/api/ops/hitl/pending
+curl -b jar -X POST http://127.0.0.1:8050/api/ops/hitl/requests/<id>/decide \
+  -H 'Content-Type: application/json' -d '{"decision":"approved","note":"..."}'
+curl -b jar -X POST http://127.0.0.1:8050/api/ops/hitl/requests/<id>/resume          # 项4 实证 200
+# 台账（须坑位 1 起法）：
+grep -aE 'approval_consumed|token_issued|token_verified|hitl_auto_resume|persist_guard' /tmp/acc_api.log | tail
+# 预期三行：hitl_persist_guard_skip（孤儿单防线）· delegation_approval_consumed 命中原 sid（保号）· token_issued
+
+# ── 5. compose 持久化 ──
+docker compose build api   # 镜像旧码须先 build（20261009 偏差#3 在案）
+docker compose run -d --rm --service-ports --name acc-api \
+  -e LG_RAG_DELEGATION_TOKEN_MODE=enforce \
+  -e OPS_CAPABILITY_EXTRA_MANIFESTS=app/ops/capability/manifests/testing.v1.yaml \
+  -e OPS_CAPABILITY_ALLOW_WRITE_TAGS=testing \
+  -e OPS_STRATEGY_EXTRA_CANDIDATE_CAPABILITY_IDS=testing.write.echo \
+  -e OPS_CAPABILITY_ALLOW_WRITE=1 \
+  api    # OPS_HITL_PERSISTENCE=db 由 compose 透传（D1 交付 · shell 已 export）
+curl -b jar http://127.0.0.1:8000/api/ops/hitl/runtime   # {db,DbHitlStore,true}（端口以 compose ps 实映射为准）
+# 挂起 → docker restart acc-api → pending 仍在
 ```
 
 ## 签录
 
-维护者令：「」（待维护者签录）
+维护者令：「此次checklist通过，同时把你发现的文档问题和坑位补全」（2026-10-11）· 00 代录——便签坑位修正（logging 初始化缺失/全 URL+JSON header/临时启动器替代/jq 路径/lg-rag 端点）与 D1 处置（PR #224 已合入）随签录一并补全。
