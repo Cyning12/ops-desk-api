@@ -13,7 +13,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from langchain_core.messages import AIMessage
@@ -254,6 +256,122 @@ def _delegation_active() -> bool:
     return dl.delegation_mode() != dl.MODE_OFF
 
 
+# ---------------------------------------------------------------------------
+# Host V1-A · 签发审批消费门（D1：批准 → 可消费的授权）
+# ---------------------------------------------------------------------------
+
+ENV_APPROVAL_CONSUMPTION_TTL_SECONDS = "OPS_HITL_APPROVAL_CONSUMPTION_TTL_SECONDS"
+DEFAULT_APPROVAL_CONSUMPTION_TTL_SECONDS = 3600
+_BLOCKED_BY_DELEGATION_ISSUE = "delegation_issue_hitl_required"
+
+
+def _approval_consumption_ttl_seconds() -> int:
+    """批准消费 TTL（墙钟秒）；默认 3600，非法 / 越界（[1, 86400]）回退默认。
+
+    承 ``delegation._env_int``（delegation.py:105-107）low/high 先例同形态。
+    """
+    raw = os.environ.get(ENV_APPROVAL_CONSUMPTION_TTL_SECONDS, "")
+    try:
+        value = int(str(raw).strip())
+    except (TypeError, ValueError):
+        return DEFAULT_APPROVAL_CONSUMPTION_TTL_SECONDS
+    return value if 1 <= value <= 86400 else DEFAULT_APPROVAL_CONSUMPTION_TTL_SECONDS
+
+
+def _decided_at_ts(raw: Any) -> float | None:
+    """``decided_at`` 归一为可比墙钟时间戳；不可归一 → ``None``（fail-closed）。
+
+    输入类型钉死（R1-N1 锚点精度）：**float**（InMemory store.py:98 ``time.time()``）
+    | **ISO 8601 str**（Db store 经 ``alist/aget`` 实收 ``_row_to_dict`` :249 输出）。
+    SPEC「Db store 为 datetime」指 SQL 层；消费端实收是 ISO 字符串，漏 str 分支
+    会让 TTL 比较 TypeError 或误判过期/新鲜。
+    """
+    if isinstance(raw, bool):
+        return None
+    if isinstance(raw, (int, float)):
+        return float(raw)
+    if isinstance(raw, str):
+        try:
+            dt = datetime.fromisoformat(raw.strip())
+        except ValueError:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.timestamp()
+    return None
+
+
+def _audit_approval_consumed(**fields: Any) -> None:
+    """批准消费台账（记动作不记内容）：logger 结构化行 + span metadata。
+
+    只记 request_id / subtask_id / capability_id / decision_by / TTL 余量，
+    **不记参数原值**（承 delegation.audit_delegation 同一纪律）。
+    """
+    safe = {k: v for k, v in fields.items() if v is not None}
+    logger.info(
+        "delegation_approval_consumed %s",
+        json.dumps(safe, ensure_ascii=False, sort_keys=True),
+    )
+    _record_span_metadata({"delegation_approval_consumed": True, **safe})
+
+
+async def _approval_consumed(
+    state: LgRagState, *, subtask_id: str, capability_id: str
+) -> bool:
+    """消费匹配的 approved 单据（D1 消费门 · Q1 三元组 + Q5 读时 TTL）。
+
+    命中（``(run_id, subtask_id, capability_id)`` 精确匹配 + 未过期）→ ``True``
+    + ``delegation_approval_consumed`` 台账；**fail-closed**：读失败 / 旧单据缺
+    ``capability_id`` 键 / 过期 / 类型不符 / 未命中 → 一律 ``False``（维持拦截）。
+    只消费 ``blocked_by=delegation_issue_hitl_required`` 类单据；**不写回单据状态**
+    （授权效力 = 读取时刻的活状态，非缓存快照）。
+    """
+    from app.ops.hitl import get_hitl_store
+
+    run_id = _run_id_of(state)
+    if not (run_id and subtask_id and capability_id):
+        return False
+    try:
+        rows = await get_hitl_store().alist(status="approved", limit=200)
+    except Exception as exc:  # FP-1：消费读失败 fail-closed + warning 台账
+        logger.warning(
+            "delegation_approval_consumption_read_failed subtask=%s capability=%s err=%r",
+            subtask_id,
+            capability_id,
+            exc,
+        )
+        return False
+    now = time.time()
+    ttl = _approval_consumption_ttl_seconds()
+    for row in rows:
+        if str(row.get("blocked_by") or "") != _BLOCKED_BY_DELEGATION_ISSUE:
+            continue  # 单据类型守卫：prefix_touch_required 类一行不动
+        if str(row.get("run_id") or "") != run_id:
+            continue
+        if str(row.get("subtask_id") or "") != subtask_id:
+            continue
+        payload = row.get("payload")
+        if not isinstance(payload, dict):
+            continue  # 旧单据无 payload → 不消费（fail-closed）
+        if str(payload.get("capability_id") or "") != capability_id:
+            continue  # 旧单据缺 capability_id 键 → 不消费（fail-closed）
+        decided_ts = _decided_at_ts(row.get("decided_at"))
+        if decided_ts is None:
+            continue
+        remaining = ttl - (now - decided_ts)
+        if remaining <= 0:
+            continue  # Q5：读时判过期（不写回单据状态）
+        _audit_approval_consumed(
+            request_id=str(row.get("id") or ""),
+            subtask_id=subtask_id,
+            capability_id=capability_id,
+            decision_by=str(row.get("decision_by") or ""),
+            ttl_remaining_seconds=int(remaining),
+        )
+        return True
+    return False
+
+
 def _parse_requested_scope(raw: str) -> Any:
     """从 supervisor LLM 输出取 plan 级 requested_scope（A2）；解析失败 → None（视同未声明）。"""
     outcome = parse_only(raw, schema=SubtasksPlan)
@@ -274,11 +392,16 @@ def _effective_scope(state: LgRagState) -> frozenset[str]:
     return frozenset(str(c) for c in (state.get("allowed_capability_ids") or []))
 
 
-def _delegation_issue_block_reason(state: LgRagState, row: dict) -> str | None:
+async def _delegation_issue_block_reason(state: LgRagState, row: dict) -> str | None:
     """签发审批口径（Q2 裁定：只读自动 · 其余 HITL）；需审批 → 原因，自动放行 → None。
 
     有效 scope 内空集（模型声明收窄把 tool 自己裁掉）**不走 HITL**：不签发，
     tool_exec 直接 ok=False 走既有未知/无授权路径（SPEC §2 D5）。
+
+    D1 消费门：sync 纯判定判出需审批后、返回拦截原因**前**，先消费 HITL store
+    匹配的 approved 单据（三元组 + TTL · fail-closed）——命中即放行签发（None），
+    未命中 / 读异常维持拦截。消费读在编排层本函数内，``auto_approve_ok``
+    保持纯函数零 IO（capability 包零触）。
     """
     tool = str(row.get("tool") or "").strip()
     if not tool:
@@ -291,6 +414,9 @@ def _delegation_issue_block_reason(state: LgRagState, row: dict) -> str | None:
         return "委派签发审批：capability 未注册，无法判定审批口径（安全默认交人）"
     ok, why = dl.auto_approve_ok([entry[0]], effective_scope=scope)
     if ok:
+        return None
+    sid = str(row.get("subtask_id") or "")
+    if await _approval_consumed(state, subtask_id=sid, capability_id=tool):
         return None
     return f"委派签发需人工审批（{why}）"
 
@@ -641,7 +767,7 @@ def _terminal_index(results: list, plan_ids: set[str]) -> dict[str, dict]:
     return found
 
 
-def _join_subtasks(state: LgRagState) -> dict:
+async def _join_subtasks(state: LgRagState) -> dict:
     """收口上一批：漏带回的 id 写错误终态；预算耗尽则补齐剩余 id，不再开新批。"""
     plan = _plan_rows(state)
     plan_ids = {str(row["subtask_id"]) for row in plan}
@@ -708,7 +834,7 @@ def _join_subtasks(state: LgRagState) -> dict:
             # Host V1-A：委派签发审批（Q2：只读自动 · 其余 HITL_REQUIRED）。
             # off 模式整段短路（现状零 diff）；审批拦截复用既有 HITL 回路留痕。
             if _delegation_active() and str(row.get("type") or "") == "tool":
-                issue_reason = _delegation_issue_block_reason(state, row)
+                issue_reason = await _delegation_issue_block_reason(state, row)
                 if issue_reason:
                     blocked = _error_terminal(row, issue_reason)
                     blocked["blocked_by"] = "delegation_issue_hitl_required"
@@ -1443,6 +1569,20 @@ async def _persist_hitl(
             if str(dep) in set(state.get("plan_prefix_ids") or []):
                 unlock = str(dep)
                 break
+        if not unlock and str(term.get("blocked_by") or "") == (
+            _BLOCKED_BY_DELEGATION_ISSUE
+        ):
+            # D2 空形态回填（形态守卫仅 delegation_issue 类）：无前驱前缀时
+            # 批准 = 授权（重）下发**被拦步骤自身**（与 D1 消费配对成环）；
+            # prefix_touch_required 类空 unlock 维持现状（router 409 保留）。
+            unlock = sid
+        # D1 消费键（Q1）：payload jsonb 增记 capability_id（零迁移 · 既有读取兼容）。
+        # 真源 = _error_terminal 保留的 tool 字段。30 裁定留痕：tool 为空时**不落键**
+        # （不落空串）——消费端缺键 fail-closed 语义不变，两类「缺键」归一同一路径。
+        payload = {"observation": {k: obs[k] for k in ("round", "planned", "done")}}
+        capability_id = str(term.get("tool") or "").strip()
+        if capability_id:
+            payload["capability_id"] = capability_id
         request = {
             "id": new_request_id(),
             "run_id": run_id,
@@ -1454,7 +1594,7 @@ async def _persist_hitl(
             "unlock_subtask_id": unlock,
             "reason": str(term.get("error") or ""),
             "detail": str(term.get("blocked_detail") or ""),
-            "payload": {"observation": {k: obs[k] for k in ("round", "planned", "done")}},
+            "payload": payload,
             "status": "pending",
             "created_at": time.time(),
         }
