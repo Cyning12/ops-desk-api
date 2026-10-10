@@ -1,6 +1,6 @@
 # Task：hitl-approval-consumption-strategy-env（T3 · D3 strategy 候选 map env 追加口 · 最小独立）
 
-> **状态**：`draft`  
+> **状态**：`done`（2026-10-10 · 验收 TC1–TC3 全机断绿 · 40 核验 PASS（七项全绿 · 全量 1679 passed · B1 八文件 114 passed）· 三闸维护者签（00 代录）· PR [#213](https://github.com/Cyning12/ops-desk-api/pull/213) MERGED（`7853334` · CI 四绿）· CLOSE 归档 done/）  
 > **类型**：**SPEC 承接**（SPEC v1 · HG-SPEC-SIGNOFF=approved 2026-10-10）  
 > **依据**：`docs/spec/hitl-approval-consumption/SPEC-hitl-approval-consumption_v1.md`（**SPEC 文档当前在 `spec/hitl-approval-consumption` 分支 · 随首个实现 PR 一并带入 master**）——本 task 承接 D3（strategy 候选 map env 口 · 最小独立）· Q4 · FP-5 · A4（+ A5/A8 存续面）  
 > **分支**：`task/hitl-approval-consumption`（00 裁定合流 · 2026-10-10 · base：`master` 4d905e0 · 禁止 master 直改）  
@@ -81,10 +81,10 @@ SPEC v1 §1 缺口 3（第四道门）：`app/ops/strategy/config.py:14-23` `CAP
 
 ## 范围
 
-- [ ] **F1 · env 追加口**：`strategy/config.py` 增 `OPS_STRATEGY_EXTRA_CANDIDATE_CAPABILITY_IDS` 解析（逗号分隔/strip/去空去重/调用点读取）+ `get_candidate_capability_ids` map 解析后追加（含未知 key · 覆盖口分支不动）
-- [ ] **F2 · 台账**：env 追加集生效记录（候选 id 列表 + 基数）
-- [ ] **F3 · 测试**：验收 TC1–TC3 逐条断言化（含 FP-5 下游裁剪断言与 B1 旧测全绿亲跑）
-- [ ] **F4 · 图谱同步**：`docs/_tech_graph/l1/01_modules.md` lg_rag 行（strategy 归属段）在册备注回写（G-L1 · HG-GRAPH-MODULES 随 30 回写由 00 代录）
+- [x] **F1 · env 追加口**：`strategy/config.py` 增 `OPS_STRATEGY_EXTRA_CANDIDATE_CAPABILITY_IDS` 解析（逗号分隔/strip/去空去重/调用点读取）+ `get_candidate_capability_ids` map 解析后追加（含未知 key · 覆盖口分支不动）
+- [x] **F2 · 台账**：env 追加集生效记录（候选 id 列表 + 基数）
+- [x] **F3 · 测试**：验收 TC1–TC3 逐条断言化（含 FP-5 下游裁剪断言与 B1 旧测全绿亲跑）
+- [x] **F4 · 图谱同步**：`docs/_tech_graph/l1/01_modules.md` lg_rag 行（strategy 归属段）在册备注回写（G-L1 · HG-GRAPH-MODULES 随 30 回写由 00 代录）
 
 ### 非范围
 
@@ -127,12 +127,12 @@ SPEC v1 §1 缺口 3（第四道门）：`app/ops/strategy/config.py:14-23` `CAP
 
 ## 验收标准
 
-- [ ] 人工闸：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved 后方可勾选下列码项
-- [ ] **TC1（env 口零 diff/追加语义 · SPEC A4）**：① 不设 env → `get_candidate_capability_ids` 各 key（supervisor/default/**未知 key**）解析结果对 master 逐字节一致（返回 list 内容与顺序对拍）② 设 env → candidates 含追加 id（map 命中 key 与未知 key 两例）且 ∩visible/stripped 语义不变 ③ 解析断言：strip/去空/保序去重/全空白=不设 ④ 覆盖口生效时 env 集不混入
-- [ ] **TC2（FP-5 · 下游闸不动）**：env 含高危/写 capability id → 仍被下游裁（∩visible 不可见 · 或经可见性豁免路径仍被 deny_high_risk/deny_write/Policy 裁 · 按既有测试面选型断言并留痕）；`registry.py::_match_filter` 与 `policy.py` 闸序段 git diff 为空；`test_allow_tags_does_not_waive_deny_write` 原样绿
-- [ ] **TC3（工程面 · SPEC A8 本 task 面）**：`pytest tests` 全绿；`ruff check app tests` 触及路径零新增；`./scripts/graph-compile.sh` EXIT=0；图谱 lg_rag 行（strategy 归属段）备注回写 + HG-GRAPH-MODULES 00 代录行；env 生效台账断言（设则记 · 未设不记）
-- [ ] B1 旧测清单全绿亲跑记录（命令 + 结果）落 40 invoke
-- [ ] `npx spec-wave task lint --file docs/tasks/active/task_hitl_approval_consumption_strategy_env.md` PASS；`npx --yes spec-wave@3.0.1 task lint-wiki-delta --target .` PASS
+- [x] 人工闸：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved 后方可勾选下列码项
+- [x] **TC1（env 口零 diff/追加语义 · SPEC A4）**：① 不设 env → `get_candidate_capability_ids` 各 key（supervisor/default/**未知 key**）解析结果对 master 逐字节一致（返回 list 内容与顺序对拍）② 设 env → candidates 含追加 id（map 命中 key 与未知 key 两例）且 ∩visible/stripped 语义不变 ③ 解析断言：strip/去空/保序去重/全空白=不设 ④ 覆盖口生效时 env 集不混入
+- [x] **TC2（FP-5 · 下游闸不动）**：env 含高危/写 capability id → 仍被下游裁（∩visible 不可见 · 或经可见性豁免路径仍被 deny_high_risk/deny_write/Policy 裁 · 按既有测试面选型断言并留痕）；`registry.py::_match_filter` 与 `policy.py` 闸序段 git diff 为空；`test_allow_tags_does_not_waive_deny_write` 原样绿
+- [x] **TC3（工程面 · SPEC A8 本 task 面）**：`pytest tests` 全绿；`ruff check app tests` 触及路径零新增；`./scripts/graph-compile.sh` EXIT=0；图谱 lg_rag 行（strategy 归属段）备注回写 + HG-GRAPH-MODULES 00 代录行；env 生效台账断言（设则记 · 未设不记）
+- [x] B1 旧测清单全绿亲跑记录（命令 + 结果）落 40 invoke
+- [x] `npx spec-wave task lint --file docs/tasks/active/task_hitl_approval_consumption_strategy_env.md` PASS；`npx --yes spec-wave@3.0.1 task lint-wiki-delta --target .` PASS（40 复跑于 active 期 · CLOSE 归档后改判 done/ 路径复跑）
 
 ---
 
@@ -216,3 +216,4 @@ TC1（逐字节对拍+追加+解析四例+覆盖口隔离）/TC2（FP-5+diff 空
 | 日期 | 说明 |
 |------|------|
 | 2026-10-10 | 10-task 落稿（骨架先行增量落盘 · SPEC v1 signed 承接 · R0–R5 · HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 pending → 30 拒开工） |
+| 2026-10-10 | **CLOSE**：30/40 交付（`cd253f0`/`3c1c9d1`/`86f7cde` · config.py env 追加口 +49 行 + 18 枚新测 · 验收 TC1–TC3 全机断绿 · 40 核验七项全绿（默认不设逐字节零 diff 对拍 · FP-5 三层裁剪断言 · registry/policy/builder 零 diff · 全量 1679 passed · B1 八文件 114 passed · 图谱 lg_rag 行备注实证）· nit×3 吸收复核通过）→ PR [#213](https://github.com/Cyning12/ops-desk-api/pull/213) MERGED（`7853334` · CI 四绿 · 随 PR 一并带入 T1/T2/T3 三 task 文档链与审查/签录 · SPEC 文档仍在 `spec/hitl-approval-consumption` 分支未带入 master）→ 归档 done/ · Hub 补登 · CLOSE invoke 留档；**注**：T1（消费门/unlock 回填）/T2（自动 resume）在途，签发审批消费回路全链 CLOSE 待后续 task 收口 |
