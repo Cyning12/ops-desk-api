@@ -1,6 +1,6 @@
 # Task：hitl-approval-consumption-loop（T1 · D1 审批消费门 + D2 unlock 空形态回填 + D4 台账/测试 · 批准→放行消费成环核心）
 
-> **状态**：`draft`  
+> **状态**：`done`（2026-10-10 · 验收 TA1–TA7 全机断绿 · 40 核验 PASS 带偏差登记（七项核验 · 全量 1713 passed · live resume 200 达成 · 末段 replan 重盖章致消费键失配=非本 task 回归上抛 T2/SPEC v2）· 三闸维护者签（00 代录）· PR [#216](https://github.com/Cyning12/ops-desk-api/pull/216) MERGED（`3f6a630` · CI 四绿）· CLOSE 归档 done/）  
 > **类型**：**SPEC 承接**（SPEC v1 · HG-SPEC-SIGNOFF=approved 2026-10-10）  
 > **依据**：`docs/spec/hitl-approval-consumption/SPEC-hitl-approval-consumption_v1.md`（**SPEC 文档当前在 `spec/hitl-approval-consumption` 分支 · 随首个实现 PR 一并带入 master** · 本文引用即该仓内路径）——本 task 承接 D1（审批消费门）+ D2（unlock 空形态回填）+ D4（对应台账/测试）· Q1/Q2/Q3/Q5 · FP-1~FP-7 · A1/A2/A3/A5/A6/A7/A8  
 > **分支**：`task/hitl-approval-consumption-loop`（base：`master` 4d905e0 · 禁止 master 直改）  
@@ -96,12 +96,12 @@ SPEC v1 §1 两实证缺口（均已在 master `4d905e0` 复核成立）：
 
 ## 范围
 
-- [ ] **F1 · payload 增记 capability_id**：`_persist_hitl`（nodes.py:1446-1460）申请行 `payload` jsonb 增记 `capability_id`（取 `term.get("tool")` · 缺省空串不落键或落空串由 30 定并留痕 · 消费端缺键 fail-closed 语义不变）；零迁移 · 既有读取兼容
-- [ ] **F2 · 消费助手（async）**：nodes.py 编排层新增 async 消费判定（store 读 → `blocked_by` 守卫 → 三元组匹配 → decided_at 归一 → TTL 判过期 → 命中返回放行 + `delegation_approval_consumed` 台账；异常 → warning + 维持拦截）；TTL env 解析承 `_env_int` low/high 先例
-- [ ] **F3 · async 化波及面随改**：`_delegation_issue_block_reason` 与 `_join_subtasks` async 化；B1 表 14 处 sync 直调点全部随改（测试点 `async def` 化 · scripts 门禁脚本补 `await`；含 `test_capability_testing_write.py:488-493`「设计真态钉死」段语义改写 · 见 B1）
-- [ ] **F4 · unlock 空形态回填**：`_persist_hitl` :1440-1445 增形态守卫回填（仅 delegation_issue 类 · unlock=被拦 sid 自身）
-- [ ] **F5 · 测试**：验收 TA1–TA7 逐条断言化（新增消费/回填用例 + B1 旧测全绿亲跑）
-- [ ] **F6 · 图谱同步**：`docs/_tech_graph/l1/01_modules.md` lg_rag / hitl / capability 三行在册备注回写（G-L1 · HG-GRAPH-MODULES 随 30 回写由 00 代录）
+- [x] **F1 · payload 增记 capability_id**：`_persist_hitl`（nodes.py:1446-1460）申请行 `payload` jsonb 增记 `capability_id`（取 `term.get("tool")` · 缺省空串不落键或落空串由 30 定并留痕 · 消费端缺键 fail-closed 语义不变）；零迁移 · 既有读取兼容
+- [x] **F2 · 消费助手（async）**：nodes.py 编排层新增 async 消费判定（store 读 → `blocked_by` 守卫 → 三元组匹配 → decided_at 归一 → TTL 判过期 → 命中返回放行 + `delegation_approval_consumed` 台账；异常 → warning + 维持拦截）；TTL env 解析承 `_env_int` low/high 先例
+- [x] **F3 · async 化波及面随改**：`_delegation_issue_block_reason` 与 `_join_subtasks` async 化；B1 表 14 处 sync 直调点全部随改（测试点 `async def` 化 · scripts 门禁脚本补 `await`；含 `test_capability_testing_write.py:488-493`「设计真态钉死」段语义改写 · 见 B1）
+- [x] **F4 · unlock 空形态回填**：`_persist_hitl` :1440-1445 增形态守卫回填（仅 delegation_issue 类 · unlock=被拦 sid 自身）
+- [x] **F5 · 测试**：验收 TA1–TA7 逐条断言化（新增消费/回填用例 + B1 旧测全绿亲跑）
+- [x] **F6 · 图谱同步**：`docs/_tech_graph/l1/01_modules.md` lg_rag / hitl / capability 三行在册备注回写（G-L1 · HG-GRAPH-MODULES 随 30 回写由 00 代录）
 
 ### 非范围
 
@@ -164,16 +164,16 @@ SPEC v1 §1 两实证缺口（均已在 master `4d905e0` 复核成立）：
 
 ## 验收标准
 
-- [ ] 人工闸：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved 后方可勾选下列码项
-- [ ] **TA1（消费放行 · SPEC A1）**：store 预置匹配 approved 单据（三元组命中 · decided_at 新鲜）→ 重下发同 tool 签发判定返回 `None`（不再产出 `delegation_issue_hitl_required`）· 台账含 `delegation_approval_consumed`（pytest 断言 · logger/span 双面）
-- [ ] **TA2（消费边界否定 · SPEC A2 · 变异式）**：① pending/rejected 不生效 ② 超 TTL 不生效（**InMemory + Db 双 store 各一组** · decided_at 类型归一断言 · Db 组必经 `alist/aget` 真读路径）③ 三元组任一不匹配不生效（换 run_id/换 subtask_id/换 capability_id 三例）④ payload 缺 capability_id 旧单据不生效 ⑤ store 读异常 → 维持拦截 + warning 台账
-- [ ] **TA3（单子任务形态 resume 成环 · SPEC A3 · 手动模式）**：`_persist_hitl` 对无前驱前缀 delegation_issue 拦截算出 `unlock_subtask_id=sid`（单测）；机制段 pytest 集成：decide(approved) → resume 200 → 图恢复 → `done{completed}`（可复用 `test_capability_testing_write.py` A4④ fixture 形态）；live HTTP/SSE 全链留 40 复跑
-- [ ] **TA4（反回归钉死 · SPEC A5）**：`registry.py::_match_filter` 与 `policy.py` 闸序段 git diff 为空；`test_allow_tags_does_not_waive_deny_write` 及 capability/hitl 既有测试原样绿；审批消费不过 gateway/Policy 断言（消费命中 + Policy 拒绝 → 仍被 Policy 裁）
-- [ ] **TA5（off 零 diff · SPEC A6 本 task 面）**：`LG_RAG_DELEGATION_TOKEN_MODE=off` 下消费路径零触达（store 读 spy 断言零调用 · 无 `delegation_approval_consumed` 台账）；既有 delegation/hitl 测试原样绿
-- [ ] **TA6（decide 落库不动 · SPEC A7 本 task 面）**：`store.py` `adecide`/`_DECIDE` git diff 为空；重复 decide 409 守卫原样绿（`test_hitl_pending_decide`）；`router.py:404-411` 409 守卫保留断言（prefix_touch 类空 unlock 仍 409）
-- [ ] **TA7（工程面 · SPEC A8 本 task 面）**：`pytest tests` 全绿；`ruff check app tests` 触及路径零新增；`./scripts/graph-compile.sh` EXIT=0；图谱 lg_rag/hitl/capability 三行备注回写 + HG-GRAPH-MODULES 00 代录行
-- [ ] B1 表 14 处 sync→async/补 `await` 随改全绿亲跑记录（命令 + 结果 · 含 `capability_acceptance.sh` 门禁亲跑）落 40 invoke
-- [ ] `npx spec-wave task lint --file docs/tasks/active/task_hitl_approval_consumption_loop.md` PASS；`npx --yes spec-wave@3.0.1 task lint-wiki-delta --target .` PASS
+- [x] 人工闸：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved 后方可勾选下列码项
+- [x] **TA1（消费放行 · SPEC A1）**：store 预置匹配 approved 单据（三元组命中 · decided_at 新鲜）→ 重下发同 tool 签发判定返回 `None`（不再产出 `delegation_issue_hitl_required`）· 台账含 `delegation_approval_consumed`（pytest 断言 · logger/span 双面）
+- [x] **TA2（消费边界否定 · SPEC A2 · 变异式）**：① pending/rejected 不生效 ② 超 TTL 不生效（**InMemory + Db 双 store 各一组** · decided_at 类型归一断言 · Db 组必经 `alist/aget` 真读路径）③ 三元组任一不匹配不生效（换 run_id/换 subtask_id/换 capability_id 三例）④ payload 缺 capability_id 旧单据不生效 ⑤ store 读异常 → 维持拦截 + warning 台账
+- [x] **TA3（单子任务形态 resume 成环 · SPEC A3 · 手动模式）**：`_persist_hitl` 对无前驱前缀 delegation_issue 拦截算出 `unlock_subtask_id=sid`（单测）；机制段 pytest 集成：decide(approved) → resume 200 → 图恢复 → `done{completed}`（可复用 `test_capability_testing_write.py` A4④ fixture 形态）；live HTTP/SSE 全链留 40 复跑——**live 末段标注：resume 200 达成（D2 时代 409 已消 · unlock=sid 回填 live 实证）· `done{completed}` 末段因 replan 重盖章 sid 致消费键失配（FP-3 循环 · 非本 task 回归）上抛 T2/SPEC v2（40 invoke「重要发现」）**
+- [x] **TA4（反回归钉死 · SPEC A5）**：`registry.py::_match_filter` 与 `policy.py` 闸序段 git diff 为空；`test_allow_tags_does_not_waive_deny_write` 及 capability/hitl 既有测试原样绿；审批消费不过 gateway/Policy 断言（消费命中 + Policy 拒绝 → 仍被 Policy 裁）
+- [x] **TA5（off 零 diff · SPEC A6 本 task 面）**：`LG_RAG_DELEGATION_TOKEN_MODE=off` 下消费路径零触达（store 读 spy 断言零调用 · 无 `delegation_approval_consumed` 台账）；既有 delegation/hitl 测试原样绿
+- [x] **TA6（decide 落库不动 · SPEC A7 本 task 面）**：`store.py` `adecide`/`_DECIDE` git diff 为空；重复 decide 409 守卫原样绿（`test_hitl_pending_decide`）；`router.py:404-411` 409 守卫保留断言（prefix_touch 类空 unlock 仍 409）
+- [x] **TA7（工程面 · SPEC A8 本 task 面）**：`pytest tests` 全绿；`ruff check app tests` 触及路径零新增；`./scripts/graph-compile.sh` EXIT=0；图谱 lg_rag/hitl/capability 三行备注回写 + HG-GRAPH-MODULES 00 代录行
+- [x] B1 表 14 处 sync→async/补 `await` 随改全绿亲跑记录（命令 + 结果 · 含 `capability_acceptance.sh` 门禁亲跑）落 40 invoke
+- [x] `npx spec-wave task lint --file docs/tasks/active/task_hitl_approval_consumption_loop.md` PASS；`npx --yes spec-wave@3.0.1 task lint-wiki-delta --target .` PASS（30/40 复跑于 active 期 · CLOSE 归档后改判 done/ 路径复跑）
 
 ---
 
@@ -270,3 +270,4 @@ TA1–TA7 逐条映射 SPEC A 编号并落到可对命令输出/断言机断的�
 | 2026-10-10 | 10-task 落稿（骨架先行增量落盘 · SPEC v1 signed 承接 · R0–R5 · HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 pending → 30 拒开工） |
 | 2026-10-10 | 00 代录三闸 approved（R1 增量复核 PASS · commit 45fec13）+ 计数口径顺手回改「15 处」→「14 处」（真值=B1 表枚举 join 13 + block_reason 1 · R2 审查自引更正） |
 | 2026-10-10 | 10-task 修订（20-task-audit R1 退回 B-1 修复 · **仅文档口径补齐 · 裁定结构不动**）：① B1 随改清单补第 15 处 `scripts/acceptance/capability_step_contract_gate.py:152`（`async def _drive` 内 sync 直调 `_join_subtasks` · 补 `await` · 被 `capability_acceptance.sh:165` 真跑 · 本地验收九层门禁）② 「14 处」→「15 处」全文统一（R1-N2 锚点/R2/R3 内「13 处」同步→「14 处」）③ B1 redline 行「非默认跑（eval marker）」改「默认跑（pyproject 无 addopts 排除 · conftest 无 deselect · CI pytest.yml:47 无 `-m` 排除）· 必须随改亲跑」（删「30 注记是否随改」可选措辞 · R3 residual 同步）④ 实操-A 补「grep 范围须含 `scripts/`」提醒 |
+| 2026-10-10 | **CLOSE**：30/40 交付（`f7177bf` 消费门+unlock 回填+payload 增键 · `b281d7c` B1 十四处随改+A4④ 双断言改写 · `8503456` 验收 29 枚 · `80eb872` 增强至 34 枚 · `c70a9d4` 图谱 lg_rag/hitl 行备注回写 · `b78d814`/`9080c0a`/`3a8fb3f`/`d1b0c06` invoke 与自检回填）· 验收 TA1–TA7 全机断绿 · 40 核验七项 PASS 带偏差登记（diff 面对拍五文件空 diff · 34 枚新测全绿两轮 · 全量 1713 passed 0 failed · ruff 触及面零新增 · graph-compile EXIT=0 · B1 十四处+门禁失败 0 · live 六 env 组挂起→pending→decide→**resume 200** 达成 · 闸面终态绿 · **偏差：末段 replan 重盖章 sid 致消费键失配 FP-3 循环 · 非本 task 回归 · 上抛 T2/SPEC v2**）→ PR [#216](https://github.com/Cyning12/ops-desk-api/pull/216) MERGED（`3f6a630` · CI 四绿）→ 归档 done/ · Hub 补登 · CLOSE invoke 留档；**注**：T2（auto-resume · `task_hitl_approval_consumption_auto_resume`）在途，签发审批消费回路全链 CLOSE 待 T2 收口 |

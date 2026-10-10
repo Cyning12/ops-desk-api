@@ -112,6 +112,7 @@
 | 2026-10-09 | [`task_compose_hitl_persistence_env.md`](./task_compose_hitl_persistence_env.md) | **config** · compose 透传 `OPS_HITL_PERSISTENCE`（默认空零 diff · 解锁全 docker 形态 HITL db 持久化验收通道）· 40 核验 7/7 · PR #207 |
 | 2026-10-09 | [`task_testing_write_capability.md`](./task_testing_write_capability.md) | **D2 可审对象** · 注册非只读测试 capability（testing.v1.yaml 罐头 write + env 门控 allow_write_tags_any 放行口径 + 裁定四 loader V1 放宽 · 三层显式打开 · off 零 diff）· 40 核验 PASS 带偏差登记（A1 三段 live 可达 · done 末段 409 另立 task）· PR #209 |
 | 2026-10-10 | [`task_hitl_approval_consumption_strategy_env.md`](./task_hitl_approval_consumption_strategy_env.md) | **T3 · D3** · strategy 候选 map env 追加口 `OPS_STRATEGY_EXTRA_CANDIDATE_CAPABILITY_IDS`（逗号分隔/strip/去空去重/调用点读取 · 默认不设逐字节零 diff · 含未知 key · 覆盖口隔离 · 下游闸全链不动）· 40 核验 PASS（七项全绿 · 全量 1679 passed）· PR #213 |
+| 2026-10-10 | [`task_hitl_approval_consumption_loop.md`](./task_hitl_approval_consumption_loop.md) | **T1 · D1/D2/D4** · 签发审批消费门（三元组消费键 + TTL 读时判过期 fail-closed · decided_at float\|ISO str 归一 · async 化甲案 B1 十四处随改）+ unlock 空形态回填（unlock=sid 形态守卫 · resume 409 修复）+ 台账/34 枚新测 · 40 核验 PASS 带偏差（全量 1713 passed · live resume 200 达成 · 末段 replan 重盖章上抛 T2/SPEC v2）· PR #216 |
 
 ---
 
@@ -165,6 +166,7 @@
 | 2026-10-09 | CLOSE **compose-hitl-persistence-env** `#207`（config 小 task · compose api.environment 透传 `OPS_HITL_PERSISTENCE` 默认空零 diff · 三闸维护者签（00 代录）· 40 核验 7/7 · CI 四绿 merge `61e44a8` · 归档 done/ · Hub 补登 · **验收阶段 5 全链复走留维护者另行组织**） |
 | 2026-10-09 | CLOSE **testing-write-capability**（D2）`#209`（behavior 小 task · 注册非只读测试 capability 补齐 HITL 全链可审对象 · 30 GATE_STOP→裁定四=乙（manifest 顶层 idempotency_key · loader V1 二选一放宽）→ 20 R2 PASS → 维护者重签（00 代录）· 40 核验 PASS 带偏差登记（A1 三段 live 可达 · done 末段 resume 409=既有链设计缺口）· CI 四绿 merge `ca4148f` · 归档 done/ · Hub 补登 · **留转：签发审批消费回路另立 task + SPEC 起草中**） |
 | 2026-10-10 | CLOSE **hitl-approval-consumption-strategy-env**（T3 · D3）`#213`（SPEC 承接 · strategy 候选 map env 追加口 `OPS_STRATEGY_EXTRA_CANDIDATE_CAPABILITY_IDS` 默认不设零 diff · 三闸维护者签（00 代录）· 40 核验 PASS 七项全绿（18 枚新测 · 全量 1679 passed · B1 八文件 114 passed · nit×3 吸收）· CI 四绿 merge `7853334` · 归档 done/ · Hub 补登 · **T1/T2 在途 · 签发审批消费回路全链 CLOSE 待后续**） |
+| 2026-10-10 | CLOSE **hitl-approval-consumption-loop**（T1 · D1/D2/D4）`#216`（SPEC 承接 · 审批消费门+unlock 空形态回填 · resume 409 修复 · 三闸维护者签（00 代录）· 40 核验 PASS 带偏差登记（七项 · 34 枚新测 · 全量 1713 passed · B1 十四处+门禁失败 0 · live 六 env 组 resume 200 达成 · 偏差：末段 replan 重盖章消费键失配=非本 task 回归上抛 T2/SPEC v2）· CI 四绿 merge `3f6a630` · 归档 done/ · Hub 补登 · **T2 auto-resume 在途 · 全链 CLOSE 待 T2 收口**） |
 
 ## 给维护者
 
