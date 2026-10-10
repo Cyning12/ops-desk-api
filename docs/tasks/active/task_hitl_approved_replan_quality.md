@@ -32,9 +32,9 @@
 
 | 闸 | 状态 | 说明 |
 |---|---|---|
-| HG-TASK-DRAFT | pending | （00 代录 · 非 10 职责） |
-| HG-AUDIT-R1 | pending | （00 代录 · 非 10 职责） |
-| HG-GRAPH-MODULES | pending | （00 代录 · 非 10 职责） |
+| HG-TASK-DRAFT | **approved**（2026-10-11 · 00 代录 · 授权 m01606/m00255） | R2 PASS（docs/audits/task-review/20261011_hitl-approved-replan-quality_r2.md · e9b2c9a） |
+| HG-AUDIT-R1 | **approved**（同上代录） | R1 BLOCKED→B-1 修订 54a3897→R2 PASS 闭合 |
+| HG-GRAPH-MODULES | **approved**（同上代录） | 在册·无图谱结构变更（nodes.py 执行逻辑内改 · 模块清单零增删） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 无外部试点面 |
 
 ## 背景与目标
