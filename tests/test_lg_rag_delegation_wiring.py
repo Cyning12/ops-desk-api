@@ -153,21 +153,21 @@ def test_off_mode_invalid_value_falls_back(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_readonly_subtask_auto_approved(enforce_env):
+async def test_readonly_subtask_auto_approved(enforce_env):
     _register_caps()
     state = _state(READ_CAP)
-    out = _join_subtasks({**state, "inflight_subtask_ids": []})
+    out = await _join_subtasks({**state, "inflight_subtask_ids": []})
     sid = state["subtasks"][0]["subtask_id"]
     assert sid in out["inflight_subtask_ids"]
     assert "subtask_results" not in out
 
 
-def test_write_capability_requires_hitl(enforce_env, caplog):
+async def test_write_capability_requires_hitl(enforce_env, caplog):
     _register_caps()
     state = _state(WRITE_CAP)
     sid = state["subtasks"][0]["subtask_id"]
     with caplog.at_level(logging.INFO, logger="app.ops.capability.delegation"):
-        out = _join_subtasks({**state, "inflight_subtask_ids": []})
+        out = await _join_subtasks({**state, "inflight_subtask_ids": []})
     assert sid not in out.get("inflight_subtask_ids", [])
     blocked = [r for r in out["subtask_results"] if r.get("hitl_required") is True]
     assert len(blocked) == 1
@@ -184,7 +184,7 @@ async def test_hitl_required_persists_via_existing_hitl_loop(enforce_env):
     try:
         state = _state(WRITE_CAP)
         sid = state["subtasks"][0]["subtask_id"]
-        joined = _join_subtasks({**state, "inflight_subtask_ids": []})
+        joined = await _join_subtasks({**state, "inflight_subtask_ids": []})
         merged = {
             **state,
             "subtask_results": list(joined.get("subtask_results") or []),

@@ -149,7 +149,7 @@ async def _drive(plan: list[dict], terminals: dict[str, dict], *, prefix: list[s
     }
     if prefix is not None:
         state["plan_prefix_ids"] = list(prefix)
-    out = _join_subtasks(state)
+    out = await _join_subtasks(state)
     blocked = {str(r.get("subtask_id")): r for r in (out.get("subtask_results") or [])}
     executed: list[str] = []
     for sid in out.get("inflight_subtask_ids") or []:
