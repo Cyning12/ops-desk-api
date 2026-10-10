@@ -54,7 +54,8 @@ date: 2026-10-11
 ## TC4 access 单行（共存口径）
 
 - after run 观察：uvicorn.access 保持自带格式 `INFO:     127.0.0.1:57362 - "GET /health HTTP/1.1" 200 OK`（propagate=False 自带 handler · 未被本 task root handler 重格式化 · 未双行）。
-- 精确计数补跑中（就绪探测与显式请求分离计数）……
+- 精确计数补跑（:8023 · /tmp/tc4b.log）：就绪探测 1 + 显式 3 = **4 请求 → access 行恰好 4 条**（`INFO:     127.0.0.1:57xxx - "GET /health HTTP/1.1" 200 OK` ×4，端口 57883-57886 逐一对应）；root handler 重格式化迹象（钉死格式的 uvicorn 行）= **0**；双行 = **0**。
+- ✅ 结论：propagate=False 共存口径成立——每请求恰好一条 access 行，自带格式不被 root handler 截获重发。
 
 ## TC5 反回归 · master 基线对拍
 
@@ -66,7 +67,7 @@ date: 2026-10-11
 ## OPS_LOG_LEVEL live 组（父令第 5 项）
 
 - BOGUS live：启动即落格式化错误行 `2026-10-11 01:55:33,507 app.main ERROR OPS_LOG_LEVEL='BOGUS' 无法识别（仅 CRITICAL/ERROR/WARNING/INFO/DEBUG），按 INFO 处理` ✅ fail-closed 告警可见
-- DEBUG live：补跑中……
+- DEBUG live（:8024 · /tmp/tc_debug2.log /tmp/tc_debug3.log 两轮）：login+runtime+pending 全链打下后 **DEBUG 级行数=0**。机理：触达链（auth/hitl/runtime/pending）无 logger.debug 发射点；asyncio selector 的 DEBUG 行发射于 loop 创建时（先于 app import 期的 basicConfig）被吞。app.* INFO 行同级管道仍正常可见 → env 生效的权威证据以 TC1 裸 import 探针为准（OPS_LOG_LEVEL=DEBUG → ROOT_LEVEL=DEBUG · HANDLERS=1 · 格式钉死），live 面无反证。照登为口径说明，非偏差。
 
 ## NIT 候选（随裁定回填）
 
