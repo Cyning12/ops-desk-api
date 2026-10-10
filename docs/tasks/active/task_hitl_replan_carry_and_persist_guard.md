@@ -244,7 +244,9 @@ TB1~TB4 保号面 + TB6 建单检查面为 pytest 机制段（30 达成）；TB5
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+**30 实现**：nodes.py 两段增量（_unlocked_preserved_rows 保号段 + _persist_hitl 建单检查段）· 14 枚 TB 断言 · 图谱 G-L1 备注 · 全量 4failed/1762passed（4 红=master 基线环境性）· ruff 零新增 · graph-compile EXIT=0 · B1 107 枚全绿（详见 invoke_20261010_30_implement.md）。
+
+**40 核验**（独立复跑 · 详见 invoke_20261010_40_verify.md）：七项全过。diff 面对拍恰 10 文件面外零（真 base=merge-base bdd45f9 · .env.example -34 行系 base 漂移伪象）；14 枚抽跑全绿 · TB3/TB6 断言强度亲读非假绿；全量 4 红与基线同名同数零新增 · ruff 零新增 · graph-compile EXIT=0 · B1 107 枚亲跑吻合。**live 三 run 正面终验**：保号消费命中原 sid（568d288a 四轮 :1/:2/:3 各自 delegation_approval_consumed · a0850a8e consumed{:1}+token+echo 真执行）= T1 :1→:11 偏差收口；hitl_persist_guard_skip 每次重放在案 = T2 孤儿单偏差收口；终态 run 零 pending。两条如实钉案：①TB8 字面 done{completed} 在手动 resume 流结构性不可达（resume.py:131 既有设计 · 终帧字面永为 resumed · event_store.py:99-107 语义=终态达成）；②approved 路径自然完成双重结构性不可达（LLM 不知晓保号行每轮新铸 echo 步+observe 剪结果盲循环 · router.py:328-357 聚合 approved 非空恒 replan · 均面外既有语义）。另钉：30 自报「verify EXIT=0」不准（实测 EXIT=2 仓级基线 BLOCKED · 主仓同 · 非本 task 归因）。**裁定：可进 PR 队列（附钉案）**。
 
 ---
 
