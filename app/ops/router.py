@@ -5,6 +5,7 @@ from app.ops.admin.capability import router as admin_capability_router
 from app.ops.admin.memory import router as admin_memory_router
 from app.ops.admin.sync import router as admin_sync_router
 from app.ops.auth import router as auth_router
+from app.ops.capability_mine import router as capability_mine_router
 from app.ops.chat.router import router as chat_router
 from app.ops.chat.ws import router as chat_ws_router
 from app.ops.graph import router as graph_router
@@ -25,6 +26,7 @@ router.include_router(pulls_router)
 router.include_router(graph_router)
 router.include_router(admin_sync_router)
 router.include_router(admin_capability_router)
+router.include_router(capability_mine_router)
 router.include_router(admin_memory_router)
 router.include_router(chat_router)
 router.include_router(chat_ws_router)

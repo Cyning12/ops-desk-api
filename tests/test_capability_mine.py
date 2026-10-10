@@ -68,7 +68,8 @@ def _make_user(user_id: str, username: str, role: str):
 
 
 def _override_user(user) -> None:
-    async def fake_get_current_user(*args, **kwargs):
+    # 注意：override 按自身签名解析——禁 *args/**kwargs（会被当 query 参数 422）
+    async def fake_get_current_user():
         return user
 
     fastapi_app.dependency_overrides[get_current_user] = fake_get_current_user
