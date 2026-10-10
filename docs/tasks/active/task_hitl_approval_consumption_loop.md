@@ -249,7 +249,17 @@ TA1–TA7 逐条映射 SPEC A 编号并落到可对命令输出/断言机断的�
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+| 验收 | 结论 | 证据 |
+|---|---|---|
+| TA1 消费放行 | ✅ | tests/test_hitl_approval_consumption.py（台账 logger+span 双面） |
+| TA2 变异否定组 | ✅ | 八组 25+ 枚（pending/rejected · 三元组/缺键/类型守卫 · TTL 双 store 真读 · 读异常 · env 解析 · 归一） |
+| TA3 unlock 回填+成环 | ✅（机制段）/ ⚠️（live 末段见下） | unlock=sid+payload 键单测 · resume 成环机制段（decide→replan→消费放行→签发→执行→done 收口）；live 挂起→pending→decide→**resume 200** 实证（40 invoke） |
+| TA4 反回归 | ✅ | registry/policy/delegation diff 空 + TA4-D 断言（消费不过 gateway/Policy） |
+| TA5 off 零 diff | ✅ | spy 零调用 + 零台账 |
+| TA6 decide 落库不动 | ✅ | store/router diff 空 + prefix_touch 空 unlock 409 保留断言（HTTP 真端点） |
+| TA7 工程面 | ✅ | 全量 1713 passed 0 failed · ruff 触及面零新增 · graph-compile EXIT=0 · 门禁失败 0 |
+
+⚠️ live 末段偏差：replan 重盖章 sid 致消费键失配（FP-3 循环）· 非本 task 回归 · 上抛 T2/SPEC v2（40 invoke「重要发现」）。30/40 invoke：by-task/hitl-approval-consumption-loop/。
 
 ---
 
