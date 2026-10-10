@@ -97,7 +97,17 @@
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+**30 自检（2026-10-11 · 30-implement 棒）**：
+
+- [x] `pytest tests -q` 零新增红（master cae745e 基线对拍）：见 invoke 思考轮 8（分支与 master 同环境同命令对跑 · 失败集逐名比对零新增）。
+- [x] `npx --yes spec-wave task lint-wiki-delta --target .` → **EXIT=0 · PASS**（scanned 155 · issues 0）。
+- [x] TC1 基线全表：93 档逐档分类落账（36 零审查档 + 39 无结论节 + 13 否定结论词 + 5 缺 SUBJ）· 处置全=豁免 · 落 `docs/harness/CONVENTION_review_gate_dual_address_v1_zh.md` §五 · 与实跑输出 1:1 对账。
+- [x] TC2 绿证：豁免清单落地后 `npx spec-wave verify --target .`（重定向取 $?）→ **EXIT=0 · VERIFY: PASS** · 豁免命中留痕 93 · invalid 0。
+- [x] TC3 反向实证：临时不合规档 `task_tc3_tmp_noncompliant_probe.md` → verify EXIT=2 BLOCKED 缺口 1 逐字指向该档 → 撤档 EXIT=0 复绿 · 零残留（证据 /tmp/tc3_red.txt / /tmp/tc3_green.txt）。
+- [x] TC4 诚实性：豁免档 reason 统一「存量基线豁免 · 未审」· 「未审」语义钉于规约档 §三.2（未在址A落可机读通过审查档）· 豁免≠审查通过。
+- [x] TC5 反回归：全量 pytest 零新增红 + 既有档 git diff 零（diff 窗仅新增 3 档：豁免 yaml / 规约档 / 本 task 自检回填 · done/ 与 reviews/ 133 档零触碰）。
+
+（40 复核结论留 40 帽回填）
 
 ---
 
