@@ -33,9 +33,9 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 初稿人扫（本 task 含两处新机制裁定——保号面/fail-open 建单——维护者重点核钉死契约节） |
-| HG-AUDIT-R1 | **pending** | 30 | 20 R1 审查落盘后人签 |
-| HG-GRAPH-MODULES | **pending** | 30 | lg_rag/hitl 行备注段（G-L1 行备注 · 不新增一级模块）· 30 回写后由 00 代录 |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | 维护者签 · 00 代录 2026-10-10（授权「授权00签收所有过程文档」） · lint PASS · R1 N-1/N-2 已同批顺手补 |
+| HG-AUDIT-R1 | **approved** | 30 | 维护者签 · 00 代录 2026-10-10（授权「授权00签收所有过程文档」） · 依据 R1 PASS（reviews/task_hitl_replan_carry_and_persist_guard_audit_R1_20261010.md · N-1~N-3 非阻塞） |
+| HG-GRAPH-MODULES | **approved** | 30 | 维护者签「在册」（lg_rag/hitl 行备注段）· 00 代录 2026-10-10 · 30 回写义务在案 |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 非物理分层试点 task |
 
 ---
@@ -89,7 +89,7 @@
 | **二 · 保号路径全覆盖** | supervisor replan **三条路径**均保号：正常 LLM 成功（:1054 stamp 前把 P 注入带回段）· LLM 失败 fallback（:1017-1051 既有 carry 面 · P ⊆ unresolved 已自然含 · 行为可归一）· 空 allowlist 短路（:963-977）。保号步骤置于 locked 前缀之后、LLM 新后缀之前；**`plan_prefix_ids` 仍仅 = locked · `recoverable_point` = len(locked) 不变**（P 可执行 · 非前缀 · 不重跑保护不扩散） |
 | **三 · 空 unlocked 零 diff** | `hitl_unlocked_ids` 为空时，replan 输出（`subtasks`/`host_subtask_seq`/`plan_prefix_ids`/`recoverable_point`/`subtask_results` 修剪面）与 master 对拍**逐字节一致**——无 approved 解锁的旧形态零行为差（反回归机断断言） |
 | **四 · 建单前检查匹配语义** | `_persist_hitl` 在 `acreate`（:1601）之前，对每个待建 sid 查 store approved 单据，匹配语义**镜像消费门**：blocked_by==`delegation_issue_hitl_required` 守卫（:347 同型）+ `(run_id, subtask_id, capability_id)` 三元组（capability 真源 = `term.get("tool")` :1583 同源）+ `decided_at` 归一复用 `_decided_at_ts` + 读时 TTL 复用 `_approval_consumption_ttl_seconds`（禁第二份 TTL/env 解析实现 · auto_resume.py:92-96 复用先例）。命中 → **跳过建单**（该 sid 不产新行） |
-| **五 · fail-open 裁定** | 检查读异常 → **照建单 + warning 台账**（新台账键建议 `hitl_persist_guard_read_failed` · 记动作不记内容 · 承 delegation 台账纪律）。**裁定理由**：漏建单 = 人干等一个不存在的审批（`_persist_hitl` docstring :1526-1529 既有红线）；fail-closed 会在 DB 抖动时抑制合法 pending 致死等，孤儿 pending 只是 UX/判定输入污染——两害相权建单为 fail-safe 方向；且 `_persist_hitl` 既有去重读失败「退回只认 state 不崩」（:1554-1555）已是同向先例。**维护者建议原话即「fail-safe 建单 + warning」，本 task 裁定采纳** |
+| **五 · fail-open 裁定** | 检查读异常 → **照建单 + warning 台账**（新台账键**钉死** `hitl_persist_guard_read_failed` · 记动作不记内容 · 承 delegation 台账纪律 · 30 不得改名 —— TB6⑤ 按字面断言）。**裁定理由**：漏建单 = 人干等一个不存在的审批（`_persist_hitl` docstring :1526-1529 既有红线）；fail-closed 会在 DB 抖动时抑制合法 pending 致死等，孤儿 pending 只是 UX/判定输入污染——两害相权建单为 fail-safe 方向；且 `_persist_hitl` 既有去重读失败「退回只认 state 不崩」（:1554-1555）已是同向先例。**维护者建议原话即「fail-safe 建单 + warning」，本 task 裁定采纳** |
 | **六 · 旧单据交互** | approved 单据缺 `capability_id` 键（T1 前旧格式）→ guard **不匹配**（fail-open 照建）· 与消费门缺键 fail-closed（:356-357）语义同构——旧单据场景退化为既有「再挂起重批」形态，**不扩面 · 不 Backfill**；payload 不增新键（零迁移存续） |
 | **七 · T1/T2 存续** | 消费门 `_approval_consumed`/`_delegation_issue_block_reason` 判定零改（guard 在 persist 侧 · 消费门在签发侧 · 两面独立）；`auto_resume.py` 触发器/行锁认领/补偿扫描零改；`store.py` 既有方法 diff 空（guard 只读复用 `alist`）；deny 判序/Policy 写闸/gateway 闸链零触；`resume.py` 恢复链零改 |
 | **八 · interrupt 语义不动** | guard 跳过建单**不改** `obs["hitl_pending"]` 与 `interrupt()` 调用结构（resume 重放时 `interrupt()` 直接返回 resume 值 · :1736-1740 · 载荷不重演）；`_persist_hitl` 返回值须把「已存在 pending」照常带回（:1559-1563 既有形态存续）；guard 跳过的 sid 不产生新行也不伪造行 |
@@ -127,7 +127,7 @@
 | **FP-2 · 保号打断 locked 前缀语义** | 保号行若被拼进 locked 前缀（或 `plan_prefix_ids`/`recoverable_point` 随之偏移）→ 重跑保护扩散 · `_unresolved_suffix` 计算错位 · T1/T2 既有断言（locked 语义 · carry 形态）批量失效 | 钉死契约二：P 置于 locked 之后 LLM 新后缀之前 · `plan_prefix_ids` 仍仅 = locked · `recoverable_point` 不变；既有断言回归对拍进验收 |
 | **FP-3 · 旧单据（无 capability_id 键）与建单检查交互** | T1 落地前创建的 approved 单据 payload 缺 `capability_id` → guard 若宽松匹配（缺键视为通配）→ 误跳过合法建单 → 该轮 HITL 永不出现 → 人干等 | 钉死契约六：缺键单据**不匹配**（fail-open 照建）· 与消费门缺键 fail-closed 同构；断言组含「缺键旧 approved 在场 → 照建单」 |
 | **FP-4 · 检查读异常静默吞错** | guard 的 `alist` 读失败若 fail-closed 不建单 → DB 抖动期合法 pending 被抑制 → 死等且无任何信号 | 钉死契约五：fail-open 照建 + `hitl_persist_guard_read_failed` warning 台账（记动作不记内容）；断言：mock store `alist` 抛错 → 单据照建 + 台账出现 |
-| **FP-5 · 保号与空 allowlist 短路交互** | 空 allowlist 短路（:963-977）`items=[]` · locked 即全计划 → 若保号段误向空计划注入 P → 多出未授权行 · 计划膨胀 | 保号仅作用于 replan 输出拼装段；空 unlocked 时与 master 对拍零 diff（钉死契约三）为总闸；空 allowlist+unlocked 组合场景进断言组 |
+| **FP-5 · 保号与空 allowlist 短路交互** | 空 allowlist 短路（:963-977）`items=[]` · locked 即全计划 → 真风险双端：① 保号段误向空计划注入 P → 计划膨胀；② 空 allowlist + unlocked 时 approved 步从计划丢失（实读 :688+:975 · P 元素均 approved 故「未授权行」非真风险 · R1 N-1） | 保号仅作用于 replan 输出拼装段；空 unlocked 时与 master 对拍零 diff（钉死契约三）为总闸；空 allowlist+unlocked 组合场景进断言组 |
 | **FP-6 · 消费命中后 resume 重放双保险失效假设** | 保号命中消费后，T2 auto resume 依「同 run 无未决 pending」推进 · 若 guard 与消费门语义漂移（TTL/归一实现分叉）→ guard 建单而消费门命中（或反向）→ 孤儿 pending 复发或重复拦截 | 钉死契约四：guard 复用 `_approval_consumption_ttl_seconds`/`_decided_at_ts` 同一实现（禁第二份解析）；匹配三元组与 blocked_by 守卫镜像 :347-357；R3 交叉验证逐项对照两函数语义 |
 | **FP-7 · 与 T1 34 枚 / T2 39 枚既有断言冲突面** | 保号改变 replan 后 `subtasks` id 序列 → 依赖「replan 后 id 递增」假设的既有断言（若有）批量失败；guard 改变 `_persist_hitl` 建单计数 → 依赖「resume 重放重建 pending」假设的断言失败 | 30 开工第一步：pytest 基线对拍（T1/T2 全绿基线）→ 实现后逐枚清点失败断言 · 凡既有断言失败须落 B1 裁定表（保留/修订/理由）· 预期冲突面集中在「重放重建 pending」形态断言（guard 跳过建单使其需按 approved-在场语义修订）；**预期零冲突面**：消费门判定/TTL/auto_resume 触发面（本 task 零改） |
 | **FP-8 · 保号步骤终态残留** | approved 步旧结果被 :1687-1689 剪掉是「未解决」的前提 · 若未来改动使 approved 步保留终态 → 保号行带终态回计划 → 跳过执行 · 消费命中后不重跑 → 授权语义架空 | 保号实现处加防御：P 计算时显式排除有终态 sid（∩ 未解决为字面实现而非隐含假设）；断言：approved 步有终态时保号集合为空（防御断言） |
