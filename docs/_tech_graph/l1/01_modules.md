@@ -24,7 +24,7 @@ audience: agent-30
 
 | module_id | 名称 | 路径 glob | 依赖方向（仅指向谁） | 负责人/备注 |
 |-----------|------|-----------|----------------------|-------------|
-| `entry` | 入口与配置 | `app/main.py`, `app/config.py` | → `api`, `db` | FastAPI 实例、CORS、环境变量 |
+| `entry` | 入口与配置 | `app/main.py`, `app/config.py` | → `api`, `db` | FastAPI 实例、CORS、环境变量；**2026-10-11（repo-logging-init）**：`app/main.py` import 期 `logging.basicConfig`（`OPS_LOG_LEVEL` 默认 INFO · 非法回退 INFO fail-closed · 不动 uvicorn logger）——仓级台账初始化，app INFO 开箱可见 |
 | `api` | API 路由注册 | `app/ops/router.py`, `app/ops/*/router.py` | → `service`, `auth`, `db` | HTTP 入口、SSE 流封装；**2026-09-21**：注册 `hitl_router`（`/hitl/*`）与 `admin_capability_router`（`/admin/capability/*`）；**2026-09-22**：注册 `admin_memory_router`（`POST /admin/memory/purge`）；**2026-09-30（hitl-browser-decide）**：`hitl_router` 增 cookie maintainer 面 `GET /hitl/pending` + `POST /hitl/requests/{id}/decide`（既有 router 内新增 · 无新注册） |
 | `auth` | 鉴权模块 | `app/ops/auth.py`, `app/ops/deps.py`, `app/ops/security.py` | → `db` | 登录、登出、session cookie、invite token 验证、角色保护；**阶段 T**：`/me` 回 `tenant_id` · `POST /auth/tenant` 切换 session 租户（F1=C · allowlist A/B） |
 | `chat` | Chat 业务（**legacy · 非主线**） | `app/ops/chat/**` · `app/ops/session/**` | → `llm`, `db`, `rag` | LangGraph StateGraph、SSE/WS 双传输；**Session 连续性**（历史加载 · 窗口压缩 · SSE replay 契约）；**T6（2026-08-31）**：`POST /api/ops/chat/stream` 已 **410** 下线（迁移 `POST /api/ops/lg-rag/stream` · 不删 chat 代码/图/表 · models/sessions.latest/WS 保留）；拓扑详见 [`10_flow_chat.md`](./10_flow_chat.md)；**session-summary-fallback（2026-09-22）**：`app/ops/session/` 新增 `summary.py`（会话真摘要懒生成 + `ops_session_summaries` 缓存 · `SESSION_SUMMARY_ENABLED` 默认关 · off/on-态全失败与占位模式逐字节一致 · 零新路由/SSE 事件类型） |
