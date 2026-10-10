@@ -27,10 +27,13 @@ live HTTP/SSE 全链与 git diff 空组（registry/policy/store）留 40 复跑�
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 import uuid
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from langchain_core.messages import HumanMessage
@@ -57,8 +60,10 @@ from app.ops.lg_rag.multi.nodes import (
     _join_subtasks,
     _observe,
     _persist_hitl,
+    _unlocked_preserved_rows,
     observe_node,
     route_after_react,
+    supervisor_node,
     tool_exec_node,
 )
 from app.ops.lg_rag.state import LgRagState
@@ -588,4 +593,511 @@ def test_ta6_prefix_touch_empty_unlock_resume_still_409():
         assert "unlock_subtask_id" in res.json()["detail"]
     finally:
         reset_hitl_store()
+
+
+# ===========================================================================
+# hitl-replan-carry-and-persist-guard：TB1–TB6（replan 保号 + persist 建单检查）
+# 契约锚：docs/tasks/active/task_hitl_replan_carry_and_persist_guard.md
+# ===========================================================================
+
+_PLAN_PATCH = "app.ops.lg_rag.multi.nodes.get_llm_provider"
+_CAPS_PATCH = "app.ops.lg_rag.multi.nodes.list_capabilities"
+
+
+def _fake_caps(*_a, **_kw):
+    """承 test_react_observe._fake_caps 范式：可见能力集只含 testing 罐头。"""
+    return [
+        SimpleNamespace(
+            capability_id=_TESTING_CAP, description="测试回写", risk_level="low"
+        )
+    ]
+
+
+def _guard_row(sid: str, **kw) -> dict:
+    """replan 保号场景计划行（承 test_react_observe._plan_row 范式）。"""
+    row = {
+        "id": sid,
+        "subtask_id": sid,
+        "alias": "t" + sid.rsplit(":", 1)[-1],
+        "type": "tool",
+        "tool": _TESTING_CAP,
+        "input": {"request_id": "r-1", "note": "demo"},
+        "depends_on": [],
+    }
+    row.update(kw)
+    return row
+
+
+def _guard_state(run_id: str, rows: list[dict], results: list[dict], **kw) -> dict:
+    """replan 保号场景 state（承 test_react_observe._state 范式）。
+
+    host_subtask_seq=len(rows)：模拟既有签发序列（保号行序号 ≤ seq 才真实）。
+    """
+    base = {
+        "messages": [HumanMessage(content="复合问题")],
+        "run_id": run_id,
+        "thread_id": "t-guard",
+        "allowed_capability_ids": [_TESTING_CAP],
+        "supervisor_step_count": 1,
+        "host_subtask_seq": len(rows),
+        "react_round": 0,
+        "inflight_subtask_ids": [],
+        "subtasks": rows,
+        "subtask_results": results,
+    }
+    base.update(kw)
+    return base
+
+
+def _llm_returning(payload: str):
+    return lambda *a, **k: SimpleNamespace(
+        complete=AsyncMock(return_value=payload)
+    )
+
+
+def _new_step_suffix(input_text: str = "新步骤") -> str:
+    return json.dumps(
+        {"subtasks": [
+            {"id": "s1", "type": "tool", "tool": _TESTING_CAP, "input": input_text}
+        ]},
+        ensure_ascii=False,
+    )
+
+
+@pytest.mark.asyncio
+async def test_tb1_replan_preserves_unlocked_sid_normal_path(cap_env):
+    """TB1：正常 LLM 重规划路径保号断言组（契约一/二）。
+
+    P=hitl_unlocked_ids∩无终态：原行原 subtask_id 带回，置 locked 后、
+    LLM 新后缀前；LLM 新步骤照常盖章新 id（seq 递增存续）；
+    plan_prefix_ids/recoverable_point 仍仅随 locked（契约二）。
+    """
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    s1, s2 = f"{run_id}:1", f"{run_id}:2"
+    unlocked_row = _guard_row(s2, input={"request_id": "r-2", "note": "重跑我"})
+    state = _guard_state(
+        run_id,
+        [_guard_row(s1), unlocked_row],
+        [{"subtask_id": s1, "type": "tool", "output": {"echo": "ok"}}],
+        plan_prefix_ids=[s1],
+        hitl_unlocked_ids=[s2],
+    )
+    with patch(_CAPS_PATCH, new=_fake_caps), patch(
+        _PLAN_PATCH, new=_llm_returning(_new_step_suffix())
+    ):
+        out = await supervisor_node(state)
+    new_id = f"{run_id}:3"
+    # 保号落位：locked 前缀 → 保号行（原 id）→ LLM 新后缀（新盖章 id）
+    assert [r["subtask_id"] for r in out["subtasks"]] == [s1, s2, new_id]
+    # 保号行内容逐键原样（不重签发 · 不改字段）
+    assert out["subtasks"][1] == unlocked_row
+    # LLM 新步骤照常盖章：seq 2→3 单调递增，新 id 不与保号行碰撞
+    assert out["host_subtask_seq"] == 3
+    # 契约二：前缀/可恢复点仅随 locked，不随保号行扩
+    assert out["plan_prefix_ids"] == [s1]
+    assert out["recoverable_point"] == 1
+
+
+@pytest.mark.asyncio
+async def test_tb2_fallback_path_preserves_unlocked_sid(cap_env):
+    """TB2-a：LLM 失败 fallback 沿用路径保号（契约二 · P⊆未解决后缀自然覆盖）。
+
+    fallback 走 _carry_plan 不重签发：unlocked∩无终态步在沿用后缀里原号带回。
+    """
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    s1, s2 = f"{run_id}:1", f"{run_id}:2"
+    state = _guard_state(
+        run_id,
+        [_guard_row(s1), _guard_row(s2, depends_on=[s1])],
+        [{"subtask_id": s1, "type": "tool", "output": {"echo": "ok"}}],
+        plan_prefix_ids=[s1],
+        hitl_unlocked_ids=[s2],
+    )
+    def _boom(*a, **k):
+        return SimpleNamespace(
+            complete=AsyncMock(side_effect=RuntimeError("LLM down"))
+        )
+
+    with patch(_CAPS_PATCH, new=_fake_caps), patch(_PLAN_PATCH, new=_boom):
+        out = await supervisor_node(state)
+    assert [r["subtask_id"] for r in out["subtasks"]] == [s1, s2]
+    assert out["host_subtask_seq"] == 2  # fallback 沿用不重签发
+    assert out["plan_prefix_ids"] == [s1]
+    assert out["recoverable_point"] == 1
+
+
+@pytest.mark.asyncio
+async def test_tb2_empty_allowlist_path_preserves_unlocked_sid(cap_env):
+    """TB2-b：空 allowlist 短路路径保号（契约二 · 三路径覆盖最后一格）。"""
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    s1, s2 = f"{run_id}:1", f"{run_id}:2"
+    state = _guard_state(
+        run_id,
+        [_guard_row(s1), _guard_row(s2)],
+        [{"subtask_id": s1, "type": "tool", "output": {"echo": "ok"}}],
+        plan_prefix_ids=[s1],
+        hitl_unlocked_ids=[s2],
+        allowed_capability_ids=[],  # 空 allowlist → 短路路径（不调 LLM）
+    )
+    out = await supervisor_node(state)
+    assert [r["subtask_id"] for r in out["subtasks"]] == [s1, s2]
+    assert out["host_subtask_seq"] == 2  # 短路 items=[] 不新签发
+    assert out["plan_prefix_ids"] == [s1]
+    assert out["recoverable_point"] == 1
+
+
+@pytest.mark.asyncio
+async def test_tb3_non_unlocked_unresolved_step_replaced_control(cap_env):
+    """TB3 变异反例：非 unlocked 的未解决步骤重规划后**不**保号。
+
+    授权面零扩大钉死：保号只认 P=hitl_unlocked_ids∩无终态；不在 P 的
+    未解决步骤照旧被 LLM 新后缀替代（承 react_observe 替换对照语义）。
+    """
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    s1, s2 = f"{run_id}:1", f"{run_id}:2"
+    state = _guard_state(
+        run_id,
+        [_guard_row(s1), _guard_row(s2, depends_on=[s1])],
+        [
+            {"subtask_id": s1, "type": "tool", "output": {"echo": "ok"}},
+            {"subtask_id": s2, "type": "tool", "error": "boom"},
+        ],
+        plan_prefix_ids=[s1],
+        hitl_unlocked_ids=[],  # s2 未解锁：不在 P
+    )
+    with patch(_CAPS_PATCH, new=_fake_caps), patch(
+        _PLAN_PATCH, new=_llm_returning(_new_step_suffix())
+    ):
+        out = await supervisor_node(state)
+    ids = [r["subtask_id"] for r in out["subtasks"]]
+    assert ids == [s1, f"{run_id}:3"]  # s2 旧 id 不回带（授权面零扩大）
+
+
+@pytest.mark.asyncio
+async def test_tb3_unlocked_step_with_terminal_not_preserved(cap_env):
+    """TB3/FP-8 防御：unlocked 步**有终态**时保号集合为空（双终态形态）。
+
+    带终态回计划会被 join 跳过执行 ⇒ approved 授权被架空；成功/失败
+    两种终态一律不保号，行为回退 master 语义（该步随旧后缀被替代）。
+    """
+    for terminal in (
+        {"subtask_id": None, "type": "tool", "output": {"echo": "ok"}},
+        {"subtask_id": None, "type": "tool", "error": "boom"},
+    ):
+        run_id = f"run-{uuid.uuid4().hex[:8]}"
+        s1, s2 = f"{run_id}:1", f"{run_id}:2"
+        term = {**terminal, "subtask_id": s2}
+        state = _guard_state(
+            run_id,
+            [_guard_row(s1), _guard_row(s2, depends_on=[s1])],
+            [{"subtask_id": s1, "type": "tool", "output": {"echo": "ok"}}, term],
+            plan_prefix_ids=[s1],
+            hitl_unlocked_ids=[s2],
+        )
+        locked = nodes._locked_prefix(state)
+        assert _unlocked_preserved_rows(state, locked) == [], (
+            f"FP-8：有终态的 unlocked 步不得保号（terminal={term}）"
+        )
+        with patch(_CAPS_PATCH, new=_fake_caps), patch(
+            _PLAN_PATCH, new=_llm_returning(_new_step_suffix())
+        ):
+            out = await supervisor_node(state)
+        ids = [r["subtask_id"] for r in out["subtasks"]]
+        assert s2 not in ids, f"FP-8：{s2} 带终态回计划会架空授权"
+        assert ids == [s1, f"{run_id}:3"]
+
+
+def _five_keys_bytes(out: dict) -> str:
+    """契约三五键序列化（subtasks/seq/prefix/recoverable/results 修剪面）。"""
+    batch = out.get("subtask_results")
+    trim = None
+    if batch is not None:
+        trim = {
+            "rows": list(batch),
+            "plan_ids": sorted(str(i) for i in batch.plan_ids),
+            "replace": bool(batch.replace),
+        }
+    return json.dumps(
+        {
+            "subtasks": out.get("subtasks"),
+            "host_subtask_seq": out.get("host_subtask_seq"),
+            "plan_prefix_ids": out.get("plan_prefix_ids"),
+            "recoverable_point": out.get("recoverable_point"),
+            "subtask_results_trim": trim,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        default=str,
+    )
+
+
+@pytest.mark.asyncio
+async def test_tb4_empty_unlocked_byte_parity_with_master(cap_env):
+    """TB4：空 unlocked 时 replan 输出五键与 master 语义逐字节一致（契约三）。
+
+    对拍法：hitl_unlocked_ids 键缺失 vs 显式空列表双跑 → 五键序列化全等；
+    再钉 golden 字面值（与 react_observe:217-239 master 替换对照逐项对应）。
+    """
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    s1, s2 = f"{run_id}:1", f"{run_id}:2"
+    results = [
+        {"subtask_id": s1, "type": "tool", "output": {"echo": "ok"}},
+        {"subtask_id": s2, "type": "tool", "error": "boom"},
+    ]
+    rows = [_guard_row(s1), _guard_row(s2, depends_on=[s1])]
+    outs = []
+    for extra in ({}, {"hitl_unlocked_ids": []}):
+        state = _guard_state(run_id, rows, results, plan_prefix_ids=[s1], **extra)
+        with patch(_CAPS_PATCH, new=_fake_caps), patch(
+            _PLAN_PATCH, new=_llm_returning(_new_step_suffix())
+        ):
+            outs.append(await supervisor_node(state))
+    # 键缺失 vs 显式空列表：五键逐字节一致（空 unlocked ⇒ 保号路径零介入）
+    assert _five_keys_bytes(outs[0]) == _five_keys_bytes(outs[1])
+    # golden 字面钉（master 语义逐项对应 · B1 冲突面零 diff 总闸）
+    new_id = f"{run_id}:3"
+    assert [r["subtask_id"] for r in outs[0]["subtasks"]] == [s1, new_id]
+    assert outs[0]["host_subtask_seq"] == 3
+    assert outs[0]["plan_prefix_ids"] == [s1]
+    assert outs[0]["recoverable_point"] == 1
+    trim = outs[0]["subtask_results"]
+    assert list(trim) == [] and trim.replace is True
+    assert set(trim.plan_ids) == {s1, new_id}
+
+
+@pytest.mark.asyncio
+async def test_tb5_consume_hit_replan_carry_loop_completes(cap_env, monkeypatch, caplog):
+    """TB5（机制段 · 消费命中成环 done{completed}）：批准→resume→**真 replan
+    保号**→消费放行→令牌→tool_exec 真执行→observe done==planned 收口。
+
+    与 TA3③ 的差异钉死：resume 后跑真 supervisor_node 重规划（LLM mock
+    出一个新后缀步），被解锁步原 subtask_id 保号带回且落位新步骤前；
+    随后用保号行过消费门（判定 None + delegation_approval_consumed 台账）。
+    live HTTP 全链（done{completed} 正面收口）留 40 复跑。
+    """
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    sid = f"{run_id}:1"
+    state, row = _mk(run_id, sid)
+    joined = await _join_subtasks(state)
+    merged = {
+        **state,
+        "subtask_results": list(joined["subtask_results"]),
+        "inflight_subtask_ids": [],
+    }
+    obs = _observe(merged)
+    created, _ = await _persist_hitl(merged, obs, thread_id="t-tb5")
+    req = next(r for r in created if str(r.get("subtask_id")) == sid)
+    assert req["unlock_subtask_id"] == sid  # D2 回填是 resume 不 409 的前提
+
+    saver = InMemorySaver()
+    suspended = None
+    async for chunk in _observe_graph_factory(checkpointer=saver).astream(
+        merged, {"configurable": {"thread_id": "t-tb5"}}, stream_mode="updates"
+    ):
+        for intr in chunk.get("__interrupt__") or []:
+            suspended = intr.value
+    assert suspended is not None and suspended["reason"] == "hitl_waiting"
+
+    decided = await cap_env.adecide(req["id"], decision=STATUS_APPROVED, by="验收")
+    assert decided["status"] == STATUS_APPROVED
+    out = await resume_hitl_run(
+        thread_id="t-tb5", approved=[sid], decided_by="验收",
+        checkpointer=saver, graph_factory=_observe_graph_factory,
+    )
+    final = out["state"]
+    assert final["react_observation"]["verdict"] == "replan"
+    assert final["hitl_unlocked_ids"] == [sid]
+
+    # 真 replan：unlocked 步保号带回（原行原 id）+ LLM 新后缀照常盖章。
+    # host_subtask_seq=1：模拟真实签发序列（保号行序号 ≤ seq 才不碰撞）。
+    replan_state = {
+        **merged,
+        "subtask_results": [],  # _apply_hitl_decision 已剪 approved 步旧结果
+        "hitl_unlocked_ids": final["hitl_unlocked_ids"],
+        "host_subtask_seq": 1,
+        "plan_prefix_ids": [],
+        "supervisor_step_count": 1,
+        "react_round": 0,
+    }
+    with patch(_CAPS_PATCH, new=_fake_caps), patch(
+        _PLAN_PATCH, new=_llm_returning(_new_step_suffix("后续步骤"))
+    ):
+        replanned = await supervisor_node(replan_state)
+    new_id = f"{run_id}:2"
+    assert [r["subtask_id"] for r in replanned["subtasks"]] == [sid, new_id]
+    carried = replanned["subtasks"][0]
+    assert carried["tool"] == _TESTING_CAP  # 原行原样带回
+
+    # 消费命中：保号行（同三元组）过签发判定 → None + 台账（记动作不记内容）
+    monkeypatch.setenv("OPS_CAPABILITY_ALLOW_WRITE", "1")
+    post = {**merged, "hitl_unlocked_ids": final["hitl_unlocked_ids"]}
+    with caplog.at_level(logging.INFO, logger="app.ops.lg_rag.multi.nodes"):
+        assert await _delegation_issue_block_reason(post, carried) is None
+    assert any(
+        "delegation_approval_consumed" in r.message for r in caplog.records
+    )
+
+    # 令牌真签发 → tool_exec 真执行（罐头回显）→ done{completed} 机制段收口
+    token = _issue_delegation_token(post, carried)
+    assert token is not None, "消费命中后令牌签发不得为空"
+    exec_out = await tool_exec_node(
+        {**post, "assigned_subtask": carried, "delegation_token": token}
+    )
+    result = exec_out["subtask_results"][-1]
+    assert result.get("subtask_id") == sid
+    assert "error" not in result, f"成环执行失败：{result.get('error')!r}"
+    assert "output" in result
+    obs_done = _observe(
+        {**post, "subtasks": [carried], "subtask_results": [result]}
+    )
+    assert obs_done["done"] == obs_done["planned"] == 1
+    assert obs_done["unsatisfied"] is False
+
+
+def _persist_scenario(run_id: str, sid: str) -> tuple[dict, dict]:
+    """TB6 场景：单步 delegation_issue 拦截终态 + obs（承 TA3② 形态）。"""
+    state, _ = _mk(run_id, sid)
+    term = {
+        "subtask_id": sid,
+        "id": sid,
+        "type": "tool",
+        "tool": _TESTING_CAP,
+        "blocked_by": _BLOCKED_BY,
+        "hitl_required": True,
+        "error": "委派签发需人工审批（测试）",
+    }
+    merged = {**state, "subtask_results": [term]}
+    obs = _observe(merged)
+    assert obs["hitl_pending"] == [sid]
+    return merged, obs
+
+
+@pytest.mark.asyncio
+async def test_tb6_fresh_approved_skips_request_creation(cap_env, caplog):
+    """TB6①：同键新鲜 approved 命中 → 跳过建单（契约四/八：不产新行不伪造行）。"""
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    sid = f"{run_id}:1"
+    await cap_env.acreate(_approved_req(run_id, sid))
+    merged, obs = _persist_scenario(run_id, sid)
+    with caplog.at_level(logging.INFO, logger="app.ops.lg_rag.multi.nodes"):
+        created, unpersisted = await _persist_hitl(merged, obs, thread_id="t-tb6")
+    assert created == []  # 跳过建单：返回值不含新行（state 原本为空）
+    assert unpersisted is False
+    pendings = await cap_env.alist(status="pending", limit=200)
+    assert pendings == []  # store 零新增 pending（孤儿单防线）
+    assert any("hitl_persist_guard_skip" in r.message for r in caplog.records)
+
+
+@pytest.mark.asyncio
+async def test_tb6_no_approved_creates_request_control(cap_env):
+    """TB6② 对照：无 approved 单据 → 照建（guard 不误伤正常建单）。"""
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    sid = f"{run_id}:1"
+    merged, obs = _persist_scenario(run_id, sid)
+    created, unpersisted = await _persist_hitl(merged, obs, thread_id="t-tb6c")
+    assert unpersisted is False
+    assert any(str(r.get("subtask_id")) == sid for r in created)
+    pendings = await cap_env.alist(status="pending", limit=200)
+    assert len(pendings) == 1
+
+
+@pytest.mark.asyncio
+async def test_tb6_expired_approved_creates_request(cap_env, monkeypatch):
+    """TB6③：approved 超 TTL → 不匹配照建（镜像消费门 TTL 语义 · 同一实现）。"""
+    monkeypatch.setenv("OPS_HITL_APPROVAL_CONSUMPTION_TTL_SECONDS", "3600")
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    sid = f"{run_id}:1"
+    await cap_env.acreate(_approved_req(run_id, sid, decided_at=time.time() - 7200))
+    merged, obs = _persist_scenario(run_id, sid)
+    created, _ = await _persist_hitl(merged, obs, thread_id="t-tb6x")
+    assert any(str(r.get("subtask_id")) == sid for r in created)  # 过期照建
+
+
+@pytest.mark.asyncio
+async def test_tb6_legacy_approved_missing_capability_creates(cap_env):
+    """TB6④：旧单据缺 capability_id 键 → 不匹配照建（契约六 · 不扩面）。"""
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    sid = f"{run_id}:1"
+    legacy = _approved_req(run_id, sid, payload={"observation": {}})
+    assert "capability_id" not in legacy["payload"]  # 前置：确为缺键旧单据
+    await cap_env.acreate(legacy)
+    merged, obs = _persist_scenario(run_id, sid)
+    created, _ = await _persist_hitl(merged, obs, thread_id="t-tb6l")
+    assert any(str(r.get("subtask_id")) == sid for r in created)  # 缺键照建
+
+
+@pytest.mark.asyncio
+async def test_tb6_prefix_touch_approved_does_not_match(cap_env):
+    """TB6⑤：blocked_by=prefix_touch_required 的 approved 单据不匹配照建
+    （单据类型守卫镜像消费门 · FP-4 同族）。"""
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    sid = f"{run_id}:1"
+    await cap_env.acreate(
+        _approved_req(run_id, sid, blocked_by="prefix_touch_required")
+    )
+    merged, obs = _persist_scenario(run_id, sid)
+    created, _ = await _persist_hitl(merged, obs, thread_id="t-tb6p")
+    assert any(str(r.get("subtask_id")) == sid for r in created)  # 守卫照建
+
+
+@pytest.mark.asyncio
+async def test_tb6_guard_read_failure_fail_open_creates(cap_env, monkeypatch, caplog):
+    """TB6⑥（FP-4）：建单检查读异常 → fail-open 照建 + 钉死 warning 键名
+    hitl_persist_guard_read_failed（契约五）。"""
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    sid = f"{run_id}:1"
+    await cap_env.acreate(_approved_req(run_id, sid))  # 有 approved 但读不到
+    merged, obs = _persist_scenario(run_id, sid)
+
+    async def _boom(*a, **k):
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(cap_env, "alist", _boom)
+    with caplog.at_level(logging.WARNING, logger="app.ops.lg_rag.multi.nodes"):
+        created, _ = await _persist_hitl(merged, obs, thread_id="t-tb6f")
+    assert any(str(r.get("subtask_id")) == sid for r in created)  # fail-open 照建
+    assert any(
+        "hitl_persist_guard_read_failed" in r.message for r in caplog.records
+    )
+
+
+@pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
+@pytest.mark.asyncio
+async def test_tb6_fresh_approved_db_store_skips_creation(cap_env):
+    """TB6⑦（Db 组 · 实操-B）：Db store 真读路径命中 → 跳过建单。
+
+    必经 alist/aget 真读：decided_at 实收 ISO 8601 str → 经 _decided_at_ts
+    归一参与 TTL 判定（与消费门同一归一函数 · 禁第二份实现钉死）。
+    """
+    db_store = DbHitlStore()
+    set_hitl_store(db_store)
+    prefix = f"hitl_tb6db_{uuid.uuid4().hex[:6]}_"
+    rid = f"{prefix}req"
+
+    async def _cleanup() -> None:
+        from sqlalchemy import text
+
+        from app.db.session import AsyncSessionLocal
+
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                text("DELETE FROM ops_hitl_requests WHERE id LIKE :p"),
+                {"p": f"{prefix}%"},
+            )
+            await db.commit()
+
+    await _cleanup()
+    try:
+        run_id = f"run-{uuid.uuid4().hex[:8]}"
+        sid = f"{run_id}:1"
+        await db_store.acreate(_approved_req(run_id, sid, id=rid))
+        decided = await db_store.adecide(rid, decision=STATUS_APPROVED, by="验收")
+        assert isinstance(decided["decided_at"], str)  # ISO str 真读路径钉死
+        merged, obs = _persist_scenario(run_id, sid)
+        created, unpersisted = await _persist_hitl(merged, obs, thread_id="t-tb6db")
+        assert created == [] and unpersisted is False  # 命中跳过建单
+        pendings = await db_store.alist(status="pending", limit=200)
+        assert not [r for r in pendings if str(r.get("run_id")) == run_id]
+    finally:
+        await _cleanup()
 
