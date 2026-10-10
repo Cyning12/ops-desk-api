@@ -64,7 +64,7 @@ SPEC §2 B1 裁定（Q1 维护者「catalog新立」· Q3 本帽 CurrentUser）�
 
 ## 钉死契约
 
-1. **端点形态钉死**：`GET /api/ops/capability/mine` · 鉴权 `CurrentUser`（deps.py:114 · 任意登录用户 · 未登录 401 承 get_current_user 既有语义 :25-27/:40-42）——Q1/Q3 裁定存续，不设角色门（viewer 看自己空集亦合法答案）。
+1. **端点形态钉死**：`GET /api/ops/capability/mine` · 鉴权 `CurrentUser`（deps.py:114 · 任意登录用户 · 未登录 401 承 get_current_user 既有语义 :25-27/:40-42/:49-51 三分支）——Q1/Q3 裁定存续，不设角色门（viewer 看自己空集亦合法答案）。
 2. **Principal 构造钉死（N3 回填）**：路由层由会话用户构造——`user_id=str(user.id)` · `tenant_id=request.state.ops_tenant_id`（deps.py:44 语义 · 缺省 "ops-desk-pilot"）· `roles=frozenset({user.role})`（OpsUser.role 单值→集合 · 本 task 钉死口径）· `departments/projects` 空集 · `classification_max` 用 Principal 缺省；**禁取自请求参数/模型产出**（visibility.py:54-72 主体由代码构造纪律同源）。
 3. **可见性语义单源（SPEC 纪律 #3）**：可见集必须经 `capability_catalog_snapshot` / `evaluate_visibility`（gateway.py:133-143 · visibility.py:112-135）求值；**路由层零过滤逻辑**（禁双真源 · FP-6 走查+对拍拒收）。
 4. **出站白名单钉死（SPEC 纪律 #4）**：每条目仅九键 `id`/`kind`/`description`/`when_to_use`/`tags`/`risk_level`/`side_effect`/`enabled`/`status`（`status="available"` 常量 · 承可见性求值结果）；显式排除 `adapter`（local_fn 代码路径）· `args_schema`（SPEC 非范围）· `when_not_to_use`/`tenant_scoped`/`reversible`/`execution_type`（归 B2 admin 面）；响应体不含 `adapter`/`local_fn:` 子串（FP-5 机断）。
@@ -95,7 +95,7 @@ SPEC §2 B1 裁定（Q1 维护者「catalog新立」· Q3 本帽 CurrentUser）�
 | 编号 | 失败路径 | 处置 |
 |---|---|---|
 | — | HG-TASK-DRAFT/HG-AUDIT-R1/HG-GRAPH-MODULES pending 即 30 | 拒开工（闸表 pending 不代签） |
-| FP-1 | 未登录访问 `/capability/mine` | **401**（get_current_user 既有语义 deps.py:25-27/:40-42 · TC1 钉） |
+| FP-1 | 未登录访问 `/capability/mine` | **401**（get_current_user 既有语义 deps.py:25-27/:40-42/:49-51 三分支 · TC1 钉） |
 | FP-2 | 用户可见集为空（viewer 被全裁 / fixture manifest 空） | 200 `{"items": [], "count": 0}`（不 500 · 不伪造条目 · TC4 钉） |
 | FP-3 | manifest 加载失败被跳过文件 | 用户面按实际在册集如实返回 · 不 500（总表 `manifest_errors` 可观测归 B2 task · 本 task 不涉） |
 | FP-4 | roles 映射口径漂移（N3） | 钉死 `roles=frozenset({user.role})` · TC3 viewer⊆maintainer 对拍机断 |
@@ -146,7 +146,7 @@ SPEC §2 B1 裁定（Q1 维护者「catalog新立」· Q3 本帽 CurrentUser）�
 | 轮 | 结论 | early_stop | reason（early_stop） | residual_risks |
 |---|---|---|---|---|
 | R0 | 问题框定：SPEC B1 已裁定（Q1 新立 · Q3 CurrentUser）· 本 task=出站投影落地 · 携带 N1–N3 回填 | false | — | 无 |
-| R1 | 证据收集：锚点 12 行全亲读（deps :18-115 · visibility :112-135 · gateway :133-143 · admin :163-214 · router · models :40 · fixture 先例） | false | — | registry 非默认条目未实证（FP-8） |
+| R1 | 证据收集：锚点 13 行全亲读（n-2 计数修正）（deps :18-115 · visibility :112-135 · gateway :133-143 · admin :163-214 · router · models :40 · fixture 先例） | false | — | registry 非默认条目未实证（FP-8） |
 | R2 | 方案生成：落点候选（`capability_mine.py` 新模块=倾向）· baseline 叠加候选（默认不加=倾向）· 均开放给 30 | false | — | 落点若变须回填 graph_delta_note |
 | R3 | 反例/边界：包内路由禁令 · adapter 泄露 · 双真源 · roles 映射漂移 · 空集 500 风险 → 钉死契约 2–7 + FP-1~FP-8 | false | — | 无 |
 | R4 | 收敛：TC1–TC7 全可 pytest 机断（对拍/⊆/401/空集/grep/工程面） | false | — | 无 |
@@ -177,6 +177,16 @@ TC1–TC7 全部 pytest 机断：401 / 九键齐+对拍一致 / ⊆ / 空集 200
 ### R5 · 收口
 
 范围 F1–F5、非范围六条、failure_paths 闸行+FP-1~FP-8、B1 旧测面、验收七条、必读八项齐备；三人工闸 pending 不代签；两候选（落点/baseline）开放性显式留 30。early_stop at R5。
+
+### 自检结论（10 起草者）
+
+1. **B-1 修复**：补本节（E5 lint 缺节 · 兄弟 task_catalog_manifest_errors_surface.md :190 先例形态对齐）。
+2. **范围无溢出**：仅 GET /capability/mine 出站投影 · admin 面/manifest_errors 显式归兄弟 task；锚点 13 行全亲读核真（R1 C1–C12 全通过在案）。
+3. **N1–N3 回填闭合**：锚点改引 :163-214 · deps :18-115 · roles=frozenset({user.role}) 钉死契约 2 + TC3 ⊆ 对拍。
+4. **nit 回填**：n-1 契约 1/FP-1 补引第三 401 分支 deps.py:49-51 ✓ · n-2 R1 思考轮计数 12→13 ✓。
+5. **三闸 pending 未代签**；落点/baseline 两候选开放留 30 实证。
+
+---
 
 ## 修订
 
