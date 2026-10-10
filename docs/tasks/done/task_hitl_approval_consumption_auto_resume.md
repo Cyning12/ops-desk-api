@@ -1,6 +1,6 @@
 # Task：hitl-approval-consumption-auto-resume（T2 · D5 批准后自动继续可配置面 · 触发器+行锁认领+补偿扫描）
 
-> **状态**：`draft`  
+> **状态**：`done`（2026-10-10 · 验收 TB1–TB8 全机断绿 · 40 核验 PASS 带偏差登记（39 枚新测全绿 · 全量 1748 passed · 4 failed=基线环境性同签名 · live auto 全链（decide→自动派发→行锁认领→同源恢复→图继续）达成 · 末段 `done{completed}` replan 重盖章偏差=T1 已登记项 · 孤儿 pending 附带观察 · 均上抛 SPEC v2）· 三闸维护者签（00 代录）· PR [#218](https://github.com/Cyning12/ops-desk-api/pull/218) MERGED（`0e13fc4` · CI 四绿）· CLOSE 归档 done/ · **签发审批消费回路 SPEC v1 全链（T3+T1+T2）收官**）  
 > **类型**：**SPEC 承接**（SPEC v1 · HG-SPEC-SIGNOFF=approved 2026-10-10）  
 > **依据**：`docs/spec/hitl-approval-consumption/SPEC-hitl-approval-consumption_v1.md`（**SPEC 文档当前在 `spec/hitl-approval-consumption` 分支 · 随首个实现 PR 一并带入 master**）——本 task 承接 D5（批准后自动继续可配置面）· Q6/Q7 · FP-8~FP-11 · A9/A10（+ A5/A6/A7/A8 存续面）· R2-N1/R2-N2/R2-N3  
 > **分支**：`task/hitl-approval-consumption-auto-resume`（base：`master` · **须含 T1 merge** · 禁止 master 直改）  
@@ -90,14 +90,14 @@ SPEC v1 §1 第四立案（承 handoff 令与终局文档 §4 :82-83）：v0 链
 
 ## 范围
 
-- [ ] **F1 · 配置面**：`OPS_HITL_AUTO_RESUME` env 解析（manual 默认 · 非法回退）+ `_DecidePayload` 增 `resume_mode: str = "inherit"` + 端点内白名单 400 校验（R2-N1）+ 有效模式求解助手
-- [ ] **F2 · 触发器**：`decide_request` 成功分支派发进程内 asyncio 任务（R2-N2 挂点 · approved ∧ auto 才派发 · 派发/执行失败只落台账不改 decide 结果 · 响应 `resume` 块 auto 注明/manual 字面零 diff）
-- [ ] **F3 · 恢复段抽取复用**：`resume_request` 恢复段（sink→resume_hitl_run→turns）抽取为可复用助手，手动端点与自动触发**同源调用**（行为 diff 空 · 禁 HTTP 自调）
-- [ ] **F4 · 行锁认领**：`DbHitlStore` 新增 `FOR UPDATE SKIP LOCKED` 认领方法（既有方法 diff 空 · 零新列零迁移）
-- [ ] **F5 · 补偿扫描**：lifespan 挂启动时扫 + 周期任务（周期 env + shutdown cancel）；「已批准未恢复」四条件判定（含 run 终态只读查询新增 · 30 裁定留痕）
-- [ ] **F6 · 台账三件套**：triggered/claimed/compensated + resume_mode 覆盖记录
-- [ ] **F7 · 测试**：验收 TB1–TB8 逐条断言化（含行锁并发 Db 组与 B1 旧测全绿亲跑）
-- [ ] **F8 · 图谱同步**：`docs/_tech_graph/l1/01_modules.md` hitl 行（decide 可选键 + 触发器/认领/补偿扫描 + main.py lifespan 挂点说明）与 lg_rag 行（auto 恢复同源说明）在册备注回写（G-L1 · HG-GRAPH-MODULES 随 30 回写由 00 代录）
+- [x] **F1 · 配置面**：`OPS_HITL_AUTO_RESUME` env 解析（manual 默认 · 非法回退）+ `_DecidePayload` 增 `resume_mode: str = "inherit"` + 端点内白名单 400 校验（R2-N1）+ 有效模式求解助手
+- [x] **F2 · 触发器**：`decide_request` 成功分支派发进程内 asyncio 任务（R2-N2 挂点 · approved ∧ auto 才派发 · 派发/执行失败只落台账不改 decide 结果 · 响应 `resume` 块 auto 注明/manual 字面零 diff）
+- [x] **F3 · 恢复段抽取复用**：`resume_request` 恢复段（sink→resume_hitl_run→turns）抽取为可复用助手，手动端点与自动触发**同源调用**（行为 diff 空 · 禁 HTTP 自调）
+- [x] **F4 · 行锁认领**：`DbHitlStore` 新增 `FOR UPDATE SKIP LOCKED` 认领方法（既有方法 diff 空 · 零新列零迁移）
+- [x] **F5 · 补偿扫描**：lifespan 挂启动时扫 + 周期任务（周期 env + shutdown cancel）；「已批准未恢复」四条件判定（含 run 终态只读查询新增 · 30 裁定留痕）
+- [x] **F6 · 台账三件套**：triggered/claimed/compensated + resume_mode 覆盖记录
+- [x] **F7 · 测试**：验收 TB1–TB8 逐条断言化（含行锁并发 Db 组与 B1 旧测全绿亲跑）
+- [x] **F8 · 图谱同步**：`docs/_tech_graph/l1/01_modules.md` hitl 行（decide 可选键 + 触发器/认领/补偿扫描 + main.py lifespan 挂点说明）与 lg_rag 行（auto 恢复同源说明）在册备注回写（G-L1 · HG-GRAPH-MODULES 随 30 回写由 00 代录）
 
 ### 非范围
 
@@ -147,17 +147,17 @@ SPEC v1 §1 第四立案（承 handoff 令与终局文档 §4 :82-83）：v0 链
 
 ## 验收标准
 
-- [ ] 人工闸：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved **且 T1 已 merge 进 master** 后方可勾选下列码项
-- [ ] **TB1（auto 全链 · SPEC A9 · handoff 验收令）**：`OPS_HITL_AUTO_RESUME=auto`（或单据级 `resume_mode=immediate`）下，plans 含写 tool 的 run → hitl.waiting → pending 可见 → decide(approved) → **无需手动 resume** → 自动恢复 → 终态 `done{completed}`：pytest 集成断言（触发 `hitl_auto_resume_triggered` 台账 + 消费放行 + 终态）；live HTTP/SSE 实录留 40 复跑
-- [ ] **TB2（无状态恢复钉死组 · SPEC A10）**：① 恢复路径（手动/自动/补偿扫描）只读事件表+DB——grep/审查断言无进程内存挂起态载体（触发器不载状态）② 补偿扫描幂等断言（重复扫描不重入非 pending 态）③ **行锁认领断言**（Db 组 · 双连接并发认领仅一成功 · InMemory 仅状态机幂等断言 · 禁假断言）④ `resume_mode` 未知值 **400** 断言（非 422 · R2-N1）⑤ 非法全局 env 回退 manual 断言
-- [ ] **TB3（防重 · SPEC FP-8）**：并发双 decide（重复 409 原样绿）+ 触发与补偿扫描并发命中同单 → 仅一执行（台账 claimed 计数断言）
-- [ ] **TB4（崩溃兜底 · SPEC FP-9）**：模拟 decide 后未派发（或派发任务丢弃）→ 补偿扫描补触发断言（`hitl_auto_resume_compensated` 台账）；进程重启后「已批准未恢复」单据被补触发（真 PG 重启链 fixture 形态承 `test_hitl_resume.py`）
-- [ ] **TB5（不循环 · SPEC FP-11）**：auto resume 后仍被拦（构造键不匹配/过期场景）→ 回挂起 + 新 pending 可见 + **无第二次自动触发**（台账 triggered 计数==1 断言）；扫描跳过同 run 有未决 pending 形态断言
-- [ ] **TB6（manual/off 零 diff · SPEC A6 本 task 面）**：`OPS_HITL_AUTO_RESUME` 缺省/非法 → decide 响应 `resume` 块字面与 master 一致 · 无后台任务创建（spy 断言）· 无扫描任务（lifespan 面）· B1 全文件原样绿；delegation off 下自动 resume 面零触达
-- [ ] **TB7（反回归存续 · SPEC A5/A7 本 task 面）**：`store.py` `adecide`/`_DECIDE` git diff 为空；`registry.py::_match_filter` 与 `policy.py` 闸序段 diff 空；`resume_request` 手动路径行为 diff 空（抽取复用前后对拍）；`test_allow_tags_does_not_waive_deny_write` 原样绿
-- [ ] **TB8（工程面 · SPEC A8 本 task 面）**：`pytest tests` 全绿；`ruff check app tests` 触及路径零新增；`./scripts/graph-compile.sh` EXIT=0；图谱 hitl/lg_rag 两行备注回写 + HG-GRAPH-MODULES 00 代录行
-- [ ] B1 旧测清单全绿亲跑记录（命令 + 结果）落 40 invoke
-- [ ] `npx spec-wave task lint --file docs/tasks/active/task_hitl_approval_consumption_auto_resume.md` PASS；`npx --yes spec-wave@3.0.1 task lint-wiki-delta --target .` PASS
+- [x] 人工闸：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved **且 T1 已 merge 进 master** 后方可勾选下列码项
+- [x] **TB1（auto 全链 · SPEC A9 · handoff 验收令）**：`OPS_HITL_AUTO_RESUME=auto`（或单据级 `resume_mode=immediate`）下，plans 含写 tool 的 run → hitl.waiting → pending 可见 → decide(approved) → **无需手动 resume** → 自动恢复 → 终态 `done{completed}`：pytest 集成断言（触发 `hitl_auto_resume_triggered` 台账 + 消费放行 + 终态）；live HTTP/SSE 实录留 40 复跑——**live 末段标注：自动恢复全链走通（decide(approved)→`hitl_auto_resume_triggered`→行锁 `claimed`→同源恢复执行→hitl.resumed 帧→图继续 replay=:13 · 六 env 组+`OPS_HITL_AUTO_RESUME=auto` live 实证）· `done{completed}` 末段 replan 重盖章致消费键失配（T1 40 已登记偏差 · 非 T2 回归）上抛 SPEC v2**
+- [x] **TB2（无状态恢复钉死组 · SPEC A10）**：① 恢复路径（手动/自动/补偿扫描）只读事件表+DB——grep/审查断言无进程内存挂起态载体（触发器不载状态）② 补偿扫描幂等断言（重复扫描不重入非 pending 态）③ **行锁认领断言**（Db 组 · 双连接并发认领仅一成功 · InMemory 仅状态机幂等断言 · 禁假断言）④ `resume_mode` 未知值 **400** 断言（非 422 · R2-N1）⑤ 非法全局 env 回退 manual 断言
+- [x] **TB3（防重 · SPEC FP-8）**：并发双 decide（重复 409 原样绿）+ 触发与补偿扫描并发命中同单 → 仅一执行（台账 claimed 计数断言）
+- [x] **TB4（崩溃兜底 · SPEC FP-9）**：模拟 decide 后未派发（或派发任务丢弃）→ 补偿扫描补触发断言（`hitl_auto_resume_compensated` 台账）；进程重启后「已批准未恢复」单据被补触发（真 PG 重启链 fixture 形态承 `test_hitl_resume.py`）
+- [x] **TB5（不循环 · SPEC FP-11）**：auto resume 后仍被拦（构造键不匹配/过期场景）→ 回挂起 + 新 pending 可见 + **无第二次自动触发**（台账 triggered 计数==1 断言）；扫描跳过同 run 有未决 pending 形态断言
+- [x] **TB6（manual/off 零 diff · SPEC A6 本 task 面）**：`OPS_HITL_AUTO_RESUME` 缺省/非法 → decide 响应 `resume` 块字面与 master 一致 · 无后台任务创建（spy 断言）· 无扫描任务（lifespan 面）· B1 全文件原样绿；delegation off 下自动 resume 面零触达
+- [x] **TB7（反回归存续 · SPEC A5/A7 本 task 面）**：`store.py` `adecide`/`_DECIDE` git diff 为空；`registry.py::_match_filter` 与 `policy.py` 闸序段 diff 空；`resume_request` 手动路径行为 diff 空（抽取复用前后对拍）；`test_allow_tags_does_not_waive_deny_write` 原样绿
+- [x] **TB8（工程面 · SPEC A8 本 task 面）**：`pytest tests` 全绿；`ruff check app tests` 触及路径零新增；`./scripts/graph-compile.sh` EXIT=0；图谱 hitl/lg_rag 两行备注回写 + HG-GRAPH-MODULES 00 代录行
+- [x] B1 旧测清单全绿亲跑记录（命令 + 结果）落 40 invoke
+- [x] `npx spec-wave task lint --file docs/tasks/active/task_hitl_approval_consumption_auto_resume.md` PASS；`npx --yes spec-wave@3.0.1 task lint-wiki-delta --target .` PASS（30/40 复跑于 active 期 · CLOSE 归档后改判 done/ 路径复跑）
 
 ---
 
@@ -253,3 +253,4 @@ TB1–TB8 逐条映射 SPEC A 编号与 FP 断言：台账计数（triggered==1/
 | 日期 | 说明 |
 |------|------|
 | 2026-10-10 | 10-task 落稿（骨架先行增量落盘 · SPEC v1 signed 承接 · R0–R5 · HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 pending → 30 拒开工） |
+| 2026-10-10 | **CLOSE**：30/40 交付（`6530bd0` 配置面+触发器+恢复段同源抽取+行锁认领+补偿扫描 · `d35369a` 验收 TB1–TB6 断言化 39 枚 · `8d03e64` 图谱 hitl/lg_rag 行备注回写+30 invoke · `893eda5`/`b43dee4` invoke 回填与 40 核验）· 验收 TB1–TB8 全机断绿 · 40 核验 PASS 带偏差登记（39 枚新测抽跑全绿 · Db 组真 PG `FOR UPDATE SKIP LOCKED` 并发仅一认领 · store.py 纯新增 68 行既有方法 diff 空 · registry/policy/nodes/delegation diff 空 · 全量 1748 passed · 4 failed=基线环境性同签名（T1 40 钉案）· graph-compile EXIT=0 · live 六 env 组+auto：挂起→pending→decide(approved) 200（resume 块 `{required:false, auto_triggered:true}`）→不调 resume→triggered→claimed→同源恢复→图继续 · **偏差：末段 `done{completed}` 未达成=replan 重盖章消费键失配（T1 已登记上抛项）· 附带观察：resume 重放致孤儿 pending · 均上抛 SPEC v2**）→ PR [#218](https://github.com/Cyning12/ops-desk-api/pull/218) MERGED（`0e13fc4` · CI 四绿）→ 归档 done/ · Hub 补登 · CLOSE invoke 留档；**注：签发审批消费回路 SPEC v1 全链（T3 env 口 + T1 消费门 + T2 自动 resume）三棒齐收官 · SPEC v2 裁定项（carry 保号/消费键放宽 + 孤儿 pending）留维护者** |

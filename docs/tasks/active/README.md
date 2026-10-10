@@ -4,6 +4,7 @@
 
 | task | 说明 |
 |---|---|
+| （无进行中 task） | 2026-10-10：`task_hitl_approval_consumption_auto_resume`（T2 · PR #218 合 · 批准后自动恢复可配置面：`OPS_HITL_AUTO_RESUME` 全局 env+单据级 `resume_mode` 白名单 400 + 进程内触发器同源恢复 + PG 行锁认领 + lifespan 补偿扫描 · 40 核验 PASS 带偏差（live auto 全链达成 · 末段 replan 重盖章+孤儿 pending 上抛 SPEC v2））归档至 `done/`；worktree `t2-auto-resume` 与分支 `task/hitl-approval-consumption-auto-resume` 待清理由 00 处理（**签发审批消费回路三 task（T3 env 口 + T1 消费门 + T2 自动 resume）全闭合 · SPEC v1 全链收官 · SPEC v2 裁定项留维护者**） |
 | （T2 在途） | 2026-10-10：`task_hitl_approval_consumption_loop`（T1 · PR #216 合 · 审批消费门三元组消费键+TTL fail-closed + unlock 空形态回填（resume 409 修复）· 40 核验 PASS 带偏差（live resume 200 达成 · 末段 replan 重盖章致消费键失配上抛 T2/SPEC v2））归档至 `done/`；worktree `t1-approval-consumption-loop` 与分支 `task/hitl-approval-consumption-loop` 待清理由 00 处理（T2 auto-resume `task_hitl_approval_consumption_auto_resume` 在途 · 仍 active · base 须含 T1 merge 已达成） |
 | （T1/T2 在途） | 2026-10-10：`task_hitl_approval_consumption_strategy_env`（T3 · PR #213 合 · strategy 候选 map env 追加口 `OPS_STRATEGY_EXTRA_CANDIDATE_CAPABILITY_IDS` 默认不设零 diff · 40 核验 PASS 七项全绿）归档至 `done/`；分支 `task/hitl-approval-consumption` 与 worktree `task-hitl-approval-consumption` 清理留维护者裁决（T1 已切 `task/hitl-approval-consumption-loop` 自立 · T2 后续自 master 新切） |
 | （无进行中 task） | 2026-10-09：`task_testing_write_capability`（PR #209 合 · D2 注册非只读测试 capability · 40 核验 PASS 带偏差登记 · A1 三段 live 可达 · done 末段 409=既有链设计缺口另立 task）归档至 `done/`；worktree `d2-testing-write-capability` 与分支 `task/testing-write-capability` 清理待维护者裁决 |
