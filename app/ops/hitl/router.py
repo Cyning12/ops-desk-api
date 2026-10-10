@@ -13,7 +13,8 @@
 （OA）的机读通道，浏览器拿不到 HMAC 密钥就永远看不到待审批列表。
 cookie 面只做两件事——列出**归属当前用户**的 pending、把申请置为已决；
 密钥不出服务器，置已决与 callback 同语义（复用 ``store.adecide``），
-恢复仍只有 ``resume`` 一个入口（decide **不自动 resume**，两步钉死）。
+恢复只有**一条路径**（``resume`` 端点 / T2 自动触发同源复用）——
+decide 默认**不自动 resume**（两步钉死），T2 起可按 env/单据配置为 auto。
 
 **恢复这一半为什么单独有驱动器（``hitl/resume.py``）**：
 ``observe_node`` 用 ``interrupt()`` 把图挂起后，前端停在"等待授权"那一帧、
@@ -38,7 +39,7 @@ from pydantic import BaseModel
 
 from app.db.models import OpsUser
 from app.ops.deps import AdminSyncAuth, MaintainerUser
-from app.ops.hitl import get_hitl_store, new_request_id
+from app.ops.hitl import auto_resume, get_hitl_store, new_request_id
 from app.ops.hitl.persistence import describe_hitl_persistence
 from app.ops.hitl.resume import ResumeError, resume_hitl_run
 from app.ops.hitl.signature import (
@@ -110,10 +111,18 @@ async def get_request(
 
 
 class _DecidePayload(BaseModel):
-    """decide 请求体。``decision`` 只收两种值，非法值由 Pydantic 直接挡成 422。"""
+    """decide 请求体。``decision`` 只收两种值，非法值由 Pydantic 直接挡成 422。
+
+    ``resume_mode``（T2 · SPEC D5/Q7）：批准后是否自动恢复的可选覆盖键
+    （`inherit` 缺省=用全局 env `OPS_HITL_AUTO_RESUME` · `immediate`=立即自动 ·
+    `manual`=稍后手动）。**两字段错误形态刻意不同**：decision 非法=Pydantic 层
+    **422**（既有形态一行不动）；resume_mode 未知值=端点内手工白名单 **400**
+    （R2-N1 · SPEC FP-10/A10 钉死——故本键钉 `str`，禁 Literal/Enum 变 422）。
+    """
 
     decision: Literal["approved", "rejected"]
     note: str = ""
+    resume_mode: str = "inherit"
 
 
 async def _run_owner_of(row: dict[str, Any]) -> str | None:
@@ -181,15 +190,25 @@ async def decide_request(
     与 OA ``callback`` 同语义（复用 ``store.adecide`` 的 pending 守卫），
     但鉴权是 cookie maintainer——**密钥不出服务器**。
 
-    **两步钉死（SPEC Q2）**：本端点只置已决，**不自动 resume**——图还挂在
-    checkpoint 里；客户端第二步调既有 ``POST /requests/{id}/resume``
-    才真正把 run 跑完。响应里的 ``resume`` 块把第二步说出来。
+    **两步钉死（SPEC Q2）· T2 起可配置**：默认（manual）本端点只置已决，
+    **不自动 resume**——图还挂在 checkpoint 里；客户端第二步调既有
+    ``POST /requests/{id}/resume`` 才真正把 run 跑完，响应里的 ``resume`` 块
+    把第二步说出来。T2 增（SPEC D5/Q7）：全局 env ``OPS_HITL_AUTO_RESUME=auto``
+    或载荷 ``resume_mode=immediate`` 时，decide(approved) 持久化成功后派发
+    进程内 asyncio 后台任务走**同一条恢复路径**（``resume`` 块注明已触发）；
+    manual 形态响应字面零 diff。
 
     边界（与 failure_paths 对齐）：
     - 未知 id / 归属他人 / 归属不可判定 → **404**（不泄露存在性，FP-1 口径）；
     - 重复 decide / 已决 → **409**（与 callback 同一判据：``adecide`` 返回 None）；
     - 审计日志只记动作锚点（id/decision/by/at），**不记内容**（SPEC 纪律 #4）。
     """
+    # R2-N1：resume_mode 白名单手工校验 → 未知值 400（非 Pydantic 422 · SPEC FP-10/A10）
+    if payload.resume_mode not in auto_resume.RESUME_MODES:
+        raise HTTPException(
+            status_code=400,
+            detail="resume_mode 必须是 inherit / immediate / manual",
+        )
     store = get_hitl_store()
     row = await store.aget(request_id)
     if row is None:
@@ -220,15 +239,37 @@ async def decide_request(
         user.username,
         time.time(),
     )
+    # T2（R2-N2 挂点 · decide 成功分支）：approved ∧ 有效模式=auto → 派发进程内
+    # asyncio 后台任务走同源恢复路径。派发不阻响应（失败只落台账 · 实操-F）；
+    # OA callback 本波不挂（签名面零 diff · 非范围）——OA 批准单在全局 auto 下
+    # 由补偿扫描补触发（N-1 语义明示：不即时 ≠ 不补 · 扫描不看来源）。
+    auto_triggered = False
+    if (
+        payload.decision == STATUS_APPROVED
+        and auto_resume.resolve_resume_mode(payload.resume_mode) == auto_resume.MODE_AUTO
+    ):
+        auto_resume.schedule_auto_resume(
+            decided, resume_mode=payload.resume_mode, source="decide"
+        )
+        auto_triggered = True
+    resume_block = {
+        # manual 形态字面零 diff：恢复是客户端的第二个显式动作（复用既有 resume 端点）
+        "required": True,
+        "method": "POST",
+        "endpoint": f"/api/ops/hitl/requests/{request_id}/resume",
+    }
+    if auto_triggered:
+        # auto 形态注明已触发自动恢复（客户端无需再点 resume · 仍可兜底手动调）
+        resume_block = {
+            "required": False,
+            "auto_triggered": True,
+            "method": "POST",
+            "endpoint": f"/api/ops/hitl/requests/{request_id}/resume",
+        }
     return {
         "ok": True,
         "request": decided,
-        # decide 不自动 resume：恢复是客户端的第二个显式动作（复用既有 resume 端点）
-        "resume": {
-            "required": True,
-            "method": "POST",
-            "endpoint": f"/api/ops/hitl/requests/{request_id}/resume",
-        },
+        "resume": resume_block,
     }
 
 
@@ -374,6 +415,54 @@ async def _persist_resumed_turns(sink, outcome: dict[str, Any]) -> None:
         logger.exception("HITL 恢复：补落 thread turns 失败 thread=%s", sink.thread_id)
 
 
+async def _execute_decided_resume(row: dict[str, Any]) -> dict[str, Any]:
+    """**恢复执行体：手动 resume 端点与自动触发同源**（T2 F3 · 无状态恢复纪律）。
+
+    依赖仅 `row`（store 行）：汇总同批决定 → 开事件 sink → `resume_hitl_run`
+    → 关 sink + 补落 turns。一律从事件表/DB 重建，**禁 HTTP 自调**、禁第二条
+    恢复实现。抛 `ResumeError` 由调用方各自映射：手动端点 → HTTP 状态码；
+    自动触发（`auto_resume` 后台任务）→ 只落日志（不改 decide 已返回结果）。
+    返回 `{req_status, thread_id, sink, outcome}` 供手动端点组装响应。
+    """
+    req_status = str(row.get("status") or "")
+    approved, rejected = await _collect_decisions(row)
+    if not approved and req_status == STATUS_APPROVED:
+        # 批准了却拿不到可解锁的步骤 —— 多半是申请行缺 unlock_subtask_id。
+        # 必须响，否则拿着空 approved 去恢复 ⇒ 实际按"驳回"收工。
+        raise ResumeError(
+            "no_unlock", "已批准但拿不到待解锁的步骤（unlock_subtask_id 为空）"
+        )
+    thread_id = str(row.get("thread_id") or "").strip()
+    sink = await _open_event_sink(row, thread_id)
+    if sink is not None:
+        await sink.open(approved=approved, decided_by=str(row.get("decision_by") or ""))
+    outcome = await resume_hitl_run(
+        thread_id=thread_id,
+        approved=approved,
+        rejected=rejected,
+        decided_by=str(row.get("decision_by") or ""),
+        update_sink=sink,
+    )
+    # ResumeError 时 sink 不关（与抽取前一致：异常路径不落 done 帧）
+    if sink is not None:
+        await sink.close()
+        await _persist_resumed_turns(sink, outcome)
+    logger.info(
+        "HITL 恢复完成 request=%s thread=%s approved=%s rejected=%s replay=%s",
+        row.get("id"),
+        thread_id,
+        approved,
+        rejected,
+        sink.cursor if sink else "",
+    )
+    return {
+        "req_status": req_status,
+        "thread_id": thread_id,
+        "sink": sink,
+        "outcome": outcome,
+    }
+
+
 @router.post("/requests/{request_id}/resume")
 async def resume_request(
     request_id: str, _user: OpsUser | None = AdminSyncAuth
@@ -400,27 +489,9 @@ async def resume_request(
             status_code=409,
             detail=f"申请状态为 {req_status or 'unknown'}，只有已决（approved/rejected）才能恢复",
         )
-    approved, rejected = await _collect_decisions(row)
-    if not approved and req_status == STATUS_APPROVED:
-        # 批准了却拿不到可解锁的步骤 —— 多半是申请行缺 unlock_subtask_id。
-        # 这里必须响，否则会拿着空 approved 去恢复 ⇒ 实际按"驳回"收工，
-        # 人看到"批了但结果是没做"，且没有任何报错。
-        raise HTTPException(
-            status_code=409,
-            detail="已批准但拿不到待解锁的步骤（unlock_subtask_id 为空）",
-        )
-    thread_id = str(row.get("thread_id") or "").strip()
-    sink = await _open_event_sink(row, thread_id)
+    # 恢复段与自动触发同源（T2 F3）：执行体抛 ResumeError，这里映射 HTTP
     try:
-        if sink is not None:
-            await sink.open(approved=approved, decided_by=str(row.get("decision_by") or ""))
-        outcome = await resume_hitl_run(
-            thread_id=thread_id,
-            approved=approved,
-            rejected=rejected,
-            decided_by=str(row.get("decision_by") or ""),
-            update_sink=sink,
-        )
+        result = await _execute_decided_resume(row)
     except ResumeError as exc:
         code = {
             "no_thread_id": status.HTTP_409_CONFLICT,
@@ -429,21 +500,16 @@ async def resume_request(
             # 旧版本格式残留：不是"这会儿不能恢复"，是"永远恢复不了"，
             # 但仍然归 409（客户端该做的是提示人重开，而不是重试）
             "stranded_checkpoint": status.HTTP_409_CONFLICT,
+            # T2 抽取：空 unlock 409 由执行体抛（detail 逐字不变；原路径不打 warning，保持）
+            "no_unlock": status.HTTP_409_CONFLICT,
             "checkpointer_not_configured": status.HTTP_503_SERVICE_UNAVAILABLE,
         }.get(exc.code, status.HTTP_502_BAD_GATEWAY)
-        logger.warning("HITL 恢复被拒 request=%s code=%s %s", request_id, exc.code, exc.detail)
+        if exc.code != "no_unlock":
+            logger.warning("HITL 恢复被拒 request=%s code=%s %s", request_id, exc.code, exc.detail)
         raise HTTPException(status_code=code, detail=exc.detail) from exc
-    if sink is not None:
-        await sink.close()
-        await _persist_resumed_turns(sink, outcome)
-    logger.info(
-        "HITL 恢复完成 request=%s thread=%s approved=%s rejected=%s replay=%s",
-        request_id,
-        thread_id,
-        approved,
-        rejected,
-        sink.cursor if sink else "",
-    )
+    thread_id = result["thread_id"]
+    sink = result["sink"]
+    outcome = result["outcome"]
     return {
         "ok": True,
         "request": {

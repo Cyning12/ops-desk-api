@@ -47,6 +47,10 @@ class HitlStore(Protocol):
         note: str = "",
     ) -> dict[str, Any] | None: ...
 
+    async def aclaim_approved_for_resume(
+        self, request_id: str, *, ttl_seconds: int
+    ) -> dict[str, Any] | None: ...
+
 
 class InMemoryHitlStore:
     """进程内存储（联调 / 单实例）。重启即丢——**不能用于生产**。"""
@@ -98,6 +102,31 @@ class InMemoryHitlStore:
         row["decided_at"] = time.time()
         return dict(row)
 
+    async def aclaim_approved_for_resume(
+        self, request_id: str, *, ttl_seconds: int
+    ) -> dict[str, Any] | None:
+        """认领「approved 未过期且同 run 无未决 pending」的申请（T2 · FP-8 防重）。
+
+        ⚠️ 本实现**无行锁语义**（单事件循环内检查与返回之间无 await，天然不交错）
+        ——跨副本/并发防重的唯一真源是 `DbHitlStore` 的 FOR UPDATE SKIP LOCKED
+        （R2-N3）；本侧只承载状态机幂等断言，**禁拿它做行锁假断言**（实操-C）。
+        """
+        row = self._items.get(request_id)
+        if row is None or row.get("status") != STATUS_APPROVED:
+            return None
+        decided_at = row.get("decided_at")
+        if isinstance(decided_at, bool) or not isinstance(decided_at, int | float):
+            return None  # 缺 decided_at 视同不可认领（fail-closed）
+        if time.time() - float(decided_at) > ttl_seconds:
+            return None
+        run_id = str(row.get("run_id") or "")
+        for other in self._items.values():
+            if other is row:
+                continue
+            if other.get("status") == STATUS_PENDING and str(other.get("run_id") or "") == run_id:
+                return None
+        return dict(row)
+
 
 class NullHitlStore:
     """未配置持久化：**不落库且显式标记**。
@@ -120,6 +149,11 @@ class NullHitlStore:
 
     async def adecide(
         self, request_id: str, *, decision: str, by: str, note: str = ""
+    ) -> dict[str, Any] | None:
+        return None
+
+    async def aclaim_approved_for_resume(
+        self, request_id: str, *, ttl_seconds: int
     ) -> dict[str, Any] | None:
         return None
 
@@ -160,6 +194,24 @@ class DbHitlStore:
         "UPDATE ops_hitl_requests SET status = :decision, decision_by = :by, "
         "decision_note = :note, decided_at = now(), updated_at = now() "
         "WHERE id = :id AND status = 'pending' RETURNING id"
+    )
+    # T2（R2-N3 · 仓内首个 FOR UPDATE SKIP LOCKED 先例）：自动 resume 的行锁认领。
+    # 条件=裁定四的 SQL 可判部分：status=approved ∧ decided_at 未过 TTL ∧
+    # 同 run 无未决 pending；run 终态由调用方经 event_store 只读查询判定。
+    # SKIP LOCKED：并发认领仅一成功（另一连接跳过锁定行 → 空结果）。
+    _CLAIM_APPROVED_FOR_RESUME = (
+        "SELECT id, run_id, thread_id, checkpoint_id, tenant_id, subtask_id, "
+        "blocked_by, unlock_subtask_id, reason, detail, payload, status, "
+        "decision_by, decision_note, decided_at, created_at "
+        "FROM ops_hitl_requests r "
+        "WHERE r.id = :id AND r.status = 'approved' "
+        "AND r.decided_at IS NOT NULL "
+        "AND r.decided_at >= now() - make_interval(secs => :ttl) "
+        "AND NOT EXISTS ("
+        "    SELECT 1 FROM ops_hitl_requests p "
+        "    WHERE p.run_id = r.run_id AND p.status = 'pending'"
+        ") "
+        "FOR UPDATE SKIP LOCKED"
     )
 
     def __init__(self, *, session_factory: Any = None) -> None:
@@ -226,6 +278,30 @@ class DbHitlStore:
         if not updated:
             return None
         return await self.aget(request_id)
+
+    async def aclaim_approved_for_resume(
+        self, request_id: str, *, ttl_seconds: int
+    ) -> dict[str, Any] | None:
+        """行锁认领一条「approved 未过期且同 run 无未决 pending」的申请（T2 · FP-8）。
+
+        `SELECT … FOR UPDATE SKIP LOCKED`：**并发双认领仅一成功**（另一连接/副本
+        跳过锁定行 → None）；条件判定（TTL / 未决 pending）与锁获取在同一语句内
+        完成，即「认领窗口内再查一次判定」（R2-N3）。锁随事务提交释放——
+        认领**不写状态**（零新列），之后的幂等由 run 终态判定 + resume 状态机
+        守卫（非挂起态重入 = not_interrupted 无副作用）兜底。
+
+        与 `capability/idempotency.py` 的 `aclaim`（幂等键认领）不同类同名：
+        那里是「结果复用去重」，这里是「并发触发去重」，语义不同勿混（N-2）。
+        """
+        from sqlalchemy import text
+
+        async with self._session_factory() as session, session.begin():
+            rows = await session.execute(
+                text(self._CLAIM_APPROVED_FOR_RESUME),
+                {"id": request_id, "ttl": max(1, int(ttl_seconds))},
+            )
+            row = rows.first()
+        return _row_to_dict(row)
 
 
 def _row_to_dict(row: Any) -> dict[str, Any] | None:
