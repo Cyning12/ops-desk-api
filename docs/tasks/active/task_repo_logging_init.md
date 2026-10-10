@@ -11,7 +11,7 @@
 |------|-----|
 | **task_slug** | `repo-logging-init` |
 | **帽链** | 10-task → 20-task-audit → 三闸 → 30 → 40 → PR → CLOSE |
-| **人工闸** | HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES = **pending**（00 代录）· HG-PILOT-OPSDESK-GLAYER n/a |
+| **人工闸** | HG-TASK-DRAFT = **approved** · HG-AUDIT-R1 = **approved**（R1 PASS-WITH-NITS docs/audits/task-review/20261011_repo-logging-init_r1.md · N-1~N-6 照登随 30 回填）· HG-GRAPH-MODULES = **approved**（图谱预判 n/a 照登 · 30 按实判回写义务）——均 2026-10-11 00 代录（授权 m01606）· HG-PILOT-OPSDESK-GLAYER n/a |
 | **图谱预判** | `docs/_tech_graph/l1/01_modules.md` 若有 app/main 或 app 行涉台账表述须回写（30 判） |
 
 ## 1. 背景与实证（锚点逐一亲读 · base cae745e 复核成立）
