@@ -767,3 +767,161 @@ def test_single_resume_path_in_router():
     src = inspect.getsource(hitl_router)
     assert src.count("await resume_hitl_run(") == 1, "禁止第二条恢复实现"
     assert hasattr(hitl_router, "_execute_decided_resume")
+
+# ---------------------------------------------------------------------------
+# hitl-auto-resume-claim-race（30）：竞态窗口注入复现（TC1 修复前红→修复后绿）
+# + 修复后 auto decide-同秒链零 stranded_checkpoint（TC2）
+# ---------------------------------------------------------------------------
+
+
+class _RaceWindow:
+    """竞态窗口替身（FP-1 注入式构造 · 禁赌真竞态：时序由本对象确定性控制）。
+
+    模拟根因形态（nodes.py:1820-1831「落库先于挂起」）：pending/approved 行
+    已可见，但 checkpoint interrupt 元数据**尚不可见**（aget_state 有 pending
+    tasks · interrupts 全空）；``flip()`` 后元数据落库可见。live D1 实证
+    该窗口为 transient（同码面 ~30s 后自愈）——替身钉的是窗口**形态**而非时长。
+    """
+
+    def __init__(self) -> None:
+        self.visible = False
+        self.probes = 0
+
+    def flip(self) -> None:
+        self.visible = True
+
+
+def _assert_zero_stranded_logs(records) -> None:
+    """TC2 台账/caplog 钉：零「HITL 自动恢复执行失败」· 零 stranded_checkpoint 痕迹。"""
+    for r in records:
+        msg = r.getMessage()
+        assert "HITL 自动恢复执行失败" not in msg, msg
+        if r.exc_info and r.exc_info[1] is not None:
+            assert "stranded_checkpoint" not in repr(r.exc_info[1]), msg
+
+
+async def test_tc1_claim_race_window_defers_until_metadata_visible(monkeypatch, caplog):
+    """TC1 注入式竞态窗口复现（钉死契约 5：本测修复前红 → 修复后绿）。
+
+    窗口内首轮认领（= live D1 decide 同秒首跑形态）：就绪校验未见 interrupt
+    元数据 → **不执行不报错**，留 deferred 台账等下轮（竞态化为「等下轮」）；
+    元数据可见后同单再认领 → 同源执行直达。stub 编码真实耦合：resume 侧
+    aget_state 与就绪校验读同一快照源，窗口内若被执行必撞 stranded_checkpoint
+    （resume.py:236-248）。
+    """
+    store = InMemoryHitlStore()
+    row = _row(thread_id="t-race")
+    await store.acreate(row)
+    await store.adecide(row["id"], decision=STATUS_APPROVED, by="验收")
+    set_hitl_store(store)
+    window = _RaceWindow()
+    attempted: list = []
+
+    async def _fake_visible(r) -> bool:
+        window.probes += 1
+        return window.visible
+
+    async def _stub_resume(**kw):
+        attempted.append(kw)
+        if not window.visible:
+            raise ResumeError("stranded_checkpoint", "窗口内：tasks 有 · interrupts 空")
+        return {"state": {}, "answer": "", "query": ""}
+
+    # raising=False：修复前该 seam 不存在时注入即悬置（行为=现状）→ 红在断言层
+    monkeypatch.setattr(
+        auto_resume, "_interrupt_metadata_visible", _fake_visible, raising=False
+    )
+    with (
+        patch("app.ops.hitl.router.resume_hitl_run", new=_stub_resume),
+        patch("app.ops.hitl.router._open_event_sink", new=AsyncMock(return_value=None)),
+        patch(
+            "app.ops.lg_rag.event_store.run_is_terminal", new=AsyncMock(return_value=False)
+        ),
+        caplog.at_level(logging.INFO, logger="app.ops.hitl.auto_resume"),
+    ):
+        await auto_resume._claim_and_execute(
+            row["id"], resume_mode="inherit", ttl_seconds=3600
+        )
+        assert not attempted, "竞态窗口内不得执行（interrupt 元数据未就绪）"
+        assert window.probes == 1, "窗口内认领须做只读就绪校验"
+        window.flip()
+        await auto_resume._claim_and_execute(
+            row["id"], resume_mode="inherit", ttl_seconds=3600
+        )
+        assert len(attempted) == 1, "元数据可见后应直达执行一次"
+    messages = [r.getMessage() for r in caplog.records]
+    _assert_zero_stranded_logs(caplog.records)
+    assert sum(m.startswith("hitl_auto_resume_claimed") for m in messages) == 2
+    assert sum(m.startswith("hitl_auto_resume_deferred") for m in messages) == 1
+
+
+async def test_tc2_auto_decide_chain_zero_stranded_in_race_window(monkeypatch, caplog):
+    """TC2 修复后 auto decide-同秒链零 stranded_checkpoint（caplog/台账断言）。
+
+    decide 同秒即时认领撞竞态窗口（注入）→ defer 等下轮（非失败重试轮）→
+    补偿扫描补触发后同源恢复直达成功（真驱动器 + InMemorySaver 挂起态）。
+    全程零「HITL 自动恢复执行失败」· 零 stranded_checkpoint · 窗口内零执行。
+    """
+    monkeypatch.setenv("OPS_HITL_AUTO_RESUME", "auto")
+    store = InMemoryHitlStore()
+    saver = InMemorySaver()
+    payload = await _suspend(_hitl_state(), saver, "t-race-chain")
+    assert payload is not None, "前置：图没有挂起"
+    row = _row(thread_id="t-race-chain")
+    await store.acreate(row)
+    set_hitl_store(store)
+    owner = _owner_map({_RUN: _MAINTAINER_ID})
+    window = _RaceWindow()
+
+    async def _fake_visible(r) -> bool:
+        window.probes += 1
+        return window.visible
+
+    from app.ops.hitl.resume import resume_hitl_run as _real_resume
+
+    async def _gated_resume(**kw):
+        # 同源耦合：窗口内 resume 侧 aget_state 同样读不到 interrupt 元数据
+        if not window.visible:
+            raise ResumeError("stranded_checkpoint", "窗口内：tasks 有 · interrupts 空")
+        return await _real_resume(checkpointer=saver, graph_factory=_graph_factory, **kw)
+
+    monkeypatch.setattr(
+        auto_resume, "_interrupt_metadata_visible", _fake_visible, raising=False
+    )
+    from httpx import ASGITransport, AsyncClient
+
+    with (
+        patch("app.ops.lg_rag.event_store.run_owner", new=owner),
+        patch("app.ops.hitl.router._open_event_sink", new=AsyncMock(return_value=None)),
+        patch("app.ops.hitl.router.resume_hitl_run", new=_gated_resume),
+        patch(
+            "app.ops.lg_rag.event_store.run_is_terminal", new=AsyncMock(return_value=False)
+        ),
+        caplog.at_level(logging.INFO, logger="app.ops.hitl.auto_resume"),
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=_bare_app()), base_url="http://test"
+        ) as client:
+            res = await client.post(
+                f"/api/ops/hitl/requests/{row['id']}/decide", json={"decision": "approved"}
+            )
+            assert res.status_code == 200, res.text
+            assert res.json()["resume"]["auto_triggered"] is True
+            await _drain_background()
+        # decide 同秒首跑撞窗口：defer —— 零执行 · 图仍挂起
+        graph = _graph_factory(checkpointer=saver)
+        snap = await graph.aget_state({"configurable": {"thread_id": "t-race-chain"}})
+        assert not snap.values.get("hitl_unlocked_ids"), "竞态窗口内不得执行"
+        # 窗口关闭（interrupt 元数据落库）→ 补偿扫描下轮补触发直达恢复
+        window.flip()
+        assert await auto_resume.scan_approved_not_resumed_once() == 1
+        await _drain_background()
+        snap = await graph.aget_state({"configurable": {"thread_id": "t-race-chain"}})
+        assert snap.values["hitl_unlocked_ids"] == [_T1], "批了却没解锁"
+    _assert_zero_stranded_logs(caplog.records)
+    messages = [r.getMessage() for r in caplog.records]
+    assert any(m.startswith("hitl_auto_resume_triggered") for m in messages)
+    assert any(m.startswith("hitl_auto_resume_deferred") for m in messages)
+    assert any(m.startswith("hitl_auto_resume_compensated") for m in messages)
+    assert any(m.startswith("hitl_auto_resume_claimed") for m in messages)
+
