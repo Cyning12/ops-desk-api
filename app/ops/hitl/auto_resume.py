@@ -24,6 +24,16 @@ run 无终态（``event_store.run_is_terminal`` · 实操-E 新增只读查询�
 → 扫描自然跳过）。**扫描不看 decide 来源**（N-1 语义明示）：OA callback 批准的单据
 在全局 auto 下不即时触发（OA 面不挂触发器 · R2-N2），但会被补偿扫描**补触发**
 （延迟 ≤ 扫描周期）——「OA 面不挂」= 「不即时」而非「全 manual」，fail-safe 方向。
+
+**认领竞态就绪校验（hitl-auto-resume-claim-race · 方向 A）**：nodes.py:1820-1831
+「落库先于挂起」使 pending/approved 行可见 ⇏ checkpoint interrupt 元数据可见——
+decide 同秒首跑此刻执行必撞 ``ResumeError: stranded_checkpoint``（resume.py:236-248 ·
+live D1 实证 transient 窗口 ~30s 自愈）。认领后**执行前**做一次**只读**就绪校验
+（``_interrupt_metadata_visible``）：命中 stranded 判定快照（有 pending tasks ·
+interrupts 全空）则不执行不报错、留 ``hitl_auto_resume_deferred`` 台账等下轮
+（认领不写状态 · 行锁随事务提交已释放 · 扫描自然补触发）——竞态化为「等下轮」，
+首跑零 stranded_checkpoint。探针只读（FP-4）：不 resume、不写状态、不替执行
+（执行仍唯一走 ``router._execute_decided_resume`` 同源路径）。
 """
 
 from __future__ import annotations
@@ -148,6 +158,38 @@ def schedule_auto_resume(row: dict[str, Any], *, resume_mode: str, source: str) 
     task.add_done_callback(_BACKGROUND_TASKS.discard)
 
 
+async def _interrupt_metadata_visible(row: dict[str, Any]) -> bool:
+    """认领后·执行前的**只读**就绪校验（hitl-auto-resume-claim-race · 方向 A）。
+
+    竞态窗口形态（live D1 实证）：aget_state 有 pending tasks 但 interrupts
+    全空——恰为执行侧 stranded_checkpoint 的判定快照（resume.py:236-248）。
+    命中该形态返 False → 调用方 defer 等下轮；校验自身失败同样 fail-closed
+    返 False（等下轮兜底）。无 pending tasks（含 checkpoint 行未写入）**不判
+    未就绪**：非 stranded 形态，交还执行侧按现状语义处理（扫描兜底不变）。
+    非 postgres checkpointer 部署无此窗口（执行侧同闸过不了）→ 直返 True。
+    """
+    from app.ops.lg_rag.checkpointer import apostgres_saver, use_postgres_checkpointer
+
+    if not use_postgres_checkpointer():
+        return True
+    from app.ops.hitl.resume import _THREAD_ID_MAX, _default_graph_factory
+
+    thread_id = str(row.get("thread_id") or "")[:_THREAD_ID_MAX]  # 同 resume.py:223 截断
+    try:
+        async with apostgres_saver() as saver:
+            graph = _default_graph_factory(checkpointer=saver)
+            state = await graph.aget_state({"configurable": {"thread_id": thread_id}})
+    except Exception:
+        logger.exception(
+            "HITL 自动恢复就绪校验失败（fail-closed 等下轮）request=%s", row.get("id")
+        )
+        return False
+    tasks = getattr(state, "tasks", None) or []
+    if not tasks:
+        return True  # 非 stranded 竞态形态（无 pending tasks）→ 交还执行侧现状语义
+    return any(getattr(t, "interrupts", None) for t in tasks)
+
+
 async def _claim_and_execute(request_id: str, *, resume_mode: str, ttl_seconds: int) -> None:
     """行锁认领 → 终态判定 → 同源恢复执行；任何失败只落日志（后台任务不改 decide 语义）。"""
     from app.ops.hitl import get_hitl_store
@@ -172,6 +214,16 @@ async def _claim_and_execute(request_id: str, *, resume_mode: str, ttl_seconds: 
             return
     except Exception:
         logger.exception("HITL 自动恢复：run 终态判定失败 fail-closed 跳过 run=%s", run_id)
+        return
+    if not await _interrupt_metadata_visible(row):
+        # 认领竞态窗口（方向 A）：interrupt 元数据未就绪 → 不执行不报错，等下轮。
+        # 认领不写状态（行锁随事务提交已释放）→ 无需回滚，扫描/补触发自然再认领。
+        _audit(
+            "hitl_auto_resume_deferred",
+            row=row,
+            resume_mode=resume_mode,
+            ttl_seconds=ttl_seconds,
+        )
         return
     try:
         from app.ops.hitl.router import _execute_decided_resume  # 惰性 import 防环
