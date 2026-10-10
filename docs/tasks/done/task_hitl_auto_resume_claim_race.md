@@ -1,9 +1,9 @@
 # Task：hitl-auto-resume-claim-race（auto_resume 认领竞态 · decide 同秒首跑连续 stranded_checkpoint）
 
-> **状态**：draft（10 落稿 · 三人工闸 pending · 未开工）
+> **状态**：done（2026-10-10 · 验收 TC1–TC5 全过 · 40 核验七项全 PASS（红测时序严格在前 · TC3 live：零 stranded_checkpoint · 零执行失败 ERROR · 恰好一次执行 · deferred×5 机制本体实证）· 三闸 approved（维护者授权 · 00 代录）· PR [#224](https://github.com/Cyning12/ops-desk-api/pull/224) MERGED（`11fb7e6` · CI 绿）· CLOSE 归档 done/ · 学习要点与改进建议见 CLOSE 文档 `docs/tasks/close/close_hitl_auto_resume_claim_race_20261010.md`）
 > **类型**：验收偏差收口（bugfix 性质 · 实证驱动 · T2 交付物的 live 偏差修正）
 > **依据**：`docs/acceptance/20261010_hitl-consumption-loop_local_acceptance.md` 偏差表 D1 + 项6 auto 链段（**实证真值 · 现于分支 `acceptance/20261010-hitl-consumption-loop` @ `f57b4ae` · 未 merge master · 引用时以该分支/commit 为准**）
-> **分支**：`task/hitl-auto-resume-claim-race`（base = master `1117286` · T4 PR #221 已 merge ✓）
+> **分支**：`task/hitl-auto-resume-claim-race`（base = master `1117286` · T4 PR #221 已 merge ✓ · 本 task 经 PR #224 合入 master · CLOSE 后分支已清理）
 
 ## Harness 元信息
 
@@ -137,11 +137,11 @@
 
 ## 验收标准
 
-- [ ] **TC1 竞态窗口复现单测**：注入式构造「checkpoint 有 pending tasks 但 interrupt 元数据不可见 → 随后可见」时序；断言修复前该窗口形态触发 `stranded_checkpoint`、修复后 auto 路径不再抛出且最终恢复成功（对照形态或修复后单测直接钉绿 · 30 裁定并留痕）。
-- [ ] **TC2 修复后零 stranded_checkpoint**：auto 全链 pytest（decide 同秒即时认领路径）caplog/台账断言无「HITL 自动恢复执行失败」+ 无 `ResumeError: stranded_checkpoint`；首跑即恢复成功（无需补偿扫描重试轮）。
-- [ ] **TC3 live 实证 auto 首跑无重试直达**：六 env 组 + auto + `OPS_HITL_AUTO_RESUME_SCAN_INTERVAL_SECONDS=5` 起 live，decide 同秒 → 首个 claimed 即恢复成功；台账链 triggered→claimed→恢复完成（consumed/token/执行）**无 stranded_checkpoint 重试轮**。
-- [ ] **TC4 反回归**：真·永久 stranded（旧格式 checkpoint 形态）手动 resume 仍 409（`tests/test_hitl_resume.py:230` 断言存续或经裁对齐）；manual 模式零 diff；tests/test_hitl_auto_resume.py 39 枚原样绿；B1 表全文件亲跑绿。
-- [ ] **TC5 工程面**：pytest 全绿（基线 4 failed=capability_lookups×3+lg_rag_multi×1 环境性钉案照登 · 零新增红）；ruff 触及路径零新增；graph-compile EXIT=0；`npx spec-wave task lint` PASS；三闸 approved 后才 30。
+- [x] **TC1 竞态窗口复现单测**：注入式构造「checkpoint 有 pending tasks 但 interrupt 元数据不可见 → 随后可见」时序；断言修复前该窗口形态触发 `stranded_checkpoint`、修复后 auto 路径不再抛出且最终恢复成功（对照形态或修复后单测直接钉绿 · 30 裁定并留痕）。
+- [x] **TC2 修复后零 stranded_checkpoint**：auto 全链 pytest（decide 同秒即时认领路径）caplog/台账断言无「HITL 自动恢复执行失败」+ 无 `ResumeError: stranded_checkpoint`；首跑即恢复成功（无需补偿扫描重试轮）。
+- [x] **TC3 live 实证 auto 首跑无重试直达**：六 env 组 + auto + `OPS_HITL_AUTO_RESUME_SCAN_INTERVAL_SECONDS=5` 起 live，decide 同秒 → 首个 claimed 即恢复成功；台账链 triggered→claimed→恢复完成（consumed/token/执行）**无 stranded_checkpoint 重试轮**。
+- [x] **TC4 反回归**：真·永久 stranded（旧格式 checkpoint 形态）手动 resume 仍 409（`tests/test_hitl_resume.py:230` 断言存续或经裁对齐）；manual 模式零 diff；tests/test_hitl_auto_resume.py 39 枚原样绿；B1 表全文件亲跑绿。
+- [x] **TC5 工程面**：pytest 全绿（基线 4 failed=capability_lookups×3+lg_rag_multi×1 环境性钉案照登 · 零新增红）；ruff 触及路径零新增；graph-compile EXIT=0；`npx spec-wave task lint` PASS；三闸 approved 后才 30。
 
 ## 依赖
 
@@ -216,8 +216,23 @@ auto_resume（T2 交付）live 验收 D1：decide 与 `hitl_auto_resume_triggere
 
 结论：**可进 PR 队列**。
 
+## KPI（00）
+
+- **周期**：10 落稿（7022e20）→ 20 R1（b7639ce PASS-WITH-NITS 零阻塞）→ 三闸代录（2f91f67）→ 30 红测先行（79b6485）+ 实现（51e17ca）→ 30 invoke+图谱（ac7f635）→ 40 核验（2714092）→ PR #224 MERGED（11fb7e6）→ CLOSE，全链 2026-10-10/11 完成 · zero 返工轮
+- **规模**：auto_resume.py +52（就绪校验探针+defer 分支）· 测试 +158（TC1/TC2 注入式红测）· 图谱 hitl 行 :39 备注回写 · 交付链 7 commit
+- **质量**：全量 pytest 1764 passed + 4 failed = 仓级基线钉案零新增红 · B1 七文件 174 passed · ruff 触及面零新增 · graph-compile EXIT=0 · 最小面实证（nodes.py/store.py/router.py/resume.py diff 全空 · test_hitl_resume.py diff 0 行）
+- **审查成本**：20 R1 一轮 PASS-WITH-NITS（锚点 8 处全亲读核真 · N-1~N-3 非阻塞）· 40 独立复跑不采信自报（红测时序 worktree 复跑实证 · TC3 live 全链）
+
+## 经验总结
+
+1. **红测先于实现的时序证据是 bugfix 类 task 的最强防线**：注入式红测（_RaceWindow seam）修复前 2 failed 与 live D1 逐字同形签名，实现 commit 严格在后（git log 父链 + detached worktree 复跑实证）——40 以 worktree 复跑为准不采信 30 自报。
+2. **`.env → load_dotenv` 使 PG 闸在 pytest 全进程 ON**（app/config.py:11）：首轮 B1 4 红即探针宽判定撞真 PG 所致，窄化判定（无 pending tasks 交还执行侧）后零改动原样绿——hitl 测试作者须知此前提。
+3. **`saver.setup()` 新库首跑 idle-in-transaction 卡点**：全新库 CREATE INDEX CONCURRENTLY 被本服务自身 login 期长事务阻塞 3m30s，pg_terminate_backend 后通——live 核验新库首跑须无长事务阻塞。
+4. **`logging.basicConfig` 缺失致裸 uvicorn 无台账**：TC3 台账链断言依赖启动器显式 logging.basicConfig(INFO)——建议后续仓级 task 收进 app/main.py（详见 CLOSE 文档改进建议 1）。
+
 ## 修订
 
 | 日期 | 说明 |
 |------|------|
 | 2026-10-10 | 10 落稿：验收 D1 实证锚点逐字承接 · 竞态机制链实读在案（落库先于挂起 · pending 可见 ⇏ interrupt 元数据可见）· 候选 A/B/C/D 开放不锁死 · 手动 409 语义钉死 · 图谱预判 n/a 照实写 · 三人工闸 pending（10 未代签） |
+| 2026-10-11 | **CLOSE**：20 R1 PASS-WITH-NITS（N-1~N-3 非阻塞照登核验全过）→ 三闸 approved（维护者授权 · 00 代录 2f91f67）→ 30 红测先行（79b6485 · 修复前 2 failed 与 D1 同形）+ 方向 A 实现（51e17ca · 就绪校验 defer）→ 40 核验七项全 PASS（2714092 · TC3 live 零 stranded · deferred×5 机制本体实证 · 恰好一次执行）→ PR [#224](https://github.com/Cyning12/ops-desk-api/pull/224) MERGED（11fb7e6 · CI 绿）→ 归档 done/ · CLOSE 文档 docs/tasks/close/close_hitl_auto_resume_claim_race_20261010.md · 本地/远端 task+close 分支已清理 |
