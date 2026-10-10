@@ -29,12 +29,12 @@
 
 ### 人工闸
 
-| 闸 | 状态 | 说明 |
-|---|---|---|
-| HG-TASK-DRAFT | pending | 10 落稿后维护者签 |
-| HG-AUDIT-R1 | pending | 20 R1 落盘后维护者签 |
-| HG-GRAPH-MODULES | pending | 随交付按实判签录（新 REST 路由 G-L1 行备注义务） |
-| HG-PILOT-OPSDESK-GLAYER | n/a | 无外部试点面 |
+| human_gate_id | status | blocks_hats | 说明 |
+|---------------|--------|-------------|------|
+| HG-TASK-DRAFT | pending | 30 | 10 落稿后维护者签 |
+| HG-AUDIT-R1 | pending | 30 | 20 R1 落盘后维护者签 |
+| HG-GRAPH-MODULES | pending | 30 | 随交付按实判签录（新 REST 路由 G-L1 行备注义务） |
+| HG-PILOT-OPSDESK-GLAYER | n/a | — | 无外部试点面 |
 
 ## 背景与目标
 
