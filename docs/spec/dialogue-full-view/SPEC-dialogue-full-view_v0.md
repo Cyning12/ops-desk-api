@@ -1,6 +1,6 @@
 # SPEC：dialogue-full-view（B 面 · 对话过程全量展示 + SSE 导出 + mermaid 拓扑）v0
 
-> **状态**：`draft`（10-spec 初稿 · 待 20-spec-audit → HG-SPEC-SIGNOFF 人签）
+> **状态**：`signed`（R1 PASS-WITH-NITS · HG-SPEC-SIGNOFF approved 2026-10-11 00 代录 · 可拆 task）
 > **立项**：2026-10-11 维护者三令（统筹第一+第二梯队）· handoff 第三棒序 2（`docs/harness/invokes/by-task/_prompts/PROMPT_00_hitl-consumption-loop-handoff_20261009.md` :41）
 > **上游**：`docs/guides/DESIGN_agent_contribution_endgame_v0_zh.md`（终局路线 v0 · PR #211）——并入裁定点 **#15**（全量渲染折叠/展开层级 · 默认折叠 node.progress 类技术帧）与 **#16**（mermaid 中间档：静态拓扑 + 当次 run 经过节点高亮）
 > **分仓纪律**：承 A 面/chat-history-hitl-ux 先例——本 SPEC 钉需求面+后端面；前端专项 SPEC 另立 `ops-desk-web` 仓（Q4 待维护者确认）
@@ -20,7 +20,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | pending | 20-spec-audit 落盘后维护者签（00 代录 · 授权 m01606） |
+| **HG-SPEC-SIGNOFF** | **approved**（2026-10-11 · 00 代录 · 授权 m01606/m00255） | R1 PASS-WITH-NITS（docs/harness/reviews/spec_dialogue-full-view_audit_R1_20261011.md · commit e37edaa）· NIT N1-N3 已吸收本文 · N4 转 B-E1 task 钉 |
 
 ---
 
@@ -30,7 +30,7 @@
 
 - 现状对话 UI（chat-history-hitl-ux 链已交付）：SSE 流式回答 + HITL 审批交互可见，但**过程帧不全量展示**——`node.progress` 类技术帧（图节点执行轨迹）对终端用户不可见，运维/审计/调试场景须翻服务端日志。
 - SSE 帧已全量落盘（event_store · `POST /api/ops/lg-rag/replay` :332 可重放 `seq > after_seq`）——**数据面已备，展示/导出面缺失**。
-- 终局 #16：mermaid 拓扑不做动态图，直接中间档——静态拓扑 + 当次 run 经过节点高亮，node.progress 帧数据已在（`sse_stream.py:201` 载荷=节点名+输出摘要）。
+- 终局 #16：mermaid 拓扑不做动态图，直接中间档——静态拓扑 + 当次 run 经过节点高亮，node.progress 帧数据已在（`sse_stream.py:201` · 节点名在帧顶层 `agent_role` 字段 · payload=输出摘要 · R1 N3 修正）。
 
 ### 1.2 目标
 
@@ -44,7 +44,7 @@
 |---|---|
 | `app/ops/lg_rag/router.py:222/:289/:332` | 端点 `POST /invoke` · `POST /stream` · `POST /replay`（replay 须登录 · 未知/跨用户 run_id → 404 · 游标非法 → 422） |
 | `app/ops/lg_rag/sse_stream.py:201` | `node.progress` 帧生成点 · 载荷=role+节点输出摘要（`_summarize_payload`） |
-| 帧型清单 | `node.progress` · `hitl.waiting` · `error` · `done` · `query` · `answer`（lg_rag 面 grep 实证 · 全量枚举 30 复核） |
+| 帧型清单（示例 · R1 N1 修正） | `run.start` · `answer` · `subtask.progress` · `node.progress` · `hitl.waiting` · `done` · `error` **7 型**（R1 实 grep 核真 · `query` 系 run.start payload 键非 event_type · 全量枚举归 D4/前端附录） |
 | `app/ops/lg_rag/multi/graph.py:86-96` | 图节点 10 枚：intent_node · strategy_builder · supervisor · rag_subtask · info_extract · tool_exec · aggregator · critic_node · subtask_join · observe（START→intent_node :96 · critic 条件边 pass/end→END :69-74） |
 | event_store | 帧全量落盘（replay 数据源 · run_id+seq 序） |
 | 终局 :93-94 | #15/#16 裁定点原文（§修订记录承并入） |
@@ -77,7 +77,7 @@
 - run 节点高亮：前端消费 node.progress 帧节点名集合 → 拓扑渲染高亮（两案同口径 · 帧数据已在）。
 
 ### D4 · 帧型枚举完备性
-- 本文帧型清单系 grep 实证（6 型）；30 拆 task 时须全量复核（含 subtask 系/台账系帧），枚举落前端专项 SPEC 附录。
+- 本文帧型清单经 R1 复核修正为 **7 型**（`run.start`/`answer`/`subtask.progress`/`node.progress`/`hitl.waiting`/`done`/`error`）；30 拆 task 时仍须全量复核，枚举落前端专项 SPEC 附录。
 
 ## 5. 维护者问答（Q 块 · 待答）
 
@@ -104,13 +104,13 @@
 - 导出完整性：导出文件帧序列与 replay 全量逐帧对拍一致（机断）。
 - 权限：跨用户 run 导出/拓扑访问 404。
 - 拓扑正确性：拓扑节点集与 graph.py add_node 清单 1:1（机断 · 防漂移）。
-- 高亮正确性：run 经过节点集 = node.progress 帧节点名去重集（机断）。
+- 高亮正确性：run 经过节点集 = **node.progress ∪ subtask.progress** 帧节点名去重集（机断 · R1 N2 并入 subtask 三节点）。
 
 ## 8. 下游拆 task 规划（签收后）
 
 | 序 | task | 仓 | 依赖 |
 |---|---|---|---|
-| B-E1 | SSE 导出端点（若 D1=B/C） | ops-desk-api | D1 裁定 |
+| B-E1 | SSE 导出端点（若 D1=B/C） | ops-desk-api | D1 裁定 · **含进行中 run 导出快照语义钉（R1 N4）** |
 | B-E2 | topology 端点（若 D3=B） | ops-desk-api | D3 裁定 |
 | B-F1 | 前端专项 SPEC（全量渲染+折叠+导出 UI+拓扑高亮） | ops-desk-web | 本 SPEC 签收 + Q1-Q5 |
 
