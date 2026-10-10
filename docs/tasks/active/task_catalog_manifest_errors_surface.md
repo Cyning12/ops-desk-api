@@ -124,11 +124,11 @@ manifest 加载失败从「仅日志」变为「catalog 响应可观测」（`ma
 
 ## 验收标准
 
-- [ ] **TC1 故障注入可观测**：tmp 坏 manifest（非法 YAML/非法字段）经 `load_capability_manifests` 注入 → `GET /api/ops/admin/capability/catalog` 响应 `manifest_errors >= 1` 且 `manifest_error_details` 含该 path + error 摘要；details 不含 `adapter`/`local_fn:` 子串（FP-5）；既有键逐键零 diff。
-- [ ] **TC2 零故障基线**：默认装配 catalog 响应 `manifest_errors == 0` · `manifest_error_details == []` · 既有键（filter/principal/visible_ids/visibility_*）逐键对拍零 diff（SPEC FP-4）。
-- [ ] **TC3 visibility_reason 钉源**：fixture manifest 含 visibility 受限条目 + 受限 principal 查询 → hidden 条目附 `visibility_reason` 文本且与 `evaluate_visibility` 直出 reason 码一一对应；路由层零过滤/零重算（走查 + 单测对拍求值函数直出）。
-- [ ] **TC4 失败域隔离与生命周期存续**：坏文件不带崩好文件（manifest.py:14-15 语义 · test_capability_manifest_http.py:413 面存续）；reload 该文件成功后其故障记录清除（钉死契约 3）；`get_capability_manifest_metadata` 两键零 diff（钉死契约 2）。
-- [ ] **TC5 工程面**：pytest 全绿（仓级基线钉案照登 · 零新增红）· ruff 触及路径零新增 · graph-compile EXIT=0 · `npx spec-wave task lint` PASS · 三闸 approved 后才 30。
+- [x] **TC1 故障注入可观测**（30 实证：test_admin_capability_manifest_errors.py::test_tc1 ✅）：tmp 坏 manifest（非法 YAML/非法字段）经 `load_capability_manifests` 注入 → `GET /api/ops/admin/capability/catalog` 响应 `manifest_errors >= 1` 且 `manifest_error_details` 含该 path + error 摘要；details 不含 `adapter`/`local_fn:` 子串（FP-5）；既有键逐键零 diff。
+- [x] **TC2 零故障基线**（30 实证：test_tc2 snapshot 直出逐键对拍 ✅）：默认装配 catalog 响应 `manifest_errors == 0` · `manifest_error_details == []` · 既有键（filter/principal/visible_ids/visibility_*）逐键对拍零 diff（SPEC FP-4）。
+- [x] **TC3 visibility_reason 钉源**（30 实证：test_tc3 词表钉源+直出对拍 ✅）：fixture manifest 含 visibility 受限条目 + 受限 principal 查询 → hidden 条目附 `visibility_reason` 文本且与 `evaluate_visibility` 直出 reason 码一一对应；路由层零过滤/零重算（走查 + 单测对拍求值函数直出）。
+- [x] **TC4 失败域隔离与生命周期存续**（30 实证：test_tc4 隔离+reload 清记录+meta 两键零 diff ✅）：坏文件不带崩好文件（manifest.py:14-15 语义 · test_capability_manifest_http.py:413 面存续）；reload 该文件成功后其故障记录清除（钉死契约 3）；`get_capability_manifest_metadata` 两键零 diff（钉死契约 2）。
+- [x] **TC5 工程面**：pytest 全绿（仓级基线钉案照登 · 零新增红）· ruff 触及路径零新增 · graph-compile EXIT=0 · `npx spec-wave task lint` PASS · 三闸 approved 后才 30。（30 实证：全量 1653 passed · 4 failed 全基线同现同败——hitl asyncpg/memory_vector_p1 环境存量 + multi_replica hitl 两枚 stash/HEAD~1 复跑同败 · ruff 触及路径 2 错基线同现零新增 · lint-imports 12 kept 0 broken · graph-compile EXIT=0 · lint/verify PASS）
 
 ## 依赖
 
