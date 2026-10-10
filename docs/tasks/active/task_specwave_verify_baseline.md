@@ -10,14 +10,32 @@
 | 字段 | 值 |
 |------|-----|
 | **task_slug** | `specwave-verify-baseline` |
+| **test_strategy** | `required` |
+| **test_strategy_note** | 反向实证（TC3 增量门禁红→绿）+ 全量 pytest 零新增红 |
+| **code_quality_bar** | `not_applicable`（纯文档面） |
 | **帽链** | 10-task → 20-task-audit → 三闸 → 30 → 40 → PR → CLOSE |
-| **人工闸** | HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES = **pending**（00 代录）· HG-PILOT-OPSDESK-GLAYER n/a |
-| **图谱预判** | n/a（纯文档面 · 不动模块图谱） |
+| **graph_delta** | `none` |
+| **graph_delta_note** | 纯文档面 · 不动模块图谱 |
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 无文档站变更（仓内规约档非 wiki） |
+| **experience_capture** | `required` |
+| **required_invoke_hats** | `10,20,30,40` |
+| **invoke_retention_profile** | `default` |
+| **git_branch** | `task/specwave-verify-baseline` |
+
+### 人工闸
+
+| human_gate_id | status | blocks_hats | 说明 |
+|---------------|--------|-------------|------|
+| HG-TASK-DRAFT | pending | 20, 30 | 初稿人扫（00 代录） |
+| HG-AUDIT-R1 | pending | 30 | 20 R1 落盘后人签（00 代录） |
+| HG-GRAPH-MODULES | pending | PR | 图谱 n/a 预判按实判（00 代录） |
+| HG-PILOT-OPSDESK-GLAYER | n/a | — | 无外部试点面 |
 
 ## 1. 背景与实证（2026-10-11 实跑真值 · base cae745e）
 
 - `npx spec-wave verify` **真 EXIT=2**（注意：`verify | tail` 管道会吞码报 0 · 先前 30 棒「EXIT=0 自报不准」即此坑 · 测码须 pipefail 或重定向后取 $?）· 尾行 `VERIFY: BLOCKED · 仓级 reviews 缺口 93`。
-- **缺口构成（93 = done/ 155 档中的不合规集）**：
+- **缺口构成（93 = done/ 154 档中的不合规集 · R1 N-1 修正 155→154）**：
   | 类型 | 数 | 含义 |
   |---|---|---|
   | 审查文无结论/签收节 | 52 | reviews 档在但无「结论/签收」起首的 ##/### 节或节内无通过词 |
@@ -52,19 +70,36 @@
 4. **既有 133+ 合规档零 diff**。
 5. **done/ 档本体零改**（不篡改历史档内容）。
 
-## 5. 验收标准（TC 组 · 可机验）
+## 失败路径
 
-- **TC1 基线全表**：缺口 93 逐档分类落账（表格：档名/类型/处置=补审或豁免），与实跑输出 1:1 对账。
-- **TC2 绿证**：`set -o pipefail; npx spec-wave verify` EXIT=0 · 尾行 PASS（处置全部落地后）。
-- **TC3 反向实证**：临时加一不合规档 → verify 红且指向该档 → 撤档复绿（增量门禁力证）。
-- **TC4 诚实性抽查**：豁免/补录档注记措辞如实（维护者抽 5 档可读）。
-- **TC5 反回归**：全量 pytest 零新增红（master 基线对拍）· 既有档 git diff 零。
+| 触发条件 | 系统行为 | 可重试 | 用户可见 |
+|----------|----------|--------|----------|
+| 豁免清单档字段缺/格式错 | verify failClosed 红（原生行为 · R1 探查在案） | 是 | 修清单档复跑 |
+| 补录审查文注记缺「存量补录」 | TC4 抽查拦 + 契约 2 grep 机查 | 是 | 补注记 |
+| 增量新档不合规 | verify 红指向该档（TC3 反向实证 · 预期行为） | 是 | 新档补合规 |
+| 豁免清单被滥用扩列 | 每行须 reason/date/authorized_by 四字段 + PR 审 | 否 | 人审拦截 |
+
+## 验收标准（TC 组 · 可机验）
+
+- [ ] 全量测试命令通过：`pytest tests -q` 零新增红（master 基线对拍）
+- [ ] `npx --yes spec-wave task lint-wiki-delta --target .` 通过（wiki_delta 预检 · n/a 恒绿口径）
+- [ ] TC1 基线全表：缺口 93 逐档分类落账（表格：档名/类型/处置=补审或豁免），与实跑输出 1:1 对账。
+- [ ] TC2 绿证：`set -o pipefail; npx spec-wave verify` EXIT=0 · 尾行 PASS（处置全部落地后）。
+- [ ] TC3 反向实证：临时加一不合规档 → verify 红且指向该档 → 撤档复绿（增量门禁力证）。
+- [ ] TC4 诚实性抽查：豁免/补录档注记措辞如实（维护者抽 5 档可读）。
+- [ ] TC5 反回归：全量 pytest 零新增红（master 基线对拍）· 既有档 git diff 零。
 
 ## 6. 非范围
 
 - verify 工具本体（spec-wave 上游）规则改动——如须豁免机制而上游无口，仓内承载并文档化，不改上游。
 - 古早档内容质量重审（超出 chore 面）。
 - reviews 双址物理归一（D2 除非裁定收）。
+
+### 自检结论（执行者）
+
+（30/40 回填）
+
+---
 
 ## 修订记录
 
