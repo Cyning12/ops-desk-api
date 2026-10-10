@@ -204,7 +204,17 @@ auto_resume（T2 交付）live 验收 D1：decide 与 `hitl_auto_resume_triggere
 
 ### 自检结论（执行者）
 
-（留 40 回填）
+40 核验回填（invoke：docs/harness/invokes/by-task/hitl-auto-resume-claim-race/invoke_20261010_40_verify.md）——七项独立复跑全 PASS，不采信 30 自报：
+
+1. **diff 面**：8 文件最小面实证（auto_resume.py +52 · 测试 +158 · 图谱 :39 · 文档面）；nodes.py/store.py/router.py/resume.py/消费门/guard diff 全空；test_hitl_resume.py diff 0 行（钉死契约 2 存续）。
+2. **红测时序**：git log + detached worktree 检出 79b6485 复跑 2 failed（D1 同形签名）→ 51e17ca 实现严格在后，无先修后测。
+3. **断言强度**：TC1 窗口内零执行断言（`assert not attempted`）+ 台账链断言 + 零 stranded caplog 断言；TC2 真 HTTP decide + 真挂起 + 四键台账齐——deferred 非假绿。
+4. **反回归**：B1 七文件 174 passed；全量 1764 passed + 4 failed = 基线钉案零新增红；ruff / graph-compile EXIT=0；再生噪音还原。
+5. **TC3 live**（隔离库 opsdesk_tc3 · :8060 · auto + 5s 扫描）：triggered→claimed→(compensated→claimed→deferred)×5→approval_consumed→token_issued→token_verified→HITL 恢复完成；**零 stranded_checkpoint · 零执行失败 ERROR · 恰好一次执行**。deferred×5 = 恢复在窗期探针挡重复认领（方向 A 机制本体 live 实证）；decide-同秒原始窗口本次未命中（误端点耽搁 44s · 如实登记），首认领直达亦合规。
+6. **留转 2-5**：not_interrupted 子窗口未观测（维持窄判定）· 永久 stranded 观测路径（deferred 台账 TTL 递减留痕）实证成立 · 探针成本低频可接受 · PG 闸环境事实照登。
+7. **N-1~N-3**：断言窗 :260 / 台账键图谱回写 / 时序证据——照登核验全过。
+
+结论：**可进 PR 队列**。
 
 ## 修订
 
