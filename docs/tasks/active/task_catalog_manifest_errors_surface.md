@@ -31,9 +31,9 @@
 
 | 闸 | 状态 | 说明 |
 |---|---|---|
-| HG-TASK-DRAFT | pending | 10 落稿 · 待维护者签 |
-| HG-AUDIT-R1 | pending | 20 R1 落盘后维护者签 |
-| HG-GRAPH-MODULES | pending | 预判 n/a（照实判定 · 不代签）· 30 实证触发回写则随交付签录 |
+| HG-TASK-DRAFT | **approved**（2026-10-11 · 00 代录 · 授权 m01606/m00255） | R1 PASS-WITH-NITS（c3d5e57 · NIT-1~3 照登不阻） |
+| HG-AUDIT-R1 | **approved**（同上代录） | 锚点 14 组全核真 · N4 落点 A 裁定成立 |
+| HG-GRAPH-MODULES | **approved**（同上代录 · 按实判） | 预判 n/a · 30 实证触发 capability 行备注则随交付回填 |
 | HG-PILOT-OPSDESK-GLAYER | n/a | 无外部试点面 |
 
 ## 背景与目标
