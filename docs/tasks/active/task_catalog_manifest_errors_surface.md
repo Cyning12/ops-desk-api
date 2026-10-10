@@ -29,12 +29,12 @@
 
 ### 人工闸
 
-| 闸 | 状态 | 说明 |
-|---|---|---|
-| HG-TASK-DRAFT | **approved**（2026-10-11 · 00 代录 · 授权 m01606/m00255） | R1 PASS-WITH-NITS（c3d5e57 · NIT-1~3 照登不阻） |
-| HG-AUDIT-R1 | **approved**（同上代录） | 锚点 14 组全核真 · N4 落点 A 裁定成立 |
-| HG-GRAPH-MODULES | **approved**（同上代录 · 按实判） | 预判 n/a · 30 实证触发 capability 行备注则随交付回填 |
-| HG-PILOT-OPSDESK-GLAYER | n/a | 无外部试点面 |
+| human_gate_id | status | blocks_hats | 说明 |
+|---|---|---|---|
+| HG-TASK-DRAFT | approved | 20-R1, 30 | 2026-10-11 · 00 代录（授权 m01606/m00255）· R1 PASS-WITH-NITS（c3d5e57 · NIT-1~3 照登不阻） |
+| HG-AUDIT-R1 | approved | 30 | 同上代录 · 锚点 14 组全核真 · N4 落点 A 裁定成立 |
+| HG-GRAPH-MODULES | approved | 30 | 同上代录 · 按实判：预判 n/a · 30 实证触发 capability 行备注则随交付回填 |
+| HG-PILOT-OPSDESK-GLAYER | n/a | — | 无外部试点面 |
 
 ## 背景与目标
 
@@ -77,7 +77,7 @@ manifest 加载失败从「仅日志」变为「catalog 响应可观测」（`ma
 1. **只增不删（SPEC 纪律 #2）**：catalog 既有键（`filter`/`principal`/`visible_ids`/`visibility_*` 计数与 `visibility_hidden` 既有子键）逐键零 diff；本 task 只增 `manifest_errors` + `manifest_error_details` 顶层键与 hidden 条目 `visibility_reason` 子键。
 2. **N4 落点钉 A**：故障面落 catalog 响应顶层（summary 面）· `get_capability_manifest_metadata` 与 `/runtime` 响应**零 diff**（tests/test_capability_manifest.py:331/:354 断言存续）。
 3. **故障记录生命周期**：manifest.py 新增模块级故障记录 = 「最近一次 `load_capability_manifests` 调用的 failed 集」；单文件 `reload_capability_manifest` 成功 → 该文件故障记录清除。语义上限：记录必须如实反映「当前在册表是怎么来的」，禁止故障后重启语义外的自动清零。细节（结构/键名）30 钉并留痕。
-4. **visibility_reason 钉源单源**：hidden 条目 `visibility_reason` 文本承 `evaluate_visibility` 摘要语义（visibility.py:126 reason 码 → 文本映射表落 visibility.py 模块 :38-41 词表旁）；**路由层零自写判定/零重算**（SPEC 纪律 #3/#6 · FP-6）。
+4. **visibility_reason 钉源单源**：hidden 条目 `visibility_reason` 文本承 `evaluate_visibility` 摘要语义（visibility.py:126 reason 码 → 文本映射表落 visibility.py 模块 :38-41 词表旁）；**路由层零自写判定/零重算**（SPEC 纪律 #3 · FP-6）。
 5. **只读零写**：不改 manifest 真源 · 不改加载/校验/失败域隔离语义（manifest.py:14-15 存续）· 不新增/启停任何 capability · 零 SSE 帧改动 · 零新表/迁移/新 env。
 6. **不泄露内部实现（SPEC 纪律 #4）**：`manifest_error_details[].error` 透出的是 ManifestError 消息（含文件 path · manifest 注释已钉无密钥字段）；`adapter`/`local_fn:` 子串不出站存续。
 7. **鉴权不动**：catalog 仍 `AdminSyncAuth`；用户面 B1 端点不涉本 task；admin `items` 全字段数组（13 字段族 + status 三态）归 B2 主 task，本 task 不动。
@@ -118,7 +118,7 @@ manifest 加载失败从「仅日志」变为「catalog 响应可观测」（`ma
 |---|---|---|
 | tests/test_admin_capability_observability.py | catalog 端点五测试（:54 鉴权 · :113 hidden 解释 · :149 kinds 裁剪 · :173 filter · :185 deny_write） | 原样绿；:113 hidden 断言面若逐键精确则需对齐增 `visibility_reason` 子键并留痕（只增） |
 | tests/test_capability_manifest.py | :331/:354 `get_capability_manifest_metadata` 断言 | 原样绿（钉死契约 2 · meta 面零 diff） |
-| tests/test_capability_manifest_http.py | :413-435 `load_capability_manifests` 失败域隔离/重复 id | 原样绿（加载语义零改动）；故障记录持久化新增断言另起用例不动既有 |
+| tests/test_capability_manifest_http.py | :409-435 `load_capability_manifests` 失败域隔离/重复 id | 原样绿（加载语义零改动）；故障记录持久化新增断言另起用例不动既有 |
 | tests/test_multi_replica_dualproc.py | :674-718 runtime/catalog 跨副本 parity | 亲跑绿（FP-3 · 新键跨副本一致） |
 | tests/test_capability_visibility_and_receipts.py | :135 visibility 求值面 | 原样绿（求值语义零改动 · 只增映射表） |
 
@@ -199,4 +199,5 @@ SPEC §2 B2 :78「summary 增 manifest_errors 计数键（或沿用既有 meta �
 
 | 日期 | 说明 |
 |------|------|
+| 2026-10-11 | 30 开工前格式归一 + NIT 消化：人工闸表转 4 列 canonical（status 纯值 · 闸真值不变 · fec3abf 在案不动）——原 3 列 + 状态格内嵌说明致 `spec-wave verify` 解析 0 行误报 BLOCKED · NIT-1 契约 4 引「SPEC 纪律 #3/#6」删「/#6」（实为 #3+FP-6）· NIT-2 B1 表锚 :413-435→:409-435（失败域隔离用例实起 :409） |
 | 2026-10-11 | 10 落稿：SPEC §2 B2 + R1 N4 携带回填 · **N4 裁定落点 A（summary 面增 `manifest_errors`/`manifest_error_details` · 弃 B：meta 双消费方爆炸半径）** · 实证锚点六处亲读（:200 故障日志 · :145-147 meta 仅 version+count · __init__.py:110 返回值即弃 · :99 meta 消费方 · visibility.py:126 reason · catalog :163-214）· 钉死契约七条 · TC1–TC5 · 三人工闸 pending（未代签） |
