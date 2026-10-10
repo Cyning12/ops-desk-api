@@ -106,11 +106,11 @@ TB1-TB8（保号 14 枚）· TA 组（T1 29+34 枚）· hitl resume/decide 既�
 
 ## 验收标准
 
-- **TC1 红测先行**：构造 resume 场景（approved 非空+部分步已终态）实证旧行为（孪生/重放）→ 实现后转绿（防恒绿假象）。
-- **TC2 单测**：D1 裁定形态对应断言（定点路径步集 / 注入载荷含已完成清单 / write 步跳过）。
-- **TC3 live（依赖序2 merge 后台账可见）**：六 env 组 → 挂起→decide→resume → 断言：无孪生 subtask · write 步执行次数=1 · delegation_approval_consumed 命中原 sid。
-- **TC4 反回归**：全量 pytest + TB1-TB8 + capability_acceptance 门禁。
-- **TC5 台账链**：live 全程台账键 grep 可断。
+- [ ] TC1 红测先行：构造 resume 场景（approved 非空+部分步已终态）实证旧行为（孪生/重放）→ 实现后转绿（防恒绿假象）。
+- [ ] TC2 单测：D1 裁定形态对应断言（定点路径步集 / 注入载荷含已完成清单 / write 步跳过）。
+- [ ] TC3 live（依赖序2 merge 后台账可见）：六 env 组 → 挂起→decide→resume → 断言：无孪生 subtask · write 步执行次数=1 · delegation_approval_consumed 命中原 sid。
+- [ ] TC4 反回归：全量 pytest + TB1-TB8 + capability_acceptance 门禁 · **旧测 grep 影响面以 §B1 节为准**（K7 口径 · 涉改文件逐枚核 diff 归因）。
+- [ ] TC5 台账链：live 全程台账键 grep 可断。
 
 ## 依赖
 
@@ -125,12 +125,14 @@ TB1-TB8（保号 14 枚）· TA 组（T1 29+34 枚）· hitl resume/decide 既�
 
 ## 思考轮控制
 
-- **R0**：锚点复核（30 首步 · 行号漂移按实校正）。
-- **R1**：盲循环复现方案（红测构造）。
-- **R2**：D1 裁定（复现实证后）。
-- **R3**：write 护栏落点（execute 节点 vs delegation 网关）。
-- **R4**：TC 组完备性回扫。
-- **R5**：40 live 排期（序2 merge 确认）。
+| 轮 | 结论 | early_stop |
+|---|---|---|
+| R0 | 锚点复核（30 首步 · 行号漂移按实校正） | 否 |
+| R1 | 盲循环复现方案（红测构造） | 否 |
+| R2 | D1 裁定（复现实证后） | 否 |
+| R3 | write 护栏落点（execute 节点 vs delegation 网关） | 否 |
+| R4 | TC 组完备性回扫 | 否 |
+| R5 | 40 live 排期（序2 merge 确认） | 否 |
 
 ## KPI（00）
 
@@ -139,6 +141,12 @@ TB1-TB8（保号 14 枚）· TA 组（T1 29+34 枚）· hitl resume/decide 既�
 ## 经验总结
 
 （CLOSE 时回填）
+
+### 自检结论（执行者）
+
+（30/40 回填 · draft 期占位合法）
+
+---
 
 ## 修订
 
