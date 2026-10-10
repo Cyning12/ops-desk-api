@@ -115,13 +115,13 @@ SPEC §2 B1 裁定（Q1 维护者「catalog新立」· Q3 本帽 CurrentUser）�
 
 ## 验收标准
 
-- [ ] **TC1 鉴权**：无 cookie 请求 `GET /api/ops/capability/mine` → 401（FP-1 · dependency_overrides 不挂即为真 401 路径）。
-- [ ] **TC2 maintainer 字段族+对拍**：cookie maintainer → 200 · `items` 每条目九键齐（id/kind/description/when_to_use/tags/risk_level/side_effect/enabled/status="available"）· `count==len(items)` · 条目 id 集与 `evaluate_visibility` 对同一 fixture manifest 直出对拍**完全一致**（钉死契约 3/6）。
-- [ ] **TC3 viewer⊆maintainer（N3 钉死）**：viewer fixture（role="viewer"）→ 200 且条目集 ⊆ maintainer 条目集；Principal roles=`{user.role}` 映射断言在测（FP-4）。
-- [ ] **TC4 空集如实**：构造全裁 principal fixture（或空 manifest）→ 200 `{"items": [], "count": 0}`（FP-2 · 不 500）。
-- [ ] **TC5 出站白名单**：响应体序列化后不含 `adapter` / `local_fn:` 子串（FP-5 · grep 机断）；九键之外零键（`args_schema`/`when_not_to_use` 等 B2 字段不出站）。
-- [ ] **TC6 单源对拍**：单测断言路由返回值 == `capability_catalog_snapshot`/`evaluate_visibility` 直出投影（路由层零过滤 · FP-6）+ 走查。
-- [ ] **TC7 工程面**：`pytest tests` 全绿（零新增红）· `ruff check app tests` 触及路径零新增 · `lint-imports` 绿 · `./scripts/graph-compile.sh` EXIT=0 · `npx spec-wave verify` PASS · G-L1 路由行备注回写 + HG-GRAPH-MODULES 签录 · 三闸 approved 后才 30。
+- [x] **TC1 鉴权**：无 cookie 请求 `GET /api/ops/capability/mine` → 401（FP-1 · dependency_overrides 不挂即为真 401 路径）。
+- [x] **TC2 maintainer 字段族+对拍**：cookie maintainer → 200 · `items` 每条目九键齐（id/kind/description/when_to_use/tags/risk_level/side_effect/enabled/status="available"）· `count==len(items)` · 条目 id 集与 `evaluate_visibility` 对同一 fixture manifest 直出对拍**完全一致**（钉死契约 3/6）。
+- [x] **TC3 viewer⊆maintainer（N3 钉死）**：viewer fixture（role="viewer"）→ 200 且条目集 ⊆ maintainer 条目集；Principal roles=`{user.role}` 映射断言在测（FP-4）。
+- [x] **TC4 空集如实**：构造全裁 principal fixture（或空 manifest）→ 200 `{"items": [], "count": 0}`（FP-2 · 不 500）。
+- [x] **TC5 出站白名单**：响应体序列化后不含 `adapter` / `local_fn:` 子串（FP-5 · grep 机断）；九键之外零键（`args_schema`/`when_not_to_use` 等 B2 字段不出站）。
+- [x] **TC6 单源对拍**：单测断言路由返回值 == `capability_catalog_snapshot`/`evaluate_visibility` 直出投影（路由层零过滤 · FP-6）+ 走查。
+- [x] **TC7 工程面**：`pytest tests` 全绿（零新增红）· `ruff check app tests` 触及路径零新增 · `lint-imports` 绿 · `./scripts/graph-compile.sh` EXIT=0 · `npx spec-wave verify` PASS · G-L1 路由行备注回写 + HG-GRAPH-MODULES 签录 · 三闸 approved 后才 30。
 
 ## 依赖
 
@@ -185,6 +185,15 @@ TC1–TC7 全部 pytest 机断：401 / 九键齐+对拍一致 / ⊆ / 空集 200
 3. **N1–N3 回填闭合**：锚点改引 :163-214 · deps :18-115 · roles=frozenset({user.role}) 钉死契约 2 + TC3 ⊆ 对拍。
 4. **nit 回填**：n-1 契约 1/FP-1 补引第三 401 分支 deps.py:49-51 ✓ · n-2 R1 思考轮计数 12→13 ✓。
 5. **三闸 pending 未代签**；落点/baseline 两候选开放留 30 实证。
+
+### 自检结论（30 实施者）
+
+1. **TC1–TC6 全绿**（tests/test_capability_mine.py 6 passed · 红测先行时序 e30b7ca 6 红 → f79fe3f 6 绿在案）：401 真路径 · 九键+对拍 · viewer⊆maintainer 真子集 · 空集 200 · grep 零命中 · 单源对拍含顺序。
+2. **TC7 工程面全绿**：全量 pytest 1652 passed 零新增红（唯一 failed=test_memory_vector_p1 环境性存量 · 基线 fec3abf 临时 worktree 复跑同现实证）· ruff 触及文件 All checks passed · lint-imports 12 kept 0 broken · graph-compile EXIT=0 · spec-wave verify PASS。
+3. **钉死契约 8 条全落地**：落点 app/ops/capability_mine.py 包外（候选①倾向实证成立）· principal 会话构造 · 可见性单源路由层零过滤 · 九键白名单 · 防探测空集如实 · 只读零写。
+4. **baseline_filter 裁定：不叠加**（契约 8 · FP-8）——baseline 是 admin 场景收窄预设，用户面=身份求值，叠加即双真源违契约 3；裁定依据全文见 invoke_20261011_30_implement.md。
+5. **HG-GRAPH-MODULES 随交付回填**：modules.md api 行 2026-10-11 注册备注 + 签录行（00 代录 · 不新增一级模块 · 零新跨模块边 · 不增 implementedBy）。
+6. **00 两裁定落地**：闸表机读归一（863260c · 零语义改动 · 实证根因 spec-wave 解析器不吃粗体+括注 status 单元格）+ 审查档 R1/R2 复制 docs/harness/reviews/ 机读口径（826b2ff · 源 daa6871 保留 · 双址规约待序3钉）。
 
 ---
 
