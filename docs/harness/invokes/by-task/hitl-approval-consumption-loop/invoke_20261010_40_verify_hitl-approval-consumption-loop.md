@@ -13,7 +13,7 @@
 |---|--------|------|------|
 | 1 | diff 面对拍 + 五文件空 diff | **PASS** | diff master --stat：nodes.py+148 / 5 随改文件 / 新测试 508 行 / 图谱+文档 · 面外零改动；registry/policy/delegation/store/router 五文件 diff 行数全 0（亲跑） |
 | 2 | 新测试抽跑 + 断言强度亲读 | **PASS** | 34 枚（30 收尾棒增强后）全绿两轮；亲读 TA2 变异组 mutate 真实造成不匹配（非假绿）；Db 组真 DbHitlStore alist/aget 路径（DB_AVAILABLE=True 非 skip） |
-| 3 | 全量 pytest / ruff / graph-compile | **PASS（口径注记）** | 全量 1713 passed · 1 skipped · 0 failed（353s · 30 棒净态口径 mode 中性）；ruff 触及七文件与 base 7853334 逐枚同构零新增（新测试文件 2 枚已修：F841/F821 · 00 收尾 commit）；graph-compile EXIT=0（graph.json 日期噪音还原）· ⚠️ 并发窗 .env 被翻 enforce 致窗口性红 4 枚（capability_lookups×3+lg_rag_multi×1 · delegation no_token）——env 覆盖/复原后复绿 · 非代码归因（T3 先例口径） |
+| 3 | 全量 pytest / ruff / graph-compile | **PASS（口径注记）** | 全量 1713 passed · 1 skipped · 0 failed（353s · 30 棒净态口径 mode 中性）；ruff 触及七文件与 base 7853334 逐枚同构零新增（新测试文件 2 枚已修：F841/F821 · 00 收尾 commit）；graph-compile EXIT=0（graph.json 日期噪音还原）· ⚠️ 并发窗 .env 被翻 enforce 致窗口性红 4 枚（capability_lookups×3+lg_rag_multi×1 · delegation no_token）——env 覆盖/复原后复绿 · 非代码归因（T3 先例口径）· **master 基线对拍钉死（2026-10-10 09:58）**：主仓 master eb8e93d 同款 4 测本地同红（CI 绿）→ 本地环境性红 · 与 T1 零关系 |
 | 4 | B1 十四处 + 门禁 | **PASS** | 三测试文件 62 passed（30 棒亲跑）+ capability_acceptance.sh 失败 0 跳过 1（联调桩目录缺 · 环境性）· CAP_EXIT=0 |
 | 5 | TA3 live 段 | **PASS 带偏差（末段见「重要发现」）** | 六 env 组（三 env + T3 候选口 + OPS_HITL_PERSISTENCE=db + OPS_CAPABILITY_ALLOW_WRITE=1）· uvicorn :8020 · docker PG · run 7b3178041bf44edba8a81d40b18be22e：① hitl.waiting（unlock_subtask_id=sid **回填 live 实证**）② pending 200 可见 ③ decide(approved) 200 persisted ④ **resume 200**（D2 时代 409 已消 · 逐字目标达成）⑤ 见重要发现 |
 | 6 | 闸面终态 | **PASS** | verify EXIT=0 · task lint PASS · 01_modules.md lg_rag/hitl 行备注 + 在册行（00 代录 2026-10-10）实证在案 |
