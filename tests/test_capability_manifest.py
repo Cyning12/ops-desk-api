@@ -329,6 +329,9 @@ capabilities:
     assert loaded.version == 9
     assert loaded.capability_manifest_count == 1
     meta = get_capability_manifest_metadata()
+    # NIT-3 键集相等补强（task_b2_nit3_admin_items_array 钉死契约 6）：
+    # 键集断言在前，防 meta 面被顺手扩/删键而逐键值断言抓不住
+    assert set(meta.keys()) == {"version", "capability_manifest_count"}
     assert meta["version"] == 9
     assert meta["capability_manifest_count"] == 1
 
@@ -352,6 +355,8 @@ capabilities:
     by_id = {s.capability_id: s for s in list_capabilities()}
     assert by_id["reload_cap"].description == "second"
     meta = get_capability_manifest_metadata()
+    # NIT-3 键集相等补强（同上）：键集在前 + 原逐键值存续
+    assert set(meta.keys()) == {"version", "capability_manifest_count"}
     assert meta["version"] == 10
     assert meta["capability_manifest_count"] == 1
 
