@@ -1,6 +1,6 @@
 # SPEC：web-integration（ops-desk-web 联调需求 · 既有后端功能面接通）v0
 
-> **状态**：`signed`（R2 PASS · HG-SPEC-SIGNOFF approved 2026-10-11 00 代录 · Q1-Q4 待维护者裁定后可拆 task）
+> **状态**：`signed`（R2 PASS · HG-SPEC-SIGNOFF approved 2026-10-11 00 代录）· **Q1-Q4 已裁**（2026-10-11 维护者 m00026 · 见 §7）→ T-W1/T-W2 可拆 task · T-W3 依赖已解除（B1/B2 已合入 #231/#234）· T-W4 待 D4/D5
 > **立项**：2026-10-11 维护者令（m02397）：「为 web 项目生成联调需求 spec，让前端项目把已经存在功能联调完成」
 > **上游**：A 面 `docs/spec/tool-catalog-page/SPEC-tool-catalog-page_v0.md`（signed · B1/B2 task 在途）· B 面 `docs/spec/dialogue-full-view/SPEC-dialogue-full-view_v0.md`（signed · task 未拆）· 验收基线 `docs/acceptance/20261010_hitl-consumption-loop_local_acceptance.md`
 > **分仓纪律**：承 A/B 面先例——本 SPEC 钉联调需求面+契约指针；实现落 ops-desk-web 仓
@@ -151,12 +151,12 @@
 
 ### D5 · WS /chat/ws 面（联调 or 标注弃用倾向）
 
-## 7. 开放问题（Q 块 · 待维护者）
+## 7. 开放问题（Q 块 · **已裁 2026-10-11 m00026**）
 
-- Q1（R1 N5 合并原 Q1/Q6）· 本 SPEC 落位：倾向 **ops-desk-web `docs/spec/web-integration/`**（web 仓已有四枚 SPEC 先例 · 实现主体在 web 仓）；api 仓不留或仅留指针档，待维护者确认。
-- Q2：F5 依赖 B1/B2 合入——联调启动是否等 PR 落地。
-- Q3：lc-evidence 已有页面在联调范围（F7）；admin 面（sync/memory purge·Bearer 机读）无 web 页面 → 倾向不在范围，待维护者确认。
-- Q4（原 Q5 重编号）：web 仓在途 task（task_web_specwave_upgrade_3_0_0 · task_web_tenant_context_chat）与本联调链的先后/并行关系。
+- Q1（R1 N5 合并原 Q1/Q6）· 本 SPEC 落位：倾向 **ops-desk-web `docs/spec/web-integration/`**（web 仓已有四枚 SPEC 先例 · 实现主体在 web 仓）；api 仓不留或仅留指针档，待维护者确认。→ **裁定（m00026）：保留在 web 仓**——正本落 ops-desk-web `docs/spec/web-integration/`（随 T-W1 拆 task 迁移），api 仓本档届时降指针。
+- Q2：F5 依赖 B1/B2 合入——联调启动是否等 PR 落地。→ **裁定（m00026）：等 PR**——B1/B2 已合入 master（#231/#234 · 2026-10-11），阻塞条件已满足，T-W3 可排期。
+- Q3：lc-evidence 已有页面在联调范围（F7）；admin 面（sync/memory purge·Bearer 机读）无 web 页面 → 倾向不在范围，待维护者确认。→ **裁定（m00026）：admin 面不在本期联调范围，后续单独 task**（lc-evidence F7 照常在范围）。
+- Q4（原 Q5 重编号）：web 仓在途 task（task_web_specwave_upgrade_3_0_0 · task_web_tenant_context_chat）与本联调链的先后/并行关系。→ **裁定（m00026）：specwave 升级目标改为 3.1.0**（原 3.0.0 task 修订）；**tenant_context_chat 暂缓**；本联调链与 specwave-3.1.0 并行，撞文件隔离按 FP-4 钉死。
 - （原 Q4 hitl.waiting 补入裁定已随 R1 B1 废弃——帧驱动已交付无裁定必要，清单补全作 NIT 级直入 T-W2。）
 
 ## 8. 风险与失败路径（FP 块）
@@ -173,7 +173,7 @@
 |---|---|---|---|
 | **T-W1 回归批** | F1/F4/F6/F7 | 已接通四面回归验证（S1/S4/S6/S7）+ role 驱动菜单核对 + 契约对拍（snake_case 原始体/threads envelope 例外照登） | 无依赖 · 可先行 |
 | **T-W2 SSE/HITL 增强批** | F2/F3 | 帧型 doc comment 清单补全（7 型 · 文档级）· decide 卡片 `resume_mode` 可选键 UI · `done{resumed}` 终态渲染核对（S2/S3） | Vitest 全量 225 条全绿为回退闸（FP-5） · useLgRagSse 管线改动面钉死 |
-| **T-W3 Capability 目录页** | F5 | 新路由+页面：/capability/mine 可见集表 · maintainer manifest_errors 展示（S5） | **wait：B1/B2 PR 合入 master**（FP-2） |
+| **T-W3 Capability 目录页** | F5 | 新路由+页面：/capability/mine 可见集表 · maintainer manifest_errors 展示（S5） | ~~wait：B1/B2 PR 合入 master~~ **已合入 #231/#234（Q2 裁定 m00026）· 可排期** |
 | **T-W4 裁定后另立** | F8/F10 | B面全量展示（D4）· models/WS 取舍（D5） | 待维护者裁定 |
 
 每 task 携对应 S 场景为验收令；web 仓在途 task（specwave 升级/租户上下文）隔离面拆 task 时钉死（FP-4）。
@@ -185,3 +185,4 @@
 | v0-draft | 2026-10-11 | 00（代笔 · 维护者令 m02397） | 骨架：端面清单 2.1-2.7 亲读核真 |
 | v0 | 2026-10-11 | 00（代笔） | 填肉：web 仓盘点回填（Vue3 栈 · 8 面已接通 · 缺口 6 枚收敛 F5/F2/F3）· F1-F10 分面表现状列 · D1 倾向 A · Q4-Q6 增 · FP-4/5 增 · §9 拆 task 规划（T-W1~W4） |
 | v0.1 | 2026-10-11 | 00（代笔 · R1 修订） | B1 hitl.waiting 失真修正（帧驱动已交付 · 残留仅 doc comment 清单）· D3 重写多端一致性 · Q1/Q6 合并 Q4 废弃重编号 · N1 sync :28 单端点 · N2 manifest_errors 挂 catalog · N3 done{resumed} 真钉案锚点 · N4 测试计数 225/65 · N6 转 A 面链照登 |
+| v0.2 | 2026-10-11 | 00（代录 · 维护者裁定 m00026） | Q1 保留 web 仓（正本随 T-W1 迁）· Q2 等 PR——B1/B2 已合入 #231/#234，T-W3 解锁 · Q3 admin 面出范围另立 task · Q4 specwave 改升 3.1.0 / tenant_context_chat 暂缓 · §9 T-W3 依赖解除 · T-W1/T-W2 可拆 |
