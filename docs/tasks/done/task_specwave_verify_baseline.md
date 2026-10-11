@@ -1,9 +1,9 @@
 # Task：specwave-verify-baseline（仓级 verify 缺口基线收口 · chore）
 
-> **状态**：40 复核 PASS（2026-10-11 · 可进 PR 队列 · 合并须 HG-GRAPH-MODULES 闸口+CI 绿）
+> **状态**：done（2026-10-11 · 验收 TC1-TC5 全过 · 40 复核 PASS（V1-V5 · TC3 反向实证亲跑红绿）· 三闸 approved（维护者授权 m01606/m00255 · 00 代录）· PR [#228](https://github.com/Cyning12/ops-desk-api/pull/228) MERGED（squash `5204330` · 2026-10-11）· CLOSE 归档 done/ · 钉案与学习要点见 CLOSE 文档 [`../close/close_specwave_verify_baseline_20261011.md`](../close/close_specwave_verify_baseline_20261011.md)）
 > **类型**：仓级 chore（文档合规 · SPEC §9 序3 · 维护者令 2026-10-11 立项）
 > **依据**：`docs/spec/hitl-approval-consumption/SPEC-hitl-approval-consumption_v1.md` §9 序3（仓级 verify EXIT=2 BLOCKED 92 缺口 · 实跑复核 93）· T1 40 钉案③
-> **分支**：`task/specwave-verify-baseline`（base = master `cae745e`）
+> **分支**：`task/specwave-verify-baseline`（base = master `cae745e` · 已经 PR #228 squash 合入 master `5204330` · CLOSE 后 worktree `t-specwave-verify-baseline` 与 task/close 分支待清理——本 CLOSE 在该 worktree 内作业无法自清 · 留 00/维护者）
 
 ## Harness 元信息
 
@@ -81,13 +81,13 @@
 
 ## 验收标准（TC 组 · 可机验）
 
-- [ ] 全量测试命令通过：`pytest tests -q` 零新增红（master 基线对拍）
-- [ ] `npx --yes spec-wave task lint-wiki-delta --target .` 通过（wiki_delta 预检 · n/a 恒绿口径）
-- [ ] TC1 基线全表：缺口 93 逐档分类落账（表格：档名/类型/处置=补审或豁免），与实跑输出 1:1 对账。
-- [ ] TC2 绿证：`set -o pipefail; npx spec-wave verify` EXIT=0 · 尾行 PASS（处置全部落地后）。
-- [ ] TC3 反向实证：临时加一不合规档 → verify 红且指向该档 → 撤档复绿（增量门禁力证）。
-- [ ] TC4 诚实性抽查：豁免/补录档注记措辞如实（维护者抽 5 档可读）。
-- [ ] TC5 反回归：全量 pytest 零新增红（master 基线对拍）· 既有档 git diff 零。
+- [x] 全量测试命令通过：`pytest tests -q` 零新增红（master 基线对拍 · TC5a 由零代码 diff 构造性成立 —— 分支与 master 代码面逐字节同一）
+- [x] `npx --yes spec-wave task lint-wiki-delta --target .` 通过（wiki_delta 预检 · n/a 恒绿口径 · 30/40 双跑 EXIT=0 PASS）
+- [x] TC1 基线全表：缺口 93 逐档分类落账（36 零审查档 + 39 无结论节 + 13 否定结论词 + 5 缺 SUBJ · 处置全=豁免 · 规约档 §五）· 与实跑输出 1:1 对账。
+- [x] TC2 绿证：`npx spec-wave verify --target .`（重定向取 $?）→ EXIT=0 · VERIFY: PASS · 豁免命中 93 · invalid 0（30/40 双跑）。
+- [x] TC3 反向实证：30 棒临时不合规档单点红→撤档复绿；40 棒藏豁免档→BLOCKED 93→恢复 PASS · 增量门禁预警力完整。
+- [x] TC4 诚实性抽查：93 条目 reason 统一「存量基线豁免 · 未审」· authorized_by 93/93 A1 合规 · 豁免≠审查通过（40 机查 + 抽验 3 档缺口实证）。
+- [x] TC5 反回归：全量 pytest 零新增红（TC5a 构造性恒等 · 30 棒亲跑对拍）· 既有档 git diff 零（done/ 与 reviews/ 133+ 档零触碰）。
 
 ## 非范围
 
@@ -126,3 +126,4 @@
 |------|------|
 | 2026-10-11 | 10 落稿（**00 代笔** · 首棒卡滞 interrupt 留痕 · 授权 m01606 过程文档代签）：实跑真值 EXIT=2/93 缺口三类分账（52+36+5）· D1 倾向 C 混合 · 管道吞码坑钉 D3 · 三闸 pending |
 | 2026-10-11 | B-1 修订（00 · commit fe51492）：E3 节名去编号+TC 勾选化 · E4 失败路径节 · E5 自检结论占位 · E8 wiki_delta 行 · 闸表 4 列化 · N-1 155→154 → R2 PASS-WITH-NITS（559d24a）· N-4 顺手吸收（节去编号+本行补录）· 三闸 00 代录 approved |
+| 2026-10-11 | CLOSE（close/specwave-verify-baseline）：PR #228 MERGED（squash `5204330` · CI 绿）· 归档 done/ · 头部状态/验收勾选/本行回填 · CLOSE 文档 `docs/tasks/close/close_specwave_verify_baseline_20261011.md` + 50 invoke 落盘 · 审查文 R1/R2 按双址规约 §二 过渡期口径复制落址A（`docs/harness/reviews/task_specwave_verify_baseline_audit_R{1,2}_20261011.md` · 址B 原件不动）· README 双侧补登 · 质量钉：verify EXIT=0 PASS + task lint PASS（CLOSE 复跑） |
