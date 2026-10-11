@@ -1,4 +1,6 @@
 """FastAPI application entry point."""
+import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,6 +10,32 @@ from app.config import settings
 from app.ops.hitl import auto_resume
 from app.ops.router import router as ops_router
 from app.ops.tracing import log_tracing_startup
+
+_LOG_FORMAT = "%(asctime)s %(name)s %(levelname)s %(message)s"
+_LOG_LEVEL_NAMES = ("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG")
+
+
+def _init_logging() -> None:
+    """仓级 logging 初始化（import 期 · 幂等）：root 挂唯一 StreamHandler。
+
+    - level 取自 OPS_LOG_LEVEL，缺省/非法一律 INFO（fail-closed · 承 auto_resume env 先例）；
+    - basicConfig 在 root 已有 handler 时天然 no-op（--reload supervisor 子进程重启 /
+      自写启动器 / scripts/evals 自含配置面零 diff）；
+    - 不动 uvicorn logger（uvicorn/uvicorn.access propagate=False 自带 handler ·
+      access log 不吞 · 同一事件不双行）。
+    """
+    raw = os.environ.get("OPS_LOG_LEVEL", "").strip().upper()
+    valid = raw in _LOG_LEVEL_NAMES
+    level = getattr(logging, raw) if valid else logging.INFO
+    logging.basicConfig(level=level, format=_LOG_FORMAT)
+    if raw and not valid:
+        logging.getLogger(__name__).error(
+            "OPS_LOG_LEVEL=%r 无法识别（仅 CRITICAL/ERROR/WARNING/INFO/DEBUG），按 INFO 处理",
+            raw,
+        )
+
+
+_init_logging()
 
 
 @asynccontextmanager
