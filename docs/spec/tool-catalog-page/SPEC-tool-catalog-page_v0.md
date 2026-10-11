@@ -1,7 +1,7 @@
 # SPEC：工具列表页（当前用户可见能力目录 + admin 总表扩充）（tool-catalog-page）（v0）
 
 > **层级**：L1 功能轨（capability 观测面补强 · 承 chat-history-hitl-ux 验收期实证）
-> **状态**：`draft`（10-spec 初稿 · 维护者三裁定已答 Q1/Q2/Q4 · Q3 本帽裁定 · 待 20-spec-audit → HG-SPEC-SIGNOFF 人签）
+> **状态**：`signed`（HG-SPEC-SIGNOFF approved 2026-10-11 · 00 代录 fb85675 · 授权 m01606「授权 00 签收所有过程文档」· 依据 R1 PASS-WITH-NITS · N1–N5 拆 task 携带回填 · 状态行回写随 B1/B2 CLOSE 补登）
 > **立项令（原话留痕）**：维护者 2026-10-09「获取当前用户权限下所有工具的列表，前端出一个新的工具列表页，包含描述、权限、状态等」+ 三裁定原话：「catalog新立，admin是超级管理员可看的总表，且当前有些简略，需要扩充返回内容」（Q1/Q2）·「B2可以先用方案2」（Q4 承前批）
 > **上游实证**：2026-10-09 本地验收期真读——`GET /api/ops/admin/capability/catalog` 当前仅回 `visible_ids` + 计数摘要（`app/ops/admin/capability.py:163-216`），无描述/权限/状态字段；可见集 8 个 tool 全 `side_effect: read`（`manifests/builtin.v1.yaml` · `oa.readonly.v1.yaml`）
 > **下游**：HG-SPEC-SIGNOFF → 拆 task（后端 B1/B2 先 · 前端 F1 专项 SPEC 另立——承 chat-history-hitl-ux Q4 同款分仓纪律）
@@ -204,3 +204,4 @@
 | 日期 | 版本 | 内容 |
 |---|---|---|
 | 2026-10-09 | v0 | 10-spec 初稿：维护者三裁定（catalog 新立 / admin 总表原地扩充 / 分仓承例）+ Q3 本帽裁定（CurrentUser）· 码面锚点真读（catalog 简略出站 · manifest 字段族在册 · 可见性求值完备）· FP-1~FP-6 · R0–R5 回填 · 未签 HG-SPEC-SIGNOFF |
+| 2026-10-11 | v0 | 状态行 draft→signed 回写（HG-SPEC-SIGNOFF approved 已在闸表 · 00 代录 fb85675 · 授权 m01606 · 仅状态行漏回写 · 随 B1/B2 CLOSE 补登 · 零语义改动） |
