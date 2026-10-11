@@ -13,6 +13,8 @@
 | **帽链** | 10-task → 20-task-audit → 三闸 → 30 → 40 → PR → CLOSE |
 | **人工闸** | HG-TASK-DRAFT = **approved** · HG-AUDIT-R1 = **approved**（R1 PASS-WITH-NITS docs/audits/task-review/20261011_repo-logging-init_r1.md · N-1~N-6 照登随 30 回填）· HG-GRAPH-MODULES = **approved**（图谱预判 n/a 照登 · 30 按实判回写义务）——均 2026-10-11 00 代录（授权 m01606）· HG-PILOT-OPSDESK-GLAYER n/a |
 | **图谱预判** | `docs/_tech_graph/l1/01_modules.md` 若有 app/main 或 app 行涉台账表述须回写（30 判） |
+| **wiki_delta** | `n/a` |
+| **wiki_delta_note** | 无 coding_wiki 条目变更；行为真值在本 task + 图谱回写 `docs/_tech_graph/l1/01_modules.md:27`（entry 行 2026-10-11 repo-logging-init 备注） |
 
 ## 1. 背景与实证（锚点逐一亲读 · base cae745e 复核成立）
 
@@ -71,3 +73,4 @@
 |------|------|
 | 2026-10-11 | 10 落稿（**00 代笔** · 首棒长读卡滞 interrupt 留痕 · 授权 m01606 过程文档代签）：SPEC §9 序2 逐字承接 · app/ 零初始化精确口径（55 getLogger · main.py 49 行）· D1-D4 候选开放 · TC1-TC5 · 三闸 pending |
 | 2026-10-11 | **40 自检结论回填：PASS-WITH-NITS**（invoke_20261011_40_verify.md · commits 6bd4cec/268e46c/642a4d0）——TC2 坑位1 反转实证成立（after app.* INFO 钉死格式可见 · before wrapper grep 空）· TC3 compose 零 diff 照登 · TC4 4 请求 4 access 行零双行 · TC5 对拍零新增红归因本 diff（master 基线 4 红逐名吻合 · 同 env A/B 两侧同红 chat×8 环境敏感 · memory×4 瞬态复跑全绿）· OPS_LOG_LEVEL 四组探针+BOGUS live 回退告警实证 · N-40-1 import 窗口裸格式 nit 留后续裁定。偏差：8021→8022（launchd 占用）· 三键全链缺真 LLM key 照登 |
+| 2026-10-11 | 收尾 CI 修复（PR #227 lint-wiki-delta 红）：Harness 元信息补 `wiki_delta`/`wiki_delta_note` 行（字段缺失 · 值 `n/a` 按规约形态 · 真值指针图谱 entry 行回写） |
