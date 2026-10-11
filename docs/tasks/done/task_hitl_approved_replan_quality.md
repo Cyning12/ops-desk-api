@@ -1,9 +1,9 @@
 # Task：hitl-approved-replan-quality（approved 恒 replan + LLM 盲循环 · approved 步骤「自然完成」双重结构性不可达）
 
-> **状态**：draft（10 落稿 · 2026-10-11 · 20 审与三闸 pending）
+> **状态**：done（CLOSED 2026-10-11 · 40 核验 PASS-WITH-NITS：TC3 live 双 run 对照（run1 护栏 `write_replay_guard_skip`/`replay_of` 命中孪生中性化 · run2 suffix v2 注入激活零孪生 · write 执行均=1 · consumed 命中原 sid）· TC4 全量 1769 过/7 红与 master 基线逐枚同名同因零新增 · TC5 台账链 grep 可断 · N1 locked 空注入缺口照登留另立 task · 三闸 approved（维护者授权 m01606/m00255 · 00 代录）· PR [#233](https://github.com/Cyning12/ops-desk-api/pull/233) MERGED（squash `be1469d` · 2026-10-11 · CI 绿）· CLOSE 归档 done/ · 细节见 CLOSE 文档 [`../close/close_hitl_approved_replan_quality_20261011.md`](../close/close_hitl_approved_replan_quality_20261011.md)）
 > **类型**：质量收口（消费回路血统延续 · 功能缺口 · 实证驱动 · T4 CLOSE 钉案② + SPEC §9 序1 立案）
 > **依据**：SPEC `docs/spec/hitl-approval-consumption/SPEC-hitl-approval-consumption_v1.md` §9 序1（2026-10-11 维护者令登记 · 维护者令立项）· T4 CLOSE 钉案② `docs/tasks/close/close_hitl_replan_carry_and_persist_guard_20261010.md` §四.2 · 语义边界登记 `docs/acceptance/20261010_hitl-consumption-loop_local_acceptance.md`
-> **分支**：`task/hitl-approved-replan-quality`（worktree 专用 · base master `cae745e`）
+> **分支**：`task/hitl-approved-replan-quality`（worktree 专用 · base master `cae745e` · 已经 PR #233 squash 合入 master `be1469d` · CLOSE 后 worktree `t-hitl-approved-replan-quality` 与 task/close 分支留 00/维护者清理——本 CLOSE 在该 worktree 内作业无法自清）
 
 ## Harness 元信息
 
@@ -140,7 +140,11 @@ TB1-TB8（保号 14 枚）· TA 组（T1 29+34 枚）· hitl resume/decide 既�
 
 ## 经验总结
 
-（CLOSE 时回填）
+1. **「注入去盲 + 结构护栏」双层是 LLM 行为类红线的最小可信面**：契约 1 钉「write 零重发禁纯提示词约束」——纯 B（记忆注入）LLM 遵守不可机断，C 混合案以 suffix v2 `$preserved_block` 注入承担读步去盲（行为断言+live 对照佐证）、以 `_join_subtasks` 分发层 guard-skip（先于签发 · 不派发不消费 · `replay_of` 台账）承担写步结构红线；两层各配机断面，互不寄生。
+2. **live 双 run 对照是 prompt 注入类改动的行为实证范式**：locked 空（run1 · 注入未激活 · LLM 仍产孪生 → 护栏命中中性化）vs locked 非空（run2 · suffix v2 激活 · 零孪生）构成 off/on 活体对照——比单 run「未见孪生」可信度高一个量级，且顺带 FP-3 反面（approved 步自身正常消费重跑）同框取证。
+3. **注入路径覆盖缺口要在 40 显性照登而非隐含**：N1（locked 空走基础 prompt · preserved_block 不注入 · nodes.py :1172-1173 else 分支）系 live 复跑新发现——契约红线不破（护栏兜底）但去盲面有路径缺口，照登+另立 task 裁定，不硬编「全路径覆盖」。
+4. **验收环境坑位会复发，须按先例处置并照登**：NO_PROXY 含 `[::1]` 致 httpx InvalidURL（验收文档坑位 1 复发 · 剥 no_proxy 后通）；worktree compose 5432/6333 被主仓容器占用 → 复用主仓 healthy 容器零残留——两项均非本 diff 引入，口径先行登记防误判。
+5. **审查文落址A 是归档硬步骤**（序2 教训 → 序3 双址规约 §二）：verify 仅扫 `docs/harness/reviews/`，审查文只落址B（`docs/audits/task-review/`）则 done 档 verify 必红 missing review——本 CLOSE 循规约复制 R1/R2 落址A（档头注来源 · 址B 原件不动）。
 
 **40 自检结论（2026-10-11 · 复核 HEAD 403a0e9）**：**PASS-WITH-NITS**。①diff/契约五条独立核全过（hitl/ 目录零 diff · write 零重发结构性机断 · TB 93 绿）；②TC4 终验：全量 1769 过/7 红与 master 基线逐枚同名同因（环境性）· ruff 55=55 涉改文件 6=6 · capability_acceptance 门禁失败2跳过1 与 master cae745e 完全同形（基线环境性零新增）；③TC3 live 双 run 对照实证：run1 单写步 locked 空→LLM 仍产孪生 :2→**write_replay_guard_skip/replay_of 台账 live 命中**（零重发零孤儿单 · FP-3 对照 approved 步正常消费重跑）；run2 rag+write locked 非空→suffix v2 注入路径激活→**LLM 零孪生** · :1 rag 零重跑 · :2 重跑 exactly once；④TC5 台账链 grep 可断。偏差：N1 locked 空路径 preserved_block 不注入（nodes.py :1172 else 分支 · 护栏兜底红线不破 · 建议另立 task）；N2 prompt 内容级直证不可观测（TC1-b 单测钉死+live 行为对照间接实证）；N3 worktree compose 端口占用复用主仓容器。TC3/TC4/TC5 勾选。详见 invoke_20261011_40_verify.md。
 
@@ -158,3 +162,4 @@ TB1-TB8（保号 14 枚）· TA 组（T1 29+34 枚）· hitl resume/decide 既�
 | 2026-10-11 | v1 | 10 填肉定稿（骨架棒卡滞 interrupt 留痕 · **00 代笔填肉** · 授权 m01606）：锚点亲读复核+漂移校正（真决策点 nodes.py:1759 非旧引 router.py）· D1 三案倾向 C · write 零重发核心红线 · done{completed} 钉案非范围照登（D 块留另立裁定口）· 依赖序2 |
 | 2026-10-11 | v1.1 | 30 自检结论回填 + TC1/TC2 勾选（feat ebe2a01 · 契约五条全过 · TC3/TC5 留 40） |
 | 2026-10-11 | v1.2 | 40 核验回填：PASS-WITH-NITS · TC3/TC4/TC5 勾选 · live 双 run 实证（护栏命中+注入对照）· N1 locked 空注入缺口留另立 task |
+| 2026-10-11 | v1.3 | **CLOSED**（close/hitl-approved-replan-quality）：PR [#233](https://github.com/Cyning12/ops-desk-api/pull/233) MERGED（squash `be1469d` · CI 绿）· 归档 done/（头部状态/分支行/经验总结回填）· CLOSE 文档 `docs/tasks/close/close_hitl_approved_replan_quality_20261011.md` + 50 invoke 落盘 · 审查文 R1/R2 按双址规约 §二 过渡期口径复制落址A（`docs/harness/reviews/task_hitl_approved_replan_quality_audit_R{1,2}_20261011.md` · 址B 原件不动）· README 双侧补登 · 质量钉：verify EXIT=0 PASS + task lint PASS（CLOSE 复跑）· worktree/分支移交 00 清理 |
