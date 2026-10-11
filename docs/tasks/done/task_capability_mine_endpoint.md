@@ -1,6 +1,6 @@
 # Task：capability-mine-endpoint（B1 · 用户态可见能力目录端点 GET /api/ops/capability/mine）
 
-> **状态**：draft（10-task 落稿 · 三闸 pending 待签 · 30 拒开工）
+> **状态**：done（CLOSED 2026-10-11 · 40 核验 PASS（钉死契约八条 diff 复核 + 工程面亲跑基线独立对拍零新增红 + live 冒烟五场景）· 三闸 approved（维护者授权 m01606/m00255 · 00 代录）· PR [#231](https://github.com/Cyning12/ops-desk-api/pull/231) MERGED（squash `a7d748b` · 2026-10-11 · 与 B2 同 PR）· CLOSE 归档 done/ · 细节见 CLOSE 文档 `docs/tasks/close/close_tool_catalog_page_b1b2_20261011.md`）
 > **类型**：新端点（只读观测面 · SPEC tool-catalog-page §2 B1 拆出 · 零执行语义改动）
 > **依据**：`docs/spec/tool-catalog-page/SPEC-tool-catalog-page_v0.md`（HG-SPEC-SIGNOFF approved 2026-10-11 · Q1 维护者裁定「catalog新立」· Q3 本帽裁定 CurrentUser）+ R1 审 `docs/harness/reviews/spec_tool-catalog-page_audit_R1_20261011.md`（PASS-WITH-NITS · N1–N3 本 task 携带回填）
 > **分支**：`task/tool-catalog-page`（既有 · 勿切）
@@ -213,3 +213,4 @@ TC1–TC7 全部 pytest 机断：401 / 九键齐+对拍一致 / ⊆ / 空集 200
 | 2026-10-11 | 10 逐节回填完成：SPEC B1 裁定承接 · N1–N3 回填钉死（锚点 :163-214 · deps :18-115 · roles=frozenset({user.role})）· 钉死契约八条 · TC1–TC7 · 三闸 pending 不代签 · 落点/baseline 两候选开放留 30 |
 | 2026-10-11 | 30 期机读归一（00 裁定 · B2 先行同处置）：闸表 status 单元格归一为纯 approved（去粗体去括注 · 注解移说明列）· 零语义改动——实证根因 spec-wave 解析器不吃粗体+中文括注 status 单元格（30 invoke 记实证） |
 | 2026-10-11 | 40 核验 PASS：契约八条 diff 复核 + 工程面亲跑（基线独立对拍）+ live 冒烟五场景 · invoke_20261011_40_verify.md 落盘 |
+| 2026-10-11 | **CLOSED**：PR #231 squash merge 入 master（`a7d748b` · 2026-10-11 · CI 绿 · 与 B2 同 PR）→ CLOSE 归档 done/；CLOSE 文档 `docs/tasks/close/close_tool_catalog_page_b1b2_20261011.md`（B1+B2 双 task 合一档 · 九节：任务信息/交付清单/核验结论/偏差与 nit/签录/资源清理/维护者验收 checklist 与后续建议/修订记录/附录） |

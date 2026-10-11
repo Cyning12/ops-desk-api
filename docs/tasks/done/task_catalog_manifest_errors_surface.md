@@ -1,6 +1,6 @@
 # Task：catalog-manifest-errors-surface（B2 catalog 故障可见性 · manifest 加载失败从静默到可观测 + hidden 附 visibility_reason）
 
-> **状态**：draft（10 落稿 · 三人工闸 pending · 未代签）
+> **状态**：done（CLOSED 2026-10-11 · 40 核验 PASS（钉死契约七条 diff 复核 + 工程面亲跑基线独立对拍零新增红 + live 冒烟五场景：坏 manifest 点名/visibility_reason 中文映射/runtime 两键回归）· 三闸 approved（维护者授权 m01606/m00255 · 00 代录）· PR [#231](https://github.com/Cyning12/ops-desk-api/pull/231) MERGED（squash `a7d748b` · 2026-10-11 · 与 B1 同 PR）· CLOSE 归档 done/ · 细节见 CLOSE 文档 `docs/tasks/close/close_tool_catalog_page_b1b2_20261011.md`）
 > **类型**：SPEC 拆分实现 task（观测面补强 · 纯只读 · 零执行语义改动）
 > **依据**：`docs/spec/tool-catalog-page/SPEC-tool-catalog-page_v0.md` §2 B2 + §5 FP-3/FP-4 + §6 B2 验收（HG-SPEC-SIGNOFF approved 2026-10-11）· 20 审 R1 PASS-WITH-NITS `docs/harness/reviews/spec_tool-catalog-page_audit_R1_20261011.md`（**N4 携带回填 · 本 task 裁一**）
 > **分支**：`task/tool-catalog-page`（既有分支 · 勿切 · SPEC 默认分支 · 与 B1/B2 兄弟 task 共分支按 00 编排）
@@ -209,3 +209,4 @@ SPEC §2 B2 :78「summary 增 manifest_errors 计数键（或沿用既有 meta �
 | 2026-10-11 | 30 开工前格式归一 + NIT 消化：人工闸表转 4 列 canonical（status 纯值 · 闸真值不变 · fec3abf 在案不动）——原 3 列 + 状态格内嵌说明致 `spec-wave verify` 解析 0 行误报 BLOCKED · NIT-1 契约 4 引「SPEC 纪律 #3/#6」删「/#6」（实为 #3+FP-6）· NIT-2 B1 表锚 :413-435→:409-435（失败域隔离用例实起 :409） |
 | 2026-10-11 | 10 落稿：SPEC §2 B2 + R1 N4 携带回填 · **N4 裁定落点 A（summary 面增 `manifest_errors`/`manifest_error_details` · 弃 B：meta 双消费方爆炸半径）** · 实证锚点六处亲读（:200 故障日志 · :145-147 meta 仅 version+count · __init__.py:110 返回值即弃 · :99 meta 消费方 · visibility.py:126 reason · catalog :163-214）· 钉死契约七条 · TC1–TC5 · 三人工闸 pending（未代签） |
 | 2026-10-11 | 40 核验 PASS：契约七条 diff 复核 + 工程面亲跑（基线独立对拍）+ live 冒烟五场景（坏 manifest 点名 / visibility_reason 中文映射 / runtime 两键回归）· invoke_20261011_40_verify.md 落盘 |
+| 2026-10-11 | **CLOSED**：PR #231 squash merge 入 master（`a7d748b` · 2026-10-11 · CI 绿 · 与 B1 同 PR）→ CLOSE 归档 done/；CLOSE 文档 `docs/tasks/close/close_tool_catalog_page_b1b2_20261011.md`（B1+B2 双 task 合一档 · 九节） |
