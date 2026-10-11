@@ -1,6 +1,6 @@
 # Task：repo-logging-init（仓级 logging 初始化 · 裸 uvicorn 台账可观测性收口）
 
-> **状态**：draft（10 落稿 · 20 审与三闸 pending）
+> **状态**：done（CLOSED 2026-10-11 · 40 核验 PASS-WITH-NITS（TC2 坑位1 反转实证 · TC4 4请求4行零双行 · TC5 master 基线对拍零新增红 · N-40-1 import 窗口裸格式照登）· 三闸 approved（维护者授权 · 00 代录）· PR [#227](https://github.com/Cyning12/ops-desk-api/pull/227) MERGED（squash `e5b5c3d` · 2026-10-11 · CI 绿 · 含 CI 修复两 commit 2d686f0/5e07040）· CLOSE 归档 done/ · 细节见 CLOSE 文档 `docs/tasks/close/close_repo_logging_init_20261011.md`）
 > **类型**：仓级基建（可观测性 · SPEC §9 序2 · 维护者令 2026-10-11 立项）
 > **依据**：`docs/spec/hitl-approval-consumption/SPEC-hitl-approval-consumption_v1.md` §9 序2 · `docs/tasks/close/close_hitl_auto_resume_claim_race_20261010.md` 第九节改进建议 #1 · `docs/acceptance/20261010_hitl-consumption-loop_local_acceptance.md` 操作便签坑位 1（维护者复跑亲撞）
 > **分支**：`task/repo-logging-init`（base = master `cae745e`）
@@ -74,3 +74,4 @@
 | 2026-10-11 | 10 落稿（**00 代笔** · 首棒长读卡滞 interrupt 留痕 · 授权 m01606 过程文档代签）：SPEC §9 序2 逐字承接 · app/ 零初始化精确口径（55 getLogger · main.py 49 行）· D1-D4 候选开放 · TC1-TC5 · 三闸 pending |
 | 2026-10-11 | **40 自检结论回填：PASS-WITH-NITS**（invoke_20261011_40_verify.md · commits 6bd4cec/268e46c/642a4d0）——TC2 坑位1 反转实证成立（after app.* INFO 钉死格式可见 · before wrapper grep 空）· TC3 compose 零 diff 照登 · TC4 4 请求 4 access 行零双行 · TC5 对拍零新增红归因本 diff（master 基线 4 红逐名吻合 · 同 env A/B 两侧同红 chat×8 环境敏感 · memory×4 瞬态复跑全绿）· OPS_LOG_LEVEL 四组探针+BOGUS live 回退告警实证 · N-40-1 import 窗口裸格式 nit 留后续裁定。偏差：8021→8022（launchd 占用）· 三键全链缺真 LLM key 照登 |
 | 2026-10-11 | 收尾 CI 修复（PR #227 lint-wiki-delta 红）：Harness 元信息补 `wiki_delta`/`wiki_delta_note` 行（字段缺失 · 值 `n/a` 按规约形态 · 真值指针图谱 entry 行回写） |
+| 2026-10-11 | **CLOSED**：PR #227 squash merge 入 master（`e5b5c3d` · CI 绿）→ CLOSE 归档 done/；CLOSE 文档 `docs/tasks/close/close_repo_logging_init_20261011.md`（九节：任务信息/交付清单/核验结论/偏差与 nit/签录/资源清理/后续建议/修订记录/附录） |
