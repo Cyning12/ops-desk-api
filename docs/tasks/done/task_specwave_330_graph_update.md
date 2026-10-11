@@ -1,6 +1,6 @@
 # Task：specwave-330-graph-update（spec-wave 3.0.1→3.3.0 升级与 tech_graph 适配 · chore）
 
-> **状态**：done（2026-10-11 · 30 交付当日完成 · 验收 G1-G4 全绿 · 三闸 00 代录 approved（维护者令 m00018「新建任务分支，使用新版本specwave检查tech_graph并更新」+ m00148「补task」）· commit `2029ac0`+`71341cc` · PR [#242](https://github.com/Cyning12/ops-desk-api/pull/242) 已开）
+> **状态**：done（2026-10-11 · 30 交付当日完成 · 验收 G1-G4 全绿 · 三闸 00 代录 approved（维护者令 m00018「新建任务分支，使用新版本specwave检查tech_graph并更新」+ m00148「补task」）· commit `2029ac0`+`71341cc` · PR [#242](https://github.com/Cyning12/ops-desk-api/pull/242) MERGED（squash `92a8526` · 2026-10-11T07:24:44Z · CI 绿）· CLOSE 归档 done/ · 细节见 CLOSE 文档 [`../close/close_specwave_330_graph_update_20261011.md`](../close/close_specwave_330_graph_update_20261011.md)）
 > **类型**：仓级 chore（工具链升级 + 图谱档适配 · 零业务码改动）
 > **分支**：`task/specwave-330-graph-update`（base = master）
 > **补录说明**：本 task 为维护者直接下令的图谱维护作业，30 先行交付后按仓规补录 task 档（m00148）；闸态以本表 + 维护者令为准。
@@ -108,3 +108,4 @@
 |------|------|
 | 2026-10-11 | 10 补录落稿（维护者令 m00018 开工 · m00148「补task」追补 task 档）：30 已交付（commit 2029ac0 · G1-G5 全绿）· 三闸 00 代录 approved · PR [#242](https://github.com/Cyning12/ops-desk-api/pull/242) 已开 |
 | 2026-10-11 | 分支推 origin 并开 PR [#242](https://github.com/Cyning12/ops-desk-api/pull/242)（CI 4 项跑批中） |
+| 2026-10-11 | **CLOSED**（50 close 棒 · 分支 `docs/close-b2-and-specwave330`）：PR [#242](https://github.com/Cyning12/ops-desk-api/pull/242) MERGED（squash `92a8526` · 2026-10-11T07:24:44Z · CI 绿）· 归档 done/ + 状态行 CLOSED 回写 · CLOSE 文档 `docs/tasks/close/close_specwave_330_graph_update_20261011.md`（无 R1 审查文 · 维护者直令兜底照录 · CI 钉版不一致观察点入档）· 分支 `task/specwave-330-graph-update` 移交 00 统一清理 |

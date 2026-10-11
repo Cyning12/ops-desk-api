@@ -1,6 +1,6 @@
 # Task：b2-nit3-admin-items-array（B2 后续：admin catalog items 全字段数组 + NIT-3 meta 键集相等断言补强）
 
-> **状态**：active（20 R1 PASS-WITH-NITS · 三闸 approved · 00 代录 授权 m00106 · 30 可开工）
+> **状态**：done（CLOSED 2026-10-11 · PR [#241](https://github.com/Cyning12/ops-desk-api/pull/241) MERGED（squash `4d2dd22` · 2026-10-11T05:56:25Z · CI 绿）· 交付 commit `11645a6` · 30 验收矩阵全过：TC1–TC6 全绿（pytest 1787 passed/6 failed 六红逐项钉案全环境性 · lint-imports 12 kept 0 broken · graph-compile EXIT=0）· 三闸 approved（00 代录 · 授权 m00106）· R1 PASS-WITH-NITS（nit n-1 由 30 裁定选①：visibility_reason 恒出键 None）· CLOSE 归档 done/ · 细节见 CLOSE 文档 [`../close/close_b2_nit3_admin_items_array_20261011.md`](../close/close_b2_nit3_admin_items_array_20261011.md)）
 > **类型**：SPEC 拆分实现 task（tool-catalog-page §2 B2 显式非范围回收 · 观测面补强 · 纯只读 · 零执行语义改动）+ 测试断言补强小面（NIT-3）
 > **依据**：`docs/spec/tool-catalog-page/SPEC-tool-catalog-page_v0.md` §2 B2（items 数组钉案 :75-78）+ §5 FP-4/FP-5/FP-6 + §6 B2 验收（HG-SPEC-SIGNOFF approved 2026-10-11）· CLOSE 档 `docs/tasks/close/close_tool_catalog_page_b1b2_20261011.md` §7 后续建议第 2/3 条
 > **分支**：`task/b2-nit3-admin-items-array`（worktree `../ops-desk-api-worktrees/t-b2-nit3-admin-items-array` · 自立分支勿切）
@@ -195,7 +195,18 @@ SPEC §2 B2 :75 字段族钉案 + :77 status 三态语义 + CLOSE §7 四条原�
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+**30 自检（2026-10-11 · 交付 commit `11645a6` · 实证全文见 [30 invoke](../../harness/invokes/by-task/b2_nit3_admin_items_array/invoke_20261011_30_implementation.md) · close 棒 50 代录回填 · 授权链 m00106）**：
+
+- [x] 红测先行时序实证：RED（TC1/TC2/TC3 `KeyError: 'items'`）→ GREEN（新测试文件 4 件 + TC5 + 受击面 splittability D2 双用例共 11 件全绿）；TC4 实现前空转绿照实录、实现后咬合；TC5 目标用例基线即绿（NIT-3 属测试加固非行为修复 · 照实录）
+- [x] **nit n-1 裁定（R1 留 30 二选一消歧）**：选 **①visibility_reason 恒出键（非 denied = `None`）**，保 14 键全条目键集相等（与「键集精确」表述自洽 · R1 推荐项）· TC1 恒出键断言钉死
+- [x] TC1 items 全覆盖（长度 == 全量在册数 · 含 disabled/被裁条目）+ 每条目 14 键精确键集相等 + denied 条目 visibility_reason 对拍 `evaluate_visibility` 直出
+- [x] TC2 既有 10 键在场 + 与 `capability_catalog_snapshot` 直出逐键对拍零 diff + 三组 query 组合下 items 覆盖集不变（恒全量在册）
+- [x] TC3 三探针 disabled / denied:department_mismatch / visible 三态同现（register/unregister try/finally 隔离 · disabled 不在 visible_ids 不附 reason）
+- [x] TC4 防泄露：响应体禁 `adapter|local_fn:` + `args_schema|secret_param|PROBE_BASE_URL` 子串（SPEC FP-5）
+- [x] TC5 NIT-3 键集相等：tests/test_capability_manifest.py :334/:359 两处 `set(meta.keys()) == {"version", "capability_manifest_count"}` 在前 + 原逐键值断言存续 · 被测面零 diff
+- [x] TC6 工程面：pytest 全量 1787 passed/6 failed（六红逐项钉案全环境性：三件主仓基线同红 · 三件 worktree 缺 `.env` 缺 SILICONFLOW_API_KEY、带主仓 .env 复跑全绿）· ruff check 三改动文件 All checks passed · lint-imports 12 kept 0 broken · graph-compile EXIT=0（graph.json 噪音已 checkout 还原）· task lint PASS · uv.lock 噪音已还原
+- [x] 关键实现裁定：denied 判定复用包顶 `evaluate_visibility` hidden 条目（不直导 visibility 子模块 · 绕 admin-outbound forbidden 契约 · 码+文本一体单源）；disabled 优先判定承 registry._match_filter 首判语义（投影层）
+- [x] 遗留照登：F811×4（tests/test_capability_manifest.py:468/:476/:554/:581 被 :523/:531/:597/:624 重定义 · 分支基线既有未修）· ruff format 两文件分支基线漂移（hunk 全落本棒未触既有行 · 主仓锁版 ruff 0.15.21 基线同挂 · 遵「勿当回归修」未修）
 
 ## 修订记录
 
@@ -203,3 +214,4 @@ SPEC §2 B2 :75 字段族钉案 + :77 status 三态语义 + CLOSE §7 四条原�
 |------|------|
 | 2026-10-11 | 10 落稿（10-task 棒 · worktree `t-b2-nit3-admin-items-array` · 分支 `task/b2-nit3-admin-items-array` · base master 286d825）：交接档 §2.2 第 4 项立项 · CLOSE §7 后续建议四条照录（第 2/3 条入范围 · 第 1/4 条入非范围）· 实证锚点七处亲读（admin/capability.py:164-219 · registry.py:85-91/:120-121 · visibility.py:38-151 · types.py:77-130 · manifest.py:102-105/:150-152 · capability_mine.py:35-51 · test_capability_manifest.py:331/:354）· **R2 裁定 items 数据源 S1 全量在册（disabled 三态唯一可达路径）** · 钉死契约七条 · TC1–TC6 · 三人工闸 pending（未代签） |
 | 2026-10-11 | 三闸 approved（**00 代录 · 授权 m00106**）：HG-TASK-DRAFT · HG-AUDIT-R1（R1 PASS-WITH-NITS · 审查文址A 在案 · nit n-1 留 30 二选一消歧）· HG-GRAPH-MODULES（n/a 复核通过 · 条件回写义务在案）→ 30 解锁 |
+| 2026-10-11 | 30 自检结论回填 + **CLOSED**（50 close 棒 · 分支 `docs/close-b2-and-specwave330` · 授权链 m00106）：W3 占位符回填（实证承 30 invoke 验收矩阵 · nit n-1 裁定选① visibility_reason 恒出键 None · TC1 恒出键断言钉死）· PR [#241](https://github.com/Cyning12/ops-desk-api/pull/241) MERGED（squash `4d2dd22` · CI 绿）· 归档 done/ + 状态行 CLOSED 回写 · CLOSE 文档 `docs/tasks/close/close_b2_nit3_admin_items_array_20261011.md` · R1 审查文址B 复制件 `docs/audits/task-review/20261011_b2-nit3-admin-items-array_r1.md` 随本 CLOSE 落（址A 原件不动）· worktree `t-b2-nit3-admin-items-array` 与分支 `task/b2-nit3-admin-items-array` 移交 00 统一清理 |
