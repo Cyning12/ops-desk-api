@@ -52,7 +52,7 @@ spec-wave 仓级 verify 的审查门禁消费面 `findLatestReview` 只扫描 `d
 
 - 上游源码 `src/checks/review-gates.ts:92-114`（Cyning12/SpecWave @ `fad4694`）：`findLatestReview(target, taskFile)`；**:96** 行 `const dirs = [path.join(target, 'docs/harness/reviews'), path.join(target, 'reviews')]` ——扫描面写死两址，址B 不在内；**:99** 行命名 RE `/^(task_.+?)_audit_R(\d+)_.*\.md$/i`；**:116-119** `findReview` 为同一实现源的布尔投影（status / dry-run / verify 消费）。
 - 同文件 **:46** 行：spec 审查扫描（`spec_reviews_retention`）同构双址写死——上游根治须一并评估。
-- 本仓安装镜像（编译产物 · 行号与源码对齐）：`node_modules/spec-wave@3.0.1/lib/checks/review-gates.js:89-114`。
+- 本仓安装镜像（**旁证照录** · 编译产物 · 真值以上游源码锚点为准）：`node_modules/spec-wave/lib/checks/review-gates.js:89-111`（编译行号较源码偏移 -3~-6：源码 :92/:96 → 编译 :89/:90 · 2026-10-11 30 棒实证）。
 - 址B 命名口径 `YYYYMMDD_<slug>_r<n>.md`（CONVENTION §二表）与址A `task_<slug>_audit_R<n>_*.md` **不同构**：无 `task_` 前缀、日期前缀、小写 `_r<n>`——上游支持须同时扩扫描目录 + 识别第二命名口径（方案留 R2 裁定）。
 - 本仓钉版三处（收口 bump 点）：`scripts/graph-compile.sh:28`（`GRAPH_CLI=spec-wave@3.0.1`）· `package.json:6`（`"spec-wave": "3.0.1"`）· `.github/workflows/lint-wiki-delta.yml:35`（CI npx 钉版）。钉版背景：3.2.0 `implementedBy` object schema 收紧曾断 CI（交接档 §4-4），bump 须带实证。
 
@@ -90,7 +90,7 @@ spec-wave 仓级 verify 的审查门禁消费面 `findLatestReview` 只扫描 `d
 ## 验收标准
 
 - [ ] `pytest tests -q` 零新增红（master 基线对拍 · 本仓零业务码构造性成立 + 亲跑留痕）
-- [ ] `npx --yes spec-wave task lint-wiki-delta --target .` 通过（wiki_delta 预检 · n/a 恒绿口径）
+- [ ] `npx --yes spec-wave@3.0.1 task lint-wiki-delta --target .` 通过（wiki_delta 预检 · n/a 恒绿口径 · 钉版与 `.github/workflows/lint-wiki-delta.yml:35` CI 口径一致）
 - [ ] 上游 issue 开立（URL 落本 task 实现备忘 + invoke）
 - [ ] 上游 PR 合入并发版（含址B 扫描 + 址B 命名口径单测 · 版本号落本 task）
 - [ ] 收口实证：钉版三处 bump 后，址B 单落审查文（不落址A）`npx spec-wave verify --target . > /tmp/verify_closeout.log 2>&1; echo $?` → EXIT=0 PASS（反向实证：bump 前同档单落址B 必红 · 红绿对照留痕）
@@ -109,10 +109,10 @@ spec-wave 仓级 verify 的审查门禁消费面 `findLatestReview` 只扫描 `d
 |----|------|-----------|
 | R0 | 已填（10 帽 · 交接档/规约档/锚点真读） | no |
 | R1 | 已填（10 帽 · 上游源码实证） | no |
-| R2 | 待填（方案对比 · 见槽内种子） | no |
-| R3 | 待填（边界/测试） | no |
-| R4 | 待填（测试与 PR 策略） | no |
-| R5 | 待填（图谱增量 + 关账判断） | no |
+| R2 | 已填（30 · 裁定甲：第三址+第二 RE · 乙否面大 · 丙否违零挪零改 · 跨址合并沿用最高 R 轮语义） | no |
+| R3 | 已填（30 · 址B 不存在零噪音/stripVer/normalizeSlug 归一 · spec 面不扩登记 follow-up · 单测 +4） | no |
+| R4 | 已填（30 · 上游 PR #36 红绿对照在案 · 钉版未发版前不动 · bump 单独 commit） | no |
+| R5 | 已填（30 · graph_change_layer=none 维持 · 收口待上游发版 · task 保持 active 不提前 CLOSE） | no |
 
 ### R0 · 读 task / 交接档 / 规约档
 
@@ -142,10 +142,13 @@ src/checks/review-gates.ts:96 扫描面写死 docs/harness/reviews + reviews 两
 **回填区：**
 
 ```text
-（待填 · 种子）甲：上游加第三址 + 第二命名 RE（最小面 · 与址B 现档直接兼容）；
-乙：上游开可配置扫描目录/命名（通解 · 面大）；
-丙：上游钉统一命名口径、址B 改命名迁档（违存量零挪零改契约 · 倾向否）。
-须含：址A/址B 同名冲突取舍（按最高 R 轮取最新的既有语义跨址合并是否成立）。
+（30 回填 · 2026-10-11）裁定【甲】：上游加第三址 docs/audits/task-review/ + 第二命名 RE
+^\d{8}_(.+?)_r(\d+)\.md$（最小面 · 与址B 9/9 现档命名直接兼容 · 零迁移零配置）。
+乙（可配置扫描面）否：通解面大 · 超最小根治诉求 · 配置面本身是新维护债，留日后需要再议。
+丙（统一命名迁址B 档）否：违 CONVENTION「存量零挪零改」钉死契约（址B 9 档须改名迁移 · 不可接受）。
+同名冲突取舍：findLatestReview 既有语义为「最高 R 轮取最新 · 同轮按文件名序」——跨址扫描天然合并，
+同一循环内比较即成立，无需新增仲裁规则；命名口径按址绑定不串址（址A 目录不认址B 命名 · 反之亦然），
+封堵「址A 式命名落址B 目录取巧命中」的口径漂移。裁定已落上游 issue #35 与 PR #36 实现。
 ```
 
 ### R3 · 边界 / 测试
@@ -153,9 +156,15 @@ src/checks/review-gates.ts:96 扫描面写死 docs/harness/reviews + reviews 两
 **回填区：**
 
 ```text
-（待填 · 种子）址B 目录不存在时零噪音（existsSync continue 同址A 口径）；slug 去 _v<n> 后缀
-对址B 命名同样生效；spec 扫描面（review-gates.ts:46）是否一并扩址留裁定；
-上游单测：址B 命中/址A+址B 双命中取最高 R/命名口径回归。
+（30 回填 · 2026-10-11）边界实证：
+· 址B 目录不存在 → existsSync continue 零噪音（同址A 口径 · 既有全部测试保持绿实证）
+· stripVer(_v<n>) 对址B 命名同样生效（task_vr_suff_v3.md ↔ 址B vr-suff_r1 单测钉死）
+· 址B slug 为 dash 形 vs task slug underscore 形 → normalizeSlug 归一 + 去 task_ 前缀
+  （cli-shared.ts:334 normalizeSlug 既有导出复用 · 零新工具函数）
+· spec 扫描面（review-gates.ts:46 findSpecReview）裁定【不扩】：址B 目录语义为 task-review ·
+  spec 审查无址B 落档实证 · 避免扩大面；follow-up 已登记 issue #35 锚点节
+上游单测 +4（test/cli-verify-review.test.ts）：址B 单落 PASS / 址A 式命名落址B 不认（反向钉死）/
+跨址合并取最高 R / _v<n> 后缀剥离——红绿对照在案（RED 3 红 → GREEN 12/12 · 全量 988/989 pass 0 fail）。
 ```
 
 ### R4 · 测试与 PR 策略
@@ -163,8 +172,13 @@ src/checks/review-gates.ts:96 扫描面写死 docs/harness/reviews + reviews 两
 **回填区：**
 
 ```text
-（待填 · 种子）上游 PR 带上游 test/ 用例；本仓收口红绿对照（bump 前址B 单落必红 →
-bump 后必绿）；钉版 bump 单独 commit 便于回退。
+（30 回填 · 2026-10-11）已执行：上游 PR Cyning12/SpecWave#36（分支 feat/review-gates-dual-address ·
+commit d087a4d · base origin/main fad4694 · 独立 worktree 作业未动上游仓当前 checkout 分支
+task/specwave-3-3-graph-ast）· PR 含 test/ 用例 +4 与红绿对照证据 · typecheck 干净 · 全量 0 fail。
+上游仓作业纪律履行：commit 前缀 feat(review-gates) 循上游惯例 · push 前核 remote/权限
+（gh 已认证 Cyning12 · repo scope）· harness/task/invoke 档未进 PR（仅 src+test 两档）。
+本仓侧：钉版三处在上游 PR 合入并发版前【不动】（失败路径第 4 行钉死）；bump 时单独 commit 便于回退；
+收口红绿对照（bump 前址B 单落必红 → bump 后必绿）与 CONVENTION 修订为收口动作 · 条件已在本 task 定义。
 ```
 
 ### R5 · 图谱增量 + 关账判断
@@ -172,8 +186,12 @@ bump 后必绿）；钉版 bump 单独 commit 便于回退。
 **回填区：**
 
 ```text
-（待填 · 种子）graph_change_layer=none 预判：收口仅钉版 bump + 规约档修订，不触
-docs/_tech_graph/ 模块语义；若收口形态偏离（如需脚本面改动）回 10 修订。
+（30 回填 · 2026-10-11）graph_change_layer=none 维持成立：本期实际改动面=task 文件回填
+（思考轮/NIT/实现备忘）+ 上游仓 src/test 两档 · 本仓零 app/ 零 _tech_graph 零脚本面。
+关账判断：验收标准中「上游 PR 合入并发版」及其后三项收口条件（钉版 bump/红绿实证/CONVENTION 修订）
+依赖上游维护者评审与发版决策（非范围钉死）——本期交付=上游 issue #35 + PR #36 + 收口条件定义 +
+本仓 NIT 回填；上游发版后收口动作循本 task 验收节逐条执行 · task 保持 active 不提前 CLOSE
+（提前解除双落纪律 = 失败路径第 4 行误报面复现 · 钉死禁止）。
 ```
 
 ---
@@ -192,11 +210,11 @@ docs/_tech_graph/ 模块语义；若收口形态偏离（如需脚本面改动�
 
 | 项 | 状态 | 备注 |
 |----|------|------|
-| 上游 issue | ⏳ | URL 回填 |
-| 上游 PR / 版本 | ⏳ | PR 号 + 发版版本号回填 |
-| 本仓钉版 bump | ⏳ | 三处 · 单独 commit |
-| CONVENTION 修订 | ⏳ | 收口口径 |
-| 收口红绿实证 | ⏳ | /tmp 日志留痕 |
+| 上游 issue | ✅ | https://github.com/Cyning12/SpecWave/issues/35（锚点 + 误报实证两起 + 期望行为 + R2 裁定留痕） |
+| 上游 PR / 版本 | 🔵 已开待合 | PR https://github.com/Cyning12/SpecWave/pull/36（feat/review-gates-dual-address @ d087a4d · 红绿对照+全量 0 fail）· 发版版本号待上游维护者 |
+| 本仓钉版 bump | ⏳ 待上游发版 | 三处（scripts/graph-compile.sh:28 · package.json:6 · .github/workflows/lint-wiki-delta.yml:35）· 单独 commit · 未发版不动 |
+| CONVENTION 修订 | ⏳ 待收口 | 收口条件 3（过渡口径转收口口径 · 解除双址复制强制） |
+| 收口红绿实证 | ⏳ 待收口 | bump 前址B 单落必红 → bump 后必绿 · /tmp 日志留痕 |
 
 ---
 
@@ -211,7 +229,14 @@ docs/_tech_graph/ 模块语义；若收口形态偏离（如需脚本面改动�
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+（30 回填 · 2026-10-11）本期交付达成：GATE_VERIFY EXIT=0 PASS（三闸 approved 机读复核 ·
+/tmp/verify30_verify_upstream_dual_address.log）→ 上游 issue #35 开立 → 上游 PR #36 红绿对照交付
+（RED 3 红实证误报面 → GREEN 12/12 + 全量 988/989 pass 0 fail + typecheck 干净）→ R2–R5 裁定回填 +
+R1 NIT×3 回填（镜像路径正确写法+偏移注 · 验收命令钉 @3.0.1 · 镜像行弱化旁证）。
+收口三条件（钉版 bump/红绿实证/CONVENTION 修订）依赖上游发版 · 未发版不动钉版（失败路径钉死）。
+偏离：无范围扩缩；上游仓作业用独立 worktree（dsh-coding-kit-wt-review-dual-address）替代
+「checkout 内另起分支」——因上游仓当前 checkout 分支有他棒未提交脏态，worktree 更严格满足
+「勿动其当前 checkout 分支」纪律（intent 一致 · 隔离更强）。遗留：上游评审/发版后收口。
 
 ---
 
@@ -233,3 +258,4 @@ docs/_tech_graph/ 模块语义；若收口形态偏离（如需脚本面改动�
 |------|------|
 | 2026-10-11 | 10 落稿（task/verify-upstream-dual-address worktree）：交接档 §2.2-3 立项 + CONVENTION v1 全文真读；上游源码锚点实证（Cyning12/SpecWave @ fad4694 · review-gates.ts:92-119/:46）；址B 命名不同构钉为 R2 种子；钉版三处收口点落锚；三闸 pending + HG-GRAPH-MODULES（none 按实判） |
 | 2026-10-11 | 三闸 approved（**00 代录 · 授权 m00106**）：HG-TASK-DRAFT · HG-AUDIT-R1（R1 PASS-WITH-NITS · 审查文址A 在案 · NIT×3 随 30 回填）· HG-GRAPH-MODULES（none 复核通过）→ 30 解锁 |
+| 2026-10-11 | 30 执行：GATE_VERIFY PASS → 上游 issue [#35](https://github.com/Cyning12/SpecWave/issues/35) + PR [#36](https://github.com/Cyning12/SpecWave/pull/36)（feat/review-gates-dual-address @ d087a4d · 址B 扫描+命名口径 · 单测 +4 红绿对照 · 全量 988/989 pass 0 fail）→ R2–R5 裁定回填（甲案 · spec 面不扩）· R1 NIT×3 回填（镜像路径/偏移注 · 验收钉 @3.0.1 · 镜像弱化旁证）· 收口三条件待上游发版 · 钉版不动 |
