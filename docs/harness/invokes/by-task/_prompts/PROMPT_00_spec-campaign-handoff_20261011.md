@@ -32,6 +32,8 @@
 
 ### 2.1 维护者决策点（阻塞下列线 · 须维护者答）
 
+> **2026-10-11 更新（维护者 m00026 · 00 代录）**：web Q1-Q4 已裁（SPEC-web-integration §7 v0.2：正本留 web 仓 · B1/B2 已合 T-W3 解锁 · admin 面另立 · specwave 改 3.1.0/tenant_context_chat 暂缓）· B 面 Q1-Q5 已裁（SPEC-dialogue-full-view §5 v0.1 · worktree commit 76039d2：D1=C 双格式 · D3=B topology 端点 · B-F1 另立确认 · 本期仅本人 run）→ **T-W1~W3、B-E1/B-E2/B-F1 解锁可立项**；A/B 面验收 checklist 与终局 §5 SPEC-C 仍待维护者。
+
 | 决策点 | 所属 | 影响 |
 |---|---|---|
 | web SPEC Q1-Q4 | docs/spec/web-integration/SPEC-web-integration_v0.md | 解锁 T-W1~W4 拆 task |
