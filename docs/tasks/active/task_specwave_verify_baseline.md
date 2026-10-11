@@ -1,6 +1,6 @@
 # Task：specwave-verify-baseline（仓级 verify 缺口基线收口 · chore）
 
-> **状态**：draft（10 落稿 · 20 审与三闸 pending）
+> **状态**：40 复核 PASS（2026-10-11 · 可进 PR 队列 · 合并须 HG-GRAPH-MODULES 闸口+CI 绿）
 > **类型**：仓级 chore（文档合规 · SPEC §9 序3 · 维护者令 2026-10-11 立项）
 > **依据**：`docs/spec/hitl-approval-consumption/SPEC-hitl-approval-consumption_v1.md` §9 序3（仓级 verify EXIT=2 BLOCKED 92 缺口 · 实跑复核 93）· T1 40 钉案③
 > **分支**：`task/specwave-verify-baseline`（base = master `cae745e`）
@@ -107,7 +107,16 @@
 - [x] TC4 诚实性：豁免档 reason 统一「存量基线豁免 · 未审」· 「未审」语义钉于规约档 §三.2（未在址A落可机读通过审查档）· 豁免≠审查通过。
 - [x] TC5 反回归：全量 pytest 零新增红 + 既有档 git diff 零（diff 窗仅新增 3 档：豁免 yaml / 规约档 / 本 task 自检回填 · done/ 与 reviews/ 133 档零触碰）。
 
-（40 复核结论留 40 帽回填）
+**40 复核（2026-10-11 · 40-verify 棒 · 独立复核不轻信自述）**：**PASS · 可进 PR 队列**
+
+- [x] V1 commit 链/diff 面：d704c35→72ab71f→db6aa53 三 commit diff=4 档（豁免 yaml/规约档/30 invoke/task 自检）· 全分支对 master cae745e 仅 9 档全 docs/ · done/ 与 reviews/ 零触碰 —— 最小面成立。
+- [x] V2 verify 重跑：`npx --yes spec-wave@3.2.0 verify --target .` 重定向取 $? → EXIT=0 · VERIFY: PASS · 豁免命中 93 · invalid 0；抽验 3 档（inform-graph-backfill-w6-modules-trim 零审查档 · capability-gateway-p3/so-schema-hygiene 无结论节）缺口皆实证。
+- [x] V3 TC3 反向实证 40 亲跑：藏豁免档 → EXIT=2 BLOCKED 缺口 93 → 恢复 → EXIT=0 PASS · 工作区零残留 —— 增量门禁预警力完整。
+- [x] V4 TC4 诚实性：93 条目 reason 统一「存量基线豁免 · 未审」· authorized_by 93/93 A1 合规 · 规约档 §五 93 明细行对账。
+- [x] V5 TC2/TC5：lint-wiki-delta EXIT=0 PASS 复跑 · TC5b 既有档零 diff · TC5a 由零代码 diff 构造性成立（分支与 master 代码面逐字节同一）。
+- Nit 照登：30 invoke 思考轮 8 残留「（回填中）」占位语 · 不阻 PASS。
+
+复核 commit 列：d704c35（豁免 yaml）· 72ab71f（双址规约+task 自检）· db6aa53（30 invoke）· 40 留痕 6092bcf（骨架）+ 本回填 commit（见 git log）。明细：docs/harness/invokes/by-task/specwave-verify-baseline/invoke_20261011_40_verify.md
 
 ---
 
