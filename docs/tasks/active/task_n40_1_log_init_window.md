@@ -165,7 +165,8 @@ repo-logging-init 40 核验 N-40-1：`app/main.py:9-12` app 包 import 链先于
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+- **30（2026-10-11）**：裁定**方向 A**（main.py 行序上移 · 根因即行序 · 最小面 · B 的复用价值当前无消费者反触发 G-L2 义务）——红测先行 RED 5 红实证（窗口 WARNING 裸格式 / db INFO 被吞）→ GREEN（tests/test_log_init_window.py 7 例 + 上游 test_logging_init.py 3 例全绿）；TC4 全绿（pytest 对拍零新增归因红 4 环境性钉案 · ruff 触及路径净 · graph-compile EXIT=0 · lint-wiki-delta@3.0.1 PASS）；capability 发射点字面零 diff；图谱 n/a 照实成立（A 零新模块）。详见 docs/harness/invokes/by-task/n40-1-log-init-window/invoke_20261011_30_implementation.md。R1 NIT×4 已回填闭合（N-1 四处计全断言化 · N-2 门控面登记 · N-3 钉版执行 · N-4 memory 口径）。
+- （40 回填）
 
 ---
 
@@ -187,3 +188,4 @@ repo-logging-init 40 核验 N-40-1：`app/main.py:9-12` app 包 import 链先于
 |------|------|
 | 2026-10-11 | 10 落稿（worktree `t-n40-1-log-init-window` · base master `286d825`）：交接档 §2.2 序2 逐字承接 · CLOSE N-40-1 nit 原文与 §七 修法候选照登 · 传递链亲读钉实（main.py:9-12 先于 :38 · capability/__init__.py:112 模块级装配为窗口发射源 · persistence.py:48/:65-68 两态后果）· 候选 A/B 开放不锁死（C 否决入非范围）· 钉死契约 7 · TC1–TC4（TC1 窗口格式反转红测先行为核心）· 图谱预判 n/a（方向 B 条件触发 G-L2 义务）· 三闸 pending 不代签 |
 | 2026-10-11 | 三闸 approved（**00 代录 · 授权 m00106**）：HG-TASK-DRAFT · HG-AUDIT-R1（R1 PASS-WITH-NITS · 审查文址A 在案 · NIT×4 随 30 回填）· HG-GRAPH-MODULES（n/a 复核通过 · 方向 B 条件义务在案）→ 30 解锁 |
+| 2026-10-11 | 30 实施：方向 A 裁定落地（app/main.py +10/-5 行序上移 · capability 发射点零 diff · 图谱 n/a 照实）· 红测先行 RED(5)→GREEN(7+3) · TC1–TC4 全绿（pytest 对拍零新增归因红 · ruff 触及路径净 · graph-compile EXIT=0 · lint-wiki-delta@3.0.1 PASS）· R1 NIT×4 回填闭合 · 30 invoke 落盘 |
