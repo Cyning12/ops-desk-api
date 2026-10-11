@@ -1,6 +1,6 @@
 # Task：b2-nit3-admin-items-array（B2 后续：admin catalog items 全字段数组 + NIT-3 meta 键集相等断言补强）
 
-> **状态**：draft
+> **状态**：active（20 R1 PASS-WITH-NITS · 三闸 approved · 00 代录 授权 m00106 · 30 可开工）
 > **类型**：SPEC 拆分实现 task（tool-catalog-page §2 B2 显式非范围回收 · 观测面补强 · 纯只读 · 零执行语义改动）+ 测试断言补强小面（NIT-3）
 > **依据**：`docs/spec/tool-catalog-page/SPEC-tool-catalog-page_v0.md` §2 B2（items 数组钉案 :75-78）+ §5 FP-4/FP-5/FP-6 + §6 B2 验收（HG-SPEC-SIGNOFF approved 2026-10-11）· CLOSE 档 `docs/tasks/close/close_tool_catalog_page_b1b2_20261011.md` §7 后续建议第 2/3 条
 > **分支**：`task/b2-nit3-admin-items-array`（worktree `../ops-desk-api-worktrees/t-b2-nit3-admin-items-array` · 自立分支勿切）
@@ -33,9 +33,9 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 初稿人扫 |
-| HG-AUDIT-R1 | pending | 30 | 20-task-audit R1 落盘后人签 |
-| HG-GRAPH-MODULES | pending | 30 | 按实判：预判 n/a · 30 实证触发行备注则随交付回填代录 |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | 初稿人扫 · 00 代录（授权 m00106 · 2026-10-11） |
+| HG-AUDIT-R1 | approved | 30 | R1 PASS-WITH-NITS（docs/harness/reviews/task_b2_nit3_admin_items_array_audit_R1_20261011.md · nit n-1 契约5 键集/缺省张力留 30 二选一消歧）· 00 代录（授权 m00106） |
+| HG-GRAPH-MODULES | approved | 30 | 预判 n/a（modules.md :34/:38 既有行备注覆盖 · R1 亲核属实）· 30 实证触发则回填代录义务在案 · 00 代录（授权 m00106） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 无外部试点面 |
 
 ## 背景与目标
@@ -202,3 +202,4 @@ SPEC §2 B2 :75 字段族钉案 + :77 status 三态语义 + CLOSE §7 四条原�
 | 日期 | 说明 |
 |------|------|
 | 2026-10-11 | 10 落稿（10-task 棒 · worktree `t-b2-nit3-admin-items-array` · 分支 `task/b2-nit3-admin-items-array` · base master 286d825）：交接档 §2.2 第 4 项立项 · CLOSE §7 后续建议四条照录（第 2/3 条入范围 · 第 1/4 条入非范围）· 实证锚点七处亲读（admin/capability.py:164-219 · registry.py:85-91/:120-121 · visibility.py:38-151 · types.py:77-130 · manifest.py:102-105/:150-152 · capability_mine.py:35-51 · test_capability_manifest.py:331/:354）· **R2 裁定 items 数据源 S1 全量在册（disabled 三态唯一可达路径）** · 钉死契约七条 · TC1–TC6 · 三人工闸 pending（未代签） |
+| 2026-10-11 | 三闸 approved（**00 代录 · 授权 m00106**）：HG-TASK-DRAFT · HG-AUDIT-R1（R1 PASS-WITH-NITS · 审查文址A 在案 · nit n-1 留 30 二选一消歧）· HG-GRAPH-MODULES（n/a 复核通过 · 条件回写义务在案）→ 30 解锁 |
