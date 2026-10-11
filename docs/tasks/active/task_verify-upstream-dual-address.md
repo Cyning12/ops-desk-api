@@ -1,6 +1,6 @@
 # Task：verify-upstream-dual-address（spec-wave findLatestReview 支持址B `docs/audits/task-review/` · 上游根治 + 本仓双址纪律收口）
 
-> **状态**：`draft`  
+> **状态**：`active`（20 R1 PASS-WITH-NITS · 三闸 approved · 00 代录 授权 m00106 · 30 可开工）  
 > **类型**：**upstream-chore**（上游 issue/PR 根治 + 本仓规约收口条件 · 本仓零 `app/` 改动 · `graph_change_layer=none`）  
 > **依据**：`docs/harness/invokes/by-task/_prompts/PROMPT_00_spec-campaign-handoff_20261011.md` §2.2 第 3 项 + §4-3（机读纪律坑）· `docs/harness/CONVENTION_review_gate_dual_address_v1_zh.md`（双址规约 v1 · 过渡方案已钉）  
 > **分支**：`task/verify-upstream-dual-address`（base = master `286d825` · worktree `../ops-desk-api-worktrees/t-verify-upstream-dual-address`）  
@@ -35,9 +35,9 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 初稿人扫（含思考轮 R0/R1 预置内容核真） |
-| HG-AUDIT-R1 | pending | 30 | 20 R1 审查文落址A后人签（双址规约过渡期口径：审查文必须落 `docs/harness/reviews/`） |
-| HG-GRAPH-MODULES | pending | 30 | `graph_change_layer=none` 按实判复核（零图谱面 · 人签「在册·无图谱变更」） |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | 初稿人扫（R0/R1 预置内容 R1 已核真）· 00 代录（授权 m00106 · 2026-10-11） |
+| HG-AUDIT-R1 | approved | 30 | R1 PASS-WITH-NITS · 审查文址A 在案（docs/harness/reviews/task_verify-upstream-dual-address_audit_R1_20261011.md · NIT×3 非阻塞随 30 回填）· 00 代录（授权 m00106） |
+| HG-GRAPH-MODULES | approved | 30 | `graph_change_layer=none` 按实判复核通过（零图谱面 · R1 实证 done/ 70 处先例）· 00 代录（授权 m00106） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 非物理分层试点 task |
 
 ---
@@ -232,3 +232,4 @@ docs/_tech_graph/ 模块语义；若收口形态偏离（如需脚本面改动�
 | 日期 | 说明 |
 |------|------|
 | 2026-10-11 | 10 落稿（task/verify-upstream-dual-address worktree）：交接档 §2.2-3 立项 + CONVENTION v1 全文真读；上游源码锚点实证（Cyning12/SpecWave @ fad4694 · review-gates.ts:92-119/:46）；址B 命名不同构钉为 R2 种子；钉版三处收口点落锚；三闸 pending + HG-GRAPH-MODULES（none 按实判） |
+| 2026-10-11 | 三闸 approved（**00 代录 · 授权 m00106**）：HG-TASK-DRAFT · HG-AUDIT-R1（R1 PASS-WITH-NITS · 审查文址A 在案 · NIT×3 随 30 回填）· HG-GRAPH-MODULES（none 复核通过）→ 30 解锁 |
