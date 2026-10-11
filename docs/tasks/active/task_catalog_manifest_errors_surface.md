@@ -195,9 +195,17 @@ SPEC §2 B2 :78「summary 增 manifest_errors 计数键（或沿用既有 meta �
 4. **三闸 pending 未代签**；freeze 零动；graph 预判 n/a 照实写（条件回写义务在案）。
 5. **lint 形态**：对齐 task_hitl_auto_resume_claim_race 先例（元信息表/人工闸表/钉死契约/TC 组/思考轮控制表头）。
 
+### 核验结论（40 核验者）
+
+1. **钉死契约七条逐条复核全 ✅**（diff fec3abf...HEAD 对拍 + live 双证）：catalog 顶层增两键（details 按 path 排序）· 既有键零 diff（live /runtime meta 仍两键回归实证）· 错误态留存含首次失败+修复 pop（load/reload 统一）· hidden 增 visibility_reason（词表四码精确 · 未知码原样兜底）· .importlinter 补边无环 · 零 schema/迁移/env。
+2. **工程面 40 亲跑**：全量 pytest 1653 passed/1 skipped/4 failed（基线 /tmp/base-fec3abf 逐枚同败 → 零新增红独立实证）· ruff 2 errors 与基线同码区 · lint-imports 12 kept 0 broken · graph-compile EXIT=0（钉版 3.0.1 · 3.2.0 漂移照录）· spec-wave verify/task lint 双 PASS。
+3. **live 冒烟五场景全绿**：坏 manifest 注入 manifest_errors=1 精确点名 path · visibility_reason 中文映射真实出站（部门不在该能力的可见范围内）· runtime 两键回归 · viewer 403/匿名 401 · B1 共存零互扰。
+4. **结论 PASS**，全文见 invoke_20261011_40_verify.md。
+
 ## 修订
 
 | 日期 | 说明 |
 |------|------|
 | 2026-10-11 | 30 开工前格式归一 + NIT 消化：人工闸表转 4 列 canonical（status 纯值 · 闸真值不变 · fec3abf 在案不动）——原 3 列 + 状态格内嵌说明致 `spec-wave verify` 解析 0 行误报 BLOCKED · NIT-1 契约 4 引「SPEC 纪律 #3/#6」删「/#6」（实为 #3+FP-6）· NIT-2 B1 表锚 :413-435→:409-435（失败域隔离用例实起 :409） |
 | 2026-10-11 | 10 落稿：SPEC §2 B2 + R1 N4 携带回填 · **N4 裁定落点 A（summary 面增 `manifest_errors`/`manifest_error_details` · 弃 B：meta 双消费方爆炸半径）** · 实证锚点六处亲读（:200 故障日志 · :145-147 meta 仅 version+count · __init__.py:110 返回值即弃 · :99 meta 消费方 · visibility.py:126 reason · catalog :163-214）· 钉死契约七条 · TC1–TC5 · 三人工闸 pending（未代签） |
+| 2026-10-11 | 40 核验 PASS：契约七条 diff 复核 + 工程面亲跑（基线独立对拍）+ live 冒烟五场景（坏 manifest 点名 / visibility_reason 中文映射 / runtime 两键回归）· invoke_20261011_40_verify.md 落盘 |
