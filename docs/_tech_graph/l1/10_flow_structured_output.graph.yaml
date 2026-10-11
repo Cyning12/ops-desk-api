@@ -18,48 +18,41 @@ nodes:
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/structured_output/complete.py"
-        symbol: "acomplete_structured"
-        kind: method
+      path: "app/ops/structured_output/complete.py"
+      symbol: "acomplete_structured"
 
   - id: "parse_only"
     label: "parse_only（无 LLM 管道入口）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/structured_output/parse.py"
-        symbol: "parse_only"
-        kind: method
+      path: "app/ops/structured_output/parse.py"
+      symbol: "parse_only"
 
   - id: "extract"
     label: "extract_json_object（剥 fence / 抽对象）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/structured_output/extract.py"
-        symbol: "extract_json_object"
-        kind: method
+      path: "app/ops/structured_output/extract.py"
+      symbol: "extract_json_object"
 
   - id: "repair"
     label: "deterministic_repair（仅结构符号）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/structured_output/repair.py"
-        symbol: "deterministic_repair"
-        kind: method
+      path: "app/ops/structured_output/repair.py"
+      symbol: "deterministic_repair"
 
   - id: "validate"
     label: "Pydantic + ensure_keys + custom validate"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/structured_output/parse.py"
-        symbol: "parse_only"
-        kind: method
-      - path: "app/ops/structured_output/parse.py"
-        symbol: "check_ensure_keys"
-        kind: method
+      path: "app/ops/structured_output/parse.py"
+      symbol: "parse_only"
+      # also: app/ops/structured_output/parse.py#check_ensure_keys (method)
 
   - id: "outcome"
     label: "ParseOutcome / T | StructuredFailure"
@@ -71,9 +64,8 @@ nodes:
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/structured_output/complete.py"
-        symbol: "_build_correction_user_content"
-        kind: method
+      path: "app/ops/structured_output/complete.py"
+      symbol: "_build_correction_user_content"
 
   - id: "llm"
     label: "LLM Provider"

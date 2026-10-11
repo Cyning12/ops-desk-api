@@ -1,0 +1,4 @@
+version: 1
+# 01_struct.md stub 已于 2026-08-26 清理（commit 7938039）；
+# 模块表真值迁至 l1/01_modules.md（HG-GRAPH-MODULES 签核档）
+struct_rel: "l1/01_modules.md"

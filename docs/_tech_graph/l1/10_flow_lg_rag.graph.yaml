@@ -18,285 +18,190 @@ nodes:
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/router.py"
-        symbol: "invoke_lg_rag"
-        kind: method
-      - path: "app/ops/lg_rag/router.py"
-        symbol: "_dispatch"
-        kind: method
-      - path: "app/ops/lg_rag/router.py"
-        symbol: "_prepare_thread"
-        kind: method
-      - path: "app/ops/lg_rag/continuity.py"
-        symbol: "assemble_graph_messages"
-        kind: method
-      - path: "app/ops/lg_rag/continuity.py"
-        symbol: "compress_window"
-        kind: method
-      - path: "app/ops/lg_rag/thread_store.py"
-        symbol: "resolve_thread_for_user"
-        kind: method
-      - path: "app/ops/lg_rag/thread_store.py"
-        symbol: "load_thread_turns"
-        kind: method
-      - path: "app/ops/lg_rag/thread_store.py"
-        symbol: "persist_thread_turns"
-        kind: method
+      path: "app/ops/lg_rag/router.py"
+      symbol: "invoke_lg_rag"
+      # also: app/ops/lg_rag/router.py#_dispatch (method)
+      # also: app/ops/lg_rag/router.py#_prepare_thread (method)
+      # also: app/ops/lg_rag/continuity.py#assemble_graph_messages (method)
+      # also: app/ops/lg_rag/continuity.py#compress_window (method)
+      # also: app/ops/lg_rag/thread_store.py#resolve_thread_for_user (method)
+      # also: app/ops/lg_rag/thread_store.py#load_thread_turns (method)
+      # also: app/ops/lg_rag/thread_store.py#persist_thread_turns (method)
 
   - id: "lg_stream"
     label: "POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · cursor）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/router.py"
-        symbol: "stream_lg_rag"
-        kind: method
-      - path: "app/ops/lg_rag/router.py"
-        symbol: "_prepare_thread"
-        kind: method
-      - path: "app/ops/lg_rag/sse_stream.py"
-        symbol: "iter_lg_rag_sse"
-        kind: method
-      - path: "app/ops/lg_rag/sse_stream.py"
-        symbol: "map_node_update"
-        kind: method
-      - path: "app/ops/lg_rag/answer_stream.py"
-        symbol: "complete_answer_streaming"
-        kind: method
-      - path: "app/ops/lg_rag/answer_stream.py"
-        symbol: "set_answer_token_sink"
-        kind: method
-      - path: "app/ops/lg_rag/progress_stream.py"
-        symbol: "emit_subtask_running"
-        kind: method
-      - path: "app/ops/lg_rag/progress_stream.py"
-        symbol: "set_subtask_progress_sink"
-        kind: method
-      - path: "app/ops/lg_rag/subtask_message.py"
-        symbol: "build_subtask_running_message"
-        kind: method
-      - path: "app/ops/lg_rag/subtask_message.py"
-        symbol: "build_subtask_step_message"
-        kind: method
-      - path: "app/ops/lg_rag/subtask_message.py"
-        symbol: "build_subtask_done_message"
-        kind: method
-      - path: "app/ops/lg_rag/graph.py"
-        symbol: "_astream_with_tracing"
-        kind: method
-      - path: "app/ops/lg_rag/graph.py"
-        symbol: "astream_basic_agent"
-        kind: method
-      - path: "app/ops/lg_rag/graph.py"
-        symbol: "astream_router_agent"
-        kind: method
-      - path: "app/ops/lg_rag/multi/graph.py"
-        symbol: "astream_supervisor_agent"
-        kind: method
-      - path: "app/ops/lg_rag/continuity.py"
-        symbol: "assemble_graph_messages"
-        kind: method
-      - path: "app/ops/lg_rag/continuity.py"
-        symbol: "compress_window"
-        kind: method
-      - path: "app/ops/lg_rag/event_store.py"
-        symbol: "persist_run_event"
-        kind: method
-      - path: "app/ops/lg_rag/sse_replay.py"
-        symbol: "format_sse_event"
-        kind: method
-      - path: "app/ops/lg_rag/sse_replay.py"
-        symbol: "make_cursor"
-        kind: method
-      - path: "app/ops/lg_rag/thread_store.py"
-        symbol: "resolve_thread_for_user"
-        kind: method
-      - path: "app/ops/lg_rag/thread_store.py"
-        symbol: "load_thread_turns"
-        kind: method
-      - path: "app/ops/lg_rag/thread_store.py"
-        symbol: "persist_thread_turns"
-        kind: method
+      path: "app/ops/lg_rag/router.py"
+      symbol: "stream_lg_rag"
+      # also: app/ops/lg_rag/router.py#_prepare_thread (method)
+      # also: app/ops/lg_rag/sse_stream.py#iter_lg_rag_sse (method)
+      # also: app/ops/lg_rag/sse_stream.py#map_node_update (method)
+      # also: app/ops/lg_rag/answer_stream.py#complete_answer_streaming (method)
+      # also: app/ops/lg_rag/answer_stream.py#set_answer_token_sink (method)
+      # also: app/ops/lg_rag/progress_stream.py#emit_subtask_running (method)
+      # also: app/ops/lg_rag/progress_stream.py#set_subtask_progress_sink (method)
+      # also: app/ops/lg_rag/subtask_message.py#build_subtask_running_message (method)
+      # also: app/ops/lg_rag/subtask_message.py#build_subtask_step_message (method)
+      # also: app/ops/lg_rag/subtask_message.py#build_subtask_done_message (method)
+      # also: app/ops/lg_rag/graph.py#_astream_with_tracing (method)
+      # also: app/ops/lg_rag/graph.py#astream_basic_agent (method)
+      # also: app/ops/lg_rag/graph.py#astream_router_agent (method)
+      # also: app/ops/lg_rag/multi/graph.py#astream_supervisor_agent (method)
+      # also: app/ops/lg_rag/continuity.py#assemble_graph_messages (method)
+      # also: app/ops/lg_rag/continuity.py#compress_window (method)
+      # also: app/ops/lg_rag/event_store.py#persist_run_event (method)
+      # also: app/ops/lg_rag/sse_replay.py#format_sse_event (method)
+      # also: app/ops/lg_rag/sse_replay.py#make_cursor (method)
+      # also: app/ops/lg_rag/thread_store.py#resolve_thread_for_user (method)
+      # also: app/ops/lg_rag/thread_store.py#load_thread_turns (method)
+      # also: app/ops/lg_rag/thread_store.py#persist_thread_turns (method)
 
   - id: "lg_replay"
     label: "POST /api/ops/lg-rag/replay（T4 · after_seq/cursor）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/router.py"
-        symbol: "replay_lg_rag"
-        kind: method
-      - path: "app/ops/lg_rag/event_store.py"
-        symbol: "load_events_after"
-        kind: method
-      - path: "app/ops/lg_rag/event_store.py"
-        symbol: "assert_run_owned"
-        kind: method
-      - path: "app/ops/lg_rag/sse_replay.py"
-        symbol: "resolve_replay_target"
-        kind: method
-      - path: "app/ops/lg_rag/sse_replay.py"
-        symbol: "parse_cursor"
-        kind: method
-      - path: "app/ops/lg_rag/sse_replay.py"
-        symbol: "replay_events"
-        kind: method
-      - path: "app/ops/lg_rag/sse_replay.py"
-        symbol: "format_sse_event"
-        kind: method
+      path: "app/ops/lg_rag/router.py"
+      symbol: "replay_lg_rag"
+      # also: app/ops/lg_rag/event_store.py#load_events_after (method)
+      # also: app/ops/lg_rag/event_store.py#assert_run_owned (method)
+      # also: app/ops/lg_rag/sse_replay.py#resolve_replay_target (method)
+      # also: app/ops/lg_rag/sse_replay.py#parse_cursor (method)
+      # also: app/ops/lg_rag/sse_replay.py#replay_events (method)
+      # also: app/ops/lg_rag/sse_replay.py#format_sse_event (method)
 
   - id: "basic_graph"
     label: "basic 图 build_basic_agent（Phase 1 对照）"
     kind: struct
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/graph.py"
-        symbol: "build_basic_agent"
-        kind: method
+      path: "app/ops/lg_rag/graph.py"
+      symbol: "build_basic_agent"
 
   - id: "router_graph"
     label: "router 图 build_router_agent（Phase 2-3）"
     kind: struct
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/graph.py"
-        symbol: "build_router_agent"
-        kind: method
+      path: "app/ops/lg_rag/graph.py"
+      symbol: "build_router_agent"
 
   - id: "sup_graph"
     label: "supervisor 图 build_supervisor_agent（Phase 4）"
     kind: struct
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/multi/graph.py"
-        symbol: "build_supervisor_agent"
-        kind: method
+      path: "app/ops/lg_rag/multi/graph.py"
+      symbol: "build_supervisor_agent"
 
   - id: "b_rag"
     label: "rag_node"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/nodes.py"
-        symbol: "rag_node"
-        kind: method
+      path: "app/ops/lg_rag/nodes.py"
+      symbol: "rag_node"
 
   - id: "r_router"
     label: "router_node（#数字快路径 + LLM 三分类）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/nodes.py"
-        symbol: "router_node"
-        kind: method
+      path: "app/ops/lg_rag/nodes.py"
+      symbol: "router_node"
 
   - id: "r_direct"
     label: "direct_answer_node"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/nodes.py"
-        symbol: "direct_answer_node"
-        kind: method
+      path: "app/ops/lg_rag/nodes.py"
+      symbol: "direct_answer_node"
 
   - id: "r_refuse"
     label: "refuse_node（固定文案）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/nodes.py"
-        symbol: "refuse_node"
-        kind: method
+      path: "app/ops/lg_rag/nodes.py"
+      symbol: "refuse_node"
 
   - id: "r_rag"
     label: "rag_node（黑盒调 lc chain）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/nodes.py"
-        symbol: "rag_node"
-        kind: method
+      path: "app/ops/lg_rag/nodes.py"
+      symbol: "rag_node"
 
   - id: "r_evaluate"
     label: "evaluate_node（复用 chain gate · 零额外 LLM）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/nodes.py"
-        symbol: "evaluate_node"
-        kind: method
-      - path: "app/ops/lg_rag/nodes.py"
-        symbol: "route_by_quality"
-        kind: method
+      path: "app/ops/lg_rag/nodes.py"
+      symbol: "evaluate_node"
+      # also: app/ops/lg_rag/nodes.py#route_by_quality (method)
 
   - id: "r_rewrite"
     label: "rewrite_node（LLM 改写 · 熔断封顶）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/nodes.py"
-        symbol: "rewrite_node"
-        kind: method
-      - path: "app/ops/lg_rag/nodes.py"
-        symbol: "route_after_rewrite"
-        kind: method
+      path: "app/ops/lg_rag/nodes.py"
+      symbol: "rewrite_node"
+      # also: app/ops/lg_rag/nodes.py#route_after_rewrite (method)
 
   - id: "s_intent"
     label: "intent_node（S2 IntentV1 · acomplete_structured）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/strategy/intent.py"
-        symbol: "intent_node"
-        kind: method
+      path: "app/ops/strategy/intent.py"
+      symbol: "intent_node"
 
   - id: "s_strategy_builder"
     label: "strategy_builder_node（S1 allowlist · Registry∩Policy）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/strategy/builder.py"
-        symbol: "strategy_builder_node"
-        kind: method
+      path: "app/ops/strategy/builder.py"
+      symbol: "strategy_builder_node"
 
   - id: "s_supervisor"
     label: "supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/multi/nodes.py"
-        symbol: "supervisor_node"
-        kind: method
+      path: "app/ops/lg_rag/multi/nodes.py"
+      symbol: "supervisor_node"
 
   - id: "s_dispatch"
     label: "subtask_join（ready 判定 + 一次下发无依赖工人 · 按 Host subtask_id 归并）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/multi/nodes.py"
-        symbol: "_join_subtasks"
-        kind: method
-      - path: "app/ops/lg_rag/multi/nodes.py"
-        symbol: "route_next_subtask"
-        kind: method
+      path: "app/ops/lg_rag/multi/nodes.py"
+      symbol: "_join_subtasks"
+      # also: app/ops/lg_rag/multi/nodes.py#route_next_subtask (method)
 
   - id: "s_step_contract"
     label: "step_contract 闸（consumes/produces · prefix_touch_required → hitl_required）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/multi/step_contract.py"
-        symbol: "gate"
-        kind: method
+      path: "app/ops/lg_rag/multi/step_contract.py"
+      symbol: "gate"
 
   - id: "s_observe"
     label: "observe_node（执行层收口 · hitl_required 真 interrupt 挂起）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/multi/nodes.py"
-        symbol: "observe_node"
-        kind: method
+      path: "app/ops/lg_rag/multi/nodes.py"
+      symbol: "observe_node"
 
   - id: "hitl_gw"
     label: "HITL 模块 /hitl/*（>./01_modules.md · HMAC + 管理员双口径）"
@@ -307,27 +212,24 @@ nodes:
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/multi/nodes.py"
-        symbol: "rag_subtask_node"
-        kind: method
+      path: "app/ops/lg_rag/multi/nodes.py"
+      symbol: "rag_subtask_node"
 
   - id: "s_extract"
     label: "info_extract_node"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/multi/nodes.py"
-        symbol: "info_extract_node"
-        kind: method
+      path: "app/ops/lg_rag/multi/nodes.py"
+      symbol: "info_extract_node"
 
   - id: "s_tool"
     label: "tool_exec_node（Capability Gateway）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/multi/nodes.py"
-        symbol: "tool_exec_node"
-        kind: method
+      path: "app/ops/lg_rag/multi/nodes.py"
+      symbol: "tool_exec_node"
 
   - id: "structured_output_gw"
     label: "Structured Output Gateway（>./10_flow_structured_output.md）"
@@ -342,21 +244,17 @@ nodes:
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lg_rag/multi/nodes.py"
-        symbol: "aggregator_node"
-        kind: method
+      path: "app/ops/lg_rag/multi/nodes.py"
+      symbol: "aggregator_node"
 
   - id: "s_critic"
     label: "critic_node（S4 规则 stub · 预算 1+1）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/strategy/critic.py"
-        symbol: "critic_node"
-        kind: method
-      - path: "app/ops/strategy/critic.py"
-        symbol: "route_after_critic"
-        kind: method
+      path: "app/ops/strategy/critic.py"
+      symbol: "critic_node"
+      # also: app/ops/strategy/critic.py#route_after_critic (method)
 
   - id: "s_end"
     label: "END（pass / 预算耗尽）"

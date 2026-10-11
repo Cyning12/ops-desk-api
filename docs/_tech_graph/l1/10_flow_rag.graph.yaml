@@ -18,87 +18,74 @@ nodes:
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/rag/embedder.py"
-        symbol: "get_query_embedder"
-        kind: method
-      - path: "app/ops/rag/embedder.py"
-        symbol: "ApiEmbedder"
-        kind: class
+      path: "app/ops/rag/embedder.py"
+      symbol: "get_query_embedder"
+      # also: app/ops/rag/embedder.py#ApiEmbedder (class)
 
   - id: "hybrid_recall"
     label: "hybrid_recall（入口）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/rag/retrieve.py"
-        symbol: "hybrid_recall"
-        kind: method
-      - path: "app/ops/rag/retrieve.py"
-        symbol: "hybrid_recall_detail"
-        kind: method
+      path: "app/ops/rag/retrieve.py"
+      symbol: "hybrid_recall"
+      # also: app/ops/rag/retrieve.py#hybrid_recall_detail (method)
 
   - id: "backend_gate"
     label: "search_dense_with_fallback（即时降级）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/rag/backend.py"
-        symbol: "search_dense_with_fallback"
-        kind: method
+      path: "app/ops/rag/backend.py"
+      symbol: "search_dense_with_fallback"
 
   - id: "dense_qdrant"
     label: "dense · Qdrant Cosine（默认）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/rag/retrieve.py"
-        symbol: "_semantic_search_qdrant"
-        kind: method
+      path: "app/ops/rag/retrieve.py"
+      symbol: "_semantic_search_qdrant"
 
   - id: "dense_pgvector"
     label: "dense · pgvector fallback"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/rag/retrieve.py"
-        symbol: "_semantic_search_pg"
-        kind: method
+      path: "app/ops/rag/retrieve.py"
+      symbol: "_semantic_search_pg"
 
   - id: "fts_pg"
     label: "FTS / sparse 第二路（PG）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/rag/retrieve.py"
-        symbol: "_keyword_query"
-        kind: method
+      path: "app/ops/rag/retrieve.py"
+      symbol: "_keyword_query"
 
   - id: "hydrate"
     label: "PG hydrate（Qdrant 命中回表）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/rag/retrievers/qdrant_retriever.py"
-        symbol: "QdrantRetriever.search"
-        kind: method
+      path: "app/ops/rag/retrievers/qdrant_retriever.py"
+      symbol: "QdrantRetriever.search"
 
   - id: "rrf_fuse"
     label: "RRF 融合（k=60 · 两路等权）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/rag/retrieve.py"
-        symbol: "rrf_fuse"
-        kind: method
+      path: "app/ops/rag/retrieve.py"
+      symbol: "rrf_fuse"
 
   - id: "rerank"
     label: "rerank（可选 · CE 精排）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/rag/reranker.py"
-        symbol: "rerank_chunks"
-        kind: method
+      path: "app/ops/rag/reranker.py"
+      symbol: "rerank_chunks"
 
   - id: "result"
     label: "RetrievedChunk[]（fused top-5）"

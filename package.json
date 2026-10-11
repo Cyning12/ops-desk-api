@@ -3,6 +3,6 @@
   "private": true,
   "description": "Harness kit pin only; Python runtime is pyproject.toml / requirements.txt",
   "devDependencies": {
-    "spec-wave": "3.0.1"
+    "spec-wave": "3.3.0"
   }
 }

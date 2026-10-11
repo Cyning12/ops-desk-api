@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20261010_V1",
-  "generated_at": "2026-10-10T07:04:10Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20261011_V1",
+  "generated_at": "2026-10-11T06:59:32Z",
   "graphs": [
     {
       "id": "00_main",
@@ -1378,7 +1378,7 @@
       "label": "可选 FC 暴露",
       "anchors": [
         {
-          "path": "app/ops/capability/adapters/langchain_tools.py",
+          "path": "app/ops/capability/extras/langchain.py",
           "symbol": "as_structured_tools"
         }
       ],
