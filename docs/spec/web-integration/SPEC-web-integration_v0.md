@@ -1,6 +1,6 @@
 # SPEC：web-integration（ops-desk-web 联调需求 · 既有后端功能面接通）v0
 
-> **状态**：`draft-v0.1`（R1 BLOCKED 修订毕：B1+N1-N5 消化 · 回送 R2 增量复核 · HG-SPEC-SIGNOFF 维持 pending）
+> **状态**：`signed`（R2 PASS · HG-SPEC-SIGNOFF approved 2026-10-11 00 代录 · Q1-Q4 待维护者裁定后可拆 task）
 > **立项**：2026-10-11 维护者令（m02397）：「为 web 项目生成联调需求 spec，让前端项目把已经存在功能联调完成」
 > **上游**：A 面 `docs/spec/tool-catalog-page/SPEC-tool-catalog-page_v0.md`（signed · B1/B2 task 在途）· B 面 `docs/spec/dialogue-full-view/SPEC-dialogue-full-view_v0.md`（signed · task 未拆）· 验收基线 `docs/acceptance/20261010_hitl-consumption-loop_local_acceptance.md`
 > **分仓纪律**：承 A/B 面先例——本 SPEC 钉联调需求面+契约指针；实现落 ops-desk-web 仓
@@ -20,7 +20,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | pending | 待 20-spec-audit R1 后维护者签 |
+| **HG-SPEC-SIGNOFF** | **approved**（2026-10-11 · 00 代录 · 授权 m01606/m00255） | R1 BLOCKED→修订 v0.1 → R2 PASS（docs/harness/reviews/spec_web-integration_audit_R1/R2_20261011.md · commit 9fdab48/838e8ab）· 观察项 O1 照登 · Q1-Q4 待维护者裁定不阻签收 |
 
 ---
 
