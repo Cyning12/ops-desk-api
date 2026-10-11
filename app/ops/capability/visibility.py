@@ -40,6 +40,14 @@ REASON_ROLE = "role_mismatch"
 REASON_PROJECT = "project_mismatch"
 REASON_CLASSIFICATION = "classification_exceeded"
 
+# reason 码 → 人读文本（单源：路由/出站层禁自写文案 · SPEC 纪律 #3 · 契约4）
+VISIBILITY_REASON_TEXTS: dict[str, str] = {
+    REASON_DEPARTMENT: "部门不在该能力的可见范围内",
+    REASON_ROLE: "角色不在该能力的可见范围内",
+    REASON_PROJECT: "项目不在该能力的可见范围内",
+    REASON_CLASSIFICATION: "主体密级低于该能力的可见上限",
+}
+
 
 def _as_set(value: Any) -> frozenset[str]:
     if value is None:
@@ -123,7 +131,15 @@ def evaluate_visibility(
         if ok:
             kept.append(spec)
         else:
-            hidden.append({"capability_id": spec.capability_id, "reason": reason or ""})
+            reason = reason or ""
+            hidden.append(
+                {
+                    "capability_id": spec.capability_id,
+                    "reason": reason,
+                    # 人读文本单源出于本模块词表（未知码原样返回，不静默吞）
+                    "visibility_reason": VISIBILITY_REASON_TEXTS.get(reason, reason),
+                }
+            )
     summary: dict[str, Any] = {
         "visibility_catalog_count": len(specs),
         "visibility_kept_count": len(kept),

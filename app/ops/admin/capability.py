@@ -36,6 +36,7 @@ from app.ops.capability.budget import snapshot as budget_snapshot
 from app.ops.capability.circuit import snapshot as circuit_snapshot
 from app.ops.capability.fallback import cache_snapshot as fallback_cache_snapshot
 from app.ops.capability.idempotency import DbIdempotencyStore
+from app.ops.capability.manifest import get_manifest_load_errors
 from app.ops.capability.metrics import snapshot as metrics_snapshot
 from app.ops.capability.persistence import describe_persistence
 from app.ops.capability.receipts import DbReceiptSink
@@ -189,6 +190,7 @@ async def catalog(
     visible, summary = capability_catalog_snapshot(
         filter=cap_filter, principal=principal
     )
+    manifest_error_details = get_manifest_load_errors()
     return {
         "filter": {
             "baseline": baseline,
@@ -211,6 +213,9 @@ async def catalog(
         },
         "visible_ids": sorted(s.capability_id for s in visible),
         **summary,
+        # manifest 故障可见性（契约：顶层两键 · 既有键零 diff · catalog-manifest-errors-surface）
+        "manifest_errors": len(manifest_error_details),
+        "manifest_error_details": manifest_error_details,
     }
 
 
