@@ -15,12 +15,17 @@ set -euo pipefail
 # 回退口：GRAPH_CLI 环境变量切换 CLI（默认 spec-wave；SPEC §6.2）：
 #   GRAPH_CLI=@cyning/harness ./scripts/graph-compile.sh
 #   注意：harness emit 不满足 IDE 预览契约；legacy 脚本备份已清理。
+# 2026-10-11：GRAPH_CLI 默认值钉 spec-wave@3.0.1（对齐 package.json 与
+#   .github/workflows/lint-wiki-delta.yml 既有钉法）——裸 npx spec-wave 随上游
+#   漂移：spec-wave 3.2.0 发布致 check/tech-graph 红（implementedBy object
+#   schema 收紧 · 非本仓 diff 引入；master run 38069798037 装 3.1.0 仍绿）。
+#   GRAPH_CLI 环境变量回退口保留（显式覆盖优先）。
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 GRAPH_DIR="${ROOT_DIR}/docs/_tech_graph"
 GRAPH_JSON="${GRAPH_DIR}/shared/graph.json"
-GRAPH_CLI="${GRAPH_CLI:-spec-wave}"
+GRAPH_CLI="${GRAPH_CLI:-spec-wave@3.0.1}"
 
 cd "${ROOT_DIR}"
 

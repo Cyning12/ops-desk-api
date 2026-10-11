@@ -247,7 +247,7 @@ def test_consumes_unknown_alias_is_dropped_not_guessed():
     assert "consumes_resolved" not in plan[0]
 
 
-def test_join_blocks_dependent_of_failed_predecessor():
+async def test_join_blocks_dependent_of_failed_predecessor():
     """R14 正向（编排层）：前驱失败 ⇒ 后继不下发，且写错误终态。"""
     plan = [_row(_T1), _row(_T2, deps=[_T1])]
     state = {
@@ -256,14 +256,14 @@ def test_join_blocks_dependent_of_failed_predecessor():
         "inflight_subtask_ids": [_T1],
         "supervisor_step_count": 1,
     }
-    out = _join_subtasks(state)
+    out = await _join_subtasks(state)
     assert out["inflight_subtask_ids"] == []
     blocked = {r["subtask_id"]: r for r in out["subtask_results"]}
     assert blocked[_T2]["blocked_by"] == sc.BLOCKED_PREDECESSOR_FAILED
     assert "error" in blocked[_T2]
 
 
-def test_join_cascades_the_stop():
+async def test_join_cascades_the_stop():
     """t2 被拦 ⇒ t3（依赖 t2）同批一起停，不是等下一轮才停。"""
     plan = [_row(_T1), _row(_T2, deps=[_T1]), _row(_T3, deps=[_T2])]
     state = {
@@ -272,13 +272,13 @@ def test_join_cascades_the_stop():
         "inflight_subtask_ids": [_T1],
         "supervisor_step_count": 1,
     }
-    out = _join_subtasks(state)
+    out = await _join_subtasks(state)
     assert out["inflight_subtask_ids"] == []
     blocked = {r["subtask_id"] for r in out["subtask_results"]}
     assert blocked == {_T2, _T3}
 
 
-def test_join_undeclared_predecessor_failure_still_stops():
+async def test_join_undeclared_predecessor_failure_still_stops():
     """C2 与声不声明无关：前驱失败就是停。
 
     这条同时是 test_gate_passes_when_undeclared 的编排层补强——
@@ -291,10 +291,10 @@ def test_join_undeclared_predecessor_failure_still_stops():
         "inflight_subtask_ids": [_T1],
         "supervisor_step_count": 1,
     }
-    assert _join_subtasks(state)["inflight_subtask_ids"] == []
+    assert (await _join_subtasks(state))["inflight_subtask_ids"] == []
 
 
-def test_join_success_still_dispatches():
+async def test_join_success_still_dispatches():
     """R14 反向对照（编排层）：前驱成功且契约满足 ⇒ 照常下发。"""
     plan = [_row(_T1, produces=["assignee"]), _row(_T2, deps=[_T1], consumes={_T1: ["assignee"]})]
     state = {
@@ -303,12 +303,12 @@ def test_join_success_still_dispatches():
         "inflight_subtask_ids": [_T1],
         "supervisor_step_count": 1,
     }
-    out = _join_subtasks(state)
+    out = await _join_subtasks(state)
     assert out["inflight_subtask_ids"] == [_T2]
     assert "subtask_results" not in out
 
 
-def test_join_free_text_predecessor_does_not_block_undeclared():
+async def test_join_free_text_predecessor_does_not_block_undeclared():
     """rag 产出是文本、后继没声明 consumes ⇒ 不拦。"""
     plan = [
         {"id": _T1, "subtask_id": _T1, "alias": "t1", "type": "rag", "input": "q", "depends_on": []},
@@ -320,7 +320,7 @@ def test_join_free_text_predecessor_does_not_block_undeclared():
         "inflight_subtask_ids": [_T1],
         "supervisor_step_count": 1,
     }
-    assert _join_subtasks(state)["inflight_subtask_ids"] == [_T2]
+    assert (await _join_subtasks(state))["inflight_subtask_ids"] == [_T2]
 
 
 def test_worker_state_binds_tool_args_and_records_bound_fields():
@@ -739,7 +739,7 @@ async def test_replan_preserves_prefix_results_and_does_not_rerun_them():
     assert out["plan_prefix_ids"] == [_T1]
 
 
-def test_join_uses_declared_prefix_not_any_success_terminal():
+async def test_join_uses_declared_prefix_not_any_success_terminal():
     """前缀必须是**声明**出来的，不能从"有 output 的终态"反推。
 
     反推的话，本轮刚跑完的前驱也被当成前缀 ⇒ 任何缺字段都变成
@@ -753,7 +753,7 @@ def test_join_uses_declared_prefix_not_any_success_terminal():
     bad = [_term(_T1, output={"status": "open"})]
 
     # 未声明前缀 ⇒ 本轮前驱产出不符 ⇒ contract_missing_field（Q4）
-    out = _join_subtasks(
+    out = await _join_subtasks(
         {
             "subtasks": plan,
             "subtask_results": bad,
@@ -766,7 +766,7 @@ def test_join_uses_declared_prefix_not_any_success_terminal():
     assert "hitl_required" not in row
 
     # 声明了前缀 ⇒ 同样的缺失变成"要改历史" ⇒ 交人（Q8）
-    out = _join_subtasks(
+    out = await _join_subtasks(
         {
             "subtasks": plan,
             "subtask_results": bad,

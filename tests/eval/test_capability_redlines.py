@@ -1712,7 +1712,7 @@ async def _drive_step_contract(plan: list[dict], terminals: dict[str, dict]):
         "run_id": "r14run",
         "messages": [],
     }
-    out = _join_subtasks(state)
+    out = await _join_subtasks(state)
     blocked = {
         str(r.get("subtask_id")): r for r in (out.get("subtask_results") or [])
     }

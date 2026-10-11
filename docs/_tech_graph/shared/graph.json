@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20261004_V1",
-  "generated_at": "2026-10-04T02:59:37Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20261010_V1",
+  "generated_at": "2026-10-10T07:04:10Z",
   "graphs": [
     {
       "id": "00_main",

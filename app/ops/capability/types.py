@@ -97,6 +97,14 @@ class CapabilitySpec:
     # *_map 模板 / idempotency_key / tenant_param / success_when / error_map）。
     # **只存引用（环境变量名、凭证名），不存密钥值。**
     http: dict[str, Any] | None = None
+    # 顶层幂等键（testing-write-capability · 裁定四）：manifest **顶层**
+    # idempotency_key，供 local_fn write 声明幂等键（V7 禁 local_fn 用 http
+    # 块，顶层键是其唯一合法声明位）；http 能力仍走 http.idempotency_key 不变。
+    # 缺省 None=未声明（向后兼容 · 存量 read 清单零 diff）。
+    # 定位=加载期护栏/声明位：V1 对 write 强制「http 块键 或 顶层键」二选一，
+    # V8 对 read 对称拦截；**当前对 local_fn 无运行期消费方**
+    #（未来 local_fn 接真实写时消费面另立 task）。
+    idempotency_key: str | None = None
     # 高危写需单次人工确认（加载期强校验：write/irreversible/high 必须为 True）
     hitl_required: bool = False
     # 单次确认时冻结进快照的字段（复核「参数变了则旧审批作废」用）
@@ -143,6 +151,7 @@ class CapabilityFilter:
     |---|---|---|
     | ``tags_any`` | **收窄** | 只看带这些 tag 的能力（交集） |
     | ``allow_tags_any`` | **放宽** | 命中这些 tag 的能力**豁免 ``kinds`` 裁剪** |
+    | ``allow_write_tags_any`` | **放宽** | 命中这些 tag 的能力**只豁免 ``deny_write`` 一层** |
 
     为什么需要 ``allow_tags_any``：新 kind（如 ``http``）一次性放开风险大，
     按**业务域**逐批放开更稳，而"域"天然落在 ``tags`` 上。用法::
@@ -162,6 +171,11 @@ class CapabilityFilter:
     deny_high_risk: bool = False
     # 与 deny_high_risk 对称：可见集裁剪阶段就把写能力挡在模型视野之外
     deny_write: bool = False
+    # 命中任一 tag → **只豁免 deny_write 一层**（env 门控 tag 白名单放行口径 ·
+    # testing-write-capability · 默认 None=判序零 diff）。
+    # **永不豁免 deny_high_risk**：判序上高危判定在本层之前，高危写即使命中
+    # tag 也仍被裁（「一个 tag 不能换全部豁免」纪律延续到写维度）。
+    allow_write_tags_any: frozenset[str] | None = None
 
 
 @dataclass

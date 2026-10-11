@@ -564,6 +564,15 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
         _reject_secret_keys(http_block, where=f"{loc}.http")
         _validate_http_block(http_block, loc=f"{loc}.http", args_schema=args_schema)
 
+    # 顶层 idempotency_key（testing-write-capability · 裁定四）：
+    # local_fn write 的合法幂等键声明位（V7 禁 local_fn 声明 http 块）。
+    # http 能力仍走 http.idempotency_key；缺省 None=未声明。
+    # 校验语义在 V1（write 二选一强制）/ V8（read 对称拦截），此处只解析归一。
+    idempotency_key_raw = raw.get("idempotency_key")
+    idempotency_key: str | None = None
+    if idempotency_key_raw is not None:
+        idempotency_key = str(idempotency_key_raw).strip() or None
+
     hitl_raw = raw.get("hitl") or {}
     if not isinstance(hitl_raw, dict):
         raise ManifestError(f"{loc} hitl 必须是 mapping")
@@ -634,6 +643,7 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
         when_to_use=when_to_use,
         when_not_to_use=str(raw.get("when_not_to_use") or "").strip(),
         http=dict(http_block) if kind == "http" and isinstance(http_block, dict) else None,
+        idempotency_key=idempotency_key,
         hitl_required=bool(hitl_raw.get("required", False)),
         hitl_snapshot_fields=tuple(str(x) for x in snapshot_raw),
         receipt_capture=tuple(str(x) for x in capture_raw),
@@ -842,9 +852,15 @@ def _validate_invariants(spec: CapabilitySpec, *, loc: str) -> None:
     """
     is_write = spec.side_effect in WRITE_SIDE_EFFECTS
     http_block = spec.http or {}
+    # 裁定四（testing-write-capability）：幂等键两处声明位——http 块键
+    #（http 能力）或顶层 idempotency_key（local_fn write 的合法声明位），
+    # 任一非空即满足；**仅 write 强制**，read 不受影响（顶层键缺省 None）。
+    idempotency_key = str(http_block.get("idempotency_key") or "").strip() or str(
+        spec.idempotency_key or ""
+    ).strip()
 
     # V1：写操作必须有幂等键（否则重复提交产生多张单据）
-    if is_write and not str(http_block.get("idempotency_key") or "").strip():
+    if is_write and not idempotency_key:
         raise ManifestError(
             f"{loc} V1: side_effect={spec.side_effect} 必须有 idempotency_key"
         )
@@ -888,7 +904,8 @@ def _validate_invariants(spec: CapabilitySpec, *, loc: str) -> None:
         raise ManifestError(f"{loc} V7: kind=http 缺 http 块")
 
     # V8：只读不需要幂等键——写了通常是抄错，早报早改
-    if not is_write and str(http_block.get("idempotency_key") or "").strip():
+    #（裁定四对称适配：http 块键与顶层键任一声明都拦，延续「只读不需要幂等键」）
+    if not is_write and idempotency_key:
         raise ManifestError(
             f"{loc} V8: side_effect={spec.side_effect} 不应声明 idempotency_key"
         )
