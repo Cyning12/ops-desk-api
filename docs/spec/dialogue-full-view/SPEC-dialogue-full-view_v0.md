@@ -1,9 +1,9 @@
 # SPEC：dialogue-full-view（B 面 · 对话过程全量展示 + SSE 导出 + mermaid 拓扑）v0
 
-> **状态**：`signed`（R1 PASS-WITH-NITS · HG-SPEC-SIGNOFF approved 2026-10-11 00 代录 · 可拆 task）
+> **状态**：`signed`（R1 PASS-WITH-NITS · HG-SPEC-SIGNOFF approved 2026-10-11 00 代录）· **Q1-Q5 已裁**（2026-10-11 维护者 m00026 · 见 §5）→ B-E1（D1=C）/ B-E2（D3=B）/ B-F1（Q4 另立确认）解锁可拆 task
 > **立项**：2026-10-11 维护者三令（统筹第一+第二梯队）· handoff 第三棒序 2（`docs/harness/invokes/by-task/_prompts/PROMPT_00_hitl-consumption-loop-handoff_20261009.md` :41）
 > **上游**：`docs/guides/DESIGN_agent_contribution_endgame_v0_zh.md`（终局路线 v0 · PR #211）——并入裁定点 **#15**（全量渲染折叠/展开层级 · 默认折叠 node.progress 类技术帧）与 **#16**（mermaid 中间档：静态拓扑 + 当次 run 经过节点高亮）
-> **分仓纪律**：承 A 面/chat-history-hitl-ux 先例——本 SPEC 钉需求面+后端面；前端专项 SPEC 另立 `ops-desk-web` 仓（Q4 待维护者确认）
+> **分仓纪律**：承 A 面/chat-history-hitl-ux 先例——本 SPEC 钉需求面+后端面；前端专项 SPEC 另立 `ops-desk-web` 仓（Q4 已裁确认 · m00026）
 
 ## Harness 元信息
 
@@ -59,11 +59,11 @@
 
 ## 4. 开放裁定（D 块 · 不锁死 · 留 20 审/维护者）
 
-### D1 · SSE 导出形态（核心裁定 · 三选一）
+### D1 · SSE 导出形态（**已裁 2026-10-11 m00026：C 混合**）
 - **A 前端自拼**：UI 流式期间捕获帧 + 断线 replay 补齐 → 客户端生成下载文件。零后端改动，但导出完整性依赖前端实现。
 - **B 后端导出端点**：`GET /api/ops/lg-rag/runs/{run_id}/export`（jsonl/sse 原文 · replay 同权限口径）→ 前端仅触发下载。完整性服务端保证，加一个只读端点。
 - **C 混合（倾向）**：B 为权威导出（审计口径）+ A 为流式中即时导出（体验面）。
-- 倾向 C，留 20 审裁定。
+- **裁定 C**（维护者 m00026：「混合」）——B 后端导出端点为权威（审计口径）+ A 前端自拼即时导出（体验面）；B-E1 解锁。
 
 ### D2 · 折叠层级定义（#15 落地 · 前端专项 SPEC 细化）
 - 顶层：用户 query / AI answer / error。
@@ -71,7 +71,7 @@
 - 默认折叠：node.progress 技术帧（按节点分组 · 可展开 · 帧计数徽标）。
 - 层级字面/默认态由前端专项 SPEC 钉死，本 SPEC 只钉原则。
 
-### D3 · mermaid 拓扑数据源（#16 落地 · 二选一）
+### D3 · mermaid 拓扑数据源（**已裁 2026-10-11 m00026：B 后端 topology 端点**）
 - **A 前端硬编码静态图**：10 节点拓扑写死前端——最小面，但图演进时双仓同步负担。
 - **B 后端 topology 端点（倾向）**：`GET /api/ops/lg-rag/topology` 从 graph 结构生成节点/边清单（mermaid 文本或 JSON 图谱）——图演进单源，前端纯渲染。
 - run 节点高亮：前端消费 node.progress 帧节点名集合 → 拓扑渲染高亮（两案同口径 · 帧数据已在）。
@@ -79,18 +79,18 @@
 ### D4 · 帧型枚举完备性
 - 本文帧型清单经 R1 复核修正为 **7 型**（`run.start`/`answer`/`subtask.progress`/`node.progress`/`hitl.waiting`/`done`/`error`）；30 拆 task 时仍须全量复核，枚举落前端专项 SPEC 附录。
 
-## 5. 维护者问答（Q 块 · 待答）
+## 5. 维护者问答（Q 块 · **已裁 2026-10-11 m00026**）
 
-- **Q1**：导出文件格式——sse 原文（可 replay 复现）/ jsonl（机读友好）/ 美化 md（人读报告）？（倾向 jsonl+sse 双格式 · 维护者裁）
-- **Q2**：D1 导出形态裁定（A/B/C）？
-- **Q3**：D3 拓扑源裁定（A/B）？
-- **Q4**：分仓确认——前端专项 SPEC 另立 ops-desk-web（承先例）？
-- **Q5**：导出是否须管理面（管理员可导任意 run）？（倾向否 · 本期仅本人 run · 管理面另立）
+- **Q1**：导出文件格式——sse 原文（可 replay 复现）/ jsonl（机读友好）/ 美化 md（人读报告）？→ **裁定（m00026）：双格式**（jsonl+sse · 同倾向案 · md 不做）
+- **Q2**：D1 导出形态裁定（A/B/C）？→ **裁定（m00026）：C 混合**（B 权威导出 + A 即时导出）
+- **Q3**：D3 拓扑源裁定（A/B）？→ **裁定（m00026）：B 后端 topology 端点**（`GET /api/ops/lg-rag/topology` · 图演进单源）
+- **Q4**：分仓确认——前端专项 SPEC 另立 ops-desk-web（承先例）？→ **裁定（m00026）：另立确认**（B-F1 落 ops-desk-web 仓 docs/spec/）
+- **Q5**：导出是否须管理面（管理员可导任意 run）？→ **裁定（m00026）：本期仅本人 run**（同倾向案 · 管理面另立）
 
 ## 6. 范围 / 非范围
 
 ### 范围（后端面 · 本仓）
-- 视 D1/D3 裁定：导出端点 / topology 端点（均只读 · replay 同权限口径）。
+- 导出端点（D1=C 已裁 · B 权威导出 jsonl+sse 双格式）/ topology 端点（D3=B 已裁）（均只读 · replay 同权限口径 · 仅本人 run Q5 已裁）。
 - 帧契约文档化（前端专项 SPEC 的锚）。
 
 ### 非范围
@@ -110,12 +110,13 @@
 
 | 序 | task | 仓 | 依赖 |
 |---|---|---|---|
-| B-E1 | SSE 导出端点（若 D1=B/C） | ops-desk-api | D1 裁定 · **含进行中 run 导出快照语义钉（R1 N4）** |
-| B-E2 | topology 端点（若 D3=B） | ops-desk-api | D3 裁定 |
-| B-F1 | 前端专项 SPEC（全量渲染+折叠+导出 UI+拓扑高亮） | ops-desk-web | 本 SPEC 签收 + Q1-Q5 |
+| B-E1 | SSE 导出端点（D1=C 已裁 · jsonl+sse 双格式 Q1） | ops-desk-api | ~~D1 裁定~~ 已裁 m00026 · **含进行中 run 导出快照语义钉（R1 N4）** |
+| B-E2 | topology 端点（D3=B 已裁） | ops-desk-api | ~~D3 裁定~~ 已裁 m00026 |
+| B-F1 | 前端专项 SPEC（全量渲染+折叠+导出 UI+拓扑高亮） | ops-desk-web | ~~本 SPEC 签收 + Q1-Q5~~ Q1-Q5 已裁 m00026 · Q4 另立确认 |
 
 ## 修订记录
 
 | 日期 | 版本 | 说明 |
 |---|---|---|
 | 2026-10-11 | v0 | 10-spec 初稿（**00 代笔** · 首棒卡滞 interrupt 留痕 · 授权 m01606）：终局 #15/#16 裁定点并入 · 锚点亲读（graph.py:86-96 十节点 · sse_stream.py:201 · router 三端点 · 帧型六枚）· D1-D4 开放 · Q1-Q5 待维护者 · 分仓纪律承先例 · HG-SPEC-SIGNOFF pending |
+| 2026-10-11 | v0.1 | Q1-Q5 维护者裁定回填（**00 代录 · m00026**）：Q1 jsonl+sse 双格式 · Q2 D1=C 混合 · Q3 D3=B 后端 topology 端点 · Q4 前端专项 SPEC 另立 ops-desk-web 确认 · Q5 本期仅本人 run（管理面另立）· B-E1/B-E2/B-F1 解锁 |
