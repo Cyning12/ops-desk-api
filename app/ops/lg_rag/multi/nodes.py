@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import os
@@ -37,7 +38,7 @@ from app.ops.capability import ainvoke as capability_ainvoke
 from app.ops.capability import delegation as dl
 from app.ops.capability import get_registry as _cap_registry
 from app.ops.capability.baseline import baseline_filter
-from app.ops.capability.types import CapabilitySpec
+from app.ops.capability.types import WRITE_SIDE_EFFECTS, CapabilitySpec
 from app.ops.lc_evidence_chain.step_hook import (
     reset_chain_step_hook,
     set_chain_step_hook,
@@ -116,15 +117,23 @@ def _build_supervisor_system(catalog_block: str) -> str:
 
 
 def _build_supervisor_suffix_system(
-    catalog_block: str, prefix_block: str, suffix_cap: int
+    catalog_block: str,
+    prefix_block: str,
+    suffix_cap: int,
+    preserved_block: str = "",
 ) -> str:
-    """重规划（Q8）：只让模型写后缀，前缀以**只读**形态出现。"""
+    """重规划（Q8）：只让模型写后缀，前缀以**只读**形态出现。
+
+    approved-replan-quality：preserved_block 注入保号行执行摘要
+    （已批准待重跑步名单），破「LLM 不知晓保号行」盲循环（SPEC §9 序1）。
+    """
     return render(
         "lg_rag.supervisor.suffix.system",
         {
             "catalog_block": catalog_block,
             "prefix_block": prefix_block,
             "suffix_cap": str(suffix_cap),
+            "preserved_block": preserved_block,
         },
     )
 
@@ -769,16 +778,51 @@ def _unlocked_preserved_rows(state: LgRagState, locked: list[dict]) -> list[dict
     ]
 
 
-def _format_prefix_block(locked: list[dict]) -> str:
-    """前缀摘要：只给模型**只读**视图（id / type / input / tool）。"""
+def _format_prefix_block(
+    locked: list[dict], terminals: dict[str, dict] | None = None
+) -> str:
+    """前缀摘要：只读视图（id / type / input / tool）+ 终态结果摘要。
+
+    approved-replan-quality：带上已完成步的终态 output 摘要（截断防爆），
+    破「LLM 不知晓已完成步产出」——需要数据时 consumes 引用即可，
+    不为重取产出重复规划同语义步骤（SPEC §9 序1）。
+    """
     lines = []
     for row in locked:
         alias = str(row.get("alias") or row.get("subtask_id") or "")
         line = f"- {alias}（{row.get('type') or 'rag'}）：{row.get('input') or ''}"
         if row.get("tool"):
             line += f" [tool={row['tool']}]"
+        term = (terminals or {}).get(str(row.get("subtask_id") or ""))
+        if term and "output" in term:
+            summary = json.dumps(term.get("output"), ensure_ascii=False, default=str)
+            if len(summary) > 200:
+                summary = summary[:200] + "…(截断)"
+            line += f"\n  → 终态结果：{summary}"
         lines.append(line)
     return "\n".join(lines) or "（无）"
+
+
+def _format_preserved_block(preserved: list[dict]) -> str:
+    """保号行执行摘要（approved-replan-quality）：已批准待重跑步对 LLM 可见。
+
+    SPEC §9 序1 现象①：LLM 不知晓保号行 → 重规划同语义写步孪生 →
+    二次审批 / 二次执行。注入名单后 LLM 不得为其重复规划（结构护栏
+    _write_replay_guard 在分发层兜底，双保险）。空集合返空串。
+    """
+    if not preserved:
+        return ""
+    lines = [
+        "以下步骤已获人工批准、正等待重跑（系统保留原编号并将自动执行；"
+        "切勿为同一目的再规划新步骤或孪生步骤）："
+    ]
+    for row in preserved:
+        sid = str(row.get("subtask_id") or "")
+        line = f"- {sid}（{row.get('type') or 'rag'}）：{row.get('input') or ''}"
+        if row.get("tool"):
+            line += f" [tool={row['tool']}]"
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def _plan_rows(state: LgRagState) -> list[dict]:
@@ -800,6 +844,53 @@ def _terminal_index(results: list, plan_ids: set[str]) -> dict[str, dict]:
         if "output" in row or "error" in row:
             found[sid] = row
     return found
+
+
+def _guard_write_key(row: dict) -> str | None:
+    """write 孪生护栏 canonical 键：仅 side_effect ∈ WRITE_SIDE_EFFECTS 的行。
+
+    canonical = tool + 规范化入参（args 优先，兼容 plan 层 input；sort_keys
+    稳定序列化）。未注册 / 非 write / 序列化失败 → None（不护栏，维持原
+    路径——护栏是重放优化不是新闸门，签发门/消费门 fail-closed 不变）。
+    """
+    tool = str(row.get("tool") or "").strip()
+    if not tool:
+        return None
+    entry = _cap_registry().get(tool)
+    if not entry:
+        return None
+    if str(getattr(entry[0], "side_effect", "") or "") not in WRITE_SIDE_EFFECTS:
+        return None
+    payload = row.get("args")
+    if not isinstance(payload, dict):
+        payload = row.get("input")
+    try:
+        canonical = json.dumps(
+            payload, sort_keys=True, ensure_ascii=False, default=str
+        )
+    except (TypeError, ValueError):
+        return None
+    return f"{tool}\x00{canonical}"
+
+
+def _write_success_call_keys(
+    done: dict[str, dict], by_id: dict[str, dict]
+) -> dict[str, str]:
+    """done 内 write **成功**终态的 canonical → sid 索引。
+
+    error 终态不入索引：失败的已批准写重跑是既有语义，不在护栏面。
+    """
+    keys: dict[str, str] = {}
+    for tsid, term in done.items():
+        if "output" not in term or "error" in term:
+            continue
+        trow = by_id.get(tsid)
+        if not trow:
+            continue
+        key = _guard_write_key(trow)
+        if key is not None:
+            keys.setdefault(key, tsid)
+    return keys
 
 
 async def _join_subtasks(state: LgRagState) -> dict:
@@ -842,6 +933,13 @@ async def _join_subtasks(state: LgRagState) -> dict:
     else:
         ready: list[str] = []
         blocked_meta: dict[str, int] = {}
+        # hitl-approved-replan-quality（契约一）：write 成功终态 canonical
+        # 索引 + 本批已派发 write 键——孪生步结构护栏数据面（off 模式整段
+        # 不建索引，零触达承 off 零 diff 先例）。
+        write_done_keys = (
+            _write_success_call_keys(done, by_id) if _delegation_active() else {}
+        )
+        batch_write_keys: dict[str, str] = {}
         for row in plan:
             sid = str(row["subtask_id"])
             if sid in done:
@@ -866,6 +964,51 @@ async def _join_subtasks(state: LgRagState) -> dict:
                 done[sid] = blocked
                 blocked_meta[reason] = blocked_meta.get(reason, 0) + 1
                 continue
+            # hitl-approved-replan-quality（SPEC §9 序1 · 契约一）：write
+            # 孪生步结构护栏——**先于签发检查**：命中异 sid 同 canonical
+            # 成功终态即 guard-skip（不派发 · 不消费单据 · 不产孤儿 HITL
+            # 单），output 照抄原终态 + replay_of 台账。FP-3：approved
+            # unlocked 步自身旧结果已被剪掉（无终态）⇒ 天然不命中自身。
+            write_key = None
+            if _delegation_active() and str(row.get("type") or "") == "tool":
+                write_key = _guard_write_key(row)
+                if write_key is not None:
+                    orig_sid = write_done_keys.get(write_key)
+                    if orig_sid is not None and orig_sid != sid:
+                        skipped = _base_result(row)
+                        try:
+                            skipped["output"] = copy.deepcopy(
+                                done[orig_sid].get("output")
+                            )
+                        except Exception:
+                            skipped["output"] = done[orig_sid].get("output")
+                        skipped["write_replay_guard_skip"] = True
+                        skipped["replay_of"] = orig_sid
+                        extras.append(skipped)
+                        done[sid] = skipped
+                        logger.info(
+                            "write_replay_guard_skip %s",
+                            json.dumps(
+                                {
+                                    "subtask_id": sid,
+                                    "replay_of": orig_sid,
+                                    "capability_id": str(row.get("tool") or ""),
+                                },
+                                ensure_ascii=False,
+                            ),
+                        )
+                        _record_span_metadata(
+                            {
+                                "write_replay_guard_skip": True,
+                                "subtask_id": sid,
+                                "replay_of": orig_sid,
+                            }
+                        )
+                        continue
+                    if write_key in batch_write_keys:
+                        # 同批双胞胎：首发照派，次发本轮挂起——下一 join
+                        # pass 见首发终态再走 guard-skip（同轮重入保证）。
+                        continue
             # Host V1-A：委派签发审批（Q2：只读自动 · 其余 HITL_REQUIRED）。
             # off 模式整段短路（现状零 diff）；审批拦截复用既有 HITL 回路留痕。
             if _delegation_active() and str(row.get("type") or "") == "tool":
@@ -885,6 +1028,8 @@ async def _join_subtasks(state: LgRagState) -> dict:
                         tool=str(row.get("tool") or ""),
                     )
                     continue
+            if write_key is not None:
+                batch_write_keys[write_key] = sid  # 确认派发才登记首发
             ready.append(sid)
         updates["inflight_subtask_ids"] = ready
         if blocked_meta:
@@ -1014,10 +1159,16 @@ async def supervisor_node(state: LgRagState) -> dict:
         return {**bump, **stamped}
     catalog_block = _format_capability_catalog(caps)
     if locked:
+        # approved-replan-quality：前缀带终态结果摘要 + 注入保号行名单（去盲）
+        _plan_ids = {str(r["subtask_id"]) for r in _plan_rows(state)}
+        _terminals = _terminal_index(
+            list(state.get("subtask_results") or []), _plan_ids
+        )
         system_content = _build_supervisor_suffix_system(
             catalog_block,
-            _format_prefix_block(locked),
+            _format_prefix_block(locked, _terminals),
             max(0, MAX_SUBTASKS - len(locked)),
+            preserved_block=_format_preserved_block(preserved),
         )
     else:
         system_content = _build_supervisor_system(catalog_block)

@@ -19,7 +19,8 @@ from app.ops.prompts.templates import TEMPLATES
 EXPECTED_IDS = {
     "lg_rag.intent.system": "v1",
     "lg_rag.supervisor.system": "v2",
-    "lg_rag.supervisor.suffix.system": "v1",
+    # approved-replan-quality：v1→v2 加 $preserved_block 槽（保号行注入）
+    "lg_rag.supervisor.suffix.system": "v2",
     "lg_rag.router.system": "v1",
     "lg_rag.direct.system": "v1",
     "lg_rag.rewrite.system": "v1",
@@ -33,12 +34,18 @@ EXPECTED_IDS = {
 }
 
 #: 渲染变量锚点（string.Template 语法）；除此之外 body 不得含 `$`
-DECLARED_VARIABLES = ("$catalog_block", "$prefix_block", "$suffix_cap")
+DECLARED_VARIABLES = (
+    "$catalog_block",
+    "$prefix_block",
+    "$preserved_block",
+    "$suffix_cap",
+)
 
 VARS_SUPERVISOR = {"catalog_block": "- mock_get_issue_status：Mock（risk=low）"}
 VARS_SUFFIX = {
     "catalog_block": "- mock_get_issue_status：Mock（risk=low）",
     "prefix_block": "- t1：已完成",
+    "preserved_block": "- run-x:2（tool）：已批准待重跑",
     "suffix_cap": "3",
 }
 

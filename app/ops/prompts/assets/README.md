@@ -23,7 +23,7 @@
 |---|---|---|
 | lg_rag.intent.system | v1 | 无 |
 | lg_rag.supervisor.system | v2 | `$catalog_block` |
-| lg_rag.supervisor.suffix.system | v1 | `$catalog_block` `$prefix_block` `$suffix_cap` |
+| lg_rag.supervisor.suffix.system | v2 | `$catalog_block` `$prefix_block` `$preserved_block` `$suffix_cap` |
 | lg_rag.router.system | v1 | 无 |
 | lg_rag.direct.system | v1 | 无 |
 | lg_rag.rewrite.system | v1 | 无 |
