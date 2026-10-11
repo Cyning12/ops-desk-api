@@ -1,6 +1,6 @@
 # SPEC：web-integration（ops-desk-web 联调需求 · 既有后端功能面接通）v0
 
-> **状态**：`draft-v0`（填肉毕 · 待 20-spec-audit → HG-SPEC-SIGNOFF）
+> **状态**：`draft-v0.1`（R1 BLOCKED 修订毕：B1+N1-N5 消化 · 回送 R2 增量复核 · HG-SPEC-SIGNOFF 维持 pending）
 > **立项**：2026-10-11 维护者令（m02397）：「为 web 项目生成联调需求 spec，让前端项目把已经存在功能联调完成」
 > **上游**：A 面 `docs/spec/tool-catalog-page/SPEC-tool-catalog-page_v0.md`（signed · B1/B2 task 在途）· B 面 `docs/spec/dialogue-full-view/SPEC-dialogue-full-view_v0.md`（signed · task 未拆）· 验收基线 `docs/acceptance/20261010_hitl-consumption-loop_local_acceptance.md`
 > **分仓纪律**：承 A/B 面先例——本 SPEC 钉联调需求面+契约指针；实现落 ops-desk-web 仓
@@ -31,7 +31,7 @@
 - 后端 ops-desk-api 经 chat-history-hitl-ux 链（PR #204 系）+ 签发审批消费回路战役（T1/T2/T3/保号 · PR #216/#218/#220/#221 + #224）+ A 面目录（在途）已具备完整功能面；2026-10-10 增量验收 8/8 PASS。
 - 前端 ops-desk-web 已有对话 UI（SSE + HITL 交互在案），但**既有后端功能未全量接通**——各面联调状态参差，缺一份权威联调需求清单。
 - web 仓现状（2026-10-11 只读盘点）：Vue 3.5 + vue-router 4 + Pinia 3 + Element Plus 2.10 · axios（cookie 会话 withCredentials · baseURL=/api · 租户头 X-Ops-Tenant-Id）· SSE 原生 fetch+ReadableStream（useLgRagSse.ts · 120s 可重置 idle 超时 · 坏行跳过）。**9 页已接通 8 个后端面**：login/overview/issues/pulls/graph/chat(SSE+replay+历史+HITL 两步审批)/lc-evidence/lg-rag-invoke；ObsView 只读本地 fixture 无后端面。
-- **未接通缺口**：① Capability 目录页（web 无路由 · 依赖 B1/B2 合入）② `hitl.waiting` 帧未入前端 SSE 事件清单（useLgRagSse.ts:28-29 仅 6 型）③ decide 未传 `resume_mode` 可选键（SPEC v1 D5 · 两步钉死现状与默认 manual 兼容）④ `done{resumed}` 终态语义待核前端处理 ⑤ `/chat/models` 无人消费 ⑥ `WS /chat/ws` 未用（SSE 方案已立）。
+- **未接通缺口**：① Capability 目录页（web 无路由 · 依赖 B1/B2 合入）② `hitl.waiting` 帧驱动审批卡 web **已交付**（chat.ts:709 `case 'hitl.waiting'` · :396 钉案 · pending 无轮询 :435 明钉「动作后刷新+入 thread 一次性核对」）——真残留仅 useLgRagSse.ts:28 帧型 doc comment 6 型未收 hitl.waiting（`event_type: string` 运行时全透传 · 清单/文档级补全 · R1 B1 修正）③ decide 未传 `resume_mode` 可选键（SPEC v1 D5 · 两步钉死现状与默认 manual 兼容）④ `done{resumed}` 终态语义待核前端处理 ⑤ `/chat/models` 无人消费 ⑥ `WS /chat/ws` 未用（SSE 方案已立）。
 
 ### 1.2 目标
 
@@ -61,7 +61,7 @@
 | `GET /chat/models` | chat/router.py:49 | |
 | `GET /chat/sessions/latest` | chat/router.py:60 | |
 | `WS /chat/ws` | chat/ws.py:79 | websocket 面（联调取舍待 D 块） |
-| `done` 帧语义 | event_store.py:95-107 | 含 HITL resume 流终态=`done{resumed}`（`completed` 字面结构性不可达 · SPEC-hitl-consumption §9 序1 钉案） |
+| `done` 帧语义 | resume.py:131 · event_store.py:99-107 | 含 HITL resume 流终态=`done{resumed}`（`completed` 字面结构性不可达 · 真钉案 close_hitl_replan_carry_and_persist_guard_20261010.md:36 钉案①+验收档 20261010:106 · R1 N3 修正） |
 
 ### 2.3 HITL 审批（`app/ops/hitl/router.py`）
 
@@ -85,8 +85,8 @@
 | 端点 | 锚点 | 契约要点 |
 |---|---|---|
 | `GET /capability/mine` | B1 task（PR 在途） | 当前用户可见集 · 九键白名单投影（排除 adapter/args_schema）· {items,count} |
-| `GET /admin/capability/runtime` | admin/capability.py:79 | maintainer 面 · B2 后 summary 增 `manifest_errors`/`manifest_error_details` |
-| `GET /admin/capability/catalog`·`/metrics`·`/receipts`·`/idempotency` | admin/capability.py:163/:217/:228/:255 | maintainer 面 |
+| `GET /admin/capability/runtime` | admin/capability.py:79 | maintainer 面 · meta 两键（B2 契约钉零 diff） |
+| `GET /admin/capability/catalog`·`/metrics`·`/receipts`·`/idempotency` | admin/capability.py:163/:217/:228/:255 | maintainer 面 · **catalog** B2 后 summary 增 `manifest_errors`/`manifest_error_details`（B2 分支 capability.py:217-218 · R1 N2 修正） |
 
 ### 2.6 仪表盘只读面
 
@@ -96,7 +96,7 @@
 | `GET /graph` | graph.py:15 |
 | `GET /issues` · `GET /pulls` | issues.py:28 · pulls.py:28 |
 | `POST /lc-evidence/invoke` | lc_evidence_chain/router.py:117 |
-| `POST /admin/memory/purge` · `/admin/sync/*` | admin/memory.py:73 · admin/sync.py:17（Bearer 机读/maintainer · deps.py:86-103） |
+| `POST /admin/memory/purge` · `POST /admin/sync`（单端点 · R1 N1 修正） | admin/memory.py:73 · admin/sync.py:28（Bearer 机读/maintainer · deps.py:86-103） |
 
 ### 2.7 机读契约总口
 
@@ -118,7 +118,7 @@
 | 面 | 现状 | 联调需求 | 验收场景 |
 |---|---|---|---|
 | **F1 认证会话** | ✅ 已接通（api/auth.ts:16-40 · 路由守卫 ensureMe router/index.ts:88-100 · 401 全局跳登录） | 回归验证为主；role 驱动菜单（maintainer 面入口隐藏）待核 | S1 冷启动登录→me→刷新会话存续→logout 清空→401 跳登录 |
-| **F2 对话流式** | ✅ 已接通（useLgRagSse.ts:104/:127 stream · :150 replay 复用管线 · 120s idle 超时） | 回归验证；`hitl.waiting` 帧补入事件清单（缺口②）；未知帧容错实证 | S2 提问→帧序渲染→中途断网→replay 补齐零丢失→帧计数一致 |
+| **F2 对话流式** | ✅ 已接通（useLgRagSse.ts:104/:127 stream · :150 replay 复用管线 · 120s idle 超时） | 回归验证；帧型 doc comment 清单补全（缺口② · 纯文档级 · 运行时已全透传）；未知帧容错实证 | S2 提问→帧序渲染→中途断网→replay 补齐零丢失→帧计数一致 |
 | **F3 HITL 审批** | ✅ 已接通（api/hitl.ts:20-91 pending/decide/resume · decide 不自动 resume 两步钉死） | 回归验证 + decide 卡片增 `resume_mode` 可选键 UI（缺口③ · 默认 inherit 不破坏两步）；`done{resumed}` 终态渲染核（缺口④） | S3 全链复跑（六 env 组 · 验收 20261010 口径）：挂起→审批→decide→resume→done{resumed} 渲染；auto_resume=immediate 时 UI 自适应展示自动续跑 |
 | **F4 会话历史** | ✅ 已接通（chatHistory.ts:20/:101/:113 threads+history · chat.ts:22 sessions/latest） | 回归验证 | S4 多轮后刷新→历史完整回放→切换 thread 正确 |
 | **F5 Capability 目录** | ❌ 未接通（web 无路由/页面 · 依赖 B1/B2 PR 合入） | **新建目录页**：/capability/mine 可见集表（九键投影）；maintainer 角色增 manifest_errors 展示（B2 面） | S5 普通用户只见可见集（零探测面）· maintainer 见故障详情；空集/故障态渲染 |
@@ -144,7 +144,8 @@
 
 ### D2 · SSE 断线策略（replay after_seq 已备 · 前端重连触发条件/退避钉多细）
 
-### D3 · HITL 待审单刷新（帧驱动 vs 轮询 pending · 间隔）
+### D3 · HITL 多端一致性（R1 B1 重写：帧驱动审批卡已交付 · pending 无轮询，原二选框架前提失真废弃）
+- 真开放项：多标签页/多设备场景，他端 decide 后本端审批卡/pending 列表同步策略——A 不管（单维护者现状 · 倾向）· B 手动刷新钮 · C 轻轮询。倾向 A，留维护者裁定。
 
 ### D4 · B面全量展示是否纳入本次联调（B面 SPEC signed 但 task 未拆；含→范围扩，不含→留后续）
 
@@ -152,12 +153,11 @@
 
 ## 7. 开放问题（Q 块 · 待维护者）
 
-- Q1：本 SPEC 档落 ops-desk-api `docs/spec/web-integration/` 还是 ops-desk-web `docs/`（承 A/B 面先例暂落 api 仓钉契约面）。
+- Q1（R1 N5 合并原 Q1/Q6）· 本 SPEC 落位：倾向 **ops-desk-web `docs/spec/web-integration/`**（web 仓已有四枚 SPEC 先例 · 实现主体在 web 仓）；api 仓不留或仅留指针档，待维护者确认。
 - Q2：F5 依赖 B1/B2 合入——联调启动是否等 PR 落地。
 - Q3：lc-evidence 已有页面在联调范围（F7）；admin 面（sync/memory purge·Bearer 机读）无 web 页面 → 倾向不在范围，待维护者确认。
-- Q4：`hitl.waiting` 帧前端未入事件清单——裁定补入渲染（审批卡帧驱动提示）还是仅容错跳过（现状 pending 轮询已够）？
-- Q5：web 仓在途 task（task_web_specwave_upgrade_3_0_0 · task_web_tenant_context_chat）与本联调链的先后/并行关系。
-- Q6：本 SPEC 落位——web 仓 docs/spec/ 已有四枚 SPEC 先例，倾向落 `ops-desk-web/docs/spec/web-integration/`（api 仓仅留指针），待维护者确认。
+- Q4（原 Q5 重编号）：web 仓在途 task（task_web_specwave_upgrade_3_0_0 · task_web_tenant_context_chat）与本联调链的先后/并行关系。
+- （原 Q4 hitl.waiting 补入裁定已随 R1 B1 废弃——帧驱动已交付无裁定必要，清单补全作 NIT 级直入 T-W2。）
 
 ## 8. 风险与失败路径（FP 块）
 
@@ -165,14 +165,14 @@
 - FP-2：B1/B2 未合入即联调 F5 → 阻塞，标 wait。
 - FP-3：SSE 代理缓冲（vite proxy/反代）导致帧不实时 → 联调环境钉死直连或关缓冲配置。
 - FP-4：web 仓在途 task（specwave 升级/租户上下文）与本联调链撞文件 → 拆 task 时按路由/store 隔离面钉死。
-- FP-5：`hitl.waiting` 帧补入若改 useLgRagSse 管线 → 既有 6 型帧零回归（chat-store 28 枚测试面全绿为闸）。
+- FP-5：T-W2 若动 useLgRagSse 管线 → 既有帧处理零回归（web 仓 Vitest 全量 225 条 · chat-store.spec.ts 65 条 it 全绿为闸 · R1 N4 口径）。
 
 ## 9. 拆 task 规划（签收后执行 · 落 ops-desk-web 仓 docs/tasks/）
 
 | task | 面 | 内容 | 依赖/闸 |
 |---|---|---|---|
 | **T-W1 回归批** | F1/F4/F6/F7 | 已接通四面回归验证（S1/S4/S6/S7）+ role 驱动菜单核对 + 契约对拍（snake_case 原始体/threads envelope 例外照登） | 无依赖 · 可先行 |
-| **T-W2 SSE/HITL 增强批** | F2/F3 | `hitl.waiting` 帧补入事件清单与审批卡帧驱动提示（Q4 裁定后）· decide 卡片 `resume_mode` 可选键 UI · `done{resumed}` 终态渲染核对（S2/S3） | 既有 28 枚 Vitest 全绿为回退闸 · useLgRagSse 管线改动面钉死（FP-5） |
+| **T-W2 SSE/HITL 增强批** | F2/F3 | 帧型 doc comment 清单补全（7 型 · 文档级）· decide 卡片 `resume_mode` 可选键 UI · `done{resumed}` 终态渲染核对（S2/S3） | Vitest 全量 225 条全绿为回退闸（FP-5） · useLgRagSse 管线改动面钉死 |
 | **T-W3 Capability 目录页** | F5 | 新路由+页面：/capability/mine 可见集表 · maintainer manifest_errors 展示（S5） | **wait：B1/B2 PR 合入 master**（FP-2） |
 | **T-W4 裁定后另立** | F8/F10 | B面全量展示（D4）· models/WS 取舍（D5） | 待维护者裁定 |
 
@@ -184,3 +184,4 @@
 |---|---|---|---|
 | v0-draft | 2026-10-11 | 00（代笔 · 维护者令 m02397） | 骨架：端面清单 2.1-2.7 亲读核真 |
 | v0 | 2026-10-11 | 00（代笔） | 填肉：web 仓盘点回填（Vue3 栈 · 8 面已接通 · 缺口 6 枚收敛 F5/F2/F3）· F1-F10 分面表现状列 · D1 倾向 A · Q4-Q6 增 · FP-4/5 增 · §9 拆 task 规划（T-W1~W4） |
+| v0.1 | 2026-10-11 | 00（代笔 · R1 修订） | B1 hitl.waiting 失真修正（帧驱动已交付 · 残留仅 doc comment 清单）· D3 重写多端一致性 · Q1/Q6 合并 Q4 废弃重编号 · N1 sync :28 单端点 · N2 manifest_errors 挂 catalog · N3 done{resumed} 真钉案锚点 · N4 测试计数 225/65 · N6 转 A 面链照登 |
