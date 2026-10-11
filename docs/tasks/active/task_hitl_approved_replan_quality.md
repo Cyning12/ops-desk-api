@@ -106,8 +106,8 @@ TB1-TB8（保号 14 枚）· TA 组（T1 29+34 枚）· hitl resume/decide 既�
 
 ## 验收标准
 
-- [ ] TC1 红测先行：构造 resume 场景（approved 非空+部分步已终态）实证旧行为（孪生/重放）→ 实现后转绿（防恒绿假象）。
-- [ ] TC2 单测：D1 裁定形态对应断言（定点路径步集 / 注入载荷含已完成清单 / write 步跳过）。
+- [x] TC1 红测先行：构造 resume 场景（approved 非空+部分步已终态）实证旧行为（孪生/重放）→ 实现后转绿（防恒绿假象）。（9b56343 RED → ebe2a01 转绿 · 时序在 git 历史）
+- [x] TC2 单测：D1 裁定形态对应断言（定点路径步集 / 注入载荷含已完成清单 / write 步跳过）。（TC2 六枚：FP-3 反面/异 args/error 不拦/同批双胞胎/off 零介入/canonical 确定性 · ebe2a01）
 - [ ] TC3 live（依赖序2 merge 后台账可见）：六 env 组 → 挂起→decide→resume → 断言：无孪生 subtask · write 步执行次数=1 · delegation_approval_consumed 命中原 sid。
 - [ ] TC4 反回归：全量 pytest + TB1-TB8 + capability_acceptance 门禁 · **旧测 grep 影响面以 §B1 节为准**（K7 口径 · 涉改文件逐枚核 diff 归因）。
 - [ ] TC5 台账链：live 全程台账键 grep 可断。
@@ -144,7 +144,7 @@ TB1-TB8（保号 14 枚）· TA 组（T1 29+34 枚）· hitl resume/decide 既�
 
 ### 自检结论（执行者）
 
-（30/40 回填 · draft 期占位合法）
+**30（2026-10-11 · ebe2a01）**：D1=C 混合案落地——replan 注入去盲（$preserved_block 保号行 + locked 终态摘要 · 模板 v1→v2）+ write 孪生分发层 guard-skip 护栏（先于签发检查 · 不派发不消费 · replay_of 台账 · off 零触达）。钉死契约五条全过：①write 零重发结构性机断（TC1-a/TC2 组）②TB1-TB8 48 枚全绿台账键零字面改动③resume.py:131 未触④reject 零 diff⑤全量 1769 过/7 红与基线逐枚一致（环境性 · .env delegation ON+postgres checkpointer · stash 对拍在案）· ruff 55 持平 master。TC1/TC2 勾选；TC3/TC5 live 待序2 merge 后 40 帽；40 本棒不做。详见 invoke_20261011_30_implementation.md。
 
 ---
 
@@ -154,3 +154,4 @@ TB1-TB8（保号 14 枚）· TA 组（T1 29+34 枚）· hitl resume/decide 既�
 |---|---|---|
 | 2026-10-11 | v0-skeleton | 10 骨架先行落稿（全节标题+占位 · 增量填充中） |
 | 2026-10-11 | v1 | 10 填肉定稿（骨架棒卡滞 interrupt 留痕 · **00 代笔填肉** · 授权 m01606）：锚点亲读复核+漂移校正（真决策点 nodes.py:1759 非旧引 router.py）· D1 三案倾向 C · write 零重发核心红线 · done{completed} 钉案非范围照登（D 块留另立裁定口）· 依赖序2 |
+| 2026-10-11 | v1.1 | 30 自检结论回填 + TC1/TC2 勾选（feat ebe2a01 · 契约五条全过 · TC3/TC5 留 40） |
