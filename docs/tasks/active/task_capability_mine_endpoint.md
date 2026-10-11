@@ -195,6 +195,13 @@ TC1–TC7 全部 pytest 机断：401 / 九键齐+对拍一致 / ⊆ / 空集 200
 5. **HG-GRAPH-MODULES 随交付回填**：modules.md api 行 2026-10-11 注册备注 + 签录行（00 代录 · 不新增一级模块 · 零新跨模块边 · 不增 implementedBy）。
 6. **00 两裁定落地**：闸表机读归一（863260c · 零语义改动 · 实证根因 spec-wave 解析器不吃粗体+括注 status 单元格）+ 审查档 R1/R2 复制 docs/harness/reviews/ 机读口径（826b2ff · 源 daa6871 保留 · 双址规约待序3钉）。
 
+### 核验结论（40 核验者）
+
+1. **钉死契约八条逐条复核全 ✅**（diff fec3abf...HEAD 对拍 + live 双证）：落点包外 · CurrentUser 401 · principal 会话构造逐字段 · 可见性单源路由层零过滤 · 精确九键+status 常量 · 防探测空集 200 · 只读零写 · baseline_filter 不叠加。
+2. **工程面 40 亲跑**：全量 pytest 1653 passed/1 skipped/4 failed（4 红基线 /tmp/base-fec3abf 复跑逐枚同败 → 零新增红独立实证）· ruff 2 errors 与基线同码区（UP038 口径订正：ruff 0.15.21 已移除该规则）· lint-imports 12 kept 0 broken · graph-compile EXIT=0（npm ci 钉版 3.0.1 后；3.2.0 漂移照录不 merge master）· spec-wave verify/task lint 双 PASS。
+3. **live 冒烟五场景全绿**（uvicorn :8070 + curl）：未登录 401 · maintainer count=5 九键 adapter 零命中 · viewer ⊆ · 限定条目 fail-closed 不出站 · B1/B2 共存零互扰。
+4. **结论 PASS**，全文见 invoke_20261011_40_verify.md。
+
 ---
 
 ## 修订
@@ -205,3 +212,4 @@ TC1–TC7 全部 pytest 机断：401 / 九键齐+对拍一致 / ⊆ / 空集 200
 | 2026-10-11 | B-1 修订（commit f6c041f）：补自检结论节 + n-1/n-2 回填 → R2 PASS（daa6871）· 三闸 00 代录 approved（授权 m01606/m00255） |
 | 2026-10-11 | 10 逐节回填完成：SPEC B1 裁定承接 · N1–N3 回填钉死（锚点 :163-214 · deps :18-115 · roles=frozenset({user.role})）· 钉死契约八条 · TC1–TC7 · 三闸 pending 不代签 · 落点/baseline 两候选开放留 30 |
 | 2026-10-11 | 30 期机读归一（00 裁定 · B2 先行同处置）：闸表 status 单元格归一为纯 approved（去粗体去括注 · 注解移说明列）· 零语义改动——实证根因 spec-wave 解析器不吃粗体+中文括注 status 单元格（30 invoke 记实证） |
+| 2026-10-11 | 40 核验 PASS：契约八条 diff 复核 + 工程面亲跑（基线独立对拍）+ live 冒烟五场景 · invoke_20261011_40_verify.md 落盘 |
