@@ -18,153 +18,126 @@ nodes:
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/manifest.py"
-        symbol: "load_capability_manifest"
-        kind: method
+      path: "app/ops/capability/manifest.py"
+      symbol: "load_capability_manifest"
 
   - id: "register"
     label: "register / defaults.ensure_default_capabilities"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/gateway.py"
-        symbol: "register"
-        kind: method
-      - path: "app/ops/capability/defaults.py"
-        symbol: "ensure_default_capabilities"
-        kind: method
+      path: "app/ops/capability/gateway.py"
+      symbol: "register"
+      # also: app/ops/capability/defaults.py#ensure_default_capabilities (method)
 
   - id: "list_filter"
     label: "list_capabilities / schemas_for_llm（Filter）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/gateway.py"
-        symbol: "list_capabilities"
-        kind: method
-      - path: "app/ops/capability/gateway.py"
-        symbol: "schemas_for_llm"
-        kind: method
+      path: "app/ops/capability/gateway.py"
+      symbol: "list_capabilities"
+      # also: app/ops/capability/gateway.py#schemas_for_llm (method)
 
   - id: "invoke"
     label: "invoke / ainvoke(capability_id, args)"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/gateway.py"
-        symbol: "invoke"
-        kind: method
-      - path: "app/ops/capability/gateway.py"
-        symbol: "ainvoke"
-        kind: method
+      path: "app/ops/capability/gateway.py"
+      symbol: "invoke"
+      # also: app/ops/capability/gateway.py#ainvoke (method)
 
   - id: "pg_lookup"
     label: "lookups.get_issue/pr_by_number（本库 PG 只读）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/lookups.py"
-        symbol: "get_issue_by_number"
-        kind: method
-      - path: "app/ops/capability/lookups.py"
-        symbol: "get_pr_by_number"
-        kind: method
+      path: "app/ops/capability/lookups.py"
+      symbol: "get_issue_by_number"
+      # also: app/ops/capability/lookups.py#get_pr_by_number (method)
 
   - id: "local_fn"
     label: "LocalFnAdapter"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/adapters/local_fn.py"
-        symbol: "LocalFnAdapter"
-        kind: class
+      path: "app/ops/capability/adapters/local_fn.py"
+      symbol: "LocalFnAdapter"
 
   - id: "probes"
     label: "mcp / sandbox / cli probes（默认关闭）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/probes.py"
-        symbol: "register_p2_probes"
-        kind: method
+      path: "app/ops/capability/probes.py"
+      symbol: "register_p2_probes"
 
   - id: "skill_stub"
     label: "skill provide/invoke stub（无完整引擎）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/gateway.py"
-        symbol: "provide"
-        kind: method
-      - path: "app/ops/capability/adapters/skill.py"
-        symbol: "SkillStubAdapter"
-        kind: class
+      path: "app/ops/capability/gateway.py"
+      symbol: "provide"
+      # also: app/ops/capability/adapters/skill.py#SkillStubAdapter (class)
 
   - id: "result"
     label: "CapabilityResult（ok / output / error）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/types.py"
-        symbol: "CapabilityResult"
-        kind: class
+      path: "app/ops/capability/types.py"
+      symbol: "CapabilityResult"
 
   - id: "idempotency"
     label: "idempotency 防重（命中重放上次结果 · receipts 回执）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/idempotency.py"
-        symbol: "get_idempotency_store"
-        kind: method
+      path: "app/ops/capability/idempotency.py"
+      symbol: "get_idempotency_store"
 
   - id: "precheck"
     label: "_prepare_call 闸链（lookup→enabled→Policy→熔断→配额/kill→args_schema）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/gateway.py"
-        symbol: "_prepare_call"
-        kind: method
+      path: "app/ops/capability/gateway.py"
+      symbol: "_prepare_call"
 
   - id: "circuit"
     label: "circuit 下游熔断（pybreaker · 写探测 · 判定不看错误文案）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/circuit.py"
-        symbol: "check"
-        kind: method
-      - path: "app/ops/capability/circuit.py"
-        symbol: "guard"
-        kind: method
+      path: "app/ops/capability/circuit.py"
+      symbol: "check"
+      # also: app/ops/capability/circuit.py#guard (method)
 
   - id: "budget"
     label: "budget 会话配额 / kill switch（Policy 拒不计配额）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/budget.py"
-        symbol: "check"
-        kind: method
+      path: "app/ops/capability/budget.py"
+      symbol: "check"
 
   - id: "fallback"
     label: "fallback 降级链（声明才降级 · 降级必带 degraded 标记跟数据走）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/fallback.py"
-        symbol: "should_degrade"
-        kind: method
+      path: "app/ops/capability/fallback.py"
+      symbol: "should_degrade"
 
   - id: "result_contract"
     label: "result_contract 输出契约（output_schema · 违约 ok=False）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/result_contract.py"
-        symbol: "validate"
-        kind: method
+      path: "app/ops/capability/result_contract.py"
+      symbol: "validate"
 
   - id: "obs_admin"
     label: "观测端点 /admin/capability/{runtime,catalog,receipts,idempotency}（AdminSyncAuth · 只读）"
@@ -179,9 +152,8 @@ nodes:
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/capability/adapters/langchain_tools.py"
-        symbol: "as_tool_node"
-        kind: method
+      path: "app/ops/capability/extras/langchain.py"
+      symbol: "as_tool_node"
 
   - id: "lg_rag_doc"
     label: ">./10_flow_lg_rag.md"
@@ -212,7 +184,7 @@ edges:
     mark: "?>"
     type: "branches"
     anchors:
-      - path: "app/ops/capability/adapters/langchain_tools.py"
+      - path: "app/ops/capability/extras/langchain.py"
         symbol: "as_structured_tools"
 
   - from: "caller"

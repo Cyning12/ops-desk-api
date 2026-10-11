@@ -18,99 +18,88 @@ nodes:
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/chat/router.py"
-        symbol: "chat_stream"
-        kind: method
+      path: "app/ops/chat/router.py"
+      symbol: "chat_stream"
 
   - id: "chat_ws"
     label: "WS /api/ops/chat/ws"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/chat/ws.py"
-        symbol: "chat_ws"
-        kind: method
+      path: "app/ops/chat/ws.py"
+      symbol: "chat_ws"
 
   - id: "event_gen"
     label: "ChatEventStreamer (SSE/WS 共享)"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/chat/streaming.py"
-        symbol: "ChatEventStreamer"
-        kind: class
+      path: "app/ops/chat/streaming.py"
+      symbol: "ChatEventStreamer"
 
   - id: "chat_service"
     label: "run_chat_stream"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/chat/service.py"
-        symbol: "run_chat_stream"
-        kind: method
+      path: "app/ops/chat/service.py"
+      symbol: "run_chat_stream"
 
   - id: "stategraph"
     label: "Chat StateGraph"
     kind: struct
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/chat/graph.py"
-        symbol: "graph"
-        kind: module
+      path: "app/ops/chat/graph.py"
+      symbol: "graph"
 
   - id: "intent"
     label: "detect_intent"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/chat/nodes.py"
-        symbol: "intent_node"
-        kind: method
+      path: "app/ops/chat/nodes.py"
+      symbol: "intent_node"
 
   - id: "context"
     label: "load_context"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/chat/nodes.py"
-        symbol: "load_issue_context_node"
-        kind: method
+      path: "app/ops/chat/nodes.py"
+      symbol: "load_issue_context_node"
 
   - id: "retrieve"
     label: "hybrid_recall"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/chat/rag_nodes.py"
-        symbol: "retrieve_node"
-        kind: method
+      path: "app/ops/chat/rag_nodes.py"
+      symbol: "retrieve_node"
 
   - id: "grade"
     label: "grade_chunks + gate"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/chat/rag_nodes.py"
-        symbol: "grade_node"
-        kind: method
+      path: "app/ops/chat/rag_nodes.py"
+      symbol: "grade_node"
 
   - id: "refuse_answer"
     label: "refuse on low relevance"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/chat/rag_nodes.py"
-        symbol: "refuse_node"
-        kind: method
+      path: "app/ops/chat/rag_nodes.py"
+      symbol: "refuse_node"
 
   - id: "answer"
     label: "generate_answer"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/chat/nodes.py"
-        symbol: "answer_node"
-        kind: method
+      path: "app/ops/chat/nodes.py"
+      symbol: "answer_node"
 
   - id: "rag"
     label: "RAG hybrid_recall"

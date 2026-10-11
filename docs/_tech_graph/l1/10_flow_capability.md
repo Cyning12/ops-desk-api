@@ -1,7 +1,7 @@
 ---
 graph_id: 10_flow_capability
 version: 2026-09-21
-generated_at: sha256-3d084f7998b2741e
+generated_at: sha256-9564b1807c256724
 source: 10_flow_capability.graph.yaml
 ---
 
@@ -40,7 +40,7 @@ flowchart TB
     register -->|"编目可见"| list_filter
     %% → app/ops/capability/gateway.py::list_capabilities
     list_filter -->|"可选 FC 暴露"| fc_optional
-    %% → app/ops/capability/adapters/langchain_tools.py::as_structured_tools
+    %% → app/ops/capability/extras/langchain.py::as_structured_tools
     caller -->|"tool 子任务"| invoke
     %% → app/ops/lg_rag/multi/nodes.py::tool_exec_node
     invoke -->|"写能力先查防重"| idempotency

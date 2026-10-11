@@ -18,51 +18,42 @@ nodes:
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lc_evidence_chain/router.py"
-        symbol: "invoke_lc_evidence"
-        kind: method
+      path: "app/ops/lc_evidence_chain/router.py"
+      symbol: "invoke_lc_evidence"
 
   - id: "chain"
     label: "ainvoke_evidence_answer（LCEL · 不进入 chat/graph）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lc_evidence_chain/chain.py"
-        symbol: "ainvoke_evidence_answer"
-        kind: method
-      - path: "app/ops/lc_evidence_chain/chain.py"
-        symbol: "build_chain"
-        kind: method
+      path: "app/ops/lc_evidence_chain/chain.py"
+      symbol: "ainvoke_evidence_answer"
+      # also: app/ops/lc_evidence_chain/chain.py#build_chain (method)
 
   - id: "retrieve"
     label: "retrieve_evidence"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lc_evidence_chain/retrieve.py"
-        symbol: "retrieve_evidence"
-        kind: method
+      path: "app/ops/lc_evidence_chain/retrieve.py"
+      symbol: "retrieve_evidence"
 
   - id: "grade"
     label: "grade_chunk + decide_grade（gate）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lc_evidence_chain/grader.py"
-        symbol: "grade_chunk"
-        kind: method
-      - path: "app/ops/lc_evidence_chain/grader.py"
-        symbol: "decide_grade"
-        kind: method
+      path: "app/ops/lc_evidence_chain/grader.py"
+      symbol: "grade_chunk"
+      # also: app/ops/lc_evidence_chain/grader.py#decide_grade (method)
 
   - id: "answer"
     label: "answer_question（按 gate_action 应答/拒答）"
     kind: flow
     layer_hint: "G-L2"
     implementedBy:
-      - path: "app/ops/lc_evidence_chain/answer.py"
-        symbol: "answer_question"
-        kind: method
+      path: "app/ops/lc_evidence_chain/answer.py"
+      symbol: "answer_question"
 
   - id: "rag"
     label: "RAG hybrid_recall"
