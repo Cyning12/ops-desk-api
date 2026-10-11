@@ -40,6 +40,7 @@
 | 2026-09-17 | [`task_specwave_upgrade_2_4_2.md`](./task_specwave_upgrade_2_4_2.md) | spec-wave 2.1.3→2.4.2 + 旧命令字面收编（R1 PWN · 验收 14/14） · PR #136 |
 | 2026-09-18 | [`task_specwave_upgrade_3_0_0.md`](./task_specwave_upgrade_3_0_0.md) | spec-wave 2.4.2→3.0.0 major（R1 PWN · 验收 13/13） · PR #139 |
 | 2026-09-23 | [`task_specwave_upgrade_3_0_1.md`](./task_specwave_upgrade_3_0_1.md) | spec-wave 3.0.0→3.0.1 patch + 长程任务反馈 F-1~F-4（R1 PASS · 机械闸全绿） · PR #172 |
+| 2026-10-11 | [`task_specwave_verify_baseline.md`](./task_specwave_verify_baseline.md) | 仓级 verify 缺口基线收口：93 存量豁免 yaml + 审查门禁双址规约 v1（R1 BLOCKER→R2 PWN · 40 PASS V1-V5 · TC3 反向实证） · PR #228 |
 
 ---
 
@@ -174,6 +175,8 @@
 | 2026-10-10 | CLOSE **hitl-approval-consumption-auto-resume**（T2 · D5）`#218`（SPEC 承接 · 批准后自动恢复可配置面（env+resume_mode 双级 · 触发器+行锁认领+补偿扫描 · 无状态恢复纪律 · store 既有方法 diff 空）· 三闸维护者签（00 代录）· 40 核验 PASS 带偏差登记（TB1–TB8 · 39 枚新测全绿 · 全量 1748 passed · 4 failed=基线环境性 · live 六 env 组+auto 全链：decide→triggered→claimed→同源恢复→图继续 · 偏差：末段 done{completed} replan 重盖章失配=T1 已登记上抛项 · 孤儿 pending 附带观察 · 均上抛 SPEC v2）· CI 四绿 merge `0e13fc4` · 归档 done/ · Hub 补登 · **签发审批消费回路 SPEC v1 全链（T3+T1+T2）收官 · SPEC v2 裁定项留维护者**） |
 | 2026-10-10 | CLOSE **hitl-replan-carry-and-persist-guard** `#221`（SPEC v1 FP-3 偏差维护者双裁定落地 · replan 保号三路径+`_persist_hitl` 建单前检查 · 三闸维护者签（00 代录）· 20 R1 PASS 零阻塞 · 40 核验七项全过（TB1–TB6 14 枚 · 全量 4failed/1762passed 基线 · live 三 run 双靶点闭合：consumed 命中原 sid · hitl_persist_guard_skip 每次重放 · done{resumed} 语义终态）· CI merge `85058f7` · 归档 done/ · Hub 补登 · CLOSE 文档 `docs/tasks/close/` 落盘 · worktree+分支本 CLOSE 清理 · **T1/T2 上抛偏差正面收口 · 钉案三条照登（resumed 语义 · LLM 盲循环+_collect_decisions 恒 replan 建议后续 task · 仓级 verify 92 缺口基线）**） |
 | 2026-10-11 | CLOSE **hitl-auto-resume-claim-race** `#224`（T2 验收 D1 偏差收口 · 方向 A 就绪校验 defer 等下轮 + 台账 `hitl_auto_resume_deferred` · 三闸 approved（维护者授权 · 00 代录 2f91f67）· 20 R1 PASS-WITH-NITS（N-1~N-3 照登核验全过）· 30 红测先行（79b6485 修复前 2 failed 与 live D1 同形 → 51e17ca 实现）· 40 核验七项全 PASS（红测时序 worktree 复跑实证 · TC3 live 零 stranded_checkpoint · deferred×5 挡重复认领 · 恰好一次执行）· merge `11fb7e6` · 归档 done/ · Hub 补登 · CLOSE 文档 `docs/tasks/close/` 落盘 · task+close 分支本 CLOSE 清理 · **T2 live 偏差全收口 · 学习要点四条照登（红测时序证据 · .env PG 闸全进程 · saver.setup() idle-in-transaction · 裸 uvicorn 无台账建议仓级 task）**） || 2026-10-11 | CLOSE **repo-logging-init** `#227`（仓级 logging 初始化 · SPEC §9 序2 · D1=A import 期 basicConfig + D2=A `OPS_LOG_LEVEL` 默认 INFO 非法 fail-closed · 红测先行 445ce28→b329aec · 三闸 approved（维护者授权 · 00 代录 a31d471）· 20 R1 PASS-WITH-NITS（N-1~N-6 照登随 30 回填闭合）· 40 核验 PASS-WITH-NITS（TC2 坑位1 反转实证 · TC3 compose 零 diff · TC4 4请求4行 · TC5 master 基线 4 红逐名吻合 A/B 归因零新增红）· squash merge `e5b5c3d` · CI 修复 2d686f0/5e07040 · 归档 done/ · Hub 补登 · CLOSE 文档 `docs/tasks/close/` 落盘 · worktree+分支移交 00 统一清理 · **N-40-1 import 窗口裸格式 nit 留后续裁定**） |
+
+| 2026-10-11 | CLOSE **specwave-verify-baseline** `#228`（仓级 chore · SPEC §9 序3 · 93 存量豁免 yaml+双址规约 v1 · R1 BLOCKER→B-1 修订→R2 PASS-WITH-NITS · 三闸维护者签（00 代录 m01606/m00255）· 40 复核 PASS 五验全绿（TC3 反向实证亲跑红绿 · 豁免命中 93 invalid 0）· squash merge `5204330` · 归档 done/ · Hub 补登 · CLOSE 文档+50 invoke 落盘 · 审查文 R1/R2 复制落址A 过渡（规约 §二）· **钉案：豁免≠审查通过 · 上游 verify 支持址B 留后续 · 管道吞码坑 D3 复证**） |
 
 ## 给维护者
 
