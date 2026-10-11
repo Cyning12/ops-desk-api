@@ -6,11 +6,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings
-from app.ops.hitl import auto_resume
-from app.ops.router import router as ops_router
-from app.ops.tracing import log_tracing_startup
-
 _LOG_FORMAT = "%(asctime)s %(name)s %(levelname)s %(message)s"
 _LOG_LEVEL_NAMES = ("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG")
 
@@ -35,7 +30,17 @@ def _init_logging() -> None:
         )
 
 
+# N-40-1：初始化必须先于首个 app 包 import——import 链执行期（窗口期）capability
+# 模块级装配（app/ops/capability/__init__.py:112 → persistence.py）即发射 WARNING/INFO；
+# root 无 handler 则 WARNING 走 lastResort 裸格式、INFO 整行被吞。函数仅用 stdlib，
+# 无循环 import 风险；basicConfig 幂等（root 已有 handler 时 no-op）。
 _init_logging()
+
+
+from app.config import settings  # noqa: E402
+from app.ops.hitl import auto_resume  # noqa: E402
+from app.ops.router import router as ops_router  # noqa: E402
+from app.ops.tracing import log_tracing_startup  # noqa: E402
 
 
 @asynccontextmanager
