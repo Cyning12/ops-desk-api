@@ -28,7 +28,9 @@ from app.db.models import OpsUser
 from app.ops.capability import (
     Principal,
     capability_catalog_snapshot,
+    evaluate_visibility,
     get_capability_manifest_metadata,
+    get_registry,
     list_capabilities,
 )
 from app.ops.capability.baseline import baseline_filter
@@ -40,7 +42,7 @@ from app.ops.capability.manifest import get_manifest_load_errors
 from app.ops.capability.metrics import snapshot as metrics_snapshot
 from app.ops.capability.persistence import describe_persistence
 from app.ops.capability.receipts import DbReceiptSink
-from app.ops.capability.types import CapabilityFilter
+from app.ops.capability.types import CapabilityFilter, CapabilitySpec
 from app.ops.deps import AdminSyncAuth
 
 router = APIRouter(prefix="/admin/capability", tags=["admin"])
@@ -161,6 +163,46 @@ def _health(persistence: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _project_catalog_item(
+    spec: CapabilitySpec, hidden: dict[str, str] | None
+) -> dict[str, Any]:
+    """admin 总表单条在册能力的出站投影（SPEC tool-catalog-page §2 B2 · 钉死契约 3/4/5）。
+
+    - 键集精确 14 键；``capability_id`` → ``id`` 改名承 capability_mine
+      ``project_capability`` 先例；``adapter`` / ``args_schema`` / ``http`` /
+      ``idempotency_key`` / ``hitl_*`` 等内部装配一律不出站（SPEC 纪律 #4 · FP-5）。
+    - ``status`` 三态：``enabled`` 为 False → ``disabled``（**优先判定** · 与
+      registry ``_match_filter`` 首判同款语义）；其余按 ``evaluate_visibility``
+      hidden 条目 → ``denied:<原因码>`` / ``visible``。
+    - ``visibility_reason`` **恒出键**，仅 denied 条目非空（R1 nit n-1 裁定选①）；
+      原因码与人读文本直接取 hidden 条目（单源 visibility.py ``check_visible`` +
+      ``VISIBILITY_REASON_TEXTS`` · 未知码原样兜底）——路由层零重算。
+    """
+    status_text = "visible"
+    reason_text: str | None = None
+    if not spec.enabled:
+        status_text = "disabled"
+    elif hidden is not None:
+        status_text = f"denied:{hidden['reason']}"
+        reason_text = hidden["visibility_reason"]
+    return {
+        "id": spec.capability_id,
+        "kind": spec.kind,
+        "description": spec.description,
+        "when_to_use": spec.when_to_use,
+        "when_not_to_use": spec.when_not_to_use,
+        "tags": list(spec.tags),
+        "risk_level": spec.risk_level,
+        "side_effect": spec.side_effect,
+        "enabled": spec.enabled,
+        "tenant_scoped": spec.tenant_scoped,
+        "reversible": spec.reversible,
+        "execution_type": spec.execution_type,
+        "status": status_text,
+        "visibility_reason": reason_text,
+    }
+
+
 @router.get("/catalog")
 async def catalog(
     _user: OpsUser | None = AdminSyncAuth,
@@ -191,6 +233,18 @@ async def catalog(
         filter=cap_filter, principal=principal
     )
     manifest_error_details = get_manifest_load_errors()
+    # items 全字段数组（SPEC §2 B2「每个在册 capability 一条」· 钉死契约 2）：
+    # 数据源 = 无 filter 全量在册（registry.list_specs 口径），baseline/kinds/deny_write
+    # 等裁剪只影响上方 visible_ids/summary，对 items 覆盖集零影响；按 id 排序保对拍稳定。
+    specs = get_registry().list_specs()
+    # hidden 条目（capability_id/reason/visibility_reason）由 evaluate_visibility 单源给出；
+    # 对全量在册求值后按 id 索引，denied 判定与文本零路由层重算。
+    _, visibility = evaluate_visibility(specs, principal)
+    hidden_by_id = {h["capability_id"]: h for h in visibility["visibility_hidden"]}
+    items = sorted(
+        (_project_catalog_item(spec, hidden_by_id.get(spec.capability_id)) for spec in specs),
+        key=lambda item: item["id"],
+    )
     return {
         "filter": {
             "baseline": baseline,
@@ -213,6 +267,8 @@ async def catalog(
         },
         "visible_ids": sorted(s.capability_id for s in visible),
         **summary,
+        # admin 总表 items（只增顶层键 · 既有键零 diff）
+        "items": items,
         # manifest 故障可见性（契约：顶层两键 · 既有键零 diff · catalog-manifest-errors-surface）
         "manifest_errors": len(manifest_error_details),
         "manifest_error_details": manifest_error_details,

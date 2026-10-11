@@ -117,10 +117,12 @@ async def test_tc2_zero_failure_baseline_key_parity(client, as_admin):
 
     assert body["manifest_errors"] == 0
     assert body["manifest_error_details"] == []
-    # 键面：既有键一钥不少，新增仅两键
+    # 键面：既有键一钥不少，新增仅三键（manifest_errors/details + B2 items 全字段数组）
     assert set(body) == _catalog_expected_keys() | {
         "manifest_errors",
         "manifest_error_details",
+        # task_b2_nit3_admin_items_array：admin 总表 items（SPEC §2 B2 · 只增顶层键）
+        "items",
     }
     # 逐键对拍：与 snapshot 直出一致（路由零重算 · 契约4 同纪律）
     assert body["visible_ids"] == sorted(s.capability_id for s in visible)
