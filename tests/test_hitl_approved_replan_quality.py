@@ -25,6 +25,14 @@ TC2（单测组 · FP-3 反面 + 边界口径）：
   （sort_keys 键序无关 / 异参不同键 / 未注册 tool 返 None）。
 
 两枚 TC1 对现码均 RED（护栏/注入未实现）——红测先行时序证据见 git 历史。
+
+N1 收口追加组（task hitl-n1-locked-branch-inject）：
+
+- **TC1-N1** locked 空 + preserved 非空（40 run1 实证形态）：supervisor 重规划
+  prompt 须注入保号行名单（现码 else 分支走基础 prompt 不注入 · RED 先行 →
+  方案 A `if locked or preserved` 复用 suffix 注入面转 GREEN）。
+- **TC2-b** locked 空 + preserved 空（首次规划主路径 · FP-3 钉死）：
+  system_content 对基础模板渲染逐字节零 diff。
 """
 
 from __future__ import annotations
@@ -38,6 +46,8 @@ import pytest
 
 from app.ops.capability import delegation as dl
 from app.ops.lg_rag.multi.nodes import (
+    _build_supervisor_system,
+    _format_capability_catalog,
     _format_preserved_block,
     _guard_write_key,
     _join_subtasks,
@@ -150,6 +160,62 @@ async def test_tc1_supervisor_replan_prompt_sees_preserved_and_results(cap_env):
     # 保号契约零 diff：落位仍 locked → 保号行 → LLM 新后缀
     new_id = run_id + ":3"
     assert [r["subtask_id"] for r in out["subtasks"]] == [s1, s2, new_id]
+
+
+@pytest.mark.asyncio
+async def test_tc1_locked_empty_preserved_injected_into_prompt(cap_env):  # noqa: F811
+    """TC1-N1（红测先行 · N1 缺口同形签名）：locked 空 + preserved 非空 → 保号行注入。
+
+    场景钉 40 run1 实证形态：hitl 批准单步写，被批准步经 _apply_hitl_decision
+    剪结果后无终态、locked 前缀为空，preserved 非空。现码 else 分支走
+    _build_supervisor_system 基础 prompt，保号行名单不注入（LLM 仍盲）。
+    修复后（方案 A 复用 suffix 注入面）prompt 须含保号行 sid + 钉死措辞；
+    保号落位契约零 diff：[保号行, LLM 新后缀]。
+    """
+    run_id = "run-" + uuid.uuid4().hex[:8]
+    s1 = run_id + ":1"
+    state = _guard_state(
+        run_id,
+        [_guard_row(s1, input={"request_id": "r-n1", "note": "批准重跑我"})],
+        [],
+        hitl_unlocked_ids=[s1],
+    )
+    complete = AsyncMock(return_value=_new_step_suffix("后续步骤"))
+    provider = SimpleNamespace(complete=complete)
+    with patch(_CAPS_PATCH, new=_fake_caps), patch(
+        _PLAN_PATCH, new=lambda *a, **k: provider
+    ):
+        out = await supervisor_node(state)
+
+    system_prompt = str(complete.await_args.args[0][0].content)
+    # 现码 RED：locked 空走基础 prompt，s1 不出现（N1 缺口同形签名）
+    assert s1 in system_prompt, "locked 空分支保号行（approved 待重跑）须注入 prompt"
+    assert "切勿为同一目的再规划新步骤或孪生步骤" in system_prompt
+    # 保号落位契约零 diff：locked 空 → [保号行, LLM 新后缀]（seq=1 ⇒ 新 id :2）
+    new_id = run_id + ":2"
+    assert [r["subtask_id"] for r in out["subtasks"]] == [s1, new_id]
+
+
+@pytest.mark.asyncio
+async def test_tc2_locked_empty_preserved_empty_prompt_zero_diff(cap_env):  # noqa: F811
+    """TC2-b（FP-3 钉死）：locked 空 + preserved 空（首次规划主路径）逐字节零 diff。
+
+    preserved 空时 system_content 必须仍是基础模板渲染结果——对 master
+    同输入逐字节零 diff，防「顺手统一分支」误伤首次规划主路径。
+    """
+    run_id = "run-" + uuid.uuid4().hex[:8]
+    state = _guard_state(run_id, [], [])
+    complete = AsyncMock(return_value=_new_step_suffix("首步"))
+    provider = SimpleNamespace(complete=complete)
+    with patch(_CAPS_PATCH, new=_fake_caps), patch(
+        _PLAN_PATCH, new=lambda *a, **k: provider
+    ):
+        await supervisor_node(state)
+
+    system_prompt = str(complete.await_args.args[0][0].content)
+    expected = _build_supervisor_system(_format_capability_catalog(_fake_caps()))
+    assert system_prompt == expected, "preserved 空主路径须对基础模板逐字节零 diff"
+    assert "切勿为同一目的再规划新步骤或孪生步骤" not in system_prompt
 
 
 @pytest.mark.asyncio
