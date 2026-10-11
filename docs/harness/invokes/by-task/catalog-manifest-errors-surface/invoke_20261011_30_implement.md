@@ -43,7 +43,7 @@
 | 1 | \`.venv/bin/python -m pytest tests/test_admin_capability_manifest_errors.py\` | 0 | **4 passed**（红测先行时序：520425f 时 ImportError 红 · 实现后全绿） |
 | 2 | 受影响面五文件（manifest/manifest_http/admin observability/visibility_receipts/本文件） | 0 | **85 passed** |
 | 3 | \`.venv/bin/python -m pytest tests -q\`（全量） | 1 | **1653 passed, 1 skipped, 4 failed**——4 红全基线同现同败：hitl asyncpg + memory_vector_p1（stash 基线复跑同败 · B1 钉案一致）+ multi_replica hitl 两枚（HEAD~1 回退本帽五文件复跑同败 · 共享测试库状态敏感）→ **零新增红成立** |
-| 4 | \`ruff check\` 触及四文件 | 1 | 2 errors（I001 import 排序 + 多余括号）**stash 基线复跑同现** → 零新增；format 差异同基线 |
+| 4 | \`ruff check\` 触及四文件 | 1 | 4 errors（I001 manifest.py:22 import 排序 · UP034 manifest.py:718 多余括号 · UP038 manifest.py:608 + visibility.py:57 isinstance 元组）——**接管棒复跑 fec3abf 基线逐条对拍同现同码区（仅行号随 diff 平移）→ 零新增**；format 差异同基线（2026-10-11 接管棒订正：原记「2 errors」系笔误，实 4 枚全基线存量） |
 | 5 | \`.venv/bin/lint-imports\` | 0 | **12 kept, 0 broken**（补边后） |
 | 6 | \`./scripts/graph-compile.sh\` | 0 | EXIT=0（implementedBy 提示为既有 warning · 不咬 exit） |
 | 7 | \`npx spec-wave task lint --file\` | 0 | **LINT: PASS** |
@@ -79,3 +79,4 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-10-11 | 30 交付：红测先行（520425f ImportError 红）→ 实现（2a2503d 4 绿）· 全量 1653 passed 零新增红（4 红基线两法互证）· 工程面九命令绿 · 图谱实判维持 n/a · 三裁定（visibility/.importlinter/审查档）落地留痕 |
+| 2026-10-11 | 接管棒收尾复验：TC1-TC4 4 绿 · splittability_hardening 7 绿（d2 两枚含）· 全量 1653 passed/1 skipped/4 failed 与前棒逐枚一致（hitl asyncpg + memory_vector_p1 + multi_replica hitl 两枚 · 基线存量）· lint-imports 12 kept 0 broken · graph-compile EXIT=0 · verify/task lint PASS · parity 1 绿 · **订正 ruff 行：实 4 errors 非 2（UP038 两枚漏记）· fec3abf 基线同现同码区对拍零新增结论不变** |

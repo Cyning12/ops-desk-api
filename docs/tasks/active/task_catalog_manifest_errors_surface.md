@@ -128,7 +128,7 @@ manifest 加载失败从「仅日志」变为「catalog 响应可观测」（`ma
 - [x] **TC2 零故障基线**（30 实证：test_tc2 snapshot 直出逐键对拍 ✅）：默认装配 catalog 响应 `manifest_errors == 0` · `manifest_error_details == []` · 既有键（filter/principal/visible_ids/visibility_*）逐键对拍零 diff（SPEC FP-4）。
 - [x] **TC3 visibility_reason 钉源**（30 实证：test_tc3 词表钉源+直出对拍 ✅）：fixture manifest 含 visibility 受限条目 + 受限 principal 查询 → hidden 条目附 `visibility_reason` 文本且与 `evaluate_visibility` 直出 reason 码一一对应；路由层零过滤/零重算（走查 + 单测对拍求值函数直出）。
 - [x] **TC4 失败域隔离与生命周期存续**（30 实证：test_tc4 隔离+reload 清记录+meta 两键零 diff ✅）：坏文件不带崩好文件（manifest.py:14-15 语义 · test_capability_manifest_http.py:413 面存续）；reload 该文件成功后其故障记录清除（钉死契约 3）；`get_capability_manifest_metadata` 两键零 diff（钉死契约 2）。
-- [x] **TC5 工程面**：pytest 全绿（仓级基线钉案照登 · 零新增红）· ruff 触及路径零新增 · graph-compile EXIT=0 · `npx spec-wave task lint` PASS · 三闸 approved 后才 30。（30 实证：全量 1653 passed · 4 failed 全基线同现同败——hitl asyncpg/memory_vector_p1 环境存量 + multi_replica hitl 两枚 stash/HEAD~1 复跑同败 · ruff 触及路径 2 错基线同现零新增 · lint-imports 12 kept 0 broken · graph-compile EXIT=0 · lint/verify PASS）
+- [x] **TC5 工程面**：pytest 全绿（仓级基线钉案照登 · 零新增红）· ruff 触及路径零新增 · graph-compile EXIT=0 · `npx spec-wave task lint` PASS · 三闸 approved 后才 30。（30 实证：全量 1653 passed · 4 failed 全基线同现同败——hitl asyncpg/memory_vector_p1 环境存量 + multi_replica hitl 两枚 stash/HEAD~1 复跑同败 · ruff 触及路径 4 错（I001/UP034/UP038×2）fec3abf 基线同现同码区零新增 · lint-imports 12 kept 0 broken · graph-compile EXIT=0 · lint/verify PASS）
 
 ## 依赖
 
