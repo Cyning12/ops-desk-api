@@ -108,9 +108,9 @@ TB1-TB8（保号 14 枚）· TA 组（T1 29+34 枚）· hitl resume/decide 既�
 
 - [x] TC1 红测先行：构造 resume 场景（approved 非空+部分步已终态）实证旧行为（孪生/重放）→ 实现后转绿（防恒绿假象）。（9b56343 RED → ebe2a01 转绿 · 时序在 git 历史）
 - [x] TC2 单测：D1 裁定形态对应断言（定点路径步集 / 注入载荷含已完成清单 / write 步跳过）。（TC2 六枚：FP-3 反面/异 args/error 不拦/同批双胞胎/off 零介入/canonical 确定性 · ebe2a01）
-- [ ] TC3 live（依赖序2 merge 后台账可见）：六 env 组 → 挂起→decide→resume → 断言：无孪生 subtask · write 步执行次数=1 · delegation_approval_consumed 命中原 sid。
-- [ ] TC4 反回归：全量 pytest + TB1-TB8 + capability_acceptance 门禁 · **旧测 grep 影响面以 §B1 节为准**（K7 口径 · 涉改文件逐枚核 diff 归因）。
-- [ ] TC5 台账链：live 全程台账键 grep 可断。
+- [x] TC3 live（依赖序2 merge 后台账可见）：六 env 组 → 挂起→decide→resume → 断言：无孪生 subtask · write 步执行次数=1 · delegation_approval_consumed 命中原 sid。（40 双 run 实证：run1 6d467359 护栏 guard-skip 命中孪生 :2 replay_of :1 · run2 3f2c58bf 注入路径激活零孪生 · write 执行均=1 · consumed 命中原 sid · pending 零孤儿 · invoke_20261011_40_verify.md §3）
+- [x] TC4 反回归：全量 pytest + TB1-TB8 + capability_acceptance 门禁 · **旧测 grep 影响面以 §B1 节为准**（K7 口径 · 涉改文件逐枚核 diff 归因）。（40 终验：1769 过/7 红与 master 基线逐枚同名同因 · ruff 55=55 涉改文件 6=6 · TB+新测+prompt_assets 93 绿 · 门禁失败2跳过1 与 master cae745e 同形 · §2）
+- [x] TC5 台账链：live 全程台账键 grep 可断。（token_issue_hitl_required→hitl_persist_guard_skip→delegation_approval_consumed→token_issued→token_verified→（run1）write_replay_guard_skip/replay_of→HITL 恢复完成 · §3 TC5）
 
 ## 依赖
 
@@ -142,6 +142,8 @@ TB1-TB8（保号 14 枚）· TA 组（T1 29+34 枚）· hitl resume/decide 既�
 
 （CLOSE 时回填）
 
+**40 自检结论（2026-10-11 · 复核 HEAD 403a0e9）**：**PASS-WITH-NITS**。①diff/契约五条独立核全过（hitl/ 目录零 diff · write 零重发结构性机断 · TB 93 绿）；②TC4 终验：全量 1769 过/7 红与 master 基线逐枚同名同因（环境性）· ruff 55=55 涉改文件 6=6 · capability_acceptance 门禁失败2跳过1 与 master cae745e 完全同形（基线环境性零新增）；③TC3 live 双 run 对照实证：run1 单写步 locked 空→LLM 仍产孪生 :2→**write_replay_guard_skip/replay_of 台账 live 命中**（零重发零孤儿单 · FP-3 对照 approved 步正常消费重跑）；run2 rag+write locked 非空→suffix v2 注入路径激活→**LLM 零孪生** · :1 rag 零重跑 · :2 重跑 exactly once；④TC5 台账链 grep 可断。偏差：N1 locked 空路径 preserved_block 不注入（nodes.py :1172 else 分支 · 护栏兜底红线不破 · 建议另立 task）；N2 prompt 内容级直证不可观测（TC1-b 单测钉死+live 行为对照间接实证）；N3 worktree compose 端口占用复用主仓容器。TC3/TC4/TC5 勾选。详见 invoke_20261011_40_verify.md。
+
 ### 自检结论（执行者）
 
 **30（2026-10-11 · ebe2a01）**：D1=C 混合案落地——replan 注入去盲（$preserved_block 保号行 + locked 终态摘要 · 模板 v1→v2）+ write 孪生分发层 guard-skip 护栏（先于签发检查 · 不派发不消费 · replay_of 台账 · off 零触达）。钉死契约五条全过：①write 零重发结构性机断（TC1-a/TC2 组）②TB1-TB8 48 枚全绿台账键零字面改动③resume.py:131 未触④reject 零 diff⑤全量 1769 过/7 红与基线逐枚一致（环境性 · .env delegation ON+postgres checkpointer · stash 对拍在案）· ruff 55 持平 master。TC1/TC2 勾选；TC3/TC5 live 待序2 merge 后 40 帽；40 本棒不做。详见 invoke_20261011_30_implementation.md。
@@ -155,3 +157,4 @@ TB1-TB8（保号 14 枚）· TA 组（T1 29+34 枚）· hitl resume/decide 既�
 | 2026-10-11 | v0-skeleton | 10 骨架先行落稿（全节标题+占位 · 增量填充中） |
 | 2026-10-11 | v1 | 10 填肉定稿（骨架棒卡滞 interrupt 留痕 · **00 代笔填肉** · 授权 m01606）：锚点亲读复核+漂移校正（真决策点 nodes.py:1759 非旧引 router.py）· D1 三案倾向 C · write 零重发核心红线 · done{completed} 钉案非范围照登（D 块留另立裁定口）· 依赖序2 |
 | 2026-10-11 | v1.1 | 30 自检结论回填 + TC1/TC2 勾选（feat ebe2a01 · 契约五条全过 · TC3/TC5 留 40） |
+| 2026-10-11 | v1.2 | 40 核验回填：PASS-WITH-NITS · TC3/TC4/TC5 勾选 · live 双 run 实证（护栏命中+注入对照）· N1 locked 空注入缺口留另立 task |
