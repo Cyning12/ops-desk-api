@@ -1158,8 +1158,13 @@ async def supervisor_node(state: LgRagState) -> dict:
         stamped = _stamp_host_plan(state, items, locked=locked, preserved=preserved)
         return {**bump, **stamped}
     catalog_block = _format_capability_catalog(caps)
-    if locked:
+    if locked or preserved:
         # approved-replan-quality：前缀带终态结果摘要 + 注入保号行名单（去盲）
+        # hitl-n1-locked-branch-inject（方案 A）：locked 空 + preserved 非空
+        # （hitl 批准单步写形态 · 40 run1 实证）同走 suffix 注入面——locked 空
+        # 不蕴涵 preserved 空，else 基础 prompt 会让保号行对 LLM 不可见（N1）。
+        # prefix_block 退化为「（无）」字面（_format_prefix_block([]) 已处理）；
+        # preserved 空 ⇒ 仍走 else 基础模板，主路径逐字节零 diff（FP-3 钉死）。
         _plan_ids = {str(r["subtask_id"]) for r in _plan_rows(state)}
         _terminals = _terminal_index(
             list(state.get("subtask_results") or []), _plan_ids
