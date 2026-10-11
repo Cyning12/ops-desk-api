@@ -1,6 +1,6 @@
 # Task：hitl-n1-locked-branch-inject（locked 空分支 preserved_block 不注入 · 读步去盲路径覆盖缺口收口）
 
-> **状态**：draft（10 落稿 · 三闸 pending 待人签 · 30 拒开工直至 HG-AUDIT-R1=approved）  
+> **状态**：active（20 R1 PASS · 三闸 approved · 00 代录 授权 m00106 · 30 可开工）  
 > **类型**：功能缺口收口（hitl-approved-replan-quality CLOSE N1 钉案 · SPEC §9 序1 后续项 · 消费回路血统延续）  
 > **依据**：SPEC `docs/spec/hitl-approval-consumption/SPEC-hitl-approval-consumption_v1.md` §9 序1 · CLOSE 文档 `docs/tasks/close/close_hitl_approved_replan_quality_20261011.md` §四.1（N1 钉案）+ §七.1（另立 task 建议 · 最高优先）· 交接档 `docs/harness/invokes/by-task/_prompts/PROMPT_00_spec-campaign-handoff_20261011.md` §2.2 第 1 项  
 > **分支**：`task/hitl-n1-locked-branch-inject`（base master `286d825`）
@@ -32,9 +32,9 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20, 30 | 初稿人扫（维护者签） |
-| HG-AUDIT-R1 | pending | 30 | 20 R1 审查文落盘后人签；pending 则 30 拒开工 |
-| HG-GRAPH-MODULES | pending | 30 | 图谱 lg_rag/multi 行备注回写后 00 代录（30 按实判是否需动） |
+| HG-TASK-DRAFT | approved | 20, 30 | 初稿人扫 · 00 代录（授权 m00106 · 2026-10-11） |
+| HG-AUDIT-R1 | approved | 30 | R1 PASS（docs/harness/reviews/task_hitl_n1_locked_branch_inject_audit_R1_20261011.md · nit N1 行号双口径留痕豁免）· 00 代录（授权 m00106） |
+| HG-GRAPH-MODULES | approved | 30 | 预判 G-L1（modules.md lg_rag/multi 行行为表述面）· 30 按实判回写义务钉死（实证免动须交免动说明）· 00 代录（授权 m00106） |
 
 ---
 
@@ -173,3 +173,4 @@ TC1 红测先行防恒绿假象（RED 签名 = N1 缺口同形：prompt 不含�
 | 日期 | 说明 |
 |------|------|
 | 2026-10-11 | v0 · 10 落稿：N1 钉案两源原文 + 锚点亲读核真（base master `286d825` · else 分支 multi/nodes.py:1173-1174）· 候选 A/B/C 开放（倾向 A）· TC1–TC5 验收 · R0–R5 思考轮（early_stop at R5）· 三闸 pending 待人签 |
+| 2026-10-11 | 三闸 approved（**00 代录 · 授权 m00106**）：HG-TASK-DRAFT 初稿人扫 · HG-AUDIT-R1（R1 PASS · 审查文址A 在案 · nit N1 豁免）· HG-GRAPH-MODULES（G-L1 预判 · 30 回写义务钉死）→ 30 解锁 |
