@@ -130,6 +130,9 @@ class ResumeEventSink:
                 "thread_id": self.thread_id,
                 "status": "waiting_approval" if self.re_interrupted else "resumed",
                 "events_persisted": self.persisted,
+                # F-OBS-1：终帧观测字段，与 lg-rag/chat SSE done 同口径
+                # （int((time.perf_counter() - started) * 1000)，起点见 __init__）。
+                "latency_ms": int((time.perf_counter() - self._started) * 1000),
             },
         )
 

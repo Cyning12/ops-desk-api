@@ -16,13 +16,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from app.ops.hitl.persistence import reset_hitl_store, set_hitl_store
 from app.ops.hitl.resume import ResumeEventSink
 from app.ops.hitl.store import (
-    InMemoryHitlStore,
     STATUS_APPROVED,
     STATUS_PENDING,
+    InMemoryHitlStore,
 )
-from app.ops.hitl.persistence import reset_hitl_store, set_hitl_store
 
 _RUN = "runevt"
 _T1 = f"{_RUN}:1"

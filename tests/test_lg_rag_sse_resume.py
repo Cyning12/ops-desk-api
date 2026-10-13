@@ -10,8 +10,6 @@ import pytest
 from httpx import AsyncClient
 from langchain_core.messages import AIMessage
 
-from tests.conftest import DB_AVAILABLE
-
 from app.ops.lg_rag.event_store import LgRagRunNotFoundError
 from app.ops.lg_rag.sse_replay import (
     InvalidCursorError,
@@ -21,6 +19,7 @@ from app.ops.lg_rag.sse_replay import (
     replay_events,
     resolve_replay_target,
 )
+from tests.conftest import DB_AVAILABLE
 
 _STREAM = "/api/ops/lg-rag/stream"
 _REPLAY = "/api/ops/lg-rag/replay"
