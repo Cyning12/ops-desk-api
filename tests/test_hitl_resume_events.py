@@ -129,6 +129,45 @@ async def test_normal_tail_is_not_marked_waiting_control(persisted):
     assert sink.re_interrupted is False
 
 
+# ---------------------------------------------------------------------------
+# 2b · 终帧观测字段（F-OBS-1：与 live 流 done 对齐 · task hitl_resume_replay_contract）
+# ---------------------------------------------------------------------------
+
+
+async def test_close_done_carries_latency_ms(persisted):
+    """F-OBS-1：resume 终帧 done 必须带 latency_ms（int ≥ 0 · 毫秒）。
+
+    缺键时前端 lastDone 徽标只能显示「耗时 0ms」（web 联调 FP-1 实证）。
+    口径与 live 流终帧一致：int((time.perf_counter() - started) * 1000)。
+    修复前 RED 签名：KeyError 'latency_ms'（缺键，与实证缺口同形）。
+    """
+    sink = ResumeEventSink(run_id="r1", user_id="u1", thread_id="t1")
+    await sink.open(approved=[_T1])
+    await sink(_plain_update())
+    await sink.close()
+
+    done = persisted[-1]
+    assert done["event_type"] == "done"
+    latency_ms = done["payload"]["latency_ms"]
+    assert isinstance(latency_ms, int)
+    assert latency_ms >= 0
+
+
+async def test_close_done_has_no_model_key_control(persisted):
+    """FP-1 裁定钉案（对照用例，应即绿）：resume 终帧**不补** model 键。
+
+    lg-rag 面无 per-run model 真源（live done 亦无 model；chat 的 model 来自
+    chat 模块自有 run 记录，非本契约面）——伪造默认值违反 FP-1 禁伪造红线。
+    此断言钉死「不硬造」，防后续有人塞配置默认值充数。
+    """
+    sink = ResumeEventSink(run_id="r1", user_id="u1", thread_id="t1")
+    await sink.open(approved=[_T1])
+    await sink(_plain_update())
+    await sink.close()
+
+    assert "model" not in persisted[-1]["payload"]
+
+
 async def test_node_updates_use_the_same_frame_shape_as_live(persisted):
     """恢复段的帧形状必须和 live 一致（复用 ``map_node_update``）。
 
