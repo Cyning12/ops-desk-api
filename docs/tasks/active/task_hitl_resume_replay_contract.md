@@ -98,7 +98,7 @@ ops-desk-web 联调链 T-W2（2026-10-11 · invoke 留痕在案）实证暴露�
 - [x] **TC2 在飞 replay 语义化**（30：409 + `Retry-After: 2` 正整数 · 在飞面整体不再触达读路径故 500 消失 · router 测+DB 三态测在案）：构造 run 在飞（未沉降）形态 `POST /lg-rag/replay` → 断言返回 409（或 30 裁定的等价语义化 4xx）+ `Retry-After` 头存在且为正整数；**不再出现 500**。
 - [x] **TC3 沉降后零 diff**（30：terminal 放行/挂起放行 DB 测 · `refuse_in_flight` 默认关全仓唯一生产调用方 · 404/422 既有断言零新增红存续）：run 沉降后 replay 200 流式帧序列对 master 同输入零 diff；resume 流既有帧序（hitl.resumed → … → done）除终帧增键外零 diff；未知 run_id 仍 404、非法 cursor 仍 422（router.py:344-356 既有语义存续）。
 - [x] **TC4 反回归全量对拍**（30：全量 1803 passed + 5 failed 经 clean tree stash 对拍同 5 红同名同因=既有环境性 · 零新增；ruff 触碰文件 All checks passed；graph-compile EXIT=0 · graph.json 再生噪音已还原）：`pytest tests` 全量对拍 master 基线零新增红（环境性红逐枚同名同因照登）；`ruff check app tests` 触及路径零新增；`./scripts/graph-compile.sh` EXIT=0（再生噪音文件一律还原）。
-- [ ] **TC5 live 对照（40 帽）**：复现 web 联调 S2/S3 同形态（在飞 replay + approve→resume 终帧），观测 409/Retry-After 与终帧 `latency_ms` 实值；结果如实照登，回执 web 联调链（T-W2 FP-1 闭环证据）。
+- [x] **TC5 live 对照（40 帽）**（40：live 六条全实证 · 在飞 replay **409 + Retry-After: 2** 两 run 三打（run `d0d824d4` 在飞窗 + 孤儿 run `22b65ce2` 复打 · 500 消失）· S3 全链 18 帧连续 · seq18 `done{status:'resumed', latency_ms:135574}` 实值 **无 model 键**（FP-1 钉案 live 一致）· 挂起 replay 200 七帧 / completed run 200 一百十二帧零 diff · 环境三坑留痕 · 40 invoke + 附件 16 件落盘）：复现 web 联调 S2/S3 同形态（在飞 replay + approve→resume 终帧），观测 409/Retry-After 与终帧 `latency_ms` 实值；结果如实照登，回执 web 联调链（T-W2 FP-1 闭环证据）。
 
 ## 依赖
 
@@ -158,7 +158,7 @@ TC1 红测先行防恒绿假象（RED 签名 = F-OBS-1 缺口同形：终帧缺 
 
 **30（2026-10-13）**：红测先行时序成立（a30b3d3 五红签名全预期：KeyError/AttributeError/TypeError×3 → e4a54d9 全绿 · 目标两文件 29 passed）；FP-1 裁定 **model 不补**（sse_stream.py 全文零 model 引用 · resume 全链无来源 · 表无列 · 对照测试钉死禁伪造）；F2 判定面新谓词 `run_stream_closed` 刻意不复用 `run_is_terminal`（挂起 replay 合法零 diff · R1 观察项 O2 回复在 30 invoke）；全量对拍零新增红（5 既有红 clean tree 实证同名同因）；TC1–TC4 勾选，**TC5 待 40 帽 live 对照**。
 
-（40 回填）
+**40（2026-10-13）**：TC5 live 对照 **PASS**——S2 同形态在飞 replay 两 run 三打实证 `409 + retry-after: 2` + 语义化 body（run `d0d824d4` 在飞窗 · 孤儿在飞 run `22b65ce2` 14:20 复打 · fail-closed 活样本 · **500 消失**）；S3 同形态 decide approved（inherit）→ resume 200（**JSON 面非 SSE** 照登 · replay cursor `:18`）→ 全量 replay **18 帧 seq 连续** · seq18 `done{status:'resumed', latency_ms:135574, 无 model 键}`（与 T-W2 形同构）；挂起 replay 200 七帧 · completed run 200 一百十二帧（TC3 零 diff live 面）；环境三坑留痕（langfuse 引号炸 port / NO_PROXY 裸 `::1` 同炸 / strategy 候选 env 追加口 `OPS_STRATEGY_EXTRA_CANDIDATE_CAPABILITY_IDS`）；回执 T-W2 联调链 F-OBS-1/F-OBS-2 闭环照登（40 invoke `invoke_20261013_40_verify.md` + attachments 16 件）。**TC1–TC5 全勾 · task 验收面收口。**
 
 ---
 
@@ -166,6 +166,7 @@ TC1 红测先行防恒绿假象（RED 签名 = F-OBS-1 缺口同形：终帧缺 
 
 | 日期 | 说明 |
 |------|------|
+| 2026-10-13 | 40 交付：TC5 live 对照 **PASS**（六条全实证 · 附件 16 件 · 环境三坑留痕 · 回执 T-W2 联调链照登 F-OBS-1/F-OBS-2 闭环）· **TC1–TC5 全勾 · task 验收面收口** · 40 invoke `invoke_20261013_40_verify.md` 落盘 |
 | 2026-10-13 | 30 交付：RED a30b3d3（5 红签名全预期）→ GREEN e4a54d9 · 图谱回写 61094bf · 全量 1803 passed 零新增红（clean tree stash 对拍同 5 既有红同名同因）· ruff 触碰文件全绿 · graph-compile EXIT=0 · 30 invoke 落盘 · TC1–TC4 勾选（TC5 待 40 live 对照） |
 | 2026-10-13 | 20-task-audit R1 落盘：结论 **PASS**（内容零阻塞 · 锚点 9 行全实证 master `cff3660` · 旧测影响面代查实证为空不退回补列 · 思考轮 R0–R5 闭合 · 非阻塞观察项 O1–O3）· 审查文 `docs/harness/reviews/task_hitl_resume_replay_contract_audit_R1_20261012.md` · 20 invoke 落盘（required_invoke_hats 含 20）· **维护者签 HG-AUDIT-R1 / HG-GRAPH-MODULES approved → 30 放行（红测先行 · TC1–TC5）** |
 | 2026-10-11 | v0 · 10 落稿：ops-desk-web 联调链 T-W2 FP-1 报回两观察项（F-OBS-1 S3 replay seq18 终帧缺 latency_ms/model · F-OBS-2 S2 run 640d68970a564fbb8459d8d40cb1c5f6 在飞 replay 500）· 锚点亲读核真（base master `92a8526` · resume.py:124-134 / router.py:350-356 / 对照面 sse_stream.py:465-490 · chat/streaming.py:290-297）· TC1–TC5 验收 · R0–R5 思考轮（early_stop at R5）· HG-TASK-DRAFT approved（00 委派令代录）· HG-AUDIT-R1/HG-GRAPH-MODULES pending 待人签 · 来源：ops-desk-web 联调链 T-W2 FP-1 报回（web PR #61） |
