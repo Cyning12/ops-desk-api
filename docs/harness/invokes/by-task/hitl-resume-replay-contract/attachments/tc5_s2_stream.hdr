@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+Transfer-Encoding: chunked
+Cache-Control: no-cache
+Connection: keep-alive
+Content-Type: text/event-stream; charset=utf-8
+Date: Tue, 13 Oct 2026 05:59:23 GMT
+Keep-Alive: timeout=4
+Proxy-Connection: keep-alive
+Server: uvicorn
+X-Accel-Buffering: no
+X-Ops-Lg-Rag-Run-Id: 69b7639eb47c4ca9bc96ec9151023cdd
+
