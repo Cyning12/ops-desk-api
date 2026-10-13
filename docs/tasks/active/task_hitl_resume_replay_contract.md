@@ -1,6 +1,6 @@
 # Task：hitl-resume-replay-contract（HITL resume 终帧字段补齐 + 在飞 replay 语义化状态码 · web 联调 FP-1 报回两观察项）
 
-> **状态**：active（draft · HG-TASK-DRAFT approved · HG-AUDIT-R1 / HG-GRAPH-MODULES pending · 30 拒开工）  
+> **状态**：active（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved · 20 R1 落盘 PASS · **30 可开工（红测先行）**）  
 > **类型**：契约缺口收口（ops-desk-web 联调链 T-W2 FP-1 报回 · web PR #61 · 纯后端 SSE/HTTP 契约面）  
 > **依据**：ops-desk-web 联调链 T-W2 invoke 留痕（2026-10-11 · S3 replay seq18 / S2 断线 replay 实测）· 本仓锚点亲读核真（base master `92a8526`）  
 > **分支**：`task/hitl-resume-obs-drafts`（base master `92a8526`）
@@ -33,8 +33,8 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
 | HG-TASK-DRAFT | approved | 20, 30 | 初稿人扫 · 00 联调链委派令代录（web 联调链 T-W2 FP-1 报回 · web PR #61 · 2026-10-11） |
-| HG-AUDIT-R1 | pending | 30 | 待 api 仓 20-task-audit R1 落盘 + 维护者签 |
-| HG-GRAPH-MODULES | pending | 30 | 预判 G-L1（modules.md hitl/lg_rag 行行为表述面）· 30 按实判回写义务钉死 · 待维护者签 |
+| HG-AUDIT-R1 | approved | 30 | 20 R1 落盘 PASS（`docs/harness/reviews/task_hitl_resume_replay_contract_audit_R1_20261012.md` · 内容零阻塞）· 维护者签 2026-10-13 |
+| HG-GRAPH-MODULES | approved | 30 | G-L1 预判与 20 R1 核对一致 · 30 按实判回写义务存续 · 维护者签 2026-10-13 |
 
 ---
 
@@ -164,4 +164,5 @@ TC1 红测先行防恒绿假象（RED 签名 = F-OBS-1 缺口同形：终帧缺 
 
 | 日期 | 说明 |
 |------|------|
+| 2026-10-13 | 20-task-audit R1 落盘：结论 **PASS**（内容零阻塞 · 锚点 9 行全实证 master `cff3660` · 旧测影响面代查实证为空不退回补列 · 思考轮 R0–R5 闭合 · 非阻塞观察项 O1–O3）· 审查文 `docs/harness/reviews/task_hitl_resume_replay_contract_audit_R1_20261012.md` · 20 invoke 落盘（required_invoke_hats 含 20）· **维护者签 HG-AUDIT-R1 / HG-GRAPH-MODULES approved → 30 放行（红测先行 · TC1–TC5）** |
 | 2026-10-11 | v0 · 10 落稿：ops-desk-web 联调链 T-W2 FP-1 报回两观察项（F-OBS-1 S3 replay seq18 终帧缺 latency_ms/model · F-OBS-2 S2 run 640d68970a564fbb8459d8d40cb1c5f6 在飞 replay 500）· 锚点亲读核真（base master `92a8526` · resume.py:124-134 / router.py:350-356 / 对照面 sse_stream.py:465-490 · chat/streaming.py:290-297）· TC1–TC5 验收 · R0–R5 思考轮（early_stop at R5）· HG-TASK-DRAFT approved（00 委派令代录）· HG-AUDIT-R1/HG-GRAPH-MODULES pending 待人签 · 来源：ops-desk-web 联调链 T-W2 FP-1 报回（web PR #61） |
