@@ -38,7 +38,11 @@ from app.ops.lg_rag import (
     ainvoke_supervisor_agent,
 )
 from app.ops.lg_rag.checkpointer import apostgres_saver, use_postgres_checkpointer
-from app.ops.lg_rag.event_store import LgRagRunNotFoundError, load_events_after
+from app.ops.lg_rag.event_store import (
+    LgRagRunInFlightError,
+    LgRagRunNotFoundError,
+    load_events_after,
+)
 from app.ops.lg_rag.sse_replay import InvalidCursorError, resolve_replay_target
 from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
 from app.ops.lg_rag.thread_store import (
@@ -334,7 +338,11 @@ async def replay_lg_rag(
     body: ReplayRequest,
     user: OpsUser = CurrentUser,
 ) -> StreamingResponse:
-    """SSE 重放已落盘帧（seq > after_seq）；须登录。未知/跨用户 run_id → 404。"""
+    """SSE 重放已落盘帧（seq > after_seq）；须登录。
+
+    未知/跨用户 run_id → 404；run 仍在流式写入（无收尾帧）→ 409 +
+    Retry-After（F-OBS-2），客户端退避重试，沉降后同请求零 diff。
+    """
     try:
         run_id, after_seq = resolve_replay_target(
             run_id=body.run_id,
@@ -348,7 +356,21 @@ async def replay_lg_rag(
         ) from None
 
     try:
-        events = await load_events_after(run_id, str(user.id), after_seq)
+        events = await load_events_after(
+            run_id,
+            str(user.id),
+            after_seq,
+            refuse_in_flight=True,
+        )
+    except LgRagRunInFlightError:
+        # F-OBS-2：在飞 replay 语义化——run 仍在流式写入时读路径不稳定（web 联调
+        # FP-1 实证瞬返 500），前置判定为 409 + Retry-After 让客户端退避重试；
+        # 沉降后同请求走原路径零 diff。
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Run is still in flight; retry after it settles.",
+            headers={"Retry-After": "2"},
+        ) from None
     except LgRagRunNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

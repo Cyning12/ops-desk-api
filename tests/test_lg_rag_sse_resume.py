@@ -19,6 +19,7 @@ from app.ops.lg_rag.sse_replay import (
     replay_events,
     resolve_replay_target,
 )
+from tests.conftest import DB_AVAILABLE
 
 _STREAM = "/api/ops/lg-rag/stream"
 _REPLAY = "/api/ops/lg-rag/replay"
@@ -205,3 +206,116 @@ async def test_replay_after_seq_sse_shape(
     ):
         again = await client.post(_REPLAY, json={"cursor": "run-x:1"})
     assert [e["seq"] for e in _parse_sse(again.text)] == [2, 3]
+
+
+# ---------------------------------------------------------------------------
+# F-OBS-2 · 在飞 replay 语义化（409 + Retry-After，不再 500）
+# ---------------------------------------------------------------------------
+
+_DB_REQUIRED = pytest.mark.skipif(
+    not DB_AVAILABLE, reason="需要本地 PG（opsdesk_test）真跑事件表"
+)
+
+
+async def test_replay_in_flight_run_409_with_retry_after(
+    client: AsyncClient, override_auth_maintainer
+) -> None:
+    """run 在飞（帧在写、未收尾）时 replay → 409 + Retry-After（正整数秒），不再 500。
+
+    web 联调 FP-1 实证：在飞 replay 瞬返 500（run 640d68970a564fbb8459d8d40cb1c5f6），
+    沉降后 200。语义化后客户端收到 409 退避重试；沉降后路径零 diff。
+    修复前 RED 签名：event_store 尚无 LgRagRunInFlightError（AttributeError），
+    修复后若漏映射则该异常冒穿路由成裸 500。
+    """
+    from app.ops.lg_rag import event_store
+
+    with patch(
+        "app.ops.lg_rag.router.load_events_after",
+        new_callable=AsyncMock,
+        side_effect=event_store.LgRagRunInFlightError,
+    ):
+        response = await client.post(
+            _REPLAY, json={"run_id": "run-live", "after_seq": 0}
+        )
+    assert response.status_code == 409
+    retry_after = response.headers.get("Retry-After")
+    assert retry_after is not None, "409 必须带 Retry-After 供客户端退避"
+    assert retry_after.isdigit() and int(retry_after) > 0
+
+
+async def _persist_frame(
+    run_id: str, seq: int, user_id: str, event_type: str, payload: dict
+) -> None:
+    from app.ops.lg_rag import event_store
+
+    await event_store.persist_run_event(
+        run_id=run_id,
+        seq=seq,
+        user_id=user_id,
+        thread_id=f"th-{run_id}",
+        ts_ms=seq * 10,
+        agent_role="system",
+        event_type=event_type,
+        payload=payload,
+    )
+
+
+@_DB_REQUIRED
+async def test_load_events_refuses_in_flight_run(seeded_maintainer) -> None:
+    """在飞（有帧、无 done/error 收尾帧）→ refuse_in_flight=True 抛 LgRagRunInFlightError。
+
+    同用例对照（默认形态 refuse_in_flight 缺省 False 照常返回在飞帧）同时实证：
+    读取路径本身在真 PG 下不抛——live 500 的具体异常类型仓内不可复现，
+    语义化前置判定使该异常面整体不再触达（裁定留痕见 30 invoke）。
+    修复前 RED 签名：TypeError（load_events_after 尚无 refuse_in_flight 形参）。
+    """
+    import uuid
+
+    from app.ops.lg_rag import event_store
+
+    user_id = str(seeded_maintainer["user"].id)
+    run_id = f"inflight-{uuid.uuid4().hex[:8]}"
+    await _persist_frame(run_id, 1, user_id, "run.start", {"status": "started"})
+    await _persist_frame(run_id, 2, user_id, "subtask", {"subtask_id": "s1"})
+
+    with pytest.raises(event_store.LgRagRunInFlightError):
+        await event_store.load_events_after(run_id, user_id, 0, refuse_in_flight=True)
+
+    events = await event_store.load_events_after(run_id, user_id, 0)
+    assert [e["seq"] for e in events] == [1, 2]
+
+
+@_DB_REQUIRED
+async def test_load_events_waiting_approval_replays_normally(seeded_maintainer) -> None:
+    """挂起待恢复（done{waiting_approval}）不算在飞：其 replay 是既有合法操作，必须零 diff。
+
+    判定面红线：waiting_approval 对 run_is_terminal 是「非终态」，但对 replay 闸
+    是「已收尾」——若复用 run_is_terminal 会把挂起 run 的合法 replay 误拦成 409。
+    """
+    import uuid
+
+    from app.ops.lg_rag import event_store
+
+    user_id = str(seeded_maintainer["user"].id)
+    run_id = f"suspended-{uuid.uuid4().hex[:8]}"
+    await _persist_frame(run_id, 1, user_id, "run.start", {"status": "started"})
+    await _persist_frame(run_id, 2, user_id, "done", {"status": "waiting_approval"})
+
+    events = await event_store.load_events_after(run_id, user_id, 0, refuse_in_flight=True)
+    assert [e["seq"] for e in events] == [1, 2]
+
+
+@_DB_REQUIRED
+async def test_load_events_terminal_run_passes_refusal_gate(seeded_maintainer) -> None:
+    """已沉降 run（done{completed}）→ refuse_in_flight=True 照常返回（TC3 零 diff 存储层锚点）。"""
+    import uuid
+
+    from app.ops.lg_rag import event_store
+
+    user_id = str(seeded_maintainer["user"].id)
+    run_id = f"settled-{uuid.uuid4().hex[:8]}"
+    await _persist_frame(run_id, 1, user_id, "run.start", {"status": "started"})
+    await _persist_frame(run_id, 2, user_id, "done", {"status": "completed"})
+
+    events = await event_store.load_events_after(run_id, user_id, 0, refuse_in_flight=True)
+    assert [e["seq"] for e in events] == [1, 2]
