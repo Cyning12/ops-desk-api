@@ -1,0 +1,155 @@
+{
+  "method": "httpx stream mid-break supervisor",
+  "verdict": "PASS",
+  "ts": "2026-10-14T14:48:56+0800",
+  "run_id": "71d3cdfb85ae478eb75e0fa56c835300",
+  "stream_status": 200,
+  "thread_id": "c5603402abff47139c3651e0194d7b59",
+  "inflight_409": {
+    "status": 409,
+    "retry_after": "2",
+    "body": "{\"detail\":\"Run is still in flight; retry after it settles.\"}"
+  },
+  "live_event_types": [
+    "run.start",
+    "node.progress",
+    "node.progress"
+  ],
+  "live_max_seq": 3,
+  "postclose_immediate": {
+    "status": 409,
+    "retry_after": "2"
+  },
+  "poll_log": [
+    {
+      "t": 0,
+      "http": 409
+    },
+    {
+      "t": 5,
+      "http": 409
+    },
+    {
+      "t": 10,
+      "http": 409
+    },
+    {
+      "t": 15,
+      "http": 409
+    },
+    {
+      "t": 20,
+      "http": 409
+    },
+    {
+      "t": 25,
+      "http": 409
+    },
+    {
+      "t": 30,
+      "http": 409
+    },
+    {
+      "t": 35,
+      "http": 409
+    },
+    {
+      "t": 40,
+      "http": 409
+    },
+    {
+      "t": 45,
+      "http": 409
+    },
+    {
+      "t": 50,
+      "http": 409
+    },
+    {
+      "t": 55,
+      "http": 409
+    },
+    {
+      "t": 60,
+      "http": 409
+    },
+    {
+      "t": 65,
+      "http": 409
+    },
+    {
+      "t": 70,
+      "http": 409
+    },
+    {
+      "t": 75,
+      "http": 409
+    },
+    {
+      "t": 80,
+      "http": 409
+    },
+    {
+      "t": 85,
+      "http": 409
+    },
+    {
+      "t": 90,
+      "http": 409
+    },
+    {
+      "t": 95,
+      "http": 409
+    },
+    {
+      "t": 100,
+      "http": 409
+    },
+    {
+      "t": 105,
+      "http": 409
+    },
+    {
+      "t": 110,
+      "http": 200
+    }
+  ],
+  "replay_http": 200,
+  "replay_max_seq": 445,
+  "done_payloads": [
+    {
+      "run_id": "71d3cdfb85ae478eb75e0fa56c835300",
+      "thread_id": "c5603402abff47139c3651e0194d7b59",
+      "latency_ms": 111464
+    }
+  ],
+  "error_payloads": [],
+  "continue_smoke": {
+    "http": 200,
+    "new_run_id": "2cc766d202e149ceaa101d52bbe26fe1",
+    "same_run": false,
+    "body_prefix": "event: run.start\ndata: {\"run_id\": \"2cc766d202e149ceaa101d52bbe26fe1\", \"seq\": 1, \"ts_ms\": 0, \"agent_role\": \"system\", \"event_type\": \"run.start\", \"payload\": {\"run_id\": \"2cc766d202e149ceaa101d52bbe26fe1\", \"thread_id\": \"c5603402abff47139c3651e0194d7b59\", \"mode\": \"basic\", \"query\": \"请用一句话总结上文要点。\\n\\n[继续回复·既"
+  },
+  "replay_event_type_counts": {
+    "run.start": 1,
+    "node.progress": 7,
+    "subtask.progress": 29,
+    "answer": 407,
+    "done": 1
+  },
+  "replay_event_types_head": [
+    "run.start",
+    "node.progress",
+    "node.progress",
+    "node.progress",
+    "node.progress",
+    "subtask.progress",
+    "subtask.progress",
+    "subtask.progress"
+  ],
+  "replay_event_types_tail": [
+    "answer",
+    "node.progress",
+    "done"
+  ]
+}

@@ -1,0 +1,3 @@
+event: run.start
+data: {"run_id": "69f3723f985d4b8d829064b00a2c3fbe", "seq": 1, "ts_ms": 0, "agent_role": "system", "event_type": "run.start", "payload": {"run_id": "69f3723f985d4b8d829064b00a2c3fbe", "thread_id": "3236297535a742feb1b4b60e9671fcd7", "mode": "supervisor", "query": "请分二十个章节、每章至少三段详细论述软件工程与 ops-desk、RAG、HITL、SSE，尽量写长。"}, "cursor": "69f3723f985d4b8d829064b00a2c3fbe:1"}
+

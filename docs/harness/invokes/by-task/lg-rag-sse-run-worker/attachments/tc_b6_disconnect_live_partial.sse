@@ -1,0 +1,9 @@
+event: run.start
+data: {"run_id": "71d3cdfb85ae478eb75e0fa56c835300", "seq": 1, "ts_ms": 0, "agent_role": "system", "event_type": "run.start", "payload": {"run_id": "71d3cdfb85ae478eb75e0fa56c835300", "thread_id": "c5603402abff47139c3651e0194d7b59", "mode": "supervisor", "query": "请以 supervisor 模式分二十个章节、每章至少三段，详细论述软件工程与 ops-desk 架构、RAG、HITL、SSE 传输与运维实践，尽量写长，不要提前结束。"}, "cursor": "71d3cdfb85ae478eb75e0fa56c835300:1"}
+
+event: node.progress
+data: {"run_id": "71d3cdfb85ae478eb75e0fa56c835300", "seq": 2, "ts_ms": 2368, "agent_role": "intent", "event_type": "node.progress", "payload": {"intent": {"domain": "general", "needs_tool": false, "needs_skill": false, "is_composite": false, "risk_hint": "low", "summary": "用户请求长篇论述软件工程与运维架构，属于一般性知识请求，非运维操作或工具调用。"}}, "cursor": "71d3cdfb85ae478eb75e0fa56c835300:2"}
+
+event: node.progress
+data: {"run_id": "71d3cdfb85ae478eb75e0fa56c835300", "seq": 3, "ts_ms": 2369, "agent_role": "strategy_builder", "event_type": "node.progress", "payload": {"allowed_capability_ids": []}, "cursor": "71d3cdfb85ae478eb75e0fa56c835300:3"}
+

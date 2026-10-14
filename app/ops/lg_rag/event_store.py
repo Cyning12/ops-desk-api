@@ -152,6 +152,71 @@ async def run_stream_closed(run_id: str) -> bool:
     return row is not None
 
 
+async def list_open_runs(
+    *,
+    stale_after_seconds: float = 0,
+    limit: int = 50,
+) -> list[dict[str, Any]]:
+    """有帧但无 done/error 的 orphan 候选（TC-B5 / F-A1）。
+
+    ``stale_after_seconds>0`` 时仅返回末帧 ``created_at`` 早于 cutoff 的 run。
+    只读；是否补偿由 ``scan_orphan_runs_for_compensation`` 再滤活跃 worker。
+    """
+    from datetime import timedelta
+
+    from app.db.models import now_utc
+
+    if limit <= 0:
+        return []
+    closed_ids = (
+        select(OpsLgRagRunEvent.run_id)
+        .where(OpsLgRagRunEvent.event_type.in_(("done", "error")))
+        .distinct()
+    )
+    # 每 run 取末帧行（max seq）上的 user_id/thread_id；禁 min(uuid)
+    max_seq_sq = (
+        select(
+            OpsLgRagRunEvent.run_id.label("rid"),
+            func.max(OpsLgRagRunEvent.seq).label("mx"),
+        )
+        .where(OpsLgRagRunEvent.run_id.notin_(closed_ids))
+        .group_by(OpsLgRagRunEvent.run_id)
+        .subquery()
+    )
+    stmt = (
+        select(
+            OpsLgRagRunEvent.run_id,
+            OpsLgRagRunEvent.user_id,
+            OpsLgRagRunEvent.thread_id,
+            OpsLgRagRunEvent.seq.label("max_seq"),
+            OpsLgRagRunEvent.created_at.label("last_activity_at"),
+        )
+        .join(
+            max_seq_sq,
+            and_(
+                OpsLgRagRunEvent.run_id == max_seq_sq.c.rid,
+                OpsLgRagRunEvent.seq == max_seq_sq.c.mx,
+            ),
+        )
+    )
+    if stale_after_seconds > 0:
+        cutoff = now_utc() - timedelta(seconds=stale_after_seconds)
+        stmt = stmt.where(OpsLgRagRunEvent.created_at < cutoff)
+    stmt = stmt.order_by(OpsLgRagRunEvent.created_at.asc()).limit(limit)
+    async with AsyncSessionLocal() as db:
+        rows = (await db.execute(stmt)).all()
+    return [
+        {
+            "run_id": str(row.run_id),
+            "user_id": str(row.user_id),
+            "thread_id": str(row.thread_id),
+            "last_activity_at": row.last_activity_at,
+            "max_seq": int(row.max_seq or 0),
+        }
+        for row in rows
+    ]
+
+
 async def assert_run_owned(run_id: str, user_id: str) -> None:
     """确认 run 存在且归属当前用户；否则 ``LgRagRunNotFoundError``。"""
     if not run_id or not user_id:

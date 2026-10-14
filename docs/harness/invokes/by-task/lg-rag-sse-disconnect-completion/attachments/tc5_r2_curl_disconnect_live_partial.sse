@@ -1,0 +1,18 @@
+event: run.start
+data: {"run_id": "b16d704c9895435db7c69e88a9bdc380", "seq": 1, "ts_ms": 0, "agent_role": "system", "event_type": "run.start", "payload": {"run_id": "b16d704c9895435db7c69e88a9bdc380", "thread_id": "0c4ef3d03e19464d990017b304cccd84", "mode": "supervisor", "query": "请分二十个章节详细论述软件工程与可观测性，尽量写长。"}, "cursor": "b16d704c9895435db7c69e88a9bdc380:1"}
+
+event: node.progress
+data: {"run_id": "b16d704c9895435db7c69e88a9bdc380", "seq": 2, "ts_ms": 2274, "agent_role": "intent", "event_type": "node.progress", "payload": {"intent": {"domain": "ops_kb", "needs_tool": false, "needs_skill": false, "is_composite": false, "risk_hint": "low", "summary": "用户请求生成关于软件工程与可观测性的长篇分章节论述，属于知识讲解类需求。"}}, "cursor": "b16d704c9895435db7c69e88a9bdc380:2"}
+
+event: node.progress
+data: {"run_id": "b16d704c9895435db7c69e88a9bdc380", "seq": 3, "ts_ms": 2277, "agent_role": "strategy_builder", "event_type": "node.progress", "payload": {"allowed_capability_ids": []}, "cursor": "b16d704c9895435db7c69e88a9bdc380:3"}
+
+event: node.progress
+data: {"run_id": "b16d704c9895435db7c69e88a9bdc380", "seq": 4, "ts_ms": 2279, "agent_role": "supervisor", "event_type": "node.progress", "payload": {"subtasks": [{"id": "b16d704c9895435db7c69e88a9bdc380:1", "subtask_id": "b16d704c9895435db7c69e88a9bdc380:1", "alias": "t1", "type": "rag", "input": "请分二十个章节详细论述软件工程与可观测性，尽量写长。", "depends_on": []}]}, "cursor": "b16d704c9895435db7c69e88a9bdc380:4"}
+
+event: node.progress
+data: {"run_id": "b16d704c9895435db7c69e88a9bdc380", "seq": 5, "ts_ms": 2281, "agent_role": "subtask_join", "event_type": "node.progress", "payload": {"keys": ["inflight_subtask_ids"]}, "cursor": "b16d704c9895435db7c69e88a9bdc380:5"}
+
+event: subtask.progress
+data: {"run_id": "b16d704c9895435db7c69e88a9bdc380", "seq": 6, "ts_ms": 2282, "agent_role": "rag_subtask", "event_type": "subtask.progress", "payload": {"status": "running", "subtask_id": "b16d704c9895435db7c69e88a9bdc380:1", "type": "rag", "input": "请分二十个章节详细论述软件工程与可观测性，尽量写长。", "message": "开始检索子任务：请分二十个章节详细论述软件工程与可观测性，尽量写长。"}, "cursor": "b16d704c9895435db7c69e88a9bdc380:6"}
+

@@ -1,0 +1,49 @@
+{
+  "run_id": "426b0a70e37d452aaeb649c2e091e79d",
+  "method": "httpx stream mid-break supervisor",
+  "verdict": "FAIL",
+  "run_stream_closed": false,
+  "done_status": null,
+  "events": [
+    {
+      "seq": 1,
+      "event_type": "run.start",
+      "status": null
+    },
+    {
+      "seq": 2,
+      "event_type": "node.progress",
+      "status": null
+    },
+    {
+      "seq": 3,
+      "event_type": "node.progress",
+      "status": null
+    },
+    {
+      "seq": 4,
+      "event_type": "node.progress",
+      "status": null
+    },
+    {
+      "seq": 5,
+      "event_type": "node.progress",
+      "status": null
+    },
+    {
+      "seq": 6,
+      "event_type": "subtask.progress",
+      "status": "running"
+    }
+  ],
+  "settled_log": false,
+  "code_surface": "router receive=request.receive; blocking _watch_http_disconnect; no _DISCONNECT_POLL_S",
+  "inflight_409": {
+    "status": 409,
+    "retry_after": "2"
+  },
+  "replay_poll_48s": 409,
+  "mid_stream_ok": true,
+  "partial_frames": 3,
+  "thread_id": "ba67aea1ce494c04a1240196717c29cb"
+}
