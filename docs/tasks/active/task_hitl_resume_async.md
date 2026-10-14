@@ -89,7 +89,7 @@
 | `resume_mode` 白名单 | 端点手工校验 `router.py:207-211`（未知值 400）· `_DecidePayload` docstring :116-120 · `RESUME_MODES=(inherit,immediate,manual)` `auto_resume.py:58-62` | 白名单不动；immediate 语义 = **立即调度**（非同步跑完）· 属契约钉死项 |
 | 驳回可 resume | 状态守卫 `router.py:487-491`（approved/rejected 均可 · 否则 409）· docstring :478-480 | 驳回也必须能 resume 收工（等待态终帧），不变 |
 | 终帧 done 键 | `resume.py:131-136`（close :124-137）：`status:"resumed"` · `latency_ms:int(perf_counter)` ≥0 · **无 `model` 键** | 逐键不变；status 枚举不变（resumed / waiting_approval） |
-| replay 在飞 409 | `event_store.py:246` `refuse_in_flight` · `app/ops/lg_rag/router.py:417-421`（`headers={"Retry-After": "2"}` :420 设置点）· 实证 `Retry-After: 2` + body `{"detail":"Run is still in flight; retry after it settles."}`（hitl-resume-replay-contract TC5） | 不变；async resume 在飞期间 replay 立即打 = 409 属预期，沉降后 200 |
+| replay 在飞 409 | `event_store.py:246` `refuse_in_flight` · `app/ops/lg_rag/router.py:417-421`（`headers={"Retry-After": "2"}` :420 设置点）· 实证 `Retry-After: 2` + body `{"detail":"Run is still in flight; retry after it settles."}`（hitl-resume-replay-contract TC5） | 不变；**resume 在飞窗 replay=200 部分帧为既有语义（非回归 · 维护者 2026-10-14 裁定 (a)）**——409 + Retry-After: 2 仅限无收尾帧的 live run（`run_stream_closed` `event_store.py:132-152` 对任何 done/error 帧即判收尾 · 挂起 run 已持 `done{waiting_approval}`）· 409 语义面不变 · 沉降后 200 全帧 |
 | ResumeError→HTTP 映射 | `router.py:495-509`：no_thread_id/no_decision/not_interrupted/stranded_checkpoint/no_unlock→409 · checkpointer_not_configured→503 · 其余→502 | 映射表不变；同步可判定错误仍请求内 fail-fast |
 
 ## 契约决策点（启动令 §5 · 待 30/00 裁定）
@@ -122,7 +122,7 @@
 - [ ] **TC5 幂等与防重**：在飞期间二次 resume = 409/幂等（按 F2 裁定形态断言）· 沉降后二次 resume 维持 409（承 hitl-resume-replay-contract TC5）
 - [ ] **TC6 崩溃兜底**：模拟投递后执行未完成（任务丢失）→ 补偿扫描路径恢复（按 F3 裁定接线面断言 · 不永久悬 409）
 - [ ] **TC7 pytest 全量对拍**：HITL/auto-resume 面 **10 件** —— `tests/test_hitl.py` · `test_hitl_approval_consumption.py` · `test_hitl_approved_replan_quality.py` · `test_hitl_auto_resume.py` · `test_hitl_pending_decide.py` · `test_hitl_resume.py` · `test_hitl_resume_events.py`（test_hitl*.py 7 件）+ `test_lg_rag_sse_hitl.py` · `test_lg_rag_sse_resume.py` · `test_lg_rag_sse_run_worker.py`（3 件）+ 新增异步 resume 单测 · 以同 base 基线对拍零新增红（红集对红集）
-- [ ] **TC8 live 实证（40 棒 · echo 场景）**：resume p95 < 1s；秒回后 replay 立即打 = 409 在飞（Retry-After: 2）→ 沉降后 200 · 帧 seq 连续 · 终帧 `done{status:"resumed", latency_ms 实值}`；回归 T-W2 S3 链 + TC5 二次 resume 409（菜谱复用 `docs/harness/invokes/by-task/hitl-resume-replay-contract/invoke_20261013_40_verify.md` 起服三坑 + echo 六 env 组 + attachments/tc5_s3_step1.sh/step2.sh）
+- [x] **TC8 live 实证（40 棒 · echo 场景）**：resume p95 < 1s；**replay 在飞 409（Retry-After: 2）仅限无收尾帧的 live run；resume 在飞窗内 replay 返回 200 部分帧为既有语义**（`run_stream_closed` `app/ops/lg_rag/event_store.py:132-152` 对任何 done/error 帧即判收尾 · 挂起 run 已持 `done{waiting_approval}` · 同步旧时代同窗口同路径同为 200 部分帧 · 契约零回归 · 维护者 2026-10-14 裁定 (a)）→ 沉降后 200 · 帧 seq 连续 · 终帧 `done{status:"resumed", latency_ms 实值}`；回归 T-W2 S3 链 + TC5 二次 resume 409（菜谱复用 `docs/harness/invokes/by-task/hitl-resume-replay-contract/invoke_20261013_40_verify.md` 起服三坑 + echo 六 env 组 + attachments/tc5_s3_step1.sh/step2.sh）—— ✅ **40 实测 8 PASS + 3a 按裁定 (a) 口径 PASS**：p95=46.6ms（8 样本 nearest-rank · 37.9–46.6ms · 较同步旧时代 130–310s 降三个数量级）· r1 在飞 replay 200 部分帧 9 帧无终帧 → 沉降 18 帧 seq 1–18 连续 · seq18 `done{resumed, latency_ms:180804 int, 无 model}`（实证 `invoke_20261014_40_verify.md` 一/三节）
 
 ## 依赖
 
@@ -189,7 +189,7 @@
 
 - TC1 红测先行（阻塞闸门执行体 · 修复前 RED=请求被卡死 · 防恒绿）
 - TC2/TC3 契约对拍（映射表 / 白名单 / 终帧逐键 · replay 409 Retry-After: 2）
-- TC4 落盘链零 diff（turns / 终帧 seq 连续）· TC5 幂等 · TC6 崩溃兜底 · TC2b 旧测 grep 影响面（4 处必破断言 + decide 面零 diff 区分）· TC7 全量对拍（10 件 HITL/auto-resume 测试文件面 + 新增单测 · 零新增红）· TC8 live echo p95<1s + replay 在飞 409→沉降 200 + T-W2 S3/TC5 复跑
+- TC4 落盘链零 diff（turns / 终帧 seq 连续）· TC5 幂等 · TC6 崩溃兜底 · TC2b 旧测 grep 影响面（4 处必破断言 + decide 面零 diff 区分）· TC7 全量对拍（10 件 HITL/auto-resume 测试文件面 + 新增单测 · 零新增红）· TC8 live echo 实测 p95=46.6ms + resume 在飞窗 replay 200 部分帧（既有语义 · 裁定 (a) 口径）→沉降 200 全帧 seq 连续 + T-W2 S3/TC5 复跑 PASS
 - 结论：验收全部可机断 · 与钉死表一一对应 → 收口
 
 ### R5 · 收口
@@ -200,7 +200,7 @@
 
 ### 自检结论（执行者）
 
-**10（2026-10-14）**：初稿落稿 · 锚点全亲读核真（base `master` 56e4a9f · 移交令/JC-F1 证据/router.py:360-533/resume.py:54-162,:288-355/auto_resume.py 全文/run_worker.py 全文/event_store.py/main.py:46-59）· lint PASS（E1–E8 零 error · 实证见 invoke_10 门禁节）· 三闸 pending 零签（维护者授权 00 代签留痕 · 签署动作归 00）· **20 R1 FAIL 退回已回填**（N1 旧测 grep 影响面 TC2b 四点亲读核真落验收 + n1–n4 · 复跑 lint PASS）· 30/40 执行者结论待签闸后回填。
+**10（2026-10-14）**：初稿落稿 · 锚点全亲读核真（base `master` 56e4a9f · 移交令/JC-F1 证据/router.py:360-533/resume.py:54-162,:288-355/auto_resume.py 全文/run_worker.py 全文/event_store.py/main.py:46-59）· lint PASS（E1–E8 零 error · 实证见 invoke_10 门禁节）· 三闸 pending 零签（维护者授权 00 代签留痕 · 签署动作归 00）· **20 R1 FAIL 退回已回填**（N1 旧测 grep 影响面 TC2b 四点亲读核真落验收 + n1–n4 · 复跑 lint PASS）· **v0.2 吸收维护者裁定 (a)**（40 机验 3a 口径修正 · TC8 勾选实测 p95=46.6ms · 8 PASS+3a 口径 PASS）· 30/40 执行者结论待签闸后回填。
 
 ## 修订记录
 
@@ -208,3 +208,4 @@
 |---|---|---|---|
 | 2026-10-14 | v0 初稿 | 10-task | 承接 web 00 移交令（B 方案）落稿 · 锚点亲读核真（base 56e4a9f）· 三闸 pending 零签 · 维护者授权 00 代签留痕（invoke_10） |
 | 2026-10-14 | v0.1 · 吸收 20 R1 退回 | 10-task | N1 补验收 TC2b「旧测 grep 影响面」（4 处必破断言亲读核真：test_hitl_resume.py:362 · test_hitl_pending_decide.py:501/528/661 · decide 面零 diff 区分 test_hitl_pending_decide.py:367-368 · test_hitl_auto_resume.py:308/417-418/570/909）· n1 ResumeEventSink 锚 :54-162 · n2 TC7 实证 10 件列全名 · n3 钉死行5 补 lg_rag/router.py:417-421 Retry-After 设置点 · n4 retention 注明 required 优先 · 复跑 lint PASS |
+| 2026-10-14 | v0.2 · 维护者裁定 (a) TC8-3a 表述修正 | 10-task | 40 live 机验 8 PASS + 3a FAIL（实测 200 部分帧 · 根因 `run_stream_closed` `event_store.py:132-152` 对任何 done/error 帧即判收尾 · 挂起 run 已持 `done{waiting_approval}` · 同步旧时代同窗口同路径同为 200 · 非回归）· 维护者 2026-10-14 裁定 (a) 修表述零码改签收 · TC8 勾选实测（p95=46.6ms · 8 样本）· 钉死行5 口径修正 · R5 摘要联动 · 复跑 lint PASS |
