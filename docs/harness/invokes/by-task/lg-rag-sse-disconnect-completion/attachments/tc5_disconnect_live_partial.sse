@@ -1,0 +1,3 @@
+event: run.start
+data: {"run_id": "5c5b4cf0187b4184a9c4be7307a4eab5", "seq": 1, "ts_ms": 0, "agent_role": "system", "event_type": "run.start", "payload": {"run_id": "5c5b4cf0187b4184a9c4be7307a4eab5", "thread_id": "63d1842e9f864780888e7094f3fceda2", "mode": "supervisor", "query": "请先规划再执行：用多步骤分析 ops-desk 的后端架构、SSE 与 LangGraph 协作，并给出改进建议。"}, "cursor": "5c5b4cf0187b4184a9c4be7307a4eab5:1"}
+

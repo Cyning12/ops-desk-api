@@ -1,0 +1,19 @@
+event: run.start
+data: {"run_id": "f6a9cdd567ae41cc91c8ce3938712083", "seq": 1, "ts_ms": 0, "agent_role": "system", "event_type": "run.start", "payload": {"run_id": "f6a9cdd567ae41cc91c8ce3938712083", "thread_id": "2048d3b3e06f442c8ed878936c0471ad", "mode": "supervisor", "query": "请用 supervisor 模式分十个阶段、每阶段至少四段，详细论述软件工程、可观测性与 ops-desk 运维台设计，尽量写长，不要提前结束。"}, "cursor": "f6a9cdd567ae41cc91c8ce3938712083:1"}
+
+event: node.progress
+data: {"run_id": "f6a9cdd567ae41cc91c8ce3938712083", "seq": 2, "ts_ms": 2051, "agent_role": "intent", "event_type": "node.progress", "payload": {"intent": {"domain": "ops_kb", "needs_tool": false, "needs_skill": false, "is_composite": true, "risk_hint": "low", "summary": "用户请求以supervisor模式分十个阶段详细论述软件工程、可观测性与ops-desk运维台设计，属于复合任务。"}}, "cursor": "f6a9cdd567ae41cc91c8ce3938712083:2"}
+
+event: node.progress
+data: {"run_id": "f6a9cdd567ae41cc91c8ce3938712083", "seq": 3, "ts_ms": 2053, "agent_role": "strategy_builder", "event_type": "node.progress", "payload": {"allowed_capability_ids": []}, "cursor": "f6a9cdd567ae41cc91c8ce3938712083:3"}
+
+event: node.progress
+data: {"run_id": "f6a9cdd567ae41cc91c8ce3938712083", "seq": 4, "ts_ms": 2054, "agent_role": "supervisor", "event_type": "node.progress", "payload": {"subtasks": [{"id": "f6a9cdd567ae41cc91c8ce3938712083:1", "subtask_id": "f6a9cdd567ae41cc91c8ce3938712083:1", "alias": "t1", "type": "rag", "input": "请用 supervisor 模式分十个阶段、每阶段至少四段，详细论述软件工程、可观测性与 ops-desk 运维台设计，尽量写长，不要提前结束。", "depends_on": []}]}, "cursor": "f6a9cdd567ae41cc91c8ce3938712083:4"}
+
+event: node.progress
+data: {"run_id": "f6a9cdd567ae41cc91c8ce3938712083", "seq": 5, "ts_ms": 2058, "agent_role": "subtask_join", "event_type": "node.progress", "payload": {"keys": ["inflight_subtask_ids"]}, "cursor": "f6a9cdd567ae41cc91c8ce3938712083:5"}
+
+event: subtask.progress
+data: {"run_id": "f6a9cdd567ae41cc91c8ce3938712083", "seq": 6, "ts_ms": 2058, "agent_role": "rag_subtask", "event_type": "subtask.progress", "payload": {"status": "running", "subtask_id": "f6a9cdd567ae41cc91c8ce3938712083:1", "type": "rag", "input": "请用 supervisor 模式分十个阶段、每阶段至少四段，详细论述软件工程、可观测性与 ops-desk 运维台设计，尽量写长，不要提前结束。", "message": "开始检索子任务：请用 supervisor 模式分十个阶段、每阶段至少四段，详细论述软件工程、可观测性与 ops-desk 运维台设计…"}, "cursor": "f6a9cdd567ae41cc91c8ce3938712083:6"}
+
+event: subtask.progress

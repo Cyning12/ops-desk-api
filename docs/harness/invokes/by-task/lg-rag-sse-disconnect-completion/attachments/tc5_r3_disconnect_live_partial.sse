@@ -1,0 +1,9 @@
+event: run.start
+data: {"run_id": "426b0a70e37d452aaeb649c2e091e79d", "seq": 1, "ts_ms": 0, "agent_role": "system", "event_type": "run.start", "payload": {"run_id": "426b0a70e37d452aaeb649c2e091e79d", "thread_id": "ba67aea1ce494c04a1240196717c29cb", "mode": "supervisor", "query": "请以 supervisor 模式分二十个章节、每章至少三段，详细论述软件工程与 ops-desk 架构、RAG、HITL、SSE 传输与运维实践，尽量写长，不要提前结束。"}, "cursor": "426b0a70e37d452aaeb649c2e091e79d:1"}
+
+event: node.progress
+data: {"run_id": "426b0a70e37d452aaeb649c2e091e79d", "seq": 2, "ts_ms": 3893, "agent_role": "intent", "event_type": "node.progress", "payload": {"intent": {"domain": "ops_kb", "needs_tool": false, "needs_skill": false, "is_composite": true, "risk_hint": "low", "summary": "用户要求以 supervisor 模式生成二十章节的超长结构化论述，覆盖软件工程、ops-desk 架构、RAG、HITL、SSE 与运维实践，属于复合型知识生成请求，无需工具或 Skill 注入。"}}, "cursor": "426b0a70e37d452aaeb649c2e091e79d:2"}
+
+event: node.progress
+data: {"run_id": "426b0a70e37d452aaeb649c2e091e79d", "seq": 3, "ts_ms": 3896, "agent_role": "strategy_builder", "event_type": "node.progress", "payload": {"allowed_capability_ids": []}, "cursor": "426b0a70e37d452aaeb649c2e091e79d:3"}
+

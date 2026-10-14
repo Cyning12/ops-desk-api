@@ -1,0 +1,18 @@
+event: run.start
+data: {"run_id": "eea35bd94a274067a4e66e3712ff254a", "seq": 1, "ts_ms": 0, "agent_role": "system", "event_type": "run.start", "payload": {"run_id": "eea35bd94a274067a4e66e3712ff254a", "thread_id": "b1e40718d100464c9d496d3d207d4f55", "mode": "supervisor", "query": "请分二十个章节、每章至少三段详细论述软件工程与 ops-desk、RAG、HITL、SSE，尽量写长。"}, "cursor": "eea35bd94a274067a4e66e3712ff254a:1"}
+
+event: node.progress
+data: {"run_id": "eea35bd94a274067a4e66e3712ff254a", "seq": 2, "ts_ms": 2837, "agent_role": "intent", "event_type": "node.progress", "payload": {"intent": {"domain": "general", "needs_tool": false, "needs_skill": false, "is_composite": false, "risk_hint": "low", "summary": "用户请求生成一篇长文论述，属于通用写作请求，非运维知识库提问或工具调用。"}}, "cursor": "eea35bd94a274067a4e66e3712ff254a:2"}
+
+event: node.progress
+data: {"run_id": "eea35bd94a274067a4e66e3712ff254a", "seq": 3, "ts_ms": 2841, "agent_role": "strategy_builder", "event_type": "node.progress", "payload": {"allowed_capability_ids": []}, "cursor": "eea35bd94a274067a4e66e3712ff254a:3"}
+
+event: node.progress
+data: {"run_id": "eea35bd94a274067a4e66e3712ff254a", "seq": 4, "ts_ms": 2843, "agent_role": "supervisor", "event_type": "node.progress", "payload": {"subtasks": [{"id": "eea35bd94a274067a4e66e3712ff254a:1", "subtask_id": "eea35bd94a274067a4e66e3712ff254a:1", "alias": "t1", "type": "rag", "input": "请分二十个章节、每章至少三段详细论述软件工程与 ops-desk、RAG、HITL、SSE，尽量写长。", "depends_on": []}]}, "cursor": "eea35bd94a274067a4e66e3712ff254a:4"}
+
+event: node.progress
+data: {"run_id": "eea35bd94a274067a4e66e3712ff254a", "seq": 5, "ts_ms": 2844, "agent_role": "subtask_join", "event_type": "node.progress", "payload": {"keys": ["inflight_subtask_ids"]}, "cursor": "eea35bd94a274067a4e66e3712ff254a:5"}
+
+event: subtask.progress
+data: {"run_id": "eea35bd94a274067a4e66e3712ff254a", "seq": 6, "ts_ms": 2844, "agent_role": "rag_subtask", "event_type": "subtask.progress", "payload": {"status": "running", "subtask_id": "eea35bd94a274067a4e66e3712ff254a:1", "type": "rag", "input": "请分二十个章节、每章至少三段详细论述软件工程与 ops-desk、RAG、HITL、SSE，尽量写长。", "message": "开始检索子任务：请分二十个章节、每章至少三段详细论述软件工程与 ops-desk、RAG、HITL、SSE，尽量写长。"}, "cursor": "eea35bd94a274067a4e66e3712ff254a:6"}
+

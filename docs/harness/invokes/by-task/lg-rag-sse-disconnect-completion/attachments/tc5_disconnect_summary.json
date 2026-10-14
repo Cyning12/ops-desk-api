@@ -1,0 +1,20 @@
+{
+  "run_id": "5c5b4cf0187b4184a9c4be7307a4eab5",
+  "run_stream_closed": false,
+  "events": [
+    {
+      "seq": 1,
+      "event_type": "run.start",
+      "status": null
+    }
+  ],
+  "verdict": "FAIL",
+  "note": "client kill mid supervisor stream; polled replay 120s still 409; no done{disconnected}",
+  "inflight_409": {
+    "http": 409,
+    "retry_after": 2,
+    "detail": "Run is still in flight; retry after it settles."
+  },
+  "starlette": "1.3.1 ASGI>=2.4 path: no concurrent listen_for_disconnect; settle depends on next send OSError",
+  "contrast_unit": "tests/test_lg_rag_sse_disconnect_completion.py agen.aclose() GREEN"
+}

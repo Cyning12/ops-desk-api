@@ -245,7 +245,8 @@ async def test_sse_holds_pg_saver_for_the_whole_stream(monkeypatch):
         seen.update(kw)
         yield {"aggregator": {"messages": []}}
 
-    with patch("app.ops.lg_rag.sse_stream.apostgres_saver", new=_fake_saver):
+    # Wave B：PG saver 由 run_worker 持有（原 sse_stream 已迁）
+    with patch("app.ops.lg_rag.run_worker.apostgres_saver", new=_fake_saver):
         await _frames(
             iter_lg_rag_sse(
                 query="q",
@@ -272,7 +273,7 @@ async def test_sse_does_not_open_pg_saver_by_default(monkeypatch):
     async def _astream(_query: str, *, thread_id: str = "t", **kw):
         yield {"aggregator": {"messages": []}}
 
-    with patch("app.ops.lg_rag.sse_stream.apostgres_saver", new=_fake_saver):
+    with patch("app.ops.lg_rag.run_worker.apostgres_saver", new=_fake_saver):
         await _frames(
             iter_lg_rag_sse(
                 query="q",
@@ -297,7 +298,7 @@ async def test_basic_mode_never_opens_pg_saver(monkeypatch):
     async def _astream(_query: str, *, thread_id: str = "t", **kw):
         yield {"rag": {"messages": []}}
 
-    with patch("app.ops.lg_rag.sse_stream.apostgres_saver", new=_fake_saver):
+    with patch("app.ops.lg_rag.run_worker.apostgres_saver", new=_fake_saver):
         await _frames(
             iter_lg_rag_sse(
                 query="q",

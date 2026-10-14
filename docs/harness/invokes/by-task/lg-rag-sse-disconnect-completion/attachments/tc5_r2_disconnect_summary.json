@@ -1,0 +1,62 @@
+{
+  "run_id": "f6a9cdd567ae41cc91c8ce3938712083",
+  "thread_id": "2048d3b3e06f442c8ed878936c0471ad",
+  "method": "httpx.AsyncClient.stream break mid-supervisor",
+  "verdict": "FAIL",
+  "run_stream_closed": false,
+  "replay_http_30s_poll": 409,
+  "late_replay_http": 409,
+  "done_status": null,
+  "events": [
+    {
+      "seq": 1,
+      "event_type": "run.start",
+      "status": null
+    },
+    {
+      "seq": 2,
+      "event_type": "node.progress",
+      "status": null
+    },
+    {
+      "seq": 3,
+      "event_type": "node.progress",
+      "status": null
+    },
+    {
+      "seq": 4,
+      "event_type": "node.progress",
+      "status": null
+    },
+    {
+      "seq": 5,
+      "event_type": "node.progress",
+      "status": null
+    },
+    {
+      "seq": 6,
+      "event_type": "subtask.progress",
+      "status": "running"
+    },
+    {
+      "seq": 7,
+      "event_type": "subtask.progress",
+      "status": "step"
+    },
+    {
+      "seq": 8,
+      "event_type": "subtask.progress",
+      "status": "step"
+    }
+  ],
+  "settle_seconds_after_kill": null,
+  "inflight_409": {
+    "http": 409,
+    "retry_after": "2",
+    "body": "Run is still in flight; retry after it settles."
+  },
+  "uvicorn_settle_log": false,
+  "code_surface": "router is_disconnected=request.is_disconnected; sse_stream poll _DISCONNECT_POLL_S=1s",
+  "unit_contrast": "test_asgi_disconnect_probe_settles_without_aclose GREEN (mock probe True)",
+  "hypothesis": "Starlette Request.is_disconnected cancelled-receive trick may not observe uvicorn http.disconnect while generator blocked in long anext; live probe stays False → no _settle_disconnected"
+}

@@ -263,6 +263,10 @@ def test_run_terminal_status_variants() -> None:
         history.run_terminal_status(_run(("done", {"status": "waiting_approval"})))
         == "waiting_approval"
     )
+    assert (
+        history.run_terminal_status(_run(("done", {"status": "disconnected"})))
+        == "disconnected"
+    )
     assert history.run_terminal_status(_run(("error", {"message": "x"}))) == "error"
     assert history.run_terminal_status(_run(("answer", {"delta": "d"}))) == "running"
 

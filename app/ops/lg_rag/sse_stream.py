@@ -1,6 +1,12 @@
 """lg-rag SSE：astream(updates) → T1 事件帧（freeze lg-rag-sse-v1）。
 
-断连语义（T2/T4）：服务端尽量跑完图；不保证客户端收齐；无 cancel。
+Wave B（task_lg_rag_sse_run_worker）：``iter_lg_rag_sse`` = 启动 RunWorker
++ 订阅 fanout。Worker（``run_worker``）持有 astream，只 emit→event_store；
+HTTP 断连只取消 subscriber（``sse_subscribe``），**不** cancel worker。
+成功终态普通 ``done``；失败 ``error{stage:lg_rag.worker_failed}``。
+Wave A 补偿：worker 自身被 cancel / 无终帧时尽力落盘
+``done{status:disconnected}``（不赌 ASGI disconnect 钩）。
+
 T4：每帧可选顶层 cursor；事件尽量落盘供 POST /lg-rag/replay。
 T5：终答 token 流 —— emit 循环经 contextvar 挂 answer token sink
 （answer_stream.complete_answer_streaming 桥），aggregator /
@@ -17,8 +23,8 @@ status=done。running/step 与 delta 同 pending_frames 竞速、落盘占 seq�
 HITL：``observe_node`` 里 ``interrupt()`` 挂起时，astream 会吐一个
 ``{"__interrupt__": [...]}`` 块。这里必须**翻译成一帧 hitl.waiting + 一帧
 done(status=waiting_approval)** 再收流——否则前端看到的就是"流莫名其妙断了"，
-而真实情况是"在等人批"。PG checkpointer 由本模块按
-``LG_RAG_HTTP_CHECKPOINTER=postgres`` 打开，且**整个流期间持有**：
+而真实情况是"在等人批"。PG checkpointer 由 RunWorker 按
+``LG_RAG_HTTP_CHECKPOINTER=postgres`` 打开，且**整个 worker 生命周期持有**：
 图挂起后进程内什么都不剩，下次请求能恢复全靠 checkpoint 已落盘。
 """
 from __future__ import annotations
@@ -38,7 +44,6 @@ from app.ops.lg_rag.answer_stream import (
     reset_answer_token_sink,
     set_answer_token_sink,
 )
-from app.ops.lg_rag.checkpointer import apostgres_saver
 from app.ops.lg_rag.progress_stream import (
     reset_subtask_progress_sink,
     set_subtask_progress_sink,
@@ -63,8 +68,10 @@ _ANSWER_MAX = 32_000
 _ANSWER_NODES = frozenset({"aggregator", "direct_answer"})
 _STREAM_END: Any = object()  # astream 耗尽哨兵（区别于合法 update）
 # §10.6：长节点静默保活（SSE comment · 不进 data JSON / 不落盘）
+# keepalive 主路径在 sse_subscribe；worker 内仍保留供单测直接泵帧
 _KEEPALIVE_INTERVAL_S = 30.0
 _KEEPALIVE_FRAME = ": keepalive\n\n"
+
 
 def _truncate(text: str, max_len: int) -> str:
     if len(text) <= max_len:
@@ -219,45 +226,32 @@ async def iter_lg_rag_sse(
     history_turns: list[dict] | None = None,
     user_id: str | None = None,
     checkpointer: Any | None = None,
+    tenant_id: str | None = None,
+    receive: Any = None,  # 兼容旧签名；Wave B 忽略（不赌 ASGI disconnect）
 ) -> AsyncIterator[str]:
-    """产出 SSE 字符串帧；异常时发 error 帧后结束；挂起时发 hitl.waiting 帧。
+    """启动 RunWorker + 订阅 fanout，产出 SSE 字符串帧。
 
-    PG checkpointer（``LG_RAG_HTTP_CHECKPOINTER=postgres``）在**整个流期间持有**：
-    图可以中途被 ``interrupt()`` 挂起，那一刻进程内什么都不推进了，
-    "这次 run 停在哪个 checkpoint"必须已经落盘，否则下一次 HTTP 请求
-    （人点了批准）根本找不到恢复点。只在持有时才打开 —— 默认仍是内存 saver。
+    订阅侧 aclose / cancel **不**停止 worker；完整终态靠 worker 落盘。
+    ``receive`` 保留形参但忽略（Wave A ASGI 钩停赌）。
     """
-    if checkpointer is None and mode == "supervisor" and _pg_saver_enabled():
-        async with apostgres_saver(setup=True) as saver:
-            async for frame in _iter_lg_rag_sse_core(
-                query=query,
-                mode=mode,
-                thread_id=thread_id,
-                run_id=run_id,
-                astream_fn=astream_fn,
-                history_turns=history_turns,
-                user_id=user_id,
-                checkpointer=saver,
-            ):
-                yield frame
-        return
-    async for frame in _iter_lg_rag_sse_core(
+    del receive  # 显式忽略：断连不 cancel worker
+    from app.ops.lg_rag.run_worker import start_run_worker
+    from app.ops.lg_rag.sse_subscribe import subscribe_run_sse
+
+    rid = run_id or uuid.uuid4().hex
+    bus = start_run_worker(
         query=query,
         mode=mode,
         thread_id=thread_id,
-        run_id=run_id,
+        run_id=rid,
         astream_fn=astream_fn,
         history_turns=history_turns,
         user_id=user_id,
         checkpointer=checkpointer,
-    ):
+        tenant_id=tenant_id,
+    )
+    async for frame in subscribe_run_sse(rid, bus=bus):
         yield frame
-
-
-def _pg_saver_enabled() -> bool:
-    from app.ops.lg_rag.checkpointer import use_postgres_checkpointer
-
-    return use_postgres_checkpointer()
 
 
 async def _iter_lg_rag_sse_core(
@@ -271,7 +265,7 @@ async def _iter_lg_rag_sse_core(
     user_id: str | None = None,
     checkpointer: Any | None = None,
 ) -> AsyncIterator[str]:
-    """产出 SSE 字符串帧；异常时发 error 帧后结束。"""
+    """Worker 内核：产出 SSE 字符串帧（由 RunWorker 泵入 fanout）；异常发 error。"""
     from app.ops.lg_rag.event_store import persist_run_event
     from app.ops.lg_rag.graph import astream_basic_agent, astream_router_agent
     from app.ops.lg_rag.multi.graph import astream_supervisor_agent
@@ -359,6 +353,8 @@ async def _iter_lg_rag_sse_core(
 
     saw_answer = False
     waiting_approval = False  # 被 interrupt() 挂起：在等人批，不是跑完了
+    # 已发 done/error 收尾（含 waiting_approval / disconnected）→ 勿再补补偿帧
+    stream_settled = False
     # T5 token sink：终答节点 LLM chunk 在此入队；sink 跑在图执行 task 的
     # context（不能 yield），帧经队列交回主循环吐出。emit 内 seq 单调 +
     # 尽量落盘（T5.1 后台），delta 帧与进度帧共享同一 seq 序列，不串台。
@@ -372,6 +368,29 @@ async def _iter_lg_rag_sse_core(
         # §10.7：running 帧与 delta 同队列竞速；走 emit → 落盘占 seq
         frame = await emit("subtask.progress", role, payload)
         pending_frames.put_nowait(frame)
+
+    async def _settle_disconnected() -> None:
+        """Wave A 薄补偿：worker 被杀/无终帧时落盘 disconnected（非 HTTP 断连主路径）。"""
+        nonlocal stream_settled
+        if stream_settled:
+            return
+        try:
+            await emit(
+                "done",
+                "system",
+                {
+                    "run_id": rid,
+                    "thread_id": thread_id,
+                    "latency_ms": int((time.perf_counter() - started) * 1000),
+                    "status": "disconnected",
+                },
+            )
+            await _drain_persist()
+            stream_settled = True
+        except Exception:
+            logger.exception(
+                "lg-rag disconnect settle failed run_id=%s", rid
+            )
 
     sink_handle = set_answer_token_sink(_answer_token_sink)
     progress_handle = set_subtask_progress_sink(_subtask_progress_sink)
@@ -395,15 +414,14 @@ async def _iter_lg_rag_sse_core(
         )
         while True:
             next_task = asyncio.ensure_future(_anext_or_end(agen))
+            update: Any = _STREAM_END
             try:
-                # 图执行期间 delta / running 帧先入队；与下一 update 竞速，先到先吐，
-                # 保证长终答 / 慢子任务中实时上屏（不等节点 updates）。
-                # §10.6：等待超时则发 comment keepalive，重置客户端 idle。
+                # 图执行期间 delta / running 帧先入队；与下一 update 竞速，先到先吐。
+                # keepalive comment 由 sse_subscribe 负责（HTTP 侧）；此处仅泵业务帧。
                 while not next_task.done():
                     get_task = asyncio.ensure_future(pending_frames.get())
                     done, _ = await asyncio.wait(
                         {next_task, get_task},
-                        timeout=_KEEPALIVE_INTERVAL_S,
                         return_when=asyncio.FIRST_COMPLETED,
                     )
                     if get_task in done:
@@ -414,29 +432,24 @@ async def _iter_lg_rag_sse_core(
                         await get_task
                     if next_task.done():
                         break
-                    yield _KEEPALIVE_FRAME
                 # update 边界：先吐净残留（sink 早于节点返回，seq 已单调）
                 while not pending_frames.empty():
                     yield pending_frames.get_nowait()
                 update = next_task.result()
             finally:
-                # 生成器被 close（断连）或异常时取消挂起的 anext，防 task 泄漏
+                # worker 被 cancel 时取消挂起的 anext，防 task 泄漏
                 if not next_task.done():
                     next_task.cancel()
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await next_task
             if update is _STREAM_END:
                 break
             if not isinstance(update, dict):
                 continue
             # ---- HITL：图被 interrupt() 挂起 ----
-            # 这不是"跑完了"，也不是"出错"。必须先说清楚在等什么再收流，
-            # 否则前端看到的是一条静默断掉的流。
             waiting = extract_interrupt(update)
             if waiting is not None:
                 waiting_approval = True
-                # ⚠️ run_id / thread_id **只在缺失时补**：审批申请是按
-                # **图里**的 run_id 建的键（``_run_id_of(state)``），
-                # 拿 SSE 帧的 rid 覆盖它，人拿着 frame 里的 run_id 去查
-                # 申请会查不到 —— 两个 run_id 恰好相等只是巧合，不能依赖。
                 yield await emit(
                     "hitl.waiting",
                     "system",
@@ -444,8 +457,6 @@ async def _iter_lg_rag_sse_core(
                         **waiting,
                         "run_id": waiting.get("run_id") or rid,
                         "thread_id": waiting.get("thread_id") or thread_id,
-                        # 未落库必须带出来：人在等一个**不存在的**审批，
-                        # 界面上却跟"正在审批中"长得一模一样
                         "unpersisted": bool(waiting.get("unpersisted")),
                     },
                 )
@@ -459,9 +470,6 @@ async def _iter_lg_rag_sse_core(
                         last_answer = content
                 yield await emit(event_type, role, payload)
         if waiting_approval:
-            # 收口帧照发（旧客户端靠 done 判断"这条流结束了"），
-            # 但 status 必须说出来：它结束了，是因为**在等人批**。
-            # 不落 thread turns —— 这一轮没有答案，落一条空回答会污染历史。
             yield await emit(
                 "done",
                 "system",
@@ -472,12 +480,10 @@ async def _iter_lg_rag_sse_core(
                     "status": "waiting_approval",
                 },
             )
+            stream_settled = True
             await _drain_persist()
             return
-        # router/basic 可能无 aggregator：用末帧预览不够时仍发 done；
-        # 若全程无 answer，补一帧空 answer 便于客户端统一收口（可选）
         if not saw_answer and mode != "supervisor":
-            # basic/router：最后进度里可能已有 answer_preview；仍发空 answer 占位
             yield await emit("answer", "system", {"content": "", "note": "no_aggregator"})
         yield await emit(
             "done",
@@ -488,6 +494,7 @@ async def _iter_lg_rag_sse_core(
                 "latency_ms": int((time.perf_counter() - started) * 1000),
             },
         )
+        stream_settled = True
         await _drain_persist()
         if user_id:
             try:
@@ -496,8 +503,6 @@ async def _iter_lg_rag_sse_core(
                 logger.exception(
                     "lg-rag persist after done failed thread_id=%s", thread_id
                 )
-            # memory-facts-p1：done 收口后离线抽取点火（create_task 不 await；
-            # 不 yield 新帧、不阻塞已发帧；对齐 T5.1 后台 persist 模式）
             schedule_memory_extraction(
                 tenant_id=current_tenant(),
                 user_id=user_id,
@@ -506,9 +511,15 @@ async def _iter_lg_rag_sse_core(
                 query=query,
                 answer=last_answer,
             )
+    except GeneratorExit:
+        # worker 内核被 aclose（非 HTTP subscriber）：补偿终帧
+        await _settle_disconnected()
+        raise
+    except asyncio.CancelledError:
+        # worker Task cancel：补偿落盘，避免孤儿永久 409
+        await _settle_disconnected()
+        raise
     except Exception as exc:
-        # delta 途中图异常：已发 delta 保留（sink 已入队/落盘调度），先吐净残留再发
-        # error 帧；不补 final 帧（failure_paths）。
         while not pending_frames.empty():
             yield pending_frames.get_nowait()
         logger.exception("lg-rag stream failed run_id=%s", rid)
@@ -516,16 +527,21 @@ async def _iter_lg_rag_sse_core(
             "error",
             "system",
             {
-                "stage": "lg_rag.stream",
+                "stage": "lg_rag.worker_failed",
                 "message": "旁路流式调用失败",
                 "retryable": True,
                 "detail": _truncate(repr(exc), 200),
             },
         )
+        stream_settled = True
         await _drain_persist()
     finally:
-        reset_answer_token_sink(sink_handle)
-        reset_subtask_progress_sink(progress_handle)
+        if not stream_settled:
+            await _settle_disconnected()
+        with contextlib.suppress(ValueError, RuntimeError):
+            reset_answer_token_sink(sink_handle)
+        with contextlib.suppress(ValueError, RuntimeError):
+            reset_subtask_progress_sink(progress_handle)
         await _drain_persist()
         if tracing_enabled():
             flush_traces()

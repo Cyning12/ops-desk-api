@@ -1,0 +1,43 @@
+{
+  "run_id": "eea35bd94a274067a4e66e3712ff254a",
+  "method": "curl --max-time 8 supervisor",
+  "verdict": "FAIL",
+  "run_stream_closed": false,
+  "done_status": null,
+  "events": [
+    {
+      "seq": 1,
+      "event_type": "run.start",
+      "status": null
+    },
+    {
+      "seq": 2,
+      "event_type": "node.progress",
+      "status": null
+    },
+    {
+      "seq": 3,
+      "event_type": "node.progress",
+      "status": null
+    },
+    {
+      "seq": 4,
+      "event_type": "node.progress",
+      "status": null
+    },
+    {
+      "seq": 5,
+      "event_type": "node.progress",
+      "status": null
+    },
+    {
+      "seq": 6,
+      "event_type": "subtask.progress",
+      "status": "running"
+    }
+  ],
+  "settled_log": false,
+  "code_surface": "router receive=request.receive; blocking _watch_http_disconnect; no _DISCONNECT_POLL_S",
+  "replay_poll_20s": 409,
+  "replay_body_head": "{\"detail\":\"Run is still in flight; retry after it settles.\"}"
+}
