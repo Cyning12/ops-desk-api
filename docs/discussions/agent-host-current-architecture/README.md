@@ -4,7 +4,8 @@
 > **目标真值**：[完整框架大纲 v0.2](../2026-09-23_agent-host-full-framework-outline_v0.md)  
 > **总览（当前总架构 + 缺失）**：[00_overview_current_vs_target_v1_zh.md](./00_overview_current_vs_target_v1_zh.md)  
 > **扩展策略（名实 · 高 ROI 能力）**：[../2026-09-24_agent-host_extension_strategy_v1_zh.md](../2026-09-24_agent-host_extension_strategy_v1_zh.md)  
-> **工程演进**：[多服务工程方案](../2026-09-23_agent-host-multi-service-engineering-architecture_v0.md)
+> **工程演进**：[多服务工程方案](../2026-09-23_agent-host-multi-service-engineering-architecture_v0.md)  
+> **交互浏览**：[../../arch-browser/README.md](../../arch-browser/README.md)（HTML 衍生视图 · 本目录 MD 仍为真值）
 
 ## 模块详构（34 = 大纲编号）
 

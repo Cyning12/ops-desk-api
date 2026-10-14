@@ -1,0 +1,383 @@
+# Host 大纲 # ↔ tech_graph module_id / flow / 规划波次
+# 真值纪律：工程边以 graph.json 为准；概念/规划以 discussions 为准。
+# 维护：改映射时改本文件后跑 scripts/build_site.py
+
+schema_version: arch_browser_crosswalk_v1
+
+modules:
+  - host_id: 1
+    title: 能力注册与同步
+    status: 部分
+    tech_modules: [capability]
+    flows: [10_flow_capability]
+    paths: [app/ops/capability/]
+    future: { wave: N5, gap_summary: "跨进程注册中心仍缺（v2.0）" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M01_capability-registry.md
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/_tech_graph/l1/10_flow_capability.md
+
+  - host_id: 2
+    title: 加载期强制
+    status: 部分
+    tech_modules: [capability]
+    flows: [10_flow_capability]
+    paths: [app/ops/capability/]
+    future: { wave: N1, gap_summary: "manifest 硬规则已有；静态红线 CI 产品面仍弱" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M02_load-time-enforce.md
+
+  - host_id: 3
+    title: 可见集两阶段
+    status: 已落地
+    tech_modules: [lg_rag, capability]
+    flows: [10_flow_lg_rag, 10_flow_capability]
+    paths: [app/ops/strategy/scenario.py, app/ops/capability/]
+    future: { wave: null, gap_summary: "" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M03_visibility-trim.md
+
+  - host_id: 4
+    title: Prompt 管理
+    status: 部分
+    tech_modules: [lg_rag]
+    flows: [10_flow_lg_rag]
+    paths: [app/ops/prompts/]
+    future: { wave: N0, gap_summary: "缺版本灰度/回滚/装配审计" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M04_prompt-mgmt.md
+
+  - host_id: 5
+    title: SO 校验
+    status: 已落地
+    tech_modules: [structured_output]
+    flows: [10_flow_structured_output]
+    paths: [app/ops/structured_output/]
+    future: { wave: null, gap_summary: "语义校验+通过率审计可深化" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M05_so-gateway.md
+      - docs/_tech_graph/l1/10_flow_structured_output.md
+
+  - host_id: 6
+    title: 委派网关 · 令牌
+    status: 已落地
+    tech_modules: [capability, lg_rag]
+    flows: [10_flow_capability, 10_flow_lg_rag]
+    paths: [app/ops/capability/delegation.py]
+    future: { wave: N5, gap_summary: "图内令牌已有；跨进程 nonce 外置属 v2.0" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M06_delegation-gateway.md
+
+  - host_id: 7
+    title: 执行网关 · 六道门
+    status: 已落地
+    tech_modules: [capability]
+    flows: [10_flow_capability]
+    paths: [app/ops/capability/gateway.py]
+    future: { wave: null, gap_summary: "" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M07_exec-gateway.md
+
+  - host_id: 8
+    title: Policy 硬闸
+    status: 部分
+    tech_modules: [capability]
+    flows: [10_flow_capability]
+    paths: [app/ops/capability/]
+    future: { wave: N2, gap_summary: "Policy 深化与可撤销字段产品面" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M08_policy-gate.md
+
+  - host_id: 9
+    title: 记忆管理 · 分层
+    status: 部分
+    tech_modules: [memory]
+    flows: []
+    paths: [app/ops/memory/]
+    future: { wave: N5, gap_summary: "跨进程记忆 D3 属 v2.0；情景/事实已有默认关" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M09_memory-layered.md
+
+  - host_id: 10
+    title: 评估与验证
+    status: 部分
+    tech_modules: []
+    flows: []
+    paths: [evals/]
+    future: { wave: N0, gap_summary: "红线/金标脚本在；产品化与 REGRESSION 回写仍弱" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M10_eval-verify.md
+
+  - host_id: 11
+    title: 可观测性
+    status: 部分
+    tech_modules: []
+    flows: []
+    paths: [app/ops/tracing.py, evals/agent/sli/]
+    future: { wave: N2, gap_summary: "统一审计台账产品面；SLI 定义已有看板未产品化" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M11_observability.md
+
+  - host_id: 12
+    title: 成本控制
+    status: 已落地
+    tech_modules: [llm, capability]
+    flows: []
+    paths: [app/llm/budget.py]
+    future: { wave: null, gap_summary: "" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M12_cost-control.md
+
+  - host_id: 13
+    title: 沙箱隔离
+    status: 不适用
+    tech_modules: [capability]
+    flows: [10_flow_capability]
+    paths: []
+    future: { wave: N5, gap_summary: "Policy 阻断替代 microVM；触发条件后再立项" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M13_sandbox.md
+
+  - host_id: 14
+    title: 安全策略 · HITL
+    status: 部分
+    tech_modules: [hitl, lg_rag]
+    flows: [10_flow_lg_rag]
+    paths: [app/ops/hitl/, app/ops/lg_rag/]
+    future: { wave: N2, gap_summary: "缺 PRE_AUTHORIZED/EXEMPT 三档与撤销执行器" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M14_hitl-security.md
+
+  - host_id: 15
+    title: 意图解析
+    status: 已落地
+    tech_modules: [lg_rag]
+    flows: [10_flow_lg_rag]
+    paths: [app/ops/lg_rag/, app/ops/strategy/]
+    future: { wave: null, gap_summary: "" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M15_intent.md
+
+  - host_id: 16
+    title: 安全护栏检测
+    status: 部分
+    tech_modules: [lg_rag]
+    flows: [10_flow_lg_rag]
+    paths: [app/ops/prompts/slots.py]
+    future: { wave: N4, gap_summary: "护栏分类器（≠ slots）仍弱" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M16_safety-guard.md
+
+  - host_id: 17
+    title: 主 Agent · Orchestrator
+    status: 已落地
+    tech_modules: [lg_rag]
+    flows: [10_flow_lg_rag]
+    paths: [app/ops/lg_rag/multi/, app/ops/strategy/]
+    future: { wave: null, gap_summary: "" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M17_orchestrator.md
+      - docs/_tech_graph/l1/10_flow_lg_rag.md
+
+  - host_id: 18
+    title: 子 Agent · Specialist
+    status: 已落地
+    tech_modules: [lg_rag, lc_evidence_chain, rag]
+    flows: [10_flow_lg_rag, 10_flow_lc_evidence, 10_flow_rag]
+    paths: [app/ops/lg_rag/, app/ops/lc_evidence_chain/, app/ops/rag/]
+    future: { wave: N3, gap_summary: "可增 rerank 等工人类型；RAG 仍是工人非产品名" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M18_specialist.md
+
+  - host_id: 19
+    title: 结果反馈（执行面）
+    status: 已落地
+    tech_modules: [lg_rag]
+    flows: [10_flow_lg_rag]
+    paths: [app/ops/lg_rag/]
+    future: { wave: null, gap_summary: "" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M19_result-feedback-llm.md
+
+  - host_id: 20
+    title: 模型注册与版本
+    status: 部分
+    tech_modules: [llm]
+    flows: []
+    paths: [app/llm/]
+    future: { wave: N4, gap_summary: "模型能力标签仍弱" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M20_model-registry.md
+
+  - host_id: 21
+    title: 模型路由
+    status: 部分
+    tech_modules: [llm]
+    flows: []
+    paths: [app/llm/]
+    future: { wave: N4, gap_summary: "声明式路由可深化" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M21_model-routing.md
+
+  - host_id: 22
+    title: 降级与容错
+    status: 已落地
+    tech_modules: [llm]
+    flows: []
+    paths: [app/llm/]
+    future: { wave: null, gap_summary: "" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M22_degrade-resilience.md
+
+  - host_id: 23
+    title: 推理缓存
+    status: 已落地
+    tech_modules: [llm]
+    flows: []
+    paths: [app/llm/infer_cache.py]
+    future: { wave: N5, gap_summary: "进程内 LRU；外置属 v2.0" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M23_infer-cache.md
+
+  - host_id: 24
+    title: Token 预算与配额
+    status: 已落地
+    tech_modules: [llm]
+    flows: []
+    paths: [app/llm/budget.py]
+    future: { wave: N5, gap_summary: "进程内计数；外置属 v2.0" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M24_token-budget.md
+
+  - host_id: 25
+    title: 模型评测 A/B
+    status: 部分
+    tech_modules: [llm]
+    flows: []
+    paths: [evals/]
+    future: { wave: N0, gap_summary: "Experiment 雏形" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M25_model-eval-ab.md
+
+  - host_id: 26
+    title: 模型安全
+    status: 部分
+    tech_modules: [llm, lg_rag]
+    flows: []
+    paths: [app/ops/prompts/slots.py]
+    future: { wave: N4, gap_summary: "输出侧敏感过滤入 LLM 统一出口仍缺" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M26_model-safety.md
+
+  - host_id: 27
+    title: 垂域 · 车控
+    status: 不适用
+    tech_modules: []
+    flows: []
+    paths: []
+    future: { wave: null, gap_summary: "本仓不适用" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M27_domain-vehicle.md
+
+  - host_id: 28
+    title: 垂域 · 座舱
+    status: 不适用
+    tech_modules: []
+    flows: []
+    paths: []
+    future: { wave: null, gap_summary: "本仓不适用" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M28_domain-cabin.md
+
+  - host_id: 29
+    title: 垂域 · 导航
+    status: 不适用
+    tech_modules: []
+    flows: []
+    paths: []
+    future: { wave: null, gap_summary: "本仓不适用" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M29_domain-nav.md
+
+  - host_id: 30
+    title: 本域能力统一接入
+    status: 已落地
+    tech_modules: [capability]
+    flows: [10_flow_capability]
+    paths: [app/ops/capability/]
+    future: { wave: N1, gap_summary: "目录仍薄 → N1 高 ROI local_fn 空间大" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M30_capability-providers.md
+
+  - host_id: 31
+    title: 结果回写
+    status: 已落地
+    tech_modules: [lg_rag]
+    flows: [10_flow_lg_rag]
+    paths: [app/ops/lg_rag/event_store.py, app/ops/lg_rag/run_worker.py, app/ops/lg_rag/sse_subscribe.py]
+    future: { wave: null, gap_summary: "RunWorker 与 SSE 解耦已落地（2026-10-14）" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M31_result-persist.md
+      - docs/spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md
+
+  - host_id: 32
+    title: 成功案例→记忆
+    status: 部分
+    tech_modules: [memory]
+    flows: []
+    paths: [app/ops/memory/]
+    future: { wave: N0, gap_summary: "成功「模式」级资产仍弱" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M32_success-to-memory.md
+
+  - host_id: 33
+    title: 失败案例→失败模式库
+    status: 已落地
+    tech_modules: [memory]
+    flows: []
+    paths: [scripts/episode_pattern_mine.py, reports/episode_patterns/]
+    future: { wave: null, gap_summary: "离线聚类已有" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M33_failure-patterns.md
+
+  - host_id: 34
+    title: 高频模式→新规则
+    status: 部分
+    tech_modules: [memory]
+    flows: []
+    paths: [scripts/episode_pattern_mine.py]
+    future: { wave: N2, gap_summary: "suggested_rule 仅建议；半自动规则工作流仍缺" }
+    sources:
+      - docs/discussions/agent-host-current-architecture/modules/M34_pattern-to-rules.md
+
+# 工程一级模块 → 可跳 Host（反向索引由 build 生成；此处列主入口提示）
+tech_module_hints:
+  lg_rag:
+    host_ids: [3, 4, 15, 16, 17, 18, 19, 31]
+    primary_flow: 10_flow_lg_rag
+    note: "执行面装配壳 + run_events；叙事=Agent Host 主线"
+  capability:
+    host_ids: [1, 2, 6, 7, 8, 13, 30]
+    primary_flow: 10_flow_capability
+  hitl:
+    host_ids: [14]
+    primary_flow: 10_flow_lg_rag
+  memory:
+    host_ids: [9, 32, 33, 34]
+    primary_flow: null
+  llm:
+    host_ids: [12, 20, 21, 22, 23, 24, 25, 26]
+    primary_flow: null
+  structured_output:
+    host_ids: [5]
+    primary_flow: 10_flow_structured_output
+  lc_evidence_chain:
+    host_ids: [18]
+    primary_flow: 10_flow_lc_evidence
+  rag:
+    host_ids: [18]
+    primary_flow: 10_flow_rag
+  chat:
+    host_ids: []
+    primary_flow: 10_flow_chat
+    note: "legacy · 非主线 · 非默认读"

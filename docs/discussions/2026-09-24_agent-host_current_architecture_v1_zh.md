@@ -6,7 +6,8 @@
 > **出口证据**：[host_v1_exit_review 报告](../reports/host_v1_exit_review/REPORT_host_v1_exit_review_20260924_v1_zh.md) · V1-A~E + SLI G1 CLOSE  
 > **分模块详构索引**：[agent-host-current-architecture/README.md](./agent-host-current-architecture/README.md)（M01–M34 各一文件）  
 > **同文副本（目录内）**：[agent-host-current-architecture/00_overview_current_vs_target_v1_zh.md](./agent-host-current-architecture/00_overview_current_vs_target_v1_zh.md)  
-> **图谱**：[docs/_tech_graph/l1/01_modules.md](../_tech_graph/l1/01_modules.md)
+> **图谱**：[docs/_tech_graph/l1/01_modules.md](../_tech_graph/l1/01_modules.md)  
+> **交互浏览（衍生视图）**：[docs/arch-browser/](../arch-browser/README.md) · 本地 `dist/` 静态页 / 可选 `GET /docs/arch-browser/` · **本文与 modules/ 仍为真值源，不删除**
 
 ---
 
@@ -15,9 +16,9 @@
 | 问 | 读 |
 |---|---|
 | 目标长什么样？ | 大纲 §2 mermaid（五层 + 三道防线） |
-| **现在**长什么样？ | 本文 §1 |
-| 差在哪？ | 本文 §2（总缺口）+ §3（34 行刷新表） |
-| 某一大纲模块内部怎么接？ | `agent-host-current-architecture/modules/Mxx_*.md` |
+| **现在**长什么样？ | 本文 §1 · **或** [架构浏览器](../arch-browser/README.md) 首页双入口 |
+| 差在哪？ | 本文 §2（总缺口）+ §3（34 行刷新表）· 浏览器「规划波次」叠层 |
+| 某一大纲模块内部怎么接？ | `agent-host-current-architecture/modules/Mxx_*.md` · 浏览器 `#/host/{n}` |
 
 判定口径（相对大纲）：**已落地** / **部分** / **缺失** / **不适用**。已按 **Host v1.0（2026-09-24）** 刷新，**不再**沿用大纲落笔当日的「雏形/缺失」字面。
 
@@ -239,3 +240,4 @@ SO（#5）与 HITL（#14）**已接线**：`lg_rag → structured_output → llm
 | 日期 | 说明 |
 |---|---|
 | 2026-09-24 | 初版：当前总图 + 缺口 + 34 模块状态刷新；详构落盘 modules/M01–M34 |
+| 2026-10-14 | 文首 POINTER：可点击架构浏览器 `docs/arch-browser/`（MD 真值不变 · HTML 衍生） |

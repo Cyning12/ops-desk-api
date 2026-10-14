@@ -2,9 +2,11 @@
 import logging
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 _LOG_FORMAT = "%(asctime)s %(name)s %(levelname)s %(message)s"
 _LOG_LEVEL_NAMES = ("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG")
@@ -80,3 +82,15 @@ app.include_router(ops_router)
 async def health() -> dict:
     """Health check endpoint."""
     return {"status": "ok"}
+
+
+# 架构浏览器：docs/arch-browser/dist 衍生静态视图（MD/_tech_graph 仍为真值源）
+_ARCH_BROWSER_DIST = (
+    Path(__file__).resolve().parents[1] / "docs" / "arch-browser" / "dist"
+)
+if (_ARCH_BROWSER_DIST / "index.html").is_file():
+    app.mount(
+        "/docs/arch-browser",
+        StaticFiles(directory=str(_ARCH_BROWSER_DIST), html=True),
+        name="arch_browser",
+    )
