@@ -30,6 +30,7 @@ decide 默认**不自动 resume**（两步钉死），T2 起可按 env/单据配
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from typing import Any, Literal
@@ -415,6 +416,22 @@ async def _persist_resumed_turns(sink, outcome: dict[str, Any]) -> None:
         logger.exception("HITL 恢复：补落 thread turns 失败 thread=%s", sink.thread_id)
 
 
+async def _collect_decisions_or_raise(row: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """汇总同 run 已批/已驳；批准了却拿不到可解锁步骤 ⇒ 显式失败（no_unlock）。
+
+    请求内 preflight 与后台执行体共用同一份守卫：同步可判定的错在请求内响，
+    与执行时才报的错语义一致。
+    """
+    approved, rejected = await _collect_decisions(row)
+    if not approved and str(row.get("status") or "") == STATUS_APPROVED:
+        # 批准了却拿不到可解锁的步骤 —— 多半是申请行缺 unlock_subtask_id。
+        # 必须响，否则拿着空 approved 去恢复 ⇒ 实际按"驳回"收工。
+        raise ResumeError(
+            "no_unlock", "已批准但拿不到待解锁的步骤（unlock_subtask_id 为空）"
+        )
+    return approved, rejected
+
+
 async def _execute_decided_resume(row: dict[str, Any]) -> dict[str, Any]:
     """**恢复执行体：手动 resume 端点与自动触发同源**（T2 F3 · 无状态恢复纪律）。
 
@@ -425,13 +442,7 @@ async def _execute_decided_resume(row: dict[str, Any]) -> dict[str, Any]:
     返回 `{req_status, thread_id, sink, outcome}` 供手动端点组装响应。
     """
     req_status = str(row.get("status") or "")
-    approved, rejected = await _collect_decisions(row)
-    if not approved and req_status == STATUS_APPROVED:
-        # 批准了却拿不到可解锁的步骤 —— 多半是申请行缺 unlock_subtask_id。
-        # 必须响，否则拿着空 approved 去恢复 ⇒ 实际按"驳回"收工。
-        raise ResumeError(
-            "no_unlock", "已批准但拿不到待解锁的步骤（unlock_subtask_id 为空）"
-        )
+    approved, rejected = await _collect_decisions_or_raise(row)
     thread_id = str(row.get("thread_id") or "").strip()
     sink = await _open_event_sink(row, thread_id)
     if sink is not None:
@@ -463,6 +474,59 @@ async def _execute_decided_resume(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+# 手动 resume 在飞登记：request_id → 后台任务（None = 请求内 preflight 在飞占位）。
+# 进程内单飞即可：崩溃后登记随进程消失、重调 resume 幂等重投递（preflight 的
+# not_interrupted 守卫拦住已跑完的）；auto 模式另有周期补偿扫描兜底。
+_RESUME_IN_FLIGHT: dict[str, asyncio.Task[None] | None] = {}
+
+
+async def _preflight_decided_resume(row: dict[str, Any]) -> tuple[str, list[str], list[str]]:
+    """请求内 fail-fast 守卫：同步可判定的 ResumeError 在这里抛（映射表不变）。
+
+    与 _execute_decided_resume 同源复用守卫链（决定汇总 → no_unlock →
+    resume_hitl_run 前置检查），但 preflight_only=True 只查不跑 ——
+    请求不再等整个图恢复跑完（同步执行实测 130–310s，超前端 30s 超时）。
+    """
+    approved, rejected = await _collect_decisions_or_raise(row)
+    thread_id = str(row.get("thread_id") or "").strip()
+    await resume_hitl_run(
+        thread_id=thread_id,
+        approved=approved,
+        rejected=rejected,
+        decided_by=str(row.get("decision_by") or ""),
+        preflight_only=True,
+    )
+    return thread_id, approved, rejected
+
+
+async def _run_resume_in_background(request_id: str, row: dict[str, Any]) -> None:
+    """异步执行体入口：与自动触发同源调 _execute_decided_resume。
+
+    失败只落日志（执行结果经事件流落盘、前端 replay 可见）；在飞登记无论
+    成败都要摘掉，否则这条申请永远 409 在飞。
+    """
+    try:
+        await _execute_decided_resume(row)
+    except Exception:
+        logger.exception("HITL 异步恢复执行失败 request=%s", request_id)
+    finally:
+        _RESUME_IN_FLIGHT.pop(request_id, None)
+
+
+async def _best_effort_replay_cursor(run_id: str) -> str:
+    """投递时刻的 replay 游标（best-effort）：取不到不阻塞受理，返回空串。"""
+    if not run_id:
+        return ""
+    try:
+        from app.ops.lg_rag.event_store import last_seq
+        from app.ops.lg_rag.sse_replay import make_cursor
+
+        return make_cursor(run_id, await last_seq(run_id))
+    except Exception:
+        logger.warning("HITL 恢复受理：replay 游标取不到 run=%s", run_id)
+        return ""
+
+
 @router.post("/requests/{request_id}/resume")
 async def resume_request(
     request_id: str, _user: OpsUser | None = AdminSyncAuth
@@ -475,24 +539,38 @@ async def resume_request(
       轮数归零），然后**真的从那个 checkpoint 继续跑**；
     - 驳回 ⇒ 不解锁，收工出结论（结论里带着"这步没做、因为没批"）。
 
-    **驳回也必须能调这个端点**：图正挂在 ``interrupt()`` 上等人，
+    **驳回也必须能调这个端点**：图正挂在 interrupt() 上等人，
     如果"只有批准能恢复"，驳回之后那条 run 会**永远挂在等待授权那一帧**，
     前端看着像卡死，而库里清清楚楚写着 rejected。
+
+    **异步受理（hitl-resume-async）**：请求内只做守卫 preflight（同步可判定的
+    错照旧按映射表响），然后投递后台执行、**秒回 200** —— 同步执行实测
+    130–310s，远超前端 30s 超时（掐断后前端误回「待审批」）。恢复过程帧
+    照常经事件流落盘，前端拿 replay.cursor 追帧拿到"批准之后跑完的那段"。
     """
     row = await get_hitl_store().aget(request_id)
     if row is None:
         raise HTTPException(status_code=404, detail="申请不存在")
-    # ⚠️ 别叫 ``status``：本模块从 fastapi 导入了同名模块，遮蔽了会炸
+    # ⚠️ 别叫 status：本模块从 fastapi 导入了同名模块，遮蔽了会炸
     req_status = str(row.get("status") or "")
     if req_status not in (STATUS_APPROVED, STATUS_REJECTED):
         raise HTTPException(
             status_code=409,
             detail=f"申请状态为 {req_status or 'unknown'}，只有已决（approved/rejected）才能恢复",
         )
-    # 恢复段与自动触发同源（T2 F3）：执行体抛 ResumeError，这里映射 HTTP
+    # 幂等防重：同一申请恢复在飞 ⇒ 409（执行已不在请求内，必须显式挡）
+    if request_id in _RESUME_IN_FLIGHT:
+        raise HTTPException(
+            status_code=409,
+            detail="该申请的恢复正在执行中，待沉降后再试",
+        )
+    _RESUME_IN_FLIGHT[request_id] = None  # 占位：preflight 在飞（asyncio 原子区）
+    # 请求内只做守卫 preflight：恢复段与自动触发同源（T2 F3），
+    # preflight 抛 ResumeError，这里按同一张表映射 HTTP
     try:
-        result = await _execute_decided_resume(row)
+        thread_id, approved, rejected = await _preflight_decided_resume(row)
     except ResumeError as exc:
+        _RESUME_IN_FLIGHT.pop(request_id, None)
         code = {
             "no_thread_id": status.HTTP_409_CONFLICT,
             "no_decision": status.HTTP_409_CONFLICT,
@@ -500,16 +578,24 @@ async def resume_request(
             # 旧版本格式残留：不是"这会儿不能恢复"，是"永远恢复不了"，
             # 但仍然归 409（客户端该做的是提示人重开，而不是重试）
             "stranded_checkpoint": status.HTTP_409_CONFLICT,
-            # T2 抽取：空 unlock 409 由执行体抛（detail 逐字不变；原路径不打 warning，保持）
+            # T2 抽取：空 unlock 409 由守卫抛（detail 逐字不变；原路径不打 warning，保持）
             "no_unlock": status.HTTP_409_CONFLICT,
             "checkpointer_not_configured": status.HTTP_503_SERVICE_UNAVAILABLE,
         }.get(exc.code, status.HTTP_502_BAD_GATEWAY)
         if exc.code != "no_unlock":
             logger.warning("HITL 恢复被拒 request=%s code=%s %s", request_id, exc.code, exc.detail)
         raise HTTPException(status_code=code, detail=exc.detail) from exc
-    thread_id = result["thread_id"]
-    sink = result["sink"]
-    outcome = result["outcome"]
+    except Exception:
+        _RESUME_IN_FLIGHT.pop(request_id, None)
+        raise
+    # 投递后台执行后即返回；登记换成真任务（finally 摘登记归执行体入口）
+    task = asyncio.create_task(
+        _run_resume_in_background(request_id, row),
+        name=f"hitl-resume-{request_id}",
+    )
+    _RESUME_IN_FLIGHT[request_id] = task
+    run_id = str(row.get("run_id") or "")
+    cursor = await _best_effort_replay_cursor(run_id)
     return {
         "ok": True,
         "request": {
@@ -518,16 +604,24 @@ async def resume_request(
             "run_id": row.get("run_id"),
             "thread_id": thread_id,
         },
-        "resume": outcome,
+        # D1：resume 键从「跑完的 outcome」变「已受理」——执行结果经事件流可见
+        "resume": {
+            "status": "accepted",
+            "thread_id": thread_id,
+            "approved": approved,
+            "rejected": rejected,
+            "decided_by": str(row.get("decision_by") or ""),
+        },
         # 前端拿这个 cursor 调 POST /lg-rag/replay 就能收到"批准之后跑完的那段"
         "replay": {
-            "run_id": sink.run_id if sink else str(row.get("run_id") or ""),
-            "cursor": sink.cursor if sink else "",
-            "events_persisted": sink.persisted if sink else 0,
-            "events_failed": sink.failed if sink else 0,
-            # 归属没解析到 ⇒ 事件没落 ⇒ 前端 replay 不到；**必须说出来**
-            "persisted": sink is not None,
-            "re_interrupted": bool(sink.re_interrupted) if sink else False,
+            "run_id": run_id,
+            # 投递时刻游标：恢复段事件都会排在它后面；取不到则为空串（不阻塞受理）
+            "cursor": cursor,
+            "events_persisted": 0,
+            "events_failed": 0,
+            # 没有 run_id ⇒ 后台 sink 归属解析不到 ⇒ 前端 replay 不到；**必须说出来**
+            "persisted": bool(run_id),
+            "re_interrupted": False,
         },
         "ts": time.time(),
     }
