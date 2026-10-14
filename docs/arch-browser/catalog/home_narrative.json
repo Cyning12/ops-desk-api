@@ -1,0 +1,43 @@
+{
+  "schema_version": "arch_browser_home_narrative_v1",
+  "product_name": "Ops Desk · Agent Host",
+  "page_title": "架构浏览器",
+  "tagline": "把「Agent 怎么跑一次请求」拆成可点击的五层蓝图，并对齐真实代码与落地状态。",
+  "one_liner": "单进程 FastAPI 内：控制面（纯代码闸链）与执行面（lg-rag supervisor）同驻；LLM 工厂与能力提供方同进程；状态落在 PostgreSQL。主线入口为 SSE 流式对话。",
+  "principles": [
+    {
+      "title": "名实分离",
+      "body": "叙事主线叫 Agent Host；HTTP / freeze 传输壳仍可叫 lg-rag。看架构谈 Host，看接口谈路由名——两边不混为一谈。"
+    },
+    {
+      "title": "五层分工",
+      "body": "控制面只跑确定性代码、不调模型；执行面编排 LLM 与工人；LLM 工厂管模型注册/路由/预算；能力提供方接本域工具；反馈闭环把运行结果写回记忆与规则建议。"
+    },
+    {
+      "title": "概念图 ↔ 工程真值",
+      "body": "本页概念图来自架构讨论稿；节点可点进模块详页。工程侧另有 tech_graph（节点/边编译产物），用于对照「概念大纲」与「仓内实际模块」。"
+    },
+    {
+      "title": "状态怎么读",
+      "body": "已落地 = 主路径可用；部分 = 核心已接、仍有缺口；暂未排期 = 大纲有、当前产品域未排（如垂域车控等）。颜色与图例一致。"
+    }
+  ],
+  "scenarios_placeholder": {
+    "title": "使用场景（占位 · 设想）",
+    "summary": "后续计划按模块展示「真实请求怎么走」：入口 → 控制面闸 → 执行面 → 能力调用 → 反馈回写，并附可核对的运行证据。当前仅为占位，内容未填充。",
+    "cards": [
+      {
+        "title": "场景 · 流式问答主线",
+        "desc": "设想：从 SSE 入口走到 supervisor / specialist，并标出 HITL、Policy、用量记账落点。"
+      },
+      {
+        "title": "场景 · 能力调用闸链",
+        "desc": "设想：一次 tool invoke 如何经过可见集、委派令牌、执行网关与 Policy。"
+      },
+      {
+        "title": "场景 · 反馈写入记忆",
+        "desc": "设想：run 结束后事实/偏好/失败模式如何回写，以及人工确认规则的边界。"
+      }
+    ]
+  }
+}
