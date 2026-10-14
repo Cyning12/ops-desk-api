@@ -4,14 +4,14 @@
 |---|---|
 | hat_id | 20-task-audit（R2） |
 | 审查对象 | `docs/tasks/active/task_hitl_resume_async.md`（v0.1 · 吸收 20 R1 退回回填） |
-| 前序审查文 | `docs/harness/reviews/task_hitl_resume_async_audit_r1.md`（R1 FAIL · N1 + n1–n4） |
+| 前序审查文 | `docs/harness/reviews/task_hitl_resume_async_audit_R1_20261014.md`（R1 FAIL · N1 + n1–n4） |
 | 配套 invoke | `docs/harness/invokes/by-task/hitl-resume-async/invoke_20261014_20_task_audit.md`（R1 节 + 本文 R2 节） |
 | 审查日期 | 2026-10-14 |
 | 审查基准 | R1 退回清单逐条核销 + 回填无回退复核 · base `master` 56e4a9f 断言点亲读核真 |
 
 ## 结论摘要
 
-- **内容审查：PASS —— R1 退回清单 N1（阻塞）+ n1–n4 全部核销 · 回填未引入新问题 · task lint 复跑 PASS（exit=0）**
+- **内容审查：PASS —— R1 核销清单 N1 + n1–n4 全部核销闭合 · 回填未引入新问题 · task lint 复跑 PASS（exit=0）**
 - **流程闸：HG-AUDIT-R1 维持 pending** —— 依纪律本文不附 30 Prompt；文末为维护者（授权 00 代签形态）签闸清单，签署动作归 00
 
 ## R1 退回清单逐条核销

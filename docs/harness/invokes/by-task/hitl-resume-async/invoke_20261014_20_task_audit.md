@@ -4,7 +4,7 @@
 |---|---|
 | hat_id | 20-task-audit（R1） |
 | task | `docs/tasks/active/task_hitl_resume_async.md`（v0 初稿） |
-| 审查文 | `docs/harness/reviews/task_hitl_resume_async_audit_r1.md` |
+| 审查文 | `docs/harness/reviews/task_hitl_resume_async_audit_R1_20261014.md` |
 | 分支 | `task/hitl-resume-async` |
 | 日期 | 2026-10-14 |
 
@@ -52,7 +52,7 @@
 |---|---|
 | hat_id | 20-task-audit（R2） |
 | task | `docs/tasks/active/task_hitl_resume_async.md`（v0.1 · 吸收 R1 退回回填） |
-| 审查文 | `docs/harness/reviews/task_hitl_resume_async_audit_r2.md` |
+| 审查文 | `docs/harness/reviews/task_hitl_resume_async_audit_R2_20261014.md` |
 
 ## R2 结论
 

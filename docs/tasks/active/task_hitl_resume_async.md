@@ -1,6 +1,6 @@
 # task_hitl_resume_async — POST /hitl/requests/{id}/resume 异步化（JC-F1 · B 方案 · 复用 RunWorker/auto_resume）
 
-> **状态**：active（2026-10-14 · HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 **approved** · 00 依维护者 2026-10-14 会话授权代签 · R 轮真值 docs/harness/reviews/task_hitl_resume_async_audit_r2.md PASS · **30 可开工（红测先行）**）
+> **状态**：active（2026-10-14 · HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 **approved** · 00 依维护者 2026-10-14 会话授权代签 · R 轮真值 docs/harness/reviews/task_hitl_resume_async_audit_R2_20261014.md PASS · **30 可开工（红测先行）**）
 > **类型**：性能/契约缺口收口（JC-F1 · web 00 跨仓移交 B 方案 · api 单边异步化）
 > **依据**：web 00 移交令 `../ops-desk-web/docs/harness/invokes/by-task/hitl-resume-async-handoff/invoke_20261014_00_dispatch_api.md`（维护者裁定 B 方案）· JC-F1 40 机验实证（web 分支 `task/web-api-joint-check` @ a2b1b1f · 未并 web 主线）· 本仓锚点亲读核真（base `master` 56e4a9f）
 > **分支**：`task/hitl-resume-async`（base `master` 56e4a9f）
@@ -32,8 +32,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---|---|---|---|
-| HG-TASK-DRAFT | approved | 20, 30 | 2026-10-14 00 代签（维护者会话授权「授权00签收后续所有文档」· invoke_10 留痕）· 初稿经 20 R1 FAIL 回填 → R2 PASS（reviews/task_hitl_resume_async_audit_r2.md） |
-| HG-AUDIT-R1 | approved | 30 | 2026-10-14 00 代签（维护者会话授权同上）· R 轮真值 = reviews/task_hitl_resume_async_audit_r1.md（FAIL）→ r2.md（PASS · N1+n1–n4 全核销） |
+| HG-TASK-DRAFT | approved | 20, 30 | 2026-10-14 00 代签（维护者会话授权「授权00签收后续所有文档」· invoke_10 留痕）· 初稿经 20 R1 FAIL 回填 → R2 PASS（reviews/task_hitl_resume_async_audit_R2_20261014.md） |
+| HG-AUDIT-R1 | approved | 30 | 2026-10-14 00 代签（维护者会话授权同上）· R 轮真值 = reviews/task_hitl_resume_async_audit_R1_20261014.md（FAIL）→ r2.md（PASS · N1+n1–n4 全核销） |
 | HG-GRAPH-MODULES | approved | 30 | 2026-10-14 00 代签（维护者会话授权同上）· 20 R1 核对 G-L1 预判与 docs/_tech_graph/l1/01_modules.md 现状相容 · **30 按实判回写义务存续** |
 
 ## 背景与目标

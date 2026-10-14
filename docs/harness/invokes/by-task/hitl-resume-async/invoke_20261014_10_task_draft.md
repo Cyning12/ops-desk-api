@@ -70,7 +70,7 @@
 
 ## 2026-10-14 · 20 R1 FAIL 退回回填（10-task · 回填后 lint PASS）
 
-- **退回**：docs/harness/reviews/task_hitl_resume_async_audit_r1.md（20-task-audit · 内容 FAIL=N1 + n1–n4 · HG-AUDIT-R1 仍 pending）
+- **退回**：docs/harness/reviews/task_hitl_resume_async_audit_R1_20261014.md（20-task-audit · 内容 FAIL=N1 + n1–n4 · HG-AUDIT-R1 仍 pending）
 - **N1 回填**：验收新增 TC2b「旧测 grep 影响面」——必破断言 4 处亲读核真（tests/test_hitl_resume.py:362 · tests/test_hitl_pending_decide.py:501/528/661）+ decide 面零 diff 区分（test_hitl_pending_decide.py:367-368 · test_hitl_auto_resume.py:308/417-418/570/909）
 - **n1**：ResumeEventSink 锚 :112-162 → :54-162（多处联动：根因锚点/必读列表/TC4/自检结论）
 - **n2**：TC7「等 8 文件」→ 实证 10 件列全名（test_hitl*.py 7 件 + lg_rag sse 3 件 · R4 摘要联动）
