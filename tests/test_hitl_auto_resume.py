@@ -759,14 +759,23 @@ def test_trigger_carries_no_state_and_no_http_self_call():
 
 
 def test_single_resume_path_in_router():
-    """同源钉：router.py 里 `await resume_hitl_run(` 调用点唯一（在抽取的执行体内）。"""
+    """同源钉：router.py 里恢复**实现**仍唯一 —— preflight 探针与执行体同驱动器。
+
+    异步化（hitl-resume-async）后 await resume_hitl_run( 有两个调用点：
+    请求内 preflight（preflight_only=True · 只查快照不驱动）+ 后台执行体。
+    两者调的是**同一个**驱动器函数，「禁止第二条恢复实现」的语义不变 ——
+    本钉防的是出现第三个恢复实现。
+    """
     import inspect
 
     import app.ops.hitl.router as hitl_router
 
     src = inspect.getsource(hitl_router)
-    assert src.count("await resume_hitl_run(") == 1, "禁止第二条恢复实现"
+    assert src.count("await resume_hitl_run(") == 2, (
+        "preflight 探针与后台执行体之外的第三调用点 = 新的恢复实现，禁止"
+    )
     assert hasattr(hitl_router, "_execute_decided_resume")
+    assert hasattr(hitl_router, "_preflight_decided_resume")
 
 # ---------------------------------------------------------------------------
 # hitl-auto-resume-claim-race（30）：竞态窗口注入复现（TC1 修复前红→修复后绿）

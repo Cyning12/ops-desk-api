@@ -42,6 +42,7 @@ from app.ops.hitl.store import (
     NullHitlStore,
 )
 from tests.conftest import DB_AVAILABLE
+from tests.test_hitl_resume import _drain
 
 _MAINTAINER = OpsUser(
     id="00000000-0000-0000-0000-000000000001", username="admin", role="maintainer"
@@ -466,14 +467,31 @@ def test_decide_invalid_decision_is_422():
 # ---------------------------------------------------------------------------
 
 
-def _resume_via(saver):
-    """把端点里的 resume_hitl_run 换成「真驱动器 + 注入内存 saver/图替身」。"""
+def _resume_via(saver, outcomes: list | None = None):
+    """把端点里的 resume_hitl_run 换成「真驱动器 + 注入内存 saver/图替身」。
+
+    异步化后端点秒回「已受理」：给 outcomes 时把**执行调用**的 outcome 捕获
+    下来（preflight 探针调用不记），供 drain 后断言图真的跑完。
+    """
     from app.ops.hitl.resume import resume_hitl_run as real
 
     async def _wrapped(**kw):
-        return await real(checkpointer=saver, graph_factory=_graph_factory, **kw)
+        out = await real(checkpointer=saver, graph_factory=_graph_factory, **kw)
+        if outcomes is not None and not kw.get("preflight_only"):
+            outcomes.append(out)
+        return out
 
     return _wrapped
+
+
+async def _adrain(timeout: float = 10.0) -> None:
+    """异步排干 resume 后台任务（与 AsyncClient 同一 loop，只能让出协程）。"""
+    import app.ops.hitl.router as router_mod
+
+    deadline = time.monotonic() + timeout
+    while getattr(router_mod, "_RESUME_IN_FLIGHT", {}) and time.monotonic() < deadline:
+        await asyncio.sleep(0.02)
+    assert not getattr(router_mod, "_RESUME_IN_FLIGHT", {}), "后台恢复未沉降"
 
 
 def test_decide_approved_then_resume_drives_the_graph():
@@ -485,11 +503,12 @@ def test_decide_approved_then_resume_drives_the_graph():
     row = _row(thread_id="t-chain")
     asyncio.run(store.acreate(row))
     owner = _owner_map({_RUN: str(_MAINTAINER.id)})
+    outcomes: list = []
 
     with (
         patch("app.ops.lg_rag.event_store.run_owner", new=owner),
         patch("app.ops.hitl.router._open_event_sink", new=AsyncMock(return_value=None)),
-        patch("app.ops.hitl.router.resume_hitl_run", new=_resume_via(saver)),
+        patch("app.ops.hitl.router.resume_hitl_run", new=_resume_via(saver, outcomes)),
         _client(store, user=_MAINTAINER) as client,
     ):
         decided = client.post(
@@ -497,8 +516,13 @@ def test_decide_approved_then_resume_drives_the_graph():
         )
         assert decided.status_code == 200, decided.text
         resumed = client.post(f"/api/ops/hitl/requests/{row['id']}/resume")
+        _drain()
     assert resumed.status_code == 200, resumed.text
-    state = resumed.json()["resume"]["state"]
+    # 异步化（hitl-resume-async）：受理响应只承诺「已受理」，驱动结果在后台 ——
+    # 响应断言受理形，outcome 断言沉降后对捕获值做（TC2b 授权适配）。
+    assert resumed.json()["resume"]["status"] == "accepted"
+    assert outcomes, "后台恢复没有执行"
+    state = outcomes[0]["state"]
     assert state["hitl_unlocked_ids"] == [_T1], "批准了却没解锁"
     assert state["react_observation"]["verdict"] == "replan"
 
@@ -511,11 +535,12 @@ def test_decide_rejected_then_resume_settles():
     row = _row(thread_id="t-chain-rej")
     asyncio.run(store.acreate(row))
     owner = _owner_map({_RUN: str(_MAINTAINER.id)})
+    outcomes: list = []
 
     with (
         patch("app.ops.lg_rag.event_store.run_owner", new=owner),
         patch("app.ops.hitl.router._open_event_sink", new=AsyncMock(return_value=None)),
-        patch("app.ops.hitl.router.resume_hitl_run", new=_resume_via(saver)),
+        patch("app.ops.hitl.router.resume_hitl_run", new=_resume_via(saver, outcomes)),
         _client(store, user=_MAINTAINER) as client,
     ):
         decided = client.post(
@@ -524,8 +549,12 @@ def test_decide_rejected_then_resume_settles():
         assert decided.status_code == 200, decided.text
         assert decided.json()["request"]["status"] == STATUS_REJECTED
         resumed = client.post(f"/api/ops/hitl/requests/{row['id']}/resume")
+        _drain()
     assert resumed.status_code == 200, resumed.text
-    state = resumed.json()["resume"]["state"]
+    # 异步化（hitl-resume-async）：受理响应只承诺「已受理」（TC2b 授权适配）。
+    assert resumed.json()["resume"]["status"] == "accepted"
+    assert outcomes, "后台恢复没有执行"
+    state = outcomes[0]["state"]
     assert state["hitl_unlocked_ids"] == [], "驳回却解锁了 —— 授权与拒绝不分"
     assert state["react_observation"]["verdict"] == "settle"
 
@@ -650,15 +679,24 @@ async def test_db_decide_survives_store_rebuild_then_resume(monkeypatch):
         # ③ resume（既有端点 · 真 PG checkpointer 找到挂起点 · 图替身避免真 LLM）
         from app.ops.hitl.resume import resume_hitl_run as _real_resume
 
+        outcomes: list = []
+
         async def _resume_minimal_graph(**kw):
             # checkpointer 不传 → 按 env 走真 PG；只换图工厂（最小 observe 图）
-            return await _real_resume(graph_factory=_graph_factory, **kw)
+            out = await _real_resume(graph_factory=_graph_factory, **kw)
+            if not kw.get("preflight_only"):
+                outcomes.append(out)
+            return out
 
         with patch("app.ops.hitl.router.resume_hitl_run", new=_resume_minimal_graph):
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 res2 = await client.post(f"/api/ops/hitl/requests/{rid}/resume")
+                await _adrain()
         assert res2.status_code == 200, res2.text
-        state = res2.json()["resume"]["state"]
+        # 异步化（hitl-resume-async）：受理响应只承诺「已受理」（TC2b 授权适配）。
+        assert res2.json()["resume"]["status"] == "accepted"
+        assert outcomes, "后台恢复没有执行"
+        state = outcomes[0]["state"]
         assert state["hitl_unlocked_ids"] == [_T1]
         assert state["react_observation"]["verdict"] == "replan"
     finally:

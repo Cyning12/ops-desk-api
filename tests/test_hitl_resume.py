@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import time
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 from langchain_core.messages import HumanMessage
@@ -32,10 +32,10 @@ from app.ops.hitl.resume import (
     resume_hitl_run,
 )
 from app.ops.hitl.store import (
-    InMemoryHitlStore,
     STATUS_APPROVED,
     STATUS_PENDING,
     STATUS_REJECTED,
+    InMemoryHitlStore,
 )
 from tests.conftest import DB_AVAILABLE
 
@@ -320,6 +320,20 @@ def _client(monkeypatch, store):
     return TestClient(app)
 
 
+def _drain(timeout: float = 5.0) -> None:
+    """等 resume 后台执行沉降（在飞登记清空）。
+
+    异步化（hitl-resume-async）后，端点秒回、执行在后台任务里；
+    TestClient 的 portal loop 在另一线程推进，这里同步轮询即可。
+    """
+    import app.ops.hitl.router as router_mod
+
+    deadline = time.monotonic() + timeout
+    while getattr(router_mod, "_RESUME_IN_FLIGHT", {}) and time.monotonic() < deadline:
+        time.sleep(0.02)
+    assert not getattr(router_mod, "_RESUME_IN_FLIGHT", {}), "后台恢复未沉降"
+
+
 def _approved_row(**kw) -> dict:
     base = {
         "id": new_request_id(),
@@ -336,7 +350,11 @@ def _approved_row(**kw) -> dict:
 
 
 def test_resume_endpoint_drives_the_graph(monkeypatch):
-    """批准 → 端点**调驱动器**，不是自己编一个"建议怎么恢复"的字典。"""
+    """批准 → 端点**调驱动器**，不是自己编一个"建议怎么恢复"的字典。
+
+    异步化（hitl-resume-async）：端点秒回「已受理」，驱动结果经后台任务产出 ——
+    响应断言受理形，outcome 断言沉降后对捕获值做（TC2b 授权适配）。
+    """
     import asyncio
 
     store = InMemoryHitlStore()
@@ -345,21 +363,28 @@ def test_resume_endpoint_drives_the_graph(monkeypatch):
     asyncio.run(store.adecide(row["id"], decision=STATUS_APPROVED, by="张三"))
 
     seen: dict = {}
+    outcomes: list[dict] = []
 
     async def _fake_resume(**kwargs):
+        if kwargs.get("preflight_only"):
+            return {"preflight": True}
         seen.update(kwargs)
-        return {"thread_id": kwargs["thread_id"], "state": {"route": "replan"}}
+        outcome = {"thread_id": kwargs["thread_id"], "state": {"route": "replan"}}
+        outcomes.append(outcome)
+        return outcome
 
     with (
         patch("app.ops.hitl.router.resume_hitl_run", new=_fake_resume),
         _client(monkeypatch, store) as client,
     ):
         res = client.post(f"/api/ops/hitl/requests/{row['id']}/resume")
+        _drain()
     assert res.status_code == 200, res.text
+    assert res.json()["resume"]["status"] == "accepted"
     assert seen["thread_id"] == "t-api"
     assert seen["approved"] == [_T1]
     assert seen["decided_by"] == "张三"
-    assert res.json()["resume"]["state"]["route"] == "replan"
+    assert outcomes and outcomes[0]["state"]["route"] == "replan"
 
 
 def test_resume_endpoint_collects_every_approved_in_the_same_run(monkeypatch):

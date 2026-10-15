@@ -220,6 +220,7 @@ async def _resume_with(
     decided_by: str,
     graph_factory: Any | None,
     update_sink: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
+    preflight_only: bool = False,
 ) -> dict[str, Any]:
     factory = graph_factory or _default_graph_factory
     graph = factory(checkpointer=checkpointer)
@@ -249,6 +250,20 @@ async def _resume_with(
             f"thread {thread_id[:32]} 有未完成任务但没有 interrupt 元数据 —— "
             "多半是升级前旧版本格式的 checkpoint，无法恢复（只能作废重开）",
         )
+
+    if preflight_only:
+        # 请求内守卫探针（异步 resume）：两道快照检查都过了就返回，**不 astream**
+        # —— 真正驱动图的是后台执行体；这里只负责把同步可判定的错提前响出来。
+        return {
+            "thread_id": thread_id[:_THREAD_ID_MAX],
+            "approved": list(approved),
+            "rejected": list(rejected),
+            "decided_by": decided_by,
+            "preflight": True,
+            "state": {},
+            "answer": "",
+            "query": "",
+        }
 
     # ⚠️ 用 astream 而不是 ainvoke：ainvoke 只给最终 state，
     #   恢复段的**过程帧**就没了 ⇒ 前端 replay 不出来"批准之后发生了什么"。
@@ -294,6 +309,7 @@ async def resume_hitl_run(
     checkpointer: Any | None = None,
     graph_factory: Any | None = None,
     update_sink: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
+    preflight_only: bool = False,
 ) -> dict[str, Any]:
     """恢复一条被 HITL 挂起的 run。
 
@@ -302,6 +318,10 @@ async def resume_hitl_run(
 
     ``update_sink`` 收到恢复段的每个节点 update（``{node: output}``），
     用来把这段过程**接着同一条 run 落盘**，让前端 replay 得到批准后的结论。
+
+    preflight_only=True 时只做守卫检查（决定非空 → checkpointer →
+    挂起快照两道校验）并返回 preflight 标记，**不驱动图** ——
+    异步 resume 端点在请求内用它 fail-fast，真正执行归后台任务。
     """
     tid = str(thread_id or "").strip()
     if not tid:
@@ -325,6 +345,7 @@ async def resume_hitl_run(
             decided_by=decided_by,
             graph_factory=graph_factory,
             update_sink=update_sink,
+            preflight_only=preflight_only,
         )
 
     from app.ops.lg_rag.checkpointer import apostgres_saver, use_postgres_checkpointer
@@ -338,7 +359,8 @@ async def resume_hitl_run(
             "跨请求恢复在内存 saver 下不可能成立，拒绝假装成功",
         )
     try:
-        async with apostgres_saver(setup=True) as saver:
+        # preflight 只读快照，不做 setup（不建表/不改 schema，请求内更快）
+        async with apostgres_saver(setup=not preflight_only) as saver:
             return await _resume_with(
                 saver,
                 thread_id=tid,
@@ -347,6 +369,7 @@ async def resume_hitl_run(
                 decided_by=decided_by,
                 graph_factory=graph_factory,
                 update_sink=update_sink,
+                preflight_only=preflight_only,
             )
     except ResumeError:
         raise

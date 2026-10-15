@@ -4,6 +4,7 @@
 
 | task | 说明 |
 |---|---|
+| `task_hitl_resume_async.md` | 2026-10-14：HITL resume 异步化（JC-F1 · web 00 移交 B 方案 · api 单边异步化复用 RunWorker/auto_resume 机制 · 契约钉死六项零回归）· 10 起草 v0 落稿 lint PASS · **三闸全 pending**（维护者 2026-10-14 授权 00 代签 · 签署待 20 R1 PASS 后由 00 执行）· 分支 `task/hitl-resume-async` |
 | `task_lg_rag_sse_disconnect_completion.md` | 2026-10-13：SSE 断连 Wave A 尝试 · TC5 live×3 FAIL 停派 ASGI 钩 · **正文不再修订** · 与新 task `lg_rag_sse_run_worker` **关联 co-CLOSE** · 分支 `task/lg-rag-sse-disconnect-completion` |
 | `task_lg_rag_sse_run_worker.md` | 2026-10-14：E3 Wave B · B1–B6/B3/B5 **PASS** · 未 commit · 分支 `task/lg-rag-sse-run-worker` · **与上表旧 task co-CLOSE** · web D3=`task_web_lg_rag_sse_continue_reply` **40 PASS** |
 | （无进行中 task） | 2026-10-11：`task_hitl_approved_replan_quality`（PR #233 合 · squash `be1469d` · SPEC §9 序1 收口：replan 保号注入去盲（suffix v2 `$preserved_block` 保号行+locked 终态摘要）+ write 孪生 guard-skip 结构护栏（`_join_subtasks` 分发层先于签发 · 不派发不消费 · `write_replay_guard_skip`/`replay_of` 台账）· 红测先行 9b56343→ebe2a01 · 20 R1 BLOCKED→B-1 修订→R2 PASS · 40 核验 PASS-WITH-NITS（TC3 live 双 run 对照：run1 护栏命中孪生中性化 · run2 注入激活零孪生 · write 执行均=1 · 全量对拍零新增红 · N1 locked 空注入缺口留另立 task））归档至 `done/`；CLOSE 文档 `docs/tasks/close/close_hitl_approved_replan_quality_20261011.md`；审查文 R1/R2 按双址规约 §二 过渡期口径复制落址A；worktree `t-hitl-approved-replan-quality` 与分支 `task/hitl-approved-replan-quality`、`close/hitl-approved-replan-quality` 移交 00 统一清理（本 CLOSE 不删任何东西） |
