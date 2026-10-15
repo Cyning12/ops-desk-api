@@ -23,6 +23,10 @@ class LgRagRunNotFoundError(Exception):
     """未知或跨用户 run_id；HTTP 映射 404。"""
 
 
+class LgRagRunInFlightError(Exception):
+    """run 仍在流式写入（无收尾帧）；HTTP 映射 409 + Retry-After（F-OBS-2）。"""
+
+
 async def persist_run_event(
     *,
     run_id: str,
@@ -125,6 +129,94 @@ async def run_is_terminal(run_id: str) -> bool:
     return row is not None
 
 
+async def run_stream_closed(run_id: str) -> bool:
+    """run 的事件流是否已收尾（存在 done 或 error 帧）。
+
+    与 run_is_terminal 刻意不同口径：done{waiting_approval} 挂起也算收尾
+    ——挂起 run 的 replay 是既有合法操作须零 diff，只有正在流式写入（有帧
+    无收尾帧）才是 replay 409 判定面（F-OBS-2）。只读，无副作用。
+    """
+    if not run_id:
+        return False
+    async with AsyncSessionLocal() as db:
+        row = (
+            await db.execute(
+                select(OpsLgRagRunEvent.seq)
+                .where(
+                    OpsLgRagRunEvent.run_id == run_id,
+                    OpsLgRagRunEvent.event_type.in_(("done", "error")),
+                )
+                .limit(1)
+            )
+        ).first()
+    return row is not None
+
+
+async def list_open_runs(
+    *,
+    stale_after_seconds: float = 0,
+    limit: int = 50,
+) -> list[dict[str, Any]]:
+    """有帧但无 done/error 的 orphan 候选（TC-B5 / F-A1）。
+
+    ``stale_after_seconds>0`` 时仅返回末帧 ``created_at`` 早于 cutoff 的 run。
+    只读；是否补偿由 ``scan_orphan_runs_for_compensation`` 再滤活跃 worker。
+    """
+    from datetime import timedelta
+
+    from app.db.models import now_utc
+
+    if limit <= 0:
+        return []
+    closed_ids = (
+        select(OpsLgRagRunEvent.run_id)
+        .where(OpsLgRagRunEvent.event_type.in_(("done", "error")))
+        .distinct()
+    )
+    # 每 run 取末帧行（max seq）上的 user_id/thread_id；禁 min(uuid)
+    max_seq_sq = (
+        select(
+            OpsLgRagRunEvent.run_id.label("rid"),
+            func.max(OpsLgRagRunEvent.seq).label("mx"),
+        )
+        .where(OpsLgRagRunEvent.run_id.notin_(closed_ids))
+        .group_by(OpsLgRagRunEvent.run_id)
+        .subquery()
+    )
+    stmt = (
+        select(
+            OpsLgRagRunEvent.run_id,
+            OpsLgRagRunEvent.user_id,
+            OpsLgRagRunEvent.thread_id,
+            OpsLgRagRunEvent.seq.label("max_seq"),
+            OpsLgRagRunEvent.created_at.label("last_activity_at"),
+        )
+        .join(
+            max_seq_sq,
+            and_(
+                OpsLgRagRunEvent.run_id == max_seq_sq.c.rid,
+                OpsLgRagRunEvent.seq == max_seq_sq.c.mx,
+            ),
+        )
+    )
+    if stale_after_seconds > 0:
+        cutoff = now_utc() - timedelta(seconds=stale_after_seconds)
+        stmt = stmt.where(OpsLgRagRunEvent.created_at < cutoff)
+    stmt = stmt.order_by(OpsLgRagRunEvent.created_at.asc()).limit(limit)
+    async with AsyncSessionLocal() as db:
+        rows = (await db.execute(stmt)).all()
+    return [
+        {
+            "run_id": str(row.run_id),
+            "user_id": str(row.user_id),
+            "thread_id": str(row.thread_id),
+            "last_activity_at": row.last_activity_at,
+            "max_seq": int(row.max_seq or 0),
+        }
+        for row in rows
+    ]
+
+
 async def assert_run_owned(run_id: str, user_id: str) -> None:
     """确认 run 存在且归属当前用户；否则 ``LgRagRunNotFoundError``。"""
     if not run_id or not user_id:
@@ -140,9 +232,19 @@ async def load_events_after(
     run_id: str,
     user_id: str,
     after_seq: int,
+    *,
+    refuse_in_flight: bool = False,
 ) -> list[dict[str, Any]]:
-    """归属校验后返回 ``seq > after_seq`` 的已提交帧（live 形状）。"""
+    """归属校验后返回 `seq` > `after_seq` 的已提交帧（live 形状）。
+
+    refuse_in_flight 开启时（replay 面 · F-OBS-2），run 仍在流式写入
+    （无收尾帧）则抛 LgRagRunInFlightError——读路径对写入中 run 不稳定
+    （live 实证 500），前置拦截语义化为 409 让客户端退避重试；缺省
+    False，其余调用面零 diff。
+    """
     await assert_run_owned(run_id, user_id)
+    if refuse_in_flight and not await run_stream_closed(run_id):
+        raise LgRagRunInFlightError(run_id)
     async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(OpsLgRagRunEvent)

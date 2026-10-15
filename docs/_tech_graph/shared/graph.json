@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20261011_V1",
-  "generated_at": "2026-10-11T06:59:32Z",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20261014_V1",
+  "generated_at": "2026-10-14T10:05:54Z",
   "graphs": [
     {
       "id": "00_main",
@@ -2270,10 +2270,10 @@
       "to": "sup_graph",
       "mark": "?>",
       "type": "branches",
-      "label": "[默认 mode=supervisor · astream updates]",
+      "label": "[默认 mode=supervisor · RunWorker astream updates]",
       "anchors": [
         {
-          "path": "app/ops/lg_rag/sse_stream.py",
+          "path": "app/ops/lg_rag/run_worker.py",
           "line": 1
         }
       ],
@@ -2285,10 +2285,10 @@
       "to": "client",
       "mark": "->",
       "type": "depends_on",
-      "label": "text/event-stream（run.start…answer delta×N→answer final…done · cursor）",
+      "label": "text/event-stream（subscribe fanout · cursor）",
       "anchors": [
         {
-          "path": "app/ops/lg_rag/sse_stream.py",
+          "path": "app/ops/lg_rag/sse_subscribe.py",
           "line": 1
         }
       ],

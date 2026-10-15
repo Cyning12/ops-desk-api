@@ -1,0 +1,10 @@
+HTTP/1.1 200 OK
+date: Wed, 14 Oct 2026 10:23:13 GMT
+server: uvicorn
+cache-control: no-cache
+x-accel-buffering: no
+x-ops-lg-rag-thread-id: 326f9132c7004fe1b62b68073cd8e9b0
+x-ops-lg-rag-run-id: 81a1e1e1abc44da288fa6f5841ab4ead
+content-type: text/event-stream; charset=utf-8
+transfer-encoding: chunked
+

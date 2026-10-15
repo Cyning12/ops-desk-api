@@ -11,6 +11,7 @@
 3. G-L1：[`l1/01_modules.md`](./l1/01_modules.md) → 按需 `l1/10_flow_*.md`
 4. G-L2：[`l2/indexes/`](./l2/indexes/)（chat 试点）
 5. 协议 / export：[`shared/`](./shared/) · **`shared/graph.json`**（唯一机器轨真值）
+6. （可选）交互浏览：[`../arch-browser/README.md`](../arch-browser/README.md) — 消费 `graph.json` + Host 大纲的**衍生 HTML**；改图后可 `./scripts/arch-browser-build.sh`
 
 ## 主线与 legacy 阅读约定（2026-09-23）
 

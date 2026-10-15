@@ -1,0 +1,12 @@
+verdict=PASS
+run_id=71d3cdfb85ae478eb75e0fa56c835300
+thread_id=c5603402abff47139c3651e0194d7b59
+live_max_seq=3
+replay_http=200
+replay_max_seq=445
+settle_approx_s=110
+done_payload=[{'run_id': '71d3cdfb85ae478eb75e0fa56c835300', 'thread_id': 'c5603402abff47139c3651e0194d7b59', 'latency_ms': 111464}]
+inflight_409={'status': 409, 'retry_after': '2', 'body': '{"detail":"Run is still in flight; retry after it settles."}'}
+continue_smoke={'http': 200, 'new_run_id': '2cc766d202e149ceaa101d52bbe26fe1', 'same_run': False, 'body_prefix': 'event: run.start\ndata: {"run_id": "2cc766d202e149ceaa101d52bbe26fe1", "seq": 1, "ts_ms": 0, "agent_role": "system", "event_type": "run.start", "payload": {"run_id": "2cc766d202e149ceaa101d52bbe26fe1", "thread_id": "c5603402abff47139c3651e0194d7b59", "mode": "basic", "query": "请用一句话总结上文要点。\\n\\n[继续回复·既'}
+type_counts={'run.start': 1, 'node.progress': 7, 'subtask.progress': 29, 'answer': 407, 'done': 1}
+uvicorn=127.0.0.1:8051 PID=18184 OPS_CHAT_TRACER=off proxy_stripped

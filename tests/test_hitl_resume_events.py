@@ -16,13 +16,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from app.ops.hitl.persistence import reset_hitl_store, set_hitl_store
 from app.ops.hitl.resume import ResumeEventSink
 from app.ops.hitl.store import (
-    InMemoryHitlStore,
     STATUS_APPROVED,
     STATUS_PENDING,
+    InMemoryHitlStore,
 )
-from app.ops.hitl.persistence import reset_hitl_store, set_hitl_store
 
 _RUN = "runevt"
 _T1 = f"{_RUN}:1"
@@ -129,6 +129,45 @@ async def test_normal_tail_is_not_marked_waiting_control(persisted):
     assert sink.re_interrupted is False
 
 
+# ---------------------------------------------------------------------------
+# 2b · 终帧观测字段（F-OBS-1：与 live 流 done 对齐 · task hitl_resume_replay_contract）
+# ---------------------------------------------------------------------------
+
+
+async def test_close_done_carries_latency_ms(persisted):
+    """F-OBS-1：resume 终帧 done 必须带 latency_ms（int ≥ 0 · 毫秒）。
+
+    缺键时前端 lastDone 徽标只能显示「耗时 0ms」（web 联调 FP-1 实证）。
+    口径与 live 流终帧一致：int((time.perf_counter() - started) * 1000)。
+    修复前 RED 签名：KeyError 'latency_ms'（缺键，与实证缺口同形）。
+    """
+    sink = ResumeEventSink(run_id="r1", user_id="u1", thread_id="t1")
+    await sink.open(approved=[_T1])
+    await sink(_plain_update())
+    await sink.close()
+
+    done = persisted[-1]
+    assert done["event_type"] == "done"
+    latency_ms = done["payload"]["latency_ms"]
+    assert isinstance(latency_ms, int)
+    assert latency_ms >= 0
+
+
+async def test_close_done_has_no_model_key_control(persisted):
+    """FP-1 裁定钉案（对照用例，应即绿）：resume 终帧**不补** model 键。
+
+    lg-rag 面无 per-run model 真源（live done 亦无 model；chat 的 model 来自
+    chat 模块自有 run 记录，非本契约面）——伪造默认值违反 FP-1 禁伪造红线。
+    此断言钉死「不硬造」，防后续有人塞配置默认值充数。
+    """
+    sink = ResumeEventSink(run_id="r1", user_id="u1", thread_id="t1")
+    await sink.open(approved=[_T1])
+    await sink(_plain_update())
+    await sink.close()
+
+    assert "model" not in persisted[-1]["payload"]
+
+
 async def test_node_updates_use_the_same_frame_shape_as_live(persisted):
     """恢复段的帧形状必须和 live 一致（复用 ``map_node_update``）。
 
@@ -226,24 +265,38 @@ def test_resume_endpoint_returns_replay_cursor(monkeypatch):
         return {"state": {}, "answer": "批准后的答案", "query": "原始问题"}
 
     turns = AsyncMock()
+    # last_seq 也顶掉：受理响应的 best-effort cursor 走真库会把 asyncpg 连接
+    # 绑到 portal loop 上（TestClient 退出时 RuntimeError）——本测不验真库游标。
     with (
         patch("app.ops.hitl.router._open_event_sink", new=_fake_open),
         patch("app.ops.hitl.router.resume_hitl_run", new=_fake_resume),
         patch("app.ops.lg_rag.event_store.persist_run_event", new=AsyncMock()),
+        patch("app.ops.lg_rag.event_store.last_seq", new=AsyncMock(return_value=0)),
         patch("app.ops.lg_rag.thread_store.persist_thread_turns", new=turns),
         _client(monkeypatch, store) as client,
     ):
         res = client.post(f"/api/ops/hitl/requests/{row['id']}/resume")
+        # 后台任务跑在 TestClient 的 portal loop 上 —— 沉降必须在 with 内等
+        from tests.test_hitl_resume import _drain
+
+        _drain()
 
     assert res.status_code == 200, res.text
     # 端点必须把 sink 交给驱动器 —— 不交的话恢复段一个事件都不会落，
     # 但响应看起来完全正常（这条就是那个"静默失效"的护栏）
     assert seen.get("update_sink") is sink, "恢复没把 update_sink 传给驱动器"
+    # 异步化（hitl-resume-async）：受理响应在后台执行**之前**发出，
+    # 响应面只能给 best-effort cursor 与受理形态；落盘真值沉降后对 sink 断。
     replay = res.json()["replay"]
     assert replay["persisted"] is True
     assert replay["run_id"] == "r1"
-    assert replay["cursor"] == "r1:6"  # open=4 / aggregator=5 / done=6
-    assert replay["events_persisted"] == 3
+    assert replay["cursor"] == "r1:0"  # last_seq 顶成 0（受理时刻的 best-effort）
+    assert replay["events_persisted"] == 0
+    assert replay["events_failed"] == 0
+    assert replay["re_interrupted"] is False
+    # 沉降后：sink 真落 3 帧，cursor 指向 done 帧
+    assert sink.persisted == 3, "恢复段 3 帧没有全部落盘"
+    assert sink.cursor == "r1:6"  # open=4 / aggregator=5 / done=6
     # 用户这一轮在"等待授权"时没落历史，恢复后必须补上
     turns.assert_awaited_once_with("t-api", "u1", "原始问题", "批准后的答案")
 
@@ -261,18 +314,31 @@ def test_resume_endpoint_reports_when_events_could_not_persist(monkeypatch):
     async def _fake_resume(**_kw):
         return {"state": {}, "answer": "", "query": ""}
 
+    opener = AsyncMock(return_value=None)
+    persist = AsyncMock()
     with (
-        patch("app.ops.hitl.router._open_event_sink", new=AsyncMock(return_value=None)),
+        patch("app.ops.hitl.router._open_event_sink", new=opener),
         patch("app.ops.hitl.router.resume_hitl_run", new=_fake_resume),
+        patch("app.ops.lg_rag.event_store.persist_run_event", new=persist),
+        patch("app.ops.lg_rag.event_store.last_seq", new=AsyncMock(return_value=0)),
         _client(monkeypatch, store) as client,
     ):
         res = client.post(f"/api/ops/hitl/requests/{row['id']}/resume")
+        # 后台任务跑在 TestClient 的 portal loop 上 —— 沉降必须在 with 内等
+        from tests.test_hitl_resume import _drain
+
+        _drain()
 
     assert res.status_code == 200, res.text
+    # 异步化（hitl-resume-async）：受理响应在归属解析**之前**发出，
+    # 无法预知解析结果 —— 「归属失败」的信号改由后台执行承担：
+    # opener 被调、解析返回 None ⇒ 恢复段一帧都不落（事件流缺席 = 前端可见）。
     replay = res.json()["replay"]
-    assert replay["persisted"] is False
-    assert replay["cursor"] == ""
+    assert replay["persisted"] is True  # run_id 存在即受理；解析结果尚不可知
+    assert isinstance(replay["cursor"], str)
     assert replay["events_persisted"] == 0
+    opener.assert_awaited_once()
+    persist.assert_not_awaited()
 
 
 # ---------------------------------------------------------------------------

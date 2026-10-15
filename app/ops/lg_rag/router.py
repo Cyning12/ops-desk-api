@@ -38,9 +38,14 @@ from app.ops.lg_rag import (
     ainvoke_supervisor_agent,
 )
 from app.ops.lg_rag.checkpointer import apostgres_saver, use_postgres_checkpointer
-from app.ops.lg_rag.event_store import LgRagRunNotFoundError, load_events_after
+from app.ops.lg_rag.event_store import (
+    LgRagRunInFlightError,
+    LgRagRunNotFoundError,
+    load_events_after,
+)
+from app.ops.lg_rag.run_worker import start_run_worker
 from app.ops.lg_rag.sse_replay import InvalidCursorError, resolve_replay_target
-from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
+from app.ops.lg_rag.sse_subscribe import subscribe_run_sse
 from app.ops.lg_rag.thread_store import (
     LgRagThreadForbiddenError,
     load_thread_turns,
@@ -83,6 +88,8 @@ class StreamRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=QUERY_MAX_LENGTH)
     mode: Mode = "supervisor"
     thread_id: str | None = Field(default=None, max_length=THREAD_ID_MAX_LENGTH)
+    # Wave B：失败后「继续回复」= 同 thread 新 run；读旧 run partial 注入草稿（禁 HITL resume）
+    continue_from_run_id: str | None = Field(default=None, max_length=64)
 
 
 class ReplayRequest(BaseModel):
@@ -206,6 +213,38 @@ async def _prepare_thread(thread_id: str, user_id: str) -> list[dict]:
         return []
 
 
+async def _partial_answer_from_run(run_id: str, user_id: str) -> str:
+    """从已落盘 run 聚合 partial answer（delta/content）；失败/未知 → 空串。"""
+    from app.ops.lg_rag.event_store import LgRagRunNotFoundError, load_events_after
+
+    try:
+        events = await load_events_after(
+            run_id, user_id, 0, refuse_in_flight=False
+        )
+    except LgRagRunNotFoundError:
+        return ""
+    except Exception:
+        logger.exception(
+            "lg-rag continue_from_run_id load failed run_id=%s", run_id
+        )
+        return ""
+    parts: list[str] = []
+    final = ""
+    for ev in events:
+        if ev.get("event_type") != "answer":
+            continue
+        payload = ev.get("payload") or {}
+        delta = payload.get("delta")
+        if isinstance(delta, str) and delta:
+            parts.append(delta)
+        content = payload.get("content")
+        if isinstance(content, str) and content:
+            final = content
+    if final:
+        return final
+    return "".join(parts)
+
+
 def _resolve_request_tenant(request: Request) -> str:
     """F1=C：session 真源；头不一致 → 403；未知租户 → 422。"""
     session_tenant = getattr(request.state, "ops_tenant_id", TENANT_A)
@@ -292,30 +331,43 @@ async def stream_lg_rag(
     request: Request,
     user: OpsUser = CurrentUser,
 ) -> StreamingResponse:
-    """SSE 流式旁路（freeze lg-rag-sse-v1）；须登录。默认 mode=supervisor。"""
+    """SSE 流式旁路（freeze lg-rag-sse-v1）；须登录。默认 mode=supervisor。
+
+    Wave B：先 start RunWorker（持有 astream→event_store），再 subscribe fanout。
+    客户端断连只取消 subscriber，worker 继续至普通 done / worker_failed。
+    """
     tenant_id = _resolve_request_tenant(request)
 
     thread_id = (body.thread_id or uuid.uuid4().hex)[:THREAD_ID_MAX_LENGTH]
     history_turns = await _prepare_thread(thread_id, str(user.id))
     run_id = uuid.uuid4().hex
+    query = body.query
+    # B2 薄：可选 continue_from_run_id → 把旧 run partial 拼进 query 草稿（新 run_id）
+    if body.continue_from_run_id:
+        partial = await _partial_answer_from_run(
+            body.continue_from_run_id, str(user.id)
+        )
+        if partial:
+            query = (
+                f"{body.query}\n\n"
+                f"[继续回复·既有草稿]\n{partial}"
+            )
+
+    # 先启动 worker（与 HTTP 生命周期解耦），再订阅
+    bus = start_run_worker(
+        query=query,
+        mode=body.mode,
+        thread_id=thread_id,
+        run_id=run_id,
+        history_turns=history_turns,
+        user_id=str(user.id),
+        tenant_id=tenant_id,
+    )
 
     async def event_gen() -> AsyncIterator[str]:
-        token = set_current_tenant(tenant_id)
-        # D4：usage 落表 run 上下文（lg_rag 面 · hex run_id）
-        llm_ctx_token = set_run_context(run_id=run_id, surface="lg_rag")
-        try:
-            async for chunk in iter_lg_rag_sse(
-                query=body.query,
-                mode=body.mode,
-                thread_id=thread_id,
-                run_id=run_id,
-                history_turns=history_turns,
-                user_id=str(user.id),
-            ):
-                yield chunk
-        finally:
-            reset_run_context(llm_ctx_token)
-            reset_current_tenant(token)
+        # tenant / usage 已在 worker Task 内设置；订阅侧仅推帧
+        async for chunk in subscribe_run_sse(run_id, bus=bus):
+            yield chunk
 
     return StreamingResponse(
         event_gen(),
@@ -334,7 +386,11 @@ async def replay_lg_rag(
     body: ReplayRequest,
     user: OpsUser = CurrentUser,
 ) -> StreamingResponse:
-    """SSE 重放已落盘帧（seq > after_seq）；须登录。未知/跨用户 run_id → 404。"""
+    """SSE 重放已落盘帧（seq > after_seq）；须登录。
+
+    未知/跨用户 run_id → 404；run 仍在流式写入（无收尾帧）→ 409 +
+    Retry-After（F-OBS-2），客户端退避重试，沉降后同请求零 diff。
+    """
     try:
         run_id, after_seq = resolve_replay_target(
             run_id=body.run_id,
@@ -348,7 +404,21 @@ async def replay_lg_rag(
         ) from None
 
     try:
-        events = await load_events_after(run_id, str(user.id), after_seq)
+        events = await load_events_after(
+            run_id,
+            str(user.id),
+            after_seq,
+            refuse_in_flight=True,
+        )
+    except LgRagRunInFlightError:
+        # F-OBS-2：在飞 replay 语义化——run 仍在流式写入时读路径不稳定（web 联调
+        # FP-1 实证瞬返 500），前置判定为 409 + Retry-After 让客户端退避重试；
+        # 沉降后同请求走原路径零 diff。
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Run is still in flight; retry after it settles.",
+            headers={"Retry-After": "2"},
+        ) from None
     except LgRagRunNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

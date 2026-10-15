@@ -1,0 +1,27 @@
+event: run.start
+data: {"run_id": "7bbb706aadd1474089d49f2c01142e7b", "seq": 1, "ts_ms": 0, "agent_role": "system", "event_type": "run.start", "payload": {"mode": "supervisor", "query": "这是一个需要调用工具的任务（就像查询 issue 状态一样）：请调用工具 testing.write.echo 回显一条备注 note=tc8-r1", "run_id": "7bbb706aadd1474089d49f2c01142e7b", "thread_id": "93a09c17283a40ac93a2e7c014bede5c"}, "cursor": "7bbb706aadd1474089d49f2c01142e7b:1"}
+
+event: node.progress
+data: {"run_id": "7bbb706aadd1474089d49f2c01142e7b", "seq": 2, "ts_ms": 2750, "agent_role": "intent", "event_type": "node.progress", "payload": {"intent": {"domain": "ops_kb", "summary": "调用测试工具testing.write.echo回显备注note=tc8-r1", "risk_hint": "low", "needs_tool": true, "needs_skill": false, "is_composite": false}}, "cursor": "7bbb706aadd1474089d49f2c01142e7b:2"}
+
+event: node.progress
+data: {"run_id": "7bbb706aadd1474089d49f2c01142e7b", "seq": 3, "ts_ms": 2754, "agent_role": "strategy_builder", "event_type": "node.progress", "payload": {"allowed_capability_ids": ["utc_now_iso", "mock_get_issue_status", "mock_get_deploy_info", "get_issue_by_number", "get_pr_by_number", "testing.write.echo"]}, "cursor": "7bbb706aadd1474089d49f2c01142e7b:3"}
+
+event: node.progress
+data: {"run_id": "7bbb706aadd1474089d49f2c01142e7b", "seq": 4, "ts_ms": 44840, "agent_role": "supervisor", "event_type": "node.progress", "payload": {"subtasks": [{"id": "7bbb706aadd1474089d49f2c01142e7b:1", "tool": "testing.write.echo", "type": "tool", "alias": "t1", "input": "note=tc8-r1", "depends_on": [], "subtask_id": "7bbb706aadd1474089d49f2c01142e7b:1"}]}, "cursor": "7bbb706aadd1474089d49f2c01142e7b:4"}
+
+event: node.progress
+data: {"run_id": "7bbb706aadd1474089d49f2c01142e7b", "seq": 5, "ts_ms": 44849, "agent_role": "subtask_join", "event_type": "node.progress", "payload": {"subtask_result": {"id": "7bbb706aadd1474089d49f2c01142e7b:1", "tool": "testing.write.echo", "type": "tool", "alias": "t1", "error": "委派签发需人工审批（capability testing.write.echo 非只读（side_effect=write））", "input": "note=tc8-r1", "blocked_by": "delegation_issue_hitl_required", "subtask_id": "7bbb706aadd1474089d49f2c01142e7b:1", "hitl_required": true}}, "cursor": "7bbb706aadd1474089d49f2c01142e7b:5"}
+
+event: hitl.waiting
+data: {"run_id": "7bbb706aadd1474089d49f2c01142e7b", "seq": 6, "ts_ms": 44859, "agent_role": "system", "event_type": "hitl.waiting", "payload": {"round": 0, "reason": "hitl_waiting", "run_id": "7bbb706aadd1474089d49f2c01142e7b", "requests": [{"id": "hitl_bb21ad31939141158449", "reason": "委派签发需人工审批（capability testing.write.echo 非只读（side_effect=write））", "blocked_by": "delegation_issue_hitl_required", "subtask_id": "7bbb706aadd1474089d49f2c01142e7b:1", "unlock_subtask_id": "7bbb706aadd1474089d49f2c01142e7b:1"}], "thread_id": "93a09c17283a40ac93a2e7c014bede5c", "unpersisted": false, "checkpoint_id": null}, "cursor": "7bbb706aadd1474089d49f2c01142e7b:6"}
+
+event: done
+data: {"run_id": "7bbb706aadd1474089d49f2c01142e7b", "seq": 7, "ts_ms": 44859, "agent_role": "system", "event_type": "done", "payload": {"run_id": "7bbb706aadd1474089d49f2c01142e7b", "status": "waiting_approval", "thread_id": "93a09c17283a40ac93a2e7c014bede5c", "latency_ms": 44859}, "cursor": "7bbb706aadd1474089d49f2c01142e7b:7"}
+
+event: hitl.resumed
+data: {"run_id": "7bbb706aadd1474089d49f2c01142e7b", "seq": 8, "ts_ms": 0, "agent_role": "system", "event_type": "hitl.resumed", "payload": {"run_id": "7bbb706aadd1474089d49f2c01142e7b", "approved": ["7bbb706aadd1474089d49f2c01142e7b:1"], "thread_id": "93a09c17283a40ac93a2e7c014bede5c", "decided_by": "admin"}, "cursor": "7bbb706aadd1474089d49f2c01142e7b:8"}
+
+event: node.progress
+data: {"run_id": "7bbb706aadd1474089d49f2c01142e7b", "seq": 9, "ts_ms": 34, "agent_role": "observe", "event_type": "node.progress", "payload": {"subtask_result": []}, "cursor": "7bbb706aadd1474089d49f2c01142e7b:9"}
+

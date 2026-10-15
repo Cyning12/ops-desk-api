@@ -133,8 +133,8 @@
 | `node.progress` | `intent` / `strategy_builder` / `supervisor` / … | 节点完成摘要（非全文 dump） |
 | `subtask.progress` | `rag_subtask` / `info_extract` / `tool_exec` | 子任务进度 / 结果摘要 |
 | `answer` | `aggregator` / `direct_answer` | 最终答案（**T5 已实现**：token delta 多帧 `{"delta": "<chunk>"}` 按 `seq` 有序拼接 + 终帧 `{"content": "<full>", "final": true}`；T2 兼容——旧客户端仅看 `content` 行为不变；流式降级时仅终帧整段）。**T5.1**：`delta` 须在生成过程中持续 SSE 刷出，**不得**等 aggregator / direct_answer 节点整段结束后再批量 flush（应然；见 §10.4.1） |
-| `done` | `system` | 正常结束 |
-| `error` | `system` | 失败；`retryable` 布尔 |
+| `done` | `system` | 正常结束；可选 `payload.status`：`waiting_approval`（HITL）· `disconnected`（仅补偿/worker 死无终帧）· 缺省≡completed |
+| `error` | `system` | 失败；`retryable` 布尔；**Wave B** `payload.stage` 钉 `lg_rag.worker_failed`（worker 异常；禁 silent 新 event_type） |
 | `cursor`（可选 · T4） | `system` | 供 replay 的游标提示（**可选** `event_type`；本波 SoT 见下行顶层字段） |
 
 **T4 顶层 `cursor` 字段（freeze `lg-rag-sse-v1` 扩展 · 2026-08-31）**
@@ -157,7 +157,7 @@
 **T4 冻结补充（2026-08-31）**
 
 - 同 freeze_id：`lg-rag-sse-v1`（顶层可选 `cursor` + `POST /lg-rag/replay`；不 silent 扩必选 `event_type`）  
-- 断连仍「尽量跑完」、无 cancel；replay 仅已落盘帧
+- 断连仍「尽量跑完」、无 cancel；replay 仅已落盘帧（**Wave B 真源**=RunWorker；HTTP 订阅可断）
 
 **T5 冻结补充（2026-08-31）**
 
@@ -243,6 +243,10 @@
 | 2026-09-07 | **§10.6**：client idle 120s + SSE comment keepalive 30s；联调项去墙钟 300s；task `lg-rag-sse-idle-keepalive` |
 | 2026-09-07 | **§10.7**：subtask `status=running` 起步帧（progress sink）· MVP；task `lg-rag-sse-subtask-live` |
 | 2026-09-08 | **§10.7 增补**：`status=step` 里程碑（router 节点 + retrieve/grade/answer）· provider 禁 aread 整包；task `lg-rag-sse-subtask-steps` |
+| 2026-10-14 | **§10.3 实然回写**：断连=落盘 `done{status:'disconnected'}`（**不**等同跑完）· task `lg-rag-sse-disconnect-completion` Wave A |
+| 2026-10-14 | **§10.3 R2**：ASGI≥2.4 挂 `request.is_disconnected` 轮询沉降（不依赖 generator aclose）· 30-R2 |
+| 2026-10-14 | **§10.3 R3**：改挂 `request.receive` **阻塞**等 `http.disconnect`（弃 peek 轮询；Starlette `is_disconnected` CancelScope 非阻塞读 live 假绿）· 30-R3 |
+| 2026-10-14 | **§10.3 Wave B**：断连尽量跑完以 RunWorker 为准（HTTP 只订阅）；失败 `error{stage:lg_rag.worker_failed}`；MVP 单进程 · task `lg-rag-sse-run-worker` |
 
 ---
 
@@ -326,9 +330,9 @@
 | 维度 | 内容 |
 |---|---|
 | **前置** | T2 稳定 · T4 api 契约冻结 |
-| **api 提供（2026-08-31 已实现）** | live `POST /lg-rag/stream` 每帧可选顶层 `cursor="{run_id}:{seq}"`；事件尽量落盘 `ops_lg_rag_run_events`。**新** `POST /api/ops/lg-rag/replay`：body `{run_id, after_seq}` 或 `{cursor}` → SSE 重放该 run 且 `seq > after_seq`（形状同 live）。须登录；未知/跨用户 `run_id` → **404**；非法 cursor → 422。断连服务端仍「尽量跑完」图（**无** cancel）。落盘失败不阻断已发 SSE；replay 仅已提交帧。freeze 仍 **`lg-rag-sse-v1`**（不强制 `event_type=cursor`）。**不** import chat/session。 |
-| **web 交付** | 断网/刷新后恢复策略 UI · 可选「从 cursor 续看」（另开 web task；本波可 api-only 先合） |
-| **联调项** | 中途断连后行为符合 api 钉死（T2=跑完不收齐；T4=可 replay） · 重复 `seq` 不重复渲染 |
+| **api 提供（2026-08-31 已实现 · Wave B 2026-10-14）** | live `POST /lg-rag/stream`：先 `start_run_worker`（进程内 asyncio.Task · `run_id` 单飞 · astream 只 emit→`ops_lg_rag_run_events`）再 `subscribe_run_sse` 推 fanout；帧可选顶层 `cursor`。**断连应然**：尽量跑完以 **worker** 为准（HTTP 断连只取消 subscriber，**不** cancel worker）→ 成功普通 `done` → History 完整 · `POST /lg-rag/replay` 200 补后半段；失败 `error{stage:lg_rag.worker_failed}` → `run_stream_closed` 真 → 「继续回复」= 同 `thread_id` **新** `/stream`（可选 `continue_from_run_id` 注入 partial · **禁** HITL resume · **禁** replay≡再调 LLM）。**实然**：MVP 单进程 fanout；多副本租约另立。Wave A ASGI disconnect 钩**停赌**；补偿仅 worker 死/超时无终帧可 `done{disconnected}`。真在飞仍 409+Retry-After；HITL `done{waiting_approval}` 零 diff。freeze 仍 **`lg-rag-sse-v1`**（不 silent 新 `event_type`；扩 `error.stage` / 可选 `done.status`）。
+| **web 交付** | 部分回复 +「继续回复」CTA（**须另开 web task · D3**）；断网/刷新读 History / replay 补后半段；`terminal_status`：`running`/`completed`/`error`/`disconnected`/`waiting_approval` 机读。 |
+| **联调项** | 中途断连 → 等 worker settle → DB 普通 `done`（或 `error{worker_failed}`）→ replay 200 含后半段 · 重复 `seq` 不重复渲染 |
 | **通过标准** | §11 T4 段 · 模拟 DevTools offline |
 | **常见坑** | 前端重复 append 同一 `answer` · 未存 `run_id`/`seq` / `cursor` |
 

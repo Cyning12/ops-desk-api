@@ -1,0 +1,24 @@
+{
+  "method": "curl --max-time 8 supervisor",
+  "run_id": "69f3723f985d4b8d829064b00a2c3fbe",
+  "curl_exit": 28,
+  "live_max_seq": 1,
+  "replay_http": 200,
+  "replay_max_seq": 578,
+  "done_payloads": [
+    {
+      "run_id": "69f3723f985d4b8d829064b00a2c3fbe",
+      "thread_id": "3236297535a742feb1b4b60e9671fcd7",
+      "latency_ms": 168714
+    }
+  ],
+  "type_counts": {
+    "run.start": 1,
+    "node.progress": 7,
+    "subtask.progress": 29,
+    "answer": 540,
+    "done": 1
+  },
+  "verdict": "PASS",
+  "note": "primary poll window 150s still 409; late probe after worker closed → 200 (longer LLM)"
+}

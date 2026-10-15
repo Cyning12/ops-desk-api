@@ -1,0 +1,60 @@
+event: run.start
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 1, "ts_ms": 0, "agent_role": "system", "event_type": "run.start", "payload": {"mode": "supervisor", "query": "TC5 S2 smoke：请简述这个系统的 SSE 断线续看机制", "run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "thread_id": "8ab0515365924cf192a0a1c1e7ea56f2"}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:1"}
+
+event: node.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 2, "ts_ms": 148, "agent_role": "intent", "event_type": "node.progress", "payload": {"intent": {"domain": "unknown", "summary": "", "risk_hint": "low", "needs_tool": false, "needs_skill": false, "is_composite": false}}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:2"}
+
+event: node.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 3, "ts_ms": 185, "agent_role": "strategy_builder", "event_type": "node.progress", "payload": {"allowed_capability_ids": []}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:3"}
+
+event: node.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 4, "ts_ms": 198, "agent_role": "supervisor", "event_type": "node.progress", "payload": {"subtasks": [{"id": "69b7639eb47c4ca9bc96ec9151023cdd:1", "type": "rag", "alias": "t1", "input": "TC5 S2 smoke：请简述这个系统的 SSE 断线续看机制", "depends_on": [], "subtask_id": "69b7639eb47c4ca9bc96ec9151023cdd:1"}]}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:4"}
+
+event: node.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 5, "ts_ms": 201, "agent_role": "subtask_join", "event_type": "node.progress", "payload": {"keys": ["inflight_subtask_ids"]}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:5"}
+
+event: subtask.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 6, "ts_ms": 201, "agent_role": "rag_subtask", "event_type": "subtask.progress", "payload": {"type": "rag", "input": "TC5 S2 smoke：请简述这个系统的 SSE 断线续看机制", "status": "running", "message": "开始检索子任务：TC5 S2 smoke：请简述这个系统的 SSE 断线续看机制", "subtask_id": "69b7639eb47c4ca9bc96ec9151023cdd:1"}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:6"}
+
+event: subtask.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 7, "ts_ms": 266, "agent_role": "rag_subtask", "event_type": "subtask.progress", "payload": {"step": "router", "type": "rag", "detail": {"route": "rag"}, "status": "step", "message": "步骤：router", "subtask_id": "69b7639eb47c4ca9bc96ec9151023cdd:1"}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:7"}
+
+event: subtask.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 8, "ts_ms": 291, "agent_role": "rag_subtask", "event_type": "subtask.progress", "payload": {"step": "retrieve", "type": "rag", "detail": {"phase": "start"}, "status": "step", "message": "开始检索…", "subtask_id": "69b7639eb47c4ca9bc96ec9151023cdd:1"}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:8"}
+
+event: subtask.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 9, "ts_ms": 317, "agent_role": "rag_subtask", "event_type": "subtask.progress", "payload": {"status": "done", "message": "子任务失败：InvalidURL(\"Invalid port: ':1]'\")", "subtask_result": {"id": "69b7639eb47c4ca9bc96ec9151023cdd:1", "type": "rag", "alias": "t1", "error": "InvalidURL(\"Invalid port: ':1]'\")", "input": "TC5 S2 smoke：请简述这个系统的 SSE 断线续看机制", "subtask_id": "69b7639eb47c4ca9bc96ec9151023cdd:1"}}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:9"}
+
+event: node.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 10, "ts_ms": 319, "agent_role": "subtask_join", "event_type": "node.progress", "payload": {"keys": ["inflight_subtask_ids"]}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:10"}
+
+event: node.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 11, "ts_ms": 332, "agent_role": "observe", "event_type": "node.progress", "payload": {"keys": ["hitl_requests", "react_observation", "react_round", "supervisor_step_count"]}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:11"}
+
+event: node.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 12, "ts_ms": 346, "agent_role": "supervisor", "event_type": "node.progress", "payload": {"subtasks": [{"id": "69b7639eb47c4ca9bc96ec9151023cdd:2", "type": "rag", "alias": "t1", "input": "TC5 S2 smoke：请简述这个系统的 SSE 断线续看机制", "depends_on": [], "subtask_id": "69b7639eb47c4ca9bc96ec9151023cdd:2"}]}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:12"}
+
+event: node.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 13, "ts_ms": 348, "agent_role": "subtask_join", "event_type": "node.progress", "payload": {"keys": ["inflight_subtask_ids"]}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:13"}
+
+event: subtask.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 14, "ts_ms": 348, "agent_role": "rag_subtask", "event_type": "subtask.progress", "payload": {"type": "rag", "input": "TC5 S2 smoke：请简述这个系统的 SSE 断线续看机制", "status": "running", "message": "开始检索子任务：TC5 S2 smoke：请简述这个系统的 SSE 断线续看机制", "subtask_id": "69b7639eb47c4ca9bc96ec9151023cdd:2"}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:14"}
+
+event: subtask.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 15, "ts_ms": 413, "agent_role": "rag_subtask", "event_type": "subtask.progress", "payload": {"step": "router", "type": "rag", "detail": {"route": "rag"}, "status": "step", "message": "步骤：router", "subtask_id": "69b7639eb47c4ca9bc96ec9151023cdd:2"}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:15"}
+
+event: subtask.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 16, "ts_ms": 437, "agent_role": "rag_subtask", "event_type": "subtask.progress", "payload": {"step": "retrieve", "type": "rag", "detail": {"phase": "start"}, "status": "step", "message": "开始检索…", "subtask_id": "69b7639eb47c4ca9bc96ec9151023cdd:2"}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:16"}
+
+event: subtask.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 17, "ts_ms": 462, "agent_role": "rag_subtask", "event_type": "subtask.progress", "payload": {"status": "done", "message": "子任务失败：InvalidURL(\"Invalid port: ':1]'\")", "subtask_result": {"id": "69b7639eb47c4ca9bc96ec9151023cdd:2", "type": "rag", "alias": "t1", "error": "InvalidURL(\"Invalid port: ':1]'\")", "input": "TC5 S2 smoke：请简述这个系统的 SSE 断线续看机制", "subtask_id": "69b7639eb47c4ca9bc96ec9151023cdd:2"}}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:17"}
+
+event: node.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 18, "ts_ms": 464, "agent_role": "subtask_join", "event_type": "node.progress", "payload": {"keys": ["inflight_subtask_ids"]}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:18"}
+
+event: node.progress
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 19, "ts_ms": 477, "agent_role": "observe", "event_type": "node.progress", "payload": {"keys": ["hitl_requests", "react_observation", "react_round", "supervisor_step_count"]}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:19"}
+
+event: error
+data: {"run_id": "69b7639eb47c4ca9bc96ec9151023cdd", "seq": 20, "ts_ms": 522, "agent_role": "system", "event_type": "error", "payload": {"stage": "lg_rag.stream", "detail": "InvalidURL(\"Invalid port: ':1]'\")", "message": "旁路流式调用失败", "retryable": true}, "cursor": "69b7639eb47c4ca9bc96ec9151023cdd:20"}
+
