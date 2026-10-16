@@ -3,11 +3,11 @@
   "product_name": "Ops Desk · Agent Host",
   "page_title": "架构浏览器",
   "tagline": "把「Agent 怎么跑一次请求」拆成可点击的五层蓝图，并对齐真实代码与落地状态。",
-  "one_liner": "单进程 FastAPI 内：控制面（纯代码闸链）与执行面（lg-rag supervisor）同驻；LLM 工厂与能力提供方同进程；状态落在 PostgreSQL。主线入口为 SSE 流式对话。",
+  "one_liner": "单进程 FastAPI 内：控制面（纯代码闸链）与执行面（Agent Host supervisor）同驻；LLM 工厂与能力提供方同进程；状态落在 PostgreSQL。主线入口为 SSE 流式对话。",
   "principles": [
     {
       "title": "名实分离",
-      "body": "叙事主线叫 Agent Host；HTTP / freeze 传输壳仍可叫 lg-rag。看架构谈 Host，看接口谈路由名——两边不混为一谈。"
+      "body": "叙事主线叫 Agent Host；对外演示统一 Agent Host 口径。看架构谈 Host；接口路由名属工程钻取层真值——两边不混为一谈。"
     },
     {
       "title": "五层分工",

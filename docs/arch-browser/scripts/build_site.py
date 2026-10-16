@@ -80,6 +80,49 @@ def _display_status(raw: str) -> str:
     return s
 
 
+# ---- 演示面命名政策（D1 已锁 · 名实分离）----
+# 只影响 Host 对照展示的 display 字段；tech_modules/flows/paths/code_paths 真值字段
+# 原样保留，供反向索引（tech_to_host / flow→Host）与工程钻取层使用；crosswalk.yaml 不改。
+_DEMO_HIDE_TECH: frozenset[str] = frozenset({"chat"})  # legacy 旧主线 · 演示面隐藏
+_DEMO_TECH_LABEL: dict[str, str] = {
+    "lg_rag": "Agent 工作台",
+    "lc_evidence_chain": "证据链（工人）",
+}
+_DEMO_HIDE_FLOW: frozenset[str] = frozenset({"10_flow_chat"})
+_DEMO_FLOW_LABEL: dict[str, str] = {
+    "10_flow_lg_rag": "Agent 工作台（SSE 流式运行）",
+    "10_flow_lc_evidence": "证据链（工人）",
+}
+_DEMO_HIDE_PATH_RE = re.compile(r"lg_rag|lc_evidence|ops/chat/")
+_DEMO_TEXT_RE = re.compile(r"lg[_-]rag|LG RAG|LC Evidence|lc_evidence_chain|legacy Chat", re.I)
+
+
+def _demo_text(s: str) -> str:
+    """叙事展示文案去旧栈名（展示层改写；源文档/discussions 真值不动）。"""
+    if not s:
+        return s
+
+    def _sub(m: re.Match) -> str:
+        t = m.group(0).lower()
+        if "evidence" in t:
+            return "证据链"
+        if "chat" in t:
+            return "旧版对话"
+        return "Agent Host"
+
+    return _DEMO_TEXT_RE.sub(_sub, s)
+
+
+def _demo_chips(items: list[str], hide: frozenset[str], labels: dict[str, str], kind: str) -> list[dict]:
+    """生成演示面 chip（label 用演示口径，href 仍指工程钻取层真值 id）。"""
+    out: list[dict] = []
+    for it in items or []:
+        if it in hide:
+            continue
+        out.append({"label": labels.get(it, it), "href": f"#/eng/{kind}/{it}"})
+    return out
+
+
 def _status_class_token(status: str) -> str:
     """与前端 badge / mermaid classDef 对齐。"""
     s = _display_status(status)
@@ -110,6 +153,13 @@ def _concept_mermaid_with_clicks(body: str, status_by_host: dict[int, str]) -> s
     """追加状态着色 classDef + click → #/host/{n}（需 mermaid securityLevel=loose）。"""
     if not body:
         return ""
+    # 演示面口径（D1 锁定）：入口层节点标签去旧栈名；discussions 源 MD 不动
+    body = re.sub(
+        r"(\bE1\s*)\[[^\]]*\]",
+        r'\1["用户请求 · Agent 工作台（SSE 流式运行）"]',
+        body,
+        count=1,
+    )
     clicks: list[str] = []
     by_class: dict[str, list[str]] = {}
     for node_id, host_id in _CONCEPT_NODE_TO_HOST.items():
@@ -269,6 +319,25 @@ def build() -> Path:
                 "future_gap": future.get("gap_summary") or "",
                 "mapped": bool(cw.get("tech_modules") or cw.get("flows") or cw.get("paths")),
                 "source_md_rel": str(md_path.relative_to(ROOT)) if md_path.is_file() else None,
+                # 演示面展示字段（旧栈名不出现在 Host 对照展示；上方真值字段不动）
+                "display": {
+                    "tech_chips": _demo_chips(
+                        cw.get("tech_modules") or [], _DEMO_HIDE_TECH, _DEMO_TECH_LABEL, "module"
+                    ),
+                    "flow_chips": _demo_chips(
+                        cw.get("flows") or [], _DEMO_HIDE_FLOW, _DEMO_FLOW_LABEL, "flow"
+                    ),
+                    "code_paths": ", ".join(
+                        p
+                        for p in re.split(r"[,，]\s*", code_paths)
+                        if p and not _DEMO_HIDE_PATH_RE.search(p)
+                    ),
+                    "paths": [
+                        p for p in (cw.get("paths") or []) if not _DEMO_HIDE_PATH_RE.search(p)
+                    ],
+                    "one_liner": _demo_text(one),
+                    "gap": _demo_text(gap_md or (future.get("gap_summary") or "")),
+                },
             }
         )
 

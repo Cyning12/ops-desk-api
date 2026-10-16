@@ -31,8 +31,8 @@
   ],
   "entry": {
     "id": "E1",
-    "title": "入口层 · SSE/HTTP lg-rag",
-    "note": "主线入口 POST /api/ops/lg-rag/stream；传输壳仍叫 lg-rag，叙事=Agent Host"
+    "title": "入口层 · Agent 工作台（SSE 流式运行）",
+    "note": "主线入口为 SSE 流式对话；对外演示统一 Agent Host 口径（名实分离：工程钻取层保留真值路由名）"
   },
   "modules": [
     {"id": 1, "slug": "M01_capability-registry", "title": "能力注册与同步", "layer": "control"},
@@ -71,7 +71,7 @@
     {"id": 34, "slug": "M34_pattern-to-rules", "title": "高频模式→新规则", "layer": "feedback"}
   ],
   "waves": [
-    {"id": "N0", "title": "叙事", "summary": "主线=Host；lg-rag=执行入口"},
+    {"id": "N0", "title": "叙事", "summary": "主线=Host；Agent 工作台=执行入口"},
     {"id": "N1", "title": "能力", "summary": "高 ROI ops capability 接入"},
     {"id": "N2", "title": "治理", "summary": "HITL 三档或统一审计台账"},
     {"id": "N3", "title": "工人", "summary": "新 specialist / rerank 一类"},

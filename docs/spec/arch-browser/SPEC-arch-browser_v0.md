@@ -41,7 +41,7 @@ Agent Host 大纲（五层 · M01–M34）与工程 `_tech_graph` 长期以 MD/Y
 
 1. **HTML 非真值**：架构结论只改 `discussions` / `crosswalk` / `home_narrative` / `_tech_graph` 源，再跑 `build_site.py`；禁止在 `app.js` 手写模块结论。
 2. **零业务契约**：不改 lg-rag / HITL / capability 执行语义；不增鉴权必过的业务 API。
-3. **名实分离**：叙事=Agent Host；传输壳可仍叫 lg-rag（首页文案须保持）。
+3. **名实分离**：叙事=Agent Host；对外演示面（首页 / 入口层 / 概念图 / 工程图演示标签 / Host 对照展示）统一 Agent Host 口径，不出现 lg-rag / LG RAG / LC Evidence / legacy Chat 等旧栈名（2026-10-16 三方演示裁定；HTTP 路径 / freeze / 包名 / 表名 / 模块 id 等业务契约不变，工程钻取真值层 docs/_tech_graph 除外——见修订记录）。
 4. **状态标签对外**：展示「暂未排期」对应 crosswalk「不适用」；可保留 `status_raw`。
 5. **公开面谨慎**：生产 Nginx 暴露（W2）前须维护者确认「未登录可读」范围（仅 arch-browser dist，非整棵 `docs/`）。
 
@@ -121,3 +121,4 @@ Agent Host 大纲（五层 · M01–M34）与工程 `_tech_graph` 长期以 MD/Y
 | 日期 | 说明 |
 |------|------|
 | 2026-10-14 | v0 draft 落盘：对齐初版实现 + W1–W4 升级轨道；HG-SPEC-SIGNOFF=pending |
+| 2026-10-16 | §1 纪律 3 修订（task demo_agent_host_surface）：三方演示裁定——演示面统一 Agent Host 口径，废止原「传输壳可仍叫 lg-rag（首页文案须保持）」；隐藏只发生在演示视图（catalog 文案 / build 展示层过滤 / app.js 视图过滤），docs/_tech_graph、crosswalk.yaml、路由、freeze、包名、表名等真值不改不删 |

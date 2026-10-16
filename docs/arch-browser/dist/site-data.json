@@ -1,8 +1,8 @@
 {
   "schema_version": "arch_browser_site_data_v1",
-  "generated_at": "2026-10-14T10:36:07Z",
+  "generated_at": "2026-10-16T07:35:36Z",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_20261014_V1",
-  "graph_generated_at": "2026-10-14T06:43:36Z",
+  "graph_generated_at": "2026-10-14T10:05:54Z",
   "sources": {
     "host_outline": "docs/arch-browser/catalog/host_outline.json",
     "crosswalk": "docs/arch-browser/catalog/crosswalk.yaml",
@@ -14,8 +14,8 @@
   },
   "entry": {
     "id": "E1",
-    "title": "入口层 · SSE/HTTP lg-rag",
-    "note": "主线入口 POST /api/ops/lg-rag/stream；传输壳仍叫 lg-rag，叙事=Agent Host"
+    "title": "入口层 · Agent 工作台（SSE 流式运行）",
+    "note": "主线入口为 SSE 流式对话；对外演示统一 Agent Host 口径（名实分离：工程钻取层保留真值路由名）"
   },
   "layers": [
     {
@@ -87,7 +87,7 @@
     {
       "id": "N0",
       "title": "叙事",
-      "summary": "主线=Host；lg-rag=执行入口"
+      "summary": "主线=Host；Agent 工作台=执行入口"
     },
     {
       "id": "N1",
@@ -120,11 +120,11 @@
     "product_name": "Ops Desk · Agent Host",
     "page_title": "架构浏览器",
     "tagline": "把「Agent 怎么跑一次请求」拆成可点击的五层蓝图，并对齐真实代码与落地状态。",
-    "one_liner": "单进程 FastAPI 内：控制面（纯代码闸链）与执行面（lg-rag supervisor）同驻；LLM 工厂与能力提供方同进程；状态落在 PostgreSQL。主线入口为 SSE 流式对话。",
+    "one_liner": "单进程 FastAPI 内：控制面（纯代码闸链）与执行面（Agent Host supervisor）同驻；LLM 工厂与能力提供方同进程；状态落在 PostgreSQL。主线入口为 SSE 流式对话。",
     "principles": [
       {
         "title": "名实分离",
-        "body": "叙事主线叫 Agent Host；HTTP / freeze 传输壳仍可叫 lg-rag。看架构谈 Host，看接口谈路由名——两边不混为一谈。"
+        "body": "叙事主线叫 Agent Host；对外演示统一 Agent Host 口径。看架构谈 Host；接口路由名属工程钻取层真值——两边不混为一谈。"
       },
       {
         "title": "五层分工",
@@ -158,7 +158,7 @@
       ]
     }
   },
-  "concept_mermaid": "flowchart TD\n    subgraph ENTRY[入口层]\n        E1[用户请求 · SSE/HTTP lg-rag]\n    end\n\n    subgraph CP[控制面 · 纯代码 · 不调 LLM]\n        direction TB\n        REG[1 注册表 · 本地 dict+接口]\n        LOAD[2 加载期强制 · manifest]\n        VIS[3 可见集两阶段 · V1-B]\n        PROMPT[4 Prompt packs/slots]\n        SO[5 SO Gateway]\n        DG[6 委派令牌 · V1-A]\n        EG[7 执行网关六道门+验签]\n        POLICY[8 Policy + 可撤销字段]\n        MEM[9 记忆分层 · 含 episode]\n        EVAL[10 红线/金标/聚类脚本]\n        OBS[11 Langfuse + SLI 定义]\n        COST[12 预算硬闸 · V1-C]\n        SBX[13 Policy 代沙箱]\n        SP[14 HITL 真挂起恢复]\n        REG --> LOAD --> VIS --> PROMPT --> SO --> DG --> EG --> POLICY\n        MEM --> PROMPT\n        EVAL -.离线.- EG\n        OBS --> EG\n        COST --> EG\n        SBX --> POLICY\n        SP --> DG\n        SP --> EG\n    end\n\n    subgraph EP[执行面 · 调用 LLM]\n        INTENT[15 意图 + fallback]\n        OA[17 supervisor Orchestrator]\n        SA[18 工人 Specialist]\n        FB_LLM[19 aggregator/answer]\n        INTENT --> OA --> SA --> FB_LLM\n    end\n\n    subgraph LLMF[LLM 工厂]\n        MREG[20 catalog]\n        MROUTE[21 分档路由]\n        MDEG[22 重试熔断+跨档链]\n        MCACHE[23 infer_cache]\n        MBUDGET[24 llm budget]\n        MEVAL[25 Experiment 雏形]\n        MSEC[26 输入隔离雏形]\n    end\n\n    subgraph PROV[能力提供方 · ops 域]\n        PV1[local_fn]\n        PV2[issue/PR lookup]\n        PV3[harness.*]\n        PV4[mock/stub/扩展位]\n    end\n\n    subgraph FEEDBACK[反馈闭环]\n        FB1[31 run_events] --> FB2[32 事实抽取+成功 episode]\n        FB1 --> FB3[33 失败模式聚类]\n        FB3 --> FB4[34 suggested_rule · 人工确认]\n    end\n\n    E1 --> INTENT\n    INTENT --> VIS\n    VIS --> PROMPT\n    PROMPT --> OA\n    OA --> SO\n    SO --> DG\n    DG --> SA\n    SA --> EG\n    EG --> PROV\n    PROV --> FB_LLM\n    FB_LLM --> FB1\n    LLMF -.供给.- EP\n\n    %% arch-browser status colors + clicks\n    classDef ok fill:#1e3a2f,stroke:#7ec8a3,color:#e7ecf3\n    classDef partial fill:#3a2f1e,stroke:#d4a15b,color:#e7ecf3\n    classDef missing fill:#3a1e1e,stroke:#d47a7a,color:#e7ecf3\n    classDef na fill:#2a2f36,stroke:#6b7280,color:#9aa8bc\n    classDef entry fill:#1e2a3a,stroke:#5b9fd4,color:#e7ecf3\n    class REG,LOAD,PROMPT,POLICY,MEM,EVAL,OBS,SP,MREG,MROUTE,MEVAL,MSEC,FB2,FB4 partial\n    class VIS,SO,DG,EG,COST,INTENT,OA,SA,FB_LLM,MDEG,MCACHE,MBUDGET,PV1,PV2,PV3,PV4,FB1,FB3 ok\n    class SBX na\n    class E1 entry\n\n    click REG \"#/host/1\" \"Host #1\"\n    click LOAD \"#/host/2\" \"Host #2\"\n    click VIS \"#/host/3\" \"Host #3\"\n    click PROMPT \"#/host/4\" \"Host #4\"\n    click SO \"#/host/5\" \"Host #5\"\n    click DG \"#/host/6\" \"Host #6\"\n    click EG \"#/host/7\" \"Host #7\"\n    click POLICY \"#/host/8\" \"Host #8\"\n    click MEM \"#/host/9\" \"Host #9\"\n    click EVAL \"#/host/10\" \"Host #10\"\n    click OBS \"#/host/11\" \"Host #11\"\n    click COST \"#/host/12\" \"Host #12\"\n    click SBX \"#/host/13\" \"Host #13\"\n    click SP \"#/host/14\" \"Host #14\"\n    click INTENT \"#/host/15\" \"Host #15\"\n    click OA \"#/host/17\" \"Host #17\"\n    click SA \"#/host/18\" \"Host #18\"\n    click FB_LLM \"#/host/19\" \"Host #19\"\n    click MREG \"#/host/20\" \"Host #20\"\n    click MROUTE \"#/host/21\" \"Host #21\"\n    click MDEG \"#/host/22\" \"Host #22\"\n    click MCACHE \"#/host/23\" \"Host #23\"\n    click MBUDGET \"#/host/24\" \"Host #24\"\n    click MEVAL \"#/host/25\" \"Host #25\"\n    click MSEC \"#/host/26\" \"Host #26\"\n    click PV1 \"#/host/30\" \"Host #30\"\n    click PV2 \"#/host/30\" \"Host #30\"\n    click PV3 \"#/host/30\" \"Host #30\"\n    click PV4 \"#/host/30\" \"Host #30\"\n    click FB1 \"#/host/31\" \"Host #31\"\n    click FB2 \"#/host/32\" \"Host #32\"\n    click FB3 \"#/host/33\" \"Host #33\"\n    click FB4 \"#/host/34\" \"Host #34\"\n",
+  "concept_mermaid": "flowchart TD\n    subgraph ENTRY[入口层]\n        E1[\"用户请求 · Agent 工作台（SSE 流式运行）\"]\n    end\n\n    subgraph CP[控制面 · 纯代码 · 不调 LLM]\n        direction TB\n        REG[1 注册表 · 本地 dict+接口]\n        LOAD[2 加载期强制 · manifest]\n        VIS[3 可见集两阶段 · V1-B]\n        PROMPT[4 Prompt packs/slots]\n        SO[5 SO Gateway]\n        DG[6 委派令牌 · V1-A]\n        EG[7 执行网关六道门+验签]\n        POLICY[8 Policy + 可撤销字段]\n        MEM[9 记忆分层 · 含 episode]\n        EVAL[10 红线/金标/聚类脚本]\n        OBS[11 Langfuse + SLI 定义]\n        COST[12 预算硬闸 · V1-C]\n        SBX[13 Policy 代沙箱]\n        SP[14 HITL 真挂起恢复]\n        REG --> LOAD --> VIS --> PROMPT --> SO --> DG --> EG --> POLICY\n        MEM --> PROMPT\n        EVAL -.离线.- EG\n        OBS --> EG\n        COST --> EG\n        SBX --> POLICY\n        SP --> DG\n        SP --> EG\n    end\n\n    subgraph EP[执行面 · 调用 LLM]\n        INTENT[15 意图 + fallback]\n        OA[17 supervisor Orchestrator]\n        SA[18 工人 Specialist]\n        FB_LLM[19 aggregator/answer]\n        INTENT --> OA --> SA --> FB_LLM\n    end\n\n    subgraph LLMF[LLM 工厂]\n        MREG[20 catalog]\n        MROUTE[21 分档路由]\n        MDEG[22 重试熔断+跨档链]\n        MCACHE[23 infer_cache]\n        MBUDGET[24 llm budget]\n        MEVAL[25 Experiment 雏形]\n        MSEC[26 输入隔离雏形]\n    end\n\n    subgraph PROV[能力提供方 · ops 域]\n        PV1[local_fn]\n        PV2[issue/PR lookup]\n        PV3[harness.*]\n        PV4[mock/stub/扩展位]\n    end\n\n    subgraph FEEDBACK[反馈闭环]\n        FB1[31 run_events] --> FB2[32 事实抽取+成功 episode]\n        FB1 --> FB3[33 失败模式聚类]\n        FB3 --> FB4[34 suggested_rule · 人工确认]\n    end\n\n    E1 --> INTENT\n    INTENT --> VIS\n    VIS --> PROMPT\n    PROMPT --> OA\n    OA --> SO\n    SO --> DG\n    DG --> SA\n    SA --> EG\n    EG --> PROV\n    PROV --> FB_LLM\n    FB_LLM --> FB1\n    LLMF -.供给.- EP\n\n    %% arch-browser status colors + clicks\n    classDef ok fill:#1e3a2f,stroke:#7ec8a3,color:#e7ecf3\n    classDef partial fill:#3a2f1e,stroke:#d4a15b,color:#e7ecf3\n    classDef missing fill:#3a1e1e,stroke:#d47a7a,color:#e7ecf3\n    classDef na fill:#2a2f36,stroke:#6b7280,color:#9aa8bc\n    classDef entry fill:#1e2a3a,stroke:#5b9fd4,color:#e7ecf3\n    class REG,LOAD,PROMPT,POLICY,MEM,EVAL,OBS,SP,MREG,MROUTE,MEVAL,MSEC,FB2,FB4 partial\n    class VIS,SO,DG,EG,COST,INTENT,OA,SA,FB_LLM,MDEG,MCACHE,MBUDGET,PV1,PV2,PV3,PV4,FB1,FB3 ok\n    class SBX na\n    class E1 entry\n\n    click REG \"#/host/1\" \"Host #1\"\n    click LOAD \"#/host/2\" \"Host #2\"\n    click VIS \"#/host/3\" \"Host #3\"\n    click PROMPT \"#/host/4\" \"Host #4\"\n    click SO \"#/host/5\" \"Host #5\"\n    click DG \"#/host/6\" \"Host #6\"\n    click EG \"#/host/7\" \"Host #7\"\n    click POLICY \"#/host/8\" \"Host #8\"\n    click MEM \"#/host/9\" \"Host #9\"\n    click EVAL \"#/host/10\" \"Host #10\"\n    click OBS \"#/host/11\" \"Host #11\"\n    click COST \"#/host/12\" \"Host #12\"\n    click SBX \"#/host/13\" \"Host #13\"\n    click SP \"#/host/14\" \"Host #14\"\n    click INTENT \"#/host/15\" \"Host #15\"\n    click OA \"#/host/17\" \"Host #17\"\n    click SA \"#/host/18\" \"Host #18\"\n    click FB_LLM \"#/host/19\" \"Host #19\"\n    click MREG \"#/host/20\" \"Host #20\"\n    click MROUTE \"#/host/21\" \"Host #21\"\n    click MDEG \"#/host/22\" \"Host #22\"\n    click MCACHE \"#/host/23\" \"Host #23\"\n    click MBUDGET \"#/host/24\" \"Host #24\"\n    click MEVAL \"#/host/25\" \"Host #25\"\n    click MSEC \"#/host/26\" \"Host #26\"\n    click PV1 \"#/host/30\" \"Host #30\"\n    click PV2 \"#/host/30\" \"Host #30\"\n    click PV3 \"#/host/30\" \"Host #30\"\n    click PV4 \"#/host/30\" \"Host #30\"\n    click FB1 \"#/host/31\" \"Host #31\"\n    click FB2 \"#/host/32\" \"Host #32\"\n    click FB3 \"#/host/33\" \"Host #33\"\n    click FB4 \"#/host/34\" \"Host #34\"\n",
   "host_modules": [
     {
       "id": 1,
@@ -187,7 +187,27 @@
       "future_wave": "N5",
       "future_gap": "跨进程注册中心仍缺（v2.0）",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M01_capability-registry.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M01_capability-registry.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "capability",
+            "href": "#/eng/module/capability"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "10_flow_capability",
+            "href": "#/eng/flow/10_flow_capability"
+          }
+        ],
+        "code_paths": "app/ops/capability/registry.py · gateway.get_registry/set_registry · manifests/",
+        "paths": [
+          "app/ops/capability/"
+        ],
+        "one_liner": "进程内 CapabilityRegistry（本地 dict 默认实现 RegistryReader/Writer）；manifest 显式 reload 注册；V1-E 接口化可替换，**无**跨进程注册中心。",
+        "gap": "跨进程注册中心 / 版本增量推送 / 紧急停用通道 → v2.0（multi-replica 触发）"
+      }
     },
     {
       "id": 2,
@@ -214,7 +234,27 @@
       "future_wave": "N1",
       "future_gap": "manifest 硬规则已有；静态红线 CI 产品面仍弱",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M02_load-time-enforce.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M02_load-time-enforce.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "capability",
+            "href": "#/eng/module/capability"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "10_flow_capability",
+            "href": "#/eng/flow/10_flow_capability"
+          }
+        ],
+        "code_paths": "app/ops/capability/manifest.py · types.CapabilitySpec",
+        "paths": [
+          "app/ops/capability/"
+        ],
+        "one_liner": "加载期 ManifestError 整文件失败；V1-B 四字段硬规则 + 缺失 HITL 三档（默认 off）；Policy 默认 blocked。缺独立 CI 静态「工程红线→拒加载」产品面（import-linter 是模块边闸，非 manifest 红线扫描）。",
+        "gap": "CI 静态红线面；加载期与策略包全量收敛"
+      }
     },
     {
       "id": 3,
@@ -244,7 +284,36 @@
       "future_wave": null,
       "future_gap": "",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M03_visibility-trim.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M03_visibility-trim.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "Agent 工作台",
+            "href": "#/eng/module/lg_rag"
+          },
+          {
+            "label": "capability",
+            "href": "#/eng/module/capability"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "Agent 工作台（SSE 流式运行）",
+            "href": "#/eng/flow/10_flow_lg_rag"
+          },
+          {
+            "label": "10_flow_capability",
+            "href": "#/eng/flow/10_flow_capability"
+          }
+        ],
+        "code_paths": "app/ops/capability/baseline.py · strategy/builder.py · strategy/scenario.py",
+        "paths": [
+          "app/ops/strategy/scenario.py",
+          "app/ops/capability/"
+        ],
+        "one_liner": "V1-B：身份维 baseline → 场景维 scenario_trim → requested_scope 交集；安全默认（fallback/unknown→空集）；剔除台账 logger+span。三档 Agent Host_VISIBILITY_SCENARIO_MODE 默认 off。",
+        "gap": "会话上下文参与裁剪；HITL 三档执行侧体系（非本模块）"
+      }
     },
     {
       "id": 4,
@@ -271,7 +340,27 @@
       "future_wave": "N0",
       "future_gap": "缺版本灰度/回滚/装配审计",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M04_prompt-mgmt.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M04_prompt-mgmt.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "Agent 工作台",
+            "href": "#/eng/module/lg_rag"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "Agent 工作台（SSE 流式运行）",
+            "href": "#/eng/flow/10_flow_lg_rag"
+          }
+        ],
+        "code_paths": "",
+        "paths": [
+          "app/ops/prompts/"
+        ],
+        "one_liner": "packs/slots/资产加载（memory.extract 等）；输入隔离槽位默认关。缺版本灰度/回滚体系、装配审计台账、Token 预算裁剪产品化。",
+        "gap": "版本灰度/回滚；装配审计（版本+变量）；体系化 Token 裁剪"
+      }
     },
     {
       "id": 5,
@@ -299,7 +388,27 @@
       "future_wave": null,
       "future_gap": "语义校验+通过率审计可深化",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M05_so-gateway.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M05_so-gateway.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "structured_output",
+            "href": "#/eng/module/structured_output"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "10_flow_structured_output",
+            "href": "#/eng/flow/10_flow_structured_output"
+          }
+        ],
+        "code_paths": "",
+        "paths": [
+          "app/ops/structured_output/"
+        ],
+        "one_liner": "parse/repair/validate/预算纠偏；Agent Host 结构化节点与 memory extract 消费；失败标 structured_output_fallback。深度语义校验与通过率审计仍浅。",
+        "gap": "ID/参数/依赖语义校验；通过率审计看板"
+      }
     },
     {
       "id": 6,
@@ -328,7 +437,35 @@
       "future_wave": "N5",
       "future_gap": "图内令牌已有；跨进程 nonce 外置属 v2.0",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M06_delegation-gateway.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M06_delegation-gateway.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "capability",
+            "href": "#/eng/module/capability"
+          },
+          {
+            "label": "Agent 工作台",
+            "href": "#/eng/module/lg_rag"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "10_flow_capability",
+            "href": "#/eng/flow/10_flow_capability"
+          },
+          {
+            "label": "Agent 工作台（SSE 流式运行）",
+            "href": "#/eng/flow/10_flow_lg_rag"
+          }
+        ],
+        "code_paths": "app/ops/capability/delegation.py · gateway._delegation_gate · multi 签发",
+        "paths": [
+          "app/ops/capability/delegation.py"
+        ],
+        "one_liner": "V1-A：六字段令牌 HMAC；subtask_join 签发；tool_exec 携令；验签在 lookup 前；只读自动/写 HITL；三档默认 off。图内化，非跨服务 JWT。",
+        "gap": "跨服务验签；跨进程 nonce（现 process-local）"
+      }
     },
     {
       "id": 7,
@@ -355,7 +492,27 @@
       "future_wave": null,
       "future_gap": "",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M07_exec-gateway.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M07_exec-gateway.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "capability",
+            "href": "#/eng/module/capability"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "10_flow_capability",
+            "href": "#/eng/flow/10_flow_capability"
+          }
+        ],
+        "code_paths": "app/ops/capability/gateway.py::_prepare_call",
+        "paths": [
+          "app/ops/capability/gateway.py"
+        ],
+        "one_liner": "闸序：委派验签 → lookup → enabled → Policy → 熔断 → 配额/kill → args_schema；Policy 拒不计配额。",
+        "gap": "紧急停用高优先级通道（现=改 manifest+reload）"
+      }
     },
     {
       "id": 8,
@@ -382,7 +539,27 @@
       "future_wave": "N2",
       "future_gap": "Policy 深化与可撤销字段产品面",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M08_policy-gate.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M08_policy-gate.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "capability",
+            "href": "#/eng/module/capability"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "10_flow_capability",
+            "href": "#/eng/flow/10_flow_capability"
+          }
+        ],
+        "code_paths": "app/ops/capability/policy.py · baseline · reversibility 字段",
+        "paths": [
+          "app/ops/capability/"
+        ],
+        "one_liner": "高危/sandbox/cli 默认 blocked；Host-only 策略键；tenant_scoped；V1-B 可撤销性进入 spec。四维判定体系化未完成；PRE_AUTHORIZED 分级未建。",
+        "gap": "四维判定体系；HITL 三档执行模型"
+      }
     },
     {
       "id": 9,
@@ -407,7 +584,22 @@
       "future_wave": "N5",
       "future_gap": "跨进程记忆 D3 属 v2.0；情景/事实已有默认关",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M09_memory-layered.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M09_memory-layered.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "memory",
+            "href": "#/eng/module/memory"
+          }
+        ],
+        "flow_chips": [],
+        "code_paths": "",
+        "paths": [
+          "app/ops/memory/"
+        ],
+        "one_liner": "事实/偏好（闸+状态机+向量）+ 会话摘要 + **情景 episode（V1-D 独立闸/库）**；默认关。跨进程记忆总线 / D3 同步未建。",
+        "gap": "跨进程同步（事件溯源/CRDT/乐观锁）；共享总线"
+      }
     },
     {
       "id": 10,
@@ -430,7 +622,17 @@
       "future_wave": "N0",
       "future_gap": "红线/金标脚本在；产品化与 REGRESSION 回写仍弱",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M10_eval-verify.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M10_eval-verify.md",
+      "display": {
+        "tech_chips": [],
+        "flow_chips": [],
+        "code_paths": "evals/agent/** · redlines · memory golden · episode_pattern_mine",
+        "paths": [
+          "evals/"
+        ],
+        "one_liner": "红线 R0–R15、金标/Experiment 轨（Eval E2–E4）、memory 金样；V1-D 失败模式聚类脚本；运行时任务完成率等仍偏文档/聚合样例。",
+        "gap": "运行时完成率热路径；聚类→规则自动生效（刻意不做）"
+      }
     },
     {
       "id": 11,
@@ -454,7 +656,18 @@
       "future_wave": "N2",
       "future_gap": "统一审计台账产品面；SLI 定义已有看板未产品化",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M11_observability.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M11_observability.md",
+      "display": {
+        "tech_chips": [],
+        "flow_chips": [],
+        "code_paths": "app/ops/tracing.py · capability metrics/visibility · run_events · SLI 四项",
+        "paths": [
+          "app/ops/tracing.py",
+          "evals/agent/sli/"
+        ],
+        "one_liner": "Langfuse tracing；admin 观测；run_events/replay；出口 G1：四项 SLI 定义+聚合样例+Langfuse GUIDE（",
+        "gap": "统一审计台账产品面；线上四项自动看板运维固化"
+      }
     },
     {
       "id": 12,
@@ -480,7 +693,26 @@
       "future_wave": null,
       "future_gap": "",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M12_cost-control.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M12_cost-control.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "llm",
+            "href": "#/eng/module/llm"
+          },
+          {
+            "label": "capability",
+            "href": "#/eng/module/capability"
+          }
+        ],
+        "flow_chips": [],
+        "code_paths": "app/llm/usage.py · budget.py · model_catalog 单价",
+        "paths": [
+          "app/llm/budget.py"
+        ],
+        "one_liner": "usage 账本 + V1-C 会话/任务预算硬闸（默认 off）+ Cost per Successful Task 口径；耗尽走降级链。",
+        "gap": "跨租户统筹预算；对账级计费"
+      }
     },
     {
       "id": 13,
@@ -505,7 +737,25 @@
       "future_wave": "N5",
       "future_gap": "Policy 阻断替代 microVM；触发条件后再立项",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M13_sandbox.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M13_sandbox.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "capability",
+            "href": "#/eng/module/capability"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "10_flow_capability",
+            "href": "#/eng/flow/10_flow_capability"
+          }
+        ],
+        "code_paths": "Policy sandbox/cli 默认 blocked",
+        "paths": [],
+        "one_liner": "单进程用 Policy 阻断替代沙箱；无 microVM。触发条件=不可信代码或跨进程。",
+        "gap": "microVM + 网络默认拒绝（v2.0 触发）"
+      }
     },
     {
       "id": 14,
@@ -534,7 +784,31 @@
       "future_wave": "N2",
       "future_gap": "缺 PRE_AUTHORIZED/EXEMPT 三档与撤销执行器",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M14_hitl-security.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M14_hitl-security.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "hitl",
+            "href": "#/eng/module/hitl"
+          },
+          {
+            "label": "Agent 工作台",
+            "href": "#/eng/module/lg_rag"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "Agent 工作台（SSE 流式运行）",
+            "href": "#/eng/flow/10_flow_lg_rag"
+          }
+        ],
+        "code_paths": "app/ops/hitl/** · step_contract · 委派签发 HITL · manifest hitl_required",
+        "paths": [
+          "app/ops/hitl/"
+        ],
+        "one_liner": "真 interrupt/resume；双鉴权；V1-A/B 接线。有单档 HITL_REQUIRED + 可撤销字段；缺 PRE_AUTHORIZED/HITL_EXEMPT 三档体系。",
+        "gap": "HITL 三档声明式；撤销执行器"
+      }
     },
     {
       "id": 15,
@@ -562,7 +836,27 @@
       "future_wave": null,
       "future_gap": "",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M15_intent.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M15_intent.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "Agent 工作台",
+            "href": "#/eng/module/lg_rag"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "Agent 工作台（SSE 流式运行）",
+            "href": "#/eng/flow/10_flow_lg_rag"
+          }
+        ],
+        "code_paths": "app/ops/strategy/intent.py · schemas/intent.py",
+        "paths": [
+          "app/ops/strategy/"
+        ],
+        "one_liner": "IntentV1 + SO；intent_fallback channel（V1-B）。目标小模型专项分类器未换档。",
+        "gap": "小模型/分类器档（依赖 LLM 工厂路由）"
+      }
     },
     {
       "id": 16,
@@ -589,7 +883,27 @@
       "future_wave": "N4",
       "future_gap": "护栏分类器（≠ slots）仍弱",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M16_safety-guard.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M16_safety-guard.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "Agent 工作台",
+            "href": "#/eng/module/lg_rag"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "Agent 工作台（SSE 流式运行）",
+            "href": "#/eng/flow/10_flow_lg_rag"
+          }
+        ],
+        "code_paths": "app/ops/prompts/slots.py",
+        "paths": [
+          "app/ops/prompts/slots.py"
+        ],
+        "one_liner": "输入槽位隔离（rag_evidence/user_query/tool_result）默认关；≠注入分类器。",
+        "gap": "专项护栏分类器；输出侧敏感过滤（见#26）"
+      }
     },
     {
       "id": 17,
@@ -618,7 +932,27 @@
       "future_wave": null,
       "future_gap": "",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M17_orchestrator.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M17_orchestrator.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "Agent 工作台",
+            "href": "#/eng/module/lg_rag"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "Agent 工作台（SSE 流式运行）",
+            "href": "#/eng/flow/10_flow_lg_rag"
+          }
+        ],
+        "code_paths": "",
+        "paths": [
+          "app/ops/strategy/"
+        ],
+        "one_liner": "supervisor 规划 + critic + ReAct≤2 + observe + 步预算；V1-A requested_scope 显式化。",
+        "gap": "动态 StateGraph compile（明确不做）"
+      }
     },
     {
       "id": 18,
@@ -651,7 +985,43 @@
       "future_wave": "N3",
       "future_gap": "可增 rerank 等工人类型；RAG 仍是工人非产品名",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M18_specialist.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M18_specialist.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "Agent 工作台",
+            "href": "#/eng/module/lg_rag"
+          },
+          {
+            "label": "证据链（工人）",
+            "href": "#/eng/module/lc_evidence_chain"
+          },
+          {
+            "label": "rag",
+            "href": "#/eng/module/rag"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "Agent 工作台（SSE 流式运行）",
+            "href": "#/eng/flow/10_flow_lg_rag"
+          },
+          {
+            "label": "证据链（工人）",
+            "href": "#/eng/flow/10_flow_lc_evidence"
+          },
+          {
+            "label": "10_flow_rag",
+            "href": "#/eng/flow/10_flow_rag"
+          }
+        ],
+        "code_paths": "workers: rag_subtask / info_extract / tool_exec",
+        "paths": [
+          "app/ops/rag/"
+        ],
+        "one_liner": "并发归并；tool_exec→capability；rag 复用 router 子图。精排独立小模型档未落地。",
+        "gap": "rag-reranker 独立档（队列）"
+      }
     },
     {
       "id": 19,
@@ -678,7 +1048,25 @@
       "future_wave": null,
       "future_gap": "",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M19_result-feedback-llm.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M19_result-feedback-llm.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "Agent 工作台",
+            "href": "#/eng/module/lg_rag"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "Agent 工作台（SSE 流式运行）",
+            "href": "#/eng/flow/10_flow_lg_rag"
+          }
+        ],
+        "code_paths": "aggregator + answer_stream",
+        "paths": [],
+        "one_liner": "综合 LLM + answer delta/终帧；流式降级整段。",
+        "gap": "模板化小 LLM 档可选"
+      }
     },
     {
       "id": 20,
@@ -703,7 +1091,22 @@
       "future_wave": "N4",
       "future_gap": "模型能力标签仍弱",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M20_model-registry.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M20_model-registry.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "llm",
+            "href": "#/eng/module/llm"
+          }
+        ],
+        "flow_chips": [],
+        "code_paths": "app/llm/model_catalog.py",
+        "paths": [
+          "app/llm/"
+        ],
+        "one_liner": "TASK_TIER_MODELS / FALLBACKS / 单价表；策略包试点可读。缺能力标签元数据与严格版本号产品。",
+        "gap": "能力标签（推理/分类/Embedding）；版本号管理"
+      }
     },
     {
       "id": 21,
@@ -728,7 +1131,22 @@
       "future_wave": "N4",
       "future_gap": "声明式路由可深化",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M21_model-routing.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M21_model-routing.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "llm",
+            "href": "#/eng/module/llm"
+          }
+        ],
+        "flow_chips": [],
+        "code_paths": "resolve_task_model 解析序",
+        "paths": [
+          "app/llm/"
+        ],
+        "one_liner": "explicit > env 档 > 档默认 > 现网默认；纯代码。缺按能力标签声明式路由。",
+        "gap": "标签驱动声明式路由"
+      }
     },
     {
       "id": 22,
@@ -753,7 +1171,22 @@
       "future_wave": null,
       "future_gap": "",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M22_degrade-resilience.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M22_degrade-resilience.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "llm",
+            "href": "#/eng/module/llm"
+          }
+        ],
+        "flow_chips": [],
+        "code_paths": "retry + circuit + TASK_TIER_FALLBACKS + capability fallback",
+        "paths": [
+          "app/llm/"
+        ],
+        "one_liner": "同档重试+熔断；V1-C 跨档声明式降级链 + degraded 标记铁律。",
+        "gap": "规则引擎 DSL（非范围）"
+      }
     },
     {
       "id": 23,
@@ -778,7 +1211,22 @@
       "future_wave": "N5",
       "future_gap": "进程内 LRU；外置属 v2.0",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M23_infer-cache.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M23_infer-cache.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "llm",
+            "href": "#/eng/module/llm"
+          }
+        ],
+        "flow_chips": [],
+        "code_paths": "app/llm/infer_cache.py",
+        "paths": [
+          "app/llm/infer_cache.py"
+        ],
+        "one_liner": "V1-C：结构化产物缓存（plan/参数）；版本入键；终答不缓存；默认关；process-local LRU。",
+        "gap": "跨进程共享缓存"
+      }
     },
     {
       "id": 24,
@@ -803,7 +1251,22 @@
       "future_wave": "N5",
       "future_gap": "进程内计数；外置属 v2.0",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M24_token-budget.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M24_token-budget.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "llm",
+            "href": "#/eng/module/llm"
+          }
+        ],
+        "flow_chips": [],
+        "code_paths": "llm/budget.py + capability/budget.py",
+        "paths": [
+          "app/llm/budget.py"
+        ],
+        "one_liner": "LLM 会话/任务预算硬闸（V1-C）+ capability 会话配额/kill；Cost 指标。",
+        "gap": "跨进程硬限额外置"
+      }
     },
     {
       "id": 25,
@@ -828,7 +1291,22 @@
       "future_wave": "N0",
       "future_gap": "Experiment 雏形",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M25_model-eval-ab.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M25_model-eval-ab.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "llm",
+            "href": "#/eng/module/llm"
+          }
+        ],
+        "flow_chips": [],
+        "code_paths": "Eval Experiment + memory 校准循环",
+        "paths": [
+          "evals/"
+        ],
+        "one_liner": "模块金标/Experiment CI 雏形；非全任务面模型更新回归台。",
+        "gap": "全任务面回归门禁产品化"
+      }
     },
     {
       "id": 26,
@@ -854,7 +1332,26 @@
       "future_wave": "N4",
       "future_gap": "输出侧敏感过滤入 LLM 统一出口仍缺",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M26_model-safety.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M26_model-safety.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "llm",
+            "href": "#/eng/module/llm"
+          },
+          {
+            "label": "Agent 工作台",
+            "href": "#/eng/module/lg_rag"
+          }
+        ],
+        "flow_chips": [],
+        "code_paths": "slots + grader refuse",
+        "paths": [
+          "app/ops/prompts/slots.py"
+        ],
+        "one_liner": "输入隔离雏形；grader 故障 refuse。缺统一出口敏感信息过滤。",
+        "gap": "LLM 工厂统一出口过滤"
+      }
     },
     {
       "id": 27,
@@ -875,7 +1372,15 @@
       "future_wave": null,
       "future_gap": "本仓不适用",
       "mapped": false,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M27_domain-vehicle.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M27_domain-vehicle.md",
+      "display": {
+        "tech_chips": [],
+        "flow_chips": [],
+        "code_paths": "—",
+        "paths": [],
+        "one_liner": "本仓 ops 域，无车控。",
+        "gap": "域外"
+      }
     },
     {
       "id": 28,
@@ -896,7 +1401,15 @@
       "future_wave": null,
       "future_gap": "本仓不适用",
       "mapped": false,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M28_domain-cabin.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M28_domain-cabin.md",
+      "display": {
+        "tech_chips": [],
+        "flow_chips": [],
+        "code_paths": "—",
+        "paths": [],
+        "one_liner": "本仓 ops 域，无座舱。",
+        "gap": "域外"
+      }
     },
     {
       "id": 29,
@@ -917,7 +1430,15 @@
       "future_wave": null,
       "future_gap": "本仓不适用",
       "mapped": false,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M29_domain-nav.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M29_domain-nav.md",
+      "display": {
+        "tech_chips": [],
+        "flow_chips": [],
+        "code_paths": "—",
+        "paths": [],
+        "one_liner": "本仓 ops 域，无导航。",
+        "gap": "域外"
+      }
     },
     {
       "id": 30,
@@ -944,7 +1465,27 @@
       "future_wave": "N1",
       "future_gap": "目录仍薄 → N1 高 ROI local_fn 空间大",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M30_capability-providers.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M30_capability-providers.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "capability",
+            "href": "#/eng/module/capability"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "10_flow_capability",
+            "href": "#/eng/flow/10_flow_capability"
+          }
+        ],
+        "code_paths": "local_fn / lookup / harness.* / task_writer / mock / skill stub",
+        "paths": [
+          "app/ops/capability/"
+        ],
+        "one_liner": "统一经 gateway invoke；tenant 谓词；MCP 默认关。",
+        "gap": "远程注册中心实现（v2.0）"
+      }
     },
     {
       "id": 31,
@@ -974,7 +1515,25 @@
       "future_wave": null,
       "future_gap": "RunWorker 与 SSE 解耦已落地（2026-10-14）",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M31_result-persist.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M31_result-persist.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "Agent 工作台",
+            "href": "#/eng/module/lg_rag"
+          }
+        ],
+        "flow_chips": [
+          {
+            "label": "Agent 工作台（SSE 流式运行）",
+            "href": "#/eng/flow/10_flow_lg_rag"
+          }
+        ],
+        "code_paths": "",
+        "paths": [],
+        "one_liner": "事件落盘 + cursor replay；与 SSE 同源。",
+        "gap": "RunWorker 与 SSE 解耦已落地（2026-10-14）"
+      }
     },
     {
       "id": 32,
@@ -999,7 +1558,22 @@
       "future_wave": "N0",
       "future_gap": "成功「模式」级资产仍弱",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M32_success-to-memory.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M32_success-to-memory.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "memory",
+            "href": "#/eng/module/memory"
+          }
+        ],
+        "flow_chips": [],
+        "code_paths": "memory extract（事实/偏好）+ episode success 召回",
+        "paths": [
+          "app/ops/memory/"
+        ],
+        "one_liner": "事实抽取离线；V1-D 成功 episode 可召回「相似经验」。成功「模式」级沉淀仍浅。",
+        "gap": "成功模式级资产化"
+      }
     },
     {
       "id": 33,
@@ -1025,7 +1599,23 @@
       "future_wave": null,
       "future_gap": "离线聚类已有",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M33_failure-patterns.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M33_failure-patterns.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "memory",
+            "href": "#/eng/module/memory"
+          }
+        ],
+        "flow_chips": [],
+        "code_paths": "ops_memory_episodes + episode_pattern_mine",
+        "paths": [
+          "scripts/episode_pattern_mine.py",
+          "reports/episode_patterns/"
+        ],
+        "one_liner": "V1-D：failure/partial 入 episode；离线指纹聚类报告。",
+        "gap": "实时聚类；跨进程"
+      }
     },
     {
       "id": 34,
@@ -1050,7 +1640,22 @@
       "future_wave": "N2",
       "future_gap": "suggested_rule 仅建议；半自动规则工作流仍缺",
       "mapped": true,
-      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M34_pattern-to-rules.md"
+      "source_md_rel": "docs/discussions/agent-host-current-architecture/modules/M34_pattern-to-rules.md",
+      "display": {
+        "tech_chips": [
+          {
+            "label": "memory",
+            "href": "#/eng/module/memory"
+          }
+        ],
+        "flow_chips": [],
+        "code_paths": "suggested_rule 报告字段 + redlines 人工",
+        "paths": [
+          "scripts/episode_pattern_mine.py"
+        ],
+        "one_liner": "聚类只产建议；**零自动改** redlines/manifest（守护断言）。",
+        "gap": "半自动回写工作流（人机协作台）"
+      }
     }
   ],
   "tech_module_hints": {
@@ -1277,7 +1882,7 @@
       "name": "HITL 人工审批",
       "paths_glob": "app/ops/hitl/**",
       "deps": "→ `db`, `lg_rag`",
-      "note": "审批申请落库 `ops_hitl_requests`（`store.py`/`persistence.py`）；**双鉴权口径**：HMAC 签名面（`signature.py` · OA 拉待办 `GET /hitl/requests` + `POST /hitl/callback` 回调）与管理员面（`AdminSyncAuth` · 查询 / `POST /hitl/requests/{id}/resume` / 创建）；`resume.py` 拿 `thread_id` 找 checkpoint 喂 `Command(resume=...)` 驱动挂起的 lg_rag run 真恢复（无此步「批了」和「没批」界面一样）；恢复事件接同一 `run_id` 落盘 + replay cursor；**hitl-browser-decide（2026-09-30 · SPEC B2 · 裁定 D1/E1）**：新增**cookie maintainer 面**（`MaintainerUser` · 纯 cookie + role==maintainer · 未登录 401 / 非 maintainer 403）——`GET /hitl/pending`（仅 `run_owner==当前用户` 的 pending · 归属经 `run_id`→`lg_rag.event_store.run_owner` 反查 · 解析不到排除+error 日志不 500）+ `POST /hitl/requests/{id}/decide`（复用 `store.adecide` pending 守卫 · 与 callback 同语义 · 重复 409 / 未知·他人 404 / 非法 422 · **不自动 resume** 两步钉死 · 审计只记动作锚点）；OA 签名面与 `resume`（AdminSyncAuth）零改动 · 零新表/迁移/SSE 事件 · 不新增一级模块；**hitl-approval-consumption T1（2026-10-10）**：审批单 `payload`（jsonb）增记 `capability_id`（零迁移 · 旧单据缺键 fail-closed 不被消费）；消费端经 `store.alist` 活读 approved 单（读时 TTL · 不写回状态 · decide 落库一行不动）；**hitl-approval-consumption-auto-resume T2（2026-10-10 · D5 可配置自动恢复）**：decide 载荷增可选键 `resume_mode`（str 缺省 inherit · 端点手工白名单未知值 **400** · decision 非法仍 422 既有形态）+ 全局 env `OPS_HITL_AUTO_RESUME`（manual 默认零 diff · 非法回退）；auto 形态 decide(approved) 成功分支派发进程内 asyncio 后台任务走与手动 resume **同源恢复段**（`_execute_decided_resume` 抽取复用 · 禁 HTTP 自调 · 触发器不载状态）；`DbHitlStore` 新增 `aclaim_approved_for_resume`（**FOR UPDATE SKIP LOCKED 仓内首个先例** · 既有四方法 diff 空 · 零新列零迁移）；main.py lifespan 挂补偿扫描（启动时+周期 `OPS_HITL_AUTO_RESUME_SCAN_INTERVAL_SECONDS` 默认 60 域[5,3600] · shutdown cancel · **manual 零创建**）；台账 `hitl_auto_resume_triggered/claimed/compensated`（记动作不记内容）；**hitl-auto-resume-claim-race（2026-10-10 · 方向 A）**：auto 认领后·执行前只读就绪校验 `_interrupt_metadata_visible`（命中 stranded 判定快照＝有 pending tasks·interrupts 全空 → defer 等下轮 · 认领不写状态无需回滚 · 执行仍 `_execute_decided_resume` 同源 · 手动 409 对外语义零 diff）；台账 +`hitl_auto_resume_deferred`；**hitl-resume-replay-contract（2026-10-13 · F-OBS-1）**：`resume.py` `ResumeEventSink.close()` 终帧 done 增 `latency_ms`（`int((perf_counter()-_started)*1000)` · 与 lg-rag/chat SSE done 同口径 · `_started` 复用零新状态 · 修 web 徽标「耗时 0ms」）；`model` 键**不补**（FP-1 钉案：lg-rag 面无 per-run model 真源 · 禁伪造）；零新表/迁移/SSE 事件 · 不新增一级模块 · 零新跨模块边 · 不增 implementedBy"
+      "note": "审批申请落库 `ops_hitl_requests`（`store.py`/`persistence.py`）；**双鉴权口径**：HMAC 签名面（`signature.py` · OA 拉待办 `GET /hitl/requests` + `POST /hitl/callback` 回调）与管理员面（`AdminSyncAuth` · 查询 / `POST /hitl/requests/{id}/resume` / 创建）；`resume.py` 拿 `thread_id` 找 checkpoint 喂 `Command(resume=...)` 驱动挂起的 lg_rag run 真恢复（无此步「批了」和「没批」界面一样）；恢复事件接同一 `run_id` 落盘 + replay cursor；**hitl-browser-decide（2026-09-30 · SPEC B2 · 裁定 D1/E1）**：新增**cookie maintainer 面**（`MaintainerUser` · 纯 cookie + role==maintainer · 未登录 401 / 非 maintainer 403）——`GET /hitl/pending`（仅 `run_owner==当前用户` 的 pending · 归属经 `run_id`→`lg_rag.event_store.run_owner` 反查 · 解析不到排除+error 日志不 500）+ `POST /hitl/requests/{id}/decide`（复用 `store.adecide` pending 守卫 · 与 callback 同语义 · 重复 409 / 未知·他人 404 / 非法 422 · **不自动 resume** 两步钉死 · 审计只记动作锚点）；OA 签名面与 `resume`（AdminSyncAuth）零改动 · 零新表/迁移/SSE 事件 · 不新增一级模块；**hitl-approval-consumption T1（2026-10-10）**：审批单 `payload`（jsonb）增记 `capability_id`（零迁移 · 旧单据缺键 fail-closed 不被消费）；消费端经 `store.alist` 活读 approved 单（读时 TTL · 不写回状态 · decide 落库一行不动）；**hitl-approval-consumption-auto-resume T2（2026-10-10 · D5 可配置自动恢复）**：decide 载荷增可选键 `resume_mode`（str 缺省 inherit · 端点手工白名单未知值 **400** · decision 非法仍 422 既有形态）+ 全局 env `OPS_HITL_AUTO_RESUME`（manual 默认零 diff · 非法回退）；auto 形态 decide(approved) 成功分支派发进程内 asyncio 后台任务走与手动 resume **同源恢复段**（`_execute_decided_resume` 抽取复用 · 禁 HTTP 自调 · 触发器不载状态）；`DbHitlStore` 新增 `aclaim_approved_for_resume`（**FOR UPDATE SKIP LOCKED 仓内首个先例** · 既有四方法 diff 空 · 零新列零迁移）；main.py lifespan 挂补偿扫描（启动时+周期 `OPS_HITL_AUTO_RESUME_SCAN_INTERVAL_SECONDS` 默认 60 域[5,3600] · shutdown cancel · **manual 零创建**）；台账 `hitl_auto_resume_triggered/claimed/compensated`（记动作不记内容）；**hitl-auto-resume-claim-race（2026-10-10 · 方向 A）**：auto 认领后·执行前只读就绪校验 `_interrupt_metadata_visible`（命中 stranded 判定快照＝有 pending tasks·interrupts 全空 → defer 等下轮 · 认领不写状态无需回滚 · 执行仍 `_execute_decided_resume` 同源 · 手动 409 对外语义零 diff）；台账 +`hitl_auto_resume_deferred`；**hitl-resume-replay-contract（2026-10-13 · F-OBS-1）**：`resume.py` `ResumeEventSink.close()` 终帧 done 增 `latency_ms`（`int((perf_counter()-_started)*1000)` · 与 lg-rag/chat SSE done 同口径 · `_started` 复用零新状态 · 修 web 徽标「耗时 0ms」）；`model` 键**不补**（FP-1 钉案：lg-rag 面无 per-run model 真源 · 禁伪造）；零新表/迁移/SSE 事件 · 不新增一级模块 · 零新跨模块边 · 不增 implementedBy；**hitl-resume-async（2026-10-14 · task_hitl_resume_async · B 方案）**：`POST /hitl/requests/{id}/resume` 异步化——请求内只做 preflight（`_preflight_decided_resume` · `resume_hitl_run(preflight_only=True)` 只查快照不驱动 · ResumeError 映射表逐字不变 fail-fast）→ `asyncio.create_task` 派发 `_execute_decided_resume` 后台执行（事件落盘/turn 补落/replay 追帧链零 diff）· 响应秒回 `resume={status:accepted,thread_id,approved,rejected,decided_by}`（状态码 200 · 顶层键 {ok,request,resume,replay,ts} 不删不改 · D2）· replay 键为受理时刻 best-effort cursor（`_best_effort_replay_cursor` · 异常降级空串）；进程内 `_RESUME_IN_FLIGHT` 单飞——在飞重复 resume=409「执行中」（占位防 TOCTOU · 异常/完成 finally pop）；崩溃兜底=重调 resume 幂等重投递（preflight not_interrupted 防重跑）+ auto 模式既有 `scan_approved_not_resumed_once` 周期兜底（不新造扫描器 · F3 裁定）；decide 语义/auto_resume 同源纪律零 diff；零新表/迁移/SSE 事件 · 不新增一级模块 · 零新跨模块边 · 不增 implementedBy"
     },
     {
       "module_id": "llm",
