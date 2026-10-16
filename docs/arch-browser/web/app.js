@@ -131,7 +131,7 @@
         <p class="tagline">${escapeHtml(n.tagline || "")}</p>
         <p class="one-liner">${escapeHtml(n.one_liner || "")}</p>
       </header>
-      <div class="note-box">叙事：主线 = Agent Host；HTTP/freeze 仍为 lg-rag 执行入口（名实分离）。</div>
+      <div class="note-box">叙事：主线 = Agent Host；对外演示统一 Agent Host 口径（名实分离：工程钻取层保留真值名）。</div>
       <h2 class="section-title">架构理念</h2>
       <div class="principle-grid">${principles}</div>
     `;
@@ -157,6 +157,19 @@
       </section>
     `;
   }
+
+  // ---- 演示面视图过滤（D1 已锁 · 名实分离）----
+  // 真值在 DATA / docs/_tech_graph 内不动；此处仅渲染层隐藏或改名，不改业务语义。
+  const ENG_DEMO_HIDDEN_FLOWS = new Set(["10_flow_chat", "10_flow_lc_evidence"]);
+  const ENG_DEMO_FLOW_LABEL = { "10_flow_lg_rag": "Agent 工作台（SSE 流式运行）" };
+  const DEMO_TEXT_SCRUB = [
+    [/lg[_-]rag/gi, "Agent Host"],
+    [/LG RAG/g, "Agent Host"],
+    [/LC Evidence/gi, "证据链"],
+    [/legacy Chat/gi, "旧版对话"],
+  ];
+  const demoText = (s) =>
+    DEMO_TEXT_SCRUB.reduce((t, [re, to]) => t.replace(re, to), s || "");
 
   function renderHome() {
     const mermaidSrc = (DATA.concept_mermaid || "").trim();
@@ -197,12 +210,12 @@
             <div class="desc">顶层流程总图 · 可点节点钻取 flow</div>
           </div>
           ${(DATA.graphs || [])
-            .filter((g) => g.id !== "00_main")
+            .filter((g) => g.id !== "00_main" && !ENG_DEMO_HIDDEN_FLOWS.has(g.id))
             .map(
               (g) => `
             <div class="card" data-nav="#/eng/flow/${g.id}">
-              <div class="title">${g.id}</div>
-              <div class="desc">${g.title || ""} · ${g.layer || ""}</div>
+              <div class="title">${ENG_DEMO_FLOW_LABEL[g.id] || g.id}</div>
+              <div class="desc">${demoText(g.title || "")} · ${g.layer || ""}</div>
             </div>`
             )
             .join("")}
@@ -285,7 +298,7 @@
                 }
                 ${!m.mapped ? `<span class="badge unmap">未映射工程</span>` : ""}
               </div>
-              <div class="desc">${m.one_liner || m.future_gap || "—"}</div>
+              <div class="desc">${(m.display && m.display.one_liner) || m.one_liner || m.future_gap || "—"}</div>
             </div>`
             )
             .join("")}
@@ -301,11 +314,13 @@
     if (!m) {
       return shell("host", `<section class="panel"><p class="error">未知 Host #${id}</p></section>`);
     }
-    const techLinks = (m.tech_modules || [])
-      .map((t) => `<a href="#/eng/module/${encodeURIComponent(t)}">${t}</a>`)
+    // 对照展示走 display 演示口径（build 生成）；真值字段仅供反向索引/工程钻取层
+    const disp = m.display || {};
+    const techLinks = (disp.tech_chips || [])
+      .map((c) => `<a href="${c.href}">${c.label}</a>`)
       .join(" · ");
-    const flowLinks = (m.flows || [])
-      .map((f) => `<a href="#/eng/flow/${encodeURIComponent(f)}">${f}</a>`)
+    const flowLinks = (disp.flow_chips || [])
+      .map((c) => `<a href="${c.href}">${c.label}</a>`)
       .join(" · ");
     const srcLinks = (m.sources || [])
       .map((s) => {
@@ -327,13 +342,13 @@
           ${!m.mapped ? `<span class="badge unmap">概念≠工程 / 未映射</span>` : ""}
         </div>
         <h2>一句话</h2>
-        <p>${m.one_liner || "（源 MD 未抽到 · 见源文档）"}</p>
+        <p>${disp.one_liner || m.one_liner || "（源 MD 未抽到 · 见源文档）"}</p>
         <h2>实现细节</h2>
         <dl class="kv">
-          <dt>代码落点</dt><dd class="mono">${m.code_paths || (m.paths || []).join(", ") || "—"}</dd>
+          <dt>代码落点</dt><dd class="mono">${disp.code_paths || (disp.paths || []).join(", ") || "—"}</dd>
           <dt>tech 模块</dt><dd>${techLinks || "—"}</dd>
           <dt>G-L1 flow</dt><dd>${flowLinks || "—"}</dd>
-          <dt>残余缺口</dt><dd>${m.gap || m.future_gap || "—"}</dd>
+          <dt>残余缺口</dt><dd>${disp.gap || m.gap || m.future_gap || "—"}</dd>
           <dt>规划波次</dt><dd>${
             m.future_wave
               ? `<a href="#/wave/${m.future_wave}">${m.future_wave}</a> · ${m.future_gap || ""}`
@@ -342,7 +357,7 @@
         </dl>
         <h2>源文档（真值 · 勿在本页改结论）</h2>
         <div class="sources">${srcLinks || "—"}</div>
-        ${(m.paths || [])
+        ${(disp.paths || m.paths || [])
           .filter((p) => p.startsWith("app/"))
           .map(
             (p) =>
