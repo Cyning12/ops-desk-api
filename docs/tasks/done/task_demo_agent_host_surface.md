@@ -1,6 +1,6 @@
 # Task：demo-agent-host-surface（三方演示 · 展示面收敛 · 侧栏与 arch-browser 对外只讲 Agent Host）
 
-> **状态**：**全链 CLOSE · TC-1–TC-8 全 ✅** · api 面 TC-1/2/3/4/6/7 ✅（2026-10-16 00 窗）· web 面 TC-5 ✅（ops-desk-web PR #70 已并 main · squash `44a77db` · CI 双绿）· 人工闸 **approved（维护者授权 00 代签）**
+> **状态**：done（CLOSED 2026-10-16 · 全链 TC-1–TC-8 全 ✅ · api 面 PR [#255](https://github.com/Cyning12/ops-desk-api/pull/255) 已并 master（squash `370cee4` · CI 四绿）· web 面 PR #70 已并 main（squash `44a77db` · CI 双绿）+ PR #71（D4 修正 · squash `46c8c54`）· 人工闸 approved（维护者授权 00 代签）· CLOSE 归档 done/ · 细节见 CLOSE 文档 [`../close/close_demo_agent_host_surface_20261016.md`](../close/close_demo_agent_host_surface_20261016.md)）
 > **类型**：演示展示面（名实分离 · 只藏不改约 · 双仓）
 > **依据**：维护者演示指令（2026-10-16 · 00 窗 prompt）：三方演示对外只讲 Agent Host 能力；展示名裁定 **已锁**（见 D1）
 > **分支**：`task/demo-agent-host-surface`（**待切** · 当前窗在 `task/arch-browser-eng-graph-mermaid` 且该分支有 arch-browser 未提交改动，30 开工前须先厘清基线，勿混 PR）
@@ -32,8 +32,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **approved**（00 代录 2026-10-16） | 20, 30 | 维护者本窗指令「授权00签收并完成任务」→ 00 代签 |
-| HG-AUDIT-R1 | **approved**（00 代录 2026-10-16） | 30 | 同上授权；20 R1 审查结论并入 30 invoke |
+| HG-TASK-DRAFT | approved | 20, 30 | 2026-10-16 00 代录（维护者本窗指令「授权00签收并完成任务」→ 00 代签） |
+| HG-AUDIT-R1 | approved | 30 | 2026-10-16 00 代录（同上授权；20 R1 审查结论并入 30 invoke） |
 
 ### 维护者裁定口
 
@@ -103,7 +103,7 @@
 - [x] **TC-5 web 侧栏（web 仓 PR）**（2026-10-16 PASS）：ops-desk-web **PR #70** 已并 main（squash `44a77db` · CI frontend/check 双绿）——菜单无 Chat / LC Evidence（`src/layouts/AppLayout.vue` 仅藏菜单项，路由与组件保留 · D2 深链不拦截）；「Agent 工作台」入菜单与页标题（页标题真值=route.meta.title）；默认落地页根路径 redirect `/overview`→`/lg-rag`（`src/router/index.ts:23`）；`pnpm lint`/`pnpm test`（31 文件 263 测试全过 · 零测试改动）/`pnpm build` 全绿；diff 仅 2 文件 +6/-5。**维护者修正裁定（D4 · 2026-10-16）**：PR #70 误把 Agent 工作台挂 /lg-rag（mode 选择页）→ **PR #71**（squash `46c8c54` · CI 双绿）纠正：菜单/页标题/默认落地全部改指 `/chat` 直接对话页；`/lg-rag` 退出菜单、meta.title 恢复 'LG RAG'（路由全保留 · 零测试改动 · lint/test(263)/build 全绿）。**残留决策点（另裁，未动）**：登录流程两处落地仍指 `/overview`（router 守卫被既有测试断言卡住 · LoginView fallback 超 diff 白名单）
 - [x] **TC-6 零契约回归**（2026-10-16 PASS）：本 task `app/` 零 diff（git status 佐证）；HTTP 路由 / freeze / SSE 帧 / 表名 / 模块 id 均未触碰；pytest 无触及面（纯 docs/arch-browser 展示面改动）
 - [x] **TC-7 真值零删**（2026-10-16 PASS）：`docs/_tech_graph` 各行未改；`./scripts/graph-compile.sh` EXIT=0（仅 pre-existing warning）；**注意**：graph-compile 会将 graph.json freeze 重写为当日 id，已 `git checkout` 回滚至 `FREEZE_20261014_V1` 并重建 dist，freeze 零 diff 守住了
-- [x] **TC-8 过程齐**（2026-10-16 PASS）：10/20/30 invoke 落盘 ✅（10/20 并入 00/30 invoke）· R0–R5 填毕 ✅ · experience 捕获 ✅（含 web 面补充）· CLOSE 清单含 web PR 链接：**ops-desk-web PR #70**（squash `44a77db`）+ **PR #71**（D4 修正 · squash `46c8c54`）
+- [x] **TC-8 过程齐**（2026-10-16 PASS）：10/20/30 invoke 落盘 ✅（10/20 并入 00/30 invoke）· R0–R5 填毕 ✅ · experience 捕获 ✅（含 web 面补充）· CLOSE 清单三链接齐：**ops-desk-web PR #70**（squash `44a77db`）+ **PR #71**（D4 修正 · squash `46c8c54`）+ **api PR #255**（squash `370cee4` · CI 四绿）
 
 ## 依赖
 
@@ -147,6 +147,8 @@
 
 **00（2026-10-16 · CLOSE 段）**：web 面由 00 派 30 子 Agent 于 ops-desk-web 仓完成 B1–B3（分支 `task/demo-agent-host-surface` · diff 仅 AppLayout.vue + router/index.ts 共 +6/-5）→ PR #70 CI 双绿（frontend 1m1s / check 12s）→ squash 并 main `44a77db` → 本 task TC-5/TC-8 回填 ✅、状态行转 **全链 CLOSE**。**未 commit**（api 仓提交切分 + 本 task 归档移位 active→done 归维护者，因 eng-graph-mermaid 脏树基线风险 FP-7）。
 
+**00（2026-10-16 · 50-CLOSE 段）**：api 仓提交切分由 30 子 Agent 完成——主工作树（eng-graph-mermaid 脏树）零触碰，新 worktree 自 master 摘 surface hunk（catalog×2/SPEC/task 档/invokes 整文件直复制 + build_site.py 仅 3 个 surface hunk + app.js surface 子集），eng（eng L0 mermaid 生成渲染管线 / mermaid 缩放交互 / README / style.css / web-index.html）留树，uv.lock 跨平台 marker 漂移与 pnpm 垃圾甄别排除，dist 靠 build_site.py 重建不靠手切 → **PR #255** CI 四绿并 master（squash `370cee4`）；三 PR 齐：web #70（`44a77db`）+ web #71（D4 修正 · `46c8c54`）+ api #255（`370cee4`）；本段归档移位 active→done + active README 登记 + done README 补登 + CLOSE 档落盘，随 CLOSE PR 完成。
+
 ---
 
 ### KPI（00）
@@ -164,3 +166,4 @@
 - **corepack pnpm 版本冲突**：裸 pnpm（v11.28.5 shim）与本仓 devEngines pnpm@10.32.1 冲突直接报错；用 `COREPACK_ENABLE_STRICT=0 corepack pnpm@10.32.1 <cmd>` 跑通三门。
 - **gh PR body 反引号坑**：`gh pr create --body` 内联串里的反引号会被 bash 命令替换吞掉；正文一律 `--body-file` 落盘再传。
 - **web 面残留决策点（另裁）**：登录流程两处落地仍指 `/overview`（router 守卫被 `tests/router-guard.spec.ts:45-50` 断言卡住 · LoginView.vue:30 fallback 超 diff 白名单）——若要求登录后默认落地也=Agent 工作台，需另裁并最小同步该条断言。
+- **混合脏树切分用 worktree 隔离**：多 task 未提交改动混在同一批文件时，主工作树一根手指头不动，新 worktree 自 master 摘本 task 的 hunk（整文件归属直接复制；混合文件人工按内容归类拆 hunk，存疑 hunk 列判定依据入 PR 正文）；dist 等生成物在 worktree 内靠重建不靠手切；漂移/垃圾文件（uv.lock 跨平台 marker 漂移、.pnpm-store/、pnpm-lock.yaml）甄别排除，别顺手带上车。
