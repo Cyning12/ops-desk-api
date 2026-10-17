@@ -33,9 +33,21 @@ cd docs/arch-browser/dist && python3 -m http.server 8765
 |------|------|
 | `#/` | 首页：理念 + 状态色 mermaid（可点）+ 场景占位 + chip 备用 · 工程入口 |
 | `#/host` · `#/host/{n}` | Host 目录 / 模块详页 |
-| `#/eng/l0` · `#/eng/flow/{id}` · `#/eng/module/{id}` | 工程钻取 |
+| `#/eng/l0` | 工程图谱（原 G-L0 · 00_main）：Mermaid 可点钻取 flow/module |
+| `#/eng/flow/{id}` · `#/eng/module/{id}` | 工程钻取 |
 | `#/eng/l2?path=` | G-L2 indexes |
 | `#/wave` · `#/wave/N2` | 规划叠层 |
+
+## 默认 Mermaid 组件
+
+所有可点击图谱统一走 `web/app.js` 的 `mermaidPanelHtml` + `mountMermaid`：
+
+- 工具栏：缩小 / 放大 / 1:1 / 适应宽度 / 复制源码
+- 适应宽度：`(视口宽) / (图 viewBox·maxWidth 设计宽)`，视口 ≥ 图宽 → 100%（非写死 48%）
+- 主布局无 max-width 封顶，仅 `min-width: 720px`；SVG 用自然像素宽 + transform 缩放
+- 滚轮缩放、空白处拖拽平移；节点点击自管 hash 跳转
+
+后续新图只调用 `mermaidPanelHtml(src, hint)`，勿再手写裸 `.mermaid-box`。
 
 ## 真值
 

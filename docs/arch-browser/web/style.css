@@ -63,8 +63,12 @@ code, .mono { font-family: var(--mono); font-size: 0.9em; }
   grid-template-columns: 1fr;
   gap: 1rem;
   padding: 1.25rem;
-  max-width: 1200px;
+  /* 图谱页需要吃满浏览器宽；仅保最小可读宽，不再封顶 1200 */
+  width: 100%;
+  max-width: none;
+  min-width: 720px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 @media (min-width: 960px) {
   .layout.split { grid-template-columns: 1.2fr 0.8fr; }
@@ -178,30 +182,104 @@ code, .mono { font-family: var(--mono); font-size: 0.9em; }
 .empty { color: var(--muted); padding: 1rem 0; }
 .error { color: var(--bad); }
 
-.mermaid-box {
-  overflow-x: auto;
-  background: #0c1118;
-  border-radius: 8px;
-  padding: 0.75rem;
-  margin: 0.75rem 0;
-}
+/* —— 默认 Mermaid 组件（mermaidPanelHtml）：缩放 + 平移 —— */
+.mermaid-viewer,
+.mermaid-box,
+.clickable-mermaid,
 .concept-mermaid {
   border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #0c1118;
+  margin: 0.75rem 0;
   min-height: 12rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+.mermaid-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.55rem;
+  border-bottom: 1px solid var(--border);
+  background: #121a24;
+  flex-shrink: 0;
+}
+.mz-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  color: var(--text);
+  border-radius: 6px;
+  min-width: 2rem;
+  height: 1.75rem;
+  padding: 0 0.45rem;
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.mz-btn:hover { border-color: var(--accent); color: var(--accent); }
+.mermaid-zoom-label {
+  min-width: 3.2rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.mermaid-viewport {
+  position: relative;
+  overflow: hidden;
+  min-height: 16rem;
+  min-width: 640px;
+  max-height: 80vh;
+  width: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+.mermaid-viewport.is-panning { cursor: grabbing; }
+.mermaid-stage {
+  transform-origin: 0 0;
+  will-change: transform;
+  padding: 0.75rem;
+  display: inline-block;
+  /* 按 SVG 自然像素宽撑开；缩放靠 transform，不靠把 SVG 压成 100% */
+  text-align: left;
+  line-height: 0;
+}
+.mz-btn.is-ok { border-color: var(--accent2); color: var(--accent2); }
+.mz-btn.is-err { border-color: var(--bad); color: var(--bad); }
+.mz-src-store { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.mermaid-viewer .mermaid,
+.clickable-mermaid .mermaid,
 .concept-mermaid .mermaid {
   margin: 0;
-  text-align: center;
+  text-align: left;
+  display: inline-block;
+  line-height: 0;
 }
+.mermaid-viewer svg,
+.clickable-mermaid svg,
 .concept-mermaid svg {
-  max-width: 100%;
+  /* 禁止 mermaid width:100% 压扁；像素宽由 normalizeMermaidSvg 写入 width 属性/style */
+  max-width: none !important;
   height: auto;
+  display: block;
 }
 /* mermaid click 节点：可点提示 */
+.mermaid-viewer .node,
+.clickable-mermaid .node,
 .concept-mermaid .node {
   cursor: pointer;
 }
 .mermaid-hint { font-size: 0.8rem; margin-top: 0.35rem; }
+.chip-backup { margin-top: 0.75rem; }
+.chip-backup summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
 
 .home-hero { margin-bottom: 0.85rem; }
 .home-hero .eyebrow {
