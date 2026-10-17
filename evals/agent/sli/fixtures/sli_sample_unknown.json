@@ -1,0 +1,31 @@
+{
+  "window": "fixture-2026-10-17-unknown-semantics",
+  "note": "30 帽降级路径证据件：演示缺单价/缺 ok 时聚合输出 unknown 而非 0（SLI Cost 铁律 + capability_hit 行规）；非真实导出数据",
+  "e2e_latency": [
+    {"run_id": "u1", "duration_ms": 120},
+    {"run_id": "u2", "duration_ms": 260},
+    {"run_id": "u3", "duration_ms": 180}
+  ],
+  "task_terminals": [
+    {"run_id": "u1", "terminal_status": "done"},
+    {"run_id": "u2", "terminal_status": "done"}
+  ],
+  "capability_calls": [
+    {"capability_id": "search", "ok": true},
+    {"capability_id": "write"}
+  ],
+  "cost_rows": [
+    {
+      "run_id": "u1",
+      "model": "deepseek-ai/DeepSeek-V4-Flash",
+      "prompt_tokens": 1000,
+      "completion_tokens": 1000
+    },
+    {
+      "run_id": "u2",
+      "model": "no/such-model-no-price",
+      "prompt_tokens": 1000,
+      "completion_tokens": 1000
+    }
+  ]
+}
