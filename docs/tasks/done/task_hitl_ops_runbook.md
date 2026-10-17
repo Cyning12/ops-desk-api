@@ -1,6 +1,6 @@
 # task_hitl_ops_runbook · HITL 生产使用流程手册 + 残留收口
 
-> **状态**：active（2026-10-17 维护者授权 00 代录签收（m00238「授权00签收后续文档，开始下面的任务」· 20 R1 书面审经授权豁免））
+> **状态**：done（CLOSED 2026-10-17 · PR #264 MERGED squash dd6e02d · mergedAt 2026-10-17T05:50:24Z · CLOSE 档 docs/tasks/close/close_hitl_ops_runbook_20261017.md）
 
 ## Harness 元信息
 
@@ -172,3 +172,4 @@ TC-1/6/7 对 F1/F3/F4 文档面（grep 节名与三要素机断）· TC-2/3/4 �
 | 2026-10-17 | 10-task 帽起草初稿：背景证据全部亲读（两份验收 + 两份 CLOSE + SPEC + compose task + hitl router/persistence 码面锚点）· 范围四项对齐委派 · 人工闸全 pending 待维护者签 |
 | 2026-10-17 | 20 R1 退回（B-1 思考轮 R0–R5 全占位 · 全仓零先例）→ 10 回填：R0–R5 控制表+正文六节实填闭合（actual_last_round=R5）· 补 HG-TASK-DRAFT 闸行对齐兄弟档（N-1）· 补 event_store.py:132 谓词本体锚点（N-4）· 验收/failure_paths/范围实质未迁就改动 |
 | 2026-10-17 | 20 R2 增量复核 PASS-WITH-NITS 签收（审查文 docs/harness/reviews/task_hitl_ops_runbook_audit_R2_20261017.md）→ 40 执行：R2 N-1 顺手修（auto_resume.py:39 → :6-7 真址）· F1 runbook 落稿五必备节+F3/F4 钉案锚点 · F2 现行 master compose 复走 TC-2/3/4 PASS + FP-4/FP-5 live 实证（验收档 20261017_hitl_ops_runbook_compose_rewalk.md）· §1.5 追帧 nuance 实测回填 · 自检结论回填 TC-1..9 全 PASS |
+| 2026-10-17 | CLOSED：PR #264 MERGED squash dd6e02d（2026-10-17T05:50:24Z）· 批量关账 · CLOSE 档 close_hitl_ops_runbook_20261017.md |

@@ -1,6 +1,6 @@
 # Task：host-v1-sli-dashboard（04 测评轨 · Host v1.0 SLI 四项看板落地 · Langfuse Dashboard 实证）
 
-> **状态**：`active`（2026-10-17 维护者授权 00 代录签收（m00238「授权00签收后续文档，开始下面的任务」· 20 R1 书面审经授权豁免）· **30 已交付**（走 D5 降级路径 · 证据/invoke/task 档齐）· 待 40 核验 / PR 合并）
+> **状态**：done（CLOSED 2026-10-17 · PR #261 MERGED squash 19a32d5 · mergedAt 2026-10-17T05:50:13Z · CLOSE 档 docs/tasks/close/close_host_v1_sli_dashboard_20261017.md）
 > **类型**：observability / eval follow-up（**docs+ops 面** · 零 `app/` 生产改动 · `graph_change_layer=none`）
 > **依据**：`docs/spec/agent-infra/eval/GUIDE_host_v1_sli_dashboard_v1.md`（看板操作真值）· `docs/spec/agent-infra/eval/SLI_host_v1_four_metrics_v1.md`（定义 signed 2026-09-24）· `docs/tasks/done/task_host_v1_sli_four_metrics.md`（四指标定义/有数/GUIDE 已 done · **Dashboard 实证未交付**）
 > **分支建议**：`task/host-v1-sli-dashboard`（base master 最新）
@@ -189,3 +189,4 @@ TC-D1/D2 对文件存在性与内容断言；TC-D3/D4 对命令输出断言；TC
 | 2026-10-17 | 10-task 初稿落盘（帽 10 · 闸 pending 待维护者签 · 禁 30 · 未 commit） |
 | 2026-10-17 | 维护者授权 00 代录三闸 approved（m00238 · 20 R1 书面审豁免）；20 R1 审查文落 `docs/harness/reviews/task_host_v1_sli_dashboard_audit_R1_20261017.md`（签收） |
 | 2026-10-17 | 30 帽交付：D1 走 D5 降级照登（无 Langfuse 项目权限）· D2 查询钉死 · D3 fixture/unknown 对拍 · D4 pytest 9 passed · 证据文 `SLI_DASHBOARD_EVIDENCE_20261017_30.md` + invoke_30 落盘 |
+| 2026-10-17 | CLOSED：PR #261 MERGED squash 19a32d5（2026-10-17T05:50:13Z）· 批量关账 · CLOSE 档 close_host_v1_sli_dashboard_20261017.md |
