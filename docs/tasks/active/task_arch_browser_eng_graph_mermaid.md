@@ -63,7 +63,8 @@
 - TC-2 ✅ 提交内 `git diff HEAD~2 -- web/app.js` 零 demo 关键词（ENG_DEMO/DEMO_TEXT/demoText/ENG_L0_DEMO/disp./m.display 全 0 命中 · 手术反向校验 64 行差异全属 demo 域）
 - TC-3 ✅ build_site.py EXIT=0 重建 dist；dist/site-data.json 与 HEAD 一致（纯演示刷新剔除）
 - TC-4 ✅ hygiene 独立提交（uv.lock=import-linter 合法同步 · pnpm-lock.yaml=spec-wave 3.3.0 锁）；.pnpm-store 已删
-- TC-5 ☐ PR 合并后切 `task/demo-agent-host-surface` 承接 demo 面（转交维护者/下一窗）
+- TC-5 ✅ 已由维护者另窗闭环（api PR #255 / CLOSE PR #256 · demo task 归档 done/）——本窗原 TC-5 表述作废
+- TC-6 ✅ eng_l0 管线回补（2b34d08）：00 CLOSE 档裁定「_ENG_L0_DEMO_* 只服务 eng_l0 管线 → 判 eng」，首切误归 demo 面切除 → 本 PR 纠正回补（build_site.py +171 · app.js ENG_L0_DEMO_* 过滤改名 · dist eng_l0_mermaid 键 2603ch）
 
 ## failure_paths
 
@@ -77,4 +78,6 @@
 |----|------|------|
 | R0 | 脏树侦察（分支==main 无独立提交 · 零档案 · 与 demo 混 14 hunk） | 见 invoke |
 | R1 | hunk 分类 + 切分方案 + 手术正确性 | PASS（双向 diff 证据） |
-| R2–R5 | n/a（追溯 · 交付已完成） | — |
+| R2 | rebase 到 master e00b414（demo 面已并）· 冲突解 = mermaid-only + 维护者 demo 编辑集 | PASS |
+| R3 | CLOSE 档切分裁定复核：eng_l0 演示政策判 eng → 首切误切除 → 回补 2b34d08 | 纠正闭环 |
+| R4–R5 | n/a（追溯） | — |

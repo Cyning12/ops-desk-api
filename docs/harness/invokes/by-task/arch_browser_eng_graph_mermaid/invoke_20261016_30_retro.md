@@ -37,3 +37,10 @@ build 重建 dist 时 site-data.json 出现 3 行真值衍生刷新（generated_
 - 混合 hunk 场景「全量 − 已知编辑集」逆向手术优于 git apply -p 子集：编辑集封闭可断言（每处命中 1 次）+ 双向 diff 可机器校验
 - dist 为纯衍生物：重建即带上真值新内容，提交切分时须显式决定是否纳入
 - 在飞工作先落 task/invoke 再动手——本次追溯成本（侦察+手术+校验）远高于事前建档
+
+## 追加：eng_l0 管线回补（2026-10-17 · commit 2b34d08）
+
+- **起因**：demo CLOSE 档（close_demo_agent_host_surface_20261016.md §「切分归类存疑 hunk」）裁定：build_site.py 的 _ENG_L0_DEMO_* 演示政策虽含 demo 字样但只服务 eng_l0 管线 → **判 eng**。本窗首切按其字面 demo 前缀误归 demo 面切除 → PR 分支 renderEngL0 缺 eng_l0_mermaid 数据源（会渲「缺 eng_l0_mermaid」错误）。
+- **纠正**：备份全量版与 master 双向 diff 证明「全量 = master + eng 段」（build_site.py +171 全 eng_l0 管线字面量；app.js 474 行差异中 surface 关键词 0 命中）→ 直接采用全量版两文件 + build 重建。
+- **验收**：py_compile/node --check OK · web==dist app.js · eng_l0_mermaid 2603ch 回键 · display×34 保留 · surface 专属关键词（ENG_DEMO_HIDDEN_FLOWS/ENG_DEMO_FLOW_LABEL/demoText/disp./m.display）相对 master 新增行 0 命中 · docs/_tech_graph 零 diff · freeze 不动。
+- **经验**：跨任务切分的归类真值在 CLOSE 档裁定钉案，不在本窗自用命名（「DEMO」前缀误导）；切分后应以「构建产物键是否齐备」做端到端冒烟（renderEngL0 缺数据源即漏切信号）。
