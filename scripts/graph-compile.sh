@@ -20,12 +20,15 @@ set -euo pipefail
 #   漂移：spec-wave 3.2.0 发布致 check/tech-graph 红（implementedBy object
 #   schema 收紧 · 非本仓 diff 引入；master run 38069798037 装 3.1.0 仍绿）。
 #   GRAPH_CLI 环境变量回退口保留（显式覆盖优先）。
+# 2026-10-17：GRAPH_CLI 默认值钉版对齐 3.3.0（task ci-specwave-pin-align ·
+#   对齐 package.json/.coding-kit/manifest.json/pnpm-lock 已生效版本，消除
+#   CI/脚本钉版分裂致的形状闸静默降级；历史钉法缘由见上 2026-10-11 段）。
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 GRAPH_DIR="${ROOT_DIR}/docs/_tech_graph"
 GRAPH_JSON="${GRAPH_DIR}/shared/graph.json"
-GRAPH_CLI="${GRAPH_CLI:-spec-wave@3.0.1}"
+GRAPH_CLI="${GRAPH_CLI:-spec-wave@3.3.0}"
 
 cd "${ROOT_DIR}"
 
