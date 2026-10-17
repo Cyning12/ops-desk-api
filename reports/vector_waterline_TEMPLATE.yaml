@@ -1,0 +1,61 @@
+# 向量水位/对账核查报告模板（task prod-vector-waterline-check E4 · template_version=v1）
+#
+# 由 scripts/check_vector_waterline.py 生成；维护者生产执行（TC-WL-8）时按本形状回填。
+# 命名：reports/vector_waterline_<env>_<UTCts>.yaml（env=local/prod/...）。
+# 只读证据：本报告不构成任何处置动作；差集/DLQ 处置另 task（FP-6）。
+# 本地/compose 产物（TC-WL-5）不得当作生产证据；生产报告 environment=prod。
+
+kind: vector_waterline
+template_version: v1
+recorded_at: "<UTC ISO8601 · 报告生成时刻>"
+environment: "<local|prod|...>"
+executed_by: "<执行人系统用户名>"
+git_sha: "<脚本所属仓 commit short sha · 不可得则 null>"
+
+config:
+  database_url_set: true          # 仅记是否配置；永不落连接串/凭证
+  qdrant_url: "http://<host>:6333"  # 已剥离 user:pass
+  qdrant_collection: "ops_knowledge"
+
+status: "ok | degraded"           # 任一面无实证 → degraded
+
+pg_face:
+  status: "ok | no_evidence"
+  reason: "<仅 no_evidence 时填：错误摘要/凭证缺失原因>"
+  row_count: 0                    # SELECT count(*) FROM ops_knowledge_chunks
+  ingest_waterline:
+    column: "ops_knowledge_chunks.embedded_at"   # 表无 created_at/updated_at，口径实定
+    max: "<UTC ISO8601 · 最近 ingest 水位；空表为 null>"
+  dlq:
+    table: "ops_qdrant_dlq"
+    depth: 0                      # DLQ 积压条数
+    oldest_created_at: "<UTC ISO8601 · 最老条目；空为 null>"
+    oldest_age_seconds: 0.0       # 最老条目年龄（报告时刻口径）
+    verdict: "empty | backlogged"
+
+qdrant_face:
+  status: "ok | no_evidence"
+  reason: "<仅 no_evidence 时填>"
+  collection: "ops_knowledge"
+  points_count: 0                 # client.count(exact=True)
+  scrolled_ids: 0                 # scroll 全量 id 数（应与 points_count 一致）
+
+reconcile:
+  status: "ok | skipped"          # 单侧无实证 → skipped + reason
+  reason: "<仅 skipped 时填>"
+  pg_count: 0
+  qdrant_count: 0
+  count_diff: 0                   # pg_count - qdrant_count
+  verdict: "match | mismatch"
+  pg_only_in_qdrant_missing:      # 方向①：PG 有 Qdrant 无（影子写漏/DLQ 积压嫌疑）
+    count: 0
+    sample: []                    # point_id 抽样（默认上限 20）
+  qdrant_only_in_pg_missing:      # 方向②：Qdrant 有 PG 无（墓碑未删/脏点嫌疑）
+    count: 0
+    sample: []
+
+degradation:
+  degraded: false
+  notes: []                       # 降级标注：「PG 面无实证：...」/「Qdrant 面无实证：...」
+
+disclaimer: "本报告为只读核查证据；差集/DLQ 处置动作另 task（FP-6）。本地/compose 环境产物不得当作生产证据（TC-WL-5 与 TC-WL-8 分离）。"
