@@ -1,6 +1,6 @@
 # Task：lg-rag-sse-run-worker（E3 Wave B · RunWorker 与 SSE 订阅解耦 · 部分回复可见 · 失败后继续回复）
 
-> **状态**：gates approved · D1=A+B · **可 30**（2026-10-14 · 00 代录 · `invoke_20261014_00_gate_signoff.md`）  
+> **状态**：done（CLOSED 2026-10-17 · PR [#250](https://github.com/Cyning12/ops-desk-api/pull/250) MERGED（squash `56e4a9f` · 2026-10-14T07:56:02Z）· E3 Wave B RunWorker 与 SSE 订阅解耦落地 · B1–B6/B3/B5 PASS · 40 TC-B6 live PASS · 与旧 task `lg_rag_sse_disconnect_completion` co-CLOSE · 三闸 approved（00 代录）· CLOSE 归档 done/ · 细节见 CLOSE 文档 [`../close/close_lg_rag_sse_run_worker_co_disconnect_20261017.md`](../close/close_lg_rag_sse_run_worker_co_disconnect_20261017.md)）  
 
 > **类型**：传输架构（进程内 RunWorker + StreamSubscriber · freeze `lg-rag-sse-v1` 行为收口）  
 > **依据**：维护者选 **E3** + 产品口径（`docs/harness/invokes/by-task/lg-rag-sse-disconnect-completion/invoke_20261014_00_e3_wave_b_plan.md`）· 新 task 生成令（`…/invoke_20261014_00_e3_new_task_spawn.md`）· 旧 task TC5 live×3 FAIL / 停派 ASGI 钩史实  
@@ -220,4 +220,10 @@ TC-B1/B2 可单测+夹具；B3 钉新 run；B6 live 替换旧 TC5；B9/B10 过�
 
 ### 经验总结
 
-（CLOSE 回填 · 建议吸收：ASGI disconnect 不可作唯一沉降路径 · Worker/Subscriber 拆分优先）
+ASGI disconnect 不可作唯一沉降路径（Wave A 三抡 live FAIL 实证）· Worker/Subscriber 拆分优先（E3 Wave B 成立）· 断连收尾靠 worker settle + replay 后半段补偿，不靠请求生命周期钩子。
+
+## 修订记录（CLOSED 补行）
+
+| 日期 | 说明 |
+|------|------|
+| 2026-10-17 | CLOSED：PR #250 MERGED（squash `56e4a9f` · 2026-10-14）· 与 `lg_rag_sse_disconnect_completion` co-CLOSE · 归档 done/ · CLOSE 档 `../close/close_lg_rag_sse_run_worker_co_disconnect_20261017.md` · 批量关账 PR 待开（close/active-batch-20261017）· 分支 `task/lg-rag-sse-run-worker` 移交 00 统一清理 |

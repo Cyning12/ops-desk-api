@@ -1,6 +1,6 @@
 # Task：hitl-resume-replay-contract（HITL resume 终帧字段补齐 + 在飞 replay 语义化状态码 · web 联调 FP-1 报回两观察项）
 
-> **状态**：active（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 全 approved · 20 R1 落盘 PASS · **30 可开工（红测先行）**）  
+> **状态**：done（CLOSED 2026-10-17 · PR [#248](https://github.com/Cyning12/ops-desk-api/pull/248) MERGED（squash `acac5e6` · 2026-10-13T03:40:29Z · 交付分支 `task/hitl-resume-obs-drafts`）· F-OBS-1/2 闭环（终帧 latency_ms 钉死 · 在飞 replay 409+Retry-After:2 · 500 消失）· TC1–TC5 全勾 · 40 live 对照 PASS（附件 16 件）· 20 R1 落盘 PASS · 三闸 approved · CLOSE 归档 done/ · 细节见 CLOSE 文档 [`../close/close_hitl_resume_replay_contract_20261017.md`](../close/close_hitl_resume_replay_contract_20261017.md)）  
 > **类型**：契约缺口收口（ops-desk-web 联调链 T-W2 FP-1 报回 · web PR #61 · 纯后端 SSE/HTTP 契约面）  
 > **依据**：ops-desk-web 联调链 T-W2 invoke 留痕（2026-10-11 · S3 replay seq18 / S2 断线 replay 实测）· 本仓锚点亲读核真（base master `92a8526`）  
 > **分支**：`task/hitl-resume-obs-drafts`（base master `92a8526`）
@@ -170,3 +170,4 @@ TC1 红测先行防恒绿假象（RED 签名 = F-OBS-1 缺口同形：终帧缺 
 | 2026-10-13 | 30 交付：RED a30b3d3（5 红签名全预期）→ GREEN e4a54d9 · 图谱回写 61094bf · 全量 1803 passed 零新增红（clean tree stash 对拍同 5 既有红同名同因）· ruff 触碰文件全绿 · graph-compile EXIT=0 · 30 invoke 落盘 · TC1–TC4 勾选（TC5 待 40 live 对照） |
 | 2026-10-13 | 20-task-audit R1 落盘：结论 **PASS**（内容零阻塞 · 锚点 9 行全实证 master `cff3660` · 旧测影响面代查实证为空不退回补列 · 思考轮 R0–R5 闭合 · 非阻塞观察项 O1–O3）· 审查文 `docs/harness/reviews/task_hitl_resume_replay_contract_audit_R1_20261012.md` · 20 invoke 落盘（required_invoke_hats 含 20）· **维护者签 HG-AUDIT-R1 / HG-GRAPH-MODULES approved → 30 放行（红测先行 · TC1–TC5）** |
 | 2026-10-11 | v0 · 10 落稿：ops-desk-web 联调链 T-W2 FP-1 报回两观察项（F-OBS-1 S3 replay seq18 终帧缺 latency_ms/model · F-OBS-2 S2 run 640d68970a564fbb8459d8d40cb1c5f6 在飞 replay 500）· 锚点亲读核真（base master `92a8526` · resume.py:124-134 / router.py:350-356 / 对照面 sse_stream.py:465-490 · chat/streaming.py:290-297）· TC1–TC5 验收 · R0–R5 思考轮（early_stop at R5）· HG-TASK-DRAFT approved（00 委派令代录）· HG-AUDIT-R1/HG-GRAPH-MODULES pending 待人签 · 来源：ops-desk-web 联调链 T-W2 FP-1 报回（web PR #61） |
+| 2026-10-17 | CLOSED：PR #248 MERGED（squash `acac5e6` · 2026-10-13 · 交付分支 `task/hitl-resume-obs-drafts`）· TC1–TC5 全勾 · 归档 done/ · CLOSE 档 `../close/close_hitl_resume_replay_contract_20261017.md` · 批量关账 PR 待开（close/active-batch-20261017） |

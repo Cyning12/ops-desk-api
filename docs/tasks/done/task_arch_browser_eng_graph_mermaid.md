@@ -1,6 +1,6 @@
 # Task：arch-browser-eng-graph-mermaid（工程图谱默认 Mermaid 组件 · 缩放/平移/复制源码 · 追溯建档）
 
-> **状态**：**交付完成 · 待 PR 合并**（本追溯档补建于交付后 · 见「追溯说明」）
+> **状态**：done（CLOSED 2026-10-17 · PR [#257](https://github.com/Cyning12/ops-desk-api/pull/257) MERGED（squash `833f605` · 2026-10-17T03:25:13Z）· TC-1–TC-6 全绿（含 TC-6 eng_l0 管线回补 `2b34d08`）· 双闸 approved（追溯 · 维护者 2026-10-16 裁定）· 30 invoke 追溯落盘 · CLOSE 归档 done/ · 细节见 CLOSE 文档 [`../close/close_arch_browser_eng_graph_mermaid_20261017.md`](../close/close_arch_browser_eng_graph_mermaid_20261017.md)）
 > **类型**：arch-browser 工程图谱展示增强（纯 web 展示层 · 零业务码）
 > **分支**：`task/arch-browser-eng-graph-mermaid`
 > **提交**：`0a91268` feat(arch-browser) mermaid 面 + `b34af17` chore(deps) lockfile 卫生 + `e736f4f` 追溯档（2026-10-16 rebase 到 master e00b414 后新 hash · rebase 前为 95a9f4e/5b63f29/edba447）
@@ -59,12 +59,16 @@
 
 ## 验收标准
 
-- TC-1 ✅ `node --check web/app.js` 通过；`web/app.js` == `dist/app.js`
-- TC-2 ✅ 提交内 `git diff HEAD~2 -- web/app.js` 零 demo 关键词（ENG_DEMO/DEMO_TEXT/demoText/ENG_L0_DEMO/disp./m.display 全 0 命中 · 手术反向校验 64 行差异全属 demo 域）
-- TC-3 ✅ build_site.py EXIT=0 重建 dist；dist/site-data.json 与 HEAD 一致（纯演示刷新剔除）
-- TC-4 ✅ hygiene 独立提交（uv.lock=import-linter 合法同步 · pnpm-lock.yaml=spec-wave 3.3.0 锁）；.pnpm-store 已删
-- TC-5 ✅ 已由维护者另窗闭环（api PR #255 / CLOSE PR #256 · demo task 归档 done/）——本窗原 TC-5 表述作废
-- TC-6 ✅ eng_l0 管线回补（2b34d08）：00 CLOSE 档裁定「_ENG_L0_DEMO_* 只服务 eng_l0 管线 → 判 eng」，首切误归 demo 面切除 → 本 PR 纠正回补（build_site.py +171 · app.js ENG_L0_DEMO_* 过滤改名 · dist eng_l0_mermaid 键 2603ch）
+- [x] TC-1 `node --check web/app.js` 通过；`web/app.js` == `dist/app.js`
+- [x] TC-2 提交内 `git diff HEAD~2 -- web/app.js` 零 demo 关键词（ENG_DEMO/DEMO_TEXT/demoText/ENG_L0_DEMO/disp./m.display 全 0 命中 · 手术反向校验 64 行差异全属 demo 域）
+- [x] TC-3 build_site.py EXIT=0 重建 dist；dist/site-data.json 与 HEAD 一致（纯演示刷新剔除）
+- [x] TC-4 hygiene 独立提交（uv.lock=import-linter 合法同步 · pnpm-lock.yaml=spec-wave 3.3.0 锁）；.pnpm-store 已删
+- [x] TC-5 已由维护者另窗闭环（api PR #255 / CLOSE PR #256 · demo task 归档 done/）——本窗原 TC-5 表述作废
+- [x] TC-6 eng_l0 管线回补（2b34d08）：00 CLOSE 档裁定「_ENG_L0_DEMO_* 只服务 eng_l0 管线 → 判 eng」，首切误归 demo 面切除 → 本 PR 纠正回补（build_site.py +171 · app.js ENG_L0_DEMO_* 过滤改名 · dist eng_l0_mermaid 键 2603ch）
+
+### 自检结论（执行者）
+
+追溯档 CLOSED 回填：TC-1–TC-6 全绿（证据链见上各行与 30 invoke `docs/harness/invokes/by-task/arch_browser_eng_graph_mermaid/invoke_20261016_30_retro.md`）· PR #257 MERGED squash `833f605` ·  lint 机读形态修订仅改勾选符号、验收内容零变更。
 
 ## failure_paths
 
@@ -81,3 +85,9 @@
 | R2 | rebase 到 master e00b414（demo 面已并）· 冲突解 = mermaid-only + 维护者 demo 编辑集 | PASS |
 | R3 | CLOSE 档切分裁定复核：eng_l0 演示政策判 eng → 首切误切除 → 回补 2b34d08 | 纠正闭环 |
 | R4–R5 | n/a（追溯） | — |
+
+## 修订记录
+
+| 日期 | 说明 |
+|------|------|
+| 2026-10-17 | CLOSED：PR #257 MERGED（squash `833f605`）· 归档 done/ · CLOSE 档 `../close/close_arch_browser_eng_graph_mermaid_20261017.md` · 批量关账 PR 待开（close/active-batch-20261017）· 分支 `task/arch-browser-eng-graph-mermaid` 移交 00 统一清理（本 CLOSE 不删任何东西） |

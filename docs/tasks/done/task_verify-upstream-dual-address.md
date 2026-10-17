@@ -1,6 +1,6 @@
 # Task：verify-upstream-dual-address（spec-wave findLatestReview 支持址B `docs/audits/task-review/` · 上游根治 + 本仓双址纪律收口）
 
-> **状态**：`active`（20 R1 PASS-WITH-NITS · 三闸 approved · 00 代录 授权 m00106 · 30 可开工）  
+> **状态**：done（CLOSED 2026-10-17 · PR [#240](https://github.com/Cyning12/ops-desk-api/pull/240) MERGED（squash `93c4960` · 2026-10-11T05:56:20Z）· 上游根治 issue [SpecWave#35](https://github.com/Cyning12/SpecWave/issues/35)/PR [SpecWave#36](https://github.com/Cyning12/SpecWave/pull/36) 已提（收口三条件待上游发版 · 钉版不动照登）· 20 R1 PASS-WITH-NITS（NIT×3 已回填）· 三闸 approved（00 代录 · 授权 m00106）· CLOSE 归档 done/ · 细节见 CLOSE 文档 [`../close/close_verify_upstream_dual_address_20261017.md`](../close/close_verify_upstream_dual_address_20261017.md)）  
 > **类型**：**upstream-chore**（上游 issue/PR 根治 + 本仓规约收口条件 · 本仓零 `app/` 改动 · `graph_change_layer=none`）  
 > **依据**：`docs/harness/invokes/by-task/_prompts/PROMPT_00_spec-campaign-handoff_20261011.md` §2.2 第 3 项 + §4-3（机读纪律坑）· `docs/harness/CONVENTION_review_gate_dual_address_v1_zh.md`（双址规约 v1 · 过渡方案已钉）  
 > **分支**：`task/verify-upstream-dual-address`（base = master `286d825` · worktree `../ops-desk-api-worktrees/t-verify-upstream-dual-address`）  
@@ -259,3 +259,4 @@ R1 NIT×3 回填（镜像路径正确写法+偏移注 · 验收命令钉 @3.0.1 
 | 2026-10-11 | 10 落稿（task/verify-upstream-dual-address worktree）：交接档 §2.2-3 立项 + CONVENTION v1 全文真读；上游源码锚点实证（Cyning12/SpecWave @ fad4694 · review-gates.ts:92-119/:46）；址B 命名不同构钉为 R2 种子；钉版三处收口点落锚；三闸 pending + HG-GRAPH-MODULES（none 按实判） |
 | 2026-10-11 | 三闸 approved（**00 代录 · 授权 m00106**）：HG-TASK-DRAFT · HG-AUDIT-R1（R1 PASS-WITH-NITS · 审查文址A 在案 · NIT×3 随 30 回填）· HG-GRAPH-MODULES（none 复核通过）→ 30 解锁 |
 | 2026-10-11 | 30 执行：GATE_VERIFY PASS → 上游 issue [#35](https://github.com/Cyning12/SpecWave/issues/35) + PR [#36](https://github.com/Cyning12/SpecWave/pull/36)（feat/review-gates-dual-address @ d087a4d · 址B 扫描+命名口径 · 单测 +4 红绿对照 · 全量 988/989 pass 0 fail）→ R2–R5 裁定回填（甲案 · spec 面不扩）· R1 NIT×3 回填（镜像路径/偏移注 · 验收钉 @3.0.1 · 镜像弱化旁证）· 收口三条件待上游发版 · 钉版不动 |
+| 2026-10-17 | CLOSED：PR #240 MERGED（squash `93c4960` · 2026-10-11）· 上游 issue #35/PR #36 已提 · 收口三条件待上游发版照登 · 归档 done/ · CLOSE 档 `../close/close_verify_upstream_dual_address_20261017.md` · 批量关账 PR 待开（close/active-batch-20261017） |
