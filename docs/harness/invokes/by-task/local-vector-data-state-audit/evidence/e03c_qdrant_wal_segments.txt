@@ -1,0 +1,86 @@
+=== wal ===
+total 43700
+drwxr-xr-x 2 root root     4096 Aug 18 02:54 .
+drwxr-xr-x 4 root root     4096 Oct 16 07:07 ..
+-rw-r--r-- 1 root root 33554432 Aug 18 02:54 closed-0
+-rw-r--r-- 1 root root       16 Aug 18 02:54 first-index
+-rw-r--r-- 1 root root 33554432 Aug 18 02:54 open-2
+-rw-r--r-- 1 root root 33554432 Aug 18 02:54 open-3
+=== segment payload/vector storage mtimes (per segment) ===
+--- /qdrant/storage/collections/ops_knowledge/0/segments/0136e013-cbd7-4b03-821a-99764c09c52f/
+total 56
+drwxr-xr-x 5 root root  4096 Oct 16 07:07 .
+drwxr-xr-x 9 root root  4096 Aug 18 02:54 ..
+-rw-r--r-- 1 root root 15808 Aug 18 02:54 mutable_id_tracker.mappings
+-rw-r--r-- 1 root root  9728 Aug 18 02:54 mutable_id_tracker.versions
+drwxr-xr-x 8 root root  4096 Aug 18 02:54 payload_index
+drwxr-xr-x 2 root root  4096 Aug 18 02:54 payload_storage
+-rw-r--r-- 1 root root   234 Oct 16 07:07 segment.json
+drwxr-xr-x 4 root root  4096 Aug 18 02:54 vector_storage
+-rw-r--r-- 1 root root     5 Aug 18 02:54 version.info
+--- /qdrant/storage/collections/ops_knowledge/0/segments/04b3a516-eb16-45db-b7ff-436855a60c3e/
+total 56
+drwxr-xr-x 5 root root  4096 Oct 16 07:07 .
+drwxr-xr-x 9 root root  4096 Aug 18 02:54 ..
+-rw-r--r-- 1 root root 15808 Aug 18 02:54 mutable_id_tracker.mappings
+-rw-r--r-- 1 root root  9728 Aug 18 02:54 mutable_id_tracker.versions
+drwxr-xr-x 8 root root  4096 Aug 18 02:54 payload_index
+drwxr-xr-x 2 root root  4096 Aug 18 02:54 payload_storage
+-rw-r--r-- 1 root root   234 Oct 16 07:07 segment.json
+drwxr-xr-x 4 root root  4096 Aug 18 02:54 vector_storage
+-rw-r--r-- 1 root root     5 Aug 18 02:54 version.info
+--- /qdrant/storage/collections/ops_knowledge/0/segments/7d7572df-361e-4bd7-9281-879986db0174/
+total 56
+drwxr-xr-x 5 root root  4096 Oct 16 07:07 .
+drwxr-xr-x 9 root root  4096 Aug 18 02:54 ..
+-rw-r--r-- 1 root root 16224 Aug 18 02:54 mutable_id_tracker.mappings
+-rw-r--r-- 1 root root  9984 Aug 18 02:54 mutable_id_tracker.versions
+drwxr-xr-x 8 root root  4096 Aug 18 02:54 payload_index
+drwxr-xr-x 2 root root  4096 Aug 18 02:54 payload_storage
+-rw-r--r-- 1 root root   234 Oct 16 07:07 segment.json
+drwxr-xr-x 4 root root  4096 Aug 18 02:54 vector_storage
+-rw-r--r-- 1 root root     5 Aug 18 02:54 version.info
+--- /qdrant/storage/collections/ops_knowledge/0/segments/869536a3-2302-4f3a-a340-6798044b179c/
+total 56
+drwxr-xr-x 5 root root  4096 Oct 16 07:07 .
+drwxr-xr-x 9 root root  4096 Aug 18 02:54 ..
+-rw-r--r-- 1 root root 16198 Aug 18 02:54 mutable_id_tracker.mappings
+-rw-r--r-- 1 root root  9968 Aug 18 02:54 mutable_id_tracker.versions
+drwxr-xr-x 8 root root  4096 Aug 18 02:54 payload_index
+drwxr-xr-x 2 root root  4096 Aug 18 02:54 payload_storage
+-rw-r--r-- 1 root root   234 Oct 16 07:07 segment.json
+drwxr-xr-x 4 root root  4096 Aug 18 02:54 vector_storage
+-rw-r--r-- 1 root root     5 Aug 18 02:54 version.info
+--- /qdrant/storage/collections/ops_knowledge/0/segments/a785962a-5767-4f7b-9487-77ae71919d46/
+total 56
+drwxr-xr-x 5 root root  4096 Oct 16 07:07 .
+drwxr-xr-x 9 root root  4096 Aug 18 02:54 ..
+-rw-r--r-- 1 root root 15808 Aug 18 02:54 mutable_id_tracker.mappings
+-rw-r--r-- 1 root root  9728 Aug 18 02:54 mutable_id_tracker.versions
+drwxr-xr-x 8 root root  4096 Aug 18 02:54 payload_index
+drwxr-xr-x 2 root root  4096 Aug 18 02:54 payload_storage
+-rw-r--r-- 1 root root   234 Oct 16 07:07 segment.json
+drwxr-xr-x 4 root root  4096 Aug 18 02:54 vector_storage
+-rw-r--r-- 1 root root     5 Aug 18 02:54 version.info
+--- /qdrant/storage/collections/ops_knowledge/0/segments/d1e81c2f-aabb-4780-a018-2a4e45aef03d/
+total 56
+drwxr-xr-x 5 root root  4096 Oct 16 07:07 .
+drwxr-xr-x 9 root root  4096 Aug 18 02:54 ..
+-rw-r--r-- 1 root root 15808 Aug 18 02:54 mutable_id_tracker.mappings
+-rw-r--r-- 1 root root  9728 Aug 18 02:54 mutable_id_tracker.versions
+drwxr-xr-x 8 root root  4096 Aug 18 02:54 payload_index
+drwxr-xr-x 2 root root  4096 Aug 18 02:54 payload_storage
+-rw-r--r-- 1 root root   234 Oct 16 07:07 segment.json
+drwxr-xr-x 4 root root  4096 Aug 18 02:54 vector_storage
+-rw-r--r-- 1 root root     5 Aug 18 02:54 version.info
+--- /qdrant/storage/collections/ops_knowledge/0/segments/fb517fa3-8196-424b-a40d-185fa33707a4/
+total 56
+drwxr-xr-x 5 root root  4096 Oct 16 07:07 .
+drwxr-xr-x 9 root root  4096 Aug 18 02:54 ..
+-rw-r--r-- 1 root root 15808 Aug 18 02:54 mutable_id_tracker.mappings
+-rw-r--r-- 1 root root  9728 Aug 18 02:54 mutable_id_tracker.versions
+drwxr-xr-x 8 root root  4096 Aug 18 02:54 payload_index
+drwxr-xr-x 2 root root  4096 Aug 18 02:54 payload_storage
+-rw-r--r-- 1 root root   234 Oct 16 07:07 segment.json
+drwxr-xr-x 4 root root  4096 Aug 18 02:54 vector_storage
+-rw-r--r-- 1 root root     5 Aug 18 02:54 version.info

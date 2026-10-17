@@ -1,0 +1,24 @@
+== id scroll ==
+pages: 9  total_ids: 8574  unique: 8574
+min: 1  max: 8593
+id type sample: int
+non-contiguous transitions: 1 e.g. first gaps: [20]
+contiguous 1..8574: False
+== sample selection ==
+head ids: 1 .. 50
+mid  ids: 4263 .. 4312
+tail ids: 8525 .. 8593
+sample size: 150
+fetched with payload: 150
+== payload key sets (keys -> count) ==
+  ['chunk_index', 'repo', 'source_id', 'source_type'] -> 150
+== source_type dist == {'issue': 54, 'pr': 55, 'doc': 41}
+== repo dist == {'MoonshotAI/kimi-code': 109, 'ops-desk-workspace': 41}
+== tenant_id dist == {'<missing>': 150}
+== chunk_index == {'int': 150, 'other': 0} min: 0 max: 19
+== source_id prefix dist == {'2720': 7, '16': 1, '20': 1, '21': 1, '32': 4, '35': 1, '37': 1, '39': 1, '40': 1, '41': 1, '43': 1, '44': 3, '45': 3, '53': 1, '54': 1, '55': 1, '56': 3, '58': 1, '59': 1, '60': 1, '63': 1, '64': 1, '68': 3, '69': 4, '71': 1, '74': 1, '75': 1, '80': 3, '770': 1, '771': 4, '772': 4, '774': 3, '775': 3, '776': 2, '777': 3, '778': 1, '779': 3, '780': 3, '781': 3, '783': 2, '784': 3, '785': 4, '786': 3, '787': 1, '788': 2, '789': 1, '790': 4, 'contracts/chat-stream-v1.md': 2, 'contracts/chat-tool-context-v1.md': 12, 'contracts/data-v1.md': 7, '991': 1, '1180': 1, '1427': 1, '1726': 1, '385': 1, '618': 1, '1214': 1, '1503': 1, '1658': 1, 'contracts/rag-knowledge-contract-v1.md': 20}
+== 3 raw samples (head/mid/tail first of each) ==
+{"id": 1, "payload": {"source_type": "issue", "repo": "MoonshotAI/kimi-code", "source_id": "2720", "chunk_index": 0}}
+{"id": 4263, "payload": {"source_type": "pr", "repo": "MoonshotAI/kimi-code", "source_id": "770", "chunk_index": 2}}
+{"id": 8525, "payload": {"source_type": "doc", "repo": "ops-desk-workspace", "source_id": "contracts/chat-stream-v1.md", "chunk_index": 14}}
+{"id": 8593, "payload": {"source_type": "doc", "repo": "ops-desk-workspace", "source_id": "contracts/rag-knowledge-contract-v1.md", "chunk_index": 19}}

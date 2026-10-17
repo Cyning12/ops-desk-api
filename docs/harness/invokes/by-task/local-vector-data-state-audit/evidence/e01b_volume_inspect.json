@@ -1,0 +1,30 @@
+[
+    {
+        "CreatedAt": "2026-07-16T08:19:50Z",
+        "Driver": "local",
+        "Labels": {
+            "com.docker.compose.config-hash": "3a38bd024863ee81e9c170137700ca9836c5e5b68e25aac147ee9c5c0c469158",
+            "com.docker.compose.project": "ops-desk-api",
+            "com.docker.compose.version": "5.1.1",
+            "com.docker.compose.volume": "pgdata"
+        },
+        "Mountpoint": "/var/lib/docker/volumes/ops-desk-api_pgdata/_data",
+        "Name": "ops-desk-api_pgdata",
+        "Options": null,
+        "Scope": "local"
+    },
+    {
+        "CreatedAt": "2026-08-16T10:43:40Z",
+        "Driver": "local",
+        "Labels": {
+            "com.docker.compose.config-hash": "3adfed8f4e12618f199ac08ecf0ef43e3f31ef5ebc5c909c69b57869299731f6",
+            "com.docker.compose.project": "ops-desk-api",
+            "com.docker.compose.version": "5.1.1",
+            "com.docker.compose.volume": "qdrant_data"
+        },
+        "Mountpoint": "/var/lib/docker/volumes/ops-desk-api_qdrant_data/_data",
+        "Name": "ops-desk-api_qdrant_data",
+        "Options": null,
+        "Scope": "local"
+    }
+]
