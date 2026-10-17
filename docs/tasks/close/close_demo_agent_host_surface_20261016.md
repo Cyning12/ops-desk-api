@@ -11,12 +11,13 @@
 - **范围**：A1 展示名替换（lg-rag→Agent 工作台，D1 已锁）· A2 arch-browser 演示视图收敛（ENG_DEMO_HIDDEN_FLOWS 过滤 + host_modules display 政策）· A3 SPEC 修订（D3）· A4 web 仓菜单/文案 · A5 验收钉 · A6 归档。
 - **非范围**：app/ 业务代码、端点改名、_tech_graph 真值、crosswalk、eng-graph-mermaid 在飞改动（留树）。
 
-## 二、交付（三 PR 齐）
+## 二、交付（四 PR 齐 · PR #72 补记于 2026-10-17）
 
 | 仓 | PR | squash | 内容 |
 |---|---|---|---|
 | ops-desk-web | **#70** | `44a77db` | web 面菜单/文案展示名替换（TC-5） |
 | ops-desk-web | **#71**（D4 修正） | `46c8c54` | 裁定：Agent 工作台=/chat 直接对话页；/lg-rag 退菜单 meta 恢复 |
+| ops-desk-web | **#72** | `d039853` | 登录落地残留收口 → /chat（TC-5 残留决策点闭环 · CI 双绿） |
 | ops-desk-api | **#255** | `370cee4` | api 面 A1-A5：catalog×2 展示文案 + build_site.py display 政策管线 + app.js 演示视图过滤/display 消费 + SPEC §1 纪律 3 修订 + §7 修订行 + dist 重建 + task 档/invokes |
 
 api 侧 CI 四绿（check / import-linter / lint-wiki-delta / pytest）。
@@ -27,13 +28,13 @@ api 侧 CI 四绿（check / import-linter / lint-wiki-delta / pytest）。
 - **TC-3（build 管线）**：`python3 docs/arch-browser/scripts/build_site.py` EXIT=0，dist 全新生成（host_modules=34 · graphs=9 · freeze 沿用 OPS_DESK_API_TECH_GRAPH_FREEZE_20261014_V1）；surface-only 构建无 eng_l0_mermaid 键——属预期（eng task 未并），grep 断言按实际载体执行并在 PR 正文说明。
 - **TC-4（SPEC 修订）**：§1 纪律 3 修订行 + §7 修订记录行均在。
 - **TC-6/7（名实分离守护）**：app/ 零 diff · docs/_tech_graph 零 diff（本 CLOSE 链未跑 graph-compile.sh，无 freeze 副作用需回滚）。
-- **TC-8（CLOSE 清单）**：三链接齐（web #70 / web #71 / api #255），已回填 task 档。
+- **TC-8（CLOSE 清单）**：四链接齐（web #70 / web #71 / web #72 / api #255），已回填 task 档。（注：本档初版停更于 web #71 时代，web #72 证据 2026-10-17 补记）
 - **pytest 未跑**（task test_strategy_note 口径：纯 docs/arch-browser 面；CI pytest 绿）。
 - **质量钉（本 CLOSE 段）**：`npx spec-wave task lint` PASS（W5 思考轮槽位 warn-only 过渡口径不挡）· 裸 `verify --target .` EXIT=0 PASS（仓级 reviews 扫描 · 豁免命中本 task）· `--task` verify 因「20 R1 审查结论并入 30 invoke」无独立审查文报 missing review → 按扩列纪律 `docs/harness/legacy-gate-exempt.yaml` 新增一枚（四字段齐 · 本 PR 即人审面 · 承 specwave-330 先例 · 豁免≠审查通过）。
 
 ## 四、偏差登记
 
-- **web 残留决策点（另裁）**：登录流程两处落地仍指 `/overview`（router 守卫被 `tests/router-guard.spec.ts:45-50` 断言卡住 · LoginView.vue:30 fallback 超 diff 白名单）——若要求登录后默认落地=Agent 工作台，需另裁并最小同步该条断言。
+- **web 残留决策点（另裁）**：登录流程两处落地仍指 `/overview`（router 守卫被 `tests/router-guard.spec.ts:45-50` 断言卡住 · LoginView.vue:30 fallback 超 diff 白名单）——若要求登录后默认落地=Agent 工作台，需另裁并最小同步该条断言。**（已闭环：web PR #72 squash `d039853` · MERGED 2026-10-16T08:13:15Z · CI 双绿 · diff 3 文件 +5/-5 · 证据见 invokes `invoke_20261016_50_close.md`）**
 - **eng-graph-mermaid 脏树留树**：主工作树未提交 eng 改动原样保留，归其自身 task；本 task 切分采用新 worktree 自 master 摘 hunk，主树零触碰（FP-7 基线风险消解）。
 - **切分归类存疑 hunk**（判定依据已入 PR #255 正文）：build_site.py `_ENG_L0_DEMO_*` 演示政策虽含「demo」字样但只服务 eng_l0 管线→判 eng；app.js 「工程 G-L0→工程图谱」改名随 mermaid 面板重写→判 eng；web/index.html cache-bust `?v=20261015-mz3`→判 eng；style.css 全部 mermaid 交互样式→判 eng；README 全为 eng 视图说明→判 eng。
 
