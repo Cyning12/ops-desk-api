@@ -21,11 +21,51 @@ WEB = ARCH / "web"
 DIST = ARCH / "dist"
 GRAPH_JSON = ROOT / "docs" / "_tech_graph" / "shared" / "graph.json"
 MODULES_MD = ROOT / "docs" / "_tech_graph" / "l1" / "01_modules.md"
+MAIN_L0_MD = ROOT / "docs" / "_tech_graph" / "l0" / "00_main.md"
 INDEX_DIR = ROOT / "docs" / "_tech_graph" / "l2" / "indexes"
 MODULES_DIR = ROOT / "docs" / "discussions" / "agent-host-current-architecture" / "modules"
 ARCH_OVERVIEW_MD = (
     ROOT / "docs" / "discussions" / "2026-09-24_agent-host_current_architecture_v1_zh.md"
 )
+
+# 工程图谱节点 → 浏览器 hash（与 web/app.js 钻取约定一致）
+_ENG_L0_NODE_CLICKS: dict[str, str] = {
+    "lg_rag_flow": "#/eng/flow/10_flow_lg_rag",
+    "lg_rag_router": "#/eng/flow/10_flow_lg_rag",
+    "chat_flow": "#/eng/flow/10_flow_chat",
+    "chat_router": "#/eng/flow/10_flow_chat",
+    "lc_evidence_flow": "#/eng/flow/10_flow_lc_evidence",
+    "lc_evidence_router": "#/eng/flow/10_flow_lc_evidence",
+    "auth": "#/eng/flow/10_flow_auth",
+    "admin_sync": "#/eng/flow/11_flow_sync_to_chat",
+    "llm": "#/eng/module/llm",
+    "db": "#/eng/module/db",
+    "struct_doc": "#/eng/modules",
+}
+
+# 图中「>../l1/…」指针标签 → 浏览器可读文案（演示面口径 D1 锁定：Agent 工作台）
+_ENG_L0_LABEL_OVERRIDE: dict[str, str] = {
+    "lg_rag_router": "Agent 工作台 路由",
+    "lg_rag_flow": "Agent 工作台（SSE 流式运行）",
+    "struct_doc": "一级模块表 · 01_modules",
+}
+
+# 演示面隐藏节点（legacy Chat / LC Evidence）：只在 build 展示层过滤，
+# docs/_tech_graph 真值（00_main.md / graph.yaml / graph.json）一律不动。
+_ENG_L0_DEMO_HIDDEN_NODES: tuple[str, ...] = (
+    "chat_router",
+    "chat_flow",
+    "lc_evidence_router",
+    "lc_evidence_flow",
+)
+# 演示图剔除的锚点注释（%% → app/ops/chat/… 等含旧栈名的代码锚点）
+_ENG_L0_DEMO_HIDDEN_ANCHOR_RE = re.compile(r"ops/chat/|lc_evidence_chain|lg_rag")
+
+# 演示图节点 id 别名：观众「复制源码」也不见旧栈名（click/深链 href 保留真值 id 指工程钻取层）
+_ENG_L0_DEMO_ID_ALIAS: dict[str, str] = {
+    "lg_rag_router": "agent_desk_router",
+    "lg_rag_flow": "agent_desk_flow",
+}
 
 # §1.2 flowchart 节点 id → Host #（与总览 MD 图一致；缺号由 chip 备用列表覆盖）
 _CONCEPT_NODE_TO_HOST: dict[str, int] = {
@@ -176,6 +216,132 @@ def _concept_mermaid_with_clicks(body: str, status_by_host: dict[int, str]) -> s
     for cls, nodes in by_class.items():
         parts.append(f"    class {','.join(nodes)} {cls}")
     if clicks:
+        parts.append("")
+        parts.extend(clicks)
+    return "\n".join(parts) + "\n"
+
+
+def _strip_mermaid_class_lines(body: str) -> str:
+    """去掉 graph-compile 产物里的浅色 classDef/class，便于浏览器重着色。"""
+    lines: list[str] = []
+    for line in body.splitlines():
+        s = line.strip()
+        if s.startswith("classDef ") or s.startswith("class "):
+            continue
+        lines.append(line)
+    return "\n".join(lines).rstrip()
+
+
+def _filter_eng_l0_demo_nodes(body: str) -> str:
+    """演示视图过滤：剔除 legacy Chat / LC Evidence 节点、相关边与锚点注释。
+
+    名实分离：docs/_tech_graph/l0/00_main.md 真值不动，仅本 build 产物过滤。
+    """
+    node_re = re.compile(r"\b(?:" + "|".join(_ENG_L0_DEMO_HIDDEN_NODES) + r")\b")
+    lines: list[str] = []
+    for line in body.splitlines():
+        if node_re.search(line):
+            continue
+        if line.strip().startswith("%%") and _ENG_L0_DEMO_HIDDEN_ANCHOR_RE.search(line):
+            continue
+        lines.append(line)
+    return "\n".join(lines).rstrip()
+
+
+def _apply_eng_l0_label_overrides(body: str) -> str:
+    """把指针式 label 换成浏览器可读文案（不改 YAML 真值）。"""
+    out = body
+    for node_id, label in _ENG_L0_LABEL_OVERRIDE.items():
+        # id["…"] 或 id[…]
+        out = re.sub(
+            rf'(\b{re.escape(node_id)}\s*)\[[^\]]*\]',
+            lambda m, lab=label: f'{m.group(1)}["{lab}"]',
+            out,
+            count=1,
+        )
+    return out
+
+
+# mermaid 保留字：作节点 id 会解析失败（如 graph）
+_MERMAID_RESERVED_RENAME: dict[str, str] = {
+    "graph": "graph_route",
+    "end": "end_node",
+    "subgraph": "subgraph_node",
+}
+
+
+def _rename_mermaid_reserved_ids(body: str) -> tuple[str, dict[str, str]]:
+    """把保留字节点 id 换成安全别名；返回 (正文, 原id→别名)。"""
+    used: dict[str, str] = {}
+    out = body
+    for src, dst in _MERMAID_RESERVED_RENAME.items():
+        if not re.search(rf"\b{re.escape(src)}\b", out):
+            continue
+        used[src] = dst
+        out = re.sub(rf"\b{re.escape(src)}\b", dst, out)
+    return out, used
+
+
+def _eng_l0_mermaid_with_clicks(body: str) -> str:
+    """工程图谱：暗色 classDef + click 钻取 flow/module（securityLevel=loose）。"""
+    if not body:
+        return ""
+    body = _filter_eng_l0_demo_nodes(_strip_mermaid_class_lines(body))
+    body = _apply_eng_l0_label_overrides(body)
+    body, renamed = _rename_mermaid_reserved_ids(body)
+    # 演示图节点 id 别名（复制源码不见旧栈名；仅本 build 产物）
+    for src, dst in _ENG_L0_DEMO_ID_ALIAS.items():
+        if re.search(rf"\b{re.escape(src)}\b", body):
+            renamed[src] = dst
+            body = re.sub(rf"\b{re.escape(src)}\b", dst, body)
+
+    def mid(node_id: str) -> str:
+        return renamed.get(node_id, node_id)
+
+    clicks: list[str] = []
+    clickable: list[str] = []
+    for node_id, href in _ENG_L0_NODE_CLICKS.items():
+        nid = mid(node_id)
+        if not re.search(rf"\b{re.escape(nid)}\b", body):
+            continue
+        # 悬停 tooltip 用演示口径标签（无则退回 href）；href 保留真值 id 指工程钻取层
+        title = _ENG_L0_LABEL_OVERRIDE.get(node_id, href.replace("#/", ""))
+        clicks.append(f'    click {nid} "{href}" "{title}"')
+        clickable.append(nid)
+
+    # 与 00_main.md 分组一致，改用暗色（graph → graph_route）
+    eng_classdef = """
+    classDef phase fill:#1e2a3a,stroke:#5b9fd4,color:#e7ecf3
+    classDef doc fill:#3a2f1e,stroke:#d4a15b,color:#e7ecf3
+    classDef infra fill:#1e3a2f,stroke:#7ec8a3,color:#e7ecf3
+    classDef clickable fill:#1e3a2f,stroke:#7ec8a3,color:#e7ecf3,stroke-width:2px
+""".strip(
+        "\n"
+    )
+    phase_nodes = ",".join(
+        mid(x)
+        for x in (
+            "health",
+            "auth",
+            "overview",
+            "issues",
+            "pulls",
+            "graph",
+            "admin_sync",
+            "lg_rag_router",
+        )
+    )
+    parts = [
+        body.rstrip(),
+        "",
+        "    %% arch-browser eng graph colors + clicks",
+        eng_classdef,
+        f"    class {phase_nodes} phase",
+        "    class app,ops_router doc",
+        "    class client,agent_desk_flow,llm,db,struct_doc infra",
+    ]
+    if clickable:
+        parts.append(f"    class {','.join(clickable)} clickable")
         parts.append("")
         parts.extend(clicks)
     return "\n".join(parts) + "\n"
@@ -376,6 +542,8 @@ def build() -> Path:
     concept_mermaid = _concept_mermaid_with_clicks(
         _extract_first_mermaid(overview_text), status_by_host
     )
+    l0_md_text = MAIN_L0_MD.read_text(encoding="utf-8") if MAIN_L0_MD.is_file() else ""
+    eng_l0_mermaid = _eng_l0_mermaid_with_clicks(_extract_first_mermaid(l0_md_text))
 
     narrative_path = CATALOG / "home_narrative.json"
     home_narrative = (
@@ -395,6 +563,7 @@ def build() -> Path:
             "home_narrative": "docs/arch-browser/catalog/home_narrative.json",
             "graph_json": "docs/_tech_graph/shared/graph.json",
             "modules_md": "docs/_tech_graph/l1/01_modules.md",
+            "main_l0_md": "docs/_tech_graph/l0/00_main.md",
             "architecture_overview": "docs/discussions/2026-09-24_agent-host_current_architecture_v1_zh.md",
             "extension_strategy": "docs/discussions/2026-09-24_agent-host_extension_strategy_v1_zh.md",
         },
@@ -403,6 +572,7 @@ def build() -> Path:
         "waves": outline.get("waves"),
         "home_narrative": home_narrative,
         "concept_mermaid": concept_mermaid,
+        "eng_l0_mermaid": eng_l0_mermaid,
         "host_modules": host_modules,
         "tech_module_hints": hints,
         "tech_to_host": tech_to_host,
@@ -432,6 +602,7 @@ def build() -> Path:
     print(f"  freeze_id={site['freeze_id']}")
     print(f"  host_modules={len(host_modules)} graphs={len(graphs_detail)}")
     print(f"  concept_mermaid_chars={len(concept_mermaid)}")
+    print(f"  eng_l0_mermaid_chars={len(eng_l0_mermaid)}")
     return out_json
 
 

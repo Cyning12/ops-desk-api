@@ -202,6 +202,16 @@
   // 真值在 DATA / docs/_tech_graph 内不动；此处仅渲染层隐藏或改名，不改业务语义。
   const ENG_DEMO_HIDDEN_FLOWS = new Set(["10_flow_chat", "10_flow_lc_evidence"]);
   const ENG_DEMO_FLOW_LABEL = { "10_flow_lg_rag": "Agent 工作台（SSE 流式运行）" };
+  const ENG_L0_DEMO_HIDDEN = new Set([
+    "chat_router",
+    "chat_flow",
+    "lc_evidence_router",
+    "lc_evidence_flow",
+  ]);
+  const ENG_L0_DEMO_LABEL = {
+    lg_rag_router: "Agent 工作台 路由",
+    lg_rag_flow: "Agent 工作台（SSE 流式运行）",
+  };
   const DEMO_TEXT_SCRUB = [
     [/lg[_-]rag/gi, "Agent Host"],
     [/LG RAG/g, "Agent Host"],
@@ -574,9 +584,10 @@
 
   function engL0ChipBackupHtml(nodes) {
     return (nodes || [])
+      .filter((n) => !ENG_L0_DEMO_HIDDEN.has(n.id))
       .map((n) => {
         const href = engL0NodeHref(n.id);
-        const label = n.label || "";
+        const label = ENG_L0_DEMO_LABEL[n.id] || n.label || "";
         const hosts = (DATA.tech_to_host && DATA.tech_to_host[n.id]) || [];
         const hostHint = hosts.length
           ? ` · Host ${hosts.map((h) => `#${h}`).join(",")}`
@@ -726,10 +737,16 @@
           <summary>边列表（${(g.edges || []).length}）</summary>
           <ul class="edge-list muted">
             ${(g.edges || [])
+              .filter(
+                (e) =>
+                  !ENG_L0_DEMO_HIDDEN.has(e.from || e.source) &&
+                  !ENG_L0_DEMO_HIDDEN.has(e.to || e.target)
+              )
               .slice(0, 40)
               .map((e) => {
-                const from = e.from || e.source;
-                const to = e.to || e.target;
+                const from =
+                  ENG_L0_DEMO_LABEL[e.from || e.source] || e.from || e.source;
+                const to = ENG_L0_DEMO_LABEL[e.to || e.target] || e.to || e.target;
                 return `<li class="mono">${from} → ${to}${
                   e.label ? " · " + e.label : ""
                 }</li>`;
