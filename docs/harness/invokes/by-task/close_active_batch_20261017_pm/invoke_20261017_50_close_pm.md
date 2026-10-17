@@ -43,5 +43,5 @@
 
 ## 六、交付
 
-- commit/PR：（commit 后回填）
+- commit 8603b8e · PR #265（https://github.com/Cyning12/ops-desk-api/pull/265）
 - 合并后 active 清零（README 留守）
