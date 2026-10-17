@@ -1,6 +1,6 @@
 # Task：vector-waterline-local-rerun（TC-WL-5 开账 · 本地/compose 亲跑向量水位核查出真实报告）
 
-> **状态**：draft（10-task 落稿 2026-10-17 · 人工闸全 pending 未代签）
+> **状态**：done（2026-10-17 CLOSE · PR #268 MERGED squash e20bc4d · TC-LR-1~6 全 PASS · 真实报告 vector_waterline_local_20261017T123649Z.yaml 落盘 · mismatch 8574 上抛另立 task_local_vector_data_state_audit · 归档 done/）
 > **类型**：运维实证核查（**零改码 · 40 轨单棒** · 复用既有只读脚本与模板）
 > **上游**：[`task_prod_vector_waterline_check.md`](../done/task_prod_vector_waterline_check.md) TC-WL-5（40 轨本地/compose 亲跑）关账时未走，移交维护者开账 —— CLOSE 档 [`close_prod_vector_waterline_check_20261017.md`](../close/close_prod_vector_waterline_check_20261017.md) §四.1 + §七 checklist「（可选）补 TC-WL-5 本地实证」；维护者 2026-10-17 选定先推此件（会话「先 WL-5」指示）
 > **分支**：无（零改码 · 零 git 操作纪律；报告产物提交与否由 00/维护者事后裁定）
@@ -180,3 +180,4 @@ F1：本地 compose 环境亲跑 `scripts/check_vector_waterline.py --env local`
 |------|------|
 | 2026-10-17 | 10-task 落稿（TC-WL-5 开账 · 本地/compose 亲跑实证 · 零改码 40 单棒 · 三闸 pending 未代签 · 零 git 操作） |
 | 2026-10-17 | 40 实证完成（TC-LR-1~6 全 PASS · 真实报告 vector_waterline_local_20261017T123649Z.yaml + 降级照登报告 123538Z · mismatch 差集 8574 上抛另立处置 task · 维护者/00 裁定报告产物入 commit 走 PR） |
+| 2026-10-17 | 50 CLOSE（维护者 m00847 授权合并+关账）：PR #268 squash e20bc4d 已并 · 归档 done/ · 状态行 CLOSED · README 登记 · invoke_20261017_50_close.md 落盘 · 遗留=另立 task_local_vector_data_state_audit 核查 mismatch 来源 |

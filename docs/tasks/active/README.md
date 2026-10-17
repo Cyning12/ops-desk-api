@@ -4,6 +4,7 @@
 
 | task | 说明 |
 |---|---|
+| （无进行中 task） | 2026-10-17：**单档关账** `task_vector_waterline_local_rerun`（PR #268 合 · squash `e20bc4d` · TC-WL-5 开账本地亲跑 · TC-LR-1~6 全 PASS · mismatch 8574 上抛另立核查 task · 降级三态真实生效照登） |
 | （无进行中 task） | 2026-10-17：**单档关账** `task_graph_json_freeze_date_pin`（PR #266 合 · squash `72b5740` · graph.json freeze_id/generated_at 脱日期化：内容 hash 派生 `<sha256-16hex>`（对齐 md 内容戳先例）· 同输入三跑字节级一致（TZ 扰动/异绝对路径/CI 容器 · sha256=7d84fdc6…）· spec-wave check 零 freeze 断言先实证后定案（FP-1）· TC-1~6 全 PASS · 钉版 3.3.0 零 diff · 零 app/ diff）归档至 `done/`；CLOSE 文档 `docs/tasks/close/close_graph_json_freeze_date_pin_20261017.md`；R1 审查文随 PR #266 落址A |
 | （无进行中 task） | 2026-10-17：**批量关账·第二波** `task_ci_specwave_pin_align`（PR #260 合 · squash `de3c7d7` · CI 钉版对齐：`scripts/graph-compile.sh:31` + `lint-wiki-delta.yml:37/:41` 3.0.1→3.3.0 · 执行面 3.0.1 清零（历史注释 2 处 S2 保留）· CI run 日志实证 3.3.0 实载防假绿 · 图谱 md 零 diff · revert 预案在档 · graph.json 日期漂移照登另案）归档至 `done/`；CLOSE 文档 `docs/tasks/close/close_ci_specwave_pin_align_20261017.md`；R1 审查文随 PR 落址A |
 | （无进行中 task） | 2026-10-17：**批量关账·第二波** `task_host_v1_sli_dashboard`（PR #261 合 · squash `19a32d5` · Host v1 SLI 四项看板：widget 名=dict_key 逐字钉死 + GUIDE §3.2 对拍四键实跑 + `sli_sample_unknown.json` 实证 unknown≠0 · pytest 9 passed · TC-D1 走 FP-1 降级照登无 Langfuse 权限零伪造（获权后按证据文 §3 补实证）· 零 app/ 越界）归档至 `done/`；CLOSE 文档 `docs/tasks/close/close_host_v1_sli_dashboard_20261017.md`；R1 审查文随 PR 落址A |
