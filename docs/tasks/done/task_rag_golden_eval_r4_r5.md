@@ -1,6 +1,6 @@
 # Task：rag-golden-eval-r4-r5（R-4 四类 golden 结案级评测 + R-5 Demo 证据表）
 
-> **状态**：active（2026-10-17 维护者授权 00 代录签收（m00238「授权00签收后续文档，开始下面的任务」· 20 R1 书面审经授权豁免） · 2026-10-17 **30 交付完成**（汇总脚本+测试+两模板+契约核对 · TC-R4-1/2/3/4/6/7 绿） · HG-EVAL-LIVE-RUN 保持 pending · 仅阻结案真跑（TC-R4-5 待 40/维护者）不阻脚本交付）  
+> **状态**：done（CLOSED 2026-10-17 · PR #262 MERGED squash e1697ad · mergedAt 2026-10-17T05:50:17Z · CLOSE 档 docs/tasks/close/close_rag_golden_eval_r4_r5_20261017.md）
 > **类型**：评测 / 证据资产（检索轨 golden scenario 结案 + Demo 证据表 · **不改生产语义**）  
 > **上游**：路线 `../ops-desk-workspace/docs/05-plan/04-agent-completion-roadmap_v1_zh.md` §P1-RAG（R-4 / R-5 标注「仍可能缺口 · 评测结案勿假设」）· 契约 `../ops-desk-workspace/docs/contracts/rag-knowledge-contract-v1.md`（R-P0 已定稿 2026-08-08）  
 > **分支**：`task/rag-golden-eval-r4-r5`（自 master 新切）  
@@ -200,3 +200,4 @@
 |------|------|
 | 2026-10-17 | 10-task 落稿（R-4 结案级评测 + R-5 Demo 证据表 · 增量立项 · 三闸 pending 待维护者签 · 未 commit） |
 | 2026-10-17 | 30 交付：summarize_r4.py + 12 项确定性测试 + r4_final_TEMPLATE.md + demo_evidence_TEMPLATE.md + 契约核对零漂移；TC-R4-1/2/3/4/6/7 绿，TC-R4-5 待闸 |
+| 2026-10-17 | CLOSED：PR #262 MERGED squash e1697ad（2026-10-17T05:50:17Z）· 批量关账 · CLOSE 档 close_rag_golden_eval_r4_r5_20261017.md |

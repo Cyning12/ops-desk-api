@@ -1,6 +1,6 @@
 # Task：ci-specwave-pin-align（仓卫生 · CI/脚本 spec-wave 钉版对齐 3.3.0 · chore）
 
-> **状态**：active（30 已交付 · 待 PR CI 实证（TC-4 由 40 核验）· 2026-10-17 维护者授权 00 代录签收（m00238「授权00签收后续文档，开始下面的任务」· 20 R1 书面审经授权豁免）
+> **状态**：done（CLOSED 2026-10-17 · PR #260 MERGED squash de3c7d7 · mergedAt 2026-10-17T05:50:10Z · CLOSE 档 docs/tasks/close/close_ci_specwave_pin_align_20261017.md）
 > **类型**：仓卫生 / 工具链钉版对齐（chore · 零 `app/` 改动 · `graph_change_layer=none`）
 > **依据**：`docs/tasks/close/close_specwave_330_graph_update_20261011.md` §「CI 钉版不一致」照录 + 后续工作建议第 1 条（「另立小 task 统一升 3.3.0」）· `docs/tasks/done/task_specwave_330_graph_update.md`（PR #242 已合）
 > **分支建议**：`task/ci-specwave-pin-align`（base master 最新）
@@ -175,3 +175,4 @@ TC-1 纯文本断言；TC-2/TC-3 本地命令输出断言；TC-4 以 CI run 日�
 | 2026-10-17 | 10-task 初稿落盘（帽 10 · 闸 pending 待维护者签 · 禁 30 · 未 commit） |
 | 2026-10-17 | 20 R1 书面审签收（址A · 审查文 docs/harness/reviews/task_ci_specwave_pin_align_audit_R1_20261017.md）· 维护者授权 00 代录三闸 approved（m00238） |
 | 2026-10-17 | 30 交付：钉版 3.0.1→3.3.0 两处文件三处字面 + 注释对齐记录 · 本地 TC-1/2/3 绿 · FP-4 版本断言 ✔ · graph.json 日期漂移恢复未混入 · 状态行更新 |
+| 2026-10-17 | CLOSED：PR #260 MERGED squash de3c7d7（2026-10-17T05:50:10Z）· 批量关账 · CLOSE 档 close_ci_specwave_pin_align_20261017.md |

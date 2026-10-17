@@ -1,6 +1,6 @@
 # Task：prod-vector-waterline-check（生产向量水位/对账核查 · 只读脚本 + runbook + 报告模板）
 
-> **状态**：active（2026-10-17 维护者授权 00 代录签收（m00238「授权00签收后续文档，开始下面的任务」· 20 R1 书面审经授权豁免） · HG-PROD-READONLY-ACCESS 保持 pending · 仅阻生产执行不阻脚本交付）  
+> **状态**：done（CLOSED 2026-10-17 · PR #263 MERGED squash ea65d3d · mergedAt 2026-10-17T05:50:21Z · CLOSE 档 docs/tasks/close/close_prod_vector_waterline_check_20261017.md）
 > **类型**：运维核查资产（只读脚本 + runbook + 核查报告模板 · **不改管线/配置/数据**）  
 > **上游**：路线 `../ops-desk-workspace/docs/05-plan/04-agent-completion-roadmap_v1_zh.md` §P1-RAG「生产向量水位与对账 **待人工**」（2026-09 进度注）  
 > **分支**：`task/prod-vector-waterline-check`（自 master 新切）  
@@ -188,3 +188,4 @@
 |------|------|
 | 2026-10-17 | 10-task 落稿（生产向量水位/对账核查 · 只读脚本+runbook+模板 · 四闸 pending 待维护者签 · 未 commit） |
 | 2026-10-17 | 30 交付：E1 脚本 + E2 降级三态 + E3 runbook + E4 模板 + E5 桩测 13 绿 · ruff 绿 · 禁区零 diff · 自检结论回填（TC-WL-1/2/3/4/6 ✅ · TC-WL-5 待 40 · TC-WL-8 待维护者） |
+| 2026-10-17 | CLOSED：PR #263 MERGED squash ea65d3d（2026-10-17T05:50:21Z）· 批量关账 · CLOSE 档 close_prod_vector_waterline_check_20261017.md |
