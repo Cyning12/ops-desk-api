@@ -1,6 +1,6 @@
 # Task：n40-1-log-init-window（logging 初始化窗口收口 · app/main.py:9-12 import 链先于 :38 _init_logging 的 lastResort 裸格式 / INFO 吞失）
 
-> **状态**：`active`（20 R1 PASS-WITH-NITS · 三闸 approved · 00 代录 授权 m00106 · 30 可开工）
+> **状态**：done（CLOSED 2026-10-17 · PR [#239](https://github.com/Cyning12/ops-desk-api/pull/239) MERGED（squash `9c07ab4` · 2026-10-11T05:56:16Z）· 方向 A 落地（app/main.py 行序上移 +10/-5）· 红测先行 RED(5)→GREEN(7+3) · TC1–TC4 全绿 · 20 R1 PASS-WITH-NITS（NIT×4 已回填）· 三闸 approved（00 代录 · 授权 m00106）· CLOSE 归档 done/ · 细节见 CLOSE 文档 [`../close/close_n40_1_log_init_window_20261017.md`](../close/close_n40_1_log_init_window_20261017.md)）
 > **类型**：上游 nit 收口（bugfix 性质 · nit 级 · 实证驱动 · repo-logging-init CLOSE N-40-1 裁定落地）
 > **依据**：`docs/harness/invokes/by-task/_prompts/PROMPT_00_spec-campaign-handoff_20261011.md` §2.2 第 2 项 · `docs/tasks/close/close_repo_logging_init_20261011.md` §四 N-40-1（nit 照登原文）+ §七 后续建议 1（修法候选留本 task 裁定）· `docs/harness/invokes/by-task/repo-logging-init/invoke_20261011_40_verify.md` :77/:91 NIT 登记
 > **分支**：`task/n40-1-log-init-window`（base = master `286d825`）
@@ -189,3 +189,4 @@ repo-logging-init 40 核验 N-40-1：`app/main.py:9-12` app 包 import 链先于
 | 2026-10-11 | 10 落稿（worktree `t-n40-1-log-init-window` · base master `286d825`）：交接档 §2.2 序2 逐字承接 · CLOSE N-40-1 nit 原文与 §七 修法候选照登 · 传递链亲读钉实（main.py:9-12 先于 :38 · capability/__init__.py:112 模块级装配为窗口发射源 · persistence.py:48/:65-68 两态后果）· 候选 A/B 开放不锁死（C 否决入非范围）· 钉死契约 7 · TC1–TC4（TC1 窗口格式反转红测先行为核心）· 图谱预判 n/a（方向 B 条件触发 G-L2 义务）· 三闸 pending 不代签 |
 | 2026-10-11 | 三闸 approved（**00 代录 · 授权 m00106**）：HG-TASK-DRAFT · HG-AUDIT-R1（R1 PASS-WITH-NITS · 审查文址A 在案 · NIT×4 随 30 回填）· HG-GRAPH-MODULES（n/a 复核通过 · 方向 B 条件义务在案）→ 30 解锁 |
 | 2026-10-11 | 30 实施：方向 A 裁定落地（app/main.py +10/-5 行序上移 · capability 发射点零 diff · 图谱 n/a 照实）· 红测先行 RED(5)→GREEN(7+3) · TC1–TC4 全绿（pytest 对拍零新增归因红 · ruff 触及路径净 · graph-compile EXIT=0 · lint-wiki-delta@3.0.1 PASS）· R1 NIT×4 回填闭合 · 30 invoke 落盘 |
+| 2026-10-17 | CLOSED：PR #239 MERGED（squash `9c07ab4` · 2026-10-11）· 归档 done/ · CLOSE 档 `../close/close_n40_1_log_init_window_20261017.md` · 批量关账 PR 待开（close/active-batch-20261017）· 分支 `task/n40-1-log-init-window` 移交 00 统一清理 |

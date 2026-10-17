@@ -1,6 +1,6 @@
 # Task：lg-rag-sse-disconnect-completion（SSE 断连后 run 残缺 · 收尾帧 / 执行解耦 · 消解孤儿 in-flight）
 
-> **状态**：**BLOCKED · TC5 live×3 FAIL · 00 停派升级维护者**（E1–E4 见 `invoke_20261014_00_escalate_tc5.md`）· 闸仍 approved · D1=A-only  
+> **状态**：done（CLOSED 2026-10-17 · co-CLOSE · 正文不再修订钉案照登）· Wave A ASGI 钩路线 TC5 live×3 FAIL 停派升级（E1–E4 见 `docs/harness/invokes/by-task/lg-rag-sse-disconnect-completion/invoke_20261014_00_escalate_tc5.md`）→ 维护者裁定 E3 Wave B · 承接 task `lg_rag_sse_run_worker` PR [#250](https://github.com/Cyning12/ops-desk-api/pull/250) MERGED（squash `56e4a9f`）收口 · 本 task 自身零合并交付 · 细节见 CLOSE 文档 [`../close/close_lg_rag_sse_run_worker_co_disconnect_20261017.md`](../close/close_lg_rag_sse_run_worker_co_disconnect_20261017.md)  
 > **类型**：传输可靠性缺口（契约意图 vs 实现张力 · freeze `lg-rag-sse-v1` 行为收口）  
 > **依据**：本仓对话实勘（2026-10-13）· T4 联调遗留（web `task_web_lg_rag_sse_t4` invoke_40：客户端断开即取消 generator · done 不落盘）· F-OBS-2 孤儿 run 409 活样本（`task_hitl_resume_replay_contract` 40 · run `22b65ce2`）· web 联调 TC4 活样本（`web-api-joint-check` · `jc_tc4_network.json` reload 后 `POST /lg-rag/replay`→409 · `jc_tc4_inflight_409.png`）· §10.3「断连尽量跑完」条文  
 > **分支**：`task/lg-rag-sse-disconnect-completion`（base master `9ee928c`）
@@ -213,3 +213,4 @@
 | 2026-10-14 | v0.2 · 00 代录三闸 approved + D1/D2/D3 已签 · 挂 web 联调 TC4 409 参照 · 状态可 30 |
 | 2026-10-13 | v0.1 · 吸收 20 R1 NIT：补 `### 自检结论` · Exception 锚点行号 `:509-525` · 修订记录本行 |
 | 2026-10-13 | v0 · 10 落稿：F-OBS-DISCONNECT（断连停跑 · 无 done · 孤儿 409 · 假续看）· Wave A/B + D1–D3 裁定口 · TC1–TC7 · R0–R5 early_stop · 闸全 pending · 分支 `task/lg-rag-sse-disconnect-completion` · base `9ee928c` · 来源：本仓 SSE 实勘对话 + T4/F-OBS-2 遗留 |
+| 2026-10-17 | CLOSED（co-CLOSE）：本 task 零合并交付 · Wave A TC5 live×3 FAIL 停派史实照登 · 承接 task `lg_rag_sse_run_worker` PR #250 MERGED（squash `56e4a9f`）· 归档 done/ · CLOSE 档 `../close/close_lg_rag_sse_run_worker_co_disconnect_20261017.md` · 批量关账 PR 待开（close/active-batch-20261017） |
