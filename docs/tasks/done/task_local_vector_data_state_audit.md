@@ -1,6 +1,6 @@
 # Task：local-vector-data-state-audit（FP-7 上抛开账 · 本地 Qdrant 8574 点 vs PG 0 行数据态溯源核查）
 
-> **状态**：approved 待 40（三闸 approved · 维护者 2026-10-17 授权 00 代录 m00914 · 承 m00238 总授权 · R1 审查签收 nit 2 项已修正）
+> **状态**：done（2026-10-17 CLOSE · PR #270 MERGED squash 1570f82 · TC-DA-1~6 全 PASS 零假绿 · F1=迁移期正常重迁写入 / F2=PG 表级清空非库重建 / F3=建议清理脚本 · 归档 done/）
 > **类型**：本地数据态核查（**只读排查优先 · 零改码 · 40 轨实证棒** · 处置方案须实证后另行裁定）
 > **上游**：[`task_vector_waterline_local_rerun.md`](../done/task_vector_waterline_local_rerun.md) 自检结论 FP-7 上抛（:173「本地 Qdrant 8574 points vs PG 0 行 → verdict=mismatch · 疑墓碑/脏点或本地 DB 重建清空 · 建议维护者另立处置 task」）；维护者 2026-10-17（会话 m00847）选定立本 task 溯源本地数据态来源
 > **分支**：无（零改码 · 零 git 操作纪律；报告产物提交与否由 00/维护者事后裁定）
@@ -191,3 +191,4 @@ F1：Qdrant 8574 点**来源判定**（只读 scroll 抽样 payload 元数据 + 
 | 2026-10-17 | 10-task 落稿（FP-7 上抛开账 · 本地数据态溯源核查 · 只读优先 · 零改码 40 实证棒 · 三闸 pending 未代签 · 零 git 操作） |
 | 2026-10-17 | 20-task-audit R1 签收（零阻塞 · nit 2 项 N1 迁移文件 17→16 / N2 expand_synthetic 参数名，均顺手修正）· 维护者 m00914 授权 00 代录三闸 approved → 待派 40 实证棒 |
 | 2026-10-17 | 40 实证棒收口：F1=历史正常写入（迁移期 bulk_upsert · 键集指纹+WAL 时间窗 08-18 02:54Z+8574 逐数对照）· F2=数据被删表级清空（窗 (08-13, 09-07] · 卷/initdb 07-16 钉死排除库重建）· F3 建议清理脚本（执行另立）· TC-DA-1~6 全 PASS · 报告 reports/local_vector_data_state_audit_20261017T135118Z.md + 证据 e00–e05 + 40 invoke 落档 |
+| 2026-10-17 | 50 CLOSE（维护者 m00954 授权合并+关账+立清理 task）：PR #270 squash 1570f82 已并 · 归档 done/ · 状态行 CLOSED · README 登记 · invoke_20261017_50_close.md 落盘 · 遗留=另立 task_local_qdrant_orphan_points_cleanup 处置 8574 遗留点 |
