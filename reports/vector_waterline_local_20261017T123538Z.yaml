@@ -1,0 +1,35 @@
+kind: vector_waterline
+template_version: v1
+recorded_at: '2026-10-17T12:35:38.833379+00:00'
+environment: local
+executed_by: cyning
+git_sha: d3fd056
+config:
+  database_url_set: true
+  qdrant_url: http://127.0.0.1:6333
+  qdrant_collection: ops_knowledge
+status: degraded
+pg_face:
+  status: ok
+  row_count: 0
+  ingest_waterline:
+    column: ops_knowledge_chunks.embedded_at
+    max: null
+  dlq:
+    table: ops_qdrant_dlq
+    depth: 0
+    oldest_created_at: null
+    oldest_age_seconds: null
+    verdict: empty
+qdrant_face:
+  status: no_evidence
+  reason: 'InvalidURL: Invalid port: '':1]'''
+reconcile:
+  status: skipped
+  reason: Qdrant 面无实证，对账跳过
+degradation:
+  degraded: true
+  notes:
+  - 'Qdrant 面无实证：InvalidURL: Invalid port: '':1]'''
+disclaimer: 本报告为只读核查证据；差集/DLQ 处置动作另 task（FP-6）。本地/compose 环境产物不得当作生产证据（TC-WL-5 与 TC-WL-8
+  分离）。
