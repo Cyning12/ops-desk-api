@@ -1,0 +1,214 @@
+=== E2-1 ops_knowledge_chunks count ===
+-[ RECORD 1 ]-------------+--
+ops_knowledge_chunks_rows | 0
+
+=== E2-2 alembic_version ===
+-[ RECORD 1 ]-------------------------
+version_num | 20260923_memory_episodes
+
+=== E2-3 DLQ count ===
+-[ RECORD 1 ]
+dlq_depth | 0
+
+=== E2-4 pg_stat_database opsdesk ===
+-[ RECORD 1 ]-+--------
+datname       | opsdesk
+stats_reset   | 
+xact_commit   | 18066
+xact_rollback | 817
+tup_inserted  | 5708
+tup_updated   | 140
+tup_deleted   | 114
+
+=== E2-5 pg_stat_user_tables (knowledge/dlq/alembic) ===
+-[ RECORD 1 ]---+---------------------
+relname         | alembic_version
+n_tup_ins       | 0
+n_tup_upd       | 0
+n_tup_del       | 0
+n_live_tup      | 0
+n_dead_tup      | 0
+last_vacuum     | 
+last_autovacuum | 
+last_analyze    | 
+seq_scan        | 4
+idx_scan        | 0
+-[ RECORD 2 ]---+---------------------
+relname         | ops_knowledge_chunks
+n_tup_ins       | 0
+n_tup_upd       | 0
+n_tup_del       | 0
+n_live_tup      | 0
+n_dead_tup      | 0
+last_vacuum     | 
+last_autovacuum | 
+last_analyze    | 
+seq_scan        | 30
+idx_scan        | 8
+-[ RECORD 3 ]---+---------------------
+relname         | ops_qdrant_dlq
+n_tup_ins       | 0
+n_tup_upd       | 0
+n_tup_del       | 0
+n_live_tup      | 0
+n_dead_tup      | 0
+last_vacuum     | 
+last_autovacuum | 
+last_analyze    | 
+seq_scan        | 2
+idx_scan        | 0
+
+=== E2-6 all user tables live tuples ===
+-[ RECORD 1 ]--------------------------
+relname    | alembic_version
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 2 ]--------------------------
+relname    | checkpoint_blobs
+n_live_tup | 2032
+n_tup_ins  | 492
+n_tup_del  | 0
+-[ RECORD 3 ]--------------------------
+relname    | checkpoint_migrations
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 4 ]--------------------------
+relname    | checkpoint_writes
+n_live_tup | 4459
+n_tup_ins  | 1099
+n_tup_del  | 0
+-[ RECORD 5 ]--------------------------
+relname    | checkpoints
+n_live_tup | 1078
+n_tup_ins  | 272
+n_tup_del  | 0
+-[ RECORD 6 ]--------------------------
+relname    | ops_capability_idempotency
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 7 ]--------------------------
+relname    | ops_capability_receipts
+n_live_tup | 6
+n_tup_ins  | 6
+n_tup_del  | 0
+-[ RECORD 8 ]--------------------------
+relname    | ops_graph_snapshots
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 9 ]--------------------------
+relname    | ops_hitl_requests
+n_live_tup | 13
+n_tup_ins  | 13
+n_tup_del  | 0
+-[ RECORD 10 ]-------------------------
+relname    | ops_invite_tokens
+n_live_tup | 8
+n_tup_ins  | 8
+n_tup_del  | 0
+-[ RECORD 11 ]-------------------------
+relname    | ops_issues
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 12 ]-------------------------
+relname    | ops_knowledge_chunks
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 13 ]-------------------------
+relname    | ops_lg_rag_run_events
+n_live_tup | 11805
+n_tup_ins  | 3528
+n_tup_del  | 0
+-[ RECORD 14 ]-------------------------
+relname    | ops_lg_rag_threads
+n_live_tup | 26
+n_tup_ins  | 26
+n_tup_del  | 0
+-[ RECORD 15 ]-------------------------
+relname    | ops_lg_rag_turns
+n_live_tup | 42
+n_tup_ins  | 42
+n_tup_del  | 0
+-[ RECORD 16 ]-------------------------
+relname    | ops_llm_usage
+n_live_tup | 510
+n_tup_ins  | 98
+n_tup_del  | 0
+-[ RECORD 17 ]-------------------------
+relname    | ops_memory_episodes
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 18 ]-------------------------
+relname    | ops_memory_facts
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 19 ]-------------------------
+relname    | ops_pull_requests
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 20 ]-------------------------
+relname    | ops_qdrant_dlq
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 21 ]-------------------------
+relname    | ops_repos
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 22 ]-------------------------
+relname    | ops_run_events
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 23 ]-------------------------
+relname    | ops_runs
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 24 ]-------------------------
+relname    | ops_scan_snapshots
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 25 ]-------------------------
+relname    | ops_session_summaries
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 26 ]-------------------------
+relname    | ops_sessions
+n_live_tup | 6
+n_tup_ins  | 6
+n_tup_del  | 0
+-[ RECORD 27 ]-------------------------
+relname    | ops_sessions_chat
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 28 ]-------------------------
+relname    | ops_sync_runs
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+-[ RECORD 29 ]-------------------------
+relname    | ops_users
+n_live_tup | 0
+n_tup_ins  | 0
+n_tup_del  | 0
+
+=== E2-7 postmaster start + PG_VERSION mtime (initdb 近似) ===
+-[ RECORD 1 ]----+-----------------------------
+postmaster_start | 2026-10-16 07:07:36.42444+00
+
+-[ RECORD 1 ]----+-----------------------
+pg_version_mtime | 2026-07-16 08:19:50+00
+

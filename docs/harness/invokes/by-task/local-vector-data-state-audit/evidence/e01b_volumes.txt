@@ -1,0 +1,2 @@
+ops-desk-api_pgdata
+ops-desk-api_qdrant_data

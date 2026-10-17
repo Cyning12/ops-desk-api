@@ -1,0 +1,2 @@
+ops-desk-api-qdrant-1 | Up 31 hours (healthy)
+ops-desk-api-db-1 | Up 31 hours (healthy)

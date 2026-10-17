@@ -1,0 +1,61 @@
+=== E2b-1 pg_class ops_knowledge_chunks ===
+-[ RECORD 1 ]-+---------------------
+relname       | alembic_version
+oid           | 16733
+relfilenode   | 16733
+reltuples     | -1
+relpages      | 0
+relallvisible | 0
+-[ RECORD 2 ]-+---------------------
+relname       | ops_knowledge_chunks
+oid           | 61170
+relfilenode   | 61170
+reltuples     | -1
+relpages      | 0
+relallvisible | 0
+-[ RECORD 3 ]-+---------------------
+relname       | ops_qdrant_dlq
+oid           | 43841
+relfilenode   | 43841
+reltuples     | -1
+relpages      | 0
+relallvisible | 0
+
+=== E2b-2 table file paths + mtime ===
+-[ RECORD 1 ]------------------
+relname  | ops_qdrant_dlq
+filepath | base/16384/43841
+-[ RECORD 2 ]------------------
+relname  | alembic_version
+filepath | base/16384/16733
+-[ RECORD 3 ]------------------
+relname  | ops_knowledge_chunks
+filepath | base/16384/61170
+
+-[ RECORD 1 ]-----------------------
+relname     | alembic_version
+file_mtime  | 2026-09-29 09:51:40+00
+size_bytes  | 8192
+total_bytes | 24576
+-[ RECORD 2 ]-----------------------
+relname     | ops_knowledge_chunks
+file_mtime  | 2026-09-07 02:19:59+00
+size_bytes  | 0
+total_bytes | 65536
+-[ RECORD 3 ]-----------------------
+relname     | ops_qdrant_dlq
+file_mtime  | 2026-08-13 09:21:20+00
+size_bytes  | 0
+total_bytes | 24576
+
+=== E2b-3 pg_control_init (initdb system_identifier) ===
+=== E2b-4 to_regclass 序列/索引侧证 ===
+ERROR:  column "system_identifier" does not exist
+LINE 1: SELECT system_identifier, pg_control_version, catalog_versio...
+               ^
+-[ RECORD 1 ]----
+pkey_bytes | 8192
+
+-[ RECORD 1 ]
+count | 5
+
