@@ -1,6 +1,6 @@
 # Task：graph-json-freeze-date-pin（仓卫生 · graph.json freeze_id/generated_at 日期漂移收口 · chore）
 
-> **状态**：`draft`（10 落稿 · 闸 pending 待维护者签 · 禁 30 · 未 commit）
+> **状态**：`done`（CLOSED 2026-10-17 · PR #266 MERGED · squash `72b5740` · 三闸 approved 维护者签（00 代录）· 30 交付 TC-1~6 全 PASS · CLOSE 档 `docs/tasks/close/close_graph_json_freeze_date_pin_20261017.md`）
 > **类型**：仓卫生 / 工具链产出确定性收口（chore · 零 `app/` 改动 · `graph_change_layer=none`）
 > **依据**：`docs/tasks/close/close_ci_specwave_pin_align_20261017.md` §四·偏差 nit 第 2 条 + §七·后续建议第 1 条（「graph.json freeze_id 脱日期化另立案照登」——本 task 即该另立案）
 > **分支建议**：`task/graph-json-freeze-date-pin`（base master 最新）
@@ -172,3 +172,4 @@ TC-1 双跑字节断言（含 TZ 扰动）；TC-2 骨架 grep + check OK；TC-3 
 | 日期 | 说明 |
 |------|------|
 | 2026-10-17 | 10-task 初稿落盘（帽 10 · 闸 pending 待维护者签 · 禁 30 · 未 commit · 出处：close_ci_specwave_pin_align_20261017.md §四·2 / §七·1 另立案） |
+| 2026-10-17 | 20-task-audit R1 内容签收（N-1~N-4 照登）→ 维护者签三闸（00 代录）→ 30 交付 PR #266（CI 4/4 绿 · TC-1~6 全 PASS · 方案=候选①内容 hash 派生）→ squash `72b5740` MERGED → **CLOSED**（50 关账 · CLOSE 档 docs/tasks/close/close_graph_json_freeze_date_pin_20261017.md） |
