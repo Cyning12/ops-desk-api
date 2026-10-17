@@ -165,7 +165,7 @@ TC-1 双跑字节断言（含 TZ 扰动）；TC-2 骨架 grep + check OK；TC-3 
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+- **30（2026-10-17 回填）**：方案定案候选①内容 hash 派生（理由见 30 invoke）；FP-1 先实证后定案（spec-wave@3.3.0 check 路径零 freeze 断言亲读实证）；TC-1/2/3/5/6 全 PASS 实证留痕 30 invoke（docs/harness/invokes/by-task/graph_json_freeze_date_pin/invoke_20261017_30_impl.md）；pytest 1843 passed，4 failed 环境归因实证与本 diff 零因果；PR #266 已建，TC-4 CI 绿态待 40 终核。
 
 ## 修订记录
 
