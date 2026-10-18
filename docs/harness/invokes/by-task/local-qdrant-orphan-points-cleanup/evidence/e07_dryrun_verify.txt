@@ -1,0 +1,12 @@
+pages: 9
+total_ids: 8574
+unique: 8574
+min: 1
+max: 8593
+all_int: True
+e04_unique: 8574
+S_minus_E04: []
+E04_minus_S: []
+set_equal: True
+count_ok: True
+verdict: PASS

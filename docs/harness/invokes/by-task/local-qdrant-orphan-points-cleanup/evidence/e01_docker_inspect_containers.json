@@ -1,0 +1,618 @@
+[
+    {
+        "Id": "a6751f5ff45e0cb0f5edb62c6a18c3f8695437df14459474892f40ea7a473cb7",
+        "Created": "2026-08-21T02:15:06.427393417Z",
+        "Path": "./entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 724,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-16T07:07:36.19706796Z",
+            "FinishedAt": "2026-10-16T07:07:33.445857959Z",
+            "Health": {
+                "Status": "healthy",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2026-10-18T00:52:31.356004836Z",
+                        "End": "2026-10-18T00:52:31.411413795Z",
+                        "ExitCode": 0,
+                        "Output": ""
+                    },
+                    {
+                        "Start": "2026-10-18T00:52:41.414209424Z",
+                        "End": "2026-10-18T00:52:41.462702508Z",
+                        "ExitCode": 0,
+                        "Output": ""
+                    },
+                    {
+                        "Start": "2026-10-18T00:52:51.464428512Z",
+                        "End": "2026-10-18T00:52:51.518646221Z",
+                        "ExitCode": 0,
+                        "Output": ""
+                    },
+                    {
+                        "Start": "2026-10-18T00:53:01.523369211Z",
+                        "End": "2026-10-18T00:53:01.571267795Z",
+                        "ExitCode": 0,
+                        "Output": ""
+                    },
+                    {
+                        "Start": "2026-10-18T00:53:11.575698716Z",
+                        "End": "2026-10-18T00:53:11.625969216Z",
+                        "ExitCode": 0,
+                        "Output": ""
+                    }
+                ]
+            }
+        },
+        "Image": "sha256:057ee3a8da769fe7310dd3537b4dc7583bf87a95ce8ac43c0af5a46bc580d1fc",
+        "ResolvConfPath": "/var/lib/docker/containers/a6751f5ff45e0cb0f5edb62c6a18c3f8695437df14459474892f40ea7a473cb7/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/a6751f5ff45e0cb0f5edb62c6a18c3f8695437df14459474892f40ea7a473cb7/hostname",
+        "HostsPath": "/var/lib/docker/containers/a6751f5ff45e0cb0f5edb62c6a18c3f8695437df14459474892f40ea7a473cb7/hosts",
+        "LogPath": "/var/lib/docker/containers/a6751f5ff45e0cb0f5edb62c6a18c3f8695437df14459474892f40ea7a473cb7/a6751f5ff45e0cb0f5edb62c6a18c3f8695437df14459474892f40ea7a473cb7-json.log",
+        "Name": "/ops-desk-api-qdrant-1",
+        "RestartCount": 0,
+        "Driver": "overlayfs",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": [
+                "ops-desk-api_qdrant_data:/qdrant/storage:rw"
+            ],
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "ops-desk-api_default",
+            "PortBindings": {
+                "6333/tcp": [
+                    {
+                        "HostIp": "",
+                        "HostPort": "6333"
+                    }
+                ],
+                "6334/tcp": [
+                    {
+                        "HostIp": "",
+                        "HostPort": "6334"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": [],
+            "DnsOptions": [],
+            "DnsSearch": [],
+            "ExtraHosts": [],
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 8589934592,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 17179869184,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/acpi",
+                "/proc/asound",
+                "/proc/interrupts",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/sys/devices/virtual/powercap",
+                "/sys/firmware"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "Storage": {
+            "RootFS": {
+                "Snapshot": {
+                    "Name": "overlayfs"
+                }
+            }
+        },
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "ops-desk-api_qdrant_data",
+                "Source": "/var/lib/docker/volumes/ops-desk-api_qdrant_data/_data",
+                "Destination": "/qdrant/storage",
+                "Driver": "local",
+                "Mode": "rw",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+        "Config": {
+            "Hostname": "a6751f5ff45e",
+            "Domainname": "",
+            "User": "0:0",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "ExposedPorts": {
+                "6333/tcp": {},
+                "6334/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "QDRANT__SERVICE__GRPC_PORT=6334",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "DIR=",
+                "TZ=Etc/UTC",
+                "RUN_MODE=production"
+            ],
+            "Cmd": [
+                "./entrypoint.sh"
+            ],
+            "Healthcheck": {
+                "Test": [
+                    "CMD-SHELL",
+                    "bash -c 'exec 3\u003c\u003e/dev/tcp/127.0.0.1/6333'"
+                ],
+                "Interval": 10000000000,
+                "Timeout": 5000000000,
+                "Retries": 5
+            },
+            "Image": "qdrant/qdrant:v1.19.0",
+            "Volumes": null,
+            "WorkingDir": "/qdrant",
+            "Entrypoint": null,
+            "Labels": {
+                "com.docker.compose.config-hash": "09e07539570f04d70581aee5ee0485df314ee58c2014d143e5828fe6b6b37815",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.depends_on": "",
+                "com.docker.compose.image": "sha256:057ee3a8da769fe7310dd3537b4dc7583bf87a95ce8ac43c0af5a46bc580d1fc",
+                "com.docker.compose.oneoff": "False",
+                "com.docker.compose.project": "ops-desk-api",
+                "com.docker.compose.project.config_files": "/Users/cyning/Desktop/Ops-desk/ops-desk-api/docker-compose.yml",
+                "com.docker.compose.project.working_dir": "/Users/cyning/Desktop/Ops-desk/ops-desk-api",
+                "com.docker.compose.replace": "qdrant-1",
+                "com.docker.compose.service": "qdrant",
+                "com.docker.compose.version": "5.1.1",
+                "org.opencontainers.image.description": "Official Qdrant image",
+                "org.opencontainers.image.documentation": "https://qdrant.com/docs",
+                "org.opencontainers.image.source": "https://github.com/qdrant/qdrant",
+                "org.opencontainers.image.title": "Qdrant",
+                "org.opencontainers.image.url": "https://qdrant.com/",
+                "org.opencontainers.image.vendor": "Qdrant",
+                "org.opencontainers.image.version": "v1.19.0"
+            },
+            "StopTimeout": 1
+        },
+        "NetworkSettings": {
+            "SandboxID": "c6368ddc87acab80b7681b6b74d500ffae2491838e5fc52006aa03685668e1fe",
+            "SandboxKey": "/var/run/docker/netns/c6368ddc87ac",
+            "Ports": {
+                "6333/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "6333"
+                    },
+                    {
+                        "HostIp": "::",
+                        "HostPort": "6333"
+                    }
+                ],
+                "6334/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "6334"
+                    },
+                    {
+                        "HostIp": "::",
+                        "HostPort": "6334"
+                    }
+                ]
+            },
+            "Networks": {
+                "ops-desk-api_default": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "ops-desk-api-qdrant-1",
+                        "qdrant"
+                    ],
+                    "DriverOpts": null,
+                    "GwPriority": 0,
+                    "NetworkID": "cf44bc48540e569cddb23069015a774647f720659e315fef7444bd6b0a210327",
+                    "EndpointID": "a111b323ce3fd0ea012e3cca3679ce3f9b2e5ae504b13f6e8c16c0b06b829bc0",
+                    "Gateway": "172.18.0.1",
+                    "IPAddress": "172.18.0.2",
+                    "MacAddress": "62:3b:d8:5e:c5:f6",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DNSNames": [
+                        "ops-desk-api-qdrant-1",
+                        "qdrant",
+                        "a6751f5ff45e"
+                    ]
+                }
+            }
+        },
+        "ImageManifestDescriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:139bbec1a1e6c0f04c978c96b5359568e72e60ae6abc9db0ab4b7643a8cd957f",
+            "size": 2934,
+            "platform": {
+                "architecture": "arm64",
+                "os": "linux"
+            }
+        }
+    },
+    {
+        "Id": "d4b2576b2e95575cded16b20e3c7acd190c2e3dc0c650d2ff8438a60305674ba",
+        "Created": "2026-07-16T08:19:50.578435718Z",
+        "Path": "docker-entrypoint.sh",
+        "Args": [
+            "postgres"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 723,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-10-16T07:07:36.197460668Z",
+            "FinishedAt": "2026-10-16T07:07:33.446192209Z",
+            "Health": {
+                "Status": "healthy",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2026-10-18T00:52:59.140719085Z",
+                        "End": "2026-10-18T00:52:59.208619543Z",
+                        "ExitCode": 0,
+                        "Output": "/var/run/postgresql:5432 - accepting connections\n"
+                    },
+                    {
+                        "Start": "2026-10-18T00:53:04.213806129Z",
+                        "End": "2026-10-18T00:53:04.275293379Z",
+                        "ExitCode": 0,
+                        "Output": "/var/run/postgresql:5432 - accepting connections\n"
+                    },
+                    {
+                        "Start": "2026-10-18T00:53:09.278694215Z",
+                        "End": "2026-10-18T00:53:09.355594215Z",
+                        "ExitCode": 0,
+                        "Output": "/var/run/postgresql:5432 - accepting connections\n"
+                    },
+                    {
+                        "Start": "2026-10-18T00:53:14.361829092Z",
+                        "End": "2026-10-18T00:53:14.433581634Z",
+                        "ExitCode": 0,
+                        "Output": "/var/run/postgresql:5432 - accepting connections\n"
+                    },
+                    {
+                        "Start": "2026-10-18T00:53:19.436777761Z",
+                        "End": "2026-10-18T00:53:19.495604678Z",
+                        "ExitCode": 0,
+                        "Output": "/var/run/postgresql:5432 - accepting connections\n"
+                    }
+                ]
+            }
+        },
+        "Image": "sha256:18d16372b8406bb38a9f94cbff15d125c463d71fde2770aa8b5c64bfcc1578ee",
+        "ResolvConfPath": "/var/lib/docker/containers/d4b2576b2e95575cded16b20e3c7acd190c2e3dc0c650d2ff8438a60305674ba/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/d4b2576b2e95575cded16b20e3c7acd190c2e3dc0c650d2ff8438a60305674ba/hostname",
+        "HostsPath": "/var/lib/docker/containers/d4b2576b2e95575cded16b20e3c7acd190c2e3dc0c650d2ff8438a60305674ba/hosts",
+        "LogPath": "/var/lib/docker/containers/d4b2576b2e95575cded16b20e3c7acd190c2e3dc0c650d2ff8438a60305674ba/d4b2576b2e95575cded16b20e3c7acd190c2e3dc0c650d2ff8438a60305674ba-json.log",
+        "Name": "/ops-desk-api-db-1",
+        "RestartCount": 0,
+        "Driver": "overlayfs",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": [
+                "ops-desk-api_pgdata:/var/lib/postgresql/data:rw"
+            ],
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "ops-desk-api_default",
+            "PortBindings": {
+                "5432/tcp": [
+                    {
+                        "HostIp": "",
+                        "HostPort": "5432"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": [],
+            "DnsOptions": [],
+            "DnsSearch": [],
+            "ExtraHosts": [],
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/acpi",
+                "/proc/asound",
+                "/proc/interrupts",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/sys/devices/virtual/powercap",
+                "/sys/firmware"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "Storage": {
+            "RootFS": {
+                "Snapshot": {
+                    "Name": "overlayfs"
+                }
+            }
+        },
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "ops-desk-api_pgdata",
+                "Source": "/var/lib/docker/volumes/ops-desk-api_pgdata/_data",
+                "Destination": "/var/lib/postgresql/data",
+                "Driver": "local",
+                "Mode": "rw",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+        "Config": {
+            "Hostname": "d4b2576b2e95",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "ExposedPorts": {
+                "5432/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "POSTGRES_PASSWORD=ops_password",
+                "POSTGRES_DB=opsdesk",
+                "POSTGRES_USER=ops",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin",
+                "GOSU_VERSION=1.19",
+                "LANG=en_US.utf8",
+                "PG_MAJOR=15",
+                "PG_VERSION=15.18-1.pgdg12+1",
+                "PGDATA=/var/lib/postgresql/data"
+            ],
+            "Cmd": [
+                "postgres"
+            ],
+            "Healthcheck": {
+                "Test": [
+                    "CMD-SHELL",
+                    "pg_isready -U ops -d opsdesk"
+                ],
+                "Interval": 5000000000,
+                "Timeout": 5000000000,
+                "Retries": 5
+            },
+            "Image": "pgvector/pgvector:pg15",
+            "Volumes": {
+                "/var/lib/postgresql/data": {}
+            },
+            "WorkingDir": "",
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "Labels": {
+                "com.docker.compose.config-hash": "d657672b73045f64948a5005c767e2a73f4a980b86cdee23c560b81fc502d7b2",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.depends_on": "",
+                "com.docker.compose.image": "sha256:18d16372b8406bb38a9f94cbff15d125c463d71fde2770aa8b5c64bfcc1578ee",
+                "com.docker.compose.oneoff": "False",
+                "com.docker.compose.project": "ops-desk-api",
+                "com.docker.compose.project.config_files": "/Users/cyning/Desktop/Ops-desk/ops-desk-api/docker-compose.yml",
+                "com.docker.compose.project.working_dir": "/Users/cyning/Desktop/Ops-desk/ops-desk-api",
+                "com.docker.compose.service": "db",
+                "com.docker.compose.version": "5.1.1"
+            },
+            "StopSignal": "SIGINT",
+            "StopTimeout": 1
+        },
+        "NetworkSettings": {
+            "SandboxID": "4cf4b3576d63119945f73b11650d11dfb01ceb9770c618c911014eae278977b9",
+            "SandboxKey": "/var/run/docker/netns/4cf4b3576d63",
+            "Ports": {
+                "5432/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "5432"
+                    },
+                    {
+                        "HostIp": "::",
+                        "HostPort": "5432"
+                    }
+                ]
+            },
+            "Networks": {
+                "ops-desk-api_default": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "ops-desk-api-db-1",
+                        "db"
+                    ],
+                    "DriverOpts": null,
+                    "GwPriority": 0,
+                    "NetworkID": "cf44bc48540e569cddb23069015a774647f720659e315fef7444bd6b0a210327",
+                    "EndpointID": "a135d91d056f73853055c4d60afed5893d9b513ca12e17e71fbda9812a3efeb7",
+                    "Gateway": "172.18.0.1",
+                    "IPAddress": "172.18.0.3",
+                    "MacAddress": "e6:1a:01:90:03:2b",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DNSNames": [
+                        "ops-desk-api-db-1",
+                        "db",
+                        "d4b2576b2e95"
+                    ]
+                }
+            }
+        },
+        "ImageManifestDescriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:88642e487e896ded7241c59f3331d6f67374ec31f2e080f622b7b1445d6883da",
+            "size": 3335,
+            "platform": {
+                "architecture": "arm64",
+                "os": "linux"
+            }
+        }
+    }
+]
