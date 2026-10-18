@@ -1,0 +1,23 @@
+{
+ "result": {
+  "collections": [
+   {
+    "name": "ops_knowledge"
+   },
+   {
+    "name": "ops_knowledge_scale"
+   },
+   {
+    "name": "ops_knowledge_scale_100k"
+   },
+   {
+    "name": "ops_knowledge_scale_mem"
+   },
+   {
+    "name": "ops_knowledge_scale_sq"
+   }
+  ]
+ },
+ "status": "ok",
+ "time": 3.875e-06
+}

@@ -1,0 +1,46 @@
+kind: vector_waterline
+template_version: v1
+recorded_at: '2026-10-18T00:55:34.436739+00:00'
+environment: local
+executed_by: cyning
+git_sha: 423ba71
+config:
+  database_url_set: true
+  qdrant_url: http://127.0.0.1:6333
+  qdrant_collection: ops_knowledge
+status: ok
+pg_face:
+  status: ok
+  row_count: 0
+  ingest_waterline:
+    column: ops_knowledge_chunks.embedded_at
+    max: null
+  dlq:
+    table: ops_qdrant_dlq
+    depth: 0
+    oldest_created_at: null
+    oldest_age_seconds: null
+    verdict: empty
+qdrant_face:
+  status: ok
+  collection: ops_knowledge
+  points_count: 0
+  scrolled_ids: 0
+reconcile:
+  status: ok
+  pg_count: 0
+  qdrant_count: 0
+  count_diff: 0
+  verdict: match
+  pg_only_in_qdrant_missing:
+    count: 0
+    sample: []
+  qdrant_only_in_pg_missing:
+    count: 0
+    sample: []
+  note: 差集只记录不处置（FP-6）；处置动作另 task。
+degradation:
+  degraded: false
+  notes: []
+disclaimer: 本报告为只读核查证据；差集/DLQ 处置动作另 task（FP-6）。本地/compose 环境产物不得当作生产证据（TC-WL-5 与 TC-WL-8
+  分离）。

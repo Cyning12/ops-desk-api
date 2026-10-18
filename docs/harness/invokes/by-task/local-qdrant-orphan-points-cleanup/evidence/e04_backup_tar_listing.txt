@@ -1,0 +1,15 @@
+0/segments/7d7572df-361e-4bd7-9281-879986db0174.tar
+0/segments/0136e013-cbd7-4b03-821a-99764c09c52f.tar
+0/segments/869536a3-2302-4f3a-a340-6798044b179c.tar
+0/segments/a785962a-5767-4f7b-9487-77ae71919d46.tar
+0/segments/04b3a516-eb16-45db-b7ff-436855a60c3e.tar
+0/segments/d1e81c2f-aabb-4780-a018-2a4e45aef03d.tar
+0/segments/fb517fa3-8196-424b-a40d-185fa33707a4.tar
+0/newest_clocks.json
+0/wal/open-3
+0/wal/closed-0
+0/wal/open-2
+0/wal/first-index
+0/replica_state.json
+0/shard_config.json
+version.info

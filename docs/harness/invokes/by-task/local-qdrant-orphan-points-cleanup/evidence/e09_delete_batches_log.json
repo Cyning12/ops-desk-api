@@ -1,0 +1,101 @@
+{
+ "summary": {
+  "batches": 9,
+  "union_count": 8574,
+  "union_eq_S": true,
+  "all_status_ok": true,
+  "verdict": "PASS"
+ },
+ "batches": [
+  {
+   "batch": 1,
+   "id_count": 1000,
+   "id_min": 1,
+   "id_max": 1000,
+   "status": "ok",
+   "operation_id": 41,
+   "api_time": 0.007579667,
+   "wall_seconds": 0.01
+  },
+  {
+   "batch": 2,
+   "id_count": 1000,
+   "id_min": 1001,
+   "id_max": 2000,
+   "status": "ok",
+   "operation_id": 42,
+   "api_time": 0.002863417,
+   "wall_seconds": 0.004
+  },
+  {
+   "batch": 3,
+   "id_count": 1000,
+   "id_min": 2001,
+   "id_max": 3000,
+   "status": "ok",
+   "operation_id": 43,
+   "api_time": 0.003060584,
+   "wall_seconds": 0.004
+  },
+  {
+   "batch": 4,
+   "id_count": 1000,
+   "id_min": 3001,
+   "id_max": 4000,
+   "status": "ok",
+   "operation_id": 44,
+   "api_time": 0.002549417,
+   "wall_seconds": 0.004
+  },
+  {
+   "batch": 5,
+   "id_count": 1000,
+   "id_min": 4001,
+   "id_max": 5000,
+   "status": "ok",
+   "operation_id": 45,
+   "api_time": 0.001968083,
+   "wall_seconds": 0.003
+  },
+  {
+   "batch": 6,
+   "id_count": 1000,
+   "id_min": 5001,
+   "id_max": 6000,
+   "status": "ok",
+   "operation_id": 46,
+   "api_time": 0.003702416,
+   "wall_seconds": 0.005
+  },
+  {
+   "batch": 7,
+   "id_count": 1000,
+   "id_min": 6001,
+   "id_max": 7000,
+   "status": "ok",
+   "operation_id": 47,
+   "api_time": 0.002240292,
+   "wall_seconds": 0.003
+  },
+  {
+   "batch": 8,
+   "id_count": 1000,
+   "id_min": 7001,
+   "id_max": 8000,
+   "status": "ok",
+   "operation_id": 48,
+   "api_time": 0.002092708,
+   "wall_seconds": 0.003
+  },
+  {
+   "batch": 9,
+   "id_count": 574,
+   "id_min": 8001,
+   "id_max": 8593,
+   "status": "ok",
+   "operation_id": 49,
+   "api_time": 0.00197675,
+   "wall_seconds": 0.003
+  }
+ ]
+}
