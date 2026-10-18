@@ -1,0 +1,4 @@
+error → {'stage': 'graph', 'message': "Please install langchain to use the Langfuse langchain integration: 'pip install langchain'", 'retryable': False}
+
+== 答案 ==
+
