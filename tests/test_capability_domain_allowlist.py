@@ -129,7 +129,7 @@ def test_tags_any_is_narrowing_not_widening():
 def test_baseline_keeps_builtin_visible_when_no_extra_manifest():
     """未加载额外清单时，基线行为与改动前一致（零影响）。"""
     ids = {s.capability_id for s in list_capabilities(filter=baseline_filter(node_role="t"))}
-    assert _BUILTIN_IDS <= ids
+    assert ids >= _BUILTIN_IDS
     assert not (ids & _OA_IDS)
 
 
@@ -137,14 +137,14 @@ def test_baseline_exposes_oa_domain_after_manifest_loaded():
     """① 的目标：加载 OA 清单后，模型可见集里要有 oa.*。"""
     load_capability_manifest(_OA_MANIFEST)
     ids = {s.capability_id for s in list_capabilities(filter=baseline_filter(node_role="t"))}
-    assert _OA_IDS <= ids
-    assert _BUILTIN_IDS <= ids
+    assert ids >= _OA_IDS
+    assert ids >= _BUILTIN_IDS
 
 
 def test_builder_and_supervisor_use_the_same_baseline():
     """单一真相：两处各写一份会漂移（一处放开、另一处没放开）。"""
-    from app.ops.strategy.builder import BUILDER_CAP_FILTER
     from app.ops.lg_rag.multi.nodes import _SUPERVISOR_CAP_FILTER
+    from app.ops.strategy.builder import BUILDER_CAP_FILTER
 
     load_capability_manifest(_OA_MANIFEST)
     builder_ids = {
@@ -154,7 +154,7 @@ def test_builder_and_supervisor_use_the_same_baseline():
         s.capability_id for s in list_capabilities(filter=_SUPERVISOR_CAP_FILTER)
     }
     assert builder_ids == supervisor_ids
-    assert _OA_IDS <= builder_ids
+    assert builder_ids >= _OA_IDS
 
 
 def test_baseline_filter_shape_is_stable():

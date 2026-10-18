@@ -478,7 +478,7 @@ async def test_persist_hitl_is_idempotent_across_resume():
     checkpoint**，恢复后 ``state["hitl_requests"]`` 是空的。只认 state 的话
     每恢复一次就多一条一模一样的申请。
     """
-    from app.ops.hitl import get_hitl_store, set_hitl_store
+    from app.ops.hitl import set_hitl_store
     from app.ops.hitl.store import InMemoryHitlStore
 
     store = InMemoryHitlStore()

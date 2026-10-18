@@ -38,12 +38,12 @@ from app.ops.hitl.signature import (
     verify,
 )
 from app.ops.hitl.store import (
-    DbHitlStore,
-    InMemoryHitlStore,
-    NullHitlStore,
     STATUS_APPROVED,
     STATUS_PENDING,
     STATUS_REJECTED,
+    DbHitlStore,
+    InMemoryHitlStore,
+    NullHitlStore,
 )
 from tests.conftest import DB_AVAILABLE
 

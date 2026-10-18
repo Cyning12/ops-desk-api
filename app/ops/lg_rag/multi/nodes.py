@@ -17,7 +17,7 @@ import logging
 import os
 import time
 from datetime import UTC, datetime
-from typing import Any, Optional
+from typing import Any
 
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
@@ -33,10 +33,10 @@ from pydantic import ValidationError
 
 from app.llm.factory import get_llm_provider
 from app.llm.schema import LlmMessage
-from app.ops.capability import CapabilityFilter, list_capabilities
 from app.ops.capability import ainvoke as capability_ainvoke
 from app.ops.capability import delegation as dl
 from app.ops.capability import get_registry as _cap_registry
+from app.ops.capability import list_capabilities
 from app.ops.capability.baseline import baseline_filter
 from app.ops.capability.types import WRITE_SIDE_EFFECTS, CapabilitySpec
 from app.ops.lc_evidence_chain.step_hook import (
@@ -45,13 +45,13 @@ from app.ops.lc_evidence_chain.step_hook import (
 )
 from app.ops.lg_rag.answer_stream import complete_answer_streaming
 from app.ops.lg_rag.graph import astream_router_agent
+from app.ops.lg_rag.multi import step_contract as sc
 from app.ops.lg_rag.multi.budget import (
     bump_react_round,
     bump_supervisor_step,
     is_react_round_exhausted,
     is_supervisor_budget_exhausted,
 )
-from app.ops.lg_rag.multi import step_contract as sc
 from app.ops.lg_rag.nodes import (
     _ROUTER_MODEL,
     _ROUTER_PROVIDER,
@@ -1654,12 +1654,12 @@ async def _satisfied_by_model(state: LgRagState, obs: dict) -> bool | None:
 
     if os.environ.get("LG_RAG_REACT_SATISFACTION", "0").strip() != "1":
         return None
+    from pydantic import BaseModel
+
     from app.llm.factory import get_llm_provider
     from app.llm.schema import LlmMessage
     from app.ops.lg_rag.nodes import _last_user_text
     from app.ops.structured_output import parse_only
-
-    from pydantic import BaseModel
 
     class _Verdict(BaseModel):
         satisfied: bool
@@ -1695,7 +1695,7 @@ async def _satisfied_by_model(state: LgRagState, obs: dict) -> bool | None:
 
 
 def _thread_id_of(
-    state: LgRagState, config: Optional[RunnableConfig] = None
+    state: LgRagState, config: RunnableConfig | None = None
 ) -> str:
     """恢复定位用的 thread_id。
 
@@ -1953,7 +1953,7 @@ def _apply_hitl_decision(state: LgRagState, obs: dict, resumed: Any) -> dict:
 
 
 async def observe_node(
-    state: LgRagState, config: Optional[RunnableConfig] = None
+    state: LgRagState, config: RunnableConfig | None = None
 ) -> dict:
     """外层 ReAct 的"观察 + 判定"：这一轮活干完了没有？
 

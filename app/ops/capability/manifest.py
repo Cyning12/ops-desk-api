@@ -30,12 +30,12 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from app.ops.capability import fallback as fallback_mod
 from app.ops.capability.adapters.http_generic import (
     HOST_INJECTED_VARS,
     GenericHttpAdapter,
 )
 from app.ops.capability.adapters.local_fn import LocalFnAdapter
-from app.ops.capability import fallback as fallback_mod
 from app.ops.capability.errors import STABLE_ERROR_CODES
 from app.ops.capability.gateway import get_registry, register, unregister
 from app.ops.capability.types import (
@@ -725,7 +725,7 @@ def _validate_http_block(
 
     # 模板变量必须落在 args_schema.properties 或 Host 注入集合内。
     # 写错变量名是**配置错误**，加载期就该拦——不要留到运行期变成空串。
-    declared = set((args_schema.get("properties") or {}))
+    declared = set(args_schema.get("properties") or {})
     allowed = declared | set(HOST_INJECTED_VARS)
     for match in re.finditer(
         r"\{\{(\w+)\}\}", json.dumps(http_block, ensure_ascii=False, default=str)

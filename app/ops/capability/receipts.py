@@ -230,9 +230,8 @@ class DbReceiptSink:
             "captured": json.dumps(receipt.captured, ensure_ascii=False, default=str),
             "error": receipt.error,
         }
-        async with self._session_factory() as session:
-            async with session.begin():
-                await session.execute(text(_INSERT), params)
+        async with self._session_factory() as session, session.begin():
+            await session.execute(text(_INSERT), params)
 
     def record(self, receipt: Receipt) -> None:
         raise RuntimeError(

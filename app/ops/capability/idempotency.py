@@ -363,31 +363,30 @@ class DbIdempotencyStore:
             "cap": capability_id,
             "ttl": self._lease,
         }
-        async with self._session_factory() as session:
-            async with session.begin():
-                inserted = await session.execute(_text(_INSERT_IF_ABSENT), params)
-                if inserted.first() is not None:
-                    return IdempotencyClaim(key=key, acquired=True, attempts=1)
+        async with self._session_factory() as session, session.begin():
+            inserted = await session.execute(_text(_INSERT_IF_ABSENT), params)
+            if inserted.first() is not None:
+                return IdempotencyClaim(key=key, acquired=True, attempts=1)
 
-                taken = await session.execute(_text(_TAKEOVER_IF_STALE), params)
-                row = taken.first()
-                if row is not None:
-                    logger.warning(
-                        "幂等键租约已过期，本次接管：capability=%s key=%s attempts=%s "
-                        "—— 上次执行可能异常中断，下游状态需人工确认",
-                        capability_id,
-                        key,
-                        row[0],
-                    )
-                    return IdempotencyClaim(
-                        key=key,
-                        acquired=True,
-                        attempts=int(row[0]),
-                        took_over_stale_lease=True,
-                    )
+            taken = await session.execute(_text(_TAKEOVER_IF_STALE), params)
+            row = taken.first()
+            if row is not None:
+                logger.warning(
+                    "幂等键租约已过期，本次接管：capability=%s key=%s attempts=%s "
+                    "—— 上次执行可能异常中断，下游状态需人工确认",
+                    capability_id,
+                    key,
+                    row[0],
+                )
+                return IdempotencyClaim(
+                    key=key,
+                    acquired=True,
+                    attempts=int(row[0]),
+                    took_over_stale_lease=True,
+                )
 
-                seen = await session.execute(_text(_BUMP_AND_READ), params)
-                got = seen.first()
+            seen = await session.execute(_text(_BUMP_AND_READ), params)
+            got = seen.first()
         if got is None:  # pragma: no cover - 竞态兜底：行被并发 release 掉了
             return await self.aclaim(
                 key, capability_id=capability_id, tenant_id=tenant_id
@@ -408,19 +407,17 @@ class DbIdempotencyStore:
     async def acomplete(
         self, key: str, *, receipt_id: str = "", tenant_id: str = ""
     ) -> None:
-        async with self._session_factory() as session:
-            async with session.begin():
-                await session.execute(
-                    _text(_COMPLETE),
-                    {"tenant": tenant_id, "key": key, "receipt": receipt_id or None},
-                )
+        async with self._session_factory() as session, session.begin():
+            await session.execute(
+                _text(_COMPLETE),
+                {"tenant": tenant_id, "key": key, "receipt": receipt_id or None},
+            )
 
     async def arelease(self, key: str, *, tenant_id: str = "") -> None:
-        async with self._session_factory() as session:
-            async with session.begin():
-                await session.execute(
-                    _text(_RELEASE), {"tenant": tenant_id, "key": key}
-                )
+        async with self._session_factory() as session, session.begin():
+            await session.execute(
+                _text(_RELEASE), {"tenant": tenant_id, "key": key}
+            )
 
     async def asnapshot(
         self, *, tenant_id: str = "", stuck_only: bool = False, limit: int = 200

@@ -20,6 +20,7 @@ import uuid
 import pytest
 from sqlalchemy import text
 
+from app.db.session import AsyncSessionLocal
 from app.ops.capability import (
     DbIdempotencyStore,
     DbReceiptSink,
@@ -40,7 +41,6 @@ from app.ops.capability import (
 from app.ops.capability.adapters import FakeHttpTransport, StaticCredentialVault
 from app.ops.capability.receipts import Receipt
 from app.ops.capability.types import CapabilitySpec
-from app.db.session import AsyncSessionLocal
 from tests.conftest import DB_AVAILABLE
 
 pytestmark = pytest.mark.skipif(
@@ -52,12 +52,11 @@ _OTHER_TENANT = "w6-test-tenant-2"
 
 
 async def _clear_test_rows() -> None:
-    async with AsyncSessionLocal() as session:
-        async with session.begin():
-            for table in ("ops_capability_idempotency", "ops_capability_receipts"):
-                await session.execute(
-                    text(f"DELETE FROM {table} WHERE tenant_id LIKE 'w6-test-%'")
-                )
+    async with AsyncSessionLocal() as session, session.begin():
+        for table in ("ops_capability_idempotency", "ops_capability_receipts"):
+            await session.execute(
+                text(f"DELETE FROM {table} WHERE tenant_id LIKE 'w6-test-%'")
+            )
 
 
 @pytest.fixture(autouse=True)

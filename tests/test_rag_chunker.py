@@ -4,11 +4,12 @@
 写法约定：一条规则一个 test；断言行为（输出长什么样），不断言实现。
 """
 
+import re
+
 from app.ops.rag.chunker import chunk_markdown, truncate_middle
 from app.ops.rag.clean import clean_markdown
 from app.ops.rag.prefix import build_prefix, embed_text, strip_doc_context_prefix
 from app.ops.rag.tokenizer import FuncTokenCounter
-import re
 
 # 假计数器：按词数计，确定、可读、够用（真 tokenizer 的口径差异不影响规则正确性）
 counter = FuncTokenCounter(lambda t: max(1, len(t.split())))

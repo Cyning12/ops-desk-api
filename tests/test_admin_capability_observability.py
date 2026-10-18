@@ -94,7 +94,12 @@ async def test_runtime_makes_disabled_persistence_visible(client, as_admin):
 async def test_runtime_health_ok_when_db_configured(client, as_admin, monkeypatch):
     if not DB_AVAILABLE:
         pytest.skip("需要 PostgreSQL")
-    from app.ops.capability import DbIdempotencyStore, DbReceiptSink, set_idempotency_store, set_receipt_sink
+    from app.ops.capability import (
+        DbIdempotencyStore,
+        DbReceiptSink,
+        set_idempotency_store,
+        set_receipt_sink,
+    )
 
     set_idempotency_store(DbIdempotencyStore(lease_seconds=120))
     set_receipt_sink(DbReceiptSink())
@@ -268,23 +273,22 @@ async def test_idempotency_endpoint_exposes_stuck_rows(client, as_admin):
 
     tenant = "obs-test-tenant"
     key = "obs-stuck-key"
-    async with AsyncSessionLocal() as session:
-        async with session.begin():
-            await session.execute(
-                text("DELETE FROM ops_capability_idempotency WHERE tenant_id = :t"),
-                {"t": tenant},
-            )
-            # 造一条**租约已过期**的 in_flight（模拟"进程崩在发出请求与落回执之间"）
-            await session.execute(
-                text(
-                    "INSERT INTO ops_capability_idempotency "
-                    "(id, tenant_id, idempotency_key, capability_id, status, "
-                    " lease_expires_at, attempts, created_at, updated_at) "
-                    "VALUES (CAST(:id AS uuid), :t, :k, 'oa.ticket.create', 'in_flight', "
-                    " now() - interval '10 minutes', 1, now(), now())"
-                ),
-                {"id": "00000000-0000-0000-0000-000000000001", "t": tenant, "k": key},
-            )
+    async with AsyncSessionLocal() as session, session.begin():
+        await session.execute(
+            text("DELETE FROM ops_capability_idempotency WHERE tenant_id = :t"),
+            {"t": tenant},
+        )
+        # 造一条**租约已过期**的 in_flight（模拟"进程崩在发出请求与落回执之间"）
+        await session.execute(
+            text(
+                "INSERT INTO ops_capability_idempotency "
+                "(id, tenant_id, idempotency_key, capability_id, status, "
+                " lease_expires_at, attempts, created_at, updated_at) "
+                "VALUES (CAST(:id AS uuid), :t, :k, 'oa.ticket.create', 'in_flight', "
+                " now() - interval '10 minutes', 1, now(), now())"
+            ),
+            {"id": "00000000-0000-0000-0000-000000000001", "t": tenant, "k": key},
+        )
     try:
         body = (
             await client.get(
@@ -301,9 +305,8 @@ async def test_idempotency_endpoint_exposes_stuck_rows(client, as_admin):
         allrows = (await client.get(f"{BASE}/idempotency", params={"tenant_id": tenant})).json()
         assert any(r["idempotency_key"] == key for r in allrows["rows"])
     finally:
-        async with AsyncSessionLocal() as session:
-            async with session.begin():
-                await session.execute(
-                    text("DELETE FROM ops_capability_idempotency WHERE tenant_id = :t"),
-                    {"t": tenant},
-                )
+        async with AsyncSessionLocal() as session, session.begin():
+            await session.execute(
+                text("DELETE FROM ops_capability_idempotency WHERE tenant_id = :t"),
+                {"t": tenant},
+            )

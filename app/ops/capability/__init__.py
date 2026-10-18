@@ -71,12 +71,12 @@ from app.ops.capability.manifest import (
     load_capability_manifests,
     load_extra_manifests_from_env,
 )
-from app.ops.capability.probes import register_p2_probes
 from app.ops.capability.persistence import (
     ENV_PERSISTENCE,
     configure_persistence_from_env,
     describe_persistence,
 )
+from app.ops.capability.probes import register_p2_probes
 from app.ops.capability.receipts import (
     AsyncReceiptSink,
     DbReceiptSink,
