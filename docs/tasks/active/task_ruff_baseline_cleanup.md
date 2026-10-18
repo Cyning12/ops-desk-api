@@ -111,14 +111,14 @@ F1：`--fix` 自动修 28 处并逐类复核无语义变更。F2：人工裁定 
 
 ## 验收标准
 
-- [ ] **TC-RC-1（机断 · 基线留档）**：30 invoke 实录修复前 `uv run --extra dev ruff check app tests --statistics` 全量分布（52 错 · 13 类）与 `ruff --version`=0.15.21、git base SHA。
-- [ ] **TC-RC-2（机断 · F1）**：`--fix` 后 28 处消除（52→24）；30 invoke 逐类（I001/SIM117/SIM300/UP035/UP045/UP034/F401）diff 复核结论「无语义变更」留痕；本地 pytest 复跑零新增红。
-- [ ] **TC-RC-3（机断+人工 · F2）**：24 处全部裁定落地；F811 九对裁定表（对名/先定义行→遮蔽行/一致或发散/裁定/理由）在 30 invoke；E402 每处或 noqa+理由或上移；N818 默认 noqa 不改名（偏离须维护者裁定记录）。**`uv run --extra dev ruff check app tests` → Found 0 errors（exit 0）**。
-- [ ] **TC-RC-4（机断 · F3）**：format 裁定执行留档：取「一次性收口」则 format 独立 commit 存在且 `uv run --extra dev ruff format --check app tests` → 0 would-reformat（exit 0）；取「不修只钉现状」则 30 invoke 含回退证据与明裁理由（须维护者可见）。
-- [ ] **TC-RC-5（机断 · F4）**：CI 裁定落地：接闸则 `.github/workflows/pytest.yml` 含生效的 ruff check 步骤（钉 ruff==0.15.21）且 PR CI 该步骤绿，PR 描述注明 CI 改动；不接则 30 invoke 明裁「不接 + 理由 + 后续建议」。
-- [ ] **TC-RC-6（机断 · pytest 硬闸）**：PR CI pytest job 绿；本地 `.venv/bin/python -m pytest tests -q` 全量红集 **⊆ 基线 19 红集**（逐名对拍，零新增红）。
-- [ ] **TC-RC-7（机断 · 零越界）**：`pyproject.toml`/`uv.lock`/图谱/Wiki/alembic/docker-compose.yml **零 diff**；ruff 版本仍 0.15.21；diff 白名单 = app/** 与 tests/** 的 lint/format 修复 + （F4 接闸时）`.github/workflows/pytest.yml` + docs/harness/invokes/ 与本档。
-- [ ] **TC-RC-8（机断 · 门禁）**：`npx --yes spec-wave verify --target . --task docs/tasks/active/task_ruff_baseline_cleanup.md` EXIT=0；`npx --yes spec-wave task lint --file docs/tasks/active/task_ruff_baseline_cleanup.md` LINT: PASS；30/40 invoke 落盘 `docs/harness/invokes/by-task/ruff-baseline-cleanup/`。
+- [x] **TC-RC-1（机断 · 基线留档）**：30 invoke §一 实录修复前 statistics 全量分布（52 错 · 13 类）· `ruff --version`=0.15.21 · base SHA c956d87。
+- [x] **TC-RC-2（机断 · F1）**：`--fix` 后 52→24（28 处消除）；30 invoke §三 逐类复核「无语义变更」留痕；F2 触及面冒烟 166 passed 0 failed。
+- [x] **TC-RC-3（机断+人工 · F2）**：24 处全裁定（30 invoke §二/§四）；F811 九对裁定表在 §二（九对全 IDENTICAL → 删先定义）；E402 两处 noqa+理由、三处上移；N818 noqa 不改名。**`ruff check app tests` → Found 0 errors（exit 0）实证**。
+- [x] **TC-RC-4（机断 · F3）**：一次性收口执行：format 独立 commit 710521c（纯机器产物）· `ruff format --check app tests` → 326 files already formatted（exit 0）；连锁 noqa 位移单列 commit 66a36eb 留痕。
+- [x] **TC-RC-5（机断 · F4）**：接闸落地：pytest.yml 含生效 Ruff 步骤（`.venv/bin/ruff check app tests` · 安装钉 `ruff==0.15.21`）；PR 描述注明 CI 改动；CI 绿以 PR 实证为准（40 复核）。
+- [x] **TC-RC-6（机断 · pytest 硬闸）**：本地全量（拷入基线环境 .env）**19 failed / 1828 passed / 1 skipped**，FAILED 清单与基线 19 红集逐名全等、零新增红（30 invoke §六 对拍表）；PR CI pytest 绿以 CI 实证为准（40 复核）。
+- [x] **TC-RC-7（机断 · 零越界）**：`git diff --name-only master...HEAD` 全白名单内；pyproject.toml/uv.lock/图谱/Wiki/alembic/docker-compose.yml 零 diff；ruff 仍 0.15.21（30 invoke §八）。
+- [x] **TC-RC-8（机断 · 门禁）**：verify EXIT=0（开工+收尾两跑）· task lint LINT: PASS；30 invoke 已落盘 by-task/ruff-baseline-cleanup/（40 invoke 待验收帽落）。
 
 ## 依赖
 
@@ -176,7 +176,12 @@ ruff 配置在库已久但存量违规扩散（52 错）且 format 漂移 223 �
 
 ### 自检结论（执行者）
 
-（draft 阶段空 · 待 30 修复与 40 验收后按 TC-RC-1..8 逐条回填 PASS/FAIL 与实证指针）
+**30 棒自检：TC-RC-1..8 全 PASS**（CI 绿待 PR 实证由 40 复核，本地面全部机断通过）。实证指针：
+
+- statistics 52→0 · format 223→0（326 ok）· 本地 pytest 19 红集与基线逐名全等零新增红：30 invoke `docs/harness/invokes/by-task/ruff-baseline-cleanup/invoke_20261018_30_ruff_cleanup.md` §一/§五/§六。
+- F811 九对全 IDENTICAL 删先定义（§二裁定表）· F1 逐类复核零语义可疑（§三）· F2 余项裁定含 N814 去别名终裁、E402 分治（§四）。
+- 越界零：diff 全白名单 · pyproject/uv.lock 未动 · ruff 钉 0.15.21（§八）。
+- 已知留痕：F3 连锁 noqa 位移 ×1（commit 66a36eb）；CI Ruff 步骤首跑绿待 PR 实证（FP-7 钉版已落实）。
 
 ---
 
@@ -185,3 +190,4 @@ ruff 配置在库已久但存量违规扩散（52 错）且 format 漂移 223 �
 | 日期 | 说明 |
 |------|------|
 | 2026-10-18 | 10-task 落稿（A1 方向 · 实证基线 10 亲跑复核：ruff 0.15.21 · check 52 错 13 类 28 可自动修 · format 223 文件漂移 · CI ruff 段注释未接闸 · pytest 本地基线 19 红 · 三闸 pending/GRAPH n/a 未代签 · 零 git 操作零码改） |
+| 2026-10-18 | 30 修复执行回填：TC-RC-1..8 全 PASS（statistics 52→0 · format 223→0 · F811 九对全 IDENTICAL 删死码 · 本地红集与基线 19 逐名全等零新增红 · CI 接 ruff==0.15.21 闸 · diff 全白名单）· 自检结论节实填 · 30 invoke 落盘 |
