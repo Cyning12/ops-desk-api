@@ -1,0 +1,7 @@
+DEGRADED_VECTOR_ONLY top-5:
+  #1 score=0.7431 source_type=issue source_id=2720 chunk_index=0 <<< ANCHOR issue#2720
+  #2 score=0.7123 source_type=doc source_id=contracts/rag-knowledge-contract-v1.md chunk_index=14
+  #3 score=0.6958 source_type=issue source_id=2720 chunk_index=1 <<< ANCHOR issue#2720
+  #4 score=0.6593 source_type=issue source_id=1585 chunk_index=0
+  #5 score=0.6578 source_type=issue source_id=2427 chunk_index=0
+ANCHOR_HIT_G01_issue2720 = True
