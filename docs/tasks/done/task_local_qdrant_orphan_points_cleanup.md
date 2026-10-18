@@ -1,6 +1,6 @@
 # Task：local-qdrant-orphan-points-cleanup（本地 Qdrant ops_knowledge 8574 遗留孤儿点清理处置 · 含写动作）
 
-> **状态**：in_progress（40 实证执行完成 2026-10-18 · 三闸 approved m01000 授权代录 · 落码裁定=零落码 curl 已执行 · F1–F5 全链 PASS · TC-OC-1~6 全过 · 处置报告 reports/local_qdrant_orphan_points_cleanup_20261018T005320Z.md · 待维护者阅报 50 CLOSE 裁定）
+> **状态**：done（2026-10-18 CLOSE · PR #272 MERGED squash 6ee1f61 · TC-OC-1~6 全 PASS 零假绿 · 8574 孤儿点已清理 · 删后水位 verdict=match（0/0/0）· 快照备份留存本机 backups/ · 归档 done/）
 > **类型**：本地运维处置（**含写动作——删除 Qdrant 遗留点**；与上游只读核查 task 不同，安全前置钉死 · 40 实证执行棒 · 建议零落码一次性命令行执行）
 > **上游**：[`task_local_vector_data_state_audit.md`](../done/task_local_vector_data_state_audit.md)（PR #270 已并 · 40 实证钉死：本地 Qdrant ops_knowledge 8574 点 = 2026-08-18 迁移期正当重迁写入，payload 恰 4 键指纹与 `scripts/qdrant_migrate/export_vectors.py:12` ALLOWED_PAYLOAD 逐键相等；PG ops_knowledge_chunks 于 (2026-08-13, 2026-09-07] 窗口被表级清空（绕过应用层无影子删除）→ mismatch · F3 处置建议 = **清理脚本**）；维护者 2026-10-17（会话 m00954）选定立本清理 task
 > **分支**：无（建议零落码 · 零 git 操作纪律；报告/invoke 产物提交与否由 00/维护者事后裁定）
@@ -204,3 +204,4 @@ F1 快照/备份前置（无备份禁删硬闸）→ F2 dry-run 先行（只读�
 | 2026-10-17 | 10-task 落稿（上游 F3 建议落地 · 本地 Qdrant 8574 孤儿点清理 · **含写动作安全前置钉死**：备份硬闸/dry-run 一致/白名单删除/回滚预案 · 建议零落码一次性 curl 执行 · 三闸 pending 未代签 · 零 git 操作 · 仅新增 untracked 文件） |
 | 2026-10-18 | 20-task-audit R1 签收（零阻塞 · nit 2 顺手精化：N1 点级删除工具口径+9 脚本枚举 / N2 备份追加 tar -tf 可读性核验）· 维护者 m01000 授权 00 代录三闸 approved · 落码裁定=零落码 curl → 待派 40 处置棒 |
 | 2026-10-18 | 40 实证执行完成：F1 备份硬闸（快照+host 备份 sha256 双端一致+tar 可读）→ F2 dry-run（8574 逐集相等）→ F3 白名单 9 批删除（全 ok）→ F4 删后核验（count=0 · 水位 verdict=match）→ F5 留档（处置报告+40 invoke+证据 e00–e11）；TC-OC-1~6 全 PASS；备份二进制 untracked 留本机；待维护者阅报 CLOSE 裁定 |
+| 2026-10-18 | 50 CLOSE（维护者 m01029 授权合并+关账）：PR #272 squash 6ee1f61 已并 · 归档 done/ · 状态行 CLOSED · README 登记 · invoke_20261018_50_close.md 落盘 · 照登：00 清理 worktree 时误删 host 备份副本（服务端快照仍在卷内），已从快照 API 重下载恢复 sha256 逐字符一致 |
