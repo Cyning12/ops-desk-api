@@ -94,7 +94,12 @@ async def test_runtime_makes_disabled_persistence_visible(client, as_admin):
 async def test_runtime_health_ok_when_db_configured(client, as_admin, monkeypatch):
     if not DB_AVAILABLE:
         pytest.skip("需要 PostgreSQL")
-    from app.ops.capability import DbIdempotencyStore, DbReceiptSink, set_idempotency_store, set_receipt_sink
+    from app.ops.capability import (
+        DbIdempotencyStore,
+        DbReceiptSink,
+        set_idempotency_store,
+        set_receipt_sink,
+    )
 
     set_idempotency_store(DbIdempotencyStore(lease_seconds=120))
     set_receipt_sink(DbReceiptSink())
@@ -137,9 +142,7 @@ async def test_catalog_lists_visible_and_explains_hidden(client, as_admin):
         assert hidden.get("dept_only_cap") == "department_mismatch"
         assert anon["principal"]["anonymous"] is True
 
-        fin = (
-            await client.get(f"{BASE}/catalog", params={"departments": "finance,hr"})
-        ).json()
+        fin = (await client.get(f"{BASE}/catalog", params={"departments": "finance,hr"})).json()
         assert "dept_only_cap" in fin["visible_ids"]
         assert fin["principal"]["departments"] == ["finance", "hr"]
     finally:
@@ -163,9 +166,7 @@ async def test_catalog_shows_kinds_crop_wins_over_visibility(client, as_admin):
         body = (await client.get(f"{BASE}/catalog")).json()
         assert "untagged_http_cap" not in body["visible_ids"]
         # 不在 hidden 里 —— 它没走到可见性判定，是被形态裁剪掉的
-        assert "untagged_http_cap" not in {
-            h["capability_id"] for h in body["visibility_hidden"]
-        }
+        assert "untagged_http_cap" not in {h["capability_id"] for h in body["visibility_hidden"]}
     finally:
         unregister("untagged_http_cap")
 
@@ -211,7 +212,7 @@ async def test_metrics_exposes_write_blocked_counter(client, as_admin):
     只看 `ok` 是看不出这件事的——写闸把请求拦了，调用方只看到"失败"，
     没有指标就没人能回答"到底有多少写被拦下了"。
     """
-    from app.ops.capability import GenericHttpAdapter as _A
+    from app.ops.capability import GenericHttpAdapter
     from app.ops.capability import metrics as cap_metrics
 
     cap_metrics.reset()
@@ -227,7 +228,7 @@ async def test_metrics_exposes_write_blocked_counter(client, as_admin):
         visibility={"departments": ["all"]},
         http={"idempotency_key": "t:{{subject}}"},
     )
-    register(spec, _A(spec))
+    register(spec, GenericHttpAdapter(spec))
     try:
         from app.ops.capability import invoke
 
@@ -268,23 +269,22 @@ async def test_idempotency_endpoint_exposes_stuck_rows(client, as_admin):
 
     tenant = "obs-test-tenant"
     key = "obs-stuck-key"
-    async with AsyncSessionLocal() as session:
-        async with session.begin():
-            await session.execute(
-                text("DELETE FROM ops_capability_idempotency WHERE tenant_id = :t"),
-                {"t": tenant},
-            )
-            # 造一条**租约已过期**的 in_flight（模拟"进程崩在发出请求与落回执之间"）
-            await session.execute(
-                text(
-                    "INSERT INTO ops_capability_idempotency "
-                    "(id, tenant_id, idempotency_key, capability_id, status, "
-                    " lease_expires_at, attempts, created_at, updated_at) "
-                    "VALUES (CAST(:id AS uuid), :t, :k, 'oa.ticket.create', 'in_flight', "
-                    " now() - interval '10 minutes', 1, now(), now())"
-                ),
-                {"id": "00000000-0000-0000-0000-000000000001", "t": tenant, "k": key},
-            )
+    async with AsyncSessionLocal() as session, session.begin():
+        await session.execute(
+            text("DELETE FROM ops_capability_idempotency WHERE tenant_id = :t"),
+            {"t": tenant},
+        )
+        # 造一条**租约已过期**的 in_flight（模拟"进程崩在发出请求与落回执之间"）
+        await session.execute(
+            text(
+                "INSERT INTO ops_capability_idempotency "
+                "(id, tenant_id, idempotency_key, capability_id, status, "
+                " lease_expires_at, attempts, created_at, updated_at) "
+                "VALUES (CAST(:id AS uuid), :t, :k, 'oa.ticket.create', 'in_flight', "
+                " now() - interval '10 minutes', 1, now(), now())"
+            ),
+            {"id": "00000000-0000-0000-0000-000000000001", "t": tenant, "k": key},
+        )
     try:
         body = (
             await client.get(
@@ -301,9 +301,8 @@ async def test_idempotency_endpoint_exposes_stuck_rows(client, as_admin):
         allrows = (await client.get(f"{BASE}/idempotency", params={"tenant_id": tenant})).json()
         assert any(r["idempotency_key"] == key for r in allrows["rows"])
     finally:
-        async with AsyncSessionLocal() as session:
-            async with session.begin():
-                await session.execute(
-                    text("DELETE FROM ops_capability_idempotency WHERE tenant_id = :t"),
-                    {"t": tenant},
-                )
+        async with AsyncSessionLocal() as session, session.begin():
+            await session.execute(
+                text("DELETE FROM ops_capability_idempotency WHERE tenant_id = :t"),
+                {"t": tenant},
+            )

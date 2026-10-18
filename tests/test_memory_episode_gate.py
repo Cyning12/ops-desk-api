@@ -11,6 +11,7 @@
   「闸拒不落库（查表为零）」断言，在闸恒放行时必挂（破坏→必挂→恢复留痕
   见提交说明）。
 """
+
 from __future__ import annotations
 
 import ast
@@ -243,10 +244,10 @@ def test_fingerprint_normalization():
         "ops_kb", {}, []
     )
     # 非标量意图特征被忽略（弱指纹方向 = 宁可不召回）
-    assert compute_context_fingerprint("ops_kb", {"nested": {"x": 1}}, []) == compute_context_fingerprint(
-        "ops_kb", {}, []
-    )
+    assert compute_context_fingerprint(
+        "ops_kb", {"nested": {"x": 1}}, []
+    ) == compute_context_fingerprint("ops_kb", {}, [])
     # 工具骨架截到 16（与闸上限同源）：前 16 相同 → 同指纹
-    assert compute_context_fingerprint("d", {}, [f"t{i}" for i in range(20)]) == compute_context_fingerprint(
-        "d", {}, [f"t{i}" for i in range(16)]
-    )
+    assert compute_context_fingerprint(
+        "d", {}, [f"t{i}" for i in range(20)]
+    ) == compute_context_fingerprint("d", {}, [f"t{i}" for i in range(16)])

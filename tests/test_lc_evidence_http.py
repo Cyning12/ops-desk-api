@@ -1,4 +1,5 @@
 """lc-evidence HTTP：鉴权、校验、envelope 与 snippet 序列化（mock 链，不连真库）。"""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
@@ -66,33 +67,25 @@ async def test_invoke_requires_auth(client: AsyncClient) -> None:
     assert response.status_code == 401
 
 
-async def test_invoke_empty_query_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_empty_query_422(client: AsyncClient, override_auth_maintainer) -> None:
     """空 query → 422。"""
     response = await client.post(_PATH, json={"query": ""})
     assert response.status_code == 422
 
 
-async def test_invoke_query_too_long_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_query_too_long_422(client: AsyncClient, override_auth_maintainer) -> None:
     """超长 query → 422。"""
     response = await client.post(_PATH, json={"query": "x" * 8001})
     assert response.status_code == 422
 
 
-async def test_invoke_missing_query_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_missing_query_422(client: AsyncClient, override_auth_maintainer) -> None:
     """缺 query 字段 → 422。"""
     response = await client.post(_PATH, json={})
     assert response.status_code == 422
 
 
-async def test_invoke_ok_includes_snippet(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_ok_includes_snippet(client: AsyncClient, override_auth_maintainer) -> None:
     """200 + {ok,data} 且 evidence 含 snippet / anchor。"""
     with patch(
         "app.ops.lc_evidence_chain.router.ainvoke_evidence_answer",
@@ -115,9 +108,7 @@ async def test_invoke_ok_includes_snippet(
     assert "content" not in item
 
 
-async def test_invoke_refuse_is_200(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_refuse_is_200(client: AsyncClient, override_auth_maintainer) -> None:
     """gate_action=refuse 仍是 200 成功态。"""
     with patch(
         "app.ops.lc_evidence_chain.router.ainvoke_evidence_answer",

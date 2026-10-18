@@ -202,10 +202,7 @@ async def _create_test_schema():
             # create_all 不管 ALTER；ORM INSERT 会带该列（deferred 只影响 SELECT），
             # 缺列会让 P0 写入路径在测试库炸掉
             await conn.execute(
-                text(
-                    "ALTER TABLE ops_memory_facts "
-                    "ADD COLUMN IF NOT EXISTS embedding vector(1024)"
-                )
+                text("ALTER TABLE ops_memory_facts ADD COLUMN IF NOT EXISTS embedding vector(1024)")
             )
             # memory-preference-profile：存量测试库 CHECK 仍是 kind='fact'，
             # create_all 不改既有约束；对齐 models.py 放宽（同 D5 迁移语义）

@@ -8,6 +8,7 @@
 关键约束：代码 fence 内**不做**任何替换（fence 感知分段，避免把代码里的
 示例 HTML 改成锚点）。
 """
+
 from __future__ import annotations
 
 import re
@@ -97,6 +98,7 @@ def _anchor(kind: str, url: str, alt: str, media: list[dict], counters: dict[str
         return plain
     return f"[{label}#{counters[kind]}: {alt.strip()}]"
 
+
 def _clean_segment_in_fence(seg: str, counters: dict[str, int]) -> tuple[str, list[dict]]:
     media: list[dict] = []
     seg = _HTML_COMMENT_RE.sub("", seg)
@@ -121,12 +123,8 @@ def _clean_segment_in_fence(seg: str, counters: dict[str, int]) -> tuple[str, li
 
     seg = _IMG_TAG_RE.sub(img_sub, seg)
     seg = _VIDEO_TAG_RE.sub(video_sub, seg)
-    seg = _MD_IMAGE_RE.sub(
-        lambda m: _anchor("image", m.group(2), m.group(1), media, counters), seg
-    )
-    seg = _BARE_VIDEO_URL_RE.sub(
-        lambda m: _anchor("video", m.group(1), "", media, counters), seg
-    )
+    seg = _MD_IMAGE_RE.sub(lambda m: _anchor("image", m.group(2), m.group(1), media, counters), seg)
+    seg = _BARE_VIDEO_URL_RE.sub(lambda m: _anchor("video", m.group(1), "", media, counters), seg)
     return seg, media
 
 

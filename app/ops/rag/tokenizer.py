@@ -6,9 +6,11 @@
 只加载 tokenizer（几 MB 词表），不加载模型权重（~2.3GB）：
 数 token 与向量化是两个阶段。懒加载 + 可注入 fake，测试与模型文件解耦。
 """
+
 from __future__ import annotations
 
-from typing import Callable, Protocol
+from collections.abc import Callable
+from typing import Protocol
 
 
 class TokenCounter(Protocol):

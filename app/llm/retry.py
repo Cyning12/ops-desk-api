@@ -98,7 +98,7 @@ def retry_config() -> RetryConfig:
 
 def backoff_delay(retry_index: int, cfg: RetryConfig) -> float:
     """第 `retry_index` 次重试（从 0 起）的退避：`random(0, min(cap, base×2^i))`。"""
-    upper = min(cfg.max_delay_s, cfg.base_delay_s * (2 ** retry_index))
+    upper = min(cfg.max_delay_s, cfg.base_delay_s * (2**retry_index))
     return random.uniform(0.0, upper)
 
 

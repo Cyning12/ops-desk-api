@@ -7,6 +7,7 @@
 
 token 计数通过 TokenCounter 注入，本模块不依赖具体 tokenizer。
 """
+
 from __future__ import annotations
 
 import re
@@ -120,7 +121,7 @@ def _split_table(text: str, counter: TokenCounter, budget: int) -> list[str]:
     """表格超限时按行切，每组重复表头（契约规则 2：断表行失去列语义）。"""
     lines = text.split("\n")
     header_lines = lines[:2] if len(lines) >= 2 else lines[:1]  # 表头 + 分隔行
-    rows = lines[len(header_lines):]
+    rows = lines[len(header_lines) :]
     groups: list[str] = []
     cur = list(header_lines)
     for row in rows:

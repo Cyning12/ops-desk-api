@@ -12,6 +12,7 @@
 
 DB 用例造 ``ops_lg_rag_run_events`` 行（不连真 LLM）；聚合层为纯函数直测。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -141,9 +142,7 @@ async def seed_events():
     async with AsyncSessionLocal() as db:
         for prefix in prefixes:
             await db.execute(
-                delete(OpsLgRagRunEvent).where(
-                    OpsLgRagRunEvent.thread_id.startswith(prefix)
-                )
+                delete(OpsLgRagRunEvent).where(OpsLgRagRunEvent.thread_id.startswith(prefix))
             )
         for uid in created_users:
             await db.execute(delete(OpsUser).where(OpsUser.id == uid))
@@ -253,8 +252,7 @@ def test_run_terminal_status_variants() -> None:
             "run_id": "r",
             "_first_created_at": _BASE_TS,
             "events": [
-                _row("r", i + 1, et, pl, _BASE_TS)
-                for i, (et, pl) in enumerate(types_payloads)
+                _row("r", i + 1, et, pl, _BASE_TS) for i, (et, pl) in enumerate(types_payloads)
             ],
         }
 
@@ -263,10 +261,7 @@ def test_run_terminal_status_variants() -> None:
         history.run_terminal_status(_run(("done", {"status": "waiting_approval"})))
         == "waiting_approval"
     )
-    assert (
-        history.run_terminal_status(_run(("done", {"status": "disconnected"})))
-        == "disconnected"
-    )
+    assert history.run_terminal_status(_run(("done", {"status": "disconnected"}))) == "disconnected"
     assert history.run_terminal_status(_run(("error", {"message": "x"}))) == "error"
     assert history.run_terminal_status(_run(("answer", {"delta": "d"}))) == "running"
 
@@ -393,28 +388,65 @@ async def test_threads_list_fields_waiting_approval_and_order(
     t0 = _BASE_TS
     rows = [
         # thread A · run r1（completed）
-        _ev("r-a1", 1, MAINTAINER_ID, tid_a, "run.start",
+        _ev(
+            "r-a1",
+            1,
+            MAINTAINER_ID,
+            tid_a,
+            "run.start",
             {"run_id": "r-a1", "thread_id": tid_a, "mode": "supervisor", "query": "第一问"},
-            t0),
-        _ev("r-a1", 2, MAINTAINER_ID, tid_a, "answer",
-            {"content": "答一", "final": True}, t0 + timedelta(seconds=1), role="aggregator"),
-        _ev("r-a1", 3, MAINTAINER_ID, tid_a, "done",
-            {"run_id": "r-a1"}, t0 + timedelta(seconds=2)),
+            t0,
+        ),
+        _ev(
+            "r-a1",
+            2,
+            MAINTAINER_ID,
+            tid_a,
+            "answer",
+            {"content": "答一", "final": True},
+            t0 + timedelta(seconds=1),
+            role="aggregator",
+        ),
+        _ev("r-a1", 3, MAINTAINER_ID, tid_a, "done", {"run_id": "r-a1"}, t0 + timedelta(seconds=2)),
         # thread A · run r2（waiting_approval · 最新活动）
-        _ev("r-a2", 1, MAINTAINER_ID, tid_a, "run.start",
+        _ev(
+            "r-a2",
+            1,
+            MAINTAINER_ID,
+            tid_a,
+            "run.start",
             {"run_id": "r-a2", "thread_id": tid_a, "mode": "supervisor", "query": "第二问"},
-            t0 + timedelta(seconds=10)),
-        _ev("r-a2", 2, MAINTAINER_ID, tid_a, "hitl.waiting",
+            t0 + timedelta(seconds=10),
+        ),
+        _ev(
+            "r-a2",
+            2,
+            MAINTAINER_ID,
+            tid_a,
+            "hitl.waiting",
             {"reason": "hitl_waiting", "requests": [{"id": "ap1"}]},
-            t0 + timedelta(seconds=11)),
-        _ev("r-a2", 3, MAINTAINER_ID, tid_a, "done",
-            {"run_id": "r-a2", "status": "waiting_approval"}, t0 + timedelta(seconds=12)),
+            t0 + timedelta(seconds=11),
+        ),
+        _ev(
+            "r-a2",
+            3,
+            MAINTAINER_ID,
+            tid_a,
+            "done",
+            {"run_id": "r-a2", "status": "waiting_approval"},
+            t0 + timedelta(seconds=12),
+        ),
         # thread B · run r3（completed · 活动介于 A 两 run 之间）
-        _ev("r-b1", 1, MAINTAINER_ID, tid_b, "run.start",
+        _ev(
+            "r-b1",
+            1,
+            MAINTAINER_ID,
+            tid_b,
+            "run.start",
             {"run_id": "r-b1", "thread_id": tid_b, "mode": "basic", "query": "B 问"},
-            t0 + timedelta(seconds=5)),
-        _ev("r-b1", 2, MAINTAINER_ID, tid_b, "done",
-            {"run_id": "r-b1"}, t0 + timedelta(seconds=6)),
+            t0 + timedelta(seconds=5),
+        ),
+        _ev("r-b1", 2, MAINTAINER_ID, tid_b, "done", {"run_id": "r-b1"}, t0 + timedelta(seconds=6)),
     ]
     await seed_events(prefix, rows)
 
@@ -453,13 +485,20 @@ async def test_threads_default_limit_20_and_over_100_422(
         tid = f"{prefix}-{i:02d}"
         ts = _BASE_TS + timedelta(minutes=i)
         rows.append(
-            _ev(f"r-{i}", 1, VIEWER_ID, tid, "run.start",
+            _ev(
+                f"r-{i}",
+                1,
+                VIEWER_ID,
+                tid,
+                "run.start",
                 {"run_id": f"r-{i}", "thread_id": tid, "mode": "basic", "query": f"q{i}"},
-                ts)
+                ts,
+            )
         )
         rows.append(
-            _ev(f"r-{i}", 2, VIEWER_ID, tid, "done", {"run_id": f"r-{i}"},
-                ts + timedelta(seconds=1))
+            _ev(
+                f"r-{i}", 2, VIEWER_ID, tid, "done", {"run_id": f"r-{i}"}, ts + timedelta(seconds=1)
+            )
         )
     await seed_events(prefix, rows)
 
@@ -484,9 +523,7 @@ async def test_threads_default_limit_20_and_over_100_422(
         resp = await client.get(_THREADS, params=params)
         assert resp.status_code == 200
         data = resp.json()["data"]
-        seen.extend(
-            t["thread_id"] for t in data["threads"] if t["thread_id"].startswith(prefix)
-        )
+        seen.extend(t["thread_id"] for t in data["threads"] if t["thread_id"].startswith(prefix))
         cursor = data["next_cursor"]
         if cursor is None:
             break
@@ -513,36 +550,106 @@ async def test_thread_history_full_rebuild_and_run_order(
     t0 = _BASE_TS
     rows = [
         # run r1（先）：delta 回退 answer + subtask 摘要 + done（无 status → completed）
-        _ev("r-h2-1", 1, MAINTAINER_ID, tid, "run.start",
+        _ev(
+            "r-h2-1",
+            1,
+            MAINTAINER_ID,
+            tid,
+            "run.start",
             {"run_id": "r-h2-1", "thread_id": tid, "mode": "supervisor", "query": "旧问"},
-            t0),
-        _ev("r-h2-1", 2, MAINTAINER_ID, tid, "subtask.progress",
-            {"status": "running", "message": "检索中"}, t0 + timedelta(seconds=1),
-            role="rag_subtask"),
-        _ev("r-h2-1", 3, MAINTAINER_ID, tid, "answer", {"delta": "你好"},
-            t0 + timedelta(seconds=2), role="aggregator"),
-        _ev("r-h2-1", 4, MAINTAINER_ID, tid, "answer", {"delta": "世界"},
-            t0 + timedelta(seconds=3), role="aggregator"),
-        _ev("r-h2-1", 5, MAINTAINER_ID, tid, "subtask.progress",
+            t0,
+        ),
+        _ev(
+            "r-h2-1",
+            2,
+            MAINTAINER_ID,
+            tid,
+            "subtask.progress",
+            {"status": "running", "message": "检索中"},
+            t0 + timedelta(seconds=1),
+            role="rag_subtask",
+        ),
+        _ev(
+            "r-h2-1",
+            3,
+            MAINTAINER_ID,
+            tid,
+            "answer",
+            {"delta": "你好"},
+            t0 + timedelta(seconds=2),
+            role="aggregator",
+        ),
+        _ev(
+            "r-h2-1",
+            4,
+            MAINTAINER_ID,
+            tid,
+            "answer",
+            {"delta": "世界"},
+            t0 + timedelta(seconds=3),
+            role="aggregator",
+        ),
+        _ev(
+            "r-h2-1",
+            5,
+            MAINTAINER_ID,
+            tid,
+            "subtask.progress",
             {"status": "done", "subtask_result": {"id": "t1"}, "answer_preview": "你好"},
-            t0 + timedelta(seconds=4), role="rag_subtask"),
-        _ev("r-h2-1", 6, MAINTAINER_ID, tid, "done", {"run_id": "r-h2-1"},
-            t0 + timedelta(seconds=5)),
+            t0 + timedelta(seconds=4),
+            role="rag_subtask",
+        ),
+        _ev(
+            "r-h2-1", 6, MAINTAINER_ID, tid, "done", {"run_id": "r-h2-1"}, t0 + timedelta(seconds=5)
+        ),
         # run r2（后）：终帧优先（混 delta）+ hitl.waiting + done(waiting_approval)
-        _ev("r-h2-2", 1, MAINTAINER_ID, tid, "run.start",
+        _ev(
+            "r-h2-2",
+            1,
+            MAINTAINER_ID,
+            tid,
+            "run.start",
             {"run_id": "r-h2-2", "thread_id": tid, "mode": "supervisor", "query": "新问"},
-            t0 + timedelta(seconds=10)),
-        _ev("r-h2-2", 2, MAINTAINER_ID, tid, "answer", {"delta": "残"},
-            t0 + timedelta(seconds=11), role="aggregator"),
-        _ev("r-h2-2", 3, MAINTAINER_ID, tid, "answer",
-            {"content": "终答", "final": True}, t0 + timedelta(seconds=12),
-            role="aggregator"),
-        _ev("r-h2-2", 4, MAINTAINER_ID, tid, "hitl.waiting",
+            t0 + timedelta(seconds=10),
+        ),
+        _ev(
+            "r-h2-2",
+            2,
+            MAINTAINER_ID,
+            tid,
+            "answer",
+            {"delta": "残"},
+            t0 + timedelta(seconds=11),
+            role="aggregator",
+        ),
+        _ev(
+            "r-h2-2",
+            3,
+            MAINTAINER_ID,
+            tid,
+            "answer",
+            {"content": "终答", "final": True},
+            t0 + timedelta(seconds=12),
+            role="aggregator",
+        ),
+        _ev(
+            "r-h2-2",
+            4,
+            MAINTAINER_ID,
+            tid,
+            "hitl.waiting",
             {"reason": "hitl_waiting", "requests": [{"id": "ap9", "action": "deploy"}]},
-            t0 + timedelta(seconds=13)),
-        _ev("r-h2-2", 5, MAINTAINER_ID, tid, "done",
+            t0 + timedelta(seconds=13),
+        ),
+        _ev(
+            "r-h2-2",
+            5,
+            MAINTAINER_ID,
+            tid,
+            "done",
             {"run_id": "r-h2-2", "status": "waiting_approval"},
-            t0 + timedelta(seconds=14)),
+            t0 + timedelta(seconds=14),
+        ),
     ]
     await seed_events(prefix, rows)
 
@@ -580,13 +687,26 @@ async def test_thread_history_run_pagination_no_dup_no_miss(
     for i in range(3):
         ts = _BASE_TS + timedelta(seconds=i * 10)
         rows.append(
-            _ev(f"r-p{i}", 1, MAINTAINER_ID, tid, "run.start",
+            _ev(
+                f"r-p{i}",
+                1,
+                MAINTAINER_ID,
+                tid,
+                "run.start",
                 {"run_id": f"r-p{i}", "thread_id": tid, "mode": "basic", "query": f"q{i}"},
-                ts)
+                ts,
+            )
         )
         rows.append(
-            _ev(f"r-p{i}", 2, MAINTAINER_ID, tid, "done", {"run_id": f"r-p{i}"},
-                ts + timedelta(seconds=1))
+            _ev(
+                f"r-p{i}",
+                2,
+                MAINTAINER_ID,
+                tid,
+                "done",
+                {"run_id": f"r-p{i}"},
+                ts + timedelta(seconds=1),
+            )
         )
     await seed_events(prefix, rows)
 
@@ -612,14 +732,34 @@ async def test_thread_history_answer_truncation_flag(
     tid = f"{prefix}-main"
     big = "长" * (ANSWER_MAX_CHARS + 100)
     rows = [
-        _ev("r-big", 1, MAINTAINER_ID, tid, "run.start",
+        _ev(
+            "r-big",
+            1,
+            MAINTAINER_ID,
+            tid,
+            "run.start",
             {"run_id": "r-big", "thread_id": tid, "mode": "basic", "query": "长答"},
-            _BASE_TS),
-        _ev("r-big", 2, MAINTAINER_ID, tid, "answer",
-            {"content": big, "final": True}, _BASE_TS + timedelta(seconds=1),
-            role="aggregator"),
-        _ev("r-big", 3, MAINTAINER_ID, tid, "done", {"run_id": "r-big"},
-            _BASE_TS + timedelta(seconds=2)),
+            _BASE_TS,
+        ),
+        _ev(
+            "r-big",
+            2,
+            MAINTAINER_ID,
+            tid,
+            "answer",
+            {"content": big, "final": True},
+            _BASE_TS + timedelta(seconds=1),
+            role="aggregator",
+        ),
+        _ev(
+            "r-big",
+            3,
+            MAINTAINER_ID,
+            tid,
+            "done",
+            {"run_id": "r-big"},
+            _BASE_TS + timedelta(seconds=2),
+        ),
     ]
     await seed_events(prefix, rows)
 
@@ -643,11 +783,16 @@ async def test_thread_history_cross_user_404(
     tid = f"{prefix}-other"
     other_user = uuid.uuid4().hex  # 他人 thread（事件表 user_id 真源）
     rows = [
-        _ev("r-x", 1, other_user, tid, "run.start",
+        _ev(
+            "r-x",
+            1,
+            other_user,
+            tid,
+            "run.start",
             {"run_id": "r-x", "thread_id": tid, "mode": "basic", "query": "别人问"},
-            _BASE_TS),
-        _ev("r-x", 2, other_user, tid, "done", {"run_id": "r-x"},
-            _BASE_TS + timedelta(seconds=1)),
+            _BASE_TS,
+        ),
+        _ev("r-x", 2, other_user, tid, "done", {"run_id": "r-x"}, _BASE_TS + timedelta(seconds=1)),
     ]
     await seed_events(prefix, rows)
 
@@ -668,9 +813,7 @@ async def test_threads_unauthorized_401(client: AsyncClient) -> None:
     assert (await client.get(_HISTORY.format(tid="th-x"))).status_code == 401
 
 
-async def test_thread_id_too_long_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_thread_id_too_long_422(client: AsyncClient, override_auth_maintainer) -> None:
     response = await client.get(_HISTORY.format(tid="t" * 256))
     assert response.status_code == 422
 
@@ -684,24 +827,40 @@ async def test_thread_history_missing_query_degrades_fp4(
     tid = f"{prefix}-old"
     run_id = "0ldrun1234567890"
     rows = [
-        _ev(run_id, 1, MAINTAINER_ID, tid, "run.start",
+        _ev(
+            run_id,
+            1,
+            MAINTAINER_ID,
+            tid,
+            "run.start",
             {"run_id": run_id, "thread_id": tid, "mode": "supervisor"},  # 无 query 键
-            _BASE_TS),
-        _ev(run_id, 2, MAINTAINER_ID, tid, "answer",
-            {"content": "旧答", "final": True}, _BASE_TS + timedelta(seconds=1),
-            role="aggregator"),
-        _ev(run_id, 3, MAINTAINER_ID, tid, "done", {"run_id": run_id},
-            _BASE_TS + timedelta(seconds=2)),
+            _BASE_TS,
+        ),
+        _ev(
+            run_id,
+            2,
+            MAINTAINER_ID,
+            tid,
+            "answer",
+            {"content": "旧答", "final": True},
+            _BASE_TS + timedelta(seconds=1),
+            role="aggregator",
+        ),
+        _ev(
+            run_id,
+            3,
+            MAINTAINER_ID,
+            tid,
+            "done",
+            {"run_id": run_id},
+            _BASE_TS + timedelta(seconds=2),
+        ),
     ]
     await seed_events(prefix, rows)
 
     list_resp = await client.get(_THREADS)
     assert list_resp.status_code == 200
-    mine = [
-        t
-        for t in list_resp.json()["data"]["threads"]
-        if t["thread_id"] == tid
-    ]
+    mine = [t for t in list_resp.json()["data"]["threads"] if t["thread_id"] == tid]
     assert len(mine) == 1  # 列表不阻塞
     assert mine[0]["title"].startswith(run_id[:8])  # 降级标题
 
@@ -713,9 +872,7 @@ async def test_thread_history_missing_query_degrades_fp4(
 
 
 @_DB_SKIP
-async def test_threads_aggregate_timeout_504(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_threads_aggregate_timeout_504(client: AsyncClient, override_auth_maintainer) -> None:
     """FP-2：聚合超时常量注入小阈值 → 504。"""
 
     async def _slow_page(*_a: Any, **_kw: Any) -> list[dict[str, Any]]:
@@ -723,9 +880,7 @@ async def test_threads_aggregate_timeout_504(
         return []
 
     with (
-        patch(
-            "app.ops.lg_rag.history_router.HISTORY_AGGREGATE_TIMEOUT_S", 0.05
-        ),
+        patch("app.ops.lg_rag.history_router.HISTORY_AGGREGATE_TIMEOUT_S", 0.05),
         patch(
             "app.ops.lg_rag.history_router.event_store.list_thread_activity_page",
             new=_slow_page,
@@ -742,9 +897,15 @@ async def test_thread_history_aggregate_timeout_504(
     prefix = f"th-to-{uuid.uuid4().hex[:8]}"
     tid = f"{prefix}-main"
     rows = [
-        _ev("r-to", 1, MAINTAINER_ID, tid, "run.start",
+        _ev(
+            "r-to",
+            1,
+            MAINTAINER_ID,
+            tid,
+            "run.start",
             {"run_id": "r-to", "thread_id": tid, "mode": "basic", "query": "q"},
-            _BASE_TS),
+            _BASE_TS,
+        ),
     ]
     await seed_events(prefix, rows)
 
@@ -753,9 +914,7 @@ async def test_thread_history_aggregate_timeout_504(
         return {}
 
     with (
-        patch(
-            "app.ops.lg_rag.history_router.HISTORY_AGGREGATE_TIMEOUT_S", 0.05
-        ),
+        patch("app.ops.lg_rag.history_router.HISTORY_AGGREGATE_TIMEOUT_S", 0.05),
         patch(
             "app.ops.lg_rag.history_router.event_store.fetch_events_for_threads",
             new=_slow_fetch,
@@ -793,9 +952,7 @@ async def test_run_start_carries_optional_query_no_new_event_type(
             new_callable=AsyncMock,
         ) as mock_persist,
     ):
-        response = await client.post(
-            _STREAM, json={"query": "历史问", "thread_id": "th-hist-sse"}
-        )
+        response = await client.post(_STREAM, json={"query": "历史问", "thread_id": "th-hist-sse"})
     assert response.status_code == 200
     events = _parse_sse(response.text)
     types = [e["event_type"] for e in events]

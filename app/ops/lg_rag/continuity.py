@@ -16,6 +16,7 @@ active facts 渲染为**系统消息尾部独立块**（`[已知事实]`，每�
 `[用户偏好]` 物理分节），三闸预算（条数默认 3 · 单条 ≤200 · 整块 ≤800
 尾部截断）；召回失败降级不注入。
 """
+
 from __future__ import annotations
 
 import json
@@ -78,9 +79,7 @@ def compress_window(
         return list(turns[-max_full_turns:])
 
 
-def _assemble_messages_from_compressed(
-    query: str, compressed: list[dict]
-) -> list[BaseMessage]:
+def _assemble_messages_from_compressed(query: str, compressed: list[dict]) -> list[BaseMessage]:
     """压缩产物 → LC 消息 + 本轮 HumanMessage(query)（assemble 共用内核）。"""
     messages: list[BaseMessage] = []
     for turn in compressed:
@@ -123,7 +122,9 @@ MEMORY_FACTS_HEADER = "[已知事实]"
 MEMORY_PREFERENCES_HEADER = "[用户偏好]"
 #: 偏好节引导语：明示「显式陈述 / 非客观事实 / 无偏好不要假设编造」（红线③扩展；
 #: 锚点断言守「用户偏好」「非客观事实」语义，改文案不挂 CI、改变量语义必挂）
-MEMORY_PREFERENCES_GUIDE = "用户显式陈述的偏好，用于调整回应方式；非客观事实。无偏好时不要假设或编造。"
+MEMORY_PREFERENCES_GUIDE = (
+    "用户显式陈述的偏好，用于调整回应方式；非客观事实。无偏好时不要假设或编造。"
+)
 DEFAULT_MEMORY_FACTS_MAX_ITEMS = 8
 
 _TRUTHY = ("1", "true", "yes", "on")
@@ -337,9 +338,7 @@ def render_memory_episodes_block(episodes: list[Any]) -> str:
     return "\n".join(lines)
 
 
-def inject_memory_facts_block(
-    messages: list[BaseMessage], block: str
-) -> list[BaseMessage]:
+def inject_memory_facts_block(messages: list[BaseMessage], block: str) -> list[BaseMessage]:
     """把块作为**独立 SystemMessage** 插到既有前缀系统消息之后（无则置队首）。
 
     空块原样返回（零 diff）；不掺入任何 prompt 模板 / 指令正文。
@@ -373,13 +372,9 @@ async def _assemble_with_session_summary(
     占位模式逐字节回退 + span session_summary_degraded=N。
     """
     turns = list(history_turns or [])
-    compressed = compress_window(
-        turns, max_full_turns=max_full_turns, group_size=group_size
-    )
+    compressed = compress_window(turns, max_full_turns=max_full_turns, group_size=group_size)
     if not (thread_id or "").strip():
-        logger.warning(
-            "SESSION_SUMMARY_ENABLED on but thread_id missing; keep placeholders"
-        )
+        logger.warning("SESSION_SUMMARY_ENABLED on but thread_id missing; keep placeholders")
     else:
         try:
             import importlib
@@ -396,8 +391,7 @@ async def _assemble_with_session_summary(
             n_placeholders = sum(
                 1
                 for t in compressed
-                if isinstance(t, dict)
-                and str(t.get("content") or "").startswith("[历史摘要 · ")
+                if isinstance(t, dict) and str(t.get("content") or "").startswith("[历史摘要 · ")
             )
             logger.exception("session summary face failed; keep placeholders")
             update_current_span_metadata({"session_summary_degraded": n_placeholders})
@@ -448,9 +442,7 @@ async def _assemble_graph_messages_with_memory_impl(
         )
     if memory_facts_enabled():
         if not (tenant_id or "").strip() or not (user_id or "").strip():
-            logger.warning(
-                "MEMORY_FACTS_ENABLED on but tenant/user missing; skip injection"
-            )
+            logger.warning("MEMORY_FACTS_ENABLED on but tenant/user missing; skip injection")
         else:
             try:
                 # 延迟 import：continuity 保持纯函数可独立加载；memory 依赖 db
@@ -492,9 +484,7 @@ async def _assemble_graph_messages_with_memory_impl(
     if not memory_episodes_enabled():
         return messages
     if not (tenant_id or "").strip():
-        logger.warning(
-            "MEMORY_EPISODES_ENABLED on but tenant missing; skip episode injection"
-        )
+        logger.warning("MEMORY_EPISODES_ENABLED on but tenant missing; skip episode injection")
         return messages
     try:
         # 延迟 import（同 memory service 先例）：off 态静态加载链零变化
@@ -610,4 +600,3 @@ async def assemble_graph_messages_with_memory(
         logger.exception("input isolation mechanism failed; degrade to off-state assembly")
         update_current_span_metadata({"input_isolation_degraded": True})
         return messages
-

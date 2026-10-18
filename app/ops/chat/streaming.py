@@ -1,4 +1,5 @@
 """Shared chat run streaming and persistence helpers for SSE and WS transports."""
+
 from __future__ import annotations
 
 import asyncio
@@ -33,9 +34,7 @@ async def resolve_chat_session(
 ) -> str:
     """Validate existing chat session or create a new one."""
     if session_id:
-        result = await db.execute(
-            select(OpsSessionChat).where(OpsSessionChat.id == session_id)
-        )
+        result = await db.execute(select(OpsSessionChat).where(OpsSessionChat.id == session_id))
         chat_session = result.scalar_one_or_none()
         if chat_session is None or str(chat_session.user_id) != str(user_id):
             raise HTTPException(
@@ -182,9 +181,7 @@ class ChatEventStreamer:
         if buffer:
             await flush_run_events(self.run_id, buffer[:])
             buffer.clear()
-        await persist_run_events(
-            self.run_id, all_events, cancelled=self.cancel_requested
-        )
+        await persist_run_events(self.run_id, all_events, cancelled=self.cancel_requested)
 
     async def events(self) -> AsyncIterator[dict]:
         """Yield run events as dicts, flushing them to the DB along the way."""
@@ -312,9 +309,7 @@ class ChatEventStreamer:
             # Persistence must survive outer task cancellation (e.g. client
             # disconnected mid-run): run cleanup as a shielded task and keep
             # re-awaiting it if we get cancelled while waiting.
-            cleanup = asyncio.create_task(
-                self._finalize_run(buffer, all_events, flush_task)
-            )
+            cleanup = asyncio.create_task(self._finalize_run(buffer, all_events, flush_task))
             while not cleanup.done():
                 try:
                     await asyncio.shield(cleanup)

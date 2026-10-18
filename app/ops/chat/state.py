@@ -1,4 +1,5 @@
 """ChatState：LangGraph 共享状态定义。"""
+
 from operator import add
 from typing import Annotated, TypedDict
 

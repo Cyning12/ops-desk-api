@@ -164,13 +164,9 @@ def _resolve_target(kind: str, slug: str, repo_root: Path) -> tuple[Path, str]:
     resolved 目标与字面根不匹配 → 拒绝。
     """
     if kind not in _KINDS:
-        raise TaskWriterError(
-            f"invalid_args: 未知 kind: {kind!r}（允许: {' / '.join(_KINDS)}）"
-        )
+        raise TaskWriterError(f"invalid_args: 未知 kind: {kind!r}（允许: {' / '.join(_KINDS)}）")
     if not isinstance(slug, str) or not _SLUG_RE.match(slug):
-        raise TaskWriterError(
-            f"invalid_args: slug 须 kebab-case（小写字母/数字/连字符）: {slug!r}"
-        )
+        raise TaskWriterError(f"invalid_args: slug 须 kebab-case（小写字母/数字/连字符）: {slug!r}")
     if kind == KIND_INVOKE:
         allow_rel = f"{_INVOKE_BASE}/{slug}"
         rel_path = f"{allow_rel}/invoke_{slug}.md"
@@ -181,9 +177,7 @@ def _resolve_target(kind: str, slug: str, repo_root: Path) -> tuple[Path, str]:
     allow_literal = repo_root / allow_rel
     target = (repo_root / rel_path).resolve()
     if not target.is_relative_to(allow_literal):
-        raise TaskWriterError(
-            f"path_not_allowed: 目标越出 allowlist（{allow_rel}/）: {rel_path}"
-        )
+        raise TaskWriterError(f"path_not_allowed: 目标越出 allowlist（{allow_rel}/）: {rel_path}")
     return target, rel_path
 
 
@@ -296,8 +290,7 @@ def apply_task_write(plan: WritePlan, *, confirmed: bool = False) -> WriteResult
     )
     if plan.checksum != expected:
         raise TaskWriterError(
-            "plan_tampered: WritePlan 校验摘要不符（疑似手工构造或篡改；"
-            "请重新走 plan_task_write）"
+            "plan_tampered: WritePlan 校验摘要不符（疑似手工构造或篡改；请重新走 plan_task_write）"
         )
     # 复跑校验：kind+slug 推导目标须与 plan 一致（kind/目录错配归并 path_not_allowed）
     root = _resolve_repo_root(plan.repo_root)
@@ -313,9 +306,7 @@ def apply_task_write(plan: WritePlan, *, confirmed: bool = False) -> WriteResult
     if not confirmed:
         return WriteResult(plan=plan, confirmed=False, written=False)
     target.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(
-        dir=target.parent, prefix=f".{target.name}.", suffix=".tmp"
-    )
+    fd, tmp_name = tempfile.mkstemp(dir=target.parent, prefix=f".{target.name}.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             handle.write(plan.content)

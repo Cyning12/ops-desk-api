@@ -22,9 +22,10 @@ from __future__ import annotations
 import asyncio
 import json
 import threading
+from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import pytest
 import yaml
@@ -71,9 +72,7 @@ def redline(redline_id: str) -> Callable[[Callable[..., Any]], Callable[..., Any
     return decorate
 
 
-def assert_redline(
-    *, redline_id: str, holds: bool, control: bool, detail: str = ""
-) -> None:
+def assert_redline(*, redline_id: str, holds: bool, control: bool, detail: str = "") -> None:
     """正向必须成立；反向对照也必须成立，否则说明这条红线是空真。"""
     assert holds, f"[{redline_id}] 红线被突破：{detail}"
     assert control, (
@@ -110,18 +109,18 @@ _WRITE_HTTP = {
 def _spec(cid: str, **over: Any) -> CapabilitySpec:
     http = dict(_WRITE_HTTP)
     http.update(over.pop("http", {}))
-    base: dict[str, Any] = dict(
-        capability_id=cid,
-        kind="http",
-        description="红线单测",
-        args_schema=dict(_ARGS),
-        tags=("oa",),
-        side_effect="write",
-        hitl_required=True,
-        when_to_use="红线单测",
-        visibility={"departments": ["all"], "roles": ["all"]},
-        http=http,
-    )
+    base: dict[str, Any] = {
+        "capability_id": cid,
+        "kind": "http",
+        "description": "红线单测",
+        "args_schema": dict(_ARGS),
+        "tags": ("oa",),
+        "side_effect": "write",
+        "hitl_required": True,
+        "when_to_use": "红线单测",
+        "visibility": {"departments": ["all"], "roles": ["all"]},
+        "http": http,
+    }
     base.update(over)
     return CapabilitySpec(**base)
 
@@ -275,9 +274,16 @@ def test_r2_undeclared_template_variable_never_silently_renders(tmp_path: Path):
 def test_r3_downstream_message_never_leaks_to_caller():
     """下游错误原文不外泄；同时错误串必须是"有内容的稳定码"而非空。"""
     leaky = "内部堆栈: at com.oa.internal.Foo.bar(Foo.java:42)"
-    spec = _spec("r3.read", side_effect="read", http={"method": "GET", "body_map": {},
-                                                       "idempotency_key": None,
-                                                       "query_map": {"q": "{{subject}}"}})
+    spec = _spec(
+        "r3.read",
+        side_effect="read",
+        http={
+            "method": "GET",
+            "body_map": {},
+            "idempotency_key": None,
+            "query_map": {"q": "{{subject}}"},
+        },
+    )
     tx = FakeHttpTransport(payload={"code": 1001, "msg": leaky})
     _register(spec, tx)
     try:
@@ -285,15 +291,11 @@ def test_r3_downstream_message_never_leaks_to_caller():
         err = str(result.error)
         holds = (not result.ok) and "com.oa.internal" not in err and leaky not in err
         # 对照：错误串必须是可决策的稳定码，不能是空/None（否则"没泄漏"是假通过）
-        control = err.startswith("args_schema_invalid") and len(err) > len(
-            "args_schema_invalid"
-        )
+        control = err.startswith("args_schema_invalid") and len(err) > len("args_schema_invalid")
     finally:
         unregister("r3.read")
 
-    assert_redline(
-        redline_id="R3", holds=holds, control=control, detail=f"error={result.error!r}"
-    )
+    assert_redline(redline_id="R3", holds=holds, control=control, detail=f"error={result.error!r}")
 
 
 # ---------------- R4：含非 ASCII 参数的写调用必须成功 ----------------
@@ -334,8 +336,12 @@ def test_r5_write_timeout_never_retries_but_read_may():
     rspec = _spec(
         "r5.read",
         side_effect="read",
-        http={"method": "GET", "body_map": {}, "idempotency_key": None,
-              "query_map": {"q": "{{subject}}"}},
+        http={
+            "method": "GET",
+            "body_map": {},
+            "idempotency_key": None,
+            "query_map": {"q": "{{subject}}"},
+        },
     )
     rtx = FakeHttpTransport(exc=TimeoutError("timeout"))
     _register(rspec, rtx)
@@ -465,14 +471,10 @@ class _AsyncOnlyIdempotencyStore:
         self._inner = inner
 
     async def aclaim(self, key: str, *, capability_id: str = "", tenant_id: str = ""):
-        return await self._inner.aclaim(
-            key, capability_id=capability_id, tenant_id=tenant_id
-        )
+        return await self._inner.aclaim(key, capability_id=capability_id, tenant_id=tenant_id)
 
     async def acomplete(self, key: str, *, receipt_id: str = "", tenant_id: str = ""):
-        await self._inner.acomplete(
-            key, receipt_id=receipt_id, tenant_id=tenant_id
-        )
+        await self._inner.acomplete(key, receipt_id=receipt_id, tenant_id=tenant_id)
 
 
 @redline("R8")
@@ -501,9 +503,7 @@ def test_r8_async_only_store_fails_closed_on_sync_invoke():
         # 注意：被拦下的同步调用**也留了一条回执**（写能力无论成败都落回执，是既有设计），
         # 所以这里不能数"回执条数 == 1"，而要断言"确实执行过一次写并留下了 write_confirmed"。
         control = (
-            allowed.ok is True
-            and len(tx.calls) == 1
-            and any(r.write_confirmed for r in sink.all())
+            allowed.ok is True and len(tx.calls) == 1 and any(r.write_confirmed for r in sink.all())
         )
     finally:
         unregister("r8.write")
@@ -568,200 +568,7 @@ def _r10_spec(cid: str, contract: dict[str, Any] | None, **over: Any) -> Capabil
     return _spec(cid, output_schema=contract, **over)
 
 
-@redline("R10")
-def test_r10_declared_contract_rejects_nonconforming_result():
-    """结果缺必填字段必须判失败（upstream_error + 契约 detail）；
-    合规结果必须成功；**未声明契约**的能力不得被推测性拦截。"""
-    contract = {"required": ["$.data.ticketId"]}
-    spec = _r10_spec("r10.write", contract)
-    bad = FakeHttpTransport(payload={"code": 0, "data": {}})  # 声明了 ticketId 却没有
-    _register(spec, bad)
-    try:
-        violated = invoke("r10.write", {"subject": "x"}, ctx=dict(_CTX_WRITE))
-        detail = str(violated.error or "")
-        holds = (
-            violated.ok is False
-            and detail.startswith("upstream_error")  # ★ 不新造错误码
-            and "result_contract" in detail
-            and violated.meta.get("result_contract_violated") is True
-        )
-    finally:
-        unregister("r10.write")
-
-    # 对照一：合规结果必须照常成功（不是"一律失败"）
-    good = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-R10"}})
-    _register(_r10_spec("r10.write", contract), good)
-    try:
-        ok_call = invoke("r10.write", {"subject": "x"}, ctx=dict(_CTX_WRITE))
-        control_ok = ok_call.ok is True and _inner_data(ok_call).get("ticketId") == "T-R10"
-    finally:
-        unregister("r10.write")
-
-    # 对照二：没声明契约 → 同样残缺的返回**照旧成功**（契约是显式声明出来的，
-    # 系统不替你猜；擅自拦截会把"能用"变成"随机不可用"）
-    _register(_r10_spec("r10.free", None), bad)
-    try:
-        free = invoke("r10.free", {"subject": "x"}, ctx=dict(_CTX_WRITE))
-        control_free = free.ok is True and not free.meta.get("result_contract_violated")
-    finally:
-        unregister("r10.free")
-
-    assert_redline(
-        redline_id="R10",
-        holds=holds,
-        control=control_ok and control_free,
-        detail=f"violated={violated.error!r} ok={ok_call.ok} free={free.ok}",
-    )
-
-
-def test_r10_is_not_vacuous(monkeypatch: pytest.MonkeyPatch):
-    """变异检验：把契约校验摘掉，上面那条红线的正向断言必须**翻掉**。
-
-    不翻 = 说明它被别的东西（比如本来就失败）满足了，是空真。
-    """
-    import app.ops.capability.gateway as gw
-
-    monkeypatch.setattr(gw, "_result_contract_verdict", lambda spec, output: None)
-    spec = _r10_spec("r10.mut", {"required": ["$.data.ticketId"]})
-    tx = FakeHttpTransport(payload={"code": 0, "data": {}})
-    _register(spec, tx)
-    try:
-        res = invoke("r10.mut", {"subject": "x"}, ctx=dict(_CTX_WRITE))
-    finally:
-        unregister("r10.mut")
-    # 摘掉校验后，残缺结果重新变回 ok=True —— 证明拦住它的确实是契约，不是别的
-    assert res.ok is True, f"变异未翻转：契约被摘掉后仍然失败 err={res.error!r}"
-
-
 # ---------------- R11：会话配额 + kill switch ----------------
-
-
-@redline("R11")
-def test_r11_session_budget_and_kill_switch_block_before_downstream(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    """配额耗尽 / kill switch 命中 → 拦下且下游零请求；
-    换会话仍能打；**被拦下的调用不计数**（否则兜底会误伤正常调用）。"""
-    from app.ops.capability import budget
-
-    monkeypatch.setenv("OPS_CAPABILITY_MAX_WRITES_PER_SESSION", "1")
-    monkeypatch.setenv("OPS_CAPABILITY_MAX_CALLS_PER_SESSION", "0")  # 0 = 不限，只测写数
-    budget.reset()
-
-    tx = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-R11"}})
-    _register(_spec("r11.write"), tx)
-    try:
-        sess = {"tenant_id": "t1", "run_id": "run-A", "_host_policy": {"allow_write": True}}
-        first = invoke("r11.write", {"subject": "a"}, ctx=dict(sess))
-        second = invoke("r11.write", {"subject": "b"}, ctx=dict(sess))
-        detail = str(second.error or "")
-        holds = (
-            first.ok is True
-            and second.ok is False
-            and detail.startswith("policy_blocked")  # ★ 不新造错误码
-            and "budget_exhausted" in detail
-            and second.meta.get("blocked") == "budget"
-            and len(tx.calls) == 1  # 第二次根本没出门
-        )
-
-        # 对照一：换一个会话照样能打（配额是 per-session，不是全局一律拒绝）
-        other = invoke(
-            "r11.write",
-            {"subject": "c"},
-            ctx={"tenant_id": "t1", "run_id": "run-B", "_host_policy": {"allow_write": True}},
-        )
-        control_other_session = other.ok is True and len(tx.calls) == 2
-
-        # 对照二：被拦下的调用**不计数** ——否则"反复尝试都被拒"会打满配额，
-        # 让一次正常调用也被误伤（兜底变成另一种不可用）
-        budget.reset()
-        blocked_ctx = {
-            "tenant_id": "t1",
-            "run_id": "run-C",
-            # 故意不给 allow_write：这次会被 Policy 拦下，不该消耗配额
-        }
-        for _ in range(3):
-            invoke("r11.write", {"subject": "z"}, ctx=dict(blocked_ctx))
-        snap = budget.snapshot()
-        used = snap["sessions"].get("run-C", {"writes": 0})
-        control_not_counted = used["writes"] == 0
-    finally:
-        unregister("r11.write")
-
-    assert_redline(
-        redline_id="R11",
-        holds=holds,
-        control=control_other_session and control_not_counted,
-        detail=(
-            f"second={second.error!r} calls={len(tx.calls)} "
-            f"other={other.ok} used_runC={used}"
-        ),
-    )
-
-
-@redline("R11")
-def test_r11_kill_switch_disables_capability(monkeypatch: pytest.MonkeyPatch):
-    """kill switch 命中 → disabled 且下游零请求；不命中/关掉开关 → 照常放行。"""
-    from app.ops.capability import budget
-
-    monkeypatch.setenv("OPS_CAPABILITY_KILL_SWITCH", "r11.*")
-    budget.reset()
-    tx = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-KS"}})
-    _register(_spec("r11.killed"), tx)
-    try:
-        killed = invoke("r11.killed", {"subject": "x"}, ctx=dict(_CTX_WRITE))
-        detail = str(killed.error or "")
-        holds = (
-            killed.ok is False
-            and detail.startswith("disabled")  # ★ 不新造错误码
-            and "kill_switch" in detail
-            and killed.meta.get("blocked") == "kill_switch"
-            and tx.calls == []
-        )
-    finally:
-        unregister("r11.killed")
-
-    # 对照：关掉开关 → 同一个能力照常放行（开关是"停用"，不是"这个 id 永久坏了"）
-    monkeypatch.delenv("OPS_CAPABILITY_KILL_SWITCH")
-    budget.reset()
-    tx2 = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-KS"}})
-    _register(_spec("r11.killed"), tx2)
-    try:
-        alive = invoke("r11.killed", {"subject": "x"}, ctx=dict(_CTX_WRITE))
-        control = alive.ok is True and len(tx2.calls) == 1
-    finally:
-        unregister("r11.killed")
-
-    assert_redline(
-        redline_id="R11",
-        holds=holds,
-        control=control,
-        detail=f"killed={killed.error!r} alive={alive.ok} calls={len(tx2.calls)}",
-    )
-
-
-def test_r11_is_not_vacuous(monkeypatch: pytest.MonkeyPatch):
-    """变异检验：把配额检查摘掉，超配额那次必须**真的打到了下游**。
-
-    不翻 = 说明拦住它的是别的东西（比如 Policy），这条红线是空真。
-    """
-    import app.ops.capability.gateway as gw
-
-    monkeypatch.setenv("OPS_CAPABILITY_MAX_WRITES_PER_SESSION", "1")
-    monkeypatch.setenv("OPS_CAPABILITY_MAX_CALLS_PER_SESSION", "0")
-    monkeypatch.setattr(gw, "budget_check", lambda spec, *, ctx: None)
-
-    tx = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-MUT"}})
-    _register(_spec("r11.mut"), tx)
-    try:
-        sess = {"tenant_id": "t1", "run_id": "run-M", "_host_policy": {"allow_write": True}}
-        invoke("r11.mut", {"subject": "a"}, ctx=dict(sess))
-        second = invoke("r11.mut", {"subject": "b"}, ctx=dict(sess))
-    finally:
-        unregister("r11.mut")
-    assert second.ok is True and len(tx.calls) == 2, (
-        f"变异未翻转：配额被摘掉后第二次仍被拦 err={second.error!r}"
-    )
 
 
 # ---------------- R10：声明了结果契约就必须校验 ----------------
@@ -897,10 +704,7 @@ def test_r11_session_budget_and_kill_switch_block_before_downstream(
         redline_id="R11",
         holds=holds,
         control=control_other_session and control_not_counted,
-        detail=(
-            f"second={second.error!r} calls={len(tx.calls)} "
-            f"other={other.ok} used_runC={used}"
-        ),
+        detail=(f"second={second.error!r} calls={len(tx.calls)} other={other.ok} used_runC={used}"),
     )
 
 
@@ -1163,6 +967,8 @@ def _r13_kw(cid: str, **over: Any) -> CapabilitySpec:
     """降级目标：参数名是 keyword（与源能力的 subject 不同，用于验证 args_map）。"""
     over.setdefault("args_schema", dict(_ARGS_KEYWORD))
     return _spec(cid, side_effect="read", http=dict(_READ_HTTP_KW), **over)
+
+
 # 降级目标用自己的参数名（query_map 必须引用自己 schema 里声明的字段，
 # 否则加载期/运行期会因"未声明模板变量"失败——那正是"降级失败要看得见"的样例）
 _READ_HTTP_KW = {**_READ_HTTP, "query_map": {"keyword": "{{keyword}}"}}
@@ -1233,11 +1039,7 @@ def test_r13_declared_fallback_degrades_with_marker():
 
         # 对照：**没声明**降级 → 明确失败，降级目标零调用
         res2 = invoke("r13.c", {"subject": "报销"}, ctx=dict(ctx))
-        control = (
-            res2.ok is False
-            and res2.meta.get("degraded") is not True
-            and good_d.calls == []
-        )
+        control = res2.ok is False and res2.meta.get("degraded") is not True and good_d.calls == []
     finally:
         for cid in ("r13.a", "r13.b", "r13.c", "r13.d"):
             unregister(cid)
@@ -1415,11 +1217,7 @@ def test_r13_chain_is_bounded():
         res = invoke("r13.cyc.a", {"subject": "x"}, ctx={"tenant_id": "t1"})
         # 不死循环：A / B 各只被打了「自己那一次」的量（GET 会重试一次 = 2 次）。
         # 真递归的话这里会是 4、6、… 或直接 RecursionError。
-        holds = (
-            res.ok is False
-            and 0 < len(a_tx.calls) <= 2
-            and 0 < len(b_tx.calls) <= 2
-        )
+        holds = res.ok is False and 0 < len(a_tx.calls) <= 2 and 0 < len(b_tx.calls) <= 2
     finally:
         unregister("r13.cyc.a")
         unregister("r13.cyc.b")
@@ -1713,9 +1511,7 @@ async def _drive_step_contract(plan: list[dict], terminals: dict[str, dict]):
         "messages": [],
     }
     out = await _join_subtasks(state)
-    blocked = {
-        str(r.get("subtask_id")): r for r in (out.get("subtask_results") or [])
-    }
+    blocked = {str(r.get("subtask_id")): r for r in (out.get("subtask_results") or [])}
     ready = list(out.get("inflight_subtask_ids") or [])
     executed: list[str] = []
     calls: list[str] = []
@@ -1878,15 +1674,20 @@ async def test_r15_recoverable_point_keeps_prefix():
         base.update(kw)
         return base
 
-    first = '{"subtasks":[{"id":"t1","type":"tool","tool":"mock_get_issue_status",' \
-            '"input":"甲","args":{"k":"v"}},{"id":"t2","type":"tool",' \
-            '"tool":"mock_get_issue_status","input":"乙","depends_on":["t1"]}]}'
-    suffix = '{"subtasks":[{"id":"s1","type":"tool","tool":"mock_get_issue_status",' \
-             '"input":"丙","depends_on":["t1"]}]}'
+    first = (
+        '{"subtasks":[{"id":"t1","type":"tool","tool":"mock_get_issue_status",'
+        '"input":"甲","args":{"k":"v"}},{"id":"t2","type":"tool",'
+        '"tool":"mock_get_issue_status","input":"乙","depends_on":["t1"]}]}'
+    )
+    suffix = (
+        '{"subtasks":[{"id":"s1","type":"tool","tool":"mock_get_issue_status",'
+        '"input":"丙","depends_on":["t1"]}]}'
+    )
 
-    with patch(
-        "app.ops.lg_rag.multi.nodes.list_capabilities", new=lambda *a, **k: caps
-    ), patch("app.ops.lg_rag.multi.nodes.get_llm_provider", new=lambda *a, **k: _prov(first)):
+    with (
+        patch("app.ops.lg_rag.multi.nodes.list_capabilities", new=lambda *a, **k: caps),
+        patch("app.ops.lg_rag.multi.nodes.get_llm_provider", new=lambda *a, **k: _prov(first)),
+    ):
         out1 = await supervisor_node(_state())
 
     # 反向对照：首次规划无前缀，计划照常签发、可恢复点为 0
@@ -1909,9 +1710,10 @@ async def test_r15_recoverable_point_keeps_prefix():
         supervisor_step_count=1,
     )
 
-    with patch(
-        "app.ops.lg_rag.multi.nodes.list_capabilities", new=lambda *a, **k: caps
-    ), patch("app.ops.lg_rag.multi.nodes.get_llm_provider", new=lambda *a, **k: _prov(suffix)):
+    with (
+        patch("app.ops.lg_rag.multi.nodes.list_capabilities", new=lambda *a, **k: caps),
+        patch("app.ops.lg_rag.multi.nodes.get_llm_provider", new=lambda *a, **k: _prov(suffix)),
+    ):
         out2 = await supervisor_node(state2)
 
     plan2 = out2["subtasks"]

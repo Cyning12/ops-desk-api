@@ -3,6 +3,7 @@
 C 臂实验：FlagEmbedding 产出 lexical weights；库内 `sparse_embedding sparsevec(250002)`。
 pgvector 限制 sparsevec 最多 1000 个非零元 → 按 |weight| 截断。
 """
+
 from __future__ import annotations
 
 import logging

@@ -346,9 +346,7 @@ def test_as_structured_tools_and_tool_node_smoke():
     graph = builder.compile(checkpointer=InMemorySaver())
 
     # langgraph 1.x：挂了 checkpointer 就必须给 thread_id（否则直接 ValueError）
-    out = graph.invoke(
-        {"messages": [msg]}, {"configurable": {"thread_id": "toolnode-smoke"}}
-    )
+    out = graph.invoke({"messages": [msg]}, {"configurable": {"thread_id": "toolnode-smoke"}})
     assert len(out["messages"]) == 2, out["messages"]
     content = out["messages"][-1].content
     payload = json.loads(content) if isinstance(content, str) else content
@@ -589,9 +587,7 @@ def test_u3_register_mcp_client_if_enabled_false_noop():
         register_mcp_client_if_enabled,
     )
 
-    assert (
-        register_mcp_client_if_enabled(enabled=False, transport=FakeTransport()) is None
-    )
+    assert register_mcp_client_if_enabled(enabled=False, transport=FakeTransport()) is None
     assert get_registry().get(MCP_CLIENT_CAPABILITY_ID) is None
 
 
@@ -635,5 +631,7 @@ def test_u3_mcp_client_live_integration():
     unregister(MCP_CLIENT_CAPABILITY_ID)
     cid = register_mcp_client_if_enabled(enabled=True)
     assert cid == MCP_CLIENT_CAPABILITY_ID
-    result = invoke(cid, {"name": settings.ops_capability_mcp_default_tool or "echo", "arguments": {}})
+    result = invoke(
+        cid, {"name": settings.ops_capability_mcp_default_tool or "echo", "arguments": {}}
+    )
     assert result.ok is True

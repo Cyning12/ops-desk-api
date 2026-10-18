@@ -9,6 +9,7 @@ mock 三处：
   patch app.ops.lg_rag.nodes.get_llm_provider /
         app.ops.lg_rag.nodes.ainvoke_evidence_answer
 """
+
 from __future__ import annotations
 
 import json
@@ -214,9 +215,7 @@ async def test_decompose_llm_exception_fallback_single_rag():
 @pytest.mark.asyncio
 async def test_extract_invalid_json_falls_back_empty():
     """extract 输出非法 JSON → 空结构 + 不中断，aggregator 照常综合。"""
-    supervisor_out = _subtasks_json(
-        [{"id": "t1", "type": "extract", "input": "随便一段文本"}]
-    )
+    supervisor_out = _subtasks_json([{"id": "t1", "type": "extract", "input": "随便一段文本"}])
     multi = _provider(supervisor_out, "这不是 JSON", _AGGREGATED)
     with patch(_MULTI_PROVIDER_PATCH, return_value=multi):
         out = await _run(_build())

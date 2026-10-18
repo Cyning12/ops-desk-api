@@ -10,6 +10,7 @@ created_at`` 等键），输出 = threads 列表摘要 / 单 thread 消息视图
 - N3：单 run answer 聚合超 ``ANSWER_MAX_CHARS`` 截断并标 ``answer_truncated``。
 - Q1：真源只有事件表——这里只认事件行，绝不读 checkpoint / turns。
 """
+
 from __future__ import annotations
 
 import base64
@@ -269,11 +270,7 @@ def paginate_run_views(
     runs = group_events_by_run(events)
     if cursor is not None:
         after_ts, after_rid = runs_cursor_after(cursor)
-        runs = [
-            r
-            for r in runs
-            if (r["_first_created_at"], r["run_id"]) > (after_ts, after_rid)
-        ]
+        runs = [r for r in runs if (r["_first_created_at"], r["run_id"]) > (after_ts, after_rid)]
     page = runs[:limit]
     views = [build_run_view(r, answer_max_chars=answer_max_chars) for r in page]
     next_cursor = None

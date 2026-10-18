@@ -14,6 +14,7 @@
 - prompt 走 prompts 资产（``memory.extract.system`` · system）+ 文本窗
   （user 消息）分离传递，不做插值——规避 JSON 示例花括号转义痛点。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -43,6 +44,7 @@ EXTRACT_MAX_RETRIES = 1
 EXTRACT_TIMEOUT_S = 60.0
 #: 抽取文本窗单侧截断上限（证据本体不进 prompt；只传必要窗）
 EXTRACT_WINDOW_MAX_CHARS = 4000
+
 
 class ExtractedFactItem(BaseModel):
     """单条抽取候选（value 限定标量；闸仍逐条复判）。"""
@@ -115,12 +117,8 @@ async def run_memory_extraction(
             )
     except Exception:
         # LLM 失败 / 非法 JSON / 超时：零写入（候选不是事实）
-        logger.warning(
-            "memory extraction failed run_id=%s; zero writes", run_id, exc_info=True
-        )
-        update_current_span_metadata(
-            {"memory_extract_candidates": 0, "memory_extract_written": 0}
-        )
+        logger.warning("memory extraction failed run_id=%s; zero writes", run_id, exc_info=True)
+        update_current_span_metadata({"memory_extract_candidates": 0, "memory_extract_written": 0})
         return (0, 0)
     assert isinstance(result, MemoryFactExtraction)
 
@@ -139,14 +137,10 @@ async def run_memory_extraction(
             )
             continue
         try:
-            await write_fact(
-                candidate, source_run_id=run_id, source_turn=source_turn
-            )
+            await write_fact(candidate, source_run_id=run_id, source_turn=source_turn)
             written += 1
         except Exception:
-            logger.exception(
-                "memory extract write failed key=%s run_id=%s", item.key, run_id
-            )
+            logger.exception("memory extract write failed key=%s run_id=%s", item.key, run_id)
     logger.info(
         "memory_extract_candidates=%d written=%d run_id=%s",
         len(result.facts),
@@ -179,9 +173,7 @@ def schedule_memory_extraction(
     if not memory_facts_extract_enabled():
         return None
     if not (tenant_id or "").strip() or not (user_id or "").strip():
-        logger.warning(
-            "MEMORY_FACTS_EXTRACT_ENABLED on but tenant/user missing; skip extraction"
-        )
+        logger.warning("MEMORY_FACTS_EXTRACT_ENABLED on but tenant/user missing; skip extraction")
         return None
     try:
         task = asyncio.create_task(

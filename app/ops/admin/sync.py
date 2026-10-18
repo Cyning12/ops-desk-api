@@ -1,4 +1,5 @@
 """Admin endpoint for receiving GitHub sync payloads."""
+
 from __future__ import annotations
 
 import logging

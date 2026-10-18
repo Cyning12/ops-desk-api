@@ -8,6 +8,7 @@
 - 落表路径抛错 → answer 正常返回 + log/计数断言（不挡主答）
 - run 上下文缺失 → run_id=NULL · surface=background
 """
+
 from __future__ import annotations
 
 import logging
@@ -85,9 +86,7 @@ async def _clean_usage():
 
 async def _rows_for(run_id: str) -> list[OpsLlmUsage]:
     async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(OpsLlmUsage).where(OpsLlmUsage.run_id == run_id)
-        )
+        result = await db.execute(select(OpsLlmUsage).where(OpsLlmUsage.run_id == run_id))
         return list(result.scalars().all())
 
 
@@ -101,18 +100,12 @@ class TestUsagePersist:
         monkeypatch.setattr(
             httpx, "AsyncClient", lambda *a, **k: _FakeClient(_usage_lines(11, 7, 3))
         )
-        with llm_usage.use_run_context(
-            run_id=run_id, surface="chat", task_type="answer"
-        ):
+        with llm_usage.use_run_context(run_id=run_id, surface="chat", task_type="answer"):
             answer = await provider.complete([LlmMessage(role="user", content="hi")])
         assert answer == "Answer"
 
-        monkeypatch.setattr(
-            httpx, "AsyncClient", lambda *a, **k: _FakeClient(_usage_lines(5, 2))
-        )
-        with llm_usage.use_run_context(
-            run_id=run_id, surface="chat", task_type="grader"
-        ):
+        monkeypatch.setattr(httpx, "AsyncClient", lambda *a, **k: _FakeClient(_usage_lines(5, 2)))
+        with llm_usage.use_run_context(run_id=run_id, surface="chat", task_type="grader"):
             await provider.complete([LlmMessage(role="user", content="grade")])
 
         rows = await _rows_for(run_id)
@@ -141,9 +134,7 @@ class TestUsagePersist:
     async def test_lg_rag_surface_distinguishable(self, monkeypatch, _clean_usage):
         """lg_rag run（hex run_id）落行 surface=lg_rag，与 chat 行可区分查询。"""
         hex_run_id = uuid.uuid4().hex
-        monkeypatch.setattr(
-            httpx, "AsyncClient", lambda *a, **k: _FakeClient(_usage_lines(3, 1))
-        )
+        monkeypatch.setattr(httpx, "AsyncClient", lambda *a, **k: _FakeClient(_usage_lines(3, 1)))
         provider = SiliconFlowProvider(api_key="test-key")
         with llm_usage.use_run_context(run_id=hex_run_id, surface="lg_rag"):
             await provider.complete([LlmMessage(role="user", content="hi")])
@@ -155,9 +146,7 @@ class TestUsagePersist:
 
         async with AsyncSessionLocal() as db:
             result = await db.execute(
-                select(func.count())
-                .select_from(OpsLlmUsage)
-                .where(OpsLlmUsage.surface == "lg_rag")
+                select(func.count()).select_from(OpsLlmUsage).where(OpsLlmUsage.surface == "lg_rag")
             )
             assert result.scalar_one() == 1
 
@@ -165,18 +154,14 @@ class TestUsagePersist:
         """provider 未回 usage 末帧 → 无行（非 0 假账）。"""
         run_id = str(uuid.uuid4())
         lines = ['data: {"choices":[{"delta":{"content":"x"}}]}', "data: [DONE]"]
-        monkeypatch.setattr(
-            httpx, "AsyncClient", lambda *a, **k: _FakeClient(lines)
-        )
+        monkeypatch.setattr(httpx, "AsyncClient", lambda *a, **k: _FakeClient(lines))
         provider = SiliconFlowProvider(api_key="test-key")
         with llm_usage.use_run_context(run_id=run_id, surface="chat", task_type="answer"):
             answer = await provider.complete([LlmMessage(role="user", content="hi")])
         assert answer == "x"
         assert await _rows_for(run_id) == []
 
-    async def test_persist_failure_does_not_block_answer(
-        self, monkeypatch, _clean_usage, caplog
-    ):
+    async def test_persist_failure_does_not_block_answer(self, monkeypatch, _clean_usage, caplog):
         """落表路径抛错（fake session 故障）→ answer 正常返回 + log/计数断言。"""
         run_id = str(uuid.uuid4())
 
@@ -187,12 +172,8 @@ class TestUsagePersist:
             async def __aexit__(self, *args):
                 pass
 
-        monkeypatch.setattr(
-            httpx, "AsyncClient", lambda *a, **k: _FakeClient(_usage_lines(2, 1))
-        )
-        monkeypatch.setattr(
-            "app.db.session.AsyncSessionLocal", lambda: _BrokenSession()
-        )
+        monkeypatch.setattr(httpx, "AsyncClient", lambda *a, **k: _FakeClient(_usage_lines(2, 1)))
+        monkeypatch.setattr("app.db.session.AsyncSessionLocal", lambda: _BrokenSession())
         provider = SiliconFlowProvider(api_key="test-key")
         with (
             caplog.at_level(logging.WARNING, logger="app.llm.usage"),
@@ -208,9 +189,7 @@ class TestUsagePersist:
 
     async def test_missing_context_background_surface(self, monkeypatch, _clean_usage):
         """无 ContextVar 的调用点：run_id=NULL · surface=background，不阻断记账。"""
-        monkeypatch.setattr(
-            httpx, "AsyncClient", lambda *a, **k: _FakeClient(_usage_lines(4, 2))
-        )
+        monkeypatch.setattr(httpx, "AsyncClient", lambda *a, **k: _FakeClient(_usage_lines(4, 2)))
         provider = SiliconFlowProvider(api_key="test-key")
         await provider.complete([LlmMessage(role="user", content="hi")])
 
@@ -245,9 +224,17 @@ class TestUsagePersist:
         monkeypatch.setattr(chat_nodes.settings, "ops_llm_model", "test-model")
 
         state = ChatState(
-            query="hi", session_id=None, run_id=run_id, model=None,
-            issue_context=[], pr_context=[], graph_context=None, intent="",
-            answer="", history_turns=[], events=[],
+            query="hi",
+            session_id=None,
+            run_id=run_id,
+            model=None,
+            issue_context=[],
+            pr_context=[],
+            graph_context=None,
+            intent="",
+            answer="",
+            history_turns=[],
+            events=[],
         )
         result = await chat_nodes.answer_node(state)
         assert result["answer"] == "hi"

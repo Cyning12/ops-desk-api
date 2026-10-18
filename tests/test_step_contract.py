@@ -194,9 +194,7 @@ def test_bind_input_appends_deterministic_block():
 def test_bind_input_truncates_long_values():
     """单值截断：一个超长值不能吃掉整块。"""
     long_value = "x" * 500
-    text, _included = sc.bind_input(
-        "q", {_T1: {"blob": long_value}}, sid_to_alias={_T1: "t1"}
-    )
+    text, _included = sc.bind_input("q", {_T1: {"blob": long_value}}, sid_to_alias={_T1: "t1"})
     assert len(text) < sc.max_value_chars() + 60
     assert text.rstrip().endswith("…")
 
@@ -311,7 +309,14 @@ async def test_join_success_still_dispatches():
 async def test_join_free_text_predecessor_does_not_block_undeclared():
     """rag 产出是文本、后继没声明 consumes ⇒ 不拦。"""
     plan = [
-        {"id": _T1, "subtask_id": _T1, "alias": "t1", "type": "rag", "input": "q", "depends_on": []},
+        {
+            "id": _T1,
+            "subtask_id": _T1,
+            "alias": "t1",
+            "type": "rag",
+            "input": "q",
+            "depends_on": [],
+        },
         _row(_T2, deps=[_T1]),
     ]
     state = {
@@ -403,11 +408,7 @@ _CAPS_PATCH = "app.ops.lg_rag.multi.nodes.list_capabilities"
 
 
 def _fake_caps(*_a, **_kw):
-    return [
-        SimpleNamespace(
-            capability_id=_TOOL, description="Mock 查询", risk_level="low"
-        )
-    ]
+    return [SimpleNamespace(capability_id=_TOOL, description="Mock 查询", risk_level="low")]
 
 
 def _prov(*outputs):
@@ -464,9 +465,7 @@ async def test_replan_keeps_prefix_verbatim_and_declares_recoverable_point():
         ]
     )
     state = _state()
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=lambda *a, **k: _prov(first)
-    ):
+    with patch(_CAPS_PATCH, new=_fake_caps), patch(_PLAN_PATCH, new=lambda *a, **k: _prov(first)):
         out = await supervisor_node(state)
 
     plan = out["subtasks"]
@@ -484,9 +483,7 @@ async def test_replan_keeps_prefix_verbatim_and_declares_recoverable_point():
     suffix = _plan_json(
         [{"id": "s1", "type": "tool", "tool": _TOOL, "input": "丙", "depends_on": ["t1"]}]
     )
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=lambda *a, **k: _prov(suffix)
-    ):
+    with patch(_CAPS_PATCH, new=_fake_caps), patch(_PLAN_PATCH, new=lambda *a, **k: _prov(suffix)):
         out2 = await supervisor_node(state2)
 
     plan2 = out2["subtasks"]
@@ -518,9 +515,7 @@ async def test_replan_suffix_cap_shrinks_with_prefix():
             {"id": "s4", "type": "rag", "input": "己"},
         ]
     )
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=lambda *a, **k: _prov(suffix)
-    ):
+    with patch(_CAPS_PATCH, new=_fake_caps), patch(_PLAN_PATCH, new=lambda *a, **k: _prov(suffix)):
         out = await supervisor_node(state)
     assert len(out["subtasks"]) == MAX_SUBTASKS
     assert out["recoverable_point"] == 2
@@ -532,8 +527,9 @@ async def test_replan_illegal_output_keeps_prefix_instead_of_single_rag():
     plan = [_row(_T1)]
     done = SubtaskResultBatch([_term(_T1, output={"a": 1})], {_T1})
     state = _state(subtasks=plan, subtask_results=done, host_subtask_seq=1, supervisor_step_count=1)
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=lambda *a, **k: _prov("这不是 JSON")
+    with (
+        patch(_CAPS_PATCH, new=_fake_caps),
+        patch(_PLAN_PATCH, new=lambda *a, **k: _prov("这不是 JSON")),
     ):
         out = await supervisor_node(state)
     assert [r["subtask_id"] for r in out["subtasks"]] == [_T1]
@@ -583,15 +579,16 @@ async def test_predecessor_failure_means_zero_downstream_tool_calls():
 
     graph = build_supervisor_agent(checkpointer=InMemorySaver())
     provider = _seq_provider(plan, "## 综合结论")
-    with patch(
-        "app.ops.strategy.intent.acomplete_structured", new=AsyncMock(return_value=intent_ok)
-    ), patch(
-        _PLAN_PATCH,
-        new=lambda *a, **k: provider,
-    ), patch(
-        "app.ops.lg_rag.multi.nodes.capability_ainvoke", new=_tool_call
-    ), patch(
-        "app.ops.lg_rag.multi.nodes.astream_router_agent", new=_rag_gen
+    with (
+        patch(
+            "app.ops.strategy.intent.acomplete_structured", new=AsyncMock(return_value=intent_ok)
+        ),
+        patch(
+            _PLAN_PATCH,
+            new=lambda *a, **k: provider,
+        ),
+        patch("app.ops.lg_rag.multi.nodes.capability_ainvoke", new=_tool_call),
+        patch("app.ops.lg_rag.multi.nodes.astream_router_agent", new=_rag_gen),
     ):
         out = await graph.ainvoke(
             {
@@ -651,15 +648,16 @@ async def test_successful_chain_still_binds_and_calls_both():
 
     graph = build_supervisor_agent(checkpointer=InMemorySaver())
     provider = _seq_provider(plan, "## 综合结论")
-    with patch(
-        "app.ops.strategy.intent.acomplete_structured", new=AsyncMock(return_value=intent_ok)
-    ), patch(
-        _PLAN_PATCH,
-        new=lambda *a, **k: provider,
-    ), patch(
-        "app.ops.lg_rag.multi.nodes.capability_ainvoke", new=_tool_call
-    ), patch(
-        "app.ops.lg_rag.multi.nodes.astream_router_agent", new=_rag_gen
+    with (
+        patch(
+            "app.ops.strategy.intent.acomplete_structured", new=AsyncMock(return_value=intent_ok)
+        ),
+        patch(
+            _PLAN_PATCH,
+            new=lambda *a, **k: provider,
+        ),
+        patch("app.ops.lg_rag.multi.nodes.capability_ainvoke", new=_tool_call),
+        patch("app.ops.lg_rag.multi.nodes.astream_router_agent", new=_rag_gen),
     ):
         out = await graph.ainvoke(
             {"messages": [HumanMessage(content="复合问题")], "run_id": _RUN},
@@ -707,20 +705,21 @@ async def test_replan_preserves_prefix_results_and_does_not_rerun_them():
     async def _tool_call(name, args, ctx=None):
         seen.append(str(ctx.get("subtask_id")))
         # 第 2 步失败 ⇒ 触发 critic retry_planner
-        return _cap(True, output={"assignee": "张三"}) if len(seen) != 2 else _cap(False, error="boom")
+        return (
+            _cap(True, output={"assignee": "张三"}) if len(seen) != 2 else _cap(False, error="boom")
+        )
 
     graph = build_supervisor_agent(checkpointer=InMemorySaver())
     # 外层 ReAct：没有待发步骤先过 observe，它判定"没做完"就 replan。
     # 于是**第 2 次 LLM 就是重规划**（不再是 aggregator）——桩要按新拓扑给。
     provider = _seq_provider(plan, suffix, "## 综合结论一", suffix, "## 综合结论二")
-    with patch(
-        "app.ops.strategy.intent.acomplete_structured", new=AsyncMock(return_value=intent_ok)
-    ), patch(
-        _PLAN_PATCH, new=lambda *a, **k: provider
-    ), patch(
-        "app.ops.lg_rag.multi.nodes.capability_ainvoke", new=_tool_call
-    ), patch(
-        "app.ops.lg_rag.multi.nodes.astream_router_agent", new=_rag_gen
+    with (
+        patch(
+            "app.ops.strategy.intent.acomplete_structured", new=AsyncMock(return_value=intent_ok)
+        ),
+        patch(_PLAN_PATCH, new=lambda *a, **k: provider),
+        patch("app.ops.lg_rag.multi.nodes.capability_ainvoke", new=_tool_call),
+        patch("app.ops.lg_rag.multi.nodes.astream_router_agent", new=_rag_gen),
     ):
         out = await graph.ainvoke(
             {"messages": [HumanMessage(content="复合问题")], "run_id": _RUN},

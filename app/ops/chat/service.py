@@ -1,4 +1,5 @@
 """Chat service glue between graph and persistence."""
+
 from collections.abc import AsyncIterator
 from contextlib import nullcontext
 

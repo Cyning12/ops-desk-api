@@ -94,9 +94,7 @@ def _wall_exceeded(started_at: Any, *, now: float | None = None) -> bool:
     return (t - started) >= max_wall
 
 
-def is_supervisor_budget_exhausted(
-    state: dict[str, Any], *, now: float | None = None
-) -> bool:
+def is_supervisor_budget_exhausted(state: dict[str, Any], *, now: float | None = None) -> bool:
     """总步 / 耗尽旗标 / 墙钟（若开启）任一触发即视为全局耗尽。"""
     if state.get("supervisor_budget_exhausted") is True:
         return True
@@ -106,9 +104,7 @@ def is_supervisor_budget_exhausted(
     return _wall_exceeded(state.get("supervisor_started_at"), now=now)
 
 
-def bump_supervisor_step(
-    state: dict[str, Any], *, now: float | None = None
-) -> dict[str, Any]:
+def bump_supervisor_step(state: dict[str, Any], *, now: float | None = None) -> dict[str, Any]:
     """节点入口 +1；首次写入 ``supervisor_started_at``；耗尽时置旗。"""
     count = int(state.get("supervisor_step_count") or 0) + 1
     update: dict[str, Any] = {"supervisor_step_count": count}

@@ -1,4 +1,5 @@
 """Bailian (DashScope) provider."""
+
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterable

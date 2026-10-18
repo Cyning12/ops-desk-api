@@ -31,10 +31,7 @@ def test_lg_rag_state_has_allowlist_fields():
 
 def test_build_allowlist_none_is_empty_not_full_open():
     """阶段 H：candidates=None 不再全开，安全默认空。"""
-    visible = frozenset(
-        s.capability_id
-        for s in list_capabilities(filter=BUILDER_CAP_FILTER)
-    )
+    visible = frozenset(s.capability_id for s in list_capabilities(filter=BUILDER_CAP_FILTER))
     allowed, stripped = build_allowlist_from_candidates(None, visible_ids=visible)
     assert allowed == []
     assert stripped == []
@@ -146,10 +143,7 @@ async def test_builder_needs_tool_false_empty_allowlist():
 @pytest.mark.asyncio
 async def test_builder_needs_tool_true_intersects_policy():
     """S2：needs_tool=True → 非空且 ⊆ Policy 可见；非法 id 剔除。"""
-    visible = frozenset(
-        s.capability_id
-        for s in list_capabilities(filter=BUILDER_CAP_FILTER)
-    )
+    visible = frozenset(s.capability_id for s in list_capabilities(filter=BUILDER_CAP_FILTER))
     with (
         patch(
             "app.ops.strategy.builder.get_candidate_capability_ids",

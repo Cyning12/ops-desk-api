@@ -54,9 +54,7 @@ def _render_all() -> dict[str, str]:
     return {
         "lg_rag.intent.system": render("lg_rag.intent.system"),
         "lg_rag.supervisor.system": render("lg_rag.supervisor.system", VARS_SUPERVISOR),
-        "lg_rag.supervisor.suffix.system": render(
-            "lg_rag.supervisor.suffix.system", VARS_SUFFIX
-        ),
+        "lg_rag.supervisor.suffix.system": render("lg_rag.supervisor.suffix.system", VARS_SUFFIX),
         "lg_rag.router.system": render("lg_rag.router.system"),
         "lg_rag.direct.system": render("lg_rag.direct.system"),
         "lg_rag.rewrite.system": render("lg_rag.rewrite.system"),
@@ -176,7 +174,11 @@ def test_loader_template_id_mismatch(tmp_assets):
 
 
 def test_loader_bad_version_format(tmp_assets):
-    _write(tmp_assets, "t.badver.system", "---\ntemplate_id: t.badver.system\nversion: '1.0'\n---\n\n正文\n")
+    _write(
+        tmp_assets,
+        "t.badver.system",
+        "---\ntemplate_id: t.badver.system\nversion: '1.0'\n---\n\n正文\n",
+    )
     with pytest.raises(PromptAssetError, match="version 非 v<N>"):
         load_asset("t.badver.system")
 
@@ -188,8 +190,16 @@ def test_loader_empty_body_raises(tmp_assets):
 
 
 def test_loader_cache_clear_rereads(tmp_assets):
-    _write(tmp_assets, "t.cached.system", "---\ntemplate_id: t.cached.system\nversion: v1\n---\n\n旧文案\n")
+    _write(
+        tmp_assets,
+        "t.cached.system",
+        "---\ntemplate_id: t.cached.system\nversion: v1\n---\n\n旧文案\n",
+    )
     assert load_asset("t.cached.system") == ("v1", "旧文案")
-    _write(tmp_assets, "t.cached.system", "---\ntemplate_id: t.cached.system\nversion: v2\n---\n\n新文案\n")
+    _write(
+        tmp_assets,
+        "t.cached.system",
+        "---\ntemplate_id: t.cached.system\nversion: v2\n---\n\n新文案\n",
+    )
     clear_asset_cache()
     assert load_asset("t.cached.system") == ("v2", "新文案")

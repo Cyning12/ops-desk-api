@@ -49,6 +49,7 @@ def max_value_chars() -> int:
 def max_block_chars() -> int:
     return _env_int("LG_RAG_STEP_CONTEXT_BLOCK_CHARS", MAX_CONTEXT_BLOCK_CHARS, low=64, high=16000)
 
+
 # 上下文块的固定抬头：编排层生成，模型写不出来
 CONTEXT_HEAD = "【上游产出】"
 
@@ -223,11 +224,7 @@ def gate(
             continue
         missing = missing_fields(term.get("output"), list(consumed[dep] or []))
         if missing:
-            reason = (
-                BLOCKED_PREFIX_TOUCH
-                if dep in prefix_ids
-                else BLOCKED_CONTRACT_MISSING
-            )
+            reason = BLOCKED_PREFIX_TOUCH if dep in prefix_ids else BLOCKED_CONTRACT_MISSING
             return reason, f"前驱 {dep} 输出缺少字段 {missing}"
 
     for dep in deps:
@@ -239,11 +236,7 @@ def gate(
             continue
         missing = missing_fields(term.get("output"), promised)
         if missing:
-            reason = (
-                BLOCKED_PREFIX_TOUCH
-                if dep in prefix_ids
-                else BLOCKED_CONTRACT_MISSING
-            )
+            reason = BLOCKED_PREFIX_TOUCH if dep in prefix_ids else BLOCKED_CONTRACT_MISSING
             return reason, f"前驱 {dep} 未兑现自己声明的 produces {missing}"
     return None, ""
 
@@ -275,11 +268,7 @@ def collect_values(
         mapping = output_fields(term.get("output"))
         if mapping is None:
             continue
-        vals = {
-            f: mapping[f]
-            for f in (consumes_by_sid[dep] or [])
-            if f in mapping
-        }
+        vals = {f: mapping[f] for f in (consumes_by_sid[dep] or []) if f in mapping}
         if vals:
             out[dep] = vals
     return out
@@ -326,9 +315,7 @@ def render_context_block(
     return "\n".join(lines), included
 
 
-def bind_input(
-    text: str, values: dict[str, dict[str, Any]], **kw: Any
-) -> tuple[str, list[str]]:
+def bind_input(text: str, values: dict[str, dict[str, Any]], **kw: Any) -> tuple[str, list[str]]:
     """rag / extract 步：在 input 尾部追加上下文块（不改写用户问句本身）。
 
     返回 ``(新文本, 实际绑定的字段)``；末尾追加的是被**整块预算挤掉**的字段名，
@@ -340,9 +327,7 @@ def bind_input(
     return f"{text}\n\n{block}", included
 
 
-def dropped_fields(
-    values: dict[str, dict[str, Any]], included: list[str]
-) -> list[str]:
+def dropped_fields(values: dict[str, dict[str, Any]], included: list[str]) -> list[str]:
     """声明了但被整块预算挤掉的字段（观测用：不能假装都给到了）。"""
     wanted = bound_field_names(values)
     return [name for name in wanted if name not in set(included)]

@@ -6,6 +6,7 @@ TC-B3：continue_from_run_id 新 /stream · HITL resume 零调用 · replay 不�
 TC-B4：真在飞 refuse_in_flight → LgRagRunInFlightError（409 零 diff）。
 TC-B5：orphan 无终帧 → scan 补 disconnected → run_stream_closed · 不再永久 409。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -64,11 +65,7 @@ async def test_tc_b1_subscriber_aclose_worker_continues_to_done() -> None:
     ) -> AsyncIterator[dict[str, Any]]:
         yield {"intent_node": {"intent": {"domain": "kb", "needs_tool": False}}}
         await gate.wait()
-        yield {
-            "aggregator": {
-                "messages": [AIMessage(content="后半段答案")]
-            }
-        }
+        yield {"aggregator": {"messages": [AIMessage(content="后半段答案")]}}
 
     with (
         patch(
@@ -109,8 +106,7 @@ async def test_tc_b1_subscriber_aclose_worker_continues_to_done() -> None:
     assert done_list, "worker 须落盘 done"
     assert done_list[-1].get("payload", {}).get("status") != "disconnected"
     assert any(
-        p.get("event_type") == "answer"
-        and (p.get("payload") or {}).get("content") == "后半段答案"
+        p.get("event_type") == "answer" and (p.get("payload") or {}).get("content") == "后半段答案"
         for p in persisted
     )
 
@@ -138,11 +134,7 @@ async def test_tc_b1_replay_after_disconnect_includes_tail(
     ) -> AsyncIterator[dict[str, Any]]:
         yield {"intent_node": {"intent": {"domain": "kb", "needs_tool": False}}}
         await gate.wait()
-        yield {
-            "aggregator": {
-                "messages": [AIMessage(content="replay后半段")]
-            }
-        }
+        yield {"aggregator": {"messages": [AIMessage(content="replay后半段")]}}
 
     with patch(
         "app.ops.lg_rag.sse_stream.persist_thread_turns",
@@ -171,9 +163,7 @@ async def test_tc_b1_replay_after_disconnect_includes_tail(
 
         # 在飞时应 409
         with pytest.raises(event_store.LgRagRunInFlightError):
-            await event_store.load_events_after(
-                run_id, user_id, 0, refuse_in_flight=True
-            )
+            await event_store.load_events_after(run_id, user_id, 0, refuse_in_flight=True)
 
         gate.set()
         task = get_run_worker_task(run_id)
@@ -181,9 +171,7 @@ async def test_tc_b1_replay_after_disconnect_includes_tail(
         await asyncio.wait_for(task, timeout=3.0)
         await asyncio.sleep(0.05)
 
-    events = await event_store.load_events_after(
-        run_id, user_id, after_seq, refuse_in_flight=True
-    )
+    events = await event_store.load_events_after(run_id, user_id, after_seq, refuse_in_flight=True)
     types = [e["event_type"] for e in events]
     assert "answer" in types
     assert "done" in types
@@ -283,9 +271,7 @@ async def test_tc_b4_in_flight_refuse_zero_diff(seeded_maintainer) -> None:
                     break
             await asyncio.sleep(0.05)
             with pytest.raises(event_store.LgRagRunInFlightError):
-                await event_store.load_events_after(
-                    run_id, user_id, 0, refuse_in_flight=True
-                )
+                await event_store.load_events_after(run_id, user_id, 0, refuse_in_flight=True)
         finally:
             await agen.aclose()
             # 结束 worker 防泄漏
@@ -371,11 +357,7 @@ async def test_tc_b3_continue_from_new_stream_zero_resume(
         ) -> AsyncIterator[dict[str, Any]]:
             llm_calls["n"] += 1
             captured_queries.append(query)
-            yield {
-                "aggregator": {
-                    "messages": [AIMessage(content="继续后的新答案")]
-                }
-            }
+            yield {"aggregator": {"messages": [AIMessage(content="继续后的新答案")]}}
 
         resume_spy = MagicMock()
 
@@ -412,18 +394,13 @@ async def test_tc_b3_continue_from_new_stream_zero_resume(
             assert resp.headers.get("X-Ops-Lg-Rag-Thread-Id") == thread_id
             assert captured_queries, "新 stream 须调 astream"
             assert partial in captured_queries[0]
-            assert (
-                "继续回复" in captured_queries[0]
-                or "既有草稿" in captured_queries[0]
-            )
+            assert "继续回复" in captured_queries[0] or "既有草稿" in captured_queries[0]
             assert llm_calls["n"] >= 1
             assert resume_spy.call_count == 0
 
             # replay 旧失败 run：只读落盘，不得再调 astream / resume
             llm_before_replay = llm_calls["n"]
-            replay = await client.post(
-                _REPLAY, json={"run_id": old_run, "after_seq": 0}
-            )
+            replay = await client.post(_REPLAY, json={"run_id": old_run, "after_seq": 0})
             assert replay.status_code == 200, replay.text
             assert llm_calls["n"] == llm_before_replay, "replay 不得触发新 LLM"
             assert resume_spy.call_count == 0
@@ -479,32 +456,22 @@ async def test_tc_b5_orphan_scan_compensates_terminal_clears_409(
     assert await event_store.run_stream_closed(run_id) is False
     assert not is_run_worker_active(run_id)
     with pytest.raises(event_store.LgRagRunInFlightError):
-        await event_store.load_events_after(
-            run_id, user_id, 0, refuse_in_flight=True
-        )
+        await event_store.load_events_after(run_id, user_id, 0, refuse_in_flight=True)
 
-    n = await scan_orphan_runs_for_compensation(
-        stale_after_seconds=0, limit=200
-    )
+    n = await scan_orphan_runs_for_compensation(stale_after_seconds=0, limit=200)
     assert n >= 1
 
     assert await event_store.run_stream_closed(run_id) is True
-    events = await event_store.load_events_after(
-        run_id, user_id, 0, refuse_in_flight=True
-    )
+    events = await event_store.load_events_after(run_id, user_id, 0, refuse_in_flight=True)
     types = [e["event_type"] for e in events]
     assert "done" in types
     done = next(e for e in events if e["event_type"] == "done")
     assert (done.get("payload") or {}).get("status") == "disconnected"
 
     # 幂等：已 closed 的 orphan 不再重复补偿
-    n2 = await scan_orphan_runs_for_compensation(
-        stale_after_seconds=0, limit=200
-    )
+    n2 = await scan_orphan_runs_for_compensation(stale_after_seconds=0, limit=200)
     # 本 run 不应再被计入；允许扫描到其它测试孤儿
-    events2 = await event_store.load_events_after(
-        run_id, user_id, 0, refuse_in_flight=True
-    )
+    events2 = await event_store.load_events_after(run_id, user_id, 0, refuse_in_flight=True)
     done_count = sum(1 for e in events2 if e["event_type"] == "done")
     assert done_count == 1
     del n2  # 他测孤儿可并存；本 run 终帧唯一即够
@@ -553,14 +520,10 @@ async def test_tc_b5_active_worker_not_compensated(seeded_maintainer) -> None:
             await asyncio.sleep(0.05)
             assert is_run_worker_active(run_id)
             assert await event_store.run_stream_closed(run_id) is False
-            await scan_orphan_runs_for_compensation(
-                stale_after_seconds=0, limit=200
-            )
+            await scan_orphan_runs_for_compensation(stale_after_seconds=0, limit=200)
             assert await event_store.run_stream_closed(run_id) is False
             with pytest.raises(event_store.LgRagRunInFlightError):
-                await event_store.load_events_after(
-                    run_id, user_id, 0, refuse_in_flight=True
-                )
+                await event_store.load_events_after(run_id, user_id, 0, refuse_in_flight=True)
         finally:
             await agen.aclose()
             hang.set()

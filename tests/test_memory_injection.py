@@ -1,4 +1,5 @@
 """memory-facts-p0 · M3 装配注入（纯装配 · 不连 DB）：开关关闭零 diff / 块格式 / 降级。"""
+
 from __future__ import annotations
 
 import logging
@@ -42,9 +43,7 @@ async def test_disabled_default_is_byte_identical(monkeypatch: pytest.MonkeyPatc
 
 
 @pytest.mark.parametrize("value", ["false", "0", "no", "off", "garbage"])
-async def test_disabled_or_invalid_is_byte_identical(
-    monkeypatch: pytest.MonkeyPatch, value: str
-):
+async def test_disabled_or_invalid_is_byte_identical(monkeypatch: pytest.MonkeyPatch, value: str):
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", value)
     history = _fixture_turns()
     baseline = assemble_graph_messages("q-now", history)
@@ -54,9 +53,7 @@ async def test_disabled_or_invalid_is_byte_identical(
     assert _shape(with_memory) == _shape(baseline)
 
 
-def test_enabled_invalid_value_warns_and_falls_back(
-    monkeypatch: pytest.MonkeyPatch, caplog
-):
+def test_enabled_invalid_value_warns_and_falls_back(monkeypatch: pytest.MonkeyPatch, caplog):
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "enable plz")
     with caplog.at_level(logging.WARNING, logger="app.ops.lg_rag.continuity"):
         assert memory_facts_enabled() is False
@@ -147,9 +144,7 @@ def test_max_items_default_and_fallback(monkeypatch: pytest.MonkeyPatch, caplog)
 # ---------------- 召回故障降级（不拖垮请求） ----------------
 
 
-async def test_recall_failure_degrades_to_no_injection(
-    monkeypatch: pytest.MonkeyPatch, caplog
-):
+async def test_recall_failure_degrades_to_no_injection(monkeypatch: pytest.MonkeyPatch, caplog):
     from unittest.mock import AsyncMock, patch
 
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
@@ -168,6 +163,7 @@ async def test_recall_failure_degrades_to_no_injection(
     assert _shape(out) == _shape(baseline)
     assert "degrade to no injection" in caplog.text
 
+
 # ---------------- span `memory_facts_injected` 专门单测（memory-embedding-backfill D3） ----------------
 # capture-list 模式对齐 tests/test_llm_routing.py:176；发射点 continuity.py:237-243。
 
@@ -177,9 +173,7 @@ def _capture_span(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
     from app.ops.lg_rag import continuity
 
     captured: list[dict] = []
-    monkeypatch.setattr(
-        continuity, "update_current_span_metadata", lambda m: captured.append(m)
-    )
+    monkeypatch.setattr(continuity, "update_current_span_metadata", lambda m: captured.append(m))
     return captured
 
 
@@ -197,9 +191,7 @@ def _patch_recall(monkeypatch: pytest.MonkeyPatch, *, facts=None, error=None):
     monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
 
     mock = (
-        AsyncMock(side_effect=error)
-        if error is not None
-        else AsyncMock(return_value=facts or [])
+        AsyncMock(side_effect=error) if error is not None else AsyncMock(return_value=facts or [])
     )
     monkeypatch.setattr("app.ops.memory.service.recall_active", mock)
     return mock
@@ -236,8 +228,7 @@ async def test_span_memory_facts_injected_zero(monkeypatch: pytest.MonkeyPatch):
     )
     assert captured == [{"memory_facts_injected": 0}]
     assert not any(
-        isinstance(m, SystemMessage) and str(m.content).startswith(MEMORY_FACTS_HEADER)
-        for m in out
+        isinstance(m, SystemMessage) and str(m.content).startswith(MEMORY_FACTS_HEADER) for m in out
     )
 
 
@@ -269,6 +260,7 @@ async def test_span_disabled_zero_calls(monkeypatch: pytest.MonkeyPatch):
     assert captured == []
     assert _shape(out) == _shape(baseline)
 
+
 # ---------------- memory-preference-profile · 分节渲染（方案 B1 单块双节） ----------------
 
 
@@ -281,10 +273,7 @@ def test_render_fact_only_byte_identical_to_legacy():
         {"key": "user.multiline", "value": "a\nb"},
     ]
     expected = (
-        "[已知事实]\n"
-        "project.primary_repo=cyning/ops-desk\n"
-        "user.retry_limit=3\n"
-        "user.multiline=a\\nb"
+        "[已知事实]\nproject.primary_repo=cyning/ops-desk\nuser.retry_limit=3\nuser.multiline=a\\nb"
     )
     assert render_memory_facts_block(facts) == expected
     with_kind = [dict(f, kind="fact") for f in facts]
@@ -352,9 +341,7 @@ async def test_span_dual_counts_mixed_kinds(monkeypatch: pytest.MonkeyPatch):
     )
     assert captured == [{"memory_facts_injected": 1, "memory_preferences_injected": 1}]
     memory_msgs = [
-        m
-        for m in out
-        if isinstance(m, SystemMessage) and MEMORY_FACTS_HEADER in str(m.content)
+        m for m in out if isinstance(m, SystemMessage) and MEMORY_FACTS_HEADER in str(m.content)
     ]
     assert len(memory_msgs) == 1  # 单条 SystemMessage
     content = str(memory_msgs[0].content)
@@ -365,9 +352,7 @@ async def test_span_fact_only_no_preferences_key(monkeypatch: pytest.MonkeyPatch
     """fact-only：span 不带 memory_preferences_injected key（与 P0/P1 观测面一致）。"""
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
     captured = _capture_span(monkeypatch)
-    _patch_recall(
-        monkeypatch, facts=[{"key": "project.primary_repo", "value": "cyning/ops-desk"}]
-    )
+    _patch_recall(monkeypatch, facts=[{"key": "project.primary_repo", "value": "cyning/ops-desk"}])
     await assemble_graph_messages_with_memory(
         "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
     )
@@ -393,5 +378,3 @@ async def test_span_preference_only_facts_zero(monkeypatch: pytest.MonkeyPatch):
     ]
     assert len(memory_msgs) == 1
     assert MEMORY_FACTS_HEADER not in memory_msgs[0]
-
-

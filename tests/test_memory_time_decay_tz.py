@@ -11,6 +11,7 @@
 四象限：aware now×naive fact / naive now×aware fact / 双 aware / 双 naive
 均不抛 + 衰减值正确（0 天=1.0 · 半衰期 30 天≈0.5 · 未来时间戳按 0 天）。
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta, timezone
@@ -58,9 +59,7 @@ def test_time_decay_half_life(now: datetime, fact_ts: datetime) -> None:
 
 
 @pytest.mark.parametrize(("now", "fact_ts"), _QUADRANTS)
-def test_time_decay_future_timestamp_clamps_to_zero(
-    now: datetime, fact_ts: datetime
-) -> None:
+def test_time_decay_future_timestamp_clamps_to_zero(now: datetime, fact_ts: datetime) -> None:
     """四象限：未来时间戳按 0 天 → decay=1.0。"""
     future = fact_ts + timedelta(days=1)
     assert _time_decay(_fact(future), now) == 1.0

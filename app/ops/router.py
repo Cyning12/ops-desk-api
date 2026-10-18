@@ -1,4 +1,5 @@
 """Ops Desk API router registration."""
+
 from fastapi import APIRouter
 
 from app.ops.admin.capability import router as admin_capability_router

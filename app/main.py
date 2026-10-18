@@ -1,4 +1,5 @@
 """FastAPI application entry point."""
+
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -85,9 +86,7 @@ async def health() -> dict:
 
 
 # 架构浏览器：docs/arch-browser/dist 衍生静态视图（MD/_tech_graph 仍为真值源）
-_ARCH_BROWSER_DIST = (
-    Path(__file__).resolve().parents[1] / "docs" / "arch-browser" / "dist"
-)
+_ARCH_BROWSER_DIST = Path(__file__).resolve().parents[1] / "docs" / "arch-browser" / "dist"
 if (_ARCH_BROWSER_DIST / "index.html").is_file():
     app.mount(
         "/docs/arch-browser",

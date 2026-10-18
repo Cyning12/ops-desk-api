@@ -1,4 +1,5 @@
 """RAG_RERANK：精排开关、方案 B 过滤与 SiliconFlow 打分后端。"""
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -272,9 +273,7 @@ def _mock_siliconflow_post(
 
     def fake_post(url, json=None, headers=None, timeout=None):
         capture["n"] += 1
-        capture["calls"].append(
-            {"url": url, "json": json, "headers": headers, "timeout": timeout}
-        )
+        capture["calls"].append({"url": url, "json": json, "headers": headers, "timeout": timeout})
         if error is not None:
             raise error
         request = httpx.Request("POST", str(url))

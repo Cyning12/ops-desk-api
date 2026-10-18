@@ -57,9 +57,7 @@ def _validate(raw: dict[str, Any], path: Path) -> dict[str, Any]:
         )
     surface = str(raw.get("surface", ""))
     if surface != _SURFACE:
-        raise StrategyPackError(
-            f"本波仅支持 surface={_SURFACE!r} · 得 {surface!r}: {path}"
-        )
+        raise StrategyPackError(f"本波仅支持 surface={_SURFACE!r} · 得 {surface!r}: {path}")
     return {
         "task_tier_models": dict(raw.get("task_tier_models") or {}),
         "task_tier_fallbacks": dict(raw.get("task_tier_fallbacks") or {}),

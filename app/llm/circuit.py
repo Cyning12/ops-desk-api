@@ -154,9 +154,7 @@ def circuit_open_error(provider: str, cb: pybreaker.CircuitBreaker) -> LlmProvid
     with _LOCK:
         _BLOCKED_CALLS += 1
     elapsed = _elapsed_since_open(cb)
-    remaining = (
-        max(0.0, float(reset_timeout()) - elapsed) if elapsed is not None else 0.0
-    )
+    remaining = max(0.0, float(reset_timeout()) - elapsed) if elapsed is not None else 0.0
     return LlmProviderError(
         f"circuit_open: {cb.name} state={cb.current_state} 剩余 {remaining:.0f}s",
         retryable=False,
@@ -221,9 +219,7 @@ def snapshot() -> dict[str, Any]:
                     "state": state,
                     "ready_to_probe": ready,
                     "seconds_until_half_open": (
-                        max(0.0, float(reset_timeout()) - elapsed)
-                        if elapsed is not None
-                        else None
+                        max(0.0, float(reset_timeout()) - elapsed) if elapsed is not None else None
                     ),
                     "fail_counter": cb.fail_counter,
                     "fail_max": cb.fail_max,

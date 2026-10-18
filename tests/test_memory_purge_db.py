@@ -103,10 +103,7 @@ async def _rows(tenant_id: str, user_id: str) -> list[tuple]:
 async def _count(tenant_id: str, user_id: str) -> int:
     async with AsyncSessionLocal() as session:
         rows = await session.execute(
-            text(
-                "SELECT count(*) FROM ops_memory_facts "
-                "WHERE tenant_id = :t AND user_id = :u"
-            ),
+            text("SELECT count(*) FROM ops_memory_facts WHERE tenant_id = :t AND user_id = :u"),
             {"t": tenant_id, "u": user_id},
         )
         return int(rows.scalar() or 0)

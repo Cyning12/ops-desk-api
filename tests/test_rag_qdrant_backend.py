@@ -1,4 +1,5 @@
 """Qdrant Flag / fallback / 影子写 enqueue 单测。"""
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -55,9 +56,7 @@ async def test_hybrid_recall_pg_backend_uses_pg_semantic(monkeypatch: pytest.Mon
     session = MagicMock()
     session.execute = AsyncMock(side_effect=fake_execute)
 
-    await hybrid_recall_detail(
-        session, "自动压缩", query_vector=[0.0] * 8, k_each=3, top_n=2
-    )
+    await hybrid_recall_detail(session, "自动压缩", query_vector=[0.0] * 8, k_each=3, top_n=2)
     assert any("embedding <=>" in c for c in calls)
     assert all("qdrant" not in c.lower() for c in calls)
 
@@ -152,6 +151,10 @@ def test_shadow_disabled_no_enqueue(monkeypatch: pytest.MonkeyPatch):
     seen: list = []
     set_enqueue_hook(lambda *a: seen.append(a))
     enqueue_shadow_upsert(
-        [ShadowPoint(1, [0.0], {"source_type": "doc", "repo": "r", "source_id": "s", "chunk_index": 0})]
+        [
+            ShadowPoint(
+                1, [0.0], {"source_type": "doc", "repo": "r", "source_id": "s", "chunk_index": 0}
+            )
+        ]
     )
     assert seen == []

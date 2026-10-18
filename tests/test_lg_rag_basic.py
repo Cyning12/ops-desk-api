@@ -2,6 +2,7 @@
 
 说明书：docs/guides/IMPL_langgraph-lg-rag-phase1_v1.md S7。
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch

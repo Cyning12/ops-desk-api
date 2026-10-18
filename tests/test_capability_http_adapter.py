@@ -56,17 +56,17 @@ def _base_env(monkeypatch: pytest.MonkeyPatch):
 def _spec(**over) -> CapabilitySpec:
     http = dict(_HTTP)
     http.update(over.pop("http", {}))
-    base = dict(
-        capability_id="oa.demo.read",
-        kind="http",
-        description="demo 只读能力",
-        args_schema=dict(_ARGS_SCHEMA),
-        tags=("oa",),
-        risk_level="low",
-        side_effect="read",
-        when_to_use="单测使用",
-        http=http,
-    )
+    base = {
+        "capability_id": "oa.demo.read",
+        "kind": "http",
+        "description": "demo 只读能力",
+        "args_schema": dict(_ARGS_SCHEMA),
+        "tags": ("oa",),
+        "risk_level": "low",
+        "side_effect": "read",
+        "when_to_use": "单测使用",
+        "http": http,
+    }
     base.update(over)
     return CapabilitySpec(**base)
 

@@ -22,6 +22,7 @@ Ink 账号在 jp 区：https://jp.cloud.langfuse.com）。
 线上抽样：``OPS_EVAL_SCORE_SAMPLE_RATE``（0.0–1.0，默认 ``0`` = 不打分）。
 I/O 截断：``OPS_LANGFUSE_IO_TRUNCATE``（字符，默认 ``4000``）。
 """
+
 from __future__ import annotations
 
 import logging

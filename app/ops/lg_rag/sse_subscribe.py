@@ -2,6 +2,7 @@
 
 断连（generator aclose / 请求 cancel）**只**取消本订阅，不 cancel RunWorker。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -40,9 +41,7 @@ async def subscribe_run_sse(
 
     # 经模块属性读间隔，便于单测 patch sse_stream._KEEPALIVE_INTERVAL_S
     interval = (
-        _sse_mod._KEEPALIVE_INTERVAL_S
-        if keepalive_interval_s is None
-        else keepalive_interval_s
+        _sse_mod._KEEPALIVE_INTERVAL_S if keepalive_interval_s is None else keepalive_interval_s
     )
     q = active.subscribe()
     end = bus_end_sentinel()
@@ -58,9 +57,7 @@ async def subscribe_run_sse(
             if isinstance(item, str):
                 yield item
     except (GeneratorExit, asyncio.CancelledError):
-        logger.info(
-            "lg-rag subscriber cancelled run_id=%s (worker untouched)", run_id
-        )
+        logger.info("lg-rag subscriber cancelled run_id=%s (worker untouched)", run_id)
         raise
     finally:
         active.unsubscribe(q)

@@ -1,4 +1,5 @@
 """LLM Provider factory."""
+
 from app.config import settings
 from app.llm.providers.bailian import BailianProvider
 from app.llm.providers.base import BaseProvider

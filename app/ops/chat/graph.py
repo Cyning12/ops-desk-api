@@ -6,6 +6,7 @@
             └─ general / overview → retrieve → grade ─┬─ refuse → refuse_answer → END
                                                     └─ answer/answer_partial → generate_answer → END
 """
+
 from langgraph.graph import END, START, StateGraph
 
 from app.ops.chat.nodes import (
@@ -42,7 +43,7 @@ builder.add_conditional_edges(
     route_by_intent,
     {
         "issue_qa": "load_context",  # 含 #编号 → 先查 issue 再回答
-        "general": "retrieve",   # 知识候选 → 检索链（2026-08-10 人定）
+        "general": "retrieve",  # 知识候选 → 检索链（2026-08-10 人定）
         "overview": "retrieve",
     },
 )

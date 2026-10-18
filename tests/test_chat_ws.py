@@ -5,6 +5,7 @@ tests via ``asyncio.to_thread``. The app runs in the TestClient's own event
 loop; the ``_reset_engine`` fixture in conftest disposes pooled connections
 between tests.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -75,9 +76,7 @@ class _StubGraderProvider:
     """grader 打桩：恒评 exact（chunk_id 与 _STUB_CHUNK 对齐）→ 闸放行 answer。"""
 
     async def complete(self, messages, model=None) -> str:
-        return json.dumps(
-            [{"chunk_id": 1, "relevance": "exact", "reason": "stub: 打桩恒放行"}]
-        )
+        return json.dumps([{"chunk_id": 1, "relevance": "exact", "reason": "stub: 打桩恒放行"}])
 
 
 _STUB_CHUNK = RetrievedChunk(
@@ -109,9 +108,7 @@ def stub_rag_chain(monkeypatch):
     async def _fake_recall(session, query, qvec, *, k_each=10, top_n=5, query_sparse=None):
         return [_STUB_CHUNK]
 
-    monkeypatch.setattr(
-        "app.ops.chat.rag_nodes._get_embedder", lambda: _StubEmbedder()
-    )
+    monkeypatch.setattr("app.ops.chat.rag_nodes._get_embedder", lambda: _StubEmbedder())
     monkeypatch.setattr("app.ops.chat.rag_nodes.hybrid_recall", _fake_recall)
     monkeypatch.setattr(
         "app.ops.chat.rag_nodes.get_llm_provider", lambda *a, **k: _StubGraderProvider()
@@ -204,9 +201,7 @@ async def test_ws_disabled_when_switch_off(monkeypatch, _portal_engine) -> None:
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
-async def test_ws_message_streams_events(
-    fake_provider, stub_rag_chain, _portal_engine
-) -> None:
+async def test_ws_message_streams_events(fake_provider, stub_rag_chain, _portal_engine) -> None:
     """A message produces the same event sequence as the SSE stream.
 
     断言对齐**现行图拓扑**（test-baseline-reds D1）：general 意图走 R-3 检索链

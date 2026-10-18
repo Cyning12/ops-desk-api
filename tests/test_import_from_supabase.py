@@ -4,6 +4,7 @@ Integration tests build a scratch ``opsdesk_src`` database on the local
 PostgreSQL instance with Supabase-shaped tables, run the import, and verify
 idempotency; they are skipped when PostgreSQL is unavailable.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -202,9 +203,7 @@ async def test_import_roundtrip_and_idempotency(scratch_source) -> None:
         assert repo.created_at.replace(tzinfo=None) == datetime(2026, 7, 1, 4, 0)
 
         issue = await db.scalar(
-            select(OpsIssue).where(
-                OpsIssue.repo_id == repo.id, OpsIssue.number == 1
-            )
+            select(OpsIssue).where(OpsIssue.repo_id == repo.id, OpsIssue.number == 1)
         )
         assert issue is not None
         assert issue.title == "导入测试 issue"
@@ -213,15 +212,11 @@ async def test_import_roundtrip_and_idempotency(scratch_source) -> None:
         run = await db.scalar(select(OpsSyncRun).where(OpsSyncRun.id == RUN_ID))
         assert run is not None
 
-        legacy_run = await db.scalar(
-            select(OpsSyncRun).where(OpsSyncRun.id == LEGACY_RUN_ID)
-        )
+        legacy_run = await db.scalar(select(OpsSyncRun).where(OpsSyncRun.id == LEGACY_RUN_ID))
         assert legacy_run is not None
         assert legacy_run.sync_type == "legacy"  # NULL sync_type defaulted
 
-        scan = await db.scalar(
-            select(OpsScanSnapshot).where(OpsScanSnapshot.id == SCAN_ID)
-        )
+        scan = await db.scalar(select(OpsScanSnapshot).where(OpsScanSnapshot.id == SCAN_ID))
         assert scan is not None
         assert scan.parsed_summary == {}  # NULL jsonb defaulted
 

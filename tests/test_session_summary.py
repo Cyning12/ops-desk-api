@@ -10,6 +10,7 @@
 缓存面：key 铁律（内容哈希+prompt_version+model）· 生成成功才写 ·
 命中零 LLM 调用 · 读写失败不挡主答 · 原文表零写入。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -96,9 +97,7 @@ async def test_off_unset_byte_identical_zero_io(monkeypatch: pytest.MonkeyPatch)
     baseline = assemble_graph_messages("本轮问", history)
     provider = _FakeProvider()
     obs = _patch_face(monkeypatch, provider)
-    out = await assemble_graph_messages_with_memory(
-        "本轮问", history, thread_id="th-sum"
-    )
+    out = await assemble_graph_messages_with_memory("本轮问", history, thread_id="th-sum")
     assert _shape(out) == _shape(baseline)
     assert provider.calls == []
     assert obs == {"reads": 0, "writes": 0, "spans": []}
@@ -112,16 +111,12 @@ async def test_off_falsy_byte_identical(monkeypatch: pytest.MonkeyPatch, value: 
     baseline = assemble_graph_messages("q-now", history)
     provider = _FakeProvider()
     obs = _patch_face(monkeypatch, provider)
-    out = await assemble_graph_messages_with_memory(
-        "q-now", history, thread_id="th-sum"
-    )
+    out = await assemble_graph_messages_with_memory("q-now", history, thread_id="th-sum")
     assert _shape(out) == _shape(baseline)
     assert provider.calls == [] and obs["reads"] == 0 and obs["writes"] == 0
 
 
-async def test_off_invalid_value_byte_identical_and_warns(
-    monkeypatch: pytest.MonkeyPatch, caplog
-):
+async def test_off_invalid_value_byte_identical_and_warns(monkeypatch: pytest.MonkeyPatch, caplog):
     """非法值回退 false + warning（continuity 三件套逐字复刻）· 输出逐字节一致。"""
     monkeypatch.setenv("SESSION_SUMMARY_ENABLED", "enable plz")
     _quiet_memory(monkeypatch)
@@ -130,9 +125,7 @@ async def test_off_invalid_value_byte_identical_and_warns(
     provider = _FakeProvider()
     _patch_face(monkeypatch, provider)
     with caplog.at_level(logging.WARNING, logger="app.ops.lg_rag.continuity"):
-        out = await assemble_graph_messages_with_memory(
-            "q-now", history, thread_id="th-sum"
-        )
+        out = await assemble_graph_messages_with_memory("q-now", history, thread_id="th-sum")
     assert _shape(out) == _shape(baseline)
     assert "SESSION_SUMMARY_ENABLED" in caplog.text
     assert provider.calls == []
@@ -178,9 +171,7 @@ async def test_on_all_llm_failures_byte_identical_with_degraded_span(
     baseline = assemble_graph_messages("q-now", history)
     provider = _FakeProvider(error=RuntimeError("llm down"))
     obs = _patch_face(monkeypatch, provider)
-    out = await assemble_graph_messages_with_memory(
-        "q-now", history, thread_id="th-sum"
-    )
+    out = await assemble_graph_messages_with_memory("q-now", history, thread_id="th-sum")
     assert _shape(out) == _shape(baseline)  # 与 off 态逐字节一致
     assert len(provider.calls) == 2  # 确实走了摘要面（两占位 chunk 各一次）
     assert obs["writes"] == 0  # 失败不写缓存（生成成功才写）
@@ -193,9 +184,7 @@ async def test_on_all_llm_failures_byte_identical_with_degraded_span(
     ]
 
 
-async def test_on_but_missing_thread_id_keeps_placeholders(
-    monkeypatch: pytest.MonkeyPatch, caplog
-):
+async def test_on_but_missing_thread_id_keeps_placeholders(monkeypatch: pytest.MonkeyPatch, caplog):
     """开关 on 但无 thread_id（身份缺失）→ 保留占位 + warning，零 LLM 调用。"""
     monkeypatch.setenv("SESSION_SUMMARY_ENABLED", "true")
     _quiet_memory(monkeypatch)
@@ -245,9 +234,7 @@ async def test_on_replaces_placeholders_with_three_markers(
     baseline = assemble_graph_messages("q-now", history)
     provider = _FakeProvider(text="前两轮讨论了部署窗口与回退方案")
     obs = _patch_face(monkeypatch, provider)
-    out = await assemble_graph_messages_with_memory(
-        "q-now", history, thread_id="th-sum"
-    )
+    out = await assemble_graph_messages_with_memory("q-now", history, thread_id="th-sum")
     assert len(out) == len(baseline)  # 条数不变
     for msg in out[:2]:  # 两条占位均被替换
         content = str(msg.content)
@@ -328,9 +315,7 @@ class TestSummaryTierRouting:
         assert model is None and source == "default"
 
     def test_summary_tier_env_override(self, monkeypatch: pytest.MonkeyPatch):
-        monkeypatch.setenv(
-            "OPS_LLM_TIER_SUMMARY_MODEL", "deepseek-ai/DeepSeek-V4-Flash"
-        )
+        monkeypatch.setenv("OPS_LLM_TIER_SUMMARY_MODEL", "deepseek-ai/DeepSeek-V4-Flash")
         model, source = resolve_task_model("summary")
         assert model == "deepseek-ai/DeepSeek-V4-Flash" and source == "env_tier"
 
@@ -428,9 +413,7 @@ def test_ops_session_summaries_table_structure():
         "created_at",
     } <= cols
     uniques = [c for c in table.constraints if isinstance(c, UniqueConstraint)]
-    assert any(
-        {col.name for col in u.columns} == {"thread_id", "chunk_hash"} for u in uniques
-    )
+    assert any({col.name for col in u.columns} == {"thread_id", "chunk_hash"} for u in uniques)
     fks = table.c.thread_id.foreign_keys
     assert len(fks) == 1
     fk = next(iter(fks))
@@ -488,9 +471,7 @@ class TestSessionSummaryCacheDB:
 
         async with AsyncSessionLocal() as db:
             result = await db.execute(
-                select(OpsSessionSummary).where(
-                    OpsSessionSummary.thread_id == thread_id
-                )
+                select(OpsSessionSummary).where(OpsSessionSummary.thread_id == thread_id)
             )
             return list(result.scalars().all())
 
@@ -499,9 +480,7 @@ class TestSessionSummaryCacheDB:
         monkeypatch.delenv("OPS_LLM_TIER_SUMMARY_MODEL", raising=False)
         _quiet_memory(monkeypatch)
         monkeypatch.setattr(session_summary, "get_llm_provider", lambda: provider)
-        monkeypatch.setattr(
-            session_summary, "update_current_span_metadata", lambda m: None
-        )
+        monkeypatch.setattr(session_summary, "update_current_span_metadata", lambda m: None)
 
     async def test_generate_then_cache_hit_zero_llm(
         self, monkeypatch: pytest.MonkeyPatch, thread_id: str
@@ -559,17 +538,13 @@ class TestSessionSummaryCacheDB:
         await assemble_graph_messages_with_memory("q", history, thread_id=thread_id)
         assert len(p1.calls) == 2
 
-        monkeypatch.setattr(
-            session_summary, "_resolve_prompt", lambda: ("sys", "v2")
-        )
+        monkeypatch.setattr(session_summary, "_resolve_prompt", lambda: ("sys", "v2"))
         p2 = _FakeProvider()
         monkeypatch.setattr(session_summary, "get_llm_provider", lambda: p2)
         await assemble_graph_messages_with_memory("q", history, thread_id=thread_id)
         assert len(p2.calls) == 2  # 全 miss 重生成
 
-    async def test_model_change_misses(
-        self, monkeypatch: pytest.MonkeyPatch, thread_id: str
-    ):
+    async def test_model_change_misses(self, monkeypatch: pytest.MonkeyPatch, thread_id: str):
         """换模型（档 env 覆盖）→ key 变自然 miss。"""
         history = _fixture_turns()
         p1 = _FakeProvider()
@@ -599,21 +574,15 @@ class TestSessionSummaryCacheDB:
             async def __aexit__(self, *args):
                 pass
 
-        monkeypatch.setattr(
-            "app.db.session.AsyncSessionLocal", lambda: _BrokenSession()
-        )
+        monkeypatch.setattr("app.db.session.AsyncSessionLocal", lambda: _BrokenSession())
         with caplog.at_level(logging.WARNING, logger="app.ops.session.summary"):
-            out = await assemble_graph_messages_with_memory(
-                "q", history, thread_id=thread_id
-            )
+            out = await assemble_graph_messages_with_memory("q", history, thread_id=thread_id)
         assert "降级期摘要" in str(out[0].content)  # 本次仍用生成的摘要
         assert provider.calls  # 读失败视同 miss → 走生成链
         assert "cache read failed" in caplog.text
         assert "cache write failed" in caplog.text
 
-    async def test_original_tables_untouched(
-        self, monkeypatch: pytest.MonkeyPatch, thread_id: str
-    ):
+    async def test_original_tables_untouched(self, monkeypatch: pytest.MonkeyPatch, thread_id: str):
         """原文 SoT 零污染：摘要通路前后 ops_lg_rag_turns / ops_runs 行数不变。"""
         from sqlalchemy import func, select
 
@@ -625,9 +594,7 @@ class TestSessionSummaryCacheDB:
                 turns = (
                     await db.execute(select(func.count()).select_from(OpsLgRagTurn))
                 ).scalar_one()
-                runs = (
-                    await db.execute(select(func.count()).select_from(OpsRun))
-                ).scalar_one()
+                runs = (await db.execute(select(func.count()).select_from(OpsRun))).scalar_one()
             return turns, runs
 
         before = await _counts()
@@ -659,9 +626,7 @@ class TestSessionSummaryCacheDB:
         monkeypatch = pytest.MonkeyPatch()
         try:
             self._wire(monkeypatch, provider)
-            await assemble_graph_messages_with_memory(
-                "q", _fixture_turns(), thread_id=thread_id
-            )
+            await assemble_graph_messages_with_memory("q", _fixture_turns(), thread_id=thread_id)
         finally:
             monkeypatch.undo()
         assert len(await self._rows(thread_id)) == 2
@@ -672,9 +637,7 @@ class TestSessionSummaryCacheDB:
         from app.db.session import AsyncSessionLocal
 
         async with AsyncSessionLocal() as db:
-            await db.execute(
-                delete(OpsLgRagThread).where(OpsLgRagThread.id == thread_id)
-            )
+            await db.execute(delete(OpsLgRagThread).where(OpsLgRagThread.id == thread_id))
             await db.commit()
         assert await self._rows(thread_id) == []
 
@@ -691,13 +654,10 @@ class TestSessionSummaryCacheDB:
         from app.llm import usage as llm_usage
         from app.llm.providers.siliconflow import SiliconFlowProvider
 
-        usage = (
-            '{"prompt_tokens": 7, "completion_tokens": 3,'
-            ' "prompt_cache_hit_tokens": 0}'
-        )
+        usage = '{"prompt_tokens": 7, "completion_tokens": 3, "prompt_cache_hit_tokens": 0}'
         lines = [
             'data: {"choices":[{"delta":{"content":"归因摘要"}}]}',
-            'data: {"choices":[],"usage":' + usage + '}',
+            'data: {"choices":[],"usage":' + usage + "}",
             "data: [DONE]",
         ]
 
@@ -727,9 +687,7 @@ class TestSessionSummaryCacheDB:
             def stream(self, *args, **kwargs):
                 return _FakeResp()
 
-        monkeypatch.setattr(
-            httpx, "AsyncClient", lambda *a, **k: _FakeClient()
-        )
+        monkeypatch.setattr(httpx, "AsyncClient", lambda *a, **k: _FakeClient())
         provider = SiliconFlowProvider(api_key="test-key")
         self._wire(monkeypatch, provider)
         run_id = uuid.uuid4().hex
@@ -741,11 +699,7 @@ class TestSessionSummaryCacheDB:
 
         async with AsyncSessionLocal() as db:
             rows = list(
-                (
-                    await db.execute(
-                        select(OpsLlmUsage).where(OpsLlmUsage.run_id == run_id)
-                    )
-                )
+                (await db.execute(select(OpsLlmUsage).where(OpsLlmUsage.run_id == run_id)))
                 .scalars()
                 .all()
             )

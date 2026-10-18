@@ -45,7 +45,9 @@ class FakeTransport:
         error: str | None = None,
         exc: BaseException | None = None,
     ) -> None:
-        self._result: Any = {"content": [{"type": "text", "text": "ok"}]} if result is None else result
+        self._result: Any = (
+            {"content": [{"type": "text", "text": "ok"}]} if result is None else result
+        )
         self._error = error
         self._exc = exc
         self.calls: list[tuple[str, Any]] = []

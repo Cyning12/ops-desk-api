@@ -30,9 +30,7 @@ from app.ops.capability.types import (
 )
 
 # 声明里的键（未知键在加载期被拒，此处只列支持项）
-VISIBILITY_KEYS = frozenset(
-    {"departments", "roles", "projects", "classification_max"}
-)
+VISIBILITY_KEYS = frozenset({"departments", "roles", "projects", "classification_max"})
 
 # 求值不通过的原因（写进审计，便于回答「为什么他没看到」）
 REASON_DEPARTMENT = "department_mismatch"
@@ -74,15 +72,11 @@ def principal_from_ctx(ctx: dict[str, Any] | None) -> Principal:
         departments=_as_set(c.get("departments")),
         roles=_as_set(c.get("roles")),
         projects=_as_set(c.get("projects")),
-        classification_max=str(
-            c.get("classification_max") or Principal().classification_max
-        ),
+        classification_max=str(c.get("classification_max") or Principal().classification_max),
     )
 
 
-def _dimension_ok(
-    rule_value: Any, principal_value: frozenset[str]
-) -> bool:
+def _dimension_ok(rule_value: Any, principal_value: frozenset[str]) -> bool:
     """一维求交：声明含 ``all`` 或未声明 → 不限；否则需交集非空。"""
     declared = _as_set(rule_value)
     if not declared or VISIBILITY_ANY in declared:
@@ -90,9 +84,7 @@ def _dimension_ok(
     return bool(declared & principal_value)
 
 
-def check_visible(
-    spec: CapabilitySpec, principal: Principal
-) -> tuple[bool, str | None]:
+def check_visible(spec: CapabilitySpec, principal: Principal) -> tuple[bool, str | None]:
     """返回 ``(visible, reason)``；``reason`` 仅在不可见时非空。"""
     rule = spec.visibility
     if not isinstance(rule, dict):
@@ -110,9 +102,7 @@ def check_visible(
         if required not in CLASSIFICATION_ORDER:
             # 加载期已校验；此处 fail-closed，不因配置写错而放行
             return False, REASON_CLASSIFICATION
-        if classification_rank(principal.classification_max) < classification_rank(
-            required
-        ):
+        if classification_rank(principal.classification_max) < classification_rank(required):
             return False, REASON_CLASSIFICATION
     return True, None
 
@@ -151,7 +141,5 @@ def evaluate_visibility(
     return kept, summary
 
 
-def filter_visible(
-    specs: list[CapabilitySpec], principal: Principal
-) -> list[CapabilitySpec]:
+def filter_visible(specs: list[CapabilitySpec], principal: Principal) -> list[CapabilitySpec]:
     return evaluate_visibility(specs, principal)[0]

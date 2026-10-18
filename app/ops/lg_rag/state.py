@@ -41,9 +41,7 @@ class SubtaskResultBatch(list):
         self.replace = bool(replace)
 
 
-def success_terminal_ids(
-    plan: list[dict] | None, results: list[dict] | None
-) -> list[str]:
+def success_terminal_ids(plan: list[dict] | None, results: list[dict] | None) -> list[str]:
     """不可变前缀（Q8）：已进入**成功终态**的计划 id，按计划顺序。
 
     **失败终态不算**——它没有要保护的东西（没有副作用、没有可取的结果），
@@ -140,9 +138,7 @@ def _terminal_subtask_id(row: dict) -> str:
     return sid
 
 
-def merge_subtask_results(
-    existing: list[dict] | None, new: list[dict] | None
-) -> list[dict]:
+def merge_subtask_results(existing: list[dict] | None, new: list[dict] | None) -> list[dict]:
     """``None`` 清空（Critic 回环）；否则按计划 id 归并。
 
     带 ``plan_ids`` 的批次：未知 id、缺终态、已终态的重复条都丢弃，不覆盖。
@@ -157,8 +153,7 @@ def merge_subtask_results(
         out = [
             row
             for row in (existing or [])
-            if isinstance(row, dict)
-            and str(row.get("subtask_id") or "").strip() in plan_ids
+            if isinstance(row, dict) and str(row.get("subtask_id") or "").strip() in plan_ids
         ]
     else:
         out = [row for row in (existing or []) if isinstance(row, dict)]

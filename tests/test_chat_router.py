@@ -1,4 +1,5 @@
 """Integration tests for chat SSE router."""
+
 from __future__ import annotations
 
 import pytest
@@ -14,9 +15,7 @@ def override_auth(monkeypatch):
 
     from app.ops.deps import get_current_user as real_get_current_user
 
-    test_user = OpsUser(
-        id="00000000-0000-0000-0000-000000000001", username="tester", role="viewer"
-    )
+    test_user = OpsUser(id="00000000-0000-0000-0000-000000000001", username="tester", role="viewer")
 
     @wraps(real_get_current_user)
     async def fake_get_current_user(*args, **kwargs):

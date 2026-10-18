@@ -197,9 +197,7 @@ class TestNoProxySignoff:
         apply_task_write(plan, confirmed=True)
         bad = _VALID_TASK.replace("HG-AUDIT-R1 | pending", "HG-AUDIT-R1 | approved")
         with pytest.raises(TaskWriterError, match="invalid_content"):
-            plan_task_write(
-                _SLUG, bad, kind=KIND_TASK_ACTIVE, repo_root=repo_root, overwrite=True
-            )
+            plan_task_write(_SLUG, bad, kind=KIND_TASK_ACTIVE, repo_root=repo_root, overwrite=True)
         # 原文件未被污染
         assert (repo_root / plan.rel_path).read_text(encoding="utf-8") == _VALID_TASK
 

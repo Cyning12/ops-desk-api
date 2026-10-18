@@ -20,6 +20,7 @@ import uuid
 import pytest
 from sqlalchemy import text
 
+from app.db.session import AsyncSessionLocal
 from app.ops.capability import (
     DbIdempotencyStore,
     DbReceiptSink,
@@ -40,7 +41,6 @@ from app.ops.capability import (
 from app.ops.capability.adapters import FakeHttpTransport, StaticCredentialVault
 from app.ops.capability.receipts import Receipt
 from app.ops.capability.types import CapabilitySpec
-from app.db.session import AsyncSessionLocal
 from tests.conftest import DB_AVAILABLE
 
 pytestmark = pytest.mark.skipif(
@@ -52,12 +52,9 @@ _OTHER_TENANT = "w6-test-tenant-2"
 
 
 async def _clear_test_rows() -> None:
-    async with AsyncSessionLocal() as session:
-        async with session.begin():
-            for table in ("ops_capability_idempotency", "ops_capability_receipts"):
-                await session.execute(
-                    text(f"DELETE FROM {table} WHERE tenant_id LIKE 'w6-test-%'")
-                )
+    async with AsyncSessionLocal() as session, session.begin():
+        for table in ("ops_capability_idempotency", "ops_capability_receipts"):
+            await session.execute(text(f"DELETE FROM {table} WHERE tenant_id LIKE 'w6-test-%'"))
 
 
 @pytest.fixture(autouse=True)
@@ -163,17 +160,17 @@ def test_db_sync_claim_is_not_exposed():
 
 
 def _receipt(**over) -> Receipt:
-    base = dict(
-        receipt_id=uuid.uuid4().hex[:16],
-        capability_id="oa.ticket.create",
-        side_effect="write",
-        ok=True,
-        created_at="2026-09-19T12:00:00+00:00",
-        tenant_id=_TENANT,
-        user_id="u-1",
-        idempotency_key="k-receipt",
-        captured={"$.data.ticketId": "T-9"},
-    )
+    base = {
+        "receipt_id": uuid.uuid4().hex[:16],
+        "capability_id": "oa.ticket.create",
+        "side_effect": "write",
+        "ok": True,
+        "created_at": "2026-09-19T12:00:00+00:00",
+        "tenant_id": _TENANT,
+        "user_id": "u-1",
+        "idempotency_key": "k-receipt",
+        "captured": {"$.data.ticketId": "T-9"},
+    }
     base.update(over)
     return Receipt(**base)
 
@@ -225,18 +222,18 @@ def _write_spec(**over) -> CapabilitySpec:
         "error_map": {"1001": "args_schema_invalid"},
     }
     http.update(over.pop("http", {}))
-    base = dict(
-        capability_id="oa.ticket.create",
-        kind="http",
-        description="建单",
-        args_schema={"type": "object", "properties": {"subject": {"type": "string"}}},
-        tags=("oa",),
-        side_effect="write",
-        hitl_required=True,
-        when_to_use="单测",
-        receipt_capture=("$.data.ticketId",),
-        http=http,
-    )
+    base = {
+        "capability_id": "oa.ticket.create",
+        "kind": "http",
+        "description": "建单",
+        "args_schema": {"type": "object", "properties": {"subject": {"type": "string"}}},
+        "tags": ("oa",),
+        "side_effect": "write",
+        "hitl_required": True,
+        "when_to_use": "单测",
+        "receipt_capture": ("$.data.ticketId",),
+        "http": http,
+    }
     base.update(over)
     return CapabilitySpec(**base)
 

@@ -123,9 +123,14 @@ def _aggregator_node(state: _DpState) -> dict[str, Any]:
     query = state["messages"][0].content if state.get("messages") else ""
     decision = state.get("decision") or {}
     if decision:
-        answer = "[dualproc] resumed answer: approved=" + str(
-            decision.get("approved"),
-        ) + " decided_by=" + str(decision.get("decided_by"))
+        answer = (
+            "[dualproc] resumed answer: approved="
+            + str(
+                decision.get("approved"),
+            )
+            + " decided_by="
+            + str(decision.get("decided_by"))
+        )
     else:
         answer = f"[dualproc] answer: {query[:80]}"
     return {"messages": [AIMessage(content=answer)]}
@@ -246,4 +251,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

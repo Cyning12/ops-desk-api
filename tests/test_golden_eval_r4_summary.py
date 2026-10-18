@@ -4,6 +4,7 @@ fake 报告样例喂入；不连真库 / 真 LLM / 外网。
 覆盖：四象限分组 · zh2en ≥1/3 门槛三态（MET/NOT_MET/NO_DATA）·
 拒答正确率与误拒/误答分类 · 小样本 confidence 标注存在性 · FP-2 显式失败。
 """
+
 from pathlib import Path
 
 import pytest
@@ -74,13 +75,24 @@ def _write(tmp_path: Path, report: dict) -> Path:
 def test_quadrant_grouping():
     results = [
         _case("G01", "zh2en"),
-        _case("G02", "zh2en", recall_at5="fail", verdict="fail",
-              fail_reasons=["recall@5: miss"]),
+        _case("G02", "zh2en", recall_at5="fail", verdict="fail", fail_reasons=["recall@5: miss"]),
         _case("G20", "zh2zh"),
-        _case("G40", "en2en", min_relevance="fail", verdict="fail",
-              fail_reasons=["min_relevance: got weak < relevant"]),
-        _case("G62", "negative", recall_at5=None, min_relevance=None,
-              citation_in_hits=None, must_refuse="pass", gate_action="refuse"),
+        _case(
+            "G40",
+            "en2en",
+            min_relevance="fail",
+            verdict="fail",
+            fail_reasons=["min_relevance: got weak < relevant"],
+        ),
+        _case(
+            "G62",
+            "negative",
+            recall_at5=None,
+            min_relevance=None,
+            citation_in_hits=None,
+            must_refuse="pass",
+            gate_action="refuse",
+        ),
     ]
     agg = aggregate(results)
     quads = agg["quadrants"]
@@ -110,8 +122,12 @@ def test_quadrant_grouping():
 )
 def test_zh2en_gate_three_states(hits, n, expected):
     results = [
-        _case(f"G{i:02d}", "zh2en", recall_at5="pass" if i <= hits else "fail",
-              verdict="pass" if i <= hits else "fail")
+        _case(
+            f"G{i:02d}",
+            "zh2en",
+            recall_at5="pass" if i <= hits else "fail",
+            verdict="pass" if i <= hits else "fail",
+        )
         for i in range(1, n + 1)
     ]
     gate = aggregate(results)["gates"]["zh2en_crosslingual_recall_at5"]
@@ -120,8 +136,17 @@ def test_zh2en_gate_three_states(hits, n, expected):
 
 
 def test_zh2en_gate_no_data():
-    results = [_case("G62", "negative", recall_at5=None, min_relevance=None,
-                     citation_in_hits=None, must_refuse="pass", gate_action="refuse")]
+    results = [
+        _case(
+            "G62",
+            "negative",
+            recall_at5=None,
+            min_relevance=None,
+            citation_in_hits=None,
+            must_refuse="pass",
+            gate_action="refuse",
+        )
+    ]
     gate = aggregate(results)["gates"]["zh2en_crosslingual_recall_at5"]
     assert gate["verdict"] == "NO_DATA"
     assert gate["n"] == 0
@@ -132,16 +157,44 @@ def test_zh2en_gate_no_data():
 def test_refusal_classification():
     results = [
         # 负样本：2 正确拒答 + 1 误答
-        _case("G62", "negative", recall_at5=None, min_relevance=None,
-              citation_in_hits=None, must_refuse="pass", gate_action="refuse"),
-        _case("G63", "negative", recall_at5=None, min_relevance=None,
-              citation_in_hits=None, must_refuse="pass", gate_action="refuse"),
-        _case("G67", "negative", recall_at5=None, min_relevance=None,
-              citation_in_hits=None, must_refuse="fail", gate_action="answer_partial",
-              verdict="fail", fail_reasons=["must_refuse: gate_action=answer_partial"]),
+        _case(
+            "G62",
+            "negative",
+            recall_at5=None,
+            min_relevance=None,
+            citation_in_hits=None,
+            must_refuse="pass",
+            gate_action="refuse",
+        ),
+        _case(
+            "G63",
+            "negative",
+            recall_at5=None,
+            min_relevance=None,
+            citation_in_hits=None,
+            must_refuse="pass",
+            gate_action="refuse",
+        ),
+        _case(
+            "G67",
+            "negative",
+            recall_at5=None,
+            min_relevance=None,
+            citation_in_hits=None,
+            must_refuse="fail",
+            gate_action="answer_partial",
+            verdict="fail",
+            fail_reasons=["must_refuse: gate_action=answer_partial"],
+        ),
         # 正样本：1 疑似误拒
-        _case("G16", "zh2en", gate_action="refuse", verdict="fail",
-              min_relevance="fail", fail_reasons=["min_relevance: got irrelevant"]),
+        _case(
+            "G16",
+            "zh2en",
+            gate_action="refuse",
+            verdict="fail",
+            min_relevance="fail",
+            fail_reasons=["min_relevance: got irrelevant"],
+        ),
     ]
     rf = aggregate(results)["refusal"]
     assert rf["negative_n"] == 3
@@ -179,8 +232,11 @@ def test_load_report_rejects_malformed(tmp_path: Path):
     bad2 = tmp_path / "bad2.yaml"
     bad2.write_text(
         yaml.safe_dump(
-            {"results": [{"id": "G01", "quadrant": "zh2en", "verdict": "pass",
-                          "recall_at5": "maybe"}]}
+            {
+                "results": [
+                    {"id": "G01", "quadrant": "zh2en", "verdict": "pass", "recall_at5": "maybe"}
+                ]
+            }
         ),
         encoding="utf-8",
     )
@@ -209,10 +265,16 @@ def test_build_final_report_header_passthrough(tmp_path: Path):
 def test_render_markdown_sections(tmp_path: Path):
     results = [
         _case("G01", "zh2en"),
-        _case("G02", "zh2en", recall_at5="fail", verdict="fail",
-              fail_reasons=["recall@5: miss"]),
-        _case("G62", "negative", recall_at5=None, min_relevance=None,
-              citation_in_hits=None, must_refuse="pass", gate_action="refuse"),
+        _case("G02", "zh2en", recall_at5="fail", verdict="fail", fail_reasons=["recall@5: miss"]),
+        _case(
+            "G62",
+            "negative",
+            recall_at5=None,
+            min_relevance=None,
+            citation_in_hits=None,
+            must_refuse="pass",
+            gate_action="refuse",
+        ),
     ]
     src = _write(tmp_path, _fake_report(results))
     md = render_markdown(build_final_report(load_report(src), src))
@@ -230,17 +292,29 @@ def test_render_markdown_sections(tmp_path: Path):
 def test_cli_end_to_end(tmp_path: Path):
     results = [
         _case("G01", "zh2en"),
-        _case("G62", "negative", recall_at5=None, min_relevance=None,
-              citation_in_hits=None, must_refuse="pass", gate_action="refuse"),
+        _case(
+            "G62",
+            "negative",
+            recall_at5=None,
+            min_relevance=None,
+            citation_in_hits=None,
+            must_refuse="pass",
+            gate_action="refuse",
+        ),
     ]
     src = _write(tmp_path, _fake_report(results))
     out_yaml = tmp_path / "final.yaml"
     out_md = tmp_path / "final.md"
-    rc = main([
-        "--report", str(src),
-        "--out-yaml", str(out_yaml),
-        "--out-md", str(out_md),
-    ])
+    rc = main(
+        [
+            "--report",
+            str(src),
+            "--out-yaml",
+            str(out_yaml),
+            "--out-md",
+            str(out_md),
+        ]
+    )
     assert rc == 0
     loaded = yaml.safe_load(out_yaml.read_text(encoding="utf-8"))
     assert loaded["gates"]["zh2en_crosslingual_recall_at5"]["verdict"] == "MET"
@@ -248,11 +322,16 @@ def test_cli_end_to_end(tmp_path: Path):
     md = out_md.read_text(encoding="utf-8")
     assert "**MET**" in md
     # 确定性：同输入重跑产物逐字节一致
-    rc2 = main([
-        "--report", str(src),
-        "--out-yaml", str(out_yaml),
-        "--out-md", str(out_md),
-    ])
+    rc2 = main(
+        [
+            "--report",
+            str(src),
+            "--out-yaml",
+            str(out_yaml),
+            "--out-md",
+            str(out_md),
+        ]
+    )
     assert rc2 == 0
     assert yaml.safe_load(out_yaml.read_text(encoding="utf-8")) == loaded
 

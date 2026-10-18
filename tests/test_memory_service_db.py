@@ -9,6 +9,7 @@
 ⚠️ 全文件 `async def`（asyncio_mode=auto）；不要自建 event loop
 （对齐 tests/test_capability_persistence_db.py 头注）。
 """
+
 from __future__ import annotations
 
 import uuid
@@ -45,9 +46,7 @@ _OTHER_TENANT = "mf-test-tenant-b"
 
 async def _clear_test_rows() -> None:
     async with AsyncSessionLocal() as session, session.begin():
-        await session.execute(
-            text("DELETE FROM ops_memory_facts WHERE tenant_id LIKE 'mf-test-%'")
-        )
+        await session.execute(text("DELETE FROM ops_memory_facts WHERE tenant_id LIKE 'mf-test-%'"))
 
 
 @pytest.fixture(autouse=True)
@@ -80,9 +79,7 @@ async def _count(tenant_id: str = _TENANT) -> int:
 async def _row_by_id(fact_id: str):
     async with AsyncSessionLocal() as session:
         rows = await session.execute(
-            text(
-                "SELECT status, key, value FROM ops_memory_facts WHERE id = :i"
-            ),
+            text("SELECT status, key, value FROM ops_memory_facts WHERE id = :i"),
             {"i": fact_id},
         )
         return rows.first()
@@ -93,7 +90,7 @@ async def _row_by_id(fact_id: str):
 
 async def test_gate_rejection_writes_nothing():
     # memory-preference-profile：preference 已放开，改用双向绑定违例触发闸拒
-    #（preference + 非 pref. key → key_kind_mismatch）；「闸拒不落库」语义不变
+    # （preference + 非 pref. key → key_kind_mismatch）；「闸拒不落库」语义不变
     with pytest.raises(GateRejectedError) as exc:
         await write_fact(_candidate(kind="preference"))
     assert exc.value.reason_code == "key_kind_mismatch"
@@ -189,9 +186,7 @@ async def test_recall_limit_truncates_oldest_first():
     async with AsyncSessionLocal() as session, session.begin():
         for i, f in enumerate(facts):
             await session.execute(
-                text(
-                    "UPDATE ops_memory_facts SET updated_at = :ts WHERE id = :i"
-                ),
+                text("UPDATE ops_memory_facts SET updated_at = :ts WHERE id = :i"),
                 {"ts": now_utc() + timedelta(seconds=i), "i": str(f.id)},
             )
 
@@ -222,9 +217,7 @@ async def test_mutation_wrong_fact_pollutes_then_revoke_erases(
     polluted = await assemble_graph_messages_with_memory(
         "部署到哪里？", [], tenant_id=_TENANT, user_id=user
     )
-    blocks = [
-        str(m.content) for m in polluted if isinstance(m, SystemMessage)
-    ]
+    blocks = [str(m.content) for m in polluted if isinstance(m, SystemMessage)]
     # 第一步：通路是通的——错误事实确实出现在注入块
     assert any(MEMORY_FACTS_HEADER in b for b in blocks)
     assert any("project.deploy_target=wrong-prod-host" in b for b in blocks)
@@ -234,9 +227,7 @@ async def test_mutation_wrong_fact_pollutes_then_revoke_erases(
     healed = await assemble_graph_messages_with_memory(
         "部署到哪里？", [], tenant_id=_TENANT, user_id=user
     )
-    healed_blocks = [
-        str(m.content) for m in healed if isinstance(m, SystemMessage)
-    ]
+    healed_blocks = [str(m.content) for m in healed if isinstance(m, SystemMessage)]
     assert not any("wrong-prod-host" in b for b in healed_blocks)
     assert not any(MEMORY_FACTS_HEADER in b for b in healed_blocks)
 
@@ -249,6 +240,7 @@ async def test_cross_tenant_recall_is_empty():
     await write_fact(_candidate(user_id=user))
     assert await recall_active(_OTHER_TENANT, user) == []
     assert len(await recall_active(_TENANT, user)) == 1
+
 
 # ---------------- memory-preference-profile · kind=preference（显式-only） ----------------
 
@@ -384,9 +376,7 @@ async def test_mutation_wrong_preference_pollutes_then_revoke_by_key_erases(
     assert any(MEMORY_PREFERENCES_HEADER in b for b in blocks)
     assert any("pref.answer_lang=wrong-klingon" in b for b in blocks)
     # 且不污染事实节
-    assert not any(
-        MEMORY_FACTS_HEADER in b and "wrong-klingon" in b for b in blocks
-    )
+    assert not any(MEMORY_FACTS_HEADER in b and "wrong-klingon" in b for b in blocks)
 
     n = await revoke_by_key(_TENANT, user, "pref.answer_lang")
     assert n == 1
@@ -398,4 +388,3 @@ async def test_mutation_wrong_preference_pollutes_then_revoke_by_key_erases(
     # 第三态：污染消失 + 偏好节物理不存在（无 preference → 无偏好节）
     assert not any("wrong-klingon" in b for b in healed_blocks)
     assert not any(MEMORY_PREFERENCES_HEADER in b for b in healed_blocks)
-

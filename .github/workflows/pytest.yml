@@ -41,13 +41,13 @@ jobs:
           uv python install 3.11
           uv venv --python 3.11
           uv pip install -r requirements.txt
-          uv pip install "pytest>=8.2,<9" "pytest-asyncio>=0.23,<1" "ruff>=0.5,<1"
+          uv pip install "pytest>=8.2,<9" "pytest-asyncio>=0.23,<1" "ruff==0.15.21"
+          # ruff 钉版与 uv.lock 同源（0.15.21 · 维护者签注 m01101 明裁 · FP-7 禁 ">=0.5,<1" 漂移写法）
 
       - name: Run pytest
         run: .venv/bin/pytest tests -q --tb=short
         # 有 slow/intent marker 时示例：
         # run: .venv/bin/pytest tests -m "not intent_eval and not intent_benchmark" -q --tb=short
 
-      # --- 可选：Ruff / mypy（L2 落地后启用）---
-      # - name: Ruff
-      #   run: uv run ruff check .
+      - name: Ruff
+        run: .venv/bin/ruff check app tests

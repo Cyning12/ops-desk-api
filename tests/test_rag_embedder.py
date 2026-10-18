@@ -1,4 +1,5 @@
 """RAG_EMBED：查询路径 SiliconFlow ApiEmbedder 工厂与失败路径。"""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock

@@ -1,4 +1,5 @@
 """lg-rag SSE stream：鉴权、校验、事件序（mock astream）。"""
+
 from __future__ import annotations
 
 import json
@@ -31,11 +32,7 @@ async def _fake_supervisor_stream(
     yield {"intent_node": {"intent": {"domain": "kb", "needs_tool": False}}}
     yield {"strategy_builder": {"allowed_capability_ids": []}}
     yield {"supervisor": {"subtasks": [{"id": "t1", "type": "rag", "input": query}]}}
-    yield {
-        "rag_subtask": {
-            "subtask_results": [{"id": "t1", "type": "rag", "output": "hit"}]
-        }
-    }
+    yield {"rag_subtask": {"subtask_results": [{"id": "t1", "type": "rag", "output": "hit"}]}}
     yield {"aggregator": {"messages": [AIMessage(content="最终答案")]}}
     yield {"critic_node": {"critic_verdict": "pass"}}
 
@@ -60,23 +57,17 @@ async def test_stream_requires_auth(client: AsyncClient) -> None:
     assert response.status_code == 401
 
 
-async def test_stream_empty_query_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_stream_empty_query_422(client: AsyncClient, override_auth_maintainer) -> None:
     response = await client.post(_PATH, json={"query": ""})
     assert response.status_code == 422
 
 
-async def test_stream_invalid_mode_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_stream_invalid_mode_422(client: AsyncClient, override_auth_maintainer) -> None:
     response = await client.post(_PATH, json={"query": "q", "mode": "chat"})
     assert response.status_code == 422
 
 
-async def test_stream_supervisor_event_order(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_stream_supervisor_event_order(client: AsyncClient, override_auth_maintainer) -> None:
     with patch(
         "app.ops.lg_rag.multi.graph.astream_supervisor_agent",
         new=_fake_supervisor_stream,
@@ -117,9 +108,7 @@ async def test_map_node_update_helpers() -> None:
     assert "subtask_result" in payload
     assert payload["status"] == "done"
 
-    et, role, payload = map_node_update(
-        "aggregator", {"messages": [AIMessage(content="答")]}
-    )
+    et, role, payload = map_node_update("aggregator", {"messages": [AIMessage(content="答")]})
     assert et == "answer"
     assert payload["content"] == "答"
 
@@ -143,11 +132,7 @@ async def test_subtask_running_before_slow_node_update() -> None:
             input_preview=query,
         )
         await asyncio.sleep(0.05)
-        yield {
-            "rag_subtask": {
-                "subtask_results": [{"id": "t1", "type": "rag", "output": "hit"}]
-            }
-        }
+        yield {"rag_subtask": {"subtask_results": [{"id": "t1", "type": "rag", "output": "hit"}]}}
 
     timeline: list[str] = []
     with (
@@ -231,11 +216,7 @@ async def test_subtask_step_visible_before_node_update() -> None:
             step="retrieve",
             detail={"phase": "done", "hit_count": 2},
         )
-        yield {
-            "rag_subtask": {
-                "subtask_results": [{"id": "t1", "type": "rag", "output": "hit"}]
-            }
-        }
+        yield {"rag_subtask": {"subtask_results": [{"id": "t1", "type": "rag", "output": "hit"}]}}
 
     timeline: list[str] = []
     with (

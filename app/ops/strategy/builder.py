@@ -35,9 +35,7 @@ def get_policy_visible_catalog(
     return list_capabilities(filter=cap_filter or BUILDER_CAP_FILTER)
 
 
-def get_policy_visible_ids(
-    *, cap_filter: CapabilityFilter | None = None
-) -> frozenset[str]:
+def get_policy_visible_ids(*, cap_filter: CapabilityFilter | None = None) -> frozenset[str]:
     return frozenset(s.capability_id for s in get_policy_visible_catalog(cap_filter=cap_filter))
 
 
@@ -110,9 +108,7 @@ def effective_scope_from_requested(
     return scope, stripped, truncated
 
 
-def _apply_scenario_stage(
-    visible: list[CapabilitySpec], state: LgRagState
-) -> list[CapabilitySpec]:
+def _apply_scenario_stage(visible: list[CapabilitySpec], state: LgRagState) -> list[CapabilitySpec]:
     """stage 2 场景维（Host V1-B）：基线 → scenario_trim → 有效可见集。
 
     off = 短路（现状零 diff · 零日志）；observe = 计算剔除但**不生效**
@@ -177,9 +173,7 @@ async def strategy_builder_node(state: LgRagState) -> dict:
             candidates = get_candidate_capability_ids(
                 agent_type=agent_type, mode=mode_s or "supervisor"
             )
-            allowed, stripped = build_allowlist_from_candidates(
-                candidates, visible_ids=visible_ids
-            )
+            allowed, stripped = build_allowlist_from_candidates(candidates, visible_ids=visible_ids)
         span_meta: dict = {
             "module": "strategy_builder",
             "strategy_builder_catalog_count": len(visible),

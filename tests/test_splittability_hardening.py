@@ -162,9 +162,7 @@ def test_d4_strategy_pack_absent_zero_diff(monkeypatch: pytest.MonkeyPatch) -> N
     assert source == "tier_default"
 
 
-def test_d4_env_overrides_strategy_pack(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_d4_env_overrides_strategy_pack(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """D4：env > 策略包；变异③ 若包盖过 env 则本断言必挂。"""
     clear_strategy_pack_cache()
     pack = tmp_path / "pack.yaml"
@@ -212,7 +210,7 @@ def test_d4_mutation_pack_must_not_override_env(
     monkeypatch.setenv("OPS_LLM_TIER_GRADER_MODEL", "deepseek-ai/DeepSeek-V4-Pro")
     model, source = model_catalog.resolve_task_model("grader")
     # 破坏条件：若 source==strategy_pack 且 model 为包内值 → 失败
-    assert not (
-        source == "strategy_pack" and model == "deepseek-ai/DeepSeek-V4-Flash"
-    ), "策略包不得盖过 env"
+    assert not (source == "strategy_pack" and model == "deepseek-ai/DeepSeek-V4-Flash"), (
+        "策略包不得盖过 env"
+    )
     assert source == "env_tier"

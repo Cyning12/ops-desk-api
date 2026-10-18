@@ -4,11 +4,12 @@
 写法约定：一条规则一个 test；断言行为（输出长什么样），不断言实现。
 """
 
+import re
+
 from app.ops.rag.chunker import chunk_markdown, truncate_middle
 from app.ops.rag.clean import clean_markdown
 from app.ops.rag.prefix import build_prefix, embed_text, strip_doc_context_prefix
 from app.ops.rag.tokenizer import FuncTokenCounter
-import re
 
 # 假计数器：按词数计，确定、可读、够用（真 tokenizer 的口径差异不影响规则正确性）
 counter = FuncTokenCounter(lambda t: max(1, len(t.split())))
@@ -42,12 +43,13 @@ def test_sections_become_chunks():
     chunks = chunk_markdown(cleaned.text, counter, max_tokens=10, min_tokens=2)
     # print(cleaned.text)
     for idx, chunk in enumerate(chunks):
-        print(f"\n==========\nchunk {idx+1}:\n", chunk)
+        print(f"\n==========\nchunk {idx + 1}:\n", chunk)
     assert len(chunks) == 5
     assert chunks[0].startswith("###")
     assert "### Root cause" in chunks[3]
     assert "```js" in chunks[4]
     assert all(len(c.strip()) > 0 for c in chunks)
+
 
 def test_code_fence_is_atomic():
     """
@@ -60,6 +62,7 @@ def test_code_fence_is_atomic():
     assert chunks[0].startswith("```js")
     assert chunks[0].endswith("```")
 
+
 def test_table_split_repeats_header():
     """
     超限表格按行切、每片重复表头
@@ -68,7 +71,7 @@ def test_table_split_repeats_header():
     print(table)
     chunks = chunk_markdown(table, counter, max_tokens=20, min_tokens=1)
     for idx, chunk in enumerate(chunks):
-        print(f"\n==========\nchunk {idx+1}:\n", chunk)
+        print(f"\n==========\nchunk {idx + 1}:\n", chunk)
     assert len(chunks) == 50
     assert all(chunk.startswith("| a | b |") for chunk in chunks)
     data_rows = [r for c in chunks for r in c.split("\n") if re.match(r"^\| \d+ \| \d+ \|$", r)]
@@ -119,8 +122,10 @@ def test_html_noise_and_video():
 def test_prefix_roundtrip():
     """§1b：前缀四行格式 + 展示剥离往返；无 module_tag 不写 Module 行（有才写）"""
     p = build_prefix(
-        title="标题", source_type="issue",
-        ref="MoonshotAI/kimi-code#2720", module_tag="agent-core",
+        title="标题",
+        source_type="issue",
+        ref="MoonshotAI/kimi-code#2720",
+        module_tag="agent-core",
     )
     lines = p.splitlines()
     assert lines[0] == "[Document Context]"

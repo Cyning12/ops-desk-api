@@ -16,6 +16,7 @@
 
 **拒绝 = 不落库**（不是"存了不召回"）；原因码稳定可枚举，调用方按码断言。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -140,9 +141,7 @@ def compute_context_fingerprint(
             value = intent_features[key]
             if value is None or isinstance(value, (str, int, float, bool)):
                 features[str(key)] = value
-    skeleton = [
-        str(t) for t in (tool_sequence or [])[:MAX_TOOL_SEQUENCE] if isinstance(t, str)
-    ]
+    skeleton = [str(t) for t in (tool_sequence or [])[:MAX_TOOL_SEQUENCE] if isinstance(t, str)]
     payload = {"d": domain, "i": features, "t": skeleton}
     canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

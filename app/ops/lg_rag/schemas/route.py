@@ -12,6 +12,4 @@ class RouteDecision(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
-    route: Literal["rag", "direct", "refuse"] = Field(
-        description="意图路由：rag / direct / refuse"
-    )
+    route: Literal["rag", "direct", "refuse"] = Field(description="意图路由：rag / direct / refuse")

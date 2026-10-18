@@ -4,6 +4,7 @@
 - 每个节点返回「局部更新 dict」，由 LangGraph merge 进 ChatState
 - events 字段带 Annotated[..., add] 累加，供 SSE/WS 流式推送
 """
+
 import re
 
 from sqlalchemy import select
@@ -48,7 +49,7 @@ _SYSTEM_PROMPT = (
     "\n"
     "### 兜底行为\n"
     "需要拒答时，直接输出以下原文，不要解释原因：\n"
-    f"\"{REFUSAL_TEXT}\"\n"
+    f'"{REFUSAL_TEXT}"\n'
 )
 
 
@@ -161,10 +162,7 @@ def _build_messages(state: ChatState) -> list[LlmMessage]:
         messages.append(
             LlmMessage(
                 role="user",
-                content=(
-                    f"### 资料 [issue {num}]\n"
-                    f"标题：{issue.get('title')}\n{body}"
-                ),
+                content=(f"### 资料 [issue {num}]\n标题：{issue.get('title')}\n{body}"),
             )
         )
 
@@ -172,8 +170,7 @@ def _build_messages(state: ChatState) -> list[LlmMessage]:
     retrieved = state.get("retrieved") or []
     if retrieved:
         parts = [
-            f"### 资料 [{c.source_type} {c.anchor}]\n"
-            f"{strip_doc_context_prefix(c.content)[:1200]}"
+            f"### 资料 [{c.source_type} {c.anchor}]\n{strip_doc_context_prefix(c.content)[:1200]}"
             for c in retrieved
         ]
         header = "以下是与问题相关的资料：\n\n" + "\n\n".join(parts)
@@ -215,9 +212,7 @@ async def answer_node(state: ChatState) -> dict:
                 {"llm_route": {"task_type": "answer", "model": model, "source": route_source}}
             )
             # D4：usage 落表上下文（run_id/surface/task_type 经 ContextVar 传给 provider 钩点）
-            with use_run_context(
-                run_id=state.get("run_id"), surface="chat", task_type="answer"
-            ):
+            with use_run_context(run_id=state.get("run_id"), surface="chat", task_type="answer"):
                 async for chunk in provider.complete_stream(messages, model=model):
                     # include_usage 末帧：上报 token 用量到 generation（观测基线）
                     if chunk.meta and chunk.meta.get("usage"):

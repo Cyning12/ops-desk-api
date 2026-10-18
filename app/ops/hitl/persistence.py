@@ -44,9 +44,7 @@ def configure_hitl_from_env() -> str:
         return MODE_DB
     if mode == MODE_MEMORY:
         _STORE = InMemoryHitlStore()
-        logger.warning(
-            "HITL 持久化：memory（进程内）—— **重启后审批申请即丢失**，勿用于生产"
-        )
+        logger.warning("HITL 持久化：memory（进程内）—— **重启后审批申请即丢失**，勿用于生产")
         return MODE_MEMORY
     if mode != MODE_NULL:
         logger.error("%s=%r 无法识别（仅 db / memory），按不落库处理", ENV_PERSISTENCE, mode)

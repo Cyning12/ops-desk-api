@@ -189,9 +189,7 @@ async def test_task_lint_success_via_env_open(monkeypatch):
     calls: list[dict] = []
     proc = _FakeProc(stdout=b"PASS task lint", stderr=b"")
     with patch("asyncio.create_subprocess_exec", new=_fake_exec(calls, proc)):
-        result = await ainvoke(
-            HARNESS_TASK_LINT_ID, {"op": "task_lint", "task_path": _TASK_PATH}
-        )
+        result = await ainvoke(HARNESS_TASK_LINT_ID, {"op": "task_lint", "task_path": _TASK_PATH})
     assert result.ok is True
     assert result.output["op"] == "task_lint"
     assert result.output["passed"] is True
@@ -214,9 +212,7 @@ async def test_lint_wiki_delta_success(monkeypatch):
     calls: list[dict] = []
     proc = _FakeProc(stdout=b"PASS lint-wiki-delta", stderr=b"")
     with patch("asyncio.create_subprocess_exec", new=_fake_exec(calls, proc)):
-        result = await ainvoke(
-            HARNESS_TASK_LINT_ID, {"op": "lint_wiki_delta"}, ctx=_HOST_OPEN
-        )
+        result = await ainvoke(HARNESS_TASK_LINT_ID, {"op": "lint_wiki_delta"}, ctx=_HOST_OPEN)
     assert result.ok is True
     assert result.output["op"] == "lint_wiki_delta"
     assert result.output["passed"] is True
@@ -344,9 +340,7 @@ async def test_timeout_via_gateway_ok_false_not_hang(monkeypatch):
     proc = _FakeProc(hang=True)
     calls: list[dict] = []
     with patch("asyncio.create_subprocess_exec", new=_fake_exec(calls, proc)):
-        result = await ainvoke(
-            "test_harness_timeout", {"task_path": _TASK_PATH}, ctx=_HOST_OPEN
-        )
+        result = await ainvoke("test_harness_timeout", {"task_path": _TASK_PATH}, ctx=_HOST_OPEN)
     assert result.ok is False
     assert "cli_failed: timeout" in (result.error or "")
     assert proc.killed is True
@@ -388,9 +382,7 @@ async def test_stdout_truncation(monkeypatch):
     proc = _FakeProc(stdout=big)
     calls: list[dict] = []
     with patch("asyncio.create_subprocess_exec", new=_fake_exec(calls, proc)):
-        result = await ainvoke(
-            HARNESS_TASK_LINT_ID, {"op": "lint_wiki_delta"}, ctx=_HOST_OPEN
-        )
+        result = await ainvoke(HARNESS_TASK_LINT_ID, {"op": "lint_wiki_delta"}, ctx=_HOST_OPEN)
     assert result.ok is True
     assert "truncated 2048B" in result.output["stdout"]
     assert len(result.output["stdout"]) <= MAX_STREAM_BYTES + len("...[truncated 2048B]")

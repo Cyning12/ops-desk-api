@@ -6,6 +6,7 @@
 - 融合：RRF k=60，两路 1:1 起跑（契约 4c · Ink hybrid_fusion 实证）
 - RRF 分数只进日志/返回体供观测，**不进闸**（契约 4b）
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -163,9 +164,7 @@ async def _semantic_search_pg(
     query_vector: list[float],
     k: int,
 ) -> list[RetrievedChunk]:
-    sem_rows = await session.execute(
-        _SEMANTIC_SQL, {"qvec": json.dumps(query_vector), "k": k}
-    )
+    sem_rows = await session.execute(_SEMANTIC_SQL, {"qvec": json.dumps(query_vector), "k": k})
     return [_row_to_chunk(r) for r in sem_rows]
 
 
@@ -217,8 +216,7 @@ async def hybrid_recall_detail(
     semantic, keyword = _filter_by_request_tenant(semantic, keyword)
     fused = rrf_fuse(semantic, keyword, top_n)
     logger.info(
-        "hybrid_recall: path=%s query=%r semantic=%d keyword=%d fused=%d "
-        "sem=%s kw=%s top=%s",
+        "hybrid_recall: path=%s query=%r semantic=%d keyword=%d fused=%d sem=%s kw=%s top=%s",
         path,
         query[:60],
         len(semantic),

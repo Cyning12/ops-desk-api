@@ -8,6 +8,7 @@
 - delta/终帧落盘 ops_lg_rag_run_events（persist_run_event 调用断言）
 - replay 逐帧重放含 delta；basic 占位帧不变；401/404 不变
 """
+
 from __future__ import annotations
 
 import json
@@ -19,6 +20,15 @@ import pytest
 from httpx import AsyncClient
 from langchain_core.messages import AIMessage
 
+from app.llm.schema import BaseProvider, LlmChunk, LlmMessage
+from app.ops.lg_rag.answer_stream import (
+    complete_answer_streaming,
+    current_answer_token_sink,
+    reset_answer_token_sink,
+    set_answer_token_sink,
+)
+from app.ops.lg_rag.sse_replay import format_sse_event
+
 
 @pytest.fixture(autouse=True)
 def _no_pg_checkpointer_by_default(monkeypatch):
@@ -29,14 +39,6 @@ def _no_pg_checkpointer_by_default(monkeypatch):
     """
     monkeypatch.delenv("LG_RAG_HTTP_CHECKPOINTER", raising=False)
 
-from app.llm.schema import BaseProvider, LlmChunk, LlmMessage
-from app.ops.lg_rag.answer_stream import (
-    complete_answer_streaming,
-    current_answer_token_sink,
-    reset_answer_token_sink,
-    set_answer_token_sink,
-)
-from app.ops.lg_rag.sse_replay import format_sse_event
 
 _STREAM = "/api/ops/lg-rag/stream"
 _REPLAY = "/api/ops/lg-rag/replay"
@@ -56,9 +58,7 @@ class _FakeProvider(BaseProvider):
         self._stream_exc = stream_exc
         self.complete_calls = 0
 
-    async def complete(
-        self, messages: Any, model: str | None = None
-    ) -> str:
+    async def complete(self, messages: Any, model: str | None = None) -> str:
         self.complete_calls += 1
         return self._full
 
@@ -175,9 +175,7 @@ async def test_stream_delta_frames_order_and_join(
             new_callable=AsyncMock,
         ) as mock_persist,
     ):
-        response = await client.post(
-            _STREAM, json={"query": "复合问", "thread_id": "th-t5-1"}
-        )
+        response = await client.post(_STREAM, json={"query": "复合问", "thread_id": "th-t5-1"})
     assert response.status_code == 200
     events = _parse_sse(response.text)
     assert events[0]["event_type"] == "run.start"
@@ -242,9 +240,7 @@ async def test_stream_delta_progress_coexist_no_interleave(
             new_callable=AsyncMock,
         ),
     ):
-        response = await client.post(
-            _STREAM, json={"query": "q", "thread_id": "th-t5-2"}
-        )
+        response = await client.post(_STREAM, json={"query": "q", "thread_id": "th-t5-2"})
     assert response.status_code == 200
     events = _parse_sse(response.text)
     seqs = [e["seq"] for e in events]
@@ -274,9 +270,7 @@ async def test_stream_degrades_to_full_answer_when_stream_fails(
     async def _fake_stream(
         query: str, *, thread_id: str = "t", checkpointer: Any = None, **_kw: Any
     ) -> AsyncIterator[dict[str, Any]]:
-        provider = _FakeProvider(
-            full="整段兜底答", stream_exc=RuntimeError("no stream")
-        )
+        provider = _FakeProvider(full="整段兜底答", stream_exc=RuntimeError("no stream"))
         full = await complete_answer_streaming(provider, _msgs(query), node="aggregator")
         yield {"aggregator": {"messages": [AIMessage(content=full)]}}
 
@@ -294,9 +288,7 @@ async def test_stream_degrades_to_full_answer_when_stream_fails(
             new_callable=AsyncMock,
         ),
     ):
-        response = await client.post(
-            _STREAM, json={"query": "q", "thread_id": "th-t5-3"}
-        )
+        response = await client.post(_STREAM, json={"query": "q", "thread_id": "th-t5-3"})
     assert response.status_code == 200
     events = _parse_sse(response.text)
     answer_events = [e for e in events if e["event_type"] == "answer"]
@@ -314,9 +306,7 @@ async def test_stream_router_direct_answer_same_protocol(
         query: str, *, thread_id: str = "t", checkpointer: Any = None, **_kw: Any
     ) -> AsyncIterator[dict[str, Any]]:
         provider = _FakeProvider(chunks=["你", "好"])
-        full = await complete_answer_streaming(
-            provider, _msgs(query), node="direct_answer"
-        )
+        full = await complete_answer_streaming(provider, _msgs(query), node="direct_answer")
         yield {"router": {"route": "direct"}}
         yield {"direct_answer": {"messages": [AIMessage(content=full)]}}
 
@@ -390,15 +380,11 @@ async def test_map_node_update_final_frames() -> None:
     """终帧外形：aggregator / direct_answer → answer {content, final:true}。"""
     from app.ops.lg_rag.sse_stream import map_node_update
 
-    et, role, payload = map_node_update(
-        "aggregator", {"messages": [AIMessage(content="答")]}
-    )
+    et, role, payload = map_node_update("aggregator", {"messages": [AIMessage(content="答")]})
     assert (et, role) == ("answer", "aggregator")
     assert payload == {"content": "答", "final": True}
 
-    et, role, payload = map_node_update(
-        "direct_answer", {"messages": [AIMessage(content="直答")]}
-    )
+    et, role, payload = map_node_update("direct_answer", {"messages": [AIMessage(content="直答")]})
     assert (et, role) == ("answer", "direct_answer")
     assert payload == {"content": "直答", "final": True}
 
@@ -413,9 +399,7 @@ async def test_map_node_update_final_frames() -> None:
 # ---------------------------------------------------------------------------
 
 
-async def test_replay_includes_delta_frames(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_replay_includes_delta_frames(client: AsyncClient, override_auth_maintainer) -> None:
     """replay 逐帧重放含 delta 帧，形状与 live 一致。"""
     stored = [
         format_sse_event(
@@ -464,9 +448,7 @@ async def test_replay_includes_delta_frames(
         new_callable=AsyncMock,
         return_value=stored,
     ):
-        response = await client.post(
-            _REPLAY, json={"run_id": "run-t5", "after_seq": 1}
-        )
+        response = await client.post(_REPLAY, json={"run_id": "run-t5", "after_seq": 1})
     assert response.status_code == 200
     events = _parse_sse(response.text)
     assert [e["seq"] for e in events] == [2, 3, 4, 5]
@@ -496,9 +478,7 @@ async def test_replay_unknown_run_404_unchanged(
         new_callable=AsyncMock,
         side_effect=LgRagRunNotFoundError,
     ):
-        response = await client.post(
-            _REPLAY, json={"run_id": "missing", "after_seq": 0}
-        )
+        response = await client.post(_REPLAY, json={"run_id": "missing", "after_seq": 0})
     assert response.status_code == 404
 
 
@@ -567,9 +547,7 @@ async def test_delta_yields_before_persist_completes() -> None:
                 if not data_line:
                     continue
                 ev = json.loads(data_line)
-                if ev.get("event_type") == "answer" and "delta" in ev.get(
-                    "payload", {}
-                ):
+                if ev.get("event_type") == "answer" and "delta" in ev.get("payload", {}):
                     assert ev["payload"]["delta"] == "先到"
                     saw_delta = True
                     delta_seen.set()
@@ -627,9 +605,7 @@ async def test_slow_chunks_visible_before_aggregator_update() -> None:
                 ev = json.loads(data_line)
                 if ev.get("event_type") == "answer" and "delta" in ev.get("payload", {}):
                     consumer.append(f"delta:{ev['payload']['delta']}")
-                if ev.get("event_type") == "answer" and ev.get("payload", {}).get(
-                    "final"
-                ):
+                if ev.get("event_type") == "answer" and ev.get("payload", {}).get("final"):
                     consumer.append("final")
 
     assert consumer == ["delta:一", "delta:二", "final"]

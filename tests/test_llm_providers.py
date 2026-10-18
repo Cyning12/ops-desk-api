@@ -1,4 +1,5 @@
 """Tests for LLM providers."""
+
 from __future__ import annotations
 
 import httpx
@@ -91,9 +92,7 @@ class TestSiliconFlowProvider:
         provider = SiliconFlowProvider(api_key="test-key")
         chunks = [
             chunk
-            async for chunk in provider.complete_stream(
-                [LlmMessage(role="user", content="hi")]
-            )
+            async for chunk in provider.complete_stream([LlmMessage(role="user", content="hi")])
         ]
 
         assert [c.content for c in chunks] == ["Hello", " world"]
@@ -112,10 +111,7 @@ class TestSiliconFlowProvider:
         monkeypatch.setattr(httpx, "AsyncClient", factory)
         provider = SiliconFlowProvider(api_key="test-key")
         chunks = [
-            c
-            async for c in provider.complete_stream(
-                [LlmMessage(role="user", content="hi")]
-            )
+            c async for c in provider.complete_stream([LlmMessage(role="user", content="hi")])
         ]
         assert [c.content for c in chunks] == ["X"]
         assert factory.clients[-1].last_response.aread_calls == 0
@@ -191,9 +187,7 @@ class TestSiliconFlowProvider:
         ]
         monkeypatch.setattr(httpx, "AsyncClient", _fake_client_factory(200, lines))
         monkeypatch.setattr("app.ops.tracing.tracing_enabled", lambda: True)
-        monkeypatch.setattr(
-            "app.ops.tracing.update_current_generation_usage", lambda usage: None
-        )
+        monkeypatch.setattr("app.ops.tracing.update_current_generation_usage", lambda usage: None)
         io_captured: list = []
 
         def _capture_io(*, input=None, output=None, truncate=None):
@@ -252,9 +246,7 @@ class TestSiliconFlowProvider:
         provider = SiliconFlowProvider(api_key="test-key")
         chunks = [
             chunk
-            async for chunk in provider.complete_stream(
-                [LlmMessage(role="user", content="hi")]
-            )
+            async for chunk in provider.complete_stream([LlmMessage(role="user", content="hi")])
         ]
 
         assert [c.content for c in chunks] == ["real"]
@@ -353,7 +345,9 @@ class TestSiliconFlowProvider:
 
             def stream(self, method, url, **kwargs):
                 captured["body"] = kwargs.get("json")
-                return _FakeStreamResponse(200, ['data: {"choices":[{"delta":{"content":"ok"}}]}', "data: [DONE]"])
+                return _FakeStreamResponse(
+                    200, ['data: {"choices":[{"delta":{"content":"ok"}}]}', "data: [DONE]"]
+                )
 
         monkeypatch.setattr(httpx, "AsyncClient", lambda *args, **kwargs: _CapturingClient())
 
@@ -405,10 +399,12 @@ class TestBailianProvider:
     async def test_fallback_emits_event(self, mock_bailian_stream, retry_delays):
         # 改编（清单 #3）：默认开重试后首候选先同模型退避至耗尽（max_attempts=3），
         # 再发 model.fallback 换下一候选；事件语义/链序不变
-        call_log = mock_bailian_stream({
-            "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
-            "deepseek-v4-flash": [LlmChunk(content="fallback ok")],
-        })
+        call_log = mock_bailian_stream(
+            {
+                "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
+                "deepseek-v4-flash": [LlmChunk(content="fallback ok")],
+            }
+        )
         provider = BailianProvider(api_key="test-key")
 
         chunks = [
@@ -430,11 +426,13 @@ class TestBailianProvider:
         # 改编（清单 #4）：拉高 fail_max 隔离重试语义（9 次环境失败会真熔断，
         # 熔断行为由 tests/test_llm_circuit.py 专测覆盖）；终态断言保留
         monkeypatch.setenv("OPS_LLM_CB_FAIL_MAX", "99")
-        call_log = mock_bailian_stream({
-            "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
-            "deepseek-v4-flash": LlmProviderError("503", retryable=True, status_code=503),
-            "qwen3.7-plus": LlmProviderError("503", retryable=True, status_code=503),
-        })
+        call_log = mock_bailian_stream(
+            {
+                "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
+                "deepseek-v4-flash": LlmProviderError("503", retryable=True, status_code=503),
+                "qwen3.7-plus": LlmProviderError("503", retryable=True, status_code=503),
+            }
+        )
         provider = BailianProvider(api_key="test-key")
 
         with pytest.raises(LlmProviderError) as exc_info:
@@ -449,10 +447,12 @@ class TestBailianProvider:
         )
 
     async def test_non_retryable_stops_fallback(self, mock_bailian_stream):
-        mock_bailian_stream({
-            "deepseek-v4-pro": LlmProviderError("401", retryable=False, status_code=401),
-            "deepseek-v4-flash": [LlmChunk(content="should not reach")],
-        })
+        mock_bailian_stream(
+            {
+                "deepseek-v4-pro": LlmProviderError("401", retryable=False, status_code=401),
+                "deepseek-v4-flash": [LlmChunk(content="should not reach")],
+            }
+        )
         provider = BailianProvider(api_key="test-key")
 
         with pytest.raises(LlmProviderError) as exc_info:
@@ -463,10 +463,12 @@ class TestBailianProvider:
         assert exc_info.value.status_code == 401
 
     async def test_test_only_models_filtered(self, mock_bailian_stream):
-        call_log = mock_bailian_stream({
-            "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
-            "deepseek-v4-flash": [LlmChunk(content="ok")],
-        })
+        call_log = mock_bailian_stream(
+            {
+                "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
+                "deepseek-v4-flash": [LlmChunk(content="ok")],
+            }
+        )
         provider = BailianProvider(api_key="test-key")
 
         async for _ in provider.complete_stream([LlmMessage(role="user", content="hi")]):
@@ -477,9 +479,11 @@ class TestBailianProvider:
         assert "ZHIPU/GLM-5.2" not in call_log
 
     async def test_explicit_model_skips_fallback(self, mock_bailian_stream):
-        call_log = mock_bailian_stream({
-            "qwen-plus": [LlmChunk(content="explicit")],
-        })
+        call_log = mock_bailian_stream(
+            {
+                "qwen-plus": [LlmChunk(content="explicit")],
+            }
+        )
         provider = BailianProvider(api_key="test-key")
 
         chunks = [
@@ -501,9 +505,11 @@ class TestBailianProvider:
                 pass
 
     async def test_complete_aggregates_stream(self, mock_bailian_stream):
-        mock_bailian_stream({
-            "deepseek-v4-pro": [LlmChunk(content="One"), LlmChunk(content="Two")],
-        })
+        mock_bailian_stream(
+            {
+                "deepseek-v4-pro": [LlmChunk(content="One"), LlmChunk(content="Two")],
+            }
+        )
         provider = BailianProvider(api_key="test-key")
 
         answer = await provider.complete([LlmMessage(role="user", content="hi")])
@@ -511,16 +517,18 @@ class TestBailianProvider:
         assert answer == "OneTwo"
 
     async def test_complete_reports_usage(self, mock_bailian_stream, monkeypatch):
-        mock_bailian_stream({
-            "deepseek-v4-pro": [
-                LlmChunk(content="One"),
-                LlmChunk(content="Two"),
-                LlmChunk(
-                    content="",
-                    meta={"usage": {"prompt_tokens": 3, "completion_tokens": 4}},
-                ),
-            ],
-        })
+        mock_bailian_stream(
+            {
+                "deepseek-v4-pro": [
+                    LlmChunk(content="One"),
+                    LlmChunk(content="Two"),
+                    LlmChunk(
+                        content="",
+                        meta={"usage": {"prompt_tokens": 3, "completion_tokens": 4}},
+                    ),
+                ],
+            }
+        )
         captured: list = []
         monkeypatch.setattr("app.ops.tracing.tracing_enabled", lambda: True)
         monkeypatch.setattr(
@@ -537,10 +545,12 @@ class TestBailianProvider:
         assert captured[0].completion_tokens == 4
 
     async def test_complete_skips_fallback_meta(self, mock_bailian_stream):
-        mock_bailian_stream({
-            "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
-            "deepseek-v4-flash": [LlmChunk(content="fallback ok")],
-        })
+        mock_bailian_stream(
+            {
+                "deepseek-v4-pro": LlmProviderError("503", retryable=True, status_code=503),
+                "deepseek-v4-flash": [LlmChunk(content="fallback ok")],
+            }
+        )
         provider = BailianProvider(api_key="test-key")
 
         answer = await provider.complete([LlmMessage(role="user", content="hi")])

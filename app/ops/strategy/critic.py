@@ -113,9 +113,7 @@ async def critic_node(state: LgRagState) -> dict:
     if outcome in ("retry_planner", "rebind"):
         # Q8：只丢"可变后缀"，前缀（已成功步骤）连计划带结果一起留下。
         # 整批清空的话，supervisor 重规划时算不出前缀 ⇒ 已跑过的步骤会被重跑一遍。
-        prefix = success_terminal_ids(
-            state.get("subtasks"), state.get("subtask_results")
-        )
+        prefix = success_terminal_ids(state.get("subtasks"), state.get("subtask_results"))
         prefix_set = set(prefix)
         # ★ 未解决的后缀（失败 / 未终态）**必须跟着走**，不能只留前缀。
         #   只留前缀 = 把失败记录一起裁掉：它随即变成"计划外 id"，
@@ -123,16 +121,13 @@ async def critic_node(state: LgRagState) -> dict:
         #   结论会写成"已覆盖全部子任务"——失败被静默抹掉。
         #   （与 supervisor 重规划的 carry 是同一个洞，两边都得堵。）
         unresolved = set(
-            unresolved_suffix_ids(
-                state.get("subtasks"), state.get("subtask_results"), prefix_set
-            )
+            unresolved_suffix_ids(state.get("subtasks"), state.get("subtask_results"), prefix_set)
         )
         keep = prefix_set | unresolved
         plan_rows = [
             row
             for row in (state.get("subtasks") or [])
-            if isinstance(row, dict)
-            and str(row.get("subtask_id") or "").strip() in keep
+            if isinstance(row, dict) and str(row.get("subtask_id") or "").strip() in keep
         ]
         update["subtasks"] = plan_rows
         update["subtask_results"] = SubtaskResultBatch([], keep, replace=True)

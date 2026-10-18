@@ -75,9 +75,7 @@ def verify(*, body: bytes, headers: Any, now: float | None = None) -> None:
     ``headers`` 需支持大小写不敏感的 ``get``（FastAPI ``Headers`` / dict 均可）。
     """
     if not secret_configured():
-        raise SignatureError(
-            f"{ENV_SECRET} 未配置：回调端点拒绝所有请求（不设密钥 = 不开放）"
-        )
+        raise SignatureError(f"{ENV_SECRET} 未配置：回调端点拒绝所有请求（不设密钥 = 不开放）")
 
     def _h(name: str) -> str:
         try:

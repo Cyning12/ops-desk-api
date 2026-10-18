@@ -86,8 +86,13 @@ def _load(tmp_path: Path, caps: list[dict]):
 
 
 def test_valid_four_fields_load(tmp_path):
-    cap = {**_LOCAL_BASE, "reversible": True, "execution_type": "instant",
-           "max_reversal_latency": 0, "requires_stop_support": False}
+    cap = {
+        **_LOCAL_BASE,
+        "reversible": True,
+        "execution_type": "instant",
+        "max_reversal_latency": 0,
+        "requires_stop_support": False,
+    }
     _, pending = _load(tmp_path, [cap])
     spec = pending[0].spec
     assert spec.reversible is True
@@ -142,8 +147,12 @@ def test_missing_fields_not_an_error(tmp_path):
 
 def test_contradiction_irreversible_plus_reversible_rejected_spec_level():
     spec = CapabilitySpec(
-        capability_id="x", kind="local_fn", description="d",
-        side_effect="irreversible", reversible=True, hitl_required=True,
+        capability_id="x",
+        kind="local_fn",
+        description="d",
+        side_effect="irreversible",
+        reversible=True,
+        hitl_required=True,
     )
     with pytest.raises(ManifestError, match="矛盾声明"):
         _validate_reversibility(spec, loc="t")

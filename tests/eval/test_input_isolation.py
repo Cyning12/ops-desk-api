@@ -50,9 +50,7 @@ from tests.test_lg_rag_multi import (
 
 pytestmark = pytest.mark.redline
 
-_INVENTORY = (
-    Path(__file__).resolve().parents[2] / "evals" / "security" / "input_isolation_v1.yaml"
-)
+_INVENTORY = Path(__file__).resolve().parents[2] / "evals" / "security" / "input_isolation_v1.yaml"
 
 _ENV = "SECURITY_INPUT_ISOLATION_ENABLED"
 
@@ -189,9 +187,9 @@ async def test_structure_invariants_independent_of_sentinel(
 
     # lg_rag 装配面：sentinel 进 query/历史 → 消息数/角色序/全部正文逐字节不变
     # （归因只在 additional_kwargs，注入内容改变不了装配结构）
-    history = [
-        {"role": "user", "content": f"q{i}"} for i in range(3)
-    ] + [{"role": "user", "content": g1["sentinel"]}]
+    history = [{"role": "user", "content": f"q{i}"} for i in range(3)] + [
+        {"role": "user", "content": g1["sentinel"]}
+    ]
     off = assemble_graph_messages("本轮问", history)
     on = await assemble_graph_messages_with_memory("本轮问", history)
     assert [(type(m).__name__, str(m.content)) for m in on] == [
@@ -248,9 +246,9 @@ async def test_overreach_zero_request_double_assertion(monkeypatch: pytest.Monke
     ):
         out = await _run(_build(), query=g4["sentinel"])
     assert gateway.await_count == 0, "非法 tool id 不得触达 capability gateway"
-    assert any(
-        s.get("supervisor_invalid_tool_id") is True for s in span_calls
-    ), "缺 supervisor_invalid_tool_id 拒收标记 = 「没发出去」与「没走到」不可区分"
+    assert any(s.get("supervisor_invalid_tool_id") is True for s in span_calls), (
+        "缺 supervisor_invalid_tool_id 拒收标记 = 「没发出去」与「没走到」不可区分"
+    )
     assert out["subtasks"][0]["type"] == "rag"  # 整单 fallback（既有语义零改动）
 
 

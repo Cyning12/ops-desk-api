@@ -86,8 +86,7 @@ def get_models_for_provider(provider: str) -> list[dict]:
         return [{"id": m.id, "name": m.name} for m in resolve_siliconflow_models()]
     if provider == "bailian":
         return [
-            {"id": m.id, "name": m.name, "test_only": m.test_only}
-            for m in BAILIAN_FALLBACK_CHAIN
+            {"id": m.id, "name": m.name, "test_only": m.test_only} for m in BAILIAN_FALLBACK_CHAIN
         ]
     raise ValueError(f"Unknown provider: {provider}")
 
@@ -143,9 +142,7 @@ def _known_model_ids() -> set[str]:
     return ids
 
 
-def resolve_task_model(
-    task_type: str, explicit_model: str | None = None
-) -> tuple[str | None, str]:
+def resolve_task_model(task_type: str, explicit_model: str | None = None) -> tuple[str | None, str]:
     """任务类型 → 模型档解析。返回 (model 或 None, source)。
 
     None 表示分层路由**无意见**：调用方沿用现网默认解析（逐字节一致）。
@@ -157,9 +154,7 @@ def resolve_task_model(
         return explicit_model.strip(), "explicit"
     task = (task_type or "").strip().lower()
     if task not in TASK_TIER_MODELS:
-        _logger.warning(
-            "unknown llm task_type=%r; fallback to default model resolution", task_type
-        )
+        _logger.warning("unknown llm task_type=%r; fallback to default model resolution", task_type)
         return None, "unknown_task"
 
     env_name = f"OPS_LLM_TIER_{task.upper()}_MODEL"
@@ -258,12 +253,10 @@ def resolve_fallback_chain(task_type: str) -> tuple[str, ...]:
         if not item:
             continue
         if item in seen:
-            _logger.warning(
-                "fallback chain task=%s 含重复元素 %r（成环风险）· 已去重", task, item
-            )
+            _logger.warning("fallback chain task=%s 含重复元素 %r（成环风险）· 已去重", task, item)
             continue
         if item.startswith(RULE_TIER_PREFIX):
-            rule_name = item[len(RULE_TIER_PREFIX):]
+            rule_name = item[len(RULE_TIER_PREFIX) :]
             if rule_name not in RULE_TIER_TEMPLATES:
                 _logger.warning(
                     "fallback chain task=%s 规则档 %r 不在 RULE_TIER_TEMPLATES 词表 · 已过滤",
@@ -272,9 +265,7 @@ def resolve_fallback_chain(task_type: str) -> tuple[str, ...]:
                 )
                 continue
         elif item not in known_ids:
-            _logger.warning(
-                "fallback chain task=%s 元素 %r 不在已知模型目录 · 已过滤", task, item
-            )
+            _logger.warning("fallback chain task=%s 元素 %r 不在已知模型目录 · 已过滤", task, item)
             continue
         seen.add(item)
         chain.append(item)
@@ -310,9 +301,7 @@ MODEL_UNIT_PRICES: dict[str, dict[str, float]] = {
 }
 
 
-def estimate_cost(
-    model: str | None, prompt_tokens: int, completion_tokens: int
-) -> float | None:
+def estimate_cost(model: str | None, prompt_tokens: int, completion_tokens: int) -> float | None:
     """按档级单价表估算本次调用成本（元）；缺单价 → None（unknown 不伪造 0）。
 
     单价解析：策略包 ``model_unit_prices``（若已加载且声明）> 代码
@@ -328,4 +317,3 @@ def estimate_cost(
         max(0, int(prompt_tokens)) / 1000.0 * price["input"]
         + max(0, int(completion_tokens)) / 1000.0 * price["output"]
     )
-

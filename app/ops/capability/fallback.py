@@ -80,9 +80,7 @@ ACTION_CAPABILITY = "capability"  # 换成另一个能力
 ACTION_CACHE = "cache"  # 返回上次成功结果（带 TTL）
 ACTION_STATIC = "static"  # 返回声明好的静态兜底值
 
-ACTIONS: frozenset[str] = frozenset(
-    {ACTION_NONE, ACTION_CAPABILITY, ACTION_CACHE, ACTION_STATIC}
-)
+ACTIONS: frozenset[str] = frozenset({ACTION_NONE, ACTION_CAPABILITY, ACTION_CACHE, ACTION_STATIC})
 DEFAULT_ACTION = ACTION_NONE
 
 DEFAULT_MAX_DEPTH = 2
@@ -127,9 +125,7 @@ def action_of(spec: Any) -> str:
     return action if action in ACTIONS else DEFAULT_ACTION
 
 
-def trigger_of(
-    exc: BaseException | None = None, *, blocked: str | None = None
-) -> str | None:
+def trigger_of(exc: BaseException | None = None, *, blocked: str | None = None) -> str | None:
     """这次失败属不属于「下游不可用」；不属于 → ``None``（**不降级**，B4）。
 
     判定**只用结构化字段**（异常上的 ``cause`` / ``http_status``），不解析文案：
@@ -212,9 +208,7 @@ def map_args(args: Any, args_map: Any) -> Any:
         return args
     if not isinstance(args, dict):
         return args
-    return {
-        str(dst): args.get(str(src)) for dst, src in args_map.items() if str(src) in args
-    }
+    return {str(dst): args.get(str(src)) for dst, src in args_map.items() if str(src) in args}
 
 
 # ---------------- action=cache 的存储 ----------------
@@ -236,9 +230,7 @@ def _cache_key(capability_id: str, *, args: Any, ctx: dict[str, Any] | None) -> 
     return f"{capability_id}:{digest}"
 
 
-def remember(
-    capability_id: str, output: Any, *, args: Any, ctx: dict[str, Any] | None
-) -> None:
+def remember(capability_id: str, output: Any, *, args: Any, ctx: dict[str, Any] | None) -> None:
     """记下**真实成功**的结果（降级结果不入库，否则陈旧数据会被当成新结果再降一次）。"""
     key = _cache_key(capability_id, args=args, ctx=ctx)
     with _LOCK:

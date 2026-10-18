@@ -1,4 +1,5 @@
 """Graph snapshot endpoint."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
@@ -19,9 +20,7 @@ async def get_graph(
 ) -> dict:
     """Return latest graph snapshot and module × issue matrix."""
     result = await db.execute(
-        select(OpsGraphSnapshot)
-        .order_by(OpsGraphSnapshot.created_at.desc())
-        .limit(1)
+        select(OpsGraphSnapshot).order_by(OpsGraphSnapshot.created_at.desc()).limit(1)
     )
     snapshot = result.scalar_one_or_none()
 

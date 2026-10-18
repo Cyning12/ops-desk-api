@@ -38,7 +38,7 @@ def test_extract_invalid_returns_none():
 
 def test_deterministic_repair_curly_quotes():
     # “ ” → " ；可被 json.loads
-    broken = '{“name”: “alice”, “count”: 1}'
+    broken = "{“name”: “alice”, “count”: 1}"
     fixed = deterministic_repair(broken)
     assert extract_json_object(fixed) == {"name": "alice", "count": 1}
 
@@ -72,7 +72,7 @@ def test_parse_only_fence_and_noise():
 
 
 def test_parse_only_repair_curly_quotes_then_success():
-    raw = '{“name”: “z”, “count”: 3}'
+    raw = "{“name”: “z”, “count”: 3}"
     outcome = parse_only(raw, schema=_SampleSchema)
     assert outcome.ok is True
     assert outcome.repaired is True

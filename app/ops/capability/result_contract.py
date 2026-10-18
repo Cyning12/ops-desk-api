@@ -95,13 +95,9 @@ def validate(contract: dict[str, Any] | None, payload: Any) -> Verdict:
         checked.append(expr_s)
         got = jsonpath_get(payload, expr_s)
         if got is MISSING:
-            return Verdict(
-                ok=False, reason=f"缺字段 {expr_s}", checked=tuple(checked)
-            )
+            return Verdict(ok=False, reason=f"缺字段 {expr_s}", checked=tuple(checked))
         if got is None:
-            return Verdict(
-                ok=False, reason=f"字段为 null {expr_s}", checked=tuple(checked)
-            )
+            return Verdict(ok=False, reason=f"字段为 null {expr_s}", checked=tuple(checked))
         if _is_empty(got):
             empty_hit.append(expr_s)
 
@@ -143,9 +139,7 @@ def validate(contract: dict[str, Any] | None, payload: Any) -> Verdict:
     if empty_hit:
         verdict = Verdict(
             ok=not empty_is_suspicious,
-            reason=(
-                f"空结果可疑 {','.join(empty_hit)}" if empty_is_suspicious else ""
-            ),
+            reason=(f"空结果可疑 {','.join(empty_hit)}" if empty_is_suspicious else ""),
             empty=True,
             suspicious=empty_is_suspicious,
             checked=tuple(checked),

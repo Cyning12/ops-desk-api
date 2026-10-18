@@ -3,6 +3,7 @@
 薄包装 ``ainvoke_evidence_answer``；专用响应模型保证 ``snippet`` 进 JSON
 （``EvidenceItem.snippet`` 是普通 ``@property``，``model_dump()`` 不含该键）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -135,6 +136,4 @@ async def invoke_lc_evidence(
         )
     if tracing_enabled():
         flush_traces()
-    return JSONResponse(
-        content={"ok": True, "data": serialize_chain_result(result).model_dump()}
-    )
+    return JSONResponse(content={"ok": True, "data": serialize_chain_result(result).model_dump()})

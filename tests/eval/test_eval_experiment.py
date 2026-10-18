@@ -29,9 +29,7 @@ class RecordingSink:
         self.items.append((dataset, item_id))
 
     def score(self, *, dataset: str, item_id: str, name: str, value: int) -> None:
-        self.scores.append(
-            {"dataset": dataset, "item_id": item_id, "name": name, "value": value}
-        )
+        self.scores.append({"dataset": dataset, "item_id": item_id, "name": name, "value": value})
 
     def flush(self) -> None:
         self.flushed = True
@@ -139,7 +137,7 @@ def test_eval_experiment_missing_expect_nonzero(tmp_path, capsys) -> None:
     (tmp_path / "router").mkdir()
     (tmp_path / "router" / "cases_v1.yaml").write_text(
         "version: test\nmodule: router\ncases:\n"
-        "  - id: broken\n    query: x\n    mock:\n      llm_complete: '{\"route\": \"rag\"}'\n",
+        '  - id: broken\n    query: x\n    mock:\n      llm_complete: \'{"route": "rag"}\'\n',
         encoding="utf-8",
     )
     code, report = run_experiment(

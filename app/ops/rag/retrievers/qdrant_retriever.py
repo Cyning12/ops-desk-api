@@ -1,4 +1,5 @@
 """Qdrant 稠密检索 + PG hydrate（禁止从 Qdrant 读 content/metadata/images）。"""
+
 from __future__ import annotations
 
 import logging
@@ -56,10 +57,7 @@ class QdrantRetriever(BaseRetriever):
     def _build_filter(self, filters: dict[str, Any] | None) -> qm.Filter | None:
         if not filters:
             return None
-        must = [
-            qm.FieldCondition(key=k, match=qm.MatchValue(value=v))
-            for k, v in filters.items()
-        ]
+        must = [qm.FieldCondition(key=k, match=qm.MatchValue(value=v)) for k, v in filters.items()]
         return qm.Filter(must=must)
 
     async def _search_hits(

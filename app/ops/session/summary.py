@@ -19,6 +19,7 @@
   （task_type="summary" · surface="lg_rag"）自动落 ops_llm_usage 归因；
   重试 / 熔断由 provider 包装层自动继承零改造。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -107,8 +108,7 @@ def render_summary_content(
 ) -> str:
     """真摘要条：版本 + 来源 + 有损声明三标记进上下文（锚点断言守 · 非全文快照）。"""
     header = (
-        f"[历史摘要 · {prompt_version} · {turn_count} 轮 · 模型:{model} "
-        f"· {SUMMARY_LOSSY_NOTICE}]"
+        f"[历史摘要 · {prompt_version} · {turn_count} 轮 · 模型:{model} · {SUMMARY_LOSSY_NOTICE}]"
     )
     return f"{header}\n{summary_text}"
 
@@ -277,18 +277,12 @@ async def summarize_placeholders(
     任何失败 → 该 chunk 保留占位符；占位条数与 chunk 映射不符 → 整体保留占位。
     """
     result = list(compressed)
-    positions = [
-        i for i, t in enumerate(result) if placeholder_turn_count(t) is not None
-    ]
+    positions = [i for i, t in enumerate(result) if placeholder_turn_count(t) is not None]
     if not positions:
         return result
 
-    turns = (
-        source_turns if source_turns is not None else await _load_source_turns(thread_id)
-    )
-    chunks = derive_placeholder_chunks(
-        turns, max_full_turns=max_full_turns, group_size=group_size
-    )
+    turns = source_turns if source_turns is not None else await _load_source_turns(thread_id)
+    chunks = derive_placeholder_chunks(turns, max_full_turns=max_full_turns, group_size=group_size)
     if chunks is None or len(chunks) != len(positions):
         logger.warning(
             "session summary chunk mapping mismatch thread_id=%s placeholders=%d; "
@@ -321,9 +315,7 @@ async def summarize_placeholders(
         else:
             try:
                 summary_text = await asyncio.wait_for(
-                    _generate_summary(
-                        system_prompt, chunk, model=tier_model, _provider=_provider
-                    ),
+                    _generate_summary(system_prompt, chunk, model=tier_model, _provider=_provider),
                     timeout=SUMMARY_TIMEOUT_S,
                 )
                 if not summary_text:

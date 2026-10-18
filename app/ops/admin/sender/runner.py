@@ -48,7 +48,9 @@ def run_sync(
         issues = gh.fetch_issues(since)
         pulls = gh.fetch_pull_requests(since)
 
-        scan = load_scan_snapshot(scan_path if scan_path is not None else os.getenv("OPS_SCAN_INDEX_PATH"))
+        scan = load_scan_snapshot(
+            scan_path if scan_path is not None else os.getenv("OPS_SCAN_INDEX_PATH")
+        )
         graph = load_graph_snapshot(
             graph_path if graph_path is not None else os.getenv("OPS_GRAPH_JSON_PATH")
         )

@@ -64,9 +64,7 @@ def _restore_defaults():
 def _cap(**over) -> dict:
     """构造一条 http 能力；``http_`` 前缀键合并进 http 块。"""
     cap = copy.deepcopy(_CAP_BASE)
-    http_over = {
-        k[len("http_"):]: v for k, v in over.items() if k.startswith("http_")
-    }
+    http_over = {k[len("http_") :]: v for k, v in over.items() if k.startswith("http_")}
     for k, v in over.items():
         if not k.startswith("http_"):
             cap[k] = v
@@ -314,9 +312,7 @@ def test_v9_does_not_apply_to_local_fn(tmp_path: Path):
 
 def test_visibility_block_shape_is_validated(tmp_path: Path):
     with pytest.raises(ManifestError, match="visibility 未知键"):
-        load_capability_manifest(
-            _write(tmp_path, "vis1.json", [_cap(visibility={"dept": ["x"]})])
-        )
+        load_capability_manifest(_write(tmp_path, "vis1.json", [_cap(visibility={"dept": ["x"]})]))
     with pytest.raises(ManifestError, match="classification_max 非法"):
         load_capability_manifest(
             _write(tmp_path, "vis2.json", [_cap(visibility={"classification_max": "top"})])
@@ -433,9 +429,7 @@ def test_reload_only_unregisters_its_own_file_ids(tmp_path: Path):
     a = _write(tmp_path, "a.json", [_cap()])
     b = _write(tmp_path, "b.json", [_cap(id="oa.demo.other")])
     load_capability_manifests([a, b])
-    assert {"oa.demo.read", "oa.demo.other"} <= {
-        s.capability_id for s in list_capabilities()
-    }
+    assert {"oa.demo.read", "oa.demo.other"} <= {s.capability_id for s in list_capabilities()}
 
     # a 里删掉 oa.demo.read，换成两条新的
     a.write_text(

@@ -2,6 +2,7 @@
 
 默认 qdrant；失败即时回退 pgvector。禁止跨进程 fail_streak 作唯一熔断。
 """
+
 from __future__ import annotations
 
 import logging

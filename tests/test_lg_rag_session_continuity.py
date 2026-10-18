@@ -1,4 +1,5 @@
 """T3 · lg-rag Session 连续性（纯函数 + mock DB；不连真 LLM；不测 replay）。"""
+
 from __future__ import annotations
 
 import ast
@@ -26,14 +27,12 @@ def test_lg_rag_package_does_not_import_chat_or_session() -> None:
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom) and node.module:
                 assert not any(
-                    node.module == f or node.module.startswith(f + ".")
-                    for f in forbidden
+                    node.module == f or node.module.startswith(f + ".") for f in forbidden
                 ), f"{path.name} imports {node.module}"
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     assert not any(
-                        alias.name == f or alias.name.startswith(f + ".")
-                        for f in forbidden
+                        alias.name == f or alias.name.startswith(f + ".") for f in forbidden
                     ), f"{path.name} imports {alias.name}"
 
 
@@ -168,39 +167,27 @@ async def test_stream_missing_thread_id_returns_header(
     assert events[-1]["event_type"] == "done"
 
 
-async def test_stream_thread_id_too_long_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
-    response = await client.post(
-        _STREAM, json={"query": "q", "thread_id": "t" * 256}
-    )
+async def test_stream_thread_id_too_long_422(client: AsyncClient, override_auth_maintainer) -> None:
+    response = await client.post(_STREAM, json={"query": "q", "thread_id": "t" * 256})
     assert response.status_code == 422
 
 
-async def test_stream_cross_user_thread_404(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_stream_cross_user_thread_404(client: AsyncClient, override_auth_maintainer) -> None:
     with patch(
         "app.ops.lg_rag.router.resolve_thread_for_user",
         new=AsyncMock(side_effect=LgRagThreadForbiddenError()),
     ):
-        response = await client.post(
-            _STREAM, json={"query": "q", "thread_id": "other-user-thread"}
-        )
+        response = await client.post(_STREAM, json={"query": "q", "thread_id": "other-user-thread"})
     assert response.status_code == 404
     assert "other-user" not in response.text.lower()
 
 
-async def test_invoke_cross_user_thread_404(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_cross_user_thread_404(client: AsyncClient, override_auth_maintainer) -> None:
     with patch(
         "app.ops.lg_rag.router.resolve_thread_for_user",
         new=AsyncMock(side_effect=LgRagThreadForbiddenError()),
     ):
-        response = await client.post(
-            _INVOKE, json={"query": "q", "thread_id": "other-user-thread"}
-        )
+        response = await client.post(_INVOKE, json={"query": "q", "thread_id": "other-user-thread"})
     assert response.status_code == 404
 
 
@@ -279,8 +266,6 @@ async def test_stream_other_thread_does_not_get_history(
             new=AsyncMock(),
         ),
     ):
-        response = await client.post(
-            _STREAM, json={"query": "b", "thread_id": "th-b"}
-        )
+        response = await client.post(_STREAM, json={"query": "b", "thread_id": "th-b"})
     assert response.status_code == 200
     assert captured["th-b"] == []

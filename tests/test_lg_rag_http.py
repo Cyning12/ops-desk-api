@@ -1,4 +1,5 @@
 """lg-rag HTTP：鉴权、校验、envelope 与三 mode 分派（mock 图入口，不连真库/LLM）。"""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
@@ -61,62 +62,42 @@ async def test_invoke_requires_auth(client: AsyncClient) -> None:
     assert response.status_code == 401
 
 
-async def test_invoke_empty_query_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_empty_query_422(client: AsyncClient, override_auth_maintainer) -> None:
     """空 query → 422。"""
     response = await client.post(_PATH, json={"query": ""})
     assert response.status_code == 422
 
 
-async def test_invoke_query_too_long_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_query_too_long_422(client: AsyncClient, override_auth_maintainer) -> None:
     """超长 query → 422。"""
     response = await client.post(_PATH, json={"query": "x" * 8001})
     assert response.status_code == 422
 
 
-async def test_invoke_missing_query_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_missing_query_422(client: AsyncClient, override_auth_maintainer) -> None:
     """缺 query 字段 → 422。"""
     response = await client.post(_PATH, json={})
     assert response.status_code == 422
 
 
-async def test_invoke_invalid_mode_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_invalid_mode_422(client: AsyncClient, override_auth_maintainer) -> None:
     """非法 mode → 422（Pydantic Literal 校验）。"""
-    response = await client.post(
-        _PATH, json={"query": "q", "mode": "chat"}
-    )
+    response = await client.post(_PATH, json={"query": "q", "mode": "chat"})
     assert response.status_code == 422
 
 
-async def test_invoke_thread_id_too_long_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_thread_id_too_long_422(client: AsyncClient, override_auth_maintainer) -> None:
     """超长 thread_id → 422（freeze：≤255 显式拒绝，与 web SPEC 一致）。"""
-    response = await client.post(
-        _PATH, json={"query": "q", "thread_id": "t" * 256}
-    )
+    response = await client.post(_PATH, json={"query": "q", "thread_id": "t" * 256})
     assert response.status_code == 422
 
 
-async def test_invoke_default_mode_is_router(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_default_mode_is_router(client: AsyncClient, override_auth_maintainer) -> None:
     """缺省 mode=router → 走 ainvoke_router_agent；envelope 字段齐。"""
-    mock_router = AsyncMock(
-        return_value=_state(route="rag", retry_count=1, chain_meta=_CHAIN_META)
-    )
+    mock_router = AsyncMock(return_value=_state(route="rag", retry_count=1, chain_meta=_CHAIN_META))
     p_basic, p_router, p_supervisor, mocks = _patch_entries(router=mock_router)
     with p_basic, p_router, p_supervisor:
-        response = await client.post(
-            _PATH, json={"query": "为什么自动压缩失败"}
-        )
+        response = await client.post(_PATH, json={"query": "为什么自动压缩失败"})
     assert response.status_code == 200
     body = response.json()
     assert body["ok"] is True
@@ -137,16 +118,12 @@ async def test_invoke_default_mode_is_router(
     mocks["supervisor"].assert_not_called()
 
 
-async def test_invoke_basic_mode_dispatch(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_basic_mode_dispatch(client: AsyncClient, override_auth_maintainer) -> None:
     """mode=basic → 走 ainvoke_basic_agent；无 router，route 为空串。"""
     mock_basic = AsyncMock(return_value=_state(answer="basic 答案"))
     p_basic, p_router, p_supervisor, mocks = _patch_entries(basic=mock_basic)
     with p_basic, p_router, p_supervisor:
-        response = await client.post(
-            _PATH, json={"query": "q", "mode": "basic"}
-        )
+        response = await client.post(_PATH, json={"query": "q", "mode": "basic"})
     assert response.status_code == 200
     data = response.json()["data"]
     assert data["mode"] == "basic"
@@ -176,13 +153,9 @@ async def test_invoke_supervisor_mode_dispatch(
             subtask_results=[{"id": 1, "answer": "子答案"}],
         )
     )
-    p_basic, p_router, p_supervisor, mocks = _patch_entries(
-        supervisor=mock_supervisor
-    )
+    p_basic, p_router, p_supervisor, mocks = _patch_entries(supervisor=mock_supervisor)
     with p_basic, p_router, p_supervisor:
-        response = await client.post(
-            _PATH, json={"query": "q", "mode": "supervisor"}
-        )
+        response = await client.post(_PATH, json={"query": "q", "mode": "supervisor"})
     assert response.status_code == 200
     data = response.json()["data"]
     assert data["mode"] == "supervisor"
@@ -211,17 +184,13 @@ async def test_invoke_thread_id_generated_and_echoed(
     mock_router2 = AsyncMock(return_value=_state())
     p_basic, p_router, p_supervisor, _ = _patch_entries(router=mock_router2)
     with p_basic, p_router, p_supervisor:
-        echo_resp = await client.post(
-            _PATH, json={"query": "q", "thread_id": "my-thread-1"}
-        )
+        echo_resp = await client.post(_PATH, json={"query": "q", "thread_id": "my-thread-1"})
     assert echo_resp.status_code == 200
     assert echo_resp.json()["data"]["thread_id"] == "my-thread-1"
     assert mock_router2.await_args.kwargs["thread_id"] == "my-thread-1"
 
 
-async def test_invoke_failure_envelope(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_invoke_failure_envelope(client: AsyncClient, override_auth_maintainer) -> None:
     """入口抛错 → 500 + {ok:false,error}。"""
     mock_router = AsyncMock(side_effect=RuntimeError("llm down"))
     p_basic, p_router, p_supervisor, _ = _patch_entries(router=mock_router)

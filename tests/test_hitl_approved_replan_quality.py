@@ -115,8 +115,7 @@ async def test_tc1_write_twin_guard_skips_redispatch(cap_env, monkeypatch, caplo
     # 台账面：guard 动作留痕；:2 审批单据不被消费（guard 先于签发检查）
     assert any("write_replay_guard_skip" in r.message for r in caplog.records)
     assert not any(
-        "delegation_approval_consumed" in r.message and s2 in r.message
-        for r in caplog.records
+        "delegation_approval_consumed" in r.message and s2 in r.message for r in caplog.records
     )
 
 
@@ -147,9 +146,7 @@ async def test_tc1_supervisor_replan_prompt_sees_preserved_and_results(cap_env):
     )
     complete = AsyncMock(return_value=_new_step_suffix("后续步骤"))
     provider = SimpleNamespace(complete=complete)
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=lambda *a, **k: provider
-    ):
+    with patch(_CAPS_PATCH, new=_fake_caps), patch(_PLAN_PATCH, new=lambda *a, **k: provider):
         out = await supervisor_node(state)
 
     system_prompt = str(complete.await_args.args[0][0].content)
@@ -182,9 +179,7 @@ async def test_tc1_locked_empty_preserved_injected_into_prompt(cap_env):  # noqa
     )
     complete = AsyncMock(return_value=_new_step_suffix("后续步骤"))
     provider = SimpleNamespace(complete=complete)
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=lambda *a, **k: provider
-    ):
+    with patch(_CAPS_PATCH, new=_fake_caps), patch(_PLAN_PATCH, new=lambda *a, **k: provider):
         out = await supervisor_node(state)
 
     system_prompt = str(complete.await_args.args[0][0].content)
@@ -207,9 +202,7 @@ async def test_tc2_locked_empty_preserved_empty_prompt_zero_diff(cap_env):  # no
     state = _guard_state(run_id, [], [])
     complete = AsyncMock(return_value=_new_step_suffix("首步"))
     provider = SimpleNamespace(complete=complete)
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=lambda *a, **k: provider
-    ):
+    with patch(_CAPS_PATCH, new=_fake_caps), patch(_PLAN_PATCH, new=lambda *a, **k: provider):
         await supervisor_node(state)
 
     system_prompt = str(complete.await_args.args[0][0].content)
@@ -220,7 +213,9 @@ async def test_tc2_locked_empty_preserved_empty_prompt_zero_diff(cap_env):  # no
 
 @pytest.mark.asyncio
 async def test_tc2_guard_does_not_block_approved_step_without_prior_terminal(
-    cap_env, monkeypatch, caplog  # noqa: F811
+    cap_env,  # noqa: F811
+    monkeypatch,
+    caplog,
 ):
     """FP-3 反面：approved 步无同 canonical 成功终态 → 正常消费派发。
 
@@ -238,8 +233,7 @@ async def test_tc2_guard_does_not_block_approved_step_without_prior_terminal(
 
     assert s1 in (joined.get("inflight_subtask_ids") or [])
     assert any(
-        "delegation_approval_consumed" in r.message and s1 in r.message
-        for r in caplog.records
+        "delegation_approval_consumed" in r.message and s1 in r.message for r in caplog.records
     )
     assert not any("write_replay_guard_skip" in r.message for r in caplog.records)
 
@@ -275,8 +269,7 @@ async def test_tc2_guard_does_not_block_different_args(cap_env, monkeypatch):  #
     assert s2 in (joined.get("inflight_subtask_ids") or [])
     batch = list(joined.get("subtask_results") or [])
     assert not any(
-        str(r.get("subtask_id")) == s2 and r.get("write_replay_guard_skip")
-        for r in batch
+        str(r.get("subtask_id")) == s2 and r.get("write_replay_guard_skip") for r in batch
     )
 
 
@@ -392,16 +385,15 @@ async def test_tc2_guard_zero_touch_when_delegation_off(cap_env, monkeypatch, ca
 
 def test_tc2_guard_write_key_canonical_and_preserved_block_empty(cap_env):  # noqa: F811
     """canonical 确定性 + 空保号集合零 diff（TB4 五键总闸的注入侧语义）。"""
-    assert _guard_write_key(
-        _guard_row("run:1", input={"b": 1, "a": 2})
-    ) == _guard_write_key(_guard_row("run:2", input={"a": 2, "b": 1}))
-    assert _guard_write_key(
-        _guard_row("run:3", input={"a": 2, "b": 3})
-    ) != _guard_write_key(_guard_row("run:4", input={"a": 2, "b": 1}))
+    assert _guard_write_key(_guard_row("run:1", input={"b": 1, "a": 2})) == _guard_write_key(
+        _guard_row("run:2", input={"a": 2, "b": 1})
+    )
+    assert _guard_write_key(_guard_row("run:3", input={"a": 2, "b": 3})) != _guard_write_key(
+        _guard_row("run:4", input={"a": 2, "b": 1})
+    )
     # 未注册 tool / 非 tool 行 / 空载荷 → None（护栏是优化不是闸门）
     assert _guard_write_key(_guard_row("run:5", tool="unregistered.tool")) is None
     assert _guard_write_key({"subtask_id": "run:6", "type": "rag", "input": "x"}) is None
     # 空保号集合注入段为空串——模板 $preserved_block 槽退化为空行
     assert _format_preserved_block([]) == ""
     assert _format_preserved_block(None) == ""
-

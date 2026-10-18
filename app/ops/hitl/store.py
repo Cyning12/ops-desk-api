@@ -73,13 +73,9 @@ class InMemoryHitlStore:
         row = self._items.get(request_id)
         return dict(row) if row else None
 
-    async def alist(
-        self, *, status: str | None = None, limit: int = 50
-    ) -> list[dict[str, Any]]:
+    async def alist(self, *, status: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
         rows = [
-            dict(r)
-            for r in self._items.values()
-            if status is None or r.get("status") == status
+            dict(r) for r in self._items.values() if status is None or r.get("status") == status
         ]
         rows.sort(key=lambda r: r["created_at"])
         return rows[:limit]
@@ -142,9 +138,7 @@ class NullHitlStore:
     async def aget(self, request_id: str) -> dict[str, Any] | None:
         return None
 
-    async def alist(
-        self, *, status: str | None = None, limit: int = 50
-    ) -> list[dict[str, Any]]:
+    async def alist(self, *, status: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
         return []
 
     async def adecide(
@@ -235,9 +229,7 @@ class DbHitlStore:
             "unlock_subtask_id": str(request.get("unlock_subtask_id") or ""),
             "reason": str(request.get("reason") or ""),
             "detail": str(request.get("detail") or ""),
-            "payload": json.dumps(
-                request.get("payload") or {}, ensure_ascii=False, default=str
-            ),
+            "payload": json.dumps(request.get("payload") or {}, ensure_ascii=False, default=str),
             "status": STATUS_PENDING,
         }
         async with self._session_factory() as session, session.begin():
@@ -252,9 +244,7 @@ class DbHitlStore:
             row = rows.first()
         return _row_to_dict(row)
 
-    async def alist(
-        self, *, status: str | None = None, limit: int = 50
-    ) -> list[dict[str, Any]]:
+    async def alist(self, *, status: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
         from sqlalchemy import text
 
         async with self._session_factory() as session:

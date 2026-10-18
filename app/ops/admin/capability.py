@@ -74,8 +74,7 @@ def _principal(
         departments=_csv(departments),
         roles=_csv(roles),
         projects=_csv(projects),
-        classification_max=(classification_max or "").strip()
-        or Principal().classification_max,
+        classification_max=(classification_max or "").strip() or Principal().classification_max,
     )
 
 
@@ -94,9 +93,7 @@ async def runtime(_user: OpsUser | None = AdminSyncAuth) -> dict[str, Any]:
             "by_side_effect": _count_by(specs, "side_effect"),
             # 写能力是风险面：单列出来，改清单时能一眼看到它变了没有
             "write_capabilities": [
-                s.capability_id
-                for s in specs
-                if s.side_effect in ("write", "irreversible")
+                s.capability_id for s in specs if s.side_effect in ("write", "irreversible")
             ],
         },
         "manifest": get_capability_manifest_metadata(),
@@ -163,9 +160,7 @@ def _health(persistence: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _project_catalog_item(
-    spec: CapabilitySpec, hidden: dict[str, str] | None
-) -> dict[str, Any]:
+def _project_catalog_item(spec: CapabilitySpec, hidden: dict[str, str] | None) -> dict[str, Any]:
     """admin 总表单条在册能力的出站投影（SPEC tool-catalog-page §2 B2 · 钉死契约 3/4/5）。
 
     - 键集精确 14 键；``capability_id`` → ``id`` 改名承 capability_mine
@@ -229,9 +224,7 @@ async def catalog(
         projects=projects,
         classification_max=classification_max,
     )
-    visible, summary = capability_catalog_snapshot(
-        filter=cap_filter, principal=principal
-    )
+    visible, summary = capability_catalog_snapshot(filter=cap_filter, principal=principal)
     manifest_error_details = get_manifest_load_errors()
     # items 全字段数组（SPEC §2 B2「每个在册 capability 一条」· 钉死契约 2）：
     # 数据源 = 无 filter 全量在册（registry.list_specs 口径），baseline/kinds/deny_write
@@ -317,9 +310,7 @@ async def receipts(
 async def idempotency(
     _user: OpsUser | None = AdminSyncAuth,
     tenant_id: str | None = None,
-    stuck_only: bool = Query(
-        False, description="只列出租约已过期的 in_flight（需人工到下游对账）"
-    ),
+    stuck_only: bool = Query(False, description="只列出租约已过期的 in_flight（需人工到下游对账）"),
     limit: int = Query(200, ge=1, le=1000),
 ) -> dict[str, Any]:
     """防重行。``stuck_only=true`` 是**租约巡检**：列出"发出去了但不知道结果"的写。

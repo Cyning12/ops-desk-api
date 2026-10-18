@@ -110,8 +110,9 @@ async def test_re_interrupt_marks_the_tail_as_waiting(persisted):
     """
     sink = ResumeEventSink(run_id="r1", user_id="u1", thread_id="t1")
     await sink.open(approved=[_T1])
-    await sink({"__interrupt__": (type("I", (), {"value": {"reason": "hitl_waiting",
-                                                            "requests": []}})(),)})
+    await sink(
+        {"__interrupt__": (type("I", (), {"value": {"reason": "hitl_waiting", "requests": []}})(),)}
+    )
     await sink.close()
     kinds = [r["event_type"] for r in persisted]
     assert "hitl.waiting" in kinds
@@ -195,6 +196,7 @@ async def test_internal_channels_are_not_emitted(persisted):
 
 async def test_persist_failure_is_counted_not_raised():
     """落盘挂了要记 ``failed`` 并继续跑 —— 恢复本身比事件更重要。"""
+
     async def _boom(**_kw):
         raise RuntimeError("db down")
 

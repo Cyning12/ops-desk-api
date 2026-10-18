@@ -1,4 +1,5 @@
 """Base provider implementation."""
+
 from __future__ import annotations
 
 import functools
@@ -73,9 +74,7 @@ class BaseProviderImpl(BaseProvider):
 
         @functools.wraps(fn)
         async def complete_stream(self, messages, model=None):  # noqa: ANN001,ANN202
-            async for chunk in self._budget_guarded_stream(
-                guarded_fn, messages, model=model
-            ):
+            async for chunk in self._budget_guarded_stream(guarded_fn, messages, model=model):
                 yield chunk
 
         cls.complete_stream = complete_stream
@@ -113,7 +112,7 @@ class BaseProviderImpl(BaseProvider):
         for entry in resolve_fallback_chain(task_type):
             marker = llm_budget.degraded_meta(task_type, [*chain_used, entry])
             if entry.startswith(RULE_TIER_PREFIX):
-                text = rule_tier_text(entry[len(RULE_TIER_PREFIX):])
+                text = rule_tier_text(entry[len(RULE_TIER_PREFIX) :])
                 if text is None:
                     # 规则档声明了但文案未登记 = 本档失败 · 继续走链（不伪造）
                     chain_used.append(entry)
@@ -266,9 +265,7 @@ class BaseProviderImpl(BaseProvider):
             parsed.prompt_tokens + parsed.completion_tokens,
             ctx=ctx,
         )
-        llm_budget.report_estimated_cost(
-            model, parsed.prompt_tokens, parsed.completion_tokens
-        )
+        llm_budget.report_estimated_cost(model, parsed.prompt_tokens, parsed.completion_tokens)
 
     @staticmethod
     def _messages_to_openai(messages: Iterable[LlmMessage]) -> list[dict]:
@@ -419,7 +416,7 @@ class BaseProviderImpl(BaseProvider):
         line = line.strip()
         if not line.startswith("data: "):
             return None
-        data = line[len("data: "):].strip()
+        data = line[len("data: ") :].strip()
         if data == "[DONE]":
             return None
 

@@ -116,9 +116,7 @@ class AsyncIdempotencyStore(Protocol):
         self, key: str, *, capability_id: str = "", tenant_id: str = ""
     ) -> IdempotencyClaim: ...
 
-    async def acomplete(
-        self, key: str, *, receipt_id: str = "", tenant_id: str = ""
-    ) -> None: ...
+    async def acomplete(self, key: str, *, receipt_id: str = "", tenant_id: str = "") -> None: ...
 
     async def arelease(self, key: str, *, tenant_id: str = "") -> None: ...
 
@@ -130,9 +128,7 @@ class NullIdempotencyStore:
     实现了同步 + 异步两套，便于在任何路径上做默认值。
     """
 
-    def claim(
-        self, key: str, *, capability_id: str = "", tenant_id: str = ""
-    ) -> IdempotencyClaim:
+    def claim(self, key: str, *, capability_id: str = "", tenant_id: str = "") -> IdempotencyClaim:
         logger.warning(
             "幂等防重未启用（NullIdempotencyStore）：capability=%s key=%s "
             "—— 重复提交可能产生第二张单据",
@@ -152,9 +148,7 @@ class NullIdempotencyStore:
     ) -> IdempotencyClaim:
         return self.claim(key, capability_id=capability_id, tenant_id=tenant_id)
 
-    async def acomplete(
-        self, key: str, *, receipt_id: str = "", tenant_id: str = ""
-    ) -> None:
+    async def acomplete(self, key: str, *, receipt_id: str = "", tenant_id: str = "") -> None:
         return
 
     async def arelease(self, key: str, *, tenant_id: str = "") -> None:
@@ -183,9 +177,7 @@ class InMemoryIdempotencyStore:
         self._lease = lease_seconds
         self._lock = threading.Lock()
 
-    def claim(
-        self, key: str, *, capability_id: str = "", tenant_id: str = ""
-    ) -> IdempotencyClaim:
+    def claim(self, key: str, *, capability_id: str = "", tenant_id: str = "") -> IdempotencyClaim:
         now = time.monotonic()
         with self._lock:
             row = self._rows.get((tenant_id, key))
@@ -248,12 +240,8 @@ class InMemoryIdempotencyStore:
             self.claim, key, capability_id=capability_id, tenant_id=tenant_id
         )
 
-    async def acomplete(
-        self, key: str, *, receipt_id: str = "", tenant_id: str = ""
-    ) -> None:
-        await asyncio.to_thread(
-            self.complete, key, receipt_id=receipt_id, tenant_id=tenant_id
-        )
+    async def acomplete(self, key: str, *, receipt_id: str = "", tenant_id: str = "") -> None:
+        await asyncio.to_thread(self.complete, key, receipt_id=receipt_id, tenant_id=tenant_id)
 
     async def arelease(self, key: str, *, tenant_id: str = "") -> None:
         await asyncio.to_thread(self.release, key, tenant_id=tenant_id)
@@ -363,35 +351,32 @@ class DbIdempotencyStore:
             "cap": capability_id,
             "ttl": self._lease,
         }
-        async with self._session_factory() as session:
-            async with session.begin():
-                inserted = await session.execute(_text(_INSERT_IF_ABSENT), params)
-                if inserted.first() is not None:
-                    return IdempotencyClaim(key=key, acquired=True, attempts=1)
+        async with self._session_factory() as session, session.begin():
+            inserted = await session.execute(_text(_INSERT_IF_ABSENT), params)
+            if inserted.first() is not None:
+                return IdempotencyClaim(key=key, acquired=True, attempts=1)
 
-                taken = await session.execute(_text(_TAKEOVER_IF_STALE), params)
-                row = taken.first()
-                if row is not None:
-                    logger.warning(
-                        "幂等键租约已过期，本次接管：capability=%s key=%s attempts=%s "
-                        "—— 上次执行可能异常中断，下游状态需人工确认",
-                        capability_id,
-                        key,
-                        row[0],
-                    )
-                    return IdempotencyClaim(
-                        key=key,
-                        acquired=True,
-                        attempts=int(row[0]),
-                        took_over_stale_lease=True,
-                    )
+            taken = await session.execute(_text(_TAKEOVER_IF_STALE), params)
+            row = taken.first()
+            if row is not None:
+                logger.warning(
+                    "幂等键租约已过期，本次接管：capability=%s key=%s attempts=%s "
+                    "—— 上次执行可能异常中断，下游状态需人工确认",
+                    capability_id,
+                    key,
+                    row[0],
+                )
+                return IdempotencyClaim(
+                    key=key,
+                    acquired=True,
+                    attempts=int(row[0]),
+                    took_over_stale_lease=True,
+                )
 
-                seen = await session.execute(_text(_BUMP_AND_READ), params)
-                got = seen.first()
+            seen = await session.execute(_text(_BUMP_AND_READ), params)
+            got = seen.first()
         if got is None:  # pragma: no cover - 竞态兜底：行被并发 release 掉了
-            return await self.aclaim(
-                key, capability_id=capability_id, tenant_id=tenant_id
-            )
+            return await self.aclaim(key, capability_id=capability_id, tenant_id=tenant_id)
         status, receipt_id, attempts = got[0], got[1], int(got[2])
         if status == STATUS_DONE:
             return IdempotencyClaim(
@@ -401,26 +386,18 @@ class DbIdempotencyStore:
                 receipt_id=receipt_id,
                 attempts=attempts,
             )
-        return IdempotencyClaim(
-            key=key, acquired=False, in_flight=True, attempts=attempts
-        )
+        return IdempotencyClaim(key=key, acquired=False, in_flight=True, attempts=attempts)
 
-    async def acomplete(
-        self, key: str, *, receipt_id: str = "", tenant_id: str = ""
-    ) -> None:
-        async with self._session_factory() as session:
-            async with session.begin():
-                await session.execute(
-                    _text(_COMPLETE),
-                    {"tenant": tenant_id, "key": key, "receipt": receipt_id or None},
-                )
+    async def acomplete(self, key: str, *, receipt_id: str = "", tenant_id: str = "") -> None:
+        async with self._session_factory() as session, session.begin():
+            await session.execute(
+                _text(_COMPLETE),
+                {"tenant": tenant_id, "key": key, "receipt": receipt_id or None},
+            )
 
     async def arelease(self, key: str, *, tenant_id: str = "") -> None:
-        async with self._session_factory() as session:
-            async with session.begin():
-                await session.execute(
-                    _text(_RELEASE), {"tenant": tenant_id, "key": key}
-                )
+        async with self._session_factory() as session, session.begin():
+            await session.execute(_text(_RELEASE), {"tenant": tenant_id, "key": key})
 
     async def asnapshot(
         self, *, tenant_id: str = "", stuck_only: bool = False, limit: int = 200

@@ -5,6 +5,7 @@
 完整 TC-B1/B2/B4 见 ``test_lg_rag_sse_run_worker.py``。
 旧 task ``task_lg_rag_sse_disconnect_completion.md`` 正文**不修订**。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -67,10 +68,7 @@ async def test_subscriber_aclose_does_not_kill_worker() -> None:
     assert is_run_worker_active(run_id)
     # 订阅断连不得强制落盘 disconnected（worker 仍在飞）
     done_list = [p for p in persisted if p.get("event_type") == "done"]
-    assert not any(
-        (p.get("payload") or {}).get("status") == "disconnected"
-        for p in done_list
-    )
+    assert not any((p.get("payload") or {}).get("status") == "disconnected" for p in done_list)
     # 收尾挂起的 worker，避免泄漏
     task = __import__(
         "app.ops.lg_rag.run_worker", fromlist=["get_run_worker_task"]

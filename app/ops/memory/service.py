@@ -11,6 +11,7 @@
 - session 纪律：传入 `session` 时调用方持有事务（本模块只 flush）；
   不传则模块自开 `AsyncSessionLocal` 并自行 commit（对齐 thread_store 先例）。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -160,9 +161,7 @@ async def revoke_by_source(
             result = await own.execute(stmt)
             count = int(result.rowcount or 0)
     # 审计日志：纠错动作本身必须可追查（含幂等 0 行）
-    logger.info(
-        "memory revoke_by_source source_run_id=%s affected=%d", source_run_id, count
-    )
+    logger.info("memory revoke_by_source source_run_id=%s affected=%d", source_run_id, count)
     return count
 
 
@@ -198,9 +197,7 @@ async def revoke_by_key(
             result = await own.execute(stmt)
             count = int(result.rowcount or 0)
     # 审计日志：纠错动作本身必须可追查（含幂等 0 行）
-    logger.info(
-        "memory revoke_by_key key=%s tenant=%s affected=%d", key, tenant_id, count
-    )
+    logger.info("memory revoke_by_key key=%s tenant=%s affected=%d", key, tenant_id, count)
     return count
 
 
@@ -270,9 +267,7 @@ async def _purge_in_session(
     started = time.monotonic()
     predicate = _purge_predicate(tenant_id, user_id)
     count_result = await session.execute(
-        select(OpsMemoryFact.status, func.count())
-        .where(*predicate)
-        .group_by(OpsMemoryFact.status)
+        select(OpsMemoryFact.status, func.count()).where(*predicate).group_by(OpsMemoryFact.status)
     )
     by_status = {str(row_status): int(n) for row_status, n in count_result.all()}
     scanned = sum(by_status.values())
@@ -359,6 +354,7 @@ async def recall_active(
         result = await own.execute(stmt)
         return list(result.scalars().all())
 
+
 # ---------------- P1 · 向量语义召回（默认关 · MEMORY_FACTS_VECTOR_RECALL_ENABLED） ----------------
 
 _TRUTHY = ("1", "true", "yes", "on")
@@ -394,17 +390,13 @@ def memory_facts_vector_recall_enabled() -> bool:
         return True
     if raw in _FALSY:
         return False
-    logger.warning(
-        "invalid MEMORY_FACTS_VECTOR_RECALL_ENABLED=%r; fallback to false", raw
-    )
+    logger.warning("invalid MEMORY_FACTS_VECTOR_RECALL_ENABLED=%r; fallback to false", raw)
     return False
 
 
 def _fact_embed_text(key: str, value: object) -> str:
     """嵌入文本 = 注入行同形 `key=value`（语义信号对齐召回展示面）。"""
-    text_value = (
-        value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
-    )
+    text_value = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
     return f"{key}={text_value}"
 
 
@@ -438,11 +430,7 @@ async def _set_embedding(
 ) -> None:
     """单列 UPDATE 回填 embedding；caller session 用 SAVEPOINT 隔离，
     失败只回滚本语句，不污染调用方事务。"""
-    stmt = (
-        update(OpsMemoryFact)
-        .where(OpsMemoryFact.id == fact_id)
-        .values(embedding=vector)
-    )
+    stmt = update(OpsMemoryFact).where(OpsMemoryFact.id == fact_id).values(embedding=vector)
     if session is not None:
         async with session.begin_nested():
             await session.execute(stmt)
@@ -544,7 +532,13 @@ async def _vector_top_m(
     """
     rows = await session.execute(
         _VECTOR_RECALL_SQL,
-        {"tenant": tenant_id, "user": user_id, "qvec": json.dumps(query_vector), "m": max(0, m), "now": now},
+        {
+            "tenant": tenant_id,
+            "user": user_id,
+            "qvec": json.dumps(query_vector),
+            "m": max(0, m),
+            "now": now,
+        },
     )
     sims: dict[str, float] = {}
     ids: list[str] = []
@@ -576,9 +570,7 @@ async def _recall_with_vector_in_session(
     now: datetime,
     embedder: Embedder | None,
 ) -> list[OpsMemoryFact]:
-    deterministic = await recall_active(
-        tenant_id, user_id, limit=limit, now=now, session=session
-    )
+    deterministic = await recall_active(tenant_id, user_id, limit=limit, now=now, session=session)
     try:
         query_vector = await _embed_one(_resolve_embedder(embedder), query)
         if query_vector is None:

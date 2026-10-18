@@ -58,6 +58,7 @@ PROMPT_VERSIONS: dict[str, str] = {
 }
 _UNVERSIONED = "v0-unversioned"
 
+
 @dataclass(frozen=True)
 class InferCacheContext:
     """缓存键上下文（调用方注入）：prompt 版本 + plan 类目录指纹。"""
@@ -83,13 +84,9 @@ def set_cache_context(
     cur = _current.get()
     return _current.set(
         InferCacheContext(
-            prompt_version=(
-                prompt_version if prompt_version is not None else cur.prompt_version
-            ),
+            prompt_version=(prompt_version if prompt_version is not None else cur.prompt_version),
             catalog_fingerprint=(
-                catalog_fingerprint
-                if catalog_fingerprint is not None
-                else cur.catalog_fingerprint
+                catalog_fingerprint if catalog_fingerprint is not None else cur.catalog_fingerprint
             ),
         )
     )
@@ -112,6 +109,7 @@ def use_infer_cache_context(
         yield
     finally:
         reset_cache_context(token)
+
 
 def _truthy(raw: str) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
@@ -149,6 +147,7 @@ def prompt_version_of(task_type: str | None) -> str:
         return injected.strip()
     return PROMPT_VERSIONS.get((task_type or "").strip().lower(), _UNVERSIONED)
 
+
 def normalize_input(parts: list[str] | tuple[str, ...]) -> str:
     """规范化输入（去首尾空白 · 统一换行）后哈希；不记原文。"""
     normalized = "\n".join(p.replace("\r\n", "\n").strip() for p in parts)
@@ -183,6 +182,7 @@ def make_key(
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
 
 _LOCK = threading.Lock()
 #: key → (expires_at_epoch, value)；OrderedDict 保序 = LRU 序（尾 = 最新）
@@ -221,6 +221,7 @@ def put(key: str, value: str, *, now: float | None = None) -> None:
         while len(_CACHE) > cache_max_entries():
             _CACHE.popitem(last=False)
             _EVICTED += 1
+
 
 def report_span(metadata: dict[str, Any]) -> None:
     """命中/未命中进当前 span metadata（记动作不记内容 · 失败不挡主流程）。"""

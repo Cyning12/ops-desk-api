@@ -4,6 +4,7 @@
 分工原则：用户会念出来的（标题/编号/类型）进前缀；只用于过滤和展示的留
 metadata 或活表。两边都放 = 浪费 token + 稀释向量。
 """
+
 from __future__ import annotations
 
 import re

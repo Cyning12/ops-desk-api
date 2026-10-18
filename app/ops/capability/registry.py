@@ -33,13 +33,9 @@ class CapabilityAdapter(Protocol):
 class RegistryReader(Protocol):
     """读侧协议（本地缓存 / 未来远程只读客户端形态）。"""
 
-    def get(
-        self, capability_id: str
-    ) -> tuple[CapabilitySpec, CapabilityAdapter] | None: ...
+    def get(self, capability_id: str) -> tuple[CapabilitySpec, CapabilityAdapter] | None: ...
 
-    def list_specs(
-        self, *, filter: CapabilityFilter | None = None
-    ) -> list[CapabilitySpec]: ...
+    def list_specs(self, *, filter: CapabilityFilter | None = None) -> list[CapabilitySpec]: ...
 
     def snapshot(self) -> dict[str, Any]: ...
 
@@ -77,14 +73,10 @@ class CapabilityRegistry:
     def unregister(self, capability_id: str) -> bool:
         return self._entries.pop(capability_id, None) is not None
 
-    def get(
-        self, capability_id: str
-    ) -> tuple[CapabilitySpec, CapabilityAdapter] | None:
+    def get(self, capability_id: str) -> tuple[CapabilitySpec, CapabilityAdapter] | None:
         return self._entries.get(capability_id)
 
-    def list_specs(
-        self, *, filter: CapabilityFilter | None = None
-    ) -> list[CapabilitySpec]:
+    def list_specs(self, *, filter: CapabilityFilter | None = None) -> list[CapabilitySpec]:
         specs = [spec for spec, _ in self._entries.values()]
         if filter is None:
             return list(specs)
@@ -120,18 +112,13 @@ def _match_filter(spec: CapabilitySpec, f: CapabilityFilter) -> bool:
     if not spec.enabled:
         return False
     if f.kinds is not None and spec.kind not in f.kinds:
-        exempt = bool(
-            f.allow_tags_any and f.allow_tags_any.intersection(spec.tags)
-        )
+        exempt = bool(f.allow_tags_any and f.allow_tags_any.intersection(spec.tags))
         if not exempt:
             return False
     if f.deny_high_risk and spec.risk_level == "high":
         return False
     if f.deny_write and spec.side_effect in WRITE_SIDE_EFFECTS:
-        exempt = bool(
-            f.allow_write_tags_any
-            and f.allow_write_tags_any.intersection(spec.tags)
-        )
+        exempt = bool(f.allow_write_tags_any and f.allow_write_tags_any.intersection(spec.tags))
         if not exempt:
             return False
     # node_role / mode：P0 仅占位字段，不裁剪（无 tags 绑定时全放行）

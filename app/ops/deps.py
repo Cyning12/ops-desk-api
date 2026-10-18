@@ -1,4 +1,5 @@
 """Ops Desk auth dependencies."""
+
 from __future__ import annotations
 
 import inspect
@@ -22,9 +23,7 @@ async def get_current_user(
     """Resolve current user from session cookie."""
     session_cookie = request.cookies.get(settings.session_cookie_name)
     if not session_cookie:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
     token_hash = hash_token(session_cookie)
     now = datetime.utcnow()
@@ -41,14 +40,14 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session"
         )
 
-    request.state.ops_tenant_id = (session.tenant_id or "ops-desk-pilot").strip() or "ops-desk-pilot"
+    request.state.ops_tenant_id = (
+        session.tenant_id or "ops-desk-pilot"
+    ).strip() or "ops-desk-pilot"
 
     result = await db.execute(select(OpsUser).where(OpsUser.id == session.user_id))
     user = result.scalar_one_or_none()
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
     return user
 
