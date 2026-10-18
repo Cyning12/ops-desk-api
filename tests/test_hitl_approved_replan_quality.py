@@ -213,9 +213,9 @@ async def test_tc2_locked_empty_preserved_empty_prompt_zero_diff(cap_env):  # no
 
 @pytest.mark.asyncio
 async def test_tc2_guard_does_not_block_approved_step_without_prior_terminal(
-    cap_env,
+    cap_env,  # noqa: F811
     monkeypatch,
-    caplog,  # noqa: F811
+    caplog,
 ):
     """FP-3 反面：approved 步无同 canonical 成功终态 → 正常消费派发。
 
