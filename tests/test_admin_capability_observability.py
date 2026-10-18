@@ -216,7 +216,7 @@ async def test_metrics_exposes_write_blocked_counter(client, as_admin):
     只看 `ok` 是看不出这件事的——写闸把请求拦了，调用方只看到"失败"，
     没有指标就没人能回答"到底有多少写被拦下了"。
     """
-    from app.ops.capability import GenericHttpAdapter as _A
+    from app.ops.capability import GenericHttpAdapter
     from app.ops.capability import metrics as cap_metrics
 
     cap_metrics.reset()
@@ -232,7 +232,7 @@ async def test_metrics_exposes_write_blocked_counter(client, as_admin):
         visibility={"departments": ["all"]},
         http={"idempotency_key": "t:{{subject}}"},
     )
-    register(spec, _A(spec))
+    register(spec, GenericHttpAdapter(spec))
     try:
         from app.ops.capability import invoke
 

@@ -47,15 +47,15 @@ _SCHEMA = {"type": "object", "properties": {}}
 
 
 def _spec(cid: str, **over) -> CapabilitySpec:
-    base = dict(
-        capability_id=cid,
-        kind="http",
-        description="单测",
-        args_schema=dict(_SCHEMA),
-        tags=("oa",),
-        side_effect="read",
-        when_to_use="单测",
-    )
+    base = {
+        "capability_id": cid,
+        "kind": "http",
+        "description": "单测",
+        "args_schema": dict(_SCHEMA),
+        "tags": ("oa",),
+        "side_effect": "read",
+        "when_to_use": "单测",
+    }
     base.update(over)
     return CapabilitySpec(**base)
 

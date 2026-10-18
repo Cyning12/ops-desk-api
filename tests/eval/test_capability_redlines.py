@@ -111,18 +111,18 @@ _WRITE_HTTP = {
 def _spec(cid: str, **over: Any) -> CapabilitySpec:
     http = dict(_WRITE_HTTP)
     http.update(over.pop("http", {}))
-    base: dict[str, Any] = dict(
-        capability_id=cid,
-        kind="http",
-        description="红线单测",
-        args_schema=dict(_ARGS),
-        tags=("oa",),
-        side_effect="write",
-        hitl_required=True,
-        when_to_use="红线单测",
-        visibility={"departments": ["all"], "roles": ["all"]},
-        http=http,
-    )
+    base: dict[str, Any] = {
+        "capability_id": cid,
+        "kind": "http",
+        "description": "红线单测",
+        "args_schema": dict(_ARGS),
+        "tags": ("oa",),
+        "side_effect": "write",
+        "hitl_required": True,
+        "when_to_use": "红线单测",
+        "visibility": {"departments": ["all"], "roles": ["all"]},
+        "http": http,
+    }
     base.update(over)
     return CapabilitySpec(**base)
 
@@ -569,200 +569,11 @@ def _r10_spec(cid: str, contract: dict[str, Any] | None, **over: Any) -> Capabil
     return _spec(cid, output_schema=contract, **over)
 
 
-@redline("R10")
-def test_r10_declared_contract_rejects_nonconforming_result():
-    """结果缺必填字段必须判失败（upstream_error + 契约 detail）；
-    合规结果必须成功；**未声明契约**的能力不得被推测性拦截。"""
-    contract = {"required": ["$.data.ticketId"]}
-    spec = _r10_spec("r10.write", contract)
-    bad = FakeHttpTransport(payload={"code": 0, "data": {}})  # 声明了 ticketId 却没有
-    _register(spec, bad)
-    try:
-        violated = invoke("r10.write", {"subject": "x"}, ctx=dict(_CTX_WRITE))
-        detail = str(violated.error or "")
-        holds = (
-            violated.ok is False
-            and detail.startswith("upstream_error")  # ★ 不新造错误码
-            and "result_contract" in detail
-            and violated.meta.get("result_contract_violated") is True
-        )
-    finally:
-        unregister("r10.write")
-
-    # 对照一：合规结果必须照常成功（不是"一律失败"）
-    good = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-R10"}})
-    _register(_r10_spec("r10.write", contract), good)
-    try:
-        ok_call = invoke("r10.write", {"subject": "x"}, ctx=dict(_CTX_WRITE))
-        control_ok = ok_call.ok is True and _inner_data(ok_call).get("ticketId") == "T-R10"
-    finally:
-        unregister("r10.write")
-
-    # 对照二：没声明契约 → 同样残缺的返回**照旧成功**（契约是显式声明出来的，
-    # 系统不替你猜；擅自拦截会把"能用"变成"随机不可用"）
-    _register(_r10_spec("r10.free", None), bad)
-    try:
-        free = invoke("r10.free", {"subject": "x"}, ctx=dict(_CTX_WRITE))
-        control_free = free.ok is True and not free.meta.get("result_contract_violated")
-    finally:
-        unregister("r10.free")
-
-    assert_redline(
-        redline_id="R10",
-        holds=holds,
-        control=control_ok and control_free,
-        detail=f"violated={violated.error!r} ok={ok_call.ok} free={free.ok}",
-    )
-
-
-def test_r10_is_not_vacuous(monkeypatch: pytest.MonkeyPatch):
-    """变异检验：把契约校验摘掉，上面那条红线的正向断言必须**翻掉**。
-
-    不翻 = 说明它被别的东西（比如本来就失败）满足了，是空真。
-    """
-    import app.ops.capability.gateway as gw
-
-    monkeypatch.setattr(gw, "_result_contract_verdict", lambda spec, output: None)
-    spec = _r10_spec("r10.mut", {"required": ["$.data.ticketId"]})
-    tx = FakeHttpTransport(payload={"code": 0, "data": {}})
-    _register(spec, tx)
-    try:
-        res = invoke("r10.mut", {"subject": "x"}, ctx=dict(_CTX_WRITE))
-    finally:
-        unregister("r10.mut")
-    # 摘掉校验后，残缺结果重新变回 ok=True —— 证明拦住它的确实是契约，不是别的
-    assert res.ok is True, f"变异未翻转：契约被摘掉后仍然失败 err={res.error!r}"
 
 
 # ---------------- R11：会话配额 + kill switch ----------------
 
 
-@redline("R11")
-def test_r11_session_budget_and_kill_switch_block_before_downstream(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    """配额耗尽 / kill switch 命中 → 拦下且下游零请求；
-    换会话仍能打；**被拦下的调用不计数**（否则兜底会误伤正常调用）。"""
-    from app.ops.capability import budget
-
-    monkeypatch.setenv("OPS_CAPABILITY_MAX_WRITES_PER_SESSION", "1")
-    monkeypatch.setenv("OPS_CAPABILITY_MAX_CALLS_PER_SESSION", "0")  # 0 = 不限，只测写数
-    budget.reset()
-
-    tx = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-R11"}})
-    _register(_spec("r11.write"), tx)
-    try:
-        sess = {"tenant_id": "t1", "run_id": "run-A", "_host_policy": {"allow_write": True}}
-        first = invoke("r11.write", {"subject": "a"}, ctx=dict(sess))
-        second = invoke("r11.write", {"subject": "b"}, ctx=dict(sess))
-        detail = str(second.error or "")
-        holds = (
-            first.ok is True
-            and second.ok is False
-            and detail.startswith("policy_blocked")  # ★ 不新造错误码
-            and "budget_exhausted" in detail
-            and second.meta.get("blocked") == "budget"
-            and len(tx.calls) == 1  # 第二次根本没出门
-        )
-
-        # 对照一：换一个会话照样能打（配额是 per-session，不是全局一律拒绝）
-        other = invoke(
-            "r11.write",
-            {"subject": "c"},
-            ctx={"tenant_id": "t1", "run_id": "run-B", "_host_policy": {"allow_write": True}},
-        )
-        control_other_session = other.ok is True and len(tx.calls) == 2
-
-        # 对照二：被拦下的调用**不计数** ——否则"反复尝试都被拒"会打满配额，
-        # 让一次正常调用也被误伤（兜底变成另一种不可用）
-        budget.reset()
-        blocked_ctx = {
-            "tenant_id": "t1",
-            "run_id": "run-C",
-            # 故意不给 allow_write：这次会被 Policy 拦下，不该消耗配额
-        }
-        for _ in range(3):
-            invoke("r11.write", {"subject": "z"}, ctx=dict(blocked_ctx))
-        snap = budget.snapshot()
-        used = snap["sessions"].get("run-C", {"writes": 0})
-        control_not_counted = used["writes"] == 0
-    finally:
-        unregister("r11.write")
-
-    assert_redline(
-        redline_id="R11",
-        holds=holds,
-        control=control_other_session and control_not_counted,
-        detail=(
-            f"second={second.error!r} calls={len(tx.calls)} "
-            f"other={other.ok} used_runC={used}"
-        ),
-    )
-
-
-@redline("R11")
-def test_r11_kill_switch_disables_capability(monkeypatch: pytest.MonkeyPatch):
-    """kill switch 命中 → disabled 且下游零请求；不命中/关掉开关 → 照常放行。"""
-    from app.ops.capability import budget
-
-    monkeypatch.setenv("OPS_CAPABILITY_KILL_SWITCH", "r11.*")
-    budget.reset()
-    tx = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-KS"}})
-    _register(_spec("r11.killed"), tx)
-    try:
-        killed = invoke("r11.killed", {"subject": "x"}, ctx=dict(_CTX_WRITE))
-        detail = str(killed.error or "")
-        holds = (
-            killed.ok is False
-            and detail.startswith("disabled")  # ★ 不新造错误码
-            and "kill_switch" in detail
-            and killed.meta.get("blocked") == "kill_switch"
-            and tx.calls == []
-        )
-    finally:
-        unregister("r11.killed")
-
-    # 对照：关掉开关 → 同一个能力照常放行（开关是"停用"，不是"这个 id 永久坏了"）
-    monkeypatch.delenv("OPS_CAPABILITY_KILL_SWITCH")
-    budget.reset()
-    tx2 = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-KS"}})
-    _register(_spec("r11.killed"), tx2)
-    try:
-        alive = invoke("r11.killed", {"subject": "x"}, ctx=dict(_CTX_WRITE))
-        control = alive.ok is True and len(tx2.calls) == 1
-    finally:
-        unregister("r11.killed")
-
-    assert_redline(
-        redline_id="R11",
-        holds=holds,
-        control=control,
-        detail=f"killed={killed.error!r} alive={alive.ok} calls={len(tx2.calls)}",
-    )
-
-
-def test_r11_is_not_vacuous(monkeypatch: pytest.MonkeyPatch):
-    """变异检验：把配额检查摘掉，超配额那次必须**真的打到了下游**。
-
-    不翻 = 说明拦住它的是别的东西（比如 Policy），这条红线是空真。
-    """
-    import app.ops.capability.gateway as gw
-
-    monkeypatch.setenv("OPS_CAPABILITY_MAX_WRITES_PER_SESSION", "1")
-    monkeypatch.setenv("OPS_CAPABILITY_MAX_CALLS_PER_SESSION", "0")
-    monkeypatch.setattr(gw, "budget_check", lambda spec, *, ctx: None)
-
-    tx = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-MUT"}})
-    _register(_spec("r11.mut"), tx)
-    try:
-        sess = {"tenant_id": "t1", "run_id": "run-M", "_host_policy": {"allow_write": True}}
-        invoke("r11.mut", {"subject": "a"}, ctx=dict(sess))
-        second = invoke("r11.mut", {"subject": "b"}, ctx=dict(sess))
-    finally:
-        unregister("r11.mut")
-    assert second.ok is True and len(tx.calls) == 2, (
-        f"变异未翻转：配额被摘掉后第二次仍被拦 err={second.error!r}"
-    )
 
 
 # ---------------- R10：声明了结果契约就必须校验 ----------------

@@ -67,17 +67,17 @@ def _clean(monkeypatch: pytest.MonkeyPatch):
 def _write_spec(**over) -> CapabilitySpec:
     http = dict(_HTTP_WRITE)
     http.update(over.pop("http", {}))
-    base = dict(
-        capability_id="oa.ticket.create",
-        kind="http",
-        description="建单",
-        args_schema=dict(_ARGS),
-        side_effect="write",
-        hitl_required=True,
-        when_to_use="单测",
-        receipt_capture=("$.data.ticketId",),
-        http=http,
-    )
+    base = {
+        "capability_id": "oa.ticket.create",
+        "kind": "http",
+        "description": "建单",
+        "args_schema": dict(_ARGS),
+        "side_effect": "write",
+        "hitl_required": True,
+        "when_to_use": "单测",
+        "receipt_capture": ("$.data.ticketId",),
+        "http": http,
+    }
     base.update(over)
     return CapabilitySpec(**base)
 

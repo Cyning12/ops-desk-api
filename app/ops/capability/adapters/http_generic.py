@@ -62,8 +62,8 @@ HOST_INJECTED_VARS: frozenset[str] = frozenset(
 
 # JSONPath 取值与"缺失"哨兵：与 receipt_capture / output_schema 共用一份实现
 # （见 capability/jsonpath.py），避免"回执抓到了但契约说缺字段"这种自相矛盾。
-from app.ops.capability.jsonpath import MISSING as _MISSING
-from app.ops.capability.jsonpath import jsonpath_get  # noqa: F401 - 保兼容导出路径
+from app.ops.capability.jsonpath import MISSING as _MISSING  # noqa: E402, I001 - 有意布局：与上方注释共述 jsonpath 共用实现
+from app.ops.capability.jsonpath import jsonpath_get  # noqa: F401, E402 - 保兼容导出路径；有意布局
 
 # 显式指定能力调用走的代理；不设 → **不走任何代理**（见 UrllibHttpTransport）
 _ENV_HTTP_PROXY = "OPS_CAPABILITY_HTTP_PROXY"

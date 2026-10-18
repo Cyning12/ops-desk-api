@@ -456,41 +456,6 @@ capabilities:
     return _write_yaml(tmp_path / "contract.yaml", body)
 
 
-@pytest.mark.parametrize(
-    "block, why",
-    [
-        ("      required: []", "required 为空列表 —— 等于声明了一个空契约"),
-        ("      required: ['data.ticketId']", "路径不以 $ 开头 —— 取不到，契约静默失效"),
-        ("      min_items: {'$.data.items': 'one'}", "min_items 不是整数"),
-        ("      requiredx: ['$.data.x']", "拼错字段名"),
-    ],
-)
-def test_output_schema_bad_shape_rejected(tmp_path: Path, block: str, why: str):
-    """V10：形状不合法必须在**加载期**炸，不能留到运行期静默不生效。"""
-    path = _write_output_schema_manifest(tmp_path, block)
-    with pytest.raises(ManifestError, match="V10"):
-        load_capability_manifest(path)
-    assert "probe_contract" not in {s.capability_id for s in list_capabilities()}
-
-
-def test_output_schema_valid_shape_loads(tmp_path: Path):
-    """合法契约必须能加载进 spec（对照——上面四条不是"一律拒绝"）。"""
-    block = """      required: ["$.data.ticketId"]
-      min_items: {"$.data.items": 1}
-      empty_is_suspicious: true"""
-    path = _write_output_schema_manifest(tmp_path, block)
-    result = load_capability_manifest(path)
-    assert "probe_contract" in set(result.registered_ids)
-    spec = next(
-        s for s in list_capabilities() if s.capability_id == "probe_contract"
-    )
-    assert spec.output_schema == {
-        "required": ["$.data.ticketId"],
-        "min_items": {"$.data.items": 1},
-        "empty_is_suspicious": True,
-    }
-    unregister_probe = getattr(spec, "capability_id", None)
-    assert unregister_probe == "probe_contract"
 
 
 # ---------------- V10：结果契约形状（拼错 = 没有契约）----------------
@@ -551,44 +516,6 @@ def test_output_schema_valid_shape_loads(tmp_path: Path):
 # ---------------- 失败成因分类（熔断的判定依据）----------------
 
 
-def test_environmental_failure_classification():
-    """只有「下游不响应 / 5xx / 429」算环境类；业务响应与本地装配不算。"""
-    from app.ops.capability.errors import (
-        CAUSE_BUSINESS,
-        CAUSE_HTTP_STATUS,
-        CAUSE_LOCAL,
-        CAUSE_TRANSPORT,
-        is_environmental_failure,
-    )
-
-    # 该熔
-    assert is_environmental_failure(CAUSE_TRANSPORT) is True
-    assert is_environmental_failure(CAUSE_HTTP_STATUS, 500) is True
-    assert is_environmental_failure(CAUSE_HTTP_STATUS, 503) is True
-    assert is_environmental_failure(CAUSE_HTTP_STATUS, 429) is True
-
-    # 不该熔：下游活着并回答了
-    assert is_environmental_failure(CAUSE_HTTP_STATUS, 200) is False
-    assert is_environmental_failure(CAUSE_HTTP_STATUS, 404) is False
-    assert is_environmental_failure(CAUSE_BUSINESS) is False
-    # 不该熔：我们自己没配好（配错一次不能把能力停 60s）
-    assert is_environmental_failure(CAUSE_LOCAL) is False
-    # 信息不全时不判定 → 宁可少熔
-    assert is_environmental_failure(None) is False
-    assert is_environmental_failure(CAUSE_HTTP_STATUS, None) is False
-
-
-def test_http_capability_error_exposes_structured_cause():
-    """``cause`` 必须能从异常上读到（熔断层不解析 detail 文案）。"""
-    from app.ops.capability.adapters.http_generic import HttpCapabilityError
-    from app.ops.capability.errors import CAUSE_TRANSPORT, UPSTREAM_ERROR
-
-    err = HttpCapabilityError(UPSTREAM_ERROR, "请求超时", cause=CAUSE_TRANSPORT)
-    assert err.environmental is True
-    assert str(err) == "upstream_error: 请求超时"  # 对外口径不变
-
-    biz = HttpCapabilityError(UPSTREAM_ERROR, "HTTP 200")
-    assert biz.environmental is False  # 未填 cause → 不熔（宁可少熔）
 
 
 # ---------------- 失败成因分类（熔断的判定依据）----------------

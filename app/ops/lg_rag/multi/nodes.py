@@ -1919,7 +1919,7 @@ def _apply_hitl_decision(state: LgRagState, obs: dict, resumed: Any) -> dict:
         "decided_by": decided_by,
     }
 
-    unlocked = set(str(s) for s in (state.get("hitl_unlocked_ids") or []))
+    unlocked = {str(s) for s in (state.get("hitl_unlocked_ids") or [])}
     unlocked |= approved
 
     updates: dict = {

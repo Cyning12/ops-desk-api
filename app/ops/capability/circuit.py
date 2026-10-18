@@ -74,7 +74,7 @@ _BREAKERS: dict[str, pybreaker.CircuitBreaker] = {}
 _BLOCKED_CALLS = 0
 
 
-class CircuitOpen(Exception):
+class CircuitOpen(Exception):  # noqa: N818 - 公开异常名，改名属 API 语义变更（另立 task）
     """熔断中，这次调用没有出门。
 
     带 ``detail``（含状态与剩余秒数），由 gateway 转成 ``upstream_error``。

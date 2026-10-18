@@ -19,6 +19,15 @@ import pytest
 from httpx import AsyncClient
 from langchain_core.messages import AIMessage
 
+from app.llm.schema import BaseProvider, LlmChunk, LlmMessage
+from app.ops.lg_rag.answer_stream import (
+    complete_answer_streaming,
+    current_answer_token_sink,
+    reset_answer_token_sink,
+    set_answer_token_sink,
+)
+from app.ops.lg_rag.sse_replay import format_sse_event
+
 
 @pytest.fixture(autouse=True)
 def _no_pg_checkpointer_by_default(monkeypatch):
@@ -29,14 +38,6 @@ def _no_pg_checkpointer_by_default(monkeypatch):
     """
     monkeypatch.delenv("LG_RAG_HTTP_CHECKPOINTER", raising=False)
 
-from app.llm.schema import BaseProvider, LlmChunk, LlmMessage
-from app.ops.lg_rag.answer_stream import (
-    complete_answer_streaming,
-    current_answer_token_sink,
-    reset_answer_token_sink,
-    set_answer_token_sink,
-)
-from app.ops.lg_rag.sse_replay import format_sse_event
 
 _STREAM = "/api/ops/lg-rag/stream"
 _REPLAY = "/api/ops/lg-rag/replay"
