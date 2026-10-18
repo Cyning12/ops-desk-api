@@ -4,6 +4,7 @@
 
 | task | 说明 |
 |---|---|
+| （无进行中 task） | 2026-10-18：**单档关账** `task_local_rag_knowledge_rebuild`（PR #276 合 · squash `8ac8ec0` · 本地 RAG 重建 8648 双侧对齐水位 match · 40 单棒零落码） |
 | （无进行中 task） | 2026-10-18：**单档关账** `task_ruff_baseline_cleanup`（PR #274 合 · squash `b73bb8a` · ruff check 52→0 · format 223→0 · CI 接 ruff==0.15.21 闸） |
 | （无进行中 task） | 2026-10-18：**单档关账** `task_local_qdrant_orphan_points_cleanup`（PR #272 合 · squash `6ee1f61` · 8574 孤儿点白名单批删 · 删后水位 verdict=match 0/0/0 · 快照备份留存本机） |
 | （无进行中 task） | 2026-10-17：**单档关账** `task_local_vector_data_state_audit`（PR #270 合 · squash `1570f82` · 溯源钉死：8574=08-18 迁移期正常重迁 · PG 表级清空非库重建 · 清理处置另立 task） |
