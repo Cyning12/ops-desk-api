@@ -1,6 +1,6 @@
 # Task：ruff-baseline-cleanup（A1 方向 · ruff 存量基线漂移收口：52 错清零 + format 漂移量化/收口 + CI 闸实况裁定）
 
-> **状态**：draft（2026-10-18 10-task 落稿 · 三闸全 pending 未代签 · 零 git 操作 · 零码改）
+> **状态**：done（2026-10-18 CLOSE · PR #274 MERGED squash b73bb8a · TC-RC-1~8 全 PASS · ruff check 52→0 · format 223→0（326 全 formatted）· CI 接入 ruff==0.15.21 闸 · F811×9 裁定删死码 262 行 · 归档 done/）
 > **类型**：代码质量基线收口（**有码改 · 30 棒 worktree PR 流** · lint/format 机械修复为主 + 24 处人工裁定）
 > **上游**：维护者 2026-10-18 会话 m01071「开始A1」选定方向 A1（ruff 存量基线漂移收口）· 00 委派 10 起草（实证基线 00 亲跑提供，本帽已亲跑复核，见「实证锚点」）
 > **分支**：`task/ruff-baseline-cleanup`（30 开工时自 master 切出 · 本帽零 git 操作）
@@ -191,3 +191,4 @@ ruff 配置在库已久但存量违规扩散（52 错）且 format 漂移 223 �
 |------|------|
 | 2026-10-18 | 10-task 落稿（A1 方向 · 实证基线 10 亲跑复核：ruff 0.15.21 · check 52 错 13 类 28 可自动修 · format 223 文件漂移 · CI ruff 段注释未接闸 · pytest 本地基线 19 红 · 三闸 pending/GRAPH n/a 未代签 · 零 git 操作零码改） |
 | 2026-10-18 | 30 修复执行回填：TC-RC-1..8 全 PASS（statistics 52→0 · format 223→0 · F811 九对全 IDENTICAL 删死码 · 本地红集与基线 19 逐名全等零新增红 · CI 接 ruff==0.15.21 闸 · diff 全白名单）· 自检结论节实填 · 30 invoke 落盘 |
+| 2026-10-18 | 50 CLOSE（维护者 m01131 授权合并+关账）：PR #274 squash b73bb8a 已并 · 归档 done/ · 状态行 CLOSED · README 登记 · invoke_20261018_50_close.md 落盘 |
