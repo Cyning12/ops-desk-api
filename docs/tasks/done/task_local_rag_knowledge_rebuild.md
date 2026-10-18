@@ -1,6 +1,6 @@
 # Task：local-rag-knowledge-rebuild（B2 · 本地 RAG 知识库重建：语料→embedding→PG ops_knowledge_chunks + Qdrant ops_knowledge 双侧重灌 · 含写动作）
 
-> **状态**：done（2026-10-18 40 实证执行完成：8648/8648/8648 三对照 · 水位 verdict=match · DLQ=0 · 规模 8648∈[6000,12000] · 降级向量抽检锚 issue#2720 双中 · 零落码零 diff · pytest 13 passed · LINT PASS；报告 reports/local_rag_knowledge_rebuild_20261018T0731Z.md）
+> **状态**：done（2026-10-18 CLOSE · PR #276 MERGED squash 8ac8ec0 · TC-RK-1~7 全 PASS · 8648/8648/8648 三对照水位 match · 规模落区间 · 归档 done/ · CLOSE 档 ../close/close_local_rag_knowledge_rebuild_20261018.md）
 > **类型**：本地运维重建（**含写动作——PG ops_knowledge_chunks 写入 + Qdrant ops_knowledge 点写入**；建议零落码 · 40 实证执行棒 · 承 task_local_qdrant_orphan_points_cleanup 先例）
 > **上游**：本地向量数据态三线闭合（2026-10-18）：水位亲跑 mismatch（PG 0 / Qdrant 8574）→ [`task_local_vector_data_state_audit.md`](../done/task_local_vector_data_state_audit.md) 溯源判定 8574 为迁移期正当重迁 + PG 表级清空 → [`task_local_qdrant_orphan_points_cleanup.md`](../done/task_local_qdrant_orphan_points_cleanup.md) 删 8574。现状：ops_knowledge_chunks=0 行 · Qdrant ops_knowledge=0 points · 水位 verdict=match（0/0/0）——**本地 RAG 无知识可检**。维护者 2026-10-18（会话 m01159）授权自动推进 B2=本地 RAG 知识库重建
 > **分支**：无（建议零落码 · 零 git 操作纪律；报告/invoke 产物提交与否由 00/维护者事后裁定）
@@ -219,3 +219,4 @@ F1 前置核验（容器/密钥/collection 三面实证 · 缺一降级不硬闯
 |------|------|
 | 2026-10-18 | 40 实证执行完成（F1–F5 全链落档：8648/8648/8648 三对照 · 水位 match · DLQ=0 · 规模 8648∈[6000,12000] 对照历史 8574 · 降级向量抽检锚双中显式标注 · 两环境级失败+一编排事故全照登零遮掩 · 零落码零 diff · pytest 13 passed · LINT PASS；报告 reports/local_rag_knowledge_rebuild_20261018T0731Z.md · invoke_20261018_40_rebuild.md） |
 | 2026-10-18 | 10-task 落稿（B2 本地 RAG 知识库重建 · 含写动作 PG+Qdrant 双侧重灌 · 实证锚点 13 项全亲跑亲读：语料源 881+1855 units/0 chunks/0 dlq · 双容器 healthy · SILICONFLOW_API_KEY 存在 · collection green dim=1024 points=0 · 历史 8574 基准 · 金样 73 条锚依赖 · expand_synthetic 不适用实证 · 规模裁定 [6000,12000] 区间对照历史量级 · 执行棒裁定=40 单棒零落码承 orphan cleanup 先例 · 三闸 DRAFT/AUDIT pending · GRAPH n/a 未代签 · 零 git 操作零码改） |
+| 2026-10-18 | 50 CLOSE（维护者 m01159 授权链自动推进）：PR #276 squash 8ac8ec0 已并 · 归档 done/ · 状态行 CLOSED · README 登记 · invoke_20261018_50_close.md 落盘 |
