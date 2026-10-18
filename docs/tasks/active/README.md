@@ -4,6 +4,7 @@
 
 | task | 说明 |
 |---|---|
+| （无进行中 task） | 2026-10-18：**单档关账** `task_local_qdrant_orphan_points_cleanup`（PR #272 合 · squash `6ee1f61` · 8574 孤儿点白名单批删 · 删后水位 verdict=match 0/0/0 · 快照备份留存本机） |
 | （无进行中 task） | 2026-10-17：**单档关账** `task_local_vector_data_state_audit`（PR #270 合 · squash `1570f82` · 溯源钉死：8574=08-18 迁移期正常重迁 · PG 表级清空非库重建 · 清理处置另立 task） |
 | （无进行中 task） | 2026-10-17：**单档关账** `task_vector_waterline_local_rerun`（PR #268 合 · squash `e20bc4d` · TC-WL-5 开账本地亲跑 · TC-LR-1~6 全 PASS · mismatch 8574 上抛另立核查 task · 降级三态真实生效照登） |
 | （无进行中 task） | 2026-10-17：**单档关账** `task_graph_json_freeze_date_pin`（PR #266 合 · squash `72b5740` · graph.json freeze_id/generated_at 脱日期化：内容 hash 派生 `<sha256-16hex>`（对齐 md 内容戳先例）· 同输入三跑字节级一致（TZ 扰动/异绝对路径/CI 容器 · sha256=7d84fdc6…）· spec-wave check 零 freeze 断言先实证后定案（FP-1）· TC-1~6 全 PASS · 钉版 3.3.0 零 diff · 零 app/ diff）归档至 `done/`；CLOSE 文档 `docs/tasks/close/close_graph_json_freeze_date_pin_20261017.md`；R1 审查文随 PR #266 落址A |
