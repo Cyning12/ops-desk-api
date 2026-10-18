@@ -48,6 +48,7 @@ def _clean_budget_state(monkeypatch):
     yield
     llm_budget.reset()
 
+
 class _FakeProvider(BaseProviderImpl):
     """记录每次真实出网调用的 model；末帧带 usage（走真记账钩点）。"""
 
@@ -59,9 +60,7 @@ class _FakeProvider(BaseProviderImpl):
     async def complete_stream(self, messages, model=None):
         self.calls.append(model)
         yield LlmChunk(content=f"ok:{model}")
-        yield LlmChunk(
-            content="", meta={"usage": {"prompt_tokens": 10, "completion_tokens": 5}}
-        )
+        yield LlmChunk(content="", meta={"usage": {"prompt_tokens": 10, "completion_tokens": 5}})
 
 
 class _FlashFailsProvider(BaseProviderImpl):
@@ -84,6 +83,7 @@ async def _collect(provider, messages, *, model=None):
 
 def _degraded_chunks(chunks):
     return [c for c in chunks if (c.meta or {}).get("degraded") is True]
+
 
 class TestBudgetDeclaration:
     """D1 · 两级声明解析。"""
@@ -113,6 +113,7 @@ class TestBudgetDeclaration:
         assert llm_budget.effective_mode("answer") == "enforce"
         assert llm_budget.effective_mode("grader") == "enforce"
         assert llm_budget.effective_mode("summary") == "observe"
+
 
 class TestCheckpoint:
     """D1 · 检查点三档 + 预估下限 + 记账覆盖（变异检验③锚点：
@@ -198,6 +199,7 @@ class TestCheckpoint:
         assert snap["sessions"]["r1"] == 1000
         assert snap["tasks"]["grader"] == 1000
 
+
 class TestStreamingNotCutMidFlight:
     """D1 · 进行中流不截断：调用中超限不截流，超限在下一次调用前拦截。"""
 
@@ -216,6 +218,7 @@ class TestStreamingNotCutMidFlight:
         degraded = _degraded_chunks(second)
         assert degraded, "第二次调用应走降级链（ok=True 也可能降级）"
         assert provider.calls == ["big/model", "deepseek-ai/DeepSeek-V4-Flash"]
+
 
 class TestDegradeChain:
     """D2 · 耗尽降级链（防假降级 U3 · 变异检验①锚点：
@@ -306,6 +309,7 @@ class TestDegradeChain:
         assert not _degraded_chunks(chunks)
         assert llm_budget.snapshot()["sessions"] == {}
 
+
 class TestFallbackChainDeclaration:
     """D4 · catalog 链声明解析（非法档过滤+warning · 去环 · 链长≤3）。"""
 
@@ -362,6 +366,7 @@ class TestFallbackChainDeclaration:
             chain = resolve_fallback_chain("answer")
         assert len(chain) == 3
         assert any("链长上限" in r.message for r in caplog.records)
+
 
 class TestCostPerSuccessfulTask:
     """D5 · Cost per Successful Task 聚合口径（缺单价 unknown 不伪造 0）。"""

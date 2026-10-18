@@ -1,4 +1,5 @@
 """LLM provider shared schemas."""
+
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterable

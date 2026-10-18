@@ -100,23 +100,17 @@ def check_invoke(
 
     # H4 写操作闸：与 risk_level **独立**（medium + write 亦默认拒）
     if spec.side_effect in WRITE_SIDE_EFFECTS and not write_allowed(ctx):
-        return PolicyDecision(
-            False, format_error(POLICY_BLOCKED, "write_not_confirmed")
-        )
+        return PolicyDecision(False, format_error(POLICY_BLOCKED, "write_not_confirmed"))
 
     if spec.kind == "sandbox" and not (
         _env_bool(_ENV_ALLOW_SANDBOX) or host.get("allow_sandbox") is True
     ):
         return PolicyDecision(False, format_error(POLICY_BLOCKED, "sandbox_disabled"))
 
-    if spec.kind == "cli" and not (
-        _env_bool(_ENV_ALLOW_CLI) or host.get("allow_cli") is True
-    ):
+    if spec.kind == "cli" and not (_env_bool(_ENV_ALLOW_CLI) or host.get("allow_cli") is True):
         return PolicyDecision(False, format_error(POLICY_BLOCKED, "cli_disabled"))
 
     if getattr(spec, "tenant_scoped", False) and _tenant_predicate(ctx) is None:
-        return PolicyDecision(
-            False, format_error(POLICY_BLOCKED, "tenant_scope_missing")
-        )
+        return PolicyDecision(False, format_error(POLICY_BLOCKED, "tenant_scope_missing"))
 
     return PolicyDecision(True, None)

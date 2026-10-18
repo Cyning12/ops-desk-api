@@ -103,17 +103,30 @@ def test_aggregate_capability_hit_and_unknown():
     )
     assert ok["dict_key"] == KEY_CAPABILITY_HIT
     assert ok["value"] == pytest.approx(0.75)
-    unknown = aggregate_capability_hit(
-        [{"capability_id": "a", "ok": True}, {"capability_id": "b"}]
-    )
+    unknown = aggregate_capability_hit([{"capability_id": "a", "ok": True}, {"capability_id": "b"}])
     assert unknown["value"] == "unknown"
 
 
 def test_cost_parity_with_budget_function():
     rows = [
-        {"run_id": "r1", "model": "deepseek-ai/DeepSeek-V4-Flash", "prompt_tokens": 1000, "completion_tokens": 1000},
-        {"run_id": "r1", "model": "deepseek-ai/DeepSeek-V4-Flash", "prompt_tokens": 1000, "completion_tokens": 1000},
-        {"run_id": "r2", "model": "Qwen/Qwen3.6-27B", "prompt_tokens": 1000, "completion_tokens": 0},
+        {
+            "run_id": "r1",
+            "model": "deepseek-ai/DeepSeek-V4-Flash",
+            "prompt_tokens": 1000,
+            "completion_tokens": 1000,
+        },
+        {
+            "run_id": "r1",
+            "model": "deepseek-ai/DeepSeek-V4-Flash",
+            "prompt_tokens": 1000,
+            "completion_tokens": 1000,
+        },
+        {
+            "run_id": "r2",
+            "model": "Qwen/Qwen3.6-27B",
+            "prompt_tokens": 1000,
+            "completion_tokens": 0,
+        },
     ]
     via_sli = aggregate_cost(rows)
     via_budget = cost_per_successful_task(
@@ -132,8 +145,18 @@ def test_cost_parity_with_budget_function():
 def test_cost_missing_price_unknown_not_zero():
     out = aggregate_cost(
         [
-            {"run_id": "r1", "model": "deepseek-ai/DeepSeek-V4-Flash", "prompt_tokens": 1000, "completion_tokens": 1000},
-            {"run_id": "r2", "model": "no/such-model", "prompt_tokens": 1000, "completion_tokens": 1000},
+            {
+                "run_id": "r1",
+                "model": "deepseek-ai/DeepSeek-V4-Flash",
+                "prompt_tokens": 1000,
+                "completion_tokens": 1000,
+            },
+            {
+                "run_id": "r2",
+                "model": "no/such-model",
+                "prompt_tokens": 1000,
+                "completion_tokens": 1000,
+            },
         ]
     )
     assert out["value"] == "unknown"

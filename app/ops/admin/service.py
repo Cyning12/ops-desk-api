@@ -1,4 +1,5 @@
 """Admin sync business logic."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -34,8 +35,11 @@ def _normalize_datetimes(obj: dict) -> dict:
             result[key] = _normalize_datetimes(value)
         elif isinstance(value, list):
             result[key] = [
-                _normalize_datetimes(item) if isinstance(item, dict) else
-                _to_naive_utc(item) if isinstance(item, datetime) else item
+                _normalize_datetimes(item)
+                if isinstance(item, dict)
+                else _to_naive_utc(item)
+                if isinstance(item, datetime)
+                else item
                 for item in value
             ]
         else:
@@ -65,15 +69,11 @@ async def process_sync_payload(
     }
 
     # Upsert repo by full_name first, then by github_repo_id if provided.
-    result = await db.execute(
-        select(OpsRepo).where(OpsRepo.full_name == payload.repo.full_name)
-    )
+    result = await db.execute(select(OpsRepo).where(OpsRepo.full_name == payload.repo.full_name))
     repo = result.scalar_one_or_none()
     if repo is None and payload.repo.github_repo_id is not None:
         result = await db.execute(
-            select(OpsRepo).where(
-                OpsRepo.github_repo_id == payload.repo.github_repo_id
-            )
+            select(OpsRepo).where(OpsRepo.github_repo_id == payload.repo.github_repo_id)
         )
         repo = result.scalar_one_or_none()
     repo_data = _normalize_datetimes(payload.repo.model_dump())

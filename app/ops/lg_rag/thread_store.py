@@ -1,4 +1,5 @@
 """lg-rag thread SoT：独立表加载 / 归属校验 / 落盘（不依赖 chat/session）。"""
+
 from __future__ import annotations
 
 import logging
@@ -75,22 +76,12 @@ async def persist_thread_turns(
                 db.add(OpsLgRagThread(id=thread_id, user_id=user_id))
                 await db.flush()
             elif str(row.user_id) != str(user_id):
-                logger.warning(
-                    "lg-rag persist skipped foreign thread_id=%s", thread_id
-                )
+                logger.warning("lg-rag persist skipped foreign thread_id=%s", thread_id)
                 return
             if query:
-                db.add(
-                    OpsLgRagTurn(
-                        thread_id=thread_id, role="user", content=query
-                    )
-                )
+                db.add(OpsLgRagTurn(thread_id=thread_id, role="user", content=query))
             if answer:
-                db.add(
-                    OpsLgRagTurn(
-                        thread_id=thread_id, role="assistant", content=answer
-                    )
-                )
+                db.add(OpsLgRagTurn(thread_id=thread_id, role="assistant", content=answer))
             owned = await db.get(OpsLgRagThread, thread_id)
             if owned is not None:
                 owned.updated_at = now_utc()

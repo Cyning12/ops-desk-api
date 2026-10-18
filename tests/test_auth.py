@@ -1,4 +1,5 @@
 """Tests for auth endpoints and session dependencies."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -81,7 +82,9 @@ async def test_login_expired_token(client: AsyncClient) -> None:
 
     async with AsyncSessionLocal() as db:
         await db.execute(delete(OpsUser).where(OpsUser.username == "expired-user"))
-        await db.execute(delete(OpsInviteToken).where(OpsInviteToken.token == hash_token(plaintext_invite)))
+        await db.execute(
+            delete(OpsInviteToken).where(OpsInviteToken.token == hash_token(plaintext_invite))
+        )
         await db.commit()
 
 
@@ -125,9 +128,7 @@ async def test_admin_sync_requires_auth(client: AsyncClient) -> None:
     assert response.status_code == 401
 
 
-async def test_admin_sync_viewer_forbidden(
-    client: AsyncClient, override_auth_viewer
-) -> None:
+async def test_admin_sync_viewer_forbidden(client: AsyncClient, override_auth_viewer) -> None:
     """POST /admin/sync as viewer returns 403."""
     response = await client.post(
         "/api/ops/admin/sync",
@@ -140,9 +141,7 @@ async def test_admin_sync_viewer_forbidden(
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
-async def test_admin_sync_maintainer_allowed(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_admin_sync_maintainer_allowed(client: AsyncClient, override_auth_maintainer) -> None:
     """POST /admin/sync as maintainer returns 202."""
     response = await client.post(
         "/api/ops/admin/sync",

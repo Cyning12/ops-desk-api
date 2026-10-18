@@ -52,7 +52,7 @@ class _CountingProvider(BaseProviderImpl):
 
     PROVIDER_NAME = "fake-cache"
 
-    def __init__(self, text: str = "{\"plan\": []}") -> None:
+    def __init__(self, text: str = '{"plan": []}') -> None:
         self.llm_calls = 0
         self._text = text
 
@@ -69,6 +69,7 @@ def _msgs(text: str = "same input"):
 
     return [LlmMessage(role="user", content=text)]
 
+
 class TestCacheHitSkipsLlm:
     """D3 · 命中跳过 LLM（mock 计数断言）。"""
 
@@ -78,7 +79,7 @@ class TestCacheHitSkipsLlm:
         with use_run_context(run_id="r1", task_type="structured"):
             first = await provider.complete(_msgs(), model="m/structured")
             second = await provider.complete(_msgs(), model="m/structured")
-        assert first == second == "{\"plan\": []}"
+        assert first == second == '{"plan": []}'
         assert provider.llm_calls == 1, "第二次同键调用应命中缓存 · 零出网"
         snap = infer_cache.snapshot()
         assert snap["hits"] == 1
@@ -110,6 +111,7 @@ class TestCacheHitSkipsLlm:
             await provider.complete(_msgs("input A"), model="m/structured")
             await provider.complete(_msgs("input B"), model="m/structured")
         assert provider.llm_calls == 2
+
 
 class TestCacheInvalidation:
     """D3 · 失效三触发（版本入键 · 旧条目自然 miss）。"""
@@ -164,6 +166,7 @@ class TestCacheInvalidation:
             await provider.complete(_msgs(), model="m/structured")
             assert provider.llm_calls == 2, "集中声明 bump → 全键自然 miss"
 
+
 class TestCacheMechanics:
     """D3 · TTL / LRU / 键形态（不记内容）。"""
 
@@ -193,9 +196,7 @@ class TestCacheMechanics:
         assert infer_cache.snapshot()["evicted"] == 1
 
     def test_key_is_hash_no_plaintext(self):
-        key = make_key(
-            "structured", "m/x", input_parts=["敏感原文"], prompt_version="v1"
-        )
+        key = make_key("structured", "m/x", input_parts=["敏感原文"], prompt_version="v1")
         assert "敏感原文" not in key
         assert len(key) == 64  # sha256 hex
 
@@ -203,6 +204,7 @@ class TestCacheMechanics:
         snap = infer_cache.snapshot()
         assert snap["scope"] == "process-local"
         assert snap["enabled"] is False
+
 
 class TestDeclarativeDegradeGuard:
     """D4 · 集中性守护：调用点零硬编码降级模型（grep 守护断言）。
@@ -232,8 +234,8 @@ class TestDeclarativeDegradeGuard:
             for model in chain_models:
                 if model in text:
                     offenders.append(f"{path.relative_to(_REPO_ROOT)}: {model}")
-        assert not offenders, (
-            "调用点硬编码降级模型（降级目标只能由 catalog 声明）：" + "; ".join(offenders)
+        assert not offenders, "调用点硬编码降级模型（降级目标只能由 catalog 声明）：" + "; ".join(
+            offenders
         )
 
     def test_resolve_fallback_chain_single_consumer(self):

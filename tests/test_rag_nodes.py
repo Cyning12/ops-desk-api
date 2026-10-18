@@ -1,4 +1,5 @@
 """R-3 接线节点单测（gate 路由 / 拒答 / 引用卡片映射）。"""
+
 from app.ops.chat.rag_nodes import _to_source, refuse_node, route_by_gate
 from app.ops.rag.grader import REFUSAL_TEXT
 from app.ops.rag.retrieve import RetrievedChunk

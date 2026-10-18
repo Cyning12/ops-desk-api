@@ -77,10 +77,10 @@ def utc_now_iso(_payload: str) -> dict:
 def testing_write_echo(payload: Any) -> dict:
     """测试专用罐头：写操作**语义 mock · 无真实写操作**。
 
-    供 `manifests/testing.v1.yaml` 的 `testing.write.echo` 使用
-   （仅 `OPS_CAPABILITY_EXTRA_MANIFESTS` 显式加载 · 不进 `_DEFAULT_SPECS`）。
-    纯函数返回罐头 dict：**零 IO · 零 DB · 零外网 · 零文件写 · 零 subprocess**
-   （函数体不 import 任何 IO 库，对齐 `utc_now_iso` 范式）。
+     供 `manifests/testing.v1.yaml` 的 `testing.write.echo` 使用
+    （仅 `OPS_CAPABILITY_EXTRA_MANIFESTS` 显式加载 · 不进 `_DEFAULT_SPECS`）。
+     纯函数返回罐头 dict：**零 IO · 零 DB · 零外网 · 零文件写 · 零 subprocess**
+    （函数体不 import 任何 IO 库，对齐 `utc_now_iso` 范式）。
     """
     return {
         "tool": "testing_write_echo",

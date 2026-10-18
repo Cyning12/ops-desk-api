@@ -1,4 +1,5 @@
 """Tests for chat LangGraph nodes."""
+
 from __future__ import annotations
 
 from app.llm.schema import LlmChunk, LlmMessage

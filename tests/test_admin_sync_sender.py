@@ -1,4 +1,5 @@
 """Admin sync sender：映射、GitHub mock、POST mock（无外网）。"""
+
 from __future__ import annotations
 
 import io

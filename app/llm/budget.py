@@ -91,6 +91,7 @@ _BLOCKED = 0
 _WOULD_BLOCK = 0
 _EVICTED_SESSIONS = 0
 
+
 def _env_int(name: str, default: int) -> int:
     """读 env；非法 / 负值一律回退默认（承 step_contract._env_int 纪律）。"""
     raw = os.environ.get(name, "").strip()
@@ -131,6 +132,7 @@ def limits() -> dict[str, int]:
         "task_tokens": _env_int(ENV_TASK_TOKENS, 0),
     }
 
+
 def _session_key(ctx: LlmRunContext) -> str:
     """会话维度 = run_id（usage ContextVar 同源）；缺失 → 匿名共享桶（不因此
     放行：匿名调用照样计数，否则无上下文就成绕过捷径——承
@@ -153,6 +155,7 @@ def estimate_tokens(task_type: str | None) -> int:
     ordered = sorted(samples)
     p50 = ordered[len(ordered) // 2]
     return max(floor, int(p50 * _P50_LOWER_FACTOR))
+
 
 @dataclass(frozen=True)
 class BudgetVerdict:
@@ -178,6 +181,7 @@ class BudgetVerdict:
 
 _VERDICT_OFF = BudgetVerdict(allowed=True, mode=MODE_OFF)
 
+
 def check_budget(task_type: str | None, *, ctx: LlmRunContext | None = None) -> BudgetVerdict:
     """预算检查点（Q1 单检查点 · 调用前判定 · 纯读计数不记账）。
 
@@ -198,9 +202,7 @@ def check_budget(task_type: str | None, *, ctx: LlmRunContext | None = None) -> 
         task_used = _TASKS.get(task, 0) if task in TASK_TYPES else 0
 
     task_limited = task in TASK_TYPES and lim["task_tokens"] > 0
-    over_session = lim["session_tokens"] > 0 and (
-        session_used + estimated > lim["session_tokens"]
-    )
+    over_session = lim["session_tokens"] > 0 and (session_used + estimated > lim["session_tokens"])
     over_task = task_limited and (task_used + estimated > lim["task_tokens"])
     over = over_session or over_task
 
@@ -235,6 +237,7 @@ def check_budget(task_type: str | None, *, ctx: LlmRunContext | None = None) -> 
         task_limit=lim["task_tokens"] if task_limited else 0,
         estimated_tokens=estimated,
     )
+
 
 def record_actual(
     task_type: str | None,
@@ -271,6 +274,7 @@ def record_actual(
                 _SAMPLES[task] = buf
             buf.append(tokens)
 
+
 # ---- D2 · 防假降级标记（U3：标记跟数据走 · ok=True 也可能降级）----
 
 META_DEGRADED = "degraded"
@@ -290,6 +294,7 @@ def degraded_meta(task_type: str | None, chain_used: list[str] | tuple[str, ...]
         META_DEGRADE_REASON: DEGRADE_REASON_BUDGET_EXHAUSTED,
         META_DEGRADE_CHAIN: [task_type or "", *[str(c) for c in chain_used]],
     }
+
 
 # ---- D5 · 指标面：Cost per Successful Task（估算口径 · 非对账）----
 
@@ -334,6 +339,7 @@ def cost_per_successful_task(
         "basis": "estimate_only_not_billing",
     }
 
+
 # ---- 观测（记动作不记内容 · span metadata 失败不挡主流程）----
 
 
@@ -369,6 +375,7 @@ def report_estimated_cost(model: str | None, prompt_tokens: int, completion_toke
     """估算成本进 span metadata（缺单价 → unknown 不伪造 0 · FP-7）。"""
     cost = estimate_cost(model, prompt_tokens, completion_tokens)
     report_span({"llm_estimated_cost": cost if cost is not None else "unknown"})
+
 
 def reset(*, key: str | None = None) -> None:
     """清空计数（测试**必须**每个用例前调一次：进程内全局状态，承先例）。"""

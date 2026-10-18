@@ -294,8 +294,7 @@ def _delegation_gate(
         return None
     cid = capability_id or ""
     subject = {
-        key: (ctx or {}).get(key)
-        for key in ("tenant_id", "user_id", "run_id", "subtask_id")
+        key: (ctx or {}).get(key) for key in ("tenant_id", "user_id", "run_id", "subtask_id")
     }
     verdict = delegation.verify_serialized(
         ctx.get("_delegation_token"),
@@ -323,9 +322,7 @@ def _delegation_gate(
         return None
     result = CapabilityResult(
         ok=False,
-        error=format_error(
-            PERMISSION_DENIED, f"delegation {verdict.reject_class}"
-        ),
+        error=format_error(PERMISSION_DENIED, f"delegation {verdict.reject_class}"),
         capability_id=cid,
         duration_ms=0.0,
         meta={
@@ -583,9 +580,7 @@ def _result_contract_verdict(spec: CapabilitySpec, output: Any) -> Any:
     """未声明契约 → ``None``（**不做任何推测性拦截**，契约是显式声明出来的）。"""
     if spec.output_schema is None:
         return None
-    return validate_result_contract(
-        spec.output_schema, _contract_payload(spec, output)
-    )
+    return validate_result_contract(spec.output_schema, _contract_payload(spec, output))
 
 
 def _fail_result(
@@ -871,22 +866,16 @@ def _degrade(
         nxt = chain.next(target, max_depth=depth)
         if nxt is None:
             return None  # 成环 / 深度到顶（B3）
-        mapped = fallback_mod.map_args(
-            args, fallback_mod.plan_of(spec).get("args_map")
-        )
+        mapped = fallback_mod.map_args(args, fallback_mod.plan_of(spec).get("args_map"))
         # 走**内部**分派而非公开 invoke：降级目标也是一次真实调用，
         # 必须同样过 Policy / 熔断 / 配额 / 参数校验，但不重复计一次指标。
-        inner = _dispatch(
-            target, mode=mode, args=mapped, ctx=ctx, chain=nxt
-        )
+        inner = _dispatch(target, mode=mode, args=mapped, ctx=ctx, chain=nxt)
         if not inner.ok:
             return None  # 降级目标也失败 → 不降级（明确失败优于静默兜底）
         output: Any = inner.output
         extra: dict[str, Any] = {"degraded_to": target}
     elif action == fallback_mod.ACTION_CACHE:
-        hit = fallback_mod.recall(
-            cid, args=args, ctx=ctx, ttl_seconds=fallback_mod.ttl_of(spec)
-        )
+        hit = fallback_mod.recall(cid, args=args, ctx=ctx, ttl_seconds=fallback_mod.ttl_of(spec))
         if hit is None:
             return None  # 没缓存 / 已过期 → 不降级（陈旧数据比报错更危险）
         output, stored_at = hit
@@ -1012,9 +1001,7 @@ def _degraded_result(
     # ★ 标记必须跟着**数据**走：模型看不到 meta，它只看工具输出。
     # 不 inject 的话，模型会拿着静态兜底/过期缓存当真实结果写进答复，语气还很确定
     # ——这是最坏的一种静默错误，所以宁可污染输出也不能漏。
-    output, inline = fallback_mod.annotate_output(
-        output, cid=cid, action=action, meta=meta
-    )
+    output, inline = fallback_mod.annotate_output(output, cid=cid, action=action, meta=meta)
     meta["degraded_marker_inline"] = inline
 
     result = CapabilityResult(
@@ -1078,9 +1065,7 @@ def _dispatch(
         if mode == "provide":
             provide_fn = getattr(adapter, "provide", None)
             if not callable(provide_fn):
-                return _missing_provide_result(
-                    spec=spec, cid=cid, started=started, ctx=ctx
-                )
+                return _missing_provide_result(spec=spec, cid=cid, started=started, ctx=ctx)
             output = provide_fn(ctx=ctx)
         else:
             # 熔断：状态机交给 pybreaker（业务类异常被 exclude 掉，不计入熔断）。
@@ -1216,16 +1201,12 @@ async def _adispatch(
         if mode == "provide":
             provide_fn = getattr(adapter, "provide", None)
             if not callable(provide_fn):
-                return _missing_provide_result(
-                    spec=spec, cid=cid, started=started, ctx=ctx
-                )
+                return _missing_provide_result(spec=spec, cid=cid, started=started, ctx=ctx)
         # 同同步路径：provide 不走熔断；invoke 由 guard 驱动状态机。
         # ``await`` 写在 with 体内是合法的——guard 是同步上下文管理器，
         # pybreaker 的 call_async 是 Tornado-only，不能用于 asyncio。
         with circuit.guard(spec):
-            output = await _call_adapter_async(
-                adapter, mode=mode, args=args, ctx=ctx
-            )
+            output = await _call_adapter_async(adapter, mode=mode, args=args, ctx=ctx)
         return await _aok_result(
             spec=spec,
             cid=cid,
@@ -1298,10 +1279,7 @@ def _args_summary(args: Any) -> str:
         redacted: dict[str, Any] = {}
         for key, value in args.items():
             low = str(key).lower()
-            if any(
-                s in low
-                for s in ("secret", "token", "password", "api_key", "credential")
-            ):
+            if any(s in low for s in ("secret", "token", "password", "api_key", "credential")):
                 redacted[key] = "***"
             else:
                 redacted[key] = value

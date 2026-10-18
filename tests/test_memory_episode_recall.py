@@ -8,6 +8,7 @@ DB 段（skipif 无 PG）：零互写双向表计数对拍（变异检验①锚�
 
 ⚠️ 全文件 async def（asyncio_mode=auto）；DB 段 fixture 清 ep-test-% 行。
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -65,9 +66,7 @@ def _patch_episode_recall(monkeypatch: pytest.MonkeyPatch, *, episodes=None, err
         if error is not None
         else AsyncMock(return_value=episodes or [])
     )
-    monkeypatch.setattr(
-        "app.ops.memory.episode_service.recall_success_episodes", mock
-    )
+    monkeypatch.setattr("app.ops.memory.episode_service.recall_success_episodes", mock)
     return mock
 
 
@@ -127,9 +126,7 @@ def test_episodes_max_items_default_and_fallback(monkeypatch: pytest.MonkeyPatch
     assert memory_episodes_max_items() == 5
 
 
-async def test_episodes_enabled_but_missing_tenant_skips(
-    monkeypatch: pytest.MonkeyPatch, caplog
-):
+async def test_episodes_enabled_but_missing_tenant_skips(monkeypatch: pytest.MonkeyPatch, caplog):
     monkeypatch.setenv("MEMORY_EPISODES_ENABLED", "true")
     history = _fixture_turns()
     baseline = assemble_graph_messages("q", history)
@@ -192,9 +189,7 @@ async def test_episode_recall_called_with_tenant_and_fingerprint(
         intent_features={"needs_tool": True},
         tool_sequence=["logs.read"],
     )
-    expected_fp = compute_context_fingerprint(
-        "ops_kb", {"needs_tool": True}, ["logs.read"]
-    )
+    expected_fp = compute_context_fingerprint("ops_kb", {"needs_tool": True}, ["logs.read"])
     mock.assert_awaited_once()
     args, kwargs = mock.await_args
     assert args[0] == "ops-desk-pilot"
@@ -210,9 +205,7 @@ def test_render_episodes_block_empty():
 
 
 def test_render_episodes_block_format():
-    block = render_memory_episodes_block(
-        [_episode_dict("先 A 后 B", ["a.read", "b.write"])]
-    )
+    block = render_memory_episodes_block([_episode_dict("先 A 后 B", ["a.read", "b.write"])])
     lines = block.split("\n")
     assert lines[0] == MEMORY_EPISODES_HEADER
     assert lines[1] == "- 先 A 后 B｜工具: a.read,b.write"
@@ -259,9 +252,7 @@ def _capture_span(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
     from app.ops.lg_rag import continuity
 
     captured: list[dict] = []
-    monkeypatch.setattr(
-        continuity, "update_current_span_metadata", lambda m: captured.append(m)
-    )
+    monkeypatch.setattr(continuity, "update_current_span_metadata", lambda m: captured.append(m))
     return captured
 
 
@@ -343,9 +334,7 @@ async def _clear_test_rows() -> None:
         await session.execute(
             text("DELETE FROM ops_memory_episodes WHERE tenant_id LIKE 'ep-test-%'")
         )
-        await session.execute(
-            text("DELETE FROM ops_memory_facts WHERE tenant_id LIKE 'ep-test-%'")
-        )
+        await session.execute(text("DELETE FROM ops_memory_facts WHERE tenant_id LIKE 'ep-test-%'"))
 
 
 @pytest.fixture(autouse=True)

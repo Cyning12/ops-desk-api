@@ -2,6 +2,7 @@
 
 说明书：docs/guides/DESIGN_langgraph-lg-rag-phase3-selfcorrect_v1.md §7。
 """
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -77,9 +78,7 @@ async def test_medium_quality_no_retry():
 @pytest.mark.asyncio
 async def test_low_triggers_rewrite_and_uses_rewritten_query():
     """low → rewrite → rag 用改写后 query 重试；第二次 high → END。"""
-    chain = AsyncMock(
-        side_effect=[_result("拒答", "refuse", 0), _result("改后好答案", "answer")]
-    )
+    chain = AsyncMock(side_effect=[_result("拒答", "refuse", 0), _result("改后好答案", "answer")])
     provider = _provider('{"route": "rag"}', "改写后的技术问题")
     with (
         patch(_CHAIN_PATCH, new=chain),
@@ -116,9 +115,7 @@ async def test_rewrite_llm_failure_ends_immediately():
     """rewrite LLM 异常 → 清空 current_query 顶格 retry_count → END，不再 rag。"""
     chain = AsyncMock(return_value=_result("拒答", "refuse", 0))
     provider = SimpleNamespace(
-        complete=AsyncMock(
-            side_effect=['{"route": "rag"}', RuntimeError("llm down")]
-        )
+        complete=AsyncMock(side_effect=['{"route": "rag"}', RuntimeError("llm down")])
     )
     with (
         patch(_CHAIN_PATCH, new=chain),

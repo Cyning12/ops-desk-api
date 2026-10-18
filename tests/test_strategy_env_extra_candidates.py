@@ -143,14 +143,9 @@ def test_tc1_env_intersection_visible_semantics_unchanged(monkeypatch: pytest.Mo
         (" , , ", []),  # 全空白=不设
     ],
 )
-def test_tc1_env_parse_cases(
-    monkeypatch: pytest.MonkeyPatch, raw: str, expected: list[str]
-):
+def test_tc1_env_parse_cases(monkeypatch: pytest.MonkeyPatch, raw: str, expected: list[str]):
     monkeypatch.setenv(_ENV, raw)
-    assert (
-        strategy_config.get_candidate_capability_ids(agent_type="no_such_agent")
-        == expected
-    )
+    assert strategy_config.get_candidate_capability_ids(agent_type="no_such_agent") == expected
 
 
 # ---------------- TC1④ 覆盖口隔离 ----------------
@@ -223,9 +218,10 @@ def test_tc2_fp5_deny_order_still_cuts_write_and_high_risk():
         allow_write_tags_any=frozenset({"testing"}),
     )
     assert _match_filter(write_spec, flt) is True  # deny_write 被 tags 豁免（既有语义）
-    assert _match_filter(
-        _spec("x.local.high_write", risk_level="high", side_effect="write"), flt
-    ) is False  # deny_high_risk 判序在前 · 不豁免
+    assert (
+        _match_filter(_spec("x.local.high_write", risk_level="high", side_effect="write"), flt)
+        is False
+    )  # deny_high_risk 判序在前 · 不豁免
 
 
 def test_tc2_fp5_policy_write_gate_still_blocks():

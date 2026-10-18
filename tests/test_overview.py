@@ -1,4 +1,5 @@
 """Tests for the overview metrics endpoint."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -14,8 +15,8 @@ from tests.conftest import DB_AVAILABLE
 
 def test_median_days_odd_sample() -> None:
     pairs = [
-        (datetime(2026, 7, 1), datetime(2026, 7, 2)),   # 1 day
-        (datetime(2026, 7, 1), datetime(2026, 7, 3)),   # 2 days
+        (datetime(2026, 7, 1), datetime(2026, 7, 2)),  # 1 day
+        (datetime(2026, 7, 1), datetime(2026, 7, 3)),  # 2 days
         (datetime(2026, 7, 1), datetime(2026, 7, 11)),  # 10 days
     ]
     assert _median_days(pairs) == {"median_days": 2.0, "sample_size": 3}
@@ -23,11 +24,11 @@ def test_median_days_odd_sample() -> None:
 
 def test_median_days_even_sample_and_invalid_pairs() -> None:
     pairs = [
-        (datetime(2026, 7, 1), datetime(2026, 7, 2)),   # 1 day
-        (datetime(2026, 7, 1), datetime(2026, 7, 4)),   # 3 days
-        (datetime(2026, 7, 1), None),                   # skipped
-        (None, datetime(2026, 7, 4)),                   # skipped
-        (datetime(2026, 7, 5), datetime(2026, 7, 1)),   # end < start, skipped
+        (datetime(2026, 7, 1), datetime(2026, 7, 2)),  # 1 day
+        (datetime(2026, 7, 1), datetime(2026, 7, 4)),  # 3 days
+        (datetime(2026, 7, 1), None),  # skipped
+        (None, datetime(2026, 7, 4)),  # skipped
+        (datetime(2026, 7, 5), datetime(2026, 7, 1)),  # end < start, skipped
     ]
     assert _median_days(pairs) == {"median_days": 2.0, "sample_size": 2}
 
@@ -57,9 +58,7 @@ async def test_overview_empty_state(
     assert data["sync_run"] is None
     assert data["scan_snapshot"] is None
     assert len(data["trend"]) == 30
-    assert all(
-        t["closed_issues"] == 0 and t["merged_prs"] == 0 for t in data["trend"]
-    )
+    assert all(t["closed_issues"] == 0 and t["merged_prs"] == 0 for t in data["trend"])
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
@@ -110,26 +109,45 @@ async def test_overview_with_seeded_data(
         # one closed 60 days ago (outside window), one still open.
         db.add(
             OpsIssue(
-                repo_id=repo.id, number=1, title="a", state="closed",
-                created_at=now - 5 * day, updated_at=now, closed_at=now,
+                repo_id=repo.id,
+                number=1,
+                title="a",
+                state="closed",
+                created_at=now - 5 * day,
+                updated_at=now,
+                closed_at=now,
             )
         )
         db.add(
             OpsIssue(
-                repo_id=repo.id, number=2, title="b", state="closed",
-                created_at=now - 20 * day, updated_at=now, closed_at=now - 10 * day,
+                repo_id=repo.id,
+                number=2,
+                title="b",
+                state="closed",
+                created_at=now - 20 * day,
+                updated_at=now,
+                closed_at=now - 10 * day,
             )
         )
         db.add(
             OpsIssue(
-                repo_id=repo.id, number=3, title="c", state="closed",
-                created_at=now - 70 * day, updated_at=now, closed_at=now - 60 * day,
+                repo_id=repo.id,
+                number=3,
+                title="c",
+                state="closed",
+                created_at=now - 70 * day,
+                updated_at=now,
+                closed_at=now - 60 * day,
             )
         )
         db.add(
             OpsIssue(
-                repo_id=repo.id, number=4, title="d", state="open",
-                created_at=now - 3 * day, updated_at=now,
+                repo_id=repo.id,
+                number=4,
+                title="d",
+                state="open",
+                created_at=now - 3 * day,
+                updated_at=now,
             )
         )
 

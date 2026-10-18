@@ -1,4 +1,5 @@
 """R-4 golden eval runner 纯函数单测（零模型零库）。"""
+
 from pathlib import Path
 
 from app.ops.rag.retrieve import RetrievedChunk

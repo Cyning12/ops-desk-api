@@ -1,4 +1,5 @@
 """Qdrant 影子写：PG commit 之后非阻塞入队；失败进 DLQ，绝不回滚/阻塞 ingest。"""
+
 from __future__ import annotations
 
 import json
@@ -180,6 +181,4 @@ def _write_dlq(
                 },
             )
     except Exception:
-        logger.exception(
-            "write ops_qdrant_dlq failed op=%s ids=%s", op, point_ids[:20]
-        )
+        logger.exception("write ops_qdrant_dlq failed op=%s ids=%s", op, point_ids[:20])

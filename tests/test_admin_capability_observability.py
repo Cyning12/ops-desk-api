@@ -142,9 +142,7 @@ async def test_catalog_lists_visible_and_explains_hidden(client, as_admin):
         assert hidden.get("dept_only_cap") == "department_mismatch"
         assert anon["principal"]["anonymous"] is True
 
-        fin = (
-            await client.get(f"{BASE}/catalog", params={"departments": "finance,hr"})
-        ).json()
+        fin = (await client.get(f"{BASE}/catalog", params={"departments": "finance,hr"})).json()
         assert "dept_only_cap" in fin["visible_ids"]
         assert fin["principal"]["departments"] == ["finance", "hr"]
     finally:
@@ -168,9 +166,7 @@ async def test_catalog_shows_kinds_crop_wins_over_visibility(client, as_admin):
         body = (await client.get(f"{BASE}/catalog")).json()
         assert "untagged_http_cap" not in body["visible_ids"]
         # 不在 hidden 里 —— 它没走到可见性判定，是被形态裁剪掉的
-        assert "untagged_http_cap" not in {
-            h["capability_id"] for h in body["visibility_hidden"]
-        }
+        assert "untagged_http_cap" not in {h["capability_id"] for h in body["visibility_hidden"]}
     finally:
         unregister("untagged_http_cap")
 

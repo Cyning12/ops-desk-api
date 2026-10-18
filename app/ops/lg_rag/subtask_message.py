@@ -6,6 +6,7 @@
 - SUBTASK_MESSAGE_MAX_LEN = 200 统一截断；
 - 未知 step / 缺 detail 走兜底短句（含 step 名），**禁止**空串。
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -47,9 +48,7 @@ def build_subtask_running_message(*, type: str = "", input_preview: str = "") ->
     return f"开始{label}…"
 
 
-def build_subtask_step_message(
-    *, step: str = "", detail: dict[str, Any] | None = None
-) -> str:
+def build_subtask_step_message(*, step: str = "", detail: dict[str, Any] | None = None) -> str:
     """step 帧：step + detail 的确定性模板映射；未知 step 兜底短句。"""
     step = (step or "").strip()
     detail = detail if isinstance(detail, dict) else {}
@@ -95,9 +94,7 @@ def build_subtask_step_message(
     return "子任务进行中"
 
 
-def build_subtask_done_message(
-    *, subtask_result: Any = None, answer_preview: str = ""
-) -> str:
+def build_subtask_done_message(*, subtask_result: Any = None, answer_preview: str = "") -> str:
     """done 帧：基于 subtask_result 轻量键的一句结果摘要（勿塞全文）。"""
     if isinstance(subtask_result, dict):
         error = str(subtask_result.get("error") or "").strip()

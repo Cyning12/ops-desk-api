@@ -16,6 +16,7 @@ supervisor 图会在 observe 里被 interrupt() 挂起等人审批，那一刻�
 推进了，"这次 run 停在哪个 checkpoint"必须已落盘，否则下一个请求（人点批准）
 找不到恢复点。SSE 侧的 saver 由 sse_stream 在整个流期间持有。
 """
+
 from __future__ import annotations
 
 import json
@@ -218,15 +219,11 @@ async def _partial_answer_from_run(run_id: str, user_id: str) -> str:
     from app.ops.lg_rag.event_store import LgRagRunNotFoundError, load_events_after
 
     try:
-        events = await load_events_after(
-            run_id, user_id, 0, refuse_in_flight=False
-        )
+        events = await load_events_after(run_id, user_id, 0, refuse_in_flight=False)
     except LgRagRunNotFoundError:
         return ""
     except Exception:
-        logger.exception(
-            "lg-rag continue_from_run_id load failed run_id=%s", run_id
-        )
+        logger.exception("lg-rag continue_from_run_id load failed run_id=%s", run_id)
         return ""
     parts: list[str] = []
     final = ""
@@ -249,9 +246,7 @@ def _resolve_request_tenant(request: Request) -> str:
     """F1=C：session 真源；头不一致 → 403；未知租户 → 422。"""
     session_tenant = getattr(request.state, "ops_tenant_id", TENANT_A)
     try:
-        return resolve_header_against_session(
-            session_tenant, request.headers.get(TENANT_HEADER)
-        )
+        return resolve_header_against_session(session_tenant, request.headers.get(TENANT_HEADER))
     except ValueError as exc:
         detail = str(exc)
         code = 403 if "mismatch" in detail else 422
@@ -315,9 +310,7 @@ async def invoke_lg_rag(
         return JSONResponse(
             content={
                 "ok": True,
-                "data": serialize_state(
-                    state, mode=body.mode, thread_id=thread_id
-                ).model_dump(),
+                "data": serialize_state(state, mode=body.mode, thread_id=thread_id).model_dump(),
             }
         )
     finally:
@@ -344,14 +337,9 @@ async def stream_lg_rag(
     query = body.query
     # B2 薄：可选 continue_from_run_id → 把旧 run partial 拼进 query 草稿（新 run_id）
     if body.continue_from_run_id:
-        partial = await _partial_answer_from_run(
-            body.continue_from_run_id, str(user.id)
-        )
+        partial = await _partial_answer_from_run(body.continue_from_run_id, str(user.id))
         if partial:
-            query = (
-                f"{body.query}\n\n"
-                f"[继续回复·既有草稿]\n{partial}"
-            )
+            query = f"{body.query}\n\n[继续回复·既有草稿]\n{partial}"
 
     # 先启动 worker（与 HTTP 生命周期解耦），再订阅
     bus = start_run_worker(
@@ -427,10 +415,7 @@ async def replay_lg_rag(
 
     async def event_gen() -> AsyncIterator[str]:
         for ev in events:
-            yield (
-                f"event: {ev['event_type']}\n"
-                f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
-            )
+            yield (f"event: {ev['event_type']}\ndata: {json.dumps(ev, ensure_ascii=False)}\n\n")
 
     return StreamingResponse(
         event_gen(),

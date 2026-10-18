@@ -14,6 +14,7 @@
 ⚠️ 全文件 async def（asyncio_mode=auto）；回填是全表扫描，fixture 清**全表**保确定性
 （opsdesk_test 由 conftest _assert_test_database 强制隔离，删全表安全）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -93,9 +94,10 @@ class RecordingFakeEmbedder:
         if self.on_text is not None:
             for t in texts:
                 self.on_text(t)
-        if list(texts) != [PREFLIGHT_PROBE_TEXT] and (
-            len(self.fact_calls) - 1
-        ) in self.fail_on_fact_calls:
+        if (
+            list(texts) != [PREFLIGHT_PROBE_TEXT]
+            and (len(self.fact_calls) - 1) in self.fail_on_fact_calls
+        ):
             raise httpx.HTTPError("embed down (injected)")
         return [self._vec(t) for t in texts]
 
@@ -198,9 +200,7 @@ def _run(fake: RecordingFakeEmbedder, tmp_path, **kw):
 # ---------------- D1 · 回填主体 ----------------
 
 
-async def test_backfill_embeds_only_active_null_rows(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-):
+async def test_backfill_embeds_only_active_null_rows(monkeypatch: pytest.MonkeyPatch, tmp_path):
     monkeypatch.setenv("RAG_EMBED_MODEL", "fake-embedder")
     fake = RecordingFakeEmbedder()
     user = "u-bf1"
@@ -289,9 +289,7 @@ async def test_preflight_name_mismatch_exit_2(monkeypatch: pytest.MonkeyPatch, t
     assert await _embedding_of(row.id) is None
 
 
-async def test_cli_preflight_failures_exit_2(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-):
+async def test_cli_preflight_failures_exit_2(monkeypatch: pytest.MonkeyPatch, tmp_path):
     """CLI 层（main · 自建引擎 · asyncio.run）：前置校验失败翻译 exit 2，零写入。
 
     main 经 asyncio.to_thread 调用（工作线程无运行中 loop，可自建 asyncio.run）；
@@ -334,9 +332,7 @@ async def test_cli_preflight_failures_exit_2(
     reset_query_embedder_cache()
 
 
-async def test_keyset_pagination_strictly_increasing(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-):
+async def test_keyset_pagination_strictly_increasing(monkeypatch: pytest.MonkeyPatch, tmp_path):
     monkeypatch.setenv("RAG_EMBED_MODEL", "fake-embedder")
     user = "u-keyset"
     rows = [await _write_null(user, f"project.page_{i}", f"v{i}") for i in range(5)]
@@ -348,9 +344,7 @@ async def test_keyset_pagination_strictly_increasing(
     assert report.embedded == 5
     pages = fake.fact_calls
     assert [len(p) for p in pages] == [2, 2, 1]  # 3 页
-    paged_ids = [
-        id_by_key[t.split("=", 1)[0]] for call in pages for t in call
-    ]
+    paged_ids = [id_by_key[t.split("=", 1)[0]] for call in pages for t in call]
     assert len(set(paged_ids)) == 5  # 无重复
     assert paged_ids == sorted(paged_ids)  # id ASC 严格递增（跨页同序）
 
@@ -358,9 +352,7 @@ async def test_keyset_pagination_strictly_increasing(
 # ---------------- D2 · 幂等/续跑/报告 ----------------
 
 
-async def test_idempotent_second_run_zero_embed_calls(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-):
+async def test_idempotent_second_run_zero_embed_calls(monkeypatch: pytest.MonkeyPatch, tmp_path):
     monkeypatch.setenv("RAG_EMBED_MODEL", "fake-embedder")
     user = "u-idem"
     for i in range(3):
@@ -378,9 +370,7 @@ async def test_idempotent_second_run_zero_embed_calls(
     assert len(texts) == len(set(texts)) == 3
 
 
-async def test_resume_after_consecutive_page_failures(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-):
+async def test_resume_after_consecutive_page_failures(monkeypatch: pytest.MonkeyPatch, tmp_path):
     """第 1 页成功后连续 3 页全败 → 终止（status=failed）；重跑补齐且不重复嵌入。"""
     monkeypatch.setenv("RAG_EMBED_MODEL", "fake-embedder")
     user = "u-resume"
@@ -425,9 +415,7 @@ async def test_partial_page_failure_counts_and_rerun_heals(
     assert await _remaining_null_active() == 0
 
 
-async def test_report_yaml_shape_and_conservation(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-):
+async def test_report_yaml_shape_and_conservation(monkeypatch: pytest.MonkeyPatch, tmp_path):
     monkeypatch.setenv("RAG_EMBED_MODEL", "fake-embedder")
     user = "u-report"
     await _write_null(user, "project.rep_0", "v0")
@@ -443,9 +431,19 @@ async def test_report_yaml_shape_and_conservation(
     assert len(files) == 1
     data = yaml.safe_load(files[0].read_text(encoding="utf-8"))
     required = {
-        "status", "dry_run", "scanned", "embedded", "skipped", "failed",
-        "failed_ids", "embedder_name", "batch_size", "sleep_ms",
-        "remaining_null_active", "elapsed_s", "recorded_at",
+        "status",
+        "dry_run",
+        "scanned",
+        "embedded",
+        "skipped",
+        "failed",
+        "failed_ids",
+        "embedder_name",
+        "batch_size",
+        "sleep_ms",
+        "remaining_null_active",
+        "elapsed_s",
+        "recorded_at",
     }
     assert required <= set(data)
     assert data["status"] == "pass"
@@ -457,9 +455,7 @@ async def test_report_yaml_shape_and_conservation(
     datetime.fromisoformat(data["recorded_at"])  # ISO 时间戳可解析
 
 
-def test_env_invalid_fallback_with_warning(
-    monkeypatch: pytest.MonkeyPatch, caplog, tmp_path
-):
+def test_env_invalid_fallback_with_warning(monkeypatch: pytest.MonkeyPatch, caplog, tmp_path):
     logger_name = "scripts.memory_embedding_backfill"
     monkeypatch.delenv("MEMORY_BACKFILL_BATCH_SIZE", raising=False)
     assert backfill_batch_size() == 32
@@ -520,9 +516,7 @@ async def test_dry_run_zero_embed_zero_write(monkeypatch: pytest.MonkeyPatch, tm
 # ---------------- D4 · 对账与金样对照（态② FakeEmbedder 集成夹具轨） ----------------
 
 
-async def test_dry_run_matches_real_run_scanned(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-):
+async def test_dry_run_matches_real_run_scanned(monkeypatch: pytest.MonkeyPatch, tmp_path):
     """同库序 dry-run scanned == 实跑 scanned；实跑后重扫剩余 == failed。"""
     monkeypatch.setenv("RAG_EMBED_MODEL", "fake-embedder")
     user = "u-recon"
@@ -578,9 +572,7 @@ async def test_reconcile_mismatch_marks_failed(monkeypatch: pytest.MonkeyPatch, 
     assert report.remaining_null_active == 1
 
 
-async def test_paraphrase_recall_before_after_backfill(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-):
+async def test_paraphrase_recall_before_after_backfill(monkeypatch: pytest.MonkeyPatch, tmp_path):
     """金样轨态②：存量 NULL 行回填前向量通路不可达（top1 不命中）/ 回填后 top1 命中。"""
     monkeypatch.setenv("RAG_EMBED_MODEL", "fake-embedder")
     fake = RecordingFakeEmbedder()
@@ -596,9 +588,7 @@ async def test_paraphrase_recall_before_after_backfill(
 
     monkeypatch.setenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", "true")
     # 回填前基线：复述 query 经混合召回，存量 NULL 行进不了向量 top-M，top1 不命中
-    pre = await recall_with_vector(
-        _TENANT, user, "我主要负责哪个仓库", limit=2, embedder=fake
-    )
+    pre = await recall_with_vector(_TENANT, user, "我主要负责哪个仓库", limit=2, embedder=fake)
     assert pre[0].key == "project.favorite_editor"
     assert all(str(f.id) != str(target.id) for f in pre[:1])
 
@@ -606,8 +596,6 @@ async def test_paraphrase_recall_before_after_backfill(
     assert report.status == "pass" and report.embedded == 3
 
     # 回填后：向量通路捞回存量行，top1 命中
-    post = await recall_with_vector(
-        _TENANT, user, "我主要负责哪个仓库", limit=2, embedder=fake
-    )
+    post = await recall_with_vector(_TENANT, user, "我主要负责哪个仓库", limit=2, embedder=fake)
     assert post[0].key == "project.primary_repo"
     assert str(post[0].id) == str(target.id)

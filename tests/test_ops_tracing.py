@@ -1,4 +1,5 @@
 """Langfuse 环境键与默认值。"""
+
 from __future__ import annotations
 
 import pytest

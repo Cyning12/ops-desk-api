@@ -44,6 +44,7 @@ DEFAULT_ROUTE = "rag"  # fallback：宁检索勿错杀（DESIGN §4）
 
 _ISSUE_NO_RE = re.compile(r"#\d+")
 
+
 def _last_user_text(messages: list[BaseMessage]) -> str:
     for m in reversed(messages):
         if getattr(m, "type", None) == "human" or m.__class__.__name__ == "HumanMessage":
@@ -88,9 +89,7 @@ async def _classify_route(query: str) -> tuple[str, str, bool]:
     )
     route = _parse_route(raw)
     if route is None:
-        logger.warning(
-            "lg_rag router 输出非法，fallback=%s raw=%r", DEFAULT_ROUTE, raw[:200]
-        )
+        logger.warning("lg_rag router 输出非法，fallback=%s raw=%r", DEFAULT_ROUTE, raw[:200])
         return DEFAULT_ROUTE, raw, True
     return route, raw, False
 
@@ -125,9 +124,7 @@ async def router_node(state: LgRagState) -> dict:
             try:
                 route, raw, fallback = await _classify_route(query)
             except Exception as exc:  # LLM 异常/超时 → 宁检索勿错杀
-                logger.warning(
-                    "lg_rag router LLM 失败，fallback=%s err=%r", DEFAULT_ROUTE, exc
-                )
+                logger.warning("lg_rag router LLM 失败，fallback=%s err=%r", DEFAULT_ROUTE, exc)
                 route, raw, fallback = DEFAULT_ROUTE, "", True
     _record_route_metadata(route=route, raw=raw, fallback=fallback)
     return {"route": route}

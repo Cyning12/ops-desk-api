@@ -10,6 +10,7 @@
 
 fake provider：进程内桩（BaseProvider.complete 返回罐头 JSON），不连外网。
 """
+
 from __future__ import annotations
 
 import json
@@ -47,9 +48,7 @@ class FakeProvider(BaseProvider):
         self.error = error
         self.calls = 0
 
-    async def complete(
-        self, messages: Iterable[LlmMessage], model: str | None = None
-    ) -> str:
+    async def complete(self, messages: Iterable[LlmMessage], model: str | None = None) -> str:
         self.calls += 1
         if self.error is not None:
             raise self.error
@@ -68,9 +67,7 @@ def _shape(messages: list[BaseMessage]) -> list[tuple[str, str]]:
 # ---------------- env 纪律：默认关 / 非法回退 + warning ----------------
 
 
-def test_extract_env_default_and_invalid_fallback(
-    monkeypatch: pytest.MonkeyPatch, caplog
-):
+def test_extract_env_default_and_invalid_fallback(monkeypatch: pytest.MonkeyPatch, caplog):
     monkeypatch.delenv("MEMORY_FACTS_EXTRACT_ENABLED", raising=False)
     assert memory_facts_extract_enabled() is False
     monkeypatch.setenv("MEMORY_FACTS_EXTRACT_ENABLED", "enable plz")
@@ -84,17 +81,14 @@ def test_extract_env_default_and_invalid_fallback(
 async def test_extract_disabled_is_noop_without_llm(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("MEMORY_FACTS_EXTRACT_ENABLED", raising=False)
     provider = FakeProvider()
-    assert (
-        await run_memory_extraction(
-            tenant_id=_TENANT,
-            user_id="u-1",
-            run_id="r-1",
-            query="q",
-            answer="a",
-            _provider=provider,
-        )
-        == (0, 0)
-    )
+    assert await run_memory_extraction(
+        tenant_id=_TENANT,
+        user_id="u-1",
+        run_id="r-1",
+        query="q",
+        answer="a",
+        _provider=provider,
+    ) == (0, 0)
     assert provider.calls == 0  # 开关关 = 零 LLM 调用
 
 
@@ -109,9 +103,7 @@ async def test_assemble_path_triggers_no_extraction(monkeypatch: pytest.MonkeyPa
     extract_mod._extract_tasks.clear()
 
     history = [{"role": "user", "content": f"q{i}"} for i in range(10)]
-    out = await assemble_graph_messages_with_memory(
-        "本轮问", history, tenant_id="t", user_id="u"
-    )
+    out = await assemble_graph_messages_with_memory("本轮问", history, tenant_id="t", user_id="u")
     assert _shape(out) == _shape(assemble_graph_messages("本轮问", history))
     assert spy.await_count == 0
     assert not extract_mod._extract_tasks  # 装配路径不点火
@@ -230,9 +222,7 @@ async def test_sse_schedules_extraction_after_done(monkeypatch: pytest.MonkeyPat
     async def fake_astream(query, *, thread_id, history_turns, **kw):
         yield {"aggregator": {"messages": [AIMessage(content="最终答案")]}}
 
-    monkeypatch.setattr(
-        "app.ops.lg_rag.event_store.persist_run_event", AsyncMock()
-    )
+    monkeypatch.setattr("app.ops.lg_rag.event_store.persist_run_event", AsyncMock())
     monkeypatch.setattr(sse_stream, "persist_thread_turns", AsyncMock())
     sched = MagicMock(return_value=None)
     monkeypatch.setattr(sse_stream, "schedule_memory_extraction", sched)
@@ -266,7 +256,14 @@ async def test_sse_schedules_extraction_after_done(monkeypatch: pytest.MonkeyPat
         for line in f.splitlines()
         if line.startswith("event: ")
     }
-    assert event_types <= {"run.start", "answer", "done", "error", "hitl.waiting", "subtask.progress"}
+    assert event_types <= {
+        "run.start",
+        "answer",
+        "done",
+        "error",
+        "hitl.waiting",
+        "subtask.progress",
+    }
 
 
 # ---------------- ②③ 抽取过闸与失败语义（真 PG） ----------------
@@ -358,9 +355,7 @@ async def test_extract_noise_candidates_rejected_table_zero(
 
 
 @_DB_SKIP
-async def test_extract_invalid_json_zero_writes(
-    monkeypatch: pytest.MonkeyPatch, _clean_db, caplog
-):
+async def test_extract_invalid_json_zero_writes(monkeypatch: pytest.MonkeyPatch, _clean_db, caplog):
     """非法 JSON → 零写入；管道内重试 ≤1（总尝试 = 2）后放弃。"""
     monkeypatch.setenv("MEMORY_FACTS_EXTRACT_ENABLED", "true")
     provider = FakeProvider("这不是 JSON {{{")
@@ -381,9 +376,7 @@ async def test_extract_invalid_json_zero_writes(
 
 
 @_DB_SKIP
-async def test_extract_provider_error_zero_writes(
-    monkeypatch: pytest.MonkeyPatch, _clean_db
-):
+async def test_extract_provider_error_zero_writes(monkeypatch: pytest.MonkeyPatch, _clean_db):
     """LLM 抛错 → 零写入（不重试风暴：异常路径 0 重试）。"""
     monkeypatch.setenv("MEMORY_FACTS_EXTRACT_ENABLED", "true")
     provider = FakeProvider(error=LlmProviderError("llm down", retryable=True))
@@ -399,6 +392,7 @@ async def test_extract_provider_error_zero_writes(
     assert (candidates, written) == (0, 0)
     assert provider.calls == 1
     assert len(await _rows()) == before
+
 
 # ---------------- memory-preference-profile · 显式-only 落点（物理拒收推断型） ----------------
 
@@ -439,4 +433,3 @@ async def test_extract_constructed_candidates_are_fact_kind(
     assert (candidates, written) == (1, 1)
     assert len(recorded) == 1
     assert recorded[0].kind == "fact"  # 构造点未传 kind → 默认 fact
-

@@ -27,9 +27,7 @@ from evals.session.fidelity import check_summary_fidelity
 
 pytestmark = pytest.mark.redline
 
-_INVENTORY = (
-    Path(__file__).resolve().parents[2] / "evals" / "session" / "summary_fidelity_v1.yaml"
-)
+_INVENTORY = Path(__file__).resolve().parents[2] / "evals" / "session" / "summary_fidelity_v1.yaml"
 
 #: rule_id → 实现它的测试函数名（装饰器登记，F0 对照用）
 IMPLEMENTED: dict[str, str] = {}
@@ -125,9 +123,7 @@ async def test_assembled_context_structure(monkeypatch: pytest.MonkeyPatch):
     零占位格式残留（无 roles= 占位条）· 每条摘要条含 v1 + 模型: + 有损三标记。
     且装配产物摘要文本过同一 fidelity 校验函数（热路径确定性）。
     """
-    monkeypatch.setattr(
-        session_summary, "update_current_span_metadata", lambda m: None
-    )
+    monkeypatch.setattr(session_summary, "update_current_span_metadata", lambda m: None)
 
     async def _no_read(thread_id, digest):
         return None
@@ -141,9 +137,7 @@ async def test_assembled_context_structure(monkeypatch: pytest.MonkeyPatch):
     for case in _cases():
         turns = case["turns"]
         compressed = compress_window(list(turns))
-        n_placeholders = sum(
-            1 for t in compressed if t["content"].startswith("[历史摘要 · ")
-        )
+        n_placeholders = sum(1 for t in compressed if t["content"].startswith("[历史摘要 · "))
         assert n_placeholders >= 1, f"[{case['id']}] 夹具 turns 未触发压缩"
 
         def _make_replay_provider(recorded: str) -> BaseProvider:
@@ -165,9 +159,7 @@ async def test_assembled_context_structure(monkeypatch: pytest.MonkeyPatch):
             compressed, thread_id=f"gold-{case['id']}", source_turns=list(turns)
         )
         assert len(out) == len(compressed)  # 结构零改动（条数不变）
-        summary_entries = [
-            t for t in out if str(t.get("content", "")).startswith("[历史摘要 · ")
-        ]
+        summary_entries = [t for t in out if str(t.get("content", "")).startswith("[历史摘要 · ")]
         assert len(summary_entries) == n_placeholders
         for entry in summary_entries:
             content = entry["content"]
@@ -177,8 +169,11 @@ async def test_assembled_context_structure(monkeypatch: pytest.MonkeyPatch):
             assert "有损" in content  # 有损声明
             # 摘要正文过同一 fidelity 校验函数（录制摘要即热路径候选）
             body = content.split("\n", 1)[1]
-            assert check_summary_fidelity(
-                body,
-                must_keep=case["must_keep"],
-                must_not_add=case["must_not_add"],
-            ) == []
+            assert (
+                check_summary_fidelity(
+                    body,
+                    must_keep=case["must_keep"],
+                    must_not_add=case["must_not_add"],
+                )
+                == []
+            )

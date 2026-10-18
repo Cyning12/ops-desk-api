@@ -68,9 +68,7 @@ def _require_signed(request: Request, body: bytes) -> None:
         verify(body=body, headers=request.headers)
     except SignatureError as exc:
         logger.warning("hitl 回调鉴权失败：%s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.get("/runtime")
@@ -97,9 +95,7 @@ async def list_requests(
 
 
 @router.get("/requests/{request_id}")
-async def get_request(
-    request_id: str, _user: OpsUser | None = AdminSyncAuth
-) -> dict[str, Any]:
+async def get_request(request_id: str, _user: OpsUser | None = AdminSyncAuth) -> dict[str, Any]:
     row = await get_hitl_store().aget(request_id)
     if row is None:
         raise HTTPException(status_code=404, detail="申请不存在")
@@ -249,9 +245,7 @@ async def decide_request(
         payload.decision == STATUS_APPROVED
         and auto_resume.resolve_resume_mode(payload.resume_mode) == auto_resume.MODE_AUTO
     ):
-        auto_resume.schedule_auto_resume(
-            decided, resume_mode=payload.resume_mode, source="decide"
-        )
+        auto_resume.schedule_auto_resume(decided, resume_mode=payload.resume_mode, source="decide")
         auto_triggered = True
     resume_block = {
         # manual 形态字面零 diff：恢复是客户端的第二个显式动作（复用既有 resume 端点）
@@ -392,9 +386,7 @@ async def _open_event_sink(row: dict[str, Any], thread_id: str):
     except Exception:
         logger.exception("HITL 恢复：run %s 取最大 seq 失败，从 0 续写", run_id)
         start_seq = 0
-    return ResumeEventSink(
-        run_id=run_id, user_id=user_id, thread_id=thread_id, start_seq=start_seq
-    )
+    return ResumeEventSink(run_id=run_id, user_id=user_id, thread_id=thread_id, start_seq=start_seq)
 
 
 async def _persist_resumed_turns(sink, outcome: dict[str, Any]) -> None:
@@ -426,9 +418,7 @@ async def _collect_decisions_or_raise(row: dict[str, Any]) -> tuple[list[str], l
     if not approved and str(row.get("status") or "") == STATUS_APPROVED:
         # 批准了却拿不到可解锁的步骤 —— 多半是申请行缺 unlock_subtask_id。
         # 必须响，否则拿着空 approved 去恢复 ⇒ 实际按"驳回"收工。
-        raise ResumeError(
-            "no_unlock", "已批准但拿不到待解锁的步骤（unlock_subtask_id 为空）"
-        )
+        raise ResumeError("no_unlock", "已批准但拿不到待解锁的步骤（unlock_subtask_id 为空）")
     return approved, rejected
 
 
@@ -528,9 +518,7 @@ async def _best_effort_replay_cursor(run_id: str) -> str:
 
 
 @router.post("/requests/{request_id}/resume")
-async def resume_request(
-    request_id: str, _user: OpsUser | None = AdminSyncAuth
-) -> dict[str, Any]:
+async def resume_request(request_id: str, _user: OpsUser | None = AdminSyncAuth) -> dict[str, Any]:
     """审批出结果后**真的把挂起的图恢复起来**。
 
     两处必须说清，否则"恢复"是个假动作：
@@ -653,4 +641,3 @@ async def create_request_manual(
     }
     created = await get_hitl_store().acreate(request)
     return {"ok": True, "request": created}
-

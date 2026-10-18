@@ -1,4 +1,5 @@
 """Tests for admin sync endpoint."""
+
 from __future__ import annotations
 
 import pytest
@@ -16,18 +17,14 @@ async def test_sync_requires_auth(client: AsyncClient) -> None:
     assert response.status_code == 401
 
 
-async def test_sync_requires_maintainer(
-    client: AsyncClient, override_auth_viewer
-) -> None:
+async def test_sync_requires_maintainer(client: AsyncClient, override_auth_viewer) -> None:
     """POST /admin/sync as viewer returns 403."""
     response = await client.post("/api/ops/admin/sync", json={})
     assert response.status_code == 403
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
-async def test_sync_rejects_missing_repo(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_sync_rejects_missing_repo(client: AsyncClient, override_auth_maintainer) -> None:
     """Payload missing repo returns 422."""
     response = await client.post(
         "/api/ops/admin/sync",

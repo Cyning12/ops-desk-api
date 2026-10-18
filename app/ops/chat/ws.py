@@ -13,6 +13,7 @@ Server -> client messages: the same event dicts as the SSE stream
 (``run.start`` / ``thinking`` / ``tool_result`` / ``answer`` /
 ``run.cancelled`` / ``done`` / ``error``) sent as JSON text frames.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -91,9 +92,7 @@ async def chat_ws(websocket: WebSocket) -> None:
 
     user = await _resolve_demo_user()
     if user is None:
-        await websocket.send_json(
-            _error_event("ws.user", "no maintainer user available for demo")
-        )
+        await websocket.send_json(_error_event("ws.user", "no maintainer user available for demo"))
         await websocket.close(code=1011)
         return
 
@@ -107,9 +106,7 @@ async def chat_ws(websocket: WebSocket) -> None:
             try:
                 data = json.loads(raw)
             except json.JSONDecodeError:
-                await websocket.send_json(
-                    _error_event("ws.protocol", "invalid JSON message")
-                )
+                await websocket.send_json(_error_event("ws.protocol", "invalid JSON message"))
                 continue
 
             msg_type = data.get("type")
@@ -124,17 +121,13 @@ async def chat_ws(websocket: WebSocket) -> None:
                         await asyncio.wait({active_task}, timeout=1)
                 if active_task is not None and not active_task.done():
                     await websocket.send_json(
-                        _error_event(
-                            "ws.protocol", "run already active", active_run_id
-                        )
+                        _error_event("ws.protocol", "run already active", active_run_id)
                     )
                     continue
 
                 message = (data.get("message") or "").strip()
                 if not message:
-                    await websocket.send_json(
-                        _error_event("ws.protocol", "message is required")
-                    )
+                    await websocket.send_json(_error_event("ws.protocol", "message is required"))
                     continue
 
                 run_id = str(uuid.uuid4())
@@ -165,9 +158,7 @@ async def chat_ws(websocket: WebSocket) -> None:
                 )
                 active_streamer = ChatEventStreamer(state, run_id, run_model)
                 active_run_id = run_id
-                active_task = asyncio.create_task(
-                    _pump_events(active_streamer, websocket)
-                )
+                active_task = asyncio.create_task(_pump_events(active_streamer, websocket))
             elif msg_type == "cancel":
                 cancel_run_id = data.get("run_id")
                 if (
@@ -179,9 +170,7 @@ async def chat_ws(websocket: WebSocket) -> None:
                     active_streamer.request_cancel()
                 else:
                     await websocket.send_json(
-                        _error_event(
-                            "ws.cancel", "no active run for cancel", cancel_run_id
-                        )
+                        _error_event("ws.cancel", "no active run for cancel", cancel_run_id)
                     )
             else:
                 await websocket.send_json(

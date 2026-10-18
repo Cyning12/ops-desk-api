@@ -75,9 +75,9 @@ def test_tc1_window_warning_uses_pinned_format() -> None:
     修复前：lastResort 裸格式（红）；修复后：<asctime> app.ops.capability.persistence WARNING …（绿）。
     """
     proc = _run_bare_import({"OPS_CAPABILITY_PERSISTENCE": ""})
-    assert _formatted_line_re(
-        "WARNING", PERSISTENCE_LOGGER, "能力层持久化未配置"
-    ).search(proc.stderr), f"缺钉死格式 WARNING 行：\n{proc.stderr}"
+    assert _formatted_line_re("WARNING", PERSISTENCE_LOGGER, "能力层持久化未配置").search(
+        proc.stderr
+    ), f"缺钉死格式 WARNING 行：\n{proc.stderr}"
     _assert_no_bare_line(proc.stderr, "能力层持久化未配置")
 
 
@@ -85,12 +85,12 @@ def test_tc1_window_invalid_persistence_error_formatted() -> None:
     """TC1 补组（R1 N-1 回填 · 发射点四处计全）：非法 OPS_CAPABILITY_PERSISTENCE 值时
     persistence.py:60-64 ERROR 与 :65-68 WARNING 两行同窗发射，均须钉死格式。"""
     proc = _run_bare_import({"OPS_CAPABILITY_PERSISTENCE": "bogus"})
-    assert _formatted_line_re(
-        "ERROR", PERSISTENCE_LOGGER, "无法识别（仅 db / memory）"
-    ).search(proc.stderr), f"缺钉死格式 ERROR 行：\n{proc.stderr}"
-    assert _formatted_line_re(
-        "WARNING", PERSISTENCE_LOGGER, "能力层持久化未配置"
-    ).search(proc.stderr), f"缺钉死格式 WARNING 行：\n{proc.stderr}"
+    assert _formatted_line_re("ERROR", PERSISTENCE_LOGGER, "无法识别（仅 db / memory）").search(
+        proc.stderr
+    ), f"缺钉死格式 ERROR 行：\n{proc.stderr}"
+    assert _formatted_line_re("WARNING", PERSISTENCE_LOGGER, "能力层持久化未配置").search(
+        proc.stderr
+    ), f"缺钉死格式 WARNING 行：\n{proc.stderr}"
     _assert_no_bare_line(proc.stderr, "无法识别（仅 db / memory）")
     _assert_no_bare_line(proc.stderr, "能力层持久化未配置")
 
@@ -124,16 +124,14 @@ def test_tc2_window_warning_formatted_memory_mode() -> None:
 def test_tc3_invalid_log_level_falls_back_info_with_alert() -> None:
     """TC3 非法值组：OPS_LOG_LEVEL=BOGUS → INFO fail-closed + 格式化 ERROR 告警行存续
     （app/main.py:31-35 口径逐字不动），且窗口 WARNING 亦钉死格式。"""
-    proc = _run_bare_import(
-        {"OPS_LOG_LEVEL": "BOGUS", "OPS_CAPABILITY_PERSISTENCE": ""}
-    )
+    proc = _run_bare_import({"OPS_LOG_LEVEL": "BOGUS", "OPS_CAPABILITY_PERSISTENCE": ""})
     assert "ROOT_LEVEL=INFO" in proc.stdout, proc.stdout
-    assert _formatted_line_re(
-        "ERROR", "app.main", "OPS_LOG_LEVEL='BOGUS' 无法识别"
-    ).search(proc.stderr), f"格式化 ERROR 告警行未存续：\n{proc.stderr}"
-    assert _formatted_line_re(
-        "WARNING", PERSISTENCE_LOGGER, "能力层持久化未配置"
-    ).search(proc.stderr), f"窗口 WARNING 非钉死格式：\n{proc.stderr}"
+    assert _formatted_line_re("ERROR", "app.main", "OPS_LOG_LEVEL='BOGUS' 无法识别").search(
+        proc.stderr
+    ), f"格式化 ERROR 告警行未存续：\n{proc.stderr}"
+    assert _formatted_line_re("WARNING", PERSISTENCE_LOGGER, "能力层持久化未配置").search(
+        proc.stderr
+    ), f"窗口 WARNING 非钉死格式：\n{proc.stderr}"
 
 
 def test_tc3_debug_effective() -> None:

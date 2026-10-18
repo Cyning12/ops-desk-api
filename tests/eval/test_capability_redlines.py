@@ -72,9 +72,7 @@ def redline(redline_id: str) -> Callable[[Callable[..., Any]], Callable[..., Any
     return decorate
 
 
-def assert_redline(
-    *, redline_id: str, holds: bool, control: bool, detail: str = ""
-) -> None:
+def assert_redline(*, redline_id: str, holds: bool, control: bool, detail: str = "") -> None:
     """正向必须成立；反向对照也必须成立，否则说明这条红线是空真。"""
     assert holds, f"[{redline_id}] 红线被突破：{detail}"
     assert control, (
@@ -276,9 +274,16 @@ def test_r2_undeclared_template_variable_never_silently_renders(tmp_path: Path):
 def test_r3_downstream_message_never_leaks_to_caller():
     """下游错误原文不外泄；同时错误串必须是"有内容的稳定码"而非空。"""
     leaky = "内部堆栈: at com.oa.internal.Foo.bar(Foo.java:42)"
-    spec = _spec("r3.read", side_effect="read", http={"method": "GET", "body_map": {},
-                                                       "idempotency_key": None,
-                                                       "query_map": {"q": "{{subject}}"}})
+    spec = _spec(
+        "r3.read",
+        side_effect="read",
+        http={
+            "method": "GET",
+            "body_map": {},
+            "idempotency_key": None,
+            "query_map": {"q": "{{subject}}"},
+        },
+    )
     tx = FakeHttpTransport(payload={"code": 1001, "msg": leaky})
     _register(spec, tx)
     try:
@@ -286,15 +291,11 @@ def test_r3_downstream_message_never_leaks_to_caller():
         err = str(result.error)
         holds = (not result.ok) and "com.oa.internal" not in err and leaky not in err
         # 对照：错误串必须是可决策的稳定码，不能是空/None（否则"没泄漏"是假通过）
-        control = err.startswith("args_schema_invalid") and len(err) > len(
-            "args_schema_invalid"
-        )
+        control = err.startswith("args_schema_invalid") and len(err) > len("args_schema_invalid")
     finally:
         unregister("r3.read")
 
-    assert_redline(
-        redline_id="R3", holds=holds, control=control, detail=f"error={result.error!r}"
-    )
+    assert_redline(redline_id="R3", holds=holds, control=control, detail=f"error={result.error!r}")
 
 
 # ---------------- R4：含非 ASCII 参数的写调用必须成功 ----------------
@@ -335,8 +336,12 @@ def test_r5_write_timeout_never_retries_but_read_may():
     rspec = _spec(
         "r5.read",
         side_effect="read",
-        http={"method": "GET", "body_map": {}, "idempotency_key": None,
-              "query_map": {"q": "{{subject}}"}},
+        http={
+            "method": "GET",
+            "body_map": {},
+            "idempotency_key": None,
+            "query_map": {"q": "{{subject}}"},
+        },
     )
     rtx = FakeHttpTransport(exc=TimeoutError("timeout"))
     _register(rspec, rtx)
@@ -466,14 +471,10 @@ class _AsyncOnlyIdempotencyStore:
         self._inner = inner
 
     async def aclaim(self, key: str, *, capability_id: str = "", tenant_id: str = ""):
-        return await self._inner.aclaim(
-            key, capability_id=capability_id, tenant_id=tenant_id
-        )
+        return await self._inner.aclaim(key, capability_id=capability_id, tenant_id=tenant_id)
 
     async def acomplete(self, key: str, *, receipt_id: str = "", tenant_id: str = ""):
-        await self._inner.acomplete(
-            key, receipt_id=receipt_id, tenant_id=tenant_id
-        )
+        await self._inner.acomplete(key, receipt_id=receipt_id, tenant_id=tenant_id)
 
 
 @redline("R8")
@@ -502,9 +503,7 @@ def test_r8_async_only_store_fails_closed_on_sync_invoke():
         # 注意：被拦下的同步调用**也留了一条回执**（写能力无论成败都落回执，是既有设计），
         # 所以这里不能数"回执条数 == 1"，而要断言"确实执行过一次写并留下了 write_confirmed"。
         control = (
-            allowed.ok is True
-            and len(tx.calls) == 1
-            and any(r.write_confirmed for r in sink.all())
+            allowed.ok is True and len(tx.calls) == 1 and any(r.write_confirmed for r in sink.all())
         )
     finally:
         unregister("r8.write")
@@ -569,11 +568,7 @@ def _r10_spec(cid: str, contract: dict[str, Any] | None, **over: Any) -> Capabil
     return _spec(cid, output_schema=contract, **over)
 
 
-
-
 # ---------------- R11：会话配额 + kill switch ----------------
-
-
 
 
 # ---------------- R10：声明了结果契约就必须校验 ----------------
@@ -709,10 +704,7 @@ def test_r11_session_budget_and_kill_switch_block_before_downstream(
         redline_id="R11",
         holds=holds,
         control=control_other_session and control_not_counted,
-        detail=(
-            f"second={second.error!r} calls={len(tx.calls)} "
-            f"other={other.ok} used_runC={used}"
-        ),
+        detail=(f"second={second.error!r} calls={len(tx.calls)} other={other.ok} used_runC={used}"),
     )
 
 
@@ -975,6 +967,8 @@ def _r13_kw(cid: str, **over: Any) -> CapabilitySpec:
     """降级目标：参数名是 keyword（与源能力的 subject 不同，用于验证 args_map）。"""
     over.setdefault("args_schema", dict(_ARGS_KEYWORD))
     return _spec(cid, side_effect="read", http=dict(_READ_HTTP_KW), **over)
+
+
 # 降级目标用自己的参数名（query_map 必须引用自己 schema 里声明的字段，
 # 否则加载期/运行期会因"未声明模板变量"失败——那正是"降级失败要看得见"的样例）
 _READ_HTTP_KW = {**_READ_HTTP, "query_map": {"keyword": "{{keyword}}"}}
@@ -1045,11 +1039,7 @@ def test_r13_declared_fallback_degrades_with_marker():
 
         # 对照：**没声明**降级 → 明确失败，降级目标零调用
         res2 = invoke("r13.c", {"subject": "报销"}, ctx=dict(ctx))
-        control = (
-            res2.ok is False
-            and res2.meta.get("degraded") is not True
-            and good_d.calls == []
-        )
+        control = res2.ok is False and res2.meta.get("degraded") is not True and good_d.calls == []
     finally:
         for cid in ("r13.a", "r13.b", "r13.c", "r13.d"):
             unregister(cid)
@@ -1227,11 +1217,7 @@ def test_r13_chain_is_bounded():
         res = invoke("r13.cyc.a", {"subject": "x"}, ctx={"tenant_id": "t1"})
         # 不死循环：A / B 各只被打了「自己那一次」的量（GET 会重试一次 = 2 次）。
         # 真递归的话这里会是 4、6、… 或直接 RecursionError。
-        holds = (
-            res.ok is False
-            and 0 < len(a_tx.calls) <= 2
-            and 0 < len(b_tx.calls) <= 2
-        )
+        holds = res.ok is False and 0 < len(a_tx.calls) <= 2 and 0 < len(b_tx.calls) <= 2
     finally:
         unregister("r13.cyc.a")
         unregister("r13.cyc.b")
@@ -1525,9 +1511,7 @@ async def _drive_step_contract(plan: list[dict], terminals: dict[str, dict]):
         "messages": [],
     }
     out = await _join_subtasks(state)
-    blocked = {
-        str(r.get("subtask_id")): r for r in (out.get("subtask_results") or [])
-    }
+    blocked = {str(r.get("subtask_id")): r for r in (out.get("subtask_results") or [])}
     ready = list(out.get("inflight_subtask_ids") or [])
     executed: list[str] = []
     calls: list[str] = []
@@ -1690,15 +1674,20 @@ async def test_r15_recoverable_point_keeps_prefix():
         base.update(kw)
         return base
 
-    first = '{"subtasks":[{"id":"t1","type":"tool","tool":"mock_get_issue_status",' \
-            '"input":"甲","args":{"k":"v"}},{"id":"t2","type":"tool",' \
-            '"tool":"mock_get_issue_status","input":"乙","depends_on":["t1"]}]}'
-    suffix = '{"subtasks":[{"id":"s1","type":"tool","tool":"mock_get_issue_status",' \
-             '"input":"丙","depends_on":["t1"]}]}'
+    first = (
+        '{"subtasks":[{"id":"t1","type":"tool","tool":"mock_get_issue_status",'
+        '"input":"甲","args":{"k":"v"}},{"id":"t2","type":"tool",'
+        '"tool":"mock_get_issue_status","input":"乙","depends_on":["t1"]}]}'
+    )
+    suffix = (
+        '{"subtasks":[{"id":"s1","type":"tool","tool":"mock_get_issue_status",'
+        '"input":"丙","depends_on":["t1"]}]}'
+    )
 
-    with patch(
-        "app.ops.lg_rag.multi.nodes.list_capabilities", new=lambda *a, **k: caps
-    ), patch("app.ops.lg_rag.multi.nodes.get_llm_provider", new=lambda *a, **k: _prov(first)):
+    with (
+        patch("app.ops.lg_rag.multi.nodes.list_capabilities", new=lambda *a, **k: caps),
+        patch("app.ops.lg_rag.multi.nodes.get_llm_provider", new=lambda *a, **k: _prov(first)),
+    ):
         out1 = await supervisor_node(_state())
 
     # 反向对照：首次规划无前缀，计划照常签发、可恢复点为 0
@@ -1721,9 +1710,10 @@ async def test_r15_recoverable_point_keeps_prefix():
         supervisor_step_count=1,
     )
 
-    with patch(
-        "app.ops.lg_rag.multi.nodes.list_capabilities", new=lambda *a, **k: caps
-    ), patch("app.ops.lg_rag.multi.nodes.get_llm_provider", new=lambda *a, **k: _prov(suffix)):
+    with (
+        patch("app.ops.lg_rag.multi.nodes.list_capabilities", new=lambda *a, **k: caps),
+        patch("app.ops.lg_rag.multi.nodes.get_llm_provider", new=lambda *a, **k: _prov(suffix)),
+    ):
         out2 = await supervisor_node(state2)
 
     plan2 = out2["subtasks"]

@@ -489,9 +489,7 @@ async def test_retrieve_evidence_wraps_rerank_when_enabled():
         out = await retrieve_evidence("q")
 
     assert [e.id for e in out.evidence] == [2]
-    assert any(
-        name == "query_embed" and kw.get("run_type") == "llm" for name, kw in spans
-    )
+    assert any(name == "query_embed" and kw.get("run_type") == "llm" for name, kw in spans)
     rerank_spans = [s for s in spans if s[0] == "rerank"]
     assert len(rerank_spans) == 1
     assert rerank_spans[0][1].get("run_type") == "llm"

@@ -7,6 +7,7 @@
 词表外置 `glossary.yaml`（同目录），迭代维护不改代码。
 命中词表的才展开，未命中的中文段不进 tsquery（交给语义路）；英文原词保留。
 """
+
 from __future__ import annotations
 
 import re

@@ -11,6 +11,7 @@
 
 禁止新增 event_type；禁止 import app.ops.session / app.ops.chat。
 """
+
 from __future__ import annotations
 
 import contextvars
@@ -32,8 +33,8 @@ _DETAIL_MAX = 400
 # sink(agent_role, payload)：把 progress 帧交给 SSE emit 循环
 SubtaskProgressSink = Callable[[str, dict[str, Any]], Awaitable[None]]
 
-_subtask_progress_sink: contextvars.ContextVar[SubtaskProgressSink | None] = (
-    contextvars.ContextVar("lg_rag_subtask_progress_sink", default=None)
+_subtask_progress_sink: contextvars.ContextVar[SubtaskProgressSink | None] = contextvars.ContextVar(
+    "lg_rag_subtask_progress_sink", default=None
 )
 
 
@@ -97,13 +98,9 @@ async def emit_subtask_running(
     if input_preview:
         payload["input"] = _truncate_preview(input_preview)
     try:  # message 生成失败仅降级（帧仍发），不中断节点
-        payload["message"] = build_subtask_running_message(
-            type=type, input_preview=input_preview
-        )
+        payload["message"] = build_subtask_running_message(type=type, input_preview=input_preview)
     except Exception as exc:
-        logger.warning(
-            "lg_rag running message 生成失败 id=%s err=%r", subtask_id, exc
-        )
+        logger.warning("lg_rag running message 生成失败 id=%s err=%r", subtask_id, exc)
     try:
         await sink(agent_role, payload)
     except Exception as exc:

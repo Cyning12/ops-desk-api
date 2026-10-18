@@ -25,7 +25,9 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # Database
-    database_url: str = Field(default="postgresql+asyncpg://ops:ops_password@localhost:5432/opsdesk")
+    database_url: str = Field(
+        default="postgresql+asyncpg://ops:ops_password@localhost:5432/opsdesk"
+    )
     database_echo: bool = False
 
     # Auth

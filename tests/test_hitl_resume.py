@@ -131,9 +131,7 @@ def _graph_factory(*, checkpointer):
     builder = StateGraph(LgRagState)
     builder.add_node("observe", observe_node)
     builder.add_edge(START, "observe")
-    builder.add_conditional_edges(
-        "observe", route_after_react, {"replan": END, "settle": END}
-    )
+    builder.add_conditional_edges("observe", route_after_react, {"replan": END, "settle": END})
     return builder.compile(checkpointer=checkpointer)
 
 
@@ -603,12 +601,8 @@ async def test_supervisor_astream_entry_keeps_the_checkpointer():
         if False:  # pragma: no cover - 让它是个 async generator
             yield {}
 
-    with patch(
-        "app.ops.lg_rag.multi.graph._astream_with_tracing", new=_fake_stream
-    ):
-        async for _ in astream_supervisor_agent(
-            "q", thread_id="t-plumb", checkpointer=sentinel
-        ):
+    with patch("app.ops.lg_rag.multi.graph._astream_with_tracing", new=_fake_stream):
+        async for _ in astream_supervisor_agent("q", thread_id="t-plumb", checkpointer=sentinel):
             pass
     assert "graph" in seen
     assert seen["graph"].checkpointer is sentinel

@@ -18,6 +18,7 @@
 仅经显式 service API 通路构造，抽取管道产物永远 kind=fact（extract.py
 schema 无 kind 字段 + 构造点钉死）——推断型偏好首期**无写入通路**。
 """
+
 from __future__ import annotations
 
 import json

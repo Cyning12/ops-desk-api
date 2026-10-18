@@ -13,6 +13,7 @@
 经同族 ``app.ops.lg_rag.router`` 间接取——直连 ``app.ops.deps`` /
 ``app.db.models`` 会破 import-linter ``lg-rag-outbound`` 契约。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -42,9 +43,7 @@ def _map_cursor_error(exc: history.HistoryCursorError) -> HTTPException:
     )
 
 
-async def _load_threads_page(
-    user_id: str, *, limit: int, cursor: str | None
-) -> dict[str, Any]:
+async def _load_threads_page(user_id: str, *, limit: int, cursor: str | None) -> dict[str, Any]:
     """H1 数据装配：thread 活动页 + 事件拉取 + 纯函数摘要。"""
     after = None
     if cursor is not None:
@@ -52,9 +51,7 @@ async def _load_threads_page(
             after = history.threads_cursor_after(cursor)
         except history.HistoryCursorError as exc:
             raise _map_cursor_error(exc) from None
-    page = await event_store.list_thread_activity_page(
-        user_id, limit=limit, after=after
-    )
+    page = await event_store.list_thread_activity_page(user_id, limit=limit, after=after)
     grouped = await event_store.fetch_events_for_threads(
         user_id, [row["thread_id"] for row in page]
     )
@@ -70,9 +67,7 @@ async def _load_threads_page(
     next_cursor = None
     if len(page) == limit and page:
         last = page[-1]
-        next_cursor = history.make_threads_cursor(
-            last["last_activity_at"], last["thread_id"]
-        )
+        next_cursor = history.make_threads_cursor(last["last_activity_at"], last["thread_id"])
     return {"threads": threads, "next_cursor": next_cursor}
 
 
@@ -143,9 +138,7 @@ async def get_chat_thread_history(
             timeout=HISTORY_AGGREGATE_TIMEOUT_S,
         )
     except TimeoutError:
-        logger.warning(
-            "chat history thread aggregate timeout thread_id=%s", thread_id
-        )
+        logger.warning("chat history thread aggregate timeout thread_id=%s", thread_id)
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="History aggregation timeout",

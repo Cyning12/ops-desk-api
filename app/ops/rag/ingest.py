@@ -5,6 +5,7 @@
 
 同步实现（D5）：CLI 批处理无并发可榨，encode 是阻塞 CPU 调用，不进异步循环。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -185,7 +186,9 @@ def ingest(
     existing = _existing_hashes(session)
     seen = {(u.repo, u.source_type, u.source_id) for u in units}
     stale = [k for k in existing if k not in seen]
-    changed = [u for u in units if existing.get((u.repo, u.source_type, u.source_id)) != u.content_hash]
+    changed = [
+        u for u in units if existing.get((u.repo, u.source_type, u.source_id)) != u.content_hash
+    ]
     report = {
         "scanned": len(units),
         "to_upsert": len(changed),
@@ -201,8 +204,10 @@ def ingest(
     for u in changed:
         cleaned = clean_markdown(u.body)
         prefix = build_prefix(
-            title=u.title, source_type=u.source_type,
-            ref=_ref_of(u), module_tag=u.module_tag,
+            title=u.title,
+            source_type=u.source_type,
+            ref=_ref_of(u),
+            module_tag=u.module_tag,
         )
         chunks = chunk_markdown(cleaned.text, counter)
         if not chunks and u.title.strip():
@@ -211,9 +216,7 @@ def ingest(
         for idx, chunk in enumerate(chunks):
             content = embed_text(prefix, chunk)
             if counter.count(content) > HARD_TOKEN_LIMIT:
-                logger.warning(
-                    "超模型硬顶 %s %s chunk %d，截中段", u.source_type, u.source_id, idx
-                )
+                logger.warning("超模型硬顶 %s %s chunk %d，截中段", u.source_type, u.source_id, idx)
                 content = truncate_middle(content, counter)
             media = [m for m in cleaned.media if m["anchor"] in chunk]
             pending.append((u, idx, content, media))
@@ -227,7 +230,9 @@ def ingest(
             )
 
     # 3) 整组替换（D3）：单元级删旧插新，逐单元提交（崩溃可续，水位跳过已写）
-    by_key: dict[tuple[str, str, str], list[tuple[SourceUnit, int, str, list[dict], list[float]]]] = {}
+    by_key: dict[
+        tuple[str, str, str], list[tuple[SourceUnit, int, str, list[dict], list[float]]]
+    ] = {}
     for (u, idx, content, media), vec in zip(pending, vectors, strict=True):
         by_key.setdefault((u.repo, u.source_type, u.source_id), []).append(
             (u, idx, content, media, vec)
@@ -235,9 +240,7 @@ def ingest(
     for (repo, stype, sid), rows in by_key.items():
         old_ids = [
             int(r.id)
-            for r in session.execute(
-                _SELECT_IDS_BY_KEY, {"repo": repo, "stype": stype, "sid": sid}
-            )
+            for r in session.execute(_SELECT_IDS_BY_KEY, {"repo": repo, "stype": stype, "sid": sid})
         ]
         session.execute(_DELETE_BY_KEY, {"repo": repo, "stype": stype, "sid": sid})
         shadow_points: list[ShadowPoint] = []
@@ -290,9 +293,7 @@ def ingest(
     for repo, stype, sid in stale:
         stale_ids.extend(
             int(r.id)
-            for r in session.execute(
-                _SELECT_IDS_BY_KEY, {"repo": repo, "stype": stype, "sid": sid}
-            )
+            for r in session.execute(_SELECT_IDS_BY_KEY, {"repo": repo, "stype": stype, "sid": sid})
         )
         session.execute(_DELETE_BY_KEY, {"repo": repo, "stype": stype, "sid": sid})
     if stale:

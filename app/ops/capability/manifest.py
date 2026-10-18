@@ -206,9 +206,7 @@ def load_capability_manifests(
             declared = [e.spec.capability_id for e in pending if e.spec.enabled]
             clash = [cid for cid in declared if cid in claimed]
             if clash:
-                raise ManifestError(
-                    f"跨文件重复 id（已被 {claimed[clash[0]]} 声明）: {clash[0]}"
-                )
+                raise ManifestError(f"跨文件重复 id（已被 {claimed[clash[0]]} 声明）: {clash[0]}")
             for cid in declared:
                 claimed[cid] = str(target)
             loaded.append(_commit(target, version, pending, replace=False))
@@ -295,16 +293,12 @@ def _validate_output_schema(block: dict[str, Any], *, loc: str) -> None:
         # 注意 ``output_schema: {}``（只写 empty_is_suspicious）是**合法**的——
         # 那是"没有必填字段，但空结果可疑"，是一个真实有意义的契约。
         if not isinstance(required, list) or not required:
-            raise ManifestError(
-                f"{loc} V10: required 必须是**非空**列表（空列表等于没契约）"
-            )
+            raise ManifestError(f"{loc} V10: required 必须是**非空**列表（空列表等于没契约）")
         if not all(isinstance(x, str) and x.strip() for x in required):
             raise ManifestError(f"{loc} V10: required 必须是非空字符串列表")
         for expr in required:
             if not str(expr).lstrip().startswith("$"):
-                raise ManifestError(
-                    f"{loc} V10: required 路径必须以 $ 开头（当前 {expr!r}）"
-                )
+                raise ManifestError(f"{loc} V10: required 路径必须以 $ 开头（当前 {expr!r}）")
 
     min_items = block.get("min_items")
     if min_items is not None:
@@ -312,9 +306,7 @@ def _validate_output_schema(block: dict[str, Any], *, loc: str) -> None:
             raise ManifestError(f"{loc} V10: min_items 必须是 mapping（路径 → 条数）")
         for expr, want in min_items.items():
             if not str(expr).lstrip().startswith("$"):
-                raise ManifestError(
-                    f"{loc} V10: min_items 路径必须以 $ 开头（当前 {expr!r}）"
-                )
+                raise ManifestError(f"{loc} V10: min_items 路径必须以 $ 开头（当前 {expr!r}）")
             try:
                 n = int(want)
             except (TypeError, ValueError):
@@ -327,8 +319,7 @@ def _validate_output_schema(block: dict[str, Any], *, loc: str) -> None:
     unknown = set(block) - {"required", "min_items", "empty_is_suspicious"}
     if unknown:
         raise ManifestError(
-            f"{loc} V10: output_schema 未知字段 {sorted(unknown)}"
-            "（拼错的字段会让契约静默失效）"
+            f"{loc} V10: output_schema 未知字段 {sorted(unknown)}（拼错的字段会让契约静默失效）"
         )
 
 
@@ -365,9 +356,7 @@ def _validate_fallback(block: dict[str, Any], *, loc: str) -> None:
         try:
             n = int(depth)
         except (TypeError, ValueError):
-            raise ManifestError(
-                f"{loc} V11: max_depth 必须是整数（当前 {depth!r}）"
-            ) from None
+            raise ManifestError(f"{loc} V11: max_depth 必须是整数（当前 {depth!r}）") from None
         if n < 1 or n > fallback_mod.MAX_DEPTH_CEILING:
             raise ManifestError(
                 f"{loc} V11: max_depth 必须在 1..{fallback_mod.MAX_DEPTH_CEILING}"
@@ -389,18 +378,11 @@ def _validate_fallback(block: dict[str, Any], *, loc: str) -> None:
         if args_map is not None:
             if not isinstance(args_map, dict) or not args_map:
                 raise ManifestError(f"{loc} V11: args_map 必须是非空 mapping")
-            if not all(
-                isinstance(k, str) and isinstance(v, str)
-                for k, v in args_map.items()
-            ):
-                raise ManifestError(
-                    f"{loc} V11: args_map 必须是 str→str（目标参数名 ← 源参数名）"
-                )
+            if not all(isinstance(k, str) and isinstance(v, str) for k, v in args_map.items()):
+                raise ManifestError(f"{loc} V11: args_map 必须是 str→str（目标参数名 ← 源参数名）")
     else:
         if target is not None:
-            raise ManifestError(
-                f"{loc} V11: 只有 action=capability 可声明 capability_id"
-            )
+            raise ManifestError(f"{loc} V11: 只有 action=capability 可声明 capability_id")
         if args_map is not None:
             raise ManifestError(f"{loc} V11: 只有 action=capability 可声明 args_map")
 
@@ -433,8 +415,7 @@ def _validate_fallback(block: dict[str, Any], *, loc: str) -> None:
     }
     if unknown:
         raise ManifestError(
-            f"{loc} V11: fallback 未知字段 {sorted(unknown)}"
-            "（拼错的字段会让降级静默失效）"
+            f"{loc} V11: fallback 未知字段 {sorted(unknown)}（拼错的字段会让降级静默失效）"
         )
 
 
@@ -502,9 +483,7 @@ def _reject_secret_keys(mapping: dict[str, Any], *, where: str) -> None:
             raise ManifestError(f"{where} 禁止密钥形字段: {key}")
 
 
-def _one_of(
-    value: Any, allowed: frozenset[str], *, default: str, loc: str, field: str
-) -> str:
+def _one_of(value: Any, allowed: frozenset[str], *, default: str, loc: str, field: str) -> str:
     text = str(value if value is not None else default).strip()
     if text not in allowed:
         raise ManifestError(
@@ -524,8 +503,7 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
     kind = str(raw.get("kind") or "").strip()
     if kind not in ALLOWED_KINDS:
         raise ManifestError(
-            f"{loc} 未知 kind（仅 {', '.join(sorted(ALLOWED_KINDS))}）: "
-            f"{kind or '(空)'}"
+            f"{loc} 未知 kind（仅 {', '.join(sorted(ALLOWED_KINDS))}）: {kind or '(空)'}"
         )
 
     tags_raw = raw.get("tags") or []
@@ -555,9 +533,7 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
         # V7：仅 kind=http 可声明 http 块。
         # 必须在**原始数据**上校验——spec.http 对非 http kind 恒为 None，
         # 在 spec 上判会让这条规则变成永远不触发的死代码，而配置被静默忽略。
-        raise ManifestError(
-            f"{loc} V7: 仅 kind=http 可声明 http 块（当前 kind={kind}）"
-        )
+        raise ManifestError(f"{loc} V7: 仅 kind=http 可声明 http 块（当前 kind={kind}）")
     if kind == "http":
         if not isinstance(http_block, dict):
             raise ManifestError(f"{loc} kind=http 必须有 http 块（mapping）")
@@ -614,14 +590,12 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
                 f"（仅 {', '.join(CLASSIFICATION_LEVELS)}）: {cls}"
             )
         for dim in ("departments", "roles", "projects"):
-            if dim in visibility_raw and not isinstance(
-                visibility_raw[dim], (list, str)
-            ):
+            if dim in visibility_raw and not isinstance(visibility_raw[dim], (list, str)):
                 raise ManifestError(f"{loc}.visibility.{dim} 必须是 list 或 str")
 
     # 可撤销性四字段（V1-B）：类型/词表合法才收；非法 → ManifestError 整文件失败
-    reversible, execution_type, max_reversal_latency, requires_stop_support = (
-        _parse_reversibility(raw, loc=loc)
+    reversible, execution_type, max_reversal_latency, requires_stop_support = _parse_reversibility(
+        raw, loc=loc
     )
 
     spec = CapabilitySpec(
@@ -631,13 +605,19 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
         args_schema=args_schema,
         tags=tuple(str(t) for t in tags_raw),
         risk_level=_one_of(
-            raw.get("risk_level"), RISK_LEVELS, default="low", loc=loc,
+            raw.get("risk_level"),
+            RISK_LEVELS,
+            default="low",
+            loc=loc,
             field="risk_level",
         ),
         enabled=bool(raw.get("enabled", True)),
         tenant_scoped=bool(raw.get("tenant_scoped", False)),
         side_effect=_one_of(
-            raw.get("side_effect"), SIDE_EFFECTS, default="none", loc=loc,
+            raw.get("side_effect"),
+            SIDE_EFFECTS,
+            default="none",
+            loc=loc,
             field="side_effect",
         ),
         when_to_use=when_to_use,
@@ -648,12 +628,8 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
         hitl_snapshot_fields=tuple(str(x) for x in snapshot_raw),
         receipt_capture=tuple(str(x) for x in capture_raw),
         # 结果契约（P0-1）：None = 未声明，不做契约校验（见 result_contract 模块 docstring）
-        output_schema=(
-            dict(output_schema_raw) if isinstance(output_schema_raw, dict) else None
-        ),
-        visibility=(
-            dict(visibility_raw) if isinstance(visibility_raw, dict) else None
-        ),
+        output_schema=(dict(output_schema_raw) if isinstance(output_schema_raw, dict) else None),
+        visibility=(dict(visibility_raw) if isinstance(visibility_raw, dict) else None),
         fallback=dict(fallback_raw) if isinstance(fallback_raw, dict) else None,
         # 可撤销性四字段（V1-B）：声明了必须合法；缺字段不报错（向后兼容）
         reversible=reversible,
@@ -682,8 +658,7 @@ def _validate_http_block(
     method = str(http_block.get("method") or "").strip().upper()
     if method not in _ALLOWED_METHODS:
         raise ManifestError(
-            f"{loc} method 非法（仅 {'/'.join(sorted(_ALLOWED_METHODS))}）: "
-            f"{method or '(空)'}"
+            f"{loc} method 非法（仅 {'/'.join(sorted(_ALLOWED_METHODS))}）: {method or '(空)'}"
         )
     base_url = str(http_block.get("base_url") or "").strip()
     if not base_url:
@@ -691,8 +666,7 @@ def _validate_http_block(
     if "://" in base_url or not _BASE_URL_NAME_RE.match(base_url):
         # 必须是环境变量名：把内网域名/端口写死进仓 = 配置泄漏 + 无法换环境
         raise ManifestError(
-            f"{loc} base_url 必须是环境变量名（大写+下划线），不能是 URL 字面量: "
-            f"{base_url}"
+            f"{loc} base_url 必须是环境变量名（大写+下划线），不能是 URL 字面量: {base_url}"
         )
     path = str(http_block.get("path") or "").strip()
     if not path.startswith("/"):
@@ -773,14 +747,10 @@ def _parse_reversibility(
         or isinstance(max_reversal_latency, bool)
         or max_reversal_latency < 0
     ):
-        raise ManifestError(
-            f"{loc} max_reversal_latency 必须是非负 int: {max_reversal_latency!r}"
-        )
+        raise ManifestError(f"{loc} max_reversal_latency 必须是非负 int: {max_reversal_latency!r}")
     requires_stop_support = raw.get("requires_stop_support")
     if requires_stop_support is not None and not isinstance(requires_stop_support, bool):
-        raise ManifestError(
-            f"{loc} requires_stop_support 必须是 bool: {requires_stop_support!r}"
-        )
+        raise ManifestError(f"{loc} requires_stop_support 必须是 bool: {requires_stop_support!r}")
     return reversible, execution_type, max_reversal_latency, requires_stop_support
 
 
@@ -792,13 +762,9 @@ def _validate_reversibility(spec: CapabilitySpec, *, loc: str) -> None:
       requires_stop_support 非 true → ManifestError。
     """
     if spec.side_effect == "irreversible" and spec.reversible is True:
-        raise ManifestError(
-            f"{loc} 矛盾声明：side_effect=irreversible 且 reversible=true"
-        )
+        raise ManifestError(f"{loc} 矛盾声明：side_effect=irreversible 且 reversible=true")
     if spec.execution_type == "process" and spec.requires_stop_support is not True:
-        raise ManifestError(
-            f"{loc} execution_type=process 必须 requires_stop_support: true"
-        )
+        raise ManifestError(f"{loc} execution_type=process 必须 requires_stop_support: true")
 
 
 def _reversibility_declared(spec: CapabilitySpec) -> bool:
@@ -853,23 +819,20 @@ def _validate_invariants(spec: CapabilitySpec, *, loc: str) -> None:
     is_write = spec.side_effect in WRITE_SIDE_EFFECTS
     http_block = spec.http or {}
     # 裁定四（testing-write-capability）：幂等键两处声明位——http 块键
-    #（http 能力）或顶层 idempotency_key（local_fn write 的合法声明位），
+    # （http 能力）或顶层 idempotency_key（local_fn write 的合法声明位），
     # 任一非空即满足；**仅 write 强制**，read 不受影响（顶层键缺省 None）。
-    idempotency_key = str(http_block.get("idempotency_key") or "").strip() or str(
-        spec.idempotency_key or ""
-    ).strip()
+    idempotency_key = (
+        str(http_block.get("idempotency_key") or "").strip()
+        or str(spec.idempotency_key or "").strip()
+    )
 
     # V1：写操作必须有幂等键（否则重复提交产生多张单据）
     if is_write and not idempotency_key:
-        raise ManifestError(
-            f"{loc} V1: side_effect={spec.side_effect} 必须有 idempotency_key"
-        )
+        raise ManifestError(f"{loc} V1: side_effect={spec.side_effect} 必须有 idempotency_key")
 
     # V2：写操作必须有人工确认（第一期不允许存在「无确认的写能力」）
     if is_write and not spec.hitl_required:
-        raise ManifestError(
-            f"{loc} V2: side_effect={spec.side_effect} 必须 hitl.required: true"
-        )
+        raise ManifestError(f"{loc} V2: side_effect={spec.side_effect} 必须 hitl.required: true")
 
     # V3：高危必须有人工确认（高危无确认 = 闸形同虚设）
     if spec.risk_level == "high" and not spec.hitl_required:
@@ -881,9 +844,7 @@ def _validate_invariants(spec: CapabilitySpec, *, loc: str) -> None:
     if spec.tenant_scoped and spec.kind == "http":
         param = http_block.get("tenant_param")
         if not isinstance(param, dict):
-            raise ManifestError(
-                f"{loc} V4: tenant_scoped=true 的 http 能力必须有 tenant_param"
-            )
+            raise ManifestError(f"{loc} V4: tenant_scoped=true 的 http 能力必须有 tenant_param")
         where = str(param.get("in") or "").strip().lower()
         if where not in _TENANT_PARAM_IN:
             raise ManifestError(
@@ -899,24 +860,20 @@ def _validate_invariants(spec: CapabilitySpec, *, loc: str) -> None:
 
     # V7：kind 形态完整性。
     # 注意 http 块的存在性在 ``_entry_from_raw`` 里按**原始数据**校验
-    #（spec.http 对非 http kind 恒为 None，此处判不出「多写了 http 块」）。
+    # （spec.http 对非 http kind 恒为 None，此处判不出「多写了 http 块」）。
     if spec.kind == "http" and not http_block:
         raise ManifestError(f"{loc} V7: kind=http 缺 http 块")
 
     # V8：只读不需要幂等键——写了通常是抄错，早报早改
-    #（裁定四对称适配：http 块键与顶层键任一声明都拦，延续「只读不需要幂等键」）
+    # （裁定四对称适配：http 块键与顶层键任一声明都拦，延续「只读不需要幂等键」）
     if not is_write and idempotency_key:
-        raise ManifestError(
-            f"{loc} V8: side_effect={spec.side_effect} 不应声明 idempotency_key"
-        )
+        raise ManifestError(f"{loc} V8: side_effect={spec.side_effect} 不应声明 idempotency_key")
 
     # V9：对外接入（kind=http）必须显式声明可见范围。
     # 进程内的 local_fn 沿用 CapabilityFilter 语义（未声明即不受限，但留痕）；
     # 而 http 是接别人系统的入口，**不该有「默认全员可见」这种兜底**。
     if spec.kind == "http" and spec.visibility is None:
-        raise ManifestError(
-            f"{loc} V9: kind=http 必须声明 visibility（部门 / 角色 / 密级）"
-        )
+        raise ManifestError(f"{loc} V9: kind=http 必须声明 visibility（部门 / 角色 / 密级）")
 
     # V12：写能力**禁止**声明降级（B1）。
     # 单据没建就是没建，不存在"降级成建了一半"。写操作失败必须看得见——

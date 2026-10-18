@@ -51,9 +51,7 @@ def configure_persistence_from_env() -> str:
     if mode == MODE_MEMORY:
         set_idempotency_store(InMemoryIdempotencyStore())
         set_receipt_sink(InMemoryReceiptSink())
-        logger.warning(
-            "能力层持久化：memory（进程内）—— **多实例下防重无效**，勿用于生产"
-        )
+        logger.warning("能力层持久化：memory（进程内）—— **多实例下防重无效**，勿用于生产")
         return MODE_MEMORY
 
     if mode != MODE_NULL:

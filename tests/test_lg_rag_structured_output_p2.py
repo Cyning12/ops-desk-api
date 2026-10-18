@@ -3,6 +3,7 @@
 覆盖：_parse_route / _parse_subtasks / info_extract 解析路径；
 fallback 语义；span metadata 含 structured_output_fallback。
 """
+
 from __future__ import annotations
 
 import json
@@ -23,9 +24,7 @@ from app.ops.strategy import BUILDER_CAP_FILTER
 
 
 def _full_allowlist_state(messages: list) -> dict:
-    ids = [
-        s.capability_id for s in list_capabilities(filter=BUILDER_CAP_FILTER)
-    ]
+    ids = [s.capability_id for s in list_capabilities(filter=BUILDER_CAP_FILTER)]
     return {
         "messages": messages,
         "allowed_capability_ids": ids,
@@ -171,9 +170,7 @@ async def test_info_extract_invalid_empty_and_metadata():
 async def test_info_extract_valid_no_fallback_flag():
     recorded: list[dict] = []
     provider = SimpleNamespace(
-        complete=AsyncMock(
-            return_value='{"dates": ["2026-08-20"], "versions": [], "people": []}'
-        )
+        complete=AsyncMock(return_value='{"dates": ["2026-08-20"], "versions": [], "people": []}')
     )
     state = {
         "subtasks": [{"id": "t1", "type": "extract", "input": "文本"}],

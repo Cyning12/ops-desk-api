@@ -75,9 +75,7 @@ def _kit_pin() -> str:
             f"capability_unavailable: env {DSH_KIT_VERSION_ENV} 未设置（钉版缺失）"
         )
     if not _KIT_PIN_RE.match(pin):
-        raise HarnessCliError(
-            f"capability_unavailable: env {DSH_KIT_VERSION_ENV} 非法值: {pin!r}"
-        )
+        raise HarnessCliError(f"capability_unavailable: env {DSH_KIT_VERSION_ENV} 非法值: {pin!r}")
     return pin
 
 
@@ -95,9 +93,7 @@ def _validate_task_path(value: Any) -> str:
     if not _TASK_PATH_RE.match(path):
         raise HarnessCliError(f"invalid_args: task_path 含非法字符: {path!r}")
     if not path.startswith(_TASK_PATH_PREFIX):
-        raise HarnessCliError(
-            f"invalid_args: task_path 须在 {_TASK_PATH_PREFIX} 内: {path!r}"
-        )
+        raise HarnessCliError(f"invalid_args: task_path 须在 {_TASK_PATH_PREFIX} 内: {path!r}")
     return path
 
 
@@ -161,13 +157,9 @@ class HarnessCliAdapter:
             asyncio.get_running_loop()
         except RuntimeError:
             return asyncio.run(self.ainvoke(args, ctx=ctx))
-        raise HarnessCliError(
-            "cli_failed: 运行中事件循环内禁同步 invoke；请用 ainvoke（P-13）"
-        )
+        raise HarnessCliError("cli_failed: 运行中事件循环内禁同步 invoke；请用 ainvoke（P-13）")
 
-    async def ainvoke(
-        self, args: Any, *, ctx: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
+    async def ainvoke(self, args: Any, *, ctx: dict[str, Any] | None = None) -> dict[str, Any]:
         del ctx  # Policy 已由 gateway 前置；adapter 不消费 ctx
         argv, op = _build_argv(self._capability_id, args)
         proc = await asyncio.create_subprocess_exec(
@@ -183,9 +175,7 @@ class HarnessCliAdapter:
             proc.kill()
             with contextlib.suppress(Exception):  # kill 后清理尽力而为
                 await proc.wait()
-            raise HarnessCliError(
-                f"cli_failed: timeout({self._timeout_seconds:g}s)"
-            ) from None
+            raise HarnessCliError(f"cli_failed: timeout({self._timeout_seconds:g}s)") from None
         stdout = _truncate(stdout_b, self._max_stream_bytes)
         stderr = _truncate(stderr_b, self._max_stream_bytes)
         returncode = proc.returncode if proc.returncode is not None else -1
@@ -195,9 +185,7 @@ class HarnessCliAdapter:
             try:
                 parsed = json.loads(stdout)
             except json.JSONDecodeError as exc:
-                raise HarnessCliError(
-                    f"cli_failed: invalid_json stdout={stdout[:200]!r}"
-                ) from exc
+                raise HarnessCliError(f"cli_failed: invalid_json stdout={stdout[:200]!r}") from exc
             if not isinstance(parsed, dict):
                 raise HarnessCliError(
                     f"cli_failed: invalid_json（期望 object）stdout={stdout[:200]!r}"

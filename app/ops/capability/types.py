@@ -20,9 +20,7 @@ from typing import Any
 
 # 词表（manifest 校验与 Policy 共用）
 RISK_LEVELS: frozenset[str] = frozenset({"low", "medium", "high"})
-SIDE_EFFECTS: frozenset[str] = frozenset(
-    {"none", "read", "write", "irreversible"}
-)
+SIDE_EFFECTS: frozenset[str] = frozenset({"none", "read", "write", "irreversible"})
 WRITE_SIDE_EFFECTS: frozenset[str] = frozenset({"write", "irreversible"})
 
 # 密级序（低 → 高）。可见集求值时按序比较：principal 需 ≥ capability。
@@ -49,9 +47,7 @@ EXECUTION_TYPES: frozenset[str] = frozenset({"instant", "target", "process"})
 def classification_rank(value: str) -> int:
     """密级序号；未知值按最低（public）处理，不抛异常。"""
     text = str(value or "").strip().lower()
-    return (
-        CLASSIFICATION_ORDER.index(text) if text in CLASSIFICATION_LEVELS else 0
-    )
+    return CLASSIFICATION_ORDER.index(text) if text in CLASSIFICATION_LEVELS else 0
 
 
 @dataclass(frozen=True)
@@ -103,7 +99,7 @@ class CapabilitySpec:
     # 缺省 None=未声明（向后兼容 · 存量 read 清单零 diff）。
     # 定位=加载期护栏/声明位：V1 对 write 强制「http 块键 或 顶层键」二选一，
     # V8 对 read 对称拦截；**当前对 local_fn 无运行期消费方**
-    #（未来 local_fn 接真实写时消费面另立 task）。
+    # （未来 local_fn 接真实写时消费面另立 task）。
     idempotency_key: str | None = None
     # 高危写需单次人工确认（加载期强校验：write/irreversible/high 必须为 True）
     hitl_required: bool = False

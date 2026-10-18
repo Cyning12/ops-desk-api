@@ -1,4 +1,5 @@
 """E4：score_current_trace 抽样门控（mock Langfuse · 不连云）。"""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -49,9 +50,7 @@ def test_eval_score_sample_rate_out_of_range(
 def test_score_current_trace_noop_when_tracing_off(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("OPS_EVAL_SCORE_SAMPLE_RATE", "1")
     mock_client = MagicMock()
-    monkeypatch.setattr(
-        "langfuse.get_client", lambda: mock_client, raising=False
-    )
+    monkeypatch.setattr("langfuse.get_client", lambda: mock_client, raising=False)
     # 未配置 tracer → tracing_enabled False；即便 import 了也不该调 SDK
     tracing.score_current_trace("stab.fallback", 1)
     mock_client.score_current_trace.assert_not_called()
@@ -90,9 +89,7 @@ def test_score_current_trace_rate_one_writes(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(langfuse, "get_client", lambda: mock_client)
 
     tracing.score_current_trace("stab.fallback", 1)
-    mock_client.score_current_trace.assert_called_once_with(
-        name="stab.fallback", value=1
-    )
+    mock_client.score_current_trace.assert_called_once_with(name="stab.fallback", value=1)
 
 
 def test_score_current_trace_sdk_error_swallowed(monkeypatch: pytest.MonkeyPatch):

@@ -41,9 +41,7 @@ class LlmRunContext:
 
 
 _DEFAULT_CONTEXT = LlmRunContext()
-_current: ContextVar[LlmRunContext] = ContextVar(
-    "llm_run_context", default=_DEFAULT_CONTEXT
-)
+_current: ContextVar[LlmRunContext] = ContextVar("llm_run_context", default=_DEFAULT_CONTEXT)
 
 #: 落表失败累计计数（进程内观测；失败 = log + 计数，不挡主答）
 _persist_failures = 0

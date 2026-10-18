@@ -150,9 +150,7 @@ async def test_answer_on_mechanism_fault_degrades_to_off(
     """机制故障（wrap 抛非内容违例异常）→ 降级 off 态装配 + span degraded。"""
     monkeypatch.setenv(_ENV, "true")
     spans: list[dict] = []
-    monkeypatch.setattr(
-        answer_mod, "update_current_span_metadata", lambda m: spans.append(m)
-    )
+    monkeypatch.setattr(answer_mod, "update_current_span_metadata", lambda m: spans.append(m))
 
     def _boom(*a, **k):
         raise RuntimeError("registry exploded")
@@ -176,9 +174,7 @@ async def test_answer_on_undeclared_content_rejected_zero_request(
     """
     monkeypatch.setenv(_ENV, "true")
     spans: list[dict] = []
-    monkeypatch.setattr(
-        answer_mod, "update_current_span_metadata", lambda m: spans.append(m)
-    )
+    monkeypatch.setattr(answer_mod, "update_current_span_metadata", lambda m: spans.append(m))
     # 变异：注入面绕过 wrap_slot 直拼（内容原样进模板，无边界标记）
     monkeypatch.setattr(answer_mod, "wrap_slot", lambda sid, content: content)
     prov = _Prov()
@@ -259,12 +255,8 @@ async def test_continuity_on_memory_block_attributed_memory_fact(
         "app.ops.memory.service.recall_active",
         AsyncMock(return_value=[{"key": "project.primary_repo", "value": "cyning/ops-desk"}]),
     )
-    out = await assemble_graph_messages_with_memory(
-        "q", [], tenant_id="t-sec", user_id="u-sec"
-    )
-    blocks = [
-        m for m in out if str(m.content).startswith(MEMORY_FACTS_HEADER)
-    ]
+    out = await assemble_graph_messages_with_memory("q", [], tenant_id="t-sec", user_id="u-sec")
+    blocks = [m for m in out if str(m.content).startswith(MEMORY_FACTS_HEADER)]
     assert len(blocks) == 1
     assert blocks[0].additional_kwargs["slot_ids"] == ["memory_fact"]
     assert "project.primary_repo=cyning/ops-desk" in str(blocks[0].content)
@@ -274,9 +266,7 @@ async def test_continuity_on_rejection_raises_with_span(monkeypatch: pytest.Monk
     """装配校验内容违例 → 显式炸 + span rejected（请求不进入图）。"""
     monkeypatch.setenv(_ENV, "true")
     spans: list[dict] = []
-    monkeypatch.setattr(
-        continuity_mod, "update_current_span_metadata", lambda m: spans.append(m)
-    )
+    monkeypatch.setattr(continuity_mod, "update_current_span_metadata", lambda m: spans.append(m))
 
     def _raise(_messages):
         from app.ops.prompts.slots import SlotUndeclaredError
@@ -292,9 +282,7 @@ async def test_continuity_on_rejection_raises_with_span(monkeypatch: pytest.Monk
 async def test_continuity_on_mechanism_fault_degrades(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv(_ENV, "true")
     spans: list[dict] = []
-    monkeypatch.setattr(
-        continuity_mod, "update_current_span_metadata", lambda m: spans.append(m)
-    )
+    monkeypatch.setattr(continuity_mod, "update_current_span_metadata", lambda m: spans.append(m))
 
     def _boom(_m, _s):
         raise RuntimeError("attribution exploded")
@@ -332,7 +320,10 @@ async def test_tool_exec_on_wraps_output_with_degraded_hint_inside(
     monkeypatch.setenv(_ENV, "true")
     hint = "（降级提示：静态兜底数据）"
     cap = SimpleNamespace(
-        ok=True, output=f"部署 v2.3.1\n{hint}", meta={"degraded": True, "degraded_action": "static"}, error=None
+        ok=True,
+        output=f"部署 v2.3.1\n{hint}",
+        meta={"degraded": True, "degraded_action": "static"},
+        error=None,
     )
     with patch.object(multi_nodes, "capability_ainvoke", AsyncMock(return_value=cap)):
         out = await multi_nodes.tool_exec_node(_tool_state())
@@ -435,9 +426,7 @@ async def test_aggregator_on_upstream_degraded_falls_back_off_state(
 ):
     """tool_exec 已降级（标记跟数据走）→ aggregator 整单退 off 态装配，不误判拒收。"""
     monkeypatch.setenv(_ENV, "true")
-    results = [
-        {"id": "t1", "type": "tool", "output": "裸回执", "input_isolation_degraded": True}
-    ]
+    results = [{"id": "t1", "type": "tool", "output": "裸回执", "input_isolation_degraded": True}]
     out, sent, _ = await _run_aggregator(monkeypatch, results)
     payload = json.dumps(results, ensure_ascii=False, default=str)
     assert str(sent[0][1].content) == f"原始问题：原始问题文本\n子任务结果：{payload}"

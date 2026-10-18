@@ -1,4 +1,5 @@
 """Tests for chat service event mapping."""
+
 from __future__ import annotations
 
 from app.ops.chat.service import run_chat_stream
@@ -28,14 +29,22 @@ class TestRunChatStream:
             yield {
                 "detect_intent": {
                     "events": [
-                        {"event_type": "thinking", "agent_role": "intent", "payload": {"step": "intent"}}
+                        {
+                            "event_type": "thinking",
+                            "agent_role": "intent",
+                            "payload": {"step": "intent"},
+                        }
                     ]
                 }
             }
             yield {
                 "generate_answer": {
                     "events": [
-                        {"event_type": "answer", "agent_role": "answer", "payload": {"content": "hi"}}
+                        {
+                            "event_type": "answer",
+                            "agent_role": "answer",
+                            "payload": {"content": "hi"},
+                        }
                     ]
                 }
             }
@@ -82,7 +91,11 @@ class TestRunChatStream:
     async def test_skips_non_dict_node_output(self, monkeypatch):
         async def fake_astream(state, stream_mode):
             yield {"detect_intent": None}
-            yield {"generate_answer": {"events": [{"event_type": "answer", "payload": {"content": "ok"}}]}}
+            yield {
+                "generate_answer": {
+                    "events": [{"event_type": "answer", "payload": {"content": "ok"}}]
+                }
+            }
 
         monkeypatch.setattr("app.ops.chat.service.graph.astream", fake_astream)
 

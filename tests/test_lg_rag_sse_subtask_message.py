@@ -1,4 +1,5 @@
 """task lg-rag-sse-subtask-message：subtask.progress 可读 message（mock，不连真 LLM）。"""
+
 from __future__ import annotations
 
 import logging
@@ -31,15 +32,11 @@ def test_running_message_unknown_type_fallback() -> None:
 
 
 def test_step_retrieve_start() -> None:
-    assert build_subtask_step_message(step="retrieve", detail={"phase": "start"}) == (
-        "开始检索…"
-    )
+    assert build_subtask_step_message(step="retrieve", detail={"phase": "start"}) == ("开始检索…")
 
 
 def test_step_retrieve_done_hit_count() -> None:
-    msg = build_subtask_step_message(
-        step="retrieve", detail={"phase": "done", "hit_count": 5}
-    )
+    msg = build_subtask_step_message(step="retrieve", detail={"phase": "done", "hit_count": 5})
     assert "5" in msg
     assert "命中" in msg
 
@@ -66,9 +63,7 @@ def test_step_rewrite_current_query() -> None:
 
 
 def test_step_answer_done_chars() -> None:
-    msg = build_subtask_step_message(
-        step="answer", detail={"phase": "done", "answer_chars": 42}
-    )
+    msg = build_subtask_step_message(step="answer", detail={"phase": "done", "answer_chars": 42})
     assert "42" in msg
 
 
@@ -91,9 +86,7 @@ def test_done_message_from_subtask_result_output() -> None:
 
 
 def test_done_message_error() -> None:
-    msg = build_subtask_done_message(
-        subtask_result={"id": "t1", "error": "LLM timeout"}
-    )
+    msg = build_subtask_done_message(subtask_result={"id": "t1", "error": "LLM timeout"})
     assert "失败" in msg
     assert "LLM timeout" in msg
 
@@ -115,15 +108,11 @@ def test_done_message_bare_fallback_non_empty() -> None:
 
 def test_message_truncated_at_max_len() -> None:
     long_query = "问" * 500
-    msg = build_subtask_step_message(
-        step="rewrite", detail={"current_query": long_query}
-    )
+    msg = build_subtask_step_message(step="rewrite", detail={"current_query": long_query})
     assert len(msg) <= SUBTASK_MESSAGE_MAX_LEN
     msg_running = build_subtask_running_message(type="rag", input_preview=long_query)
     assert len(msg_running) <= SUBTASK_MESSAGE_MAX_LEN
-    msg_done = build_subtask_done_message(
-        subtask_result={"output": long_query}
-    )
+    msg_done = build_subtask_done_message(subtask_result={"output": long_query})
     assert len(msg_done) <= SUBTASK_MESSAGE_MAX_LEN
 
 

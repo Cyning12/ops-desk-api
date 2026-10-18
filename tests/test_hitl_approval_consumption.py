@@ -136,17 +136,13 @@ async def test_ta1_approval_consumed_allows_redispatch(cap_env, caplog, monkeypa
     state, row = _mk(run_id, sid)
     await cap_env.acreate(_approved_req(run_id, sid))
     span_calls: list[dict] = []
-    monkeypatch.setattr(
-        nodes, "_record_span_metadata", lambda md: span_calls.append(md)
-    )
+    monkeypatch.setattr(nodes, "_record_span_metadata", lambda md: span_calls.append(md))
 
     with caplog.at_level(logging.INFO, logger="app.ops.lg_rag.multi.nodes"):
         reason = await _delegation_issue_block_reason(state, row)
 
     assert reason is None
-    hits = [
-        r for r in caplog.records if "delegation_approval_consumed" in r.message
-    ]
+    hits = [r for r in caplog.records if "delegation_approval_consumed" in r.message]
     assert len(hits) == 1
     msg = hits[0].message
     assert sid in msg and _TESTING_CAP in msg and "验收" in msg
@@ -263,6 +259,7 @@ async def test_ta2_ttl_db_store_real_read_path_iso_str(cap_env, monkeypatch):
     finally:
         await _cleanup()
 
+
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
 async def test_ta2_ttl_db_store_expired_not_consumed(cap_env, monkeypatch):
     """TA2⑧ 续（Db 组过期半）：decided_at 拨回 2h（SQL 层真改）→ 超 TTL 不消费。"""
@@ -308,6 +305,7 @@ async def test_ta2_ttl_db_store_expired_not_consumed(cap_env, monkeypatch):
     finally:
         await _cleanup()
 
+
 async def test_ta2_store_read_failure_fail_closed(cap_env, monkeypatch, caplog):
     """TA2⑤（FP-1）：消费读 store 异常 → 维持拦截 + warning 台账。"""
     run_id = f"run-{uuid.uuid4().hex[:8]}"
@@ -322,17 +320,20 @@ async def test_ta2_store_read_failure_fail_closed(cap_env, monkeypatch, caplog):
     with caplog.at_level(logging.WARNING, logger="app.ops.lg_rag.multi.nodes"):
         reason = await _delegation_issue_block_reason(state, row)
     assert reason is not None and "非只读" in reason
-    assert any(
-        "delegation_approval_consumption_read_failed" in r.message
-        for r in caplog.records
-    )
+    assert any("delegation_approval_consumption_read_failed" in r.message for r in caplog.records)
 
 
 @pytest.mark.parametrize(
     ("raw", "want"),
     [
-        (None, 3600), ("", 3600), ("5", 5), ("86400", 86400),
-        ("0", 3600), ("86401", 3600), ("abc", 3600), (" 120 ", 120),
+        (None, 3600),
+        ("", 3600),
+        ("5", 5),
+        ("86400", 86400),
+        ("0", 3600),
+        ("86401", 3600),
+        ("abc", 3600),
+        (" 120 ", 120),
     ],
 )
 def test_ta2_ttl_env_parse(monkeypatch, raw, want):
@@ -419,9 +420,7 @@ def _observe_graph_factory(*, checkpointer):
     builder = StateGraph(LgRagState)
     builder.add_node("observe", observe_node)
     builder.add_edge(START, "observe")
-    builder.add_conditional_edges(
-        "observe", route_after_react, {"replan": END, "settle": END}
-    )
+    builder.add_conditional_edges("observe", route_after_react, {"replan": END, "settle": END})
     return builder.compile(checkpointer=checkpointer)
 
 
@@ -481,9 +480,7 @@ async def test_ta3_single_subtask_resume_loop_completes(cap_env, monkeypatch):
     assert await _delegation_issue_block_reason(post, row) is None
     token = _issue_delegation_token(post, row)
     assert token is not None, "消费命中后令牌签发不得为空"
-    exec_out = await tool_exec_node(
-        {**post, "assigned_subtask": row, "delegation_token": token}
-    )
+    exec_out = await tool_exec_node({**post, "assigned_subtask": row, "delegation_token": token})
     result = exec_out["subtask_results"][-1]
     assert result.get("subtask_id") == sid
     assert "error" not in result, f"成环执行失败：{result.get('error')!r}"
@@ -493,6 +490,7 @@ async def test_ta3_single_subtask_resume_loop_completes(cap_env, monkeypatch):
     obs_done = _observe({**post, "subtask_results": [result]})
     assert obs_done["done"] == obs_done["planned"] == 1
     assert obs_done["unsatisfied"] is False
+
 
 async def test_ta4_consumption_hit_does_not_waive_gateway_or_policy(cap_env):
     """TA4-D（实操-D）：消费命中 ≠ 全链放行——签发判定放行后，无令牌 enforce
@@ -548,10 +546,7 @@ async def test_ta5_off_mode_zero_store_touch(cap_env, monkeypatch, caplog):
     assert not any(
         "delegation_approval_consumed" in r.message for r in caplog.records
     )  # off：无新台账
-    assert not any(
-        r.get("blocked_by") == _BLOCKED_BY
-        for r in joined.get("subtask_results", [])
-    )
+    assert not any(r.get("blocked_by") == _BLOCKED_BY for r in joined.get("subtask_results", []))
 
 
 # --- TA6 decide 落库不动：router 409 守卫保留（prefix_touch 空 unlock）-------
@@ -606,11 +601,7 @@ _CAPS_PATCH = "app.ops.lg_rag.multi.nodes.list_capabilities"
 
 def _fake_caps(*_a, **_kw):
     """承 test_react_observe._fake_caps 范式：可见能力集只含 testing 罐头。"""
-    return [
-        SimpleNamespace(
-            capability_id=_TESTING_CAP, description="测试回写", risk_level="low"
-        )
-    ]
+    return [SimpleNamespace(capability_id=_TESTING_CAP, description="测试回写", risk_level="low")]
 
 
 def _guard_row(sid: str, **kw) -> dict:
@@ -650,16 +641,12 @@ def _guard_state(run_id: str, rows: list[dict], results: list[dict], **kw) -> di
 
 
 def _llm_returning(payload: str):
-    return lambda *a, **k: SimpleNamespace(
-        complete=AsyncMock(return_value=payload)
-    )
+    return lambda *a, **k: SimpleNamespace(complete=AsyncMock(return_value=payload))
 
 
 def _new_step_suffix(input_text: str = "新步骤") -> str:
     return json.dumps(
-        {"subtasks": [
-            {"id": "s1", "type": "tool", "tool": _TESTING_CAP, "input": input_text}
-        ]},
+        {"subtasks": [{"id": "s1", "type": "tool", "tool": _TESTING_CAP, "input": input_text}]},
         ensure_ascii=False,
     )
 
@@ -682,8 +669,9 @@ async def test_tb1_replan_preserves_unlocked_sid_normal_path(cap_env):
         plan_prefix_ids=[s1],
         hitl_unlocked_ids=[s2],
     )
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=_llm_returning(_new_step_suffix())
+    with (
+        patch(_CAPS_PATCH, new=_fake_caps),
+        patch(_PLAN_PATCH, new=_llm_returning(_new_step_suffix())),
     ):
         out = await supervisor_node(state)
     new_id = f"{run_id}:3"
@@ -713,10 +701,9 @@ async def test_tb2_fallback_path_preserves_unlocked_sid(cap_env):
         plan_prefix_ids=[s1],
         hitl_unlocked_ids=[s2],
     )
+
     def _boom(*a, **k):
-        return SimpleNamespace(
-            complete=AsyncMock(side_effect=RuntimeError("LLM down"))
-        )
+        return SimpleNamespace(complete=AsyncMock(side_effect=RuntimeError("LLM down")))
 
     with patch(_CAPS_PATCH, new=_fake_caps), patch(_PLAN_PATCH, new=_boom):
         out = await supervisor_node(state)
@@ -765,8 +752,9 @@ async def test_tb3_non_unlocked_unresolved_step_replaced_control(cap_env):
         plan_prefix_ids=[s1],
         hitl_unlocked_ids=[],  # s2 未解锁：不在 P
     )
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=_llm_returning(_new_step_suffix())
+    with (
+        patch(_CAPS_PATCH, new=_fake_caps),
+        patch(_PLAN_PATCH, new=_llm_returning(_new_step_suffix())),
     ):
         out = await supervisor_node(state)
     ids = [r["subtask_id"] for r in out["subtasks"]]
@@ -798,8 +786,9 @@ async def test_tb3_unlocked_step_with_terminal_not_preserved(cap_env):
         assert _unlocked_preserved_rows(state, locked) == [], (
             f"FP-8：有终态的 unlocked 步不得保号（terminal={term}）"
         )
-        with patch(_CAPS_PATCH, new=_fake_caps), patch(
-            _PLAN_PATCH, new=_llm_returning(_new_step_suffix())
+        with (
+            patch(_CAPS_PATCH, new=_fake_caps),
+            patch(_PLAN_PATCH, new=_llm_returning(_new_step_suffix())),
         ):
             out = await supervisor_node(state)
         ids = [r["subtask_id"] for r in out["subtasks"]]
@@ -848,8 +837,9 @@ async def test_tb4_empty_unlocked_byte_parity_with_master(cap_env):
     outs = []
     for extra in ({}, {"hitl_unlocked_ids": []}):
         state = _guard_state(run_id, rows, results, plan_prefix_ids=[s1], **extra)
-        with patch(_CAPS_PATCH, new=_fake_caps), patch(
-            _PLAN_PATCH, new=_llm_returning(_new_step_suffix())
+        with (
+            patch(_CAPS_PATCH, new=_fake_caps),
+            patch(_PLAN_PATCH, new=_llm_returning(_new_step_suffix())),
         ):
             outs.append(await supervisor_node(state))
     # 键缺失 vs 显式空列表：五键逐字节一致（空 unlocked ⇒ 保号路径零介入）
@@ -901,8 +891,11 @@ async def test_tb5_consume_hit_replan_carry_loop_completes(cap_env, monkeypatch,
     decided = await cap_env.adecide(req["id"], decision=STATUS_APPROVED, by="验收")
     assert decided["status"] == STATUS_APPROVED
     out = await resume_hitl_run(
-        thread_id="t-tb5", approved=[sid], decided_by="验收",
-        checkpointer=saver, graph_factory=_observe_graph_factory,
+        thread_id="t-tb5",
+        approved=[sid],
+        decided_by="验收",
+        checkpointer=saver,
+        graph_factory=_observe_graph_factory,
     )
     final = out["state"]
     assert final["react_observation"]["verdict"] == "replan"
@@ -919,8 +912,9 @@ async def test_tb5_consume_hit_replan_carry_loop_completes(cap_env, monkeypatch,
         "supervisor_step_count": 1,
         "react_round": 0,
     }
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=_llm_returning(_new_step_suffix("后续步骤"))
+    with (
+        patch(_CAPS_PATCH, new=_fake_caps),
+        patch(_PLAN_PATCH, new=_llm_returning(_new_step_suffix("后续步骤"))),
     ):
         replanned = await supervisor_node(replan_state)
     new_id = f"{run_id}:2"
@@ -933,9 +927,7 @@ async def test_tb5_consume_hit_replan_carry_loop_completes(cap_env, monkeypatch,
     post = {**merged, "hitl_unlocked_ids": final["hitl_unlocked_ids"]}
     with caplog.at_level(logging.INFO, logger="app.ops.lg_rag.multi.nodes"):
         assert await _delegation_issue_block_reason(post, carried) is None
-    assert any(
-        "delegation_approval_consumed" in r.message for r in caplog.records
-    )
+    assert any("delegation_approval_consumed" in r.message for r in caplog.records)
 
     # 令牌真签发 → tool_exec 真执行（罐头回显）→ done{completed} 机制段收口
     token = _issue_delegation_token(post, carried)
@@ -947,9 +939,7 @@ async def test_tb5_consume_hit_replan_carry_loop_completes(cap_env, monkeypatch,
     assert result.get("subtask_id") == sid
     assert "error" not in result, f"成环执行失败：{result.get('error')!r}"
     assert "output" in result
-    obs_done = _observe(
-        {**post, "subtasks": [carried], "subtask_results": [result]}
-    )
+    obs_done = _observe({**post, "subtasks": [carried], "subtask_results": [result]})
     assert obs_done["done"] == obs_done["planned"] == 1
     assert obs_done["unsatisfied"] is False
 
@@ -1032,9 +1022,7 @@ async def test_tb6_prefix_touch_approved_does_not_match(cap_env):
     （单据类型守卫镜像消费门 · FP-4 同族）。"""
     run_id = f"run-{uuid.uuid4().hex[:8]}"
     sid = f"{run_id}:1"
-    await cap_env.acreate(
-        _approved_req(run_id, sid, blocked_by="prefix_touch_required")
-    )
+    await cap_env.acreate(_approved_req(run_id, sid, blocked_by="prefix_touch_required"))
     merged, obs = _persist_scenario(run_id, sid)
     created, _ = await _persist_hitl(merged, obs, thread_id="t-tb6p")
     assert any(str(r.get("subtask_id")) == sid for r in created)  # 守卫照建
@@ -1056,9 +1044,7 @@ async def test_tb6_guard_read_failure_fail_open_creates(cap_env, monkeypatch, ca
     with caplog.at_level(logging.WARNING, logger="app.ops.lg_rag.multi.nodes"):
         created, _ = await _persist_hitl(merged, obs, thread_id="t-tb6f")
     assert any(str(r.get("subtask_id")) == sid for r in created)  # fail-open 照建
-    assert any(
-        "hitl_persist_guard_read_failed" in r.message for r in caplog.records
-    )
+    assert any("hitl_persist_guard_read_failed" in r.message for r in caplog.records)
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
@@ -1100,4 +1086,3 @@ async def test_tb6_fresh_approved_db_store_skips_creation(cap_env):
         assert not [r for r in pendings if str(r.get("run_id")) == run_id]
     finally:
         await _cleanup()
-

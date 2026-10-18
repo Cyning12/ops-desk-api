@@ -102,7 +102,9 @@ def snapshot() -> dict[str, Any]:
                 "blocked": _WRITE_BLOCKED,
                 "allowed": _WRITE_TOTAL - _WRITE_BLOCKED,
             },
-            "by_capability": {cid: dict(sorted(b.items())) for cid, b in sorted(_BY_CAPABILITY.items())},
+            "by_capability": {
+                cid: dict(sorted(b.items())) for cid, b in sorted(_BY_CAPABILITY.items())
+            },
             "latency_ms": latency,
             # 降级：**成功但降级**的调用最容易从监控里消失（它们 ok=True），
             # 所以必须单列——不然"系统一切正常"是真的，用户拿到的却是兜底答案。
@@ -111,9 +113,7 @@ def snapshot() -> dict[str, Any]:
                 "by_action": dict(sorted(_DEGRADED_BY_ACTION.items())),
                 "by_depth": {str(k): v for k, v in sorted(_DEGRADE_BY_DEPTH.items())},
                 # 经常退到第二级 = 第一级长期不可用，是选型问题不是抖动
-                "deeper_than_one": sum(
-                    v for k, v in _DEGRADE_BY_DEPTH.items() if k > 1
-                ),
+                "deeper_than_one": sum(v for k, v in _DEGRADE_BY_DEPTH.items() if k > 1),
                 # 标记没写进输出的次数：>0 说明有人会拿到"看不出是降级的兜底值"
                 "unmarked": _DEGRADE_UNMARKED,
             },

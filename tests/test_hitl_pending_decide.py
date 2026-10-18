@@ -47,9 +47,7 @@ from tests.test_hitl_resume import _drain
 _MAINTAINER = OpsUser(
     id="00000000-0000-0000-0000-000000000001", username="admin", role="maintainer"
 )
-_VIEWER = OpsUser(
-    id="00000000-0000-0000-0000-000000000002", username="viewer", role="viewer"
-)
+_VIEWER = OpsUser(id="00000000-0000-0000-0000-000000000002", username="viewer", role="viewer")
 _OTHER_USER_ID = "00000000-0000-0000-0000-000000000099"
 
 _RUN = "rundecide"
@@ -389,7 +387,9 @@ def test_decide_does_not_auto_resume():
         patch("app.ops.hitl.router.resume_hitl_run", new=spy),
         _client(store, user=_MAINTAINER) as client,
     ):
-        res = client.post(f"/api/ops/hitl/requests/{row['id']}/decide", json={"decision": "approved"})
+        res = client.post(
+            f"/api/ops/hitl/requests/{row['id']}/decide", json={"decision": "approved"}
+        )
     assert res.status_code == 200, res.text
     spy.assert_not_called()
 
@@ -410,7 +410,9 @@ def test_decide_other_users_run_is_404_not_leaked():
         patch("app.ops.lg_rag.event_store.run_owner", new=owner),
         _client(store, user=_MAINTAINER) as client,
     ):
-        res = client.post(f"/api/ops/hitl/requests/{row['id']}/decide", json={"decision": "approved"})
+        res = client.post(
+            f"/api/ops/hitl/requests/{row['id']}/decide", json={"decision": "approved"}
+        )
     assert res.status_code == 404
     # 申请必须原样还在（没被别人决掉）
     assert asyncio.run(store.aget(row["id"]))["status"] == STATUS_PENDING
@@ -427,7 +429,9 @@ def test_decide_unresolvable_owner_is_404_with_error_log(caplog):
         caplog.at_level(logging.ERROR, logger="app.ops.hitl.router"),
         _client(store, user=_MAINTAINER) as client,
     ):
-        res = client.post(f"/api/ops/hitl/requests/{row['id']}/decide", json={"decision": "approved"})
+        res = client.post(
+            f"/api/ops/hitl/requests/{row['id']}/decide", json={"decision": "approved"}
+        )
     assert res.status_code == 404
     assert asyncio.run(store.aget(row["id"]))["status"] == STATUS_PENDING
     assert any(r.levelno >= logging.ERROR for r in caplog.records)
@@ -443,8 +447,12 @@ def test_decide_duplicate_is_409():
         patch("app.ops.lg_rag.event_store.run_owner", new=owner),
         _client(store, user=_MAINTAINER) as client,
     ):
-        first = client.post(f"/api/ops/hitl/requests/{row['id']}/decide", json={"decision": "approved"})
-        again = client.post(f"/api/ops/hitl/requests/{row['id']}/decide", json={"decision": "rejected"})
+        first = client.post(
+            f"/api/ops/hitl/requests/{row['id']}/decide", json={"decision": "approved"}
+        )
+        again = client.post(
+            f"/api/ops/hitl/requests/{row['id']}/decide", json={"decision": "rejected"}
+        )
     assert first.status_code == 200, first.text
     assert again.status_code == 409, again.text
     # 第一次的决定没被第二次覆盖

@@ -3,6 +3,7 @@
 挂载方（如 ``rag_subtask``）经 ContextVar 注入 async hook；
 chain 各步入口/出口调用 ``emit_chain_step``。无 hook 时为空操作。
 """
+
 from __future__ import annotations
 
 import contextvars

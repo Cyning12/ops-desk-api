@@ -4,6 +4,7 @@ Wave B（task_lg_rag_sse_run_worker）：执行生命周期与 HTTP SSE 订阅�
 ``run_id`` 单飞；断连只取消 subscriber，**不** cancel 本 worker。
 MVP 进程内；多副本 DB 租约另立。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -134,11 +135,7 @@ def start_run_worker(
                 ):
                     bus.publish(frame)
 
-            if (
-                checkpointer is None
-                and mode == "supervisor"
-                and use_postgres_checkpointer()
-            ):
+            if checkpointer is None and mode == "supervisor" and use_postgres_checkpointer():
                 async with apostgres_saver(setup=True) as saver:
                     await _pump(saver)
             else:
@@ -234,12 +231,8 @@ async def scan_orphan_runs_for_compensation(
                 },
             )
         except Exception:
-            logger.exception(
-                "lg-rag orphan compensate persist failed run_id=%s", run_id
-            )
+            logger.exception("lg-rag orphan compensate persist failed run_id=%s", run_id)
             continue
         compensated += 1
-        logger.info(
-            "lg-rag orphan compensated run_id=%s seq=%s", run_id, next_seq
-        )
+        logger.info("lg-rag orphan compensated run_id=%s seq=%s", run_id, next_seq)
     return compensated

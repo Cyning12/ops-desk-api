@@ -200,9 +200,7 @@ async def test_hitl_required_persists_via_existing_hitl_loop(enforce_env):
             and str(r.get("subtask_id") or "") == sid
             for r in rows
         )
-        assert any(
-            str(r.get("subtask_id") or "") == sid for r in created
-        )
+        assert any(str(r.get("subtask_id") or "") == sid for r in created)
     finally:
         reset_hitl_store()
 
@@ -310,9 +308,7 @@ def test_scope_matrix_intersect_and_strip(caplog):
     allowlist = {"a", "b"}
     # 声明收窄生效 + 越界剔除（只收窄不放宽）
     with caplog.at_level(logging.WARNING, logger="app.ops.strategy.builder"):
-        scope, stripped, truncated = effective_scope_from_requested(
-            ["a", "evil_id"], allowlist
-        )
+        scope, stripped, truncated = effective_scope_from_requested(["a", "evil_id"], allowlist)
     assert scope == ["a"]
     assert stripped == ["evil_id"]
     assert truncated == []
@@ -367,9 +363,7 @@ async def test_supervisor_writes_effective_scope(monkeypatch):
         "run_id": f"run-{uuid.uuid4().hex[:8]}",
         "allowed_capability_ids": ["mock_get_deploy_info"],
     }
-    with patch(
-        "app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider
-    ):
+    with patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider):
         out = await supervisor_node(state)
     assert out["delegation_scope"] == ["mock_get_deploy_info"]
 
@@ -396,8 +390,6 @@ async def test_supervisor_undeclared_scope_writes_nothing(monkeypatch):
         "run_id": f"run-{uuid.uuid4().hex[:8]}",
         "allowed_capability_ids": ["mock_get_deploy_info"],
     }
-    with patch(
-        "app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider
-    ):
+    with patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider):
         out = await supervisor_node(state)
     assert "delegation_scope" not in out  # 未声明 = 兼容现状隐式 allowlist

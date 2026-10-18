@@ -15,6 +15,7 @@
 - session 纪律：传入 session 时调用方持有事务（本模块只 flush）；
   不传则模块自开 AsyncSessionLocal 并自行 commit（承 service.py 先例）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -64,9 +65,7 @@ def memory_episodes_write_enabled() -> bool:
 def _is_missing_table(exc: BaseException) -> bool:
     """表不存在（migration 未跑 / 已 downgrade）→ off 态降级而非炸。"""
     text = f"{type(exc).__name__}: {exc}"
-    return "ops_memory_episodes" in text and (
-        "does not exist" in text or "UndefinedTable" in text
-    )
+    return "ops_memory_episodes" in text and ("does not exist" in text or "UndefinedTable" in text)
 
 
 async def write_episode(
@@ -159,9 +158,7 @@ async def revoke_by_run(
                 count = int(result.rowcount or 0)
     except Exception as exc:
         if _is_missing_table(exc):
-            logger.warning(
-                "memory episode table missing; revoke degraded run_id=%s", run_id
-            )
+            logger.warning("memory episode table missing; revoke degraded run_id=%s", run_id)
             return 0
         raise
     # 审计日志：纠错动作本身必须可追查（含幂等 0 行）

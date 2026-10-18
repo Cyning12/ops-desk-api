@@ -7,6 +7,7 @@
 - 三态转换用 advance 式时间拨动 hook，不真等 60s
 - snapshot 输出 state / fail_counter / seconds_until_half_open / blocked_calls
 """
+
 from __future__ import annotations
 
 import httpx

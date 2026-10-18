@@ -84,7 +84,9 @@ def scan_interval_seconds() -> int:
         value = int(str(raw).strip())
     except (TypeError, ValueError):
         return DEFAULT_SCAN_INTERVAL_SECONDS
-    return value if SCAN_INTERVAL_MIN <= value <= SCAN_INTERVAL_MAX else DEFAULT_SCAN_INTERVAL_SECONDS
+    return (
+        value if SCAN_INTERVAL_MIN <= value <= SCAN_INTERVAL_MAX else DEFAULT_SCAN_INTERVAL_SECONDS
+    )
 
 
 def resolve_resume_mode(resume_mode: str) -> str:
@@ -120,9 +122,7 @@ def _audit(event: str, *, row: dict[str, Any], resume_mode: str, ttl_seconds: in
     """
     decided_ts = _decided_at_ts(row.get("decided_at"))
     ttl_remaining = (
-        max(0, int(ttl_seconds - (time.time() - decided_ts)))
-        if decided_ts is not None
-        else None
+        max(0, int(ttl_seconds - (time.time() - decided_ts))) if decided_ts is not None else None
     )
     logger.info(
         "%s request_id=%s run_id=%s resume_mode=%s decision_by=%s ttl_remaining_s=%s",
@@ -180,9 +180,7 @@ async def _interrupt_metadata_visible(row: dict[str, Any]) -> bool:
             graph = _default_graph_factory(checkpointer=saver)
             state = await graph.aget_state({"configurable": {"thread_id": thread_id}})
     except Exception:
-        logger.exception(
-            "HITL 自动恢复就绪校验失败（fail-closed 等下轮）request=%s", row.get("id")
-        )
+        logger.exception("HITL 自动恢复就绪校验失败（fail-closed 等下轮）request=%s", row.get("id"))
         return False
     tasks = getattr(state, "tasks", None) or []
     if not tasks:
@@ -195,9 +193,7 @@ async def _claim_and_execute(request_id: str, *, resume_mode: str, ttl_seconds: 
     from app.ops.hitl import get_hitl_store
 
     try:
-        row = await get_hitl_store().aclaim_approved_for_resume(
-            request_id, ttl_seconds=ttl_seconds
-        )
+        row = await get_hitl_store().aclaim_approved_for_resume(request_id, ttl_seconds=ttl_seconds)
     except Exception:
         logger.exception("HITL 自动恢复认领失败 request=%s（等补偿扫描下轮兜底）", request_id)
         return

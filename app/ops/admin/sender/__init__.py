@@ -1,4 +1,5 @@
 """Admin sync sender：GitHub 拉取 → SyncPayload → HTTP POST（不直连 PG）。"""
+
 from __future__ import annotations
 
 from app.ops.admin.sender.github_client import GitHubClient, GitHubSyncError

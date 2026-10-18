@@ -129,9 +129,7 @@ def test_a8_v1_still_blocks_write_local_fn_without_any_key(tmp_path: Path):
         side_effect="write",
         hitl={"required": True},
     )
-    with pytest.raises(
-        ManifestError, match="V1: side_effect=write 必须有 idempotency_key"
-    ):
+    with pytest.raises(ManifestError, match="V1: side_effect=write 必须有 idempotency_key"):
         load_capability_manifest(_write_json(tmp_path, "v1.json", [cap]))
     assert "probe.write_nokey" not in {s.capability_id for s in list_capabilities()}
 
@@ -147,9 +145,7 @@ def test_a8_write_local_fn_with_top_level_key_loads(tmp_path: Path):
     )
     result = load_capability_manifest(_write_json(tmp_path, "ok.json", [cap]))
     assert "probe.write_topkey" in result.registered_ids
-    spec = next(
-        s for s in list_capabilities() if s.capability_id == "probe.write_topkey"
-    )
+    spec = next(s for s in list_capabilities() if s.capability_id == "probe.write_topkey")
     assert spec.idempotency_key == "{{request_id}}"
     assert spec.hitl_required is True  # V2 语义不动
 
@@ -159,9 +155,7 @@ def test_a8_read_without_top_level_key_zero_diff(tmp_path: Path):
     cap = dict(_PROBE_BASE, id="probe.read_plain", side_effect="read")
     result = load_capability_manifest(_write_json(tmp_path, "read.json", [cap]))
     assert "probe.read_plain" in result.registered_ids
-    spec = next(
-        s for s in list_capabilities() if s.capability_id == "probe.read_plain"
-    )
+    spec = next(s for s in list_capabilities() if s.capability_id == "probe.read_plain")
     assert spec.idempotency_key is None
 
 
@@ -170,12 +164,8 @@ def test_a8_read_with_top_level_key_hits_v8(tmp_path: Path):
 
     错误文案逐字节钉死（golden baseline_v1.json:102 对拍面 · O5）。
     """
-    cap = dict(
-        _PROBE_BASE, id="probe.read_key", side_effect="read", idempotency_key="x"
-    )
-    with pytest.raises(
-        ManifestError, match="V8: side_effect=read 不应声明 idempotency_key"
-    ):
+    cap = dict(_PROBE_BASE, id="probe.read_key", side_effect="read", idempotency_key="x")
+    with pytest.raises(ManifestError, match="V8: side_effect=read 不应声明 idempotency_key"):
         load_capability_manifest(_write_json(tmp_path, "v8.json", [cap]))
     assert "probe.read_key" not in {s.capability_id for s in list_capabilities()}
 
@@ -228,9 +218,7 @@ def test_a5_canned_adapter_zero_io():
 
     src = inspect.getsource(_testing_write_echo)
     tree = ast.parse(src)
-    fn = next(
-        n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)
-    )
+    fn = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef))
     body = [
         n
         for n in fn.body
@@ -285,18 +273,14 @@ def _write_spec(cid: str, **over) -> CapabilitySpec:
 def test_allow_write_tags_hit_exempts_deny_write_only():
     """命中 → 豁免 deny_write 一层（可见）。"""
     spec = _write_spec("x.write")
-    flt = CapabilityFilter(
-        deny_write=True, allow_write_tags_any=frozenset({"testing"})
-    )
+    flt = CapabilityFilter(deny_write=True, allow_write_tags_any=frozenset({"testing"}))
     assert _match_filter(spec, flt) is True
 
 
 def test_allow_write_tags_miss_still_cropped():
     """未命中 → deny_write 仍裁（默认空=None 时判序零 diff 一并守住）。"""
     spec = _write_spec("x.write")
-    miss = CapabilityFilter(
-        deny_write=True, allow_write_tags_any=frozenset({"other"})
-    )
+    miss = CapabilityFilter(deny_write=True, allow_write_tags_any=frozenset({"other"}))
     assert _match_filter(spec, miss) is False
     # 默认 None（env 未设）→ 与旧判序逐字节一致
     default = CapabilityFilter(deny_write=True)
@@ -319,9 +303,7 @@ def test_baseline_env_default_empty_is_none(monkeypatch):
     monkeypatch.delenv(ENV_ALLOW_WRITE_TAGS, raising=False)
     assert baseline_filter(node_role="probe").allow_write_tags_any is None
     monkeypatch.setenv(ENV_ALLOW_WRITE_TAGS, "testing, mock")
-    assert baseline_filter(node_role="probe").allow_write_tags_any == frozenset(
-        {"testing", "mock"}
-    )
+    assert baseline_filter(node_role="probe").allow_write_tags_any == frozenset({"testing", "mock"})
 
 
 # ---------------------------------------------------------------------------
@@ -382,9 +364,7 @@ def _observe_graph_factory(*, checkpointer):
     builder = StateGraph(LgRagState)
     builder.add_node("observe", observe_node)
     builder.add_edge(START, "observe")
-    builder.add_conditional_edges(
-        "observe", route_after_react, {"replan": END, "settle": END}
-    )
+    builder.add_conditional_edges("observe", route_after_react, {"replan": END, "settle": END})
     return builder.compile(checkpointer=checkpointer)
 
 
@@ -463,10 +443,7 @@ async def test_a4_enforce_chain_suspend_pending_decide_resume(monkeypatch):
             suspended = intr.value
     assert suspended is not None, "前置：图没有被挂起"
     assert suspended["reason"] == "hitl_waiting"
-    assert any(
-        r["blocked_by"] == "delegation_issue_hitl_required"
-        for r in suspended["requests"]
-    )
+    assert any(r["blocked_by"] == "delegation_issue_hitl_required" for r in suspended["requests"])
 
     # ③ decide(approved)：真 store 守卫（pending → approved）
     decided = await store.adecide(req["id"], decision=STATUS_APPROVED, by="验收")
@@ -495,7 +472,5 @@ async def test_a4_enforce_chain_suspend_pending_decide_resume(monkeypatch):
     reason = await _delegation_issue_block_reason(post, merged["subtasks"][0])
     assert reason is None
     post_mismatch = {**post, "run_id": f"{run_id}-other"}
-    reason_mismatch = await _delegation_issue_block_reason(
-        post_mismatch, merged["subtasks"][0]
-    )
+    reason_mismatch = await _delegation_issue_block_reason(post_mismatch, merged["subtasks"][0])
     assert reason_mismatch is not None and "非只读" in reason_mismatch

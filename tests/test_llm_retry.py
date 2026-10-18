@@ -6,6 +6,7 @@
 - 重试耗尽抛原始错误；OPS_LLM_RETRY_ENABLED=false = 现网逐字节一致
 - 退避序列 monkeypatch sleep 断言上界，不假 sleep
 """
+
 from __future__ import annotations
 
 import logging
@@ -171,9 +172,17 @@ class TestStreamRetryDiscipline:
         monkeypatch.setattr("app.ops.chat.nodes.settings.ops_llm_model", "test-model")
 
         state = ChatState(
-            query="hi", session_id=None, run_id="run-stream-1", model=None,
-            issue_context=[], pr_context=[], graph_context=None, intent="",
-            answer="", history_turns=[], events=[],
+            query="hi",
+            session_id=None,
+            run_id="run-stream-1",
+            model=None,
+            issue_context=[],
+            pr_context=[],
+            graph_context=None,
+            intent="",
+            answer="",
+            history_turns=[],
+            events=[],
         )
         result = await answer_node(state)
 

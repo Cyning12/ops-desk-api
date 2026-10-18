@@ -54,9 +54,7 @@ _OTHER_TENANT = "w6-test-tenant-2"
 async def _clear_test_rows() -> None:
     async with AsyncSessionLocal() as session, session.begin():
         for table in ("ops_capability_idempotency", "ops_capability_receipts"):
-            await session.execute(
-                text(f"DELETE FROM {table} WHERE tenant_id LIKE 'w6-test-%'")
-            )
+            await session.execute(text(f"DELETE FROM {table} WHERE tenant_id LIKE 'w6-test-%'"))
 
 
 @pytest.fixture(autouse=True)

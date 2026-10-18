@@ -6,6 +6,7 @@ suggested_rule 人工确认语义 · env 非法回退。
 DB 段（skipif 无 PG）：mine_patterns 端到端 + 报告 yaml 落盘 + 两次跑同字节
 （可重放）+ **建议零生效 git 守护**（聚类跑完 redlines/manifest 零 diff）。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -86,9 +87,8 @@ def test_group_patterns_report_field_family_complete():
 
 def test_group_patterns_threshold_filters_below_min_count():
     """频次阈值：<3 不成模式（FP-2 第一保险）；=3 成模式。"""
-    rows = (
-        _rows(failure_class="capability_blocked", fingerprint="fp-a", count=2)
-        + _rows(failure_class="upstream_error", fingerprint="fp-b", count=3)
+    rows = _rows(failure_class="capability_blocked", fingerprint="fp-a", count=2) + _rows(
+        failure_class="upstream_error", fingerprint="fp-b", count=3
     )
     patterns = group_patterns(rows, min_count=3)
     assert len(patterns) == 1

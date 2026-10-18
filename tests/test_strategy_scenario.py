@@ -39,7 +39,10 @@ MEDIUM_CAP = "test_scenario_medium_read"
 
 def _spec(cid: str, risk: str) -> CapabilitySpec:
     return CapabilitySpec(
-        capability_id=cid, kind="local_fn", description="探针", risk_level=risk,
+        capability_id=cid,
+        kind="local_fn",
+        description="探针",
+        risk_level=risk,
         side_effect="read",
     )
 
@@ -70,7 +73,9 @@ def _span_cm():
 
 
 def test_s1_fallback_empties_visible_set(base_visible):
-    final, stripped = sc.scenario_trim(base_visible, {"needs_tool": True, "domain": "ops_kb", "risk_hint": "low"}, True)
+    final, stripped = sc.scenario_trim(
+        base_visible, {"needs_tool": True, "domain": "ops_kb", "risk_hint": "low"}, True
+    )
     assert final == []
     assert stripped == [
         ("cap.low.a", sc.REASON_INTENT_FALLBACK),
@@ -106,7 +111,11 @@ def test_s3_unknown_domain_with_needs_tool_empties(base_visible):
 
 
 def test_s4_high_risk_trims_medium_keeps_low():
-    visible = [_spec("cap.low.a", "low"), _spec("cap.medium.b", "medium"), _spec("cap.high.c", "high")]
+    visible = [
+        _spec("cap.low.a", "low"),
+        _spec("cap.medium.b", "medium"),
+        _spec("cap.high.c", "high"),
+    ]
     final, stripped = sc.scenario_trim(
         visible, {"needs_tool": True, "domain": "ops_kb", "risk_hint": "high"}, False
     )
@@ -159,8 +168,13 @@ def test_is_composite_and_summary_not_trim_keys(base_visible):
     """Q2 裁定：is_composite/summary 不作裁剪键（自由文本不作安全键）。"""
     final, stripped = sc.scenario_trim(
         base_visible,
-        {"needs_tool": True, "domain": "ops_kb", "risk_hint": "low",
-         "is_composite": True, "summary": "看起来很危险的描述"},
+        {
+            "needs_tool": True,
+            "domain": "ops_kb",
+            "risk_hint": "low",
+            "is_composite": True,
+            "summary": "看起来很危险的描述",
+        },
         False,
     )
     assert final == base_visible
@@ -174,8 +188,10 @@ def test_is_composite_and_summary_not_trim_keys(base_visible):
 
 def test_mode_off_zero_diff_zero_log(monkeypatch, base_visible, caplog):
     monkeypatch.setenv(sc.ENV_SCENARIO_MODE, "off")
-    state = {"intent": {"needs_tool": True, "domain": "ops_kb", "risk_hint": "high"},
-             "intent_fallback": True}
+    state = {
+        "intent": {"needs_tool": True, "domain": "ops_kb", "risk_hint": "high"},
+        "intent_fallback": True,
+    }
     with caplog.at_level(logging.WARNING, logger="app.ops.strategy.scenario"):
         out = _apply_scenario_stage(base_visible, state)
     assert out is base_visible  # off = 现状零 diff（fallback 也不裁）
@@ -213,8 +229,14 @@ def test_audit_does_not_log_intent_content(monkeypatch, base_visible, caplog):
     """记动作不记内容：剔除台账不含 query/intent 原文（summary 等自由文本）。"""
     monkeypatch.setenv(sc.ENV_SCENARIO_MODE, "enforce")
     secret_text = "用户敏感原始问句xyz"
-    state = {"intent": {"needs_tool": True, "domain": "ops_kb", "risk_hint": "high",
-                        "summary": secret_text}}
+    state = {
+        "intent": {
+            "needs_tool": True,
+            "domain": "ops_kb",
+            "risk_hint": "high",
+            "summary": secret_text,
+        }
+    }
     with caplog.at_level(logging.WARNING, logger="app.ops.strategy.scenario"):
         _apply_scenario_stage(base_visible, state)
     assert "visibility_scenario_stripped" in caplog.text
@@ -224,8 +246,10 @@ def test_audit_does_not_log_intent_content(monkeypatch, base_visible, caplog):
 def test_enforce_fallback_empties_with_audit(monkeypatch, base_visible, caplog):
     """fallback 裂缝堵死（FP-5）：fallback=意图不可信 → 空集 + 台账。"""
     monkeypatch.setenv(sc.ENV_SCENARIO_MODE, "enforce")
-    state = {"intent": {"needs_tool": True, "domain": "ops_kb", "risk_hint": "low"},
-             "intent_fallback": True}
+    state = {
+        "intent": {"needs_tool": True, "domain": "ops_kb", "risk_hint": "low"},
+        "intent_fallback": True,
+    }
     with caplog.at_level(logging.WARNING, logger="app.ops.strategy.scenario"):
         out = _apply_scenario_stage(base_visible, state)
     assert out == []
@@ -242,8 +266,11 @@ async def test_builder_enforce_high_intent_trims_medium_candidate(monkeypatch, c
     monkeypatch.setenv(sc.ENV_SCENARIO_MODE, "enforce")
     register(
         CapabilitySpec(
-            capability_id=MEDIUM_CAP, kind="local_fn", description="中风险读探针",
-            risk_level="medium", side_effect="read",
+            capability_id=MEDIUM_CAP,
+            kind="local_fn",
+            description="中风险读探针",
+            risk_level="medium",
+            side_effect="read",
         ),
         LocalFnAdapter(lambda args: {"echo": args}),
     )
@@ -279,17 +306,18 @@ async def test_supervisor_delegation_scope_never_exceeds_scenario_trim(monkeypat
     monkeypatch.setenv(dl.ENV_SECRET, "scenario-b1-secret")
     register(
         CapabilitySpec(
-            capability_id=MEDIUM_CAP, kind="local_fn", description="中风险读探针",
-            risk_level="medium", side_effect="read",
+            capability_id=MEDIUM_CAP,
+            kind="local_fn",
+            description="中风险读探针",
+            risk_level="medium",
+            side_effect="read",
         ),
         LocalFnAdapter(lambda args: {"echo": args}),
     )
     from app.ops.lg_rag.multi.nodes import supervisor_node
 
     plan = {
-        "subtasks": [
-            {"id": "t1", "type": "tool", "input": "查时间", "tool": "utc_now_iso"}
-        ],
+        "subtasks": [{"id": "t1", "type": "tool", "input": "查时间", "tool": "utc_now_iso"}],
         "requested_scope": [MEDIUM_CAP, "utc_now_iso"],
     }
     provider = SimpleNamespace(

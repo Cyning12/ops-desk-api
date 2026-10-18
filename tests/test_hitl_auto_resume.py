@@ -133,12 +133,34 @@ def _hitl_state(**kw) -> dict:
         "react_round": 0,
         "inflight_subtask_ids": [],
         "subtasks": [
-            {"id": _T1, "subtask_id": _T1, "alias": "t1", "type": "tool", "tool": _TOOL, "input": "x", "depends_on": []},
-            {"id": _T2, "subtask_id": _T2, "alias": "t2", "type": "tool", "tool": _TOOL, "input": "x", "depends_on": [_T1]},
+            {
+                "id": _T1,
+                "subtask_id": _T1,
+                "alias": "t1",
+                "type": "tool",
+                "tool": _TOOL,
+                "input": "x",
+                "depends_on": [],
+            },
+            {
+                "id": _T2,
+                "subtask_id": _T2,
+                "alias": "t2",
+                "type": "tool",
+                "tool": _TOOL,
+                "input": "x",
+                "depends_on": [_T1],
+            },
         ],
         "subtask_results": [
             {"subtask_id": _T1, "type": "tool", "output": {"assignee": "张三"}},
-            {"subtask_id": _T2, "type": "tool", "error": "需要重跑已执行步骤", "blocked_by": "prefix_touch_required", "hitl_required": True},
+            {
+                "subtask_id": _T2,
+                "type": "tool",
+                "error": "需要重跑已执行步骤",
+                "blocked_by": "prefix_touch_required",
+                "hitl_required": True,
+            },
         ],
         "plan_prefix_ids": [_T1],
     }
@@ -400,9 +422,7 @@ async def test_auto_decide_auto_resumes_without_manual_call(monkeypatch, caplog)
         patch("app.ops.lg_rag.event_store.run_owner", new=owner),
         patch("app.ops.hitl.router._open_event_sink", new=AsyncMock(return_value=None)),
         patch("app.ops.hitl.router.resume_hitl_run", new=_resume_via(saver, calls)),
-        patch(
-            "app.ops.lg_rag.event_store.run_is_terminal", new=AsyncMock(return_value=False)
-        ),
+        patch("app.ops.lg_rag.event_store.run_is_terminal", new=AsyncMock(return_value=False)),
         caplog.at_level(logging.INFO, logger="app.ops.hitl.auto_resume"),
     ):
         async with AsyncClient(
@@ -501,13 +521,19 @@ async def test_db_claim_condition_filters():
         await store.acreate(_row(id=stale, run_id=f"run-{uuid.uuid4().hex[:8]}"))
         await store.acreate(_row(id=blocked, run_id=run_id))
         await store.acreate(_row(id=rejected, run_id=f"run-{uuid.uuid4().hex[:8]}"))
-        for rid, dec in ((fresh, STATUS_APPROVED), (stale, STATUS_APPROVED),
-                         (blocked, STATUS_APPROVED), (rejected, STATUS_REJECTED)):
+        for rid, dec in (
+            (fresh, STATUS_APPROVED),
+            (stale, STATUS_APPROVED),
+            (blocked, STATUS_APPROVED),
+            (rejected, STATUS_REJECTED),
+        ):
             await store.adecide(rid, decision=dec, by="验收")
         # 过期：decided_at 拨回 2h（SQL 层真改 · 承 T1 TA2⑧ 形态）
         async with AsyncSessionLocal() as db:
             await db.execute(
-                text("UPDATE ops_hitl_requests SET decided_at = now() - interval '2 hours' WHERE id = :id"),
+                text(
+                    "UPDATE ops_hitl_requests SET decided_at = now() - interval '2 hours' WHERE id = :id"
+                ),
                 {"id": stale},
             )
             await db.commit()
@@ -544,8 +570,14 @@ async def test_db_auto_chain_terminal_done_frame(seeded_maintainer, monkeypatch,
     try:
         await store.acreate(_row(id=rid, run_id=run_id, thread_id="t-term"))
         await persist_run_event(
-            run_id=run_id, seq=1, user_id=str(user.id), thread_id="t-term",
-            ts_ms=0, agent_role="system", event_type="run.start", payload={"query": "q"},
+            run_id=run_id,
+            seq=1,
+            user_id=str(user.id),
+            thread_id="t-term",
+            ts_ms=0,
+            agent_role="system",
+            event_type="run.start",
+            payload={"query": "q"},
         )
         assert await run_is_terminal(run_id) is False
 
@@ -669,9 +701,7 @@ async def test_inmemory_double_dispatch_state_machine_idempotent(caplog):
     with (
         patch("app.ops.hitl.router.resume_hitl_run", new=_stub_resume),
         patch("app.ops.hitl.router._open_event_sink", new=AsyncMock(return_value=None)),
-        patch(
-            "app.ops.lg_rag.event_store.run_is_terminal", new=AsyncMock(return_value=False)
-        ),
+        patch("app.ops.lg_rag.event_store.run_is_terminal", new=AsyncMock(return_value=False)),
         caplog.at_level(logging.INFO, logger="app.ops.hitl.auto_resume"),
     ):
         auto_resume.schedule_auto_resume(row, resume_mode="inherit", source="decide")
@@ -703,9 +733,7 @@ async def test_auto_re_interrupted_no_second_trigger_and_scan_skips(monkeypatch,
         patch("app.ops.lg_rag.event_store.run_owner", new=owner),
         patch("app.ops.hitl.router._open_event_sink", new=AsyncMock(return_value=None)),
         patch("app.ops.hitl.router.resume_hitl_run", new=_resume_via(saver)),
-        patch(
-            "app.ops.lg_rag.event_store.run_is_terminal", new=AsyncMock(return_value=False)
-        ),
+        patch("app.ops.lg_rag.event_store.run_is_terminal", new=AsyncMock(return_value=False)),
         caplog.at_level(logging.INFO, logger="app.ops.hitl.auto_resume"),
     ):
         async with AsyncClient(
@@ -777,6 +805,7 @@ def test_single_resume_path_in_router():
     assert hasattr(hitl_router, "_execute_decided_resume")
     assert hasattr(hitl_router, "_preflight_decided_resume")
 
+
 # ---------------------------------------------------------------------------
 # hitl-auto-resume-claim-race（30）：竞态窗口注入复现（TC1 修复前红→修复后绿）
 # + 修复后 auto decide-同秒链零 stranded_checkpoint（TC2）
@@ -837,26 +866,18 @@ async def test_tc1_claim_race_window_defers_until_metadata_visible(monkeypatch, 
         return {"state": {}, "answer": "", "query": ""}
 
     # raising=False：修复前该 seam 不存在时注入即悬置（行为=现状）→ 红在断言层
-    monkeypatch.setattr(
-        auto_resume, "_interrupt_metadata_visible", _fake_visible, raising=False
-    )
+    monkeypatch.setattr(auto_resume, "_interrupt_metadata_visible", _fake_visible, raising=False)
     with (
         patch("app.ops.hitl.router.resume_hitl_run", new=_stub_resume),
         patch("app.ops.hitl.router._open_event_sink", new=AsyncMock(return_value=None)),
-        patch(
-            "app.ops.lg_rag.event_store.run_is_terminal", new=AsyncMock(return_value=False)
-        ),
+        patch("app.ops.lg_rag.event_store.run_is_terminal", new=AsyncMock(return_value=False)),
         caplog.at_level(logging.INFO, logger="app.ops.hitl.auto_resume"),
     ):
-        await auto_resume._claim_and_execute(
-            row["id"], resume_mode="inherit", ttl_seconds=3600
-        )
+        await auto_resume._claim_and_execute(row["id"], resume_mode="inherit", ttl_seconds=3600)
         assert not attempted, "竞态窗口内不得执行（interrupt 元数据未就绪）"
         assert window.probes == 1, "窗口内认领须做只读就绪校验"
         window.flip()
-        await auto_resume._claim_and_execute(
-            row["id"], resume_mode="inherit", ttl_seconds=3600
-        )
+        await auto_resume._claim_and_execute(row["id"], resume_mode="inherit", ttl_seconds=3600)
         assert len(attempted) == 1, "元数据可见后应直达执行一次"
     messages = [r.getMessage() for r in caplog.records]
     _assert_zero_stranded_logs(caplog.records)
@@ -894,18 +915,14 @@ async def test_tc2_auto_decide_chain_zero_stranded_in_race_window(monkeypatch, c
             raise ResumeError("stranded_checkpoint", "窗口内：tasks 有 · interrupts 空")
         return await _real_resume(checkpointer=saver, graph_factory=_graph_factory, **kw)
 
-    monkeypatch.setattr(
-        auto_resume, "_interrupt_metadata_visible", _fake_visible, raising=False
-    )
+    monkeypatch.setattr(auto_resume, "_interrupt_metadata_visible", _fake_visible, raising=False)
     from httpx import ASGITransport, AsyncClient
 
     with (
         patch("app.ops.lg_rag.event_store.run_owner", new=owner),
         patch("app.ops.hitl.router._open_event_sink", new=AsyncMock(return_value=None)),
         patch("app.ops.hitl.router.resume_hitl_run", new=_gated_resume),
-        patch(
-            "app.ops.lg_rag.event_store.run_is_terminal", new=AsyncMock(return_value=False)
-        ),
+        patch("app.ops.lg_rag.event_store.run_is_terminal", new=AsyncMock(return_value=False)),
         caplog.at_level(logging.INFO, logger="app.ops.hitl.auto_resume"),
     ):
         async with AsyncClient(
@@ -933,4 +950,3 @@ async def test_tc2_auto_decide_chain_zero_stranded_in_race_window(monkeypatch, c
     assert any(m.startswith("hitl_auto_resume_deferred") for m in messages)
     assert any(m.startswith("hitl_auto_resume_compensated") for m in messages)
     assert any(m.startswith("hitl_auto_resume_claimed") for m in messages)
-

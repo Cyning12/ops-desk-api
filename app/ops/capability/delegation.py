@@ -72,9 +72,7 @@ AUDIT_TOKEN_REJECTED = "token_rejected"  # 形如 token_rejected:<class>
 _CONSTRAINT_ENUM = "enum"
 _CONSTRAINT_MAX_LEN = "max_len"
 _CONSTRAINT_PATTERN = "pattern"
-KNOWN_CONSTRAINT_TYPES = frozenset(
-    {_CONSTRAINT_ENUM, _CONSTRAINT_MAX_LEN, _CONSTRAINT_PATTERN}
-)
+KNOWN_CONSTRAINT_TYPES = frozenset({_CONSTRAINT_ENUM, _CONSTRAINT_MAX_LEN, _CONSTRAINT_PATTERN})
 
 # 只读副作用（Q2 自动放行边界 · 承 types.SIDE_EFFECTS 词表）
 READONLY_SIDE_EFFECTS = frozenset({"none", "read"})
@@ -288,9 +286,7 @@ def validate_param_constraints(constraints: Any) -> str | None:
     return None
 
 
-def check_param_constraints(
-    token: DelegationToken, capability_id: str, args: Any
-) -> str | None:
+def check_param_constraints(token: DelegationToken, capability_id: str, args: Any) -> str | None:
     """验签时校验调用参数；违规 → 字段名，通过 → None（纯代码校验 · 零 IO）。"""
     per_args = (token.param_constraints or {}).get(capability_id) or {}
     if not per_args:
@@ -305,8 +301,7 @@ def check_param_constraints(
         ):
             return str(arg_name)
         if _CONSTRAINT_PATTERN in rule and (
-            not isinstance(value, str)
-            or re.search(rule[_CONSTRAINT_PATTERN], value) is None
+            not isinstance(value, str) or re.search(rule[_CONSTRAINT_PATTERN], value) is None
         ):
             return str(arg_name)
     return None
@@ -439,9 +434,7 @@ def issue_token(
     token_id = f"dt-{seq}-{uuid.uuid4().hex[:12]}"
     nonce = uuid.uuid4().hex
     subtask_id = str(subject_binding.get("subtask_id") or "")
-    old_token_id = active_issuer.supersede(
-        subtask_id, new_nonce=nonce, new_token_id=token_id
-    )
+    old_token_id = active_issuer.supersede(subtask_id, new_nonce=nonce, new_token_id=token_id)
     binding = {
         "tenant_id": str(subject_binding.get("tenant_id") or ""),
         "user_id": str(subject_binding.get("user_id") or ""),
@@ -474,9 +467,7 @@ def issue_token(
             new_token_id=token_id,
             subtask_id=subtask_id,
         )
-    audit_delegation(
-        AUDIT_TOKEN_ISSUED, **_token_audit_fields(token), subtask_id=subtask_id
-    )
+    audit_delegation(AUDIT_TOKEN_ISSUED, **_token_audit_fields(token), subtask_id=subtask_id)
     return token
 
 
@@ -576,9 +567,7 @@ def verify_token(
         if str(binding.get(key) or "") != str((subject or {}).get(key) or "")
     ]
     if mismatched:
-        return Verdict(
-            False, REJECT_SUBJECT_MISMATCH, f"主体绑定不符 keys={sorted(mismatched)}"
-        )
+        return Verdict(False, REJECT_SUBJECT_MISMATCH, f"主体绑定不符 keys={sorted(mismatched)}")
     if token.one_shot and not _nonce_registry.consume(
         token.nonce, expires_at=token.expires_at, now=current
     ):

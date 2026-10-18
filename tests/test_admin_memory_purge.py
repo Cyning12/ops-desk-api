@@ -73,10 +73,7 @@ async def _seed(user: str, n: int = 2) -> list[str]:
 async def _count(user: str) -> int:
     async with AsyncSessionLocal() as session:
         rows = await session.execute(
-            text(
-                "SELECT count(*) FROM ops_memory_facts "
-                "WHERE tenant_id = :t AND user_id = :u"
-            ),
+            text("SELECT count(*) FROM ops_memory_facts WHERE tenant_id = :t AND user_id = :u"),
             {"t": _TENANT, "u": user},
         )
         return int(rows.scalar() or 0)
@@ -115,9 +112,7 @@ async def test_default_dry_run_echo_and_zero_write(client, as_admin):
 async def test_explicit_dry_run_true_same_as_default(client, as_admin):
     user = "u-dry2-" + uuid.uuid4().hex[:8]
     await _seed(user, 1)
-    resp = await client.post(
-        BASE, json={"tenant_id": _TENANT, "user_id": user, "dry_run": True}
-    )
+    resp = await client.post(BASE, json={"tenant_id": _TENANT, "user_id": user, "dry_run": True})
     assert resp.status_code == 200
     assert resp.json()["dry_run"] is True
     assert await _count(user) == 1
@@ -129,9 +124,7 @@ async def test_explicit_dry_run_true_same_as_default(client, as_admin):
 async def test_real_purge_missing_expected_count_400(client, as_admin):
     user = "u-400-" + uuid.uuid4().hex[:8]
     await _seed(user, 2)
-    resp = await client.post(
-        BASE, json={"tenant_id": _TENANT, "user_id": user, "dry_run": False}
-    )
+    resp = await client.post(BASE, json={"tenant_id": _TENANT, "user_id": user, "dry_run": False})
     assert resp.status_code == 400
     assert await _count(user) == 2  # 零删除
 

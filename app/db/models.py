@@ -1,4 +1,5 @@
 """SQLAlchemy ORM models for Ops Desk."""
+
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
@@ -324,9 +325,7 @@ class OpsLgRagRunEvent(Base):
     """lg-rag SSE 事件落盘（T4 replay）；独立于 ops_run_events。"""
 
     __tablename__ = "ops_lg_rag_run_events"
-    __table_args__ = (
-        UniqueConstraint("run_id", "seq", name="uq_ops_lg_rag_run_events_run_seq"),
-    )
+    __table_args__ = (UniqueConstraint("run_id", "seq", name="uq_ops_lg_rag_run_events_run_seq"),)
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
@@ -356,9 +355,7 @@ class OpsSessionSummary(Base):
 
     __tablename__ = "ops_session_summaries"
     __table_args__ = (
-        UniqueConstraint(
-            "thread_id", "chunk_hash", name="uq_ops_session_summaries_thread_chunk"
-        ),
+        UniqueConstraint("thread_id", "chunk_hash", name="uq_ops_session_summaries_thread_chunk"),
     )
 
     id: Mapped[str] = mapped_column(
@@ -423,9 +420,7 @@ class OpsCapabilityIdempotency(Base):
     __tablename__ = "ops_capability_idempotency"
     __table_args__ = (
         # 幂等键的唯一性作用域：**租户内唯一**（跨租户不该互相影响）
-        UniqueConstraint(
-            "tenant_id", "idempotency_key", name="uq_ops_capability_idem_tenant_key"
-        ),
+        UniqueConstraint("tenant_id", "idempotency_key", name="uq_ops_capability_idem_tenant_key"),
     )
 
     id: Mapped[str] = mapped_column(
@@ -503,9 +498,7 @@ class OpsMemoryFact(Base):
         ),
         # memory-preference-profile：放开 preference（首期显式-only · 迁移
         # 20260922_memory_kind_preference 同步放宽落库 CHECK）
-        CheckConstraint(
-            "kind IN ('fact', 'preference')", name="ck_ops_memory_facts_kind"
-        ),
+        CheckConstraint("kind IN ('fact', 'preference')", name="ck_ops_memory_facts_kind"),
         # 召回主谓词：(tenant, user, key, status)
         Index(
             "idx_ops_memory_facts_recall",

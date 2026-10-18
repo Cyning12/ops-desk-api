@@ -27,6 +27,7 @@ done(status=waiting_approval)** 再收流——否则前端看到的就是"流�
 ``LG_RAG_HTTP_CHECKPOINTER=postgres`` 打开，且**整个 worker 生命周期持有**：
 图挂起后进程内什么都不剩，下次请求能恢复全靠 checkpoint 已落盘。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -81,10 +82,7 @@ def _truncate(text: str, max_len: int) -> str:
 
 def _sse_frame(event: dict[str, Any]) -> str:
     """SSE 帧外形对齐既有 chat 格式（event + data JSON）；不新增 event_type。"""
-    return (
-        f"event: {event['event_type']}\n"
-        f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
-    )
+    return f"event: {event['event_type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
 
 
 def _summarize_payload(node_output: Any) -> dict[str, Any]:
@@ -192,9 +190,7 @@ def map_node_update(node_name: str, node_output: Any) -> tuple[str, str, dict[st
                 answer_preview=str(done_payload.get("answer_preview") or ""),
             )
         except Exception as exc:
-            logger.warning(
-                "lg_rag done message 生成失败 node=%s err=%r", node_name, exc
-            )
+            logger.warning("lg_rag done message 生成失败 node=%s err=%r", node_name, exc)
         return "subtask.progress", role, done_payload
     if node_name in _ANSWER_NODES:
         answer = ""
@@ -388,9 +384,7 @@ async def _iter_lg_rag_sse_core(
             await _drain_persist()
             stream_settled = True
         except Exception:
-            logger.exception(
-                "lg-rag disconnect settle failed run_id=%s", rid
-            )
+            logger.exception("lg-rag disconnect settle failed run_id=%s", rid)
 
     sink_handle = set_answer_token_sink(_answer_token_sink)
     progress_handle = set_subtask_progress_sink(_subtask_progress_sink)
@@ -500,9 +494,7 @@ async def _iter_lg_rag_sse_core(
             try:
                 await persist_thread_turns(thread_id, user_id, query, last_answer)
             except Exception:
-                logger.exception(
-                    "lg-rag persist after done failed thread_id=%s", thread_id
-                )
+                logger.exception("lg-rag persist after done failed thread_id=%s", thread_id)
             schedule_memory_extraction(
                 tenant_id=current_tenant(),
                 user_id=user_id,

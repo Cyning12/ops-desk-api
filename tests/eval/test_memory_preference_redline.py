@@ -32,9 +32,7 @@ from app.ops.lg_rag.continuity import (
 
 pytestmark = pytest.mark.redline
 
-_INVENTORY = (
-    Path(__file__).resolve().parents[2] / "evals" / "memory" / "preference_redline_v1.yaml"
-)
+_INVENTORY = Path(__file__).resolve().parents[2] / "evals" / "memory" / "preference_redline_v1.yaml"
 
 #: redline_id → 实现它的测试函数名（装饰器登记，P0 对照用）
 IMPLEMENTED: dict[str, str] = {}
@@ -60,9 +58,7 @@ async def _assemble_with_recall(monkeypatch: pytest.MonkeyPatch, question: str, 
     # 钉确定性召回通路（同 test_memory_injection._patch_recall 理由：
     # 宿主 .env 开向量召回 + 网络可用时 recall_with_vector 与桩 dicts 不兼容）
     monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
-    monkeypatch.setattr(
-        "app.ops.memory.service.recall_active", AsyncMock(return_value=facts)
-    )
+    monkeypatch.setattr("app.ops.memory.service.recall_active", AsyncMock(return_value=facts))
     out = await assemble_graph_messages_with_memory(
         question, [], tenant_id="redline-tenant", user_id="u-redline"
     )

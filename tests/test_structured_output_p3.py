@@ -213,8 +213,6 @@ async def test_no_retry_does_not_leak_sensitive_rule_into_correction():
     assert failure.error == _SECRET_RULE
 
     # 全部已发送 messages 不得含 OUTPUT CORRECTION，亦不得含敏感规则文案
-    all_text = "\n".join(
-        m.content for batch in provider.captured_messages for m in batch
-    )
+    all_text = "\n".join(m.content for batch in provider.captured_messages for m in batch)
     assert "OUTPUT CORRECTION" not in all_text
     assert _SECRET_RULE not in all_text

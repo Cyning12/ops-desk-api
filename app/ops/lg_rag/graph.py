@@ -132,17 +132,13 @@ def _run_config(thread_id: str) -> dict[str, Any]:
 def _tracing_contexts(thread_id: str):
     """根 span + propagate_attributes；返回 (span_cm, attr_cm)。"""
     span_cm = (
-        trace_span(_RUN_NAME, run_type="chain", tags=[_TAG])
-        if tracing_enabled()
-        else nullcontext()
+        trace_span(_RUN_NAME, run_type="chain", tags=[_TAG]) if tracing_enabled() else nullcontext()
     )
     if tracing_enabled():
         try:
             from langfuse import propagate_attributes
 
-            attr_cm = propagate_attributes(
-                trace_name=_RUN_NAME, session_id=thread_id, tags=[_TAG]
-            )
+            attr_cm = propagate_attributes(trace_name=_RUN_NAME, session_id=thread_id, tags=[_TAG])
         except Exception:  # SDK 可选；失败不挡主流程
             attr_cm = nullcontext()
     else:

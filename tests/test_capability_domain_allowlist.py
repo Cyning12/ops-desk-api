@@ -116,9 +116,7 @@ def test_tags_any_is_narrowing_not_widening():
     """把域白名单写成 tags_any 会得到空目录——存量 local_fn 没有 oa 标签。"""
     assert get_registry().get("utc_now_iso") is not None
     wrong = list_capabilities(
-        filter=CapabilityFilter(
-            kinds=frozenset({"local_fn"}), tags_any=frozenset({"oa"})
-        )
+        filter=CapabilityFilter(kinds=frozenset({"local_fn"}), tags_any=frozenset({"oa"}))
     )
     assert wrong == []
 
@@ -147,12 +145,8 @@ def test_builder_and_supervisor_use_the_same_baseline():
     from app.ops.strategy.builder import BUILDER_CAP_FILTER
 
     load_capability_manifest(_OA_MANIFEST)
-    builder_ids = {
-        s.capability_id for s in list_capabilities(filter=BUILDER_CAP_FILTER)
-    }
-    supervisor_ids = {
-        s.capability_id for s in list_capabilities(filter=_SUPERVISOR_CAP_FILTER)
-    }
+    builder_ids = {s.capability_id for s in list_capabilities(filter=BUILDER_CAP_FILTER)}
+    supervisor_ids = {s.capability_id for s in list_capabilities(filter=_SUPERVISOR_CAP_FILTER)}
     assert builder_ids == supervisor_ids
     assert builder_ids >= _OA_IDS
 
@@ -179,10 +173,7 @@ def test_baseline_crops_high_risk_and_write_end_to_end():
     register(_spec("oa.danger.read", tags=("oa",), risk_level="high"), _A())
     register(_spec("oa.ticket.create", tags=("oa",), side_effect="write"), _A())
     try:
-        ids = {
-            s.capability_id
-            for s in list_capabilities(filter=baseline_filter(node_role="t"))
-        }
+        ids = {s.capability_id for s in list_capabilities(filter=baseline_filter(node_role="t"))}
         assert "oa.danger.read" not in ids
         assert "oa.ticket.create" not in ids
     finally:

@@ -4,6 +4,7 @@
 （grader 档并入 RAG_GRADER_MODEL 覆盖链）；非法档/未知 task 回退默认 + warning；
 不显式分档的调用点 = 现网逐字节一致。
 """
+
 from __future__ import annotations
 
 import logging
@@ -115,18 +116,34 @@ class TestAnswerNodeRouting:
         monkeypatch.setattr(chat_nodes.settings, "ops_llm_model", "global/default-m")
 
         state = ChatState(
-            query="hi", session_id=None, run_id="r1", model=None,
-            issue_context=[], pr_context=[], graph_context=None, intent="",
-            answer="", history_turns=[], events=[],
+            query="hi",
+            session_id=None,
+            run_id="r1",
+            model=None,
+            issue_context=[],
+            pr_context=[],
+            graph_context=None,
+            intent="",
+            answer="",
+            history_turns=[],
+            events=[],
         )
         await chat_nodes.answer_node(state)
         assert seen["model"] == "global/default-m"
 
         # 显式 model（请求级）优先于一切
         state2 = ChatState(
-            query="hi", session_id=None, run_id="r2", model="req/explicit-m",
-            issue_context=[], pr_context=[], graph_context=None, intent="",
-            answer="", history_turns=[], events=[],
+            query="hi",
+            session_id=None,
+            run_id="r2",
+            model="req/explicit-m",
+            issue_context=[],
+            pr_context=[],
+            graph_context=None,
+            intent="",
+            answer="",
+            history_turns=[],
+            events=[],
         )
         await chat_nodes.answer_node(state2)
         assert seen["model"] == "req/explicit-m"
@@ -150,9 +167,17 @@ class TestAnswerNodeRouting:
         monkeypatch.setenv("OPS_LLM_TIER_ANSWER_MODEL", "deepseek-ai/DeepSeek-V4-Pro")
 
         state = ChatState(
-            query="hi", session_id=None, run_id="r3", model=None,
-            issue_context=[], pr_context=[], graph_context=None, intent="",
-            answer="", history_turns=[], events=[],
+            query="hi",
+            session_id=None,
+            run_id="r3",
+            model=None,
+            issue_context=[],
+            pr_context=[],
+            graph_context=None,
+            intent="",
+            answer="",
+            history_turns=[],
+            events=[],
         )
         await chat_nodes.answer_node(state)
         assert seen["model"] == "deepseek-ai/DeepSeek-V4-Pro"
@@ -177,9 +202,17 @@ class TestAnswerNodeRouting:
         )
 
         state = ChatState(
-            query="hi", session_id=None, run_id="r4", model=None,
-            issue_context=[], pr_context=[], graph_context=None, intent="",
-            answer="", history_turns=[], events=[],
+            query="hi",
+            session_id=None,
+            run_id="r4",
+            model=None,
+            issue_context=[],
+            pr_context=[],
+            graph_context=None,
+            intent="",
+            answer="",
+            history_turns=[],
+            events=[],
         )
         await chat_nodes.answer_node(state)
         route = next(m["llm_route"] for m in captured if "llm_route" in m)
@@ -195,13 +228,27 @@ class TestGradeNodeRouting:
         from app.ops.chat.state import ChatState
 
         chunk = SimpleNamespace(
-            id=1, source_type="doc", anchor="a1", content="doc-context: x\n\n证据正文",
-            metadata={}, source_id="s1", chunk_index=0,
+            id=1,
+            source_type="doc",
+            anchor="a1",
+            content="doc-context: x\n\n证据正文",
+            metadata={},
+            source_id="s1",
+            chunk_index=0,
         )
         return ChatState(
-            query="q", session_id=None, run_id="rg1", model=None,
-            issue_context=[], pr_context=[], graph_context=None, intent="",
-            answer="", history_turns=[], events=[], retrieved=[chunk],
+            query="q",
+            session_id=None,
+            run_id="rg1",
+            model=None,
+            issue_context=[],
+            pr_context=[],
+            graph_context=None,
+            intent="",
+            answer="",
+            history_turns=[],
+            events=[],
+            retrieved=[chunk],
         )
 
     def _capture_provider(self, monkeypatch, seen):
@@ -215,9 +262,7 @@ class TestGradeNodeRouting:
 
             async def complete_stream(self, messages, model=None):
                 seen["model"] = model
-                yield LlmChunk(
-                    content='[{"chunk_id": 1, "relevance": "exact", "reason": "r"}]'
-                )
+                yield LlmChunk(content='[{"chunk_id": 1, "relevance": "exact", "reason": "r"}]')
 
         monkeypatch.setattr(rag_nodes, "get_llm_provider", lambda name: _GraderCapture())
 
@@ -256,9 +301,7 @@ class TestGradeNodeRouting:
         seen = {}
         self._capture_provider(monkeypatch, seen)
         captured = []
-        monkeypatch.setattr(
-            rag_nodes, "update_current_span_metadata", lambda m: captured.append(m)
-        )
+        monkeypatch.setattr(rag_nodes, "update_current_span_metadata", lambda m: captured.append(m))
         await rag_nodes.grade_node(self._state_with_chunk())
         route = next(m["llm_route"] for m in captured if "llm_route" in m)
         assert route == {
@@ -286,9 +329,7 @@ class TestStructuredTier:
         class _S(BaseModel):
             x: int
 
-        result = await acomplete_structured(
-            system="s", user="u", schema=_S, _provider=_P()
-        )
+        result = await acomplete_structured(system="s", user="u", schema=_S, _provider=_P())
         assert result.x == 1
         assert seen["model"] is None  # provider 注入路径：现网语义不动
 

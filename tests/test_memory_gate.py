@@ -1,4 +1,5 @@
 """memory-facts-p0 · M1 写入闸纯函数（无 DB）：三判据 + 长度上限 + 拒绝原因码枚举。"""
+
 from __future__ import annotations
 
 import pytest
@@ -80,7 +81,15 @@ def test_missing_subject(tenant_id, user_id):
 
 @pytest.mark.parametrize(
     "key",
-    ["", "Project.Primary_Repo", "primaryrepo", "project.", ".project", "project.primary-repo", "a.b c"],
+    [
+        "",
+        "Project.Primary_Repo",
+        "primaryrepo",
+        "project.",
+        ".project",
+        "project.primary-repo",
+        "a.b c",
+    ],
 )
 def test_invalid_key(key):
     d = should_write(_candidate(key=key))

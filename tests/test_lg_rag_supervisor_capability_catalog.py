@@ -30,9 +30,7 @@ def _assert_host_rag(subtasks: list[dict], query: str) -> None:
 
 def _full_allowlist_state(messages: list) -> dict:
     """supervisor 单测：模拟 Builder 已写入全量可见 allowlist。"""
-    ids = [
-        s.capability_id for s in list_capabilities(filter=BUILDER_CAP_FILTER)
-    ]
+    ids = [s.capability_id for s in list_capabilities(filter=BUILDER_CAP_FILTER)]
     return {
         "messages": messages,
         "allowed_capability_ids": ids,
@@ -139,9 +137,7 @@ async def test_supervisor_invalid_tool_id_fallback_single_rag():
         ),
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
     ):
-        out = await supervisor_node(
-            _full_allowlist_state([HumanMessage(content="复合问题")])
-        )
+        out = await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
     _assert_host_rag(out["subtasks"], "复合问题")
     assert recorded
     assert recorded[0]["supervisor_fallback"] is True
@@ -259,8 +255,6 @@ async def test_supervisor_valid_tool_plan_kept():
         patch("app.ops.lg_rag.multi.nodes._record_span_metadata"),
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
     ):
-        out = await supervisor_node(
-            _full_allowlist_state([HumanMessage(content="几点了")])
-        )
+        out = await supervisor_node(_full_allowlist_state([HumanMessage(content="几点了")]))
     assert out["subtasks"][0]["type"] == "tool"
     assert out["subtasks"][0]["tool"] == "utc_now_iso"

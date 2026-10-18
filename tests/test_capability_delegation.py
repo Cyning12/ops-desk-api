@@ -143,12 +143,18 @@ def test_reject_a_no_token():
     assert verdict.ok is False
     assert verdict.reject_class == dl.REJECT_NO_TOKEN
     # 反序列化失败同归 R-a
-    assert dl.verify_serialized(
-        "junk", secret=SECRET, capability_id="cap.read", args={}, subject=SUBJECT
-    ).reject_class == dl.REJECT_NO_TOKEN
-    assert dl.verify_serialized(
-        {"bad": 1}, secret=SECRET, capability_id="cap.read", args={}, subject=SUBJECT
-    ).reject_class == dl.REJECT_NO_TOKEN
+    assert (
+        dl.verify_serialized(
+            "junk", secret=SECRET, capability_id="cap.read", args={}, subject=SUBJECT
+        ).reject_class
+        == dl.REJECT_NO_TOKEN
+    )
+    assert (
+        dl.verify_serialized(
+            {"bad": 1}, secret=SECRET, capability_id="cap.read", args={}, subject=SUBJECT
+        ).reject_class
+        == dl.REJECT_NO_TOKEN
+    )
 
 
 def test_reject_a_secret_missing():
@@ -181,9 +187,7 @@ def test_reject_d_nonce_reused():
 
 
 def test_reject_e_param_violation():
-    token = _issue(
-        param_constraints={"cap.read": {"mode": {"enum": ["a", "b"]}}}
-    )
+    token = _issue(param_constraints={"cap.read": {"mode": {"enum": ["a", "b"]}}})
     verdict = _verify(token, args={"mode": "c"})
     assert verdict.ok is False
     assert verdict.reject_class == dl.REJECT_PARAM_VIOLATION
@@ -199,9 +203,7 @@ def test_reject_f_subject_mismatch():
 
 def test_rejected_call_does_not_burn_nonce():
     """被拒（参数越约束）的调用不消费 nonce——修好参数后同一令牌仍可用。"""
-    token = _issue(
-        param_constraints={"cap.read": {"mode": {"enum": ["a"]}}}
-    )
+    token = _issue(param_constraints={"cap.read": {"mode": {"enum": ["a"]}}})
     assert _verify(token, args={"mode": "x"}).reject_class == dl.REJECT_PARAM_VIOLATION
     assert _verify(token, args={"mode": "a"}).ok is True
 
@@ -237,9 +239,7 @@ def test_constraint_pattern_pass_and_fail():
 
 def test_unknown_constraint_type_rejects_issue(caplog):
     with caplog.at_level(logging.WARNING, logger="app.ops.capability.delegation"):
-        token = _issue(
-            param_constraints={"cap.read": {"x": {"regex": ".*"}}}
-        )
+        token = _issue(param_constraints={"cap.read": {"x": {"regex": ".*"}}})
     assert token is None
     assert "拒绝签发" in caplog.text
     assert dl.validate_param_constraints({"c": {"x": {"regex": ".*"}}}) is not None
@@ -315,18 +315,14 @@ def test_env_ttl_invalid_falls_back_default(monkeypatch):
 def test_missing_secret_refuses_issue_with_alert(monkeypatch, caplog):
     monkeypatch.delenv(dl.ENV_SECRET, raising=False)
     with caplog.at_level(logging.WARNING, logger="app.ops.capability.delegation"):
-        token = dl.issue_token(
-            capability_set={"cap.read"}, subject_binding=dict(SUBJECT)
-        )
+        token = dl.issue_token(capability_set={"cap.read"}, subject_binding=dict(SUBJECT))
     assert token is None
     assert "拒绝签发" in caplog.text
 
 
 def test_secret_from_env(monkeypatch):
     monkeypatch.setenv(dl.ENV_SECRET, SECRET)
-    token = dl.issue_token(
-        capability_set={"cap.read"}, subject_binding=dict(SUBJECT), now=1000.0
-    )
+    token = dl.issue_token(capability_set={"cap.read"}, subject_binding=dict(SUBJECT), now=1000.0)
     assert token is not None
     assert _verify(token).ok is True
 

@@ -1,4 +1,5 @@
 """T4 · lg-rag SSE resume / replay（纯函数 + mock；不连真 LLM）。"""
+
 from __future__ import annotations
 
 import json
@@ -101,9 +102,7 @@ async def _fake_supervisor_stream(
     yield {"aggregator": {"messages": [AIMessage(content=f"答:{query}")]}}
 
 
-async def test_stream_frames_include_cursor(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_stream_frames_include_cursor(client: AsyncClient, override_auth_maintainer) -> None:
     with (
         patch(
             "app.ops.lg_rag.multi.graph.astream_supervisor_agent",
@@ -136,30 +135,22 @@ async def test_replay_requires_auth(client: AsyncClient) -> None:
     assert response.status_code == 401
 
 
-async def test_replay_invalid_cursor_422(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_replay_invalid_cursor_422(client: AsyncClient, override_auth_maintainer) -> None:
     response = await client.post(_REPLAY, json={"cursor": "bad"})
     assert response.status_code == 422
 
 
-async def test_replay_unknown_run_404(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_replay_unknown_run_404(client: AsyncClient, override_auth_maintainer) -> None:
     with patch(
         "app.ops.lg_rag.router.load_events_after",
         new_callable=AsyncMock,
         side_effect=LgRagRunNotFoundError,
     ):
-        response = await client.post(
-            _REPLAY, json={"run_id": "missing", "after_seq": 0}
-        )
+        response = await client.post(_REPLAY, json={"run_id": "missing", "after_seq": 0})
     assert response.status_code == 404
 
 
-async def test_replay_after_seq_sse_shape(
-    client: AsyncClient, override_auth_maintainer
-) -> None:
+async def test_replay_after_seq_sse_shape(client: AsyncClient, override_auth_maintainer) -> None:
     stored = [
         format_sse_event(
             {
@@ -187,9 +178,7 @@ async def test_replay_after_seq_sse_shape(
         new_callable=AsyncMock,
         return_value=stored,
     ) as mock_load:
-        response = await client.post(
-            _REPLAY, json={"run_id": "run-x", "after_seq": 1}
-        )
+        response = await client.post(_REPLAY, json={"run_id": "run-x", "after_seq": 1})
     assert response.status_code == 200
     assert "text/event-stream" in response.headers["content-type"]
     mock_load.assert_awaited_once()
@@ -212,9 +201,7 @@ async def test_replay_after_seq_sse_shape(
 # F-OBS-2 · 在飞 replay 语义化（409 + Retry-After，不再 500）
 # ---------------------------------------------------------------------------
 
-_DB_REQUIRED = pytest.mark.skipif(
-    not DB_AVAILABLE, reason="需要本地 PG（opsdesk_test）真跑事件表"
-)
+_DB_REQUIRED = pytest.mark.skipif(not DB_AVAILABLE, reason="需要本地 PG（opsdesk_test）真跑事件表")
 
 
 async def test_replay_in_flight_run_409_with_retry_after(
@@ -234,9 +221,7 @@ async def test_replay_in_flight_run_409_with_retry_after(
         new_callable=AsyncMock,
         side_effect=event_store.LgRagRunInFlightError,
     ):
-        response = await client.post(
-            _REPLAY, json={"run_id": "run-live", "after_seq": 0}
-        )
+        response = await client.post(_REPLAY, json={"run_id": "run-live", "after_seq": 0})
     assert response.status_code == 409
     retry_after = response.headers.get("Retry-After")
     assert retry_after is not None, "409 必须带 Retry-After 供客户端退避"

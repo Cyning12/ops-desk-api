@@ -4,6 +4,7 @@
 general / overview 一律走检索链（闲聊与语料外问题正是负样本拒答的演示面）。
 闸失败语义（人定）：fail-closed 倒向拒答，日志区分「闸故障」与「真空命中」。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -46,7 +47,7 @@ def _title_of(content: str) -> str:
     """从前缀行取标题（契约 §1b 前缀格式）。"""
     for line in content.splitlines():
         if line.startswith("Title: "):
-            return line[len("Title: "):]
+            return line[len("Title: ") :]
     return ""
 
 
@@ -141,16 +142,16 @@ async def grade_node(state: ChatState) -> dict:
                 }
             )
             # D4：usage 落表上下文（grader 档 · 同一 run_id）
-            with use_run_context(
-                run_id=state.get("run_id"), surface="chat", task_type="grader"
-            ):
+            with use_run_context(run_id=state.get("run_id"), surface="chat", task_type="grader"):
                 grades = await grade_chunks(provider, state["query"], chunks, model=grader_model)
         decision = decide(grades)
         action = decision.action
         best = decision.best.value
     except Exception as exc:
         # fail-closed：闸故障倒向拒答；与真空命中在日志层面分流
-        logger.exception("gate refuse: 闸故障（fail-closed）query=%r err=%s", state["query"][:60], exc)
+        logger.exception(
+            "gate refuse: 闸故障（fail-closed）query=%r err=%s", state["query"][:60], exc
+        )
         grades = []
         action = "refuse"
         best = "grader_error"
@@ -160,7 +161,11 @@ async def grade_node(state: ChatState) -> dict:
 
 
 def _gate_result(
-    state: ChatState, *, action: str, grades: list, chunks: list[RetrievedChunk],
+    state: ChatState,
+    *,
+    action: str,
+    grades: list,
+    chunks: list[RetrievedChunk],
     rated: bool = True,
 ) -> dict:
     relevance_map = {g.chunk_id: g.relevance.value for g in grades}

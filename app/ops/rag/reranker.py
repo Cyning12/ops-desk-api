@@ -10,6 +10,7 @@
 1. 顶分地板 ``RAG_RERANK_MIN_SCORE``（默认 0.4）：``max(score) < 地板`` → 空列表（真空拒答）
 2. 相对顶分 ``RAG_RERANK_SCORE_RATIO``（默认 0.75）：保留 ``score >= max * ratio``
 """
+
 from __future__ import annotations
 
 import logging
@@ -163,9 +164,7 @@ def _score_siliconflow(query: str, texts: Sequence[str]) -> list[float]:
     if not api_key:
         raise RuntimeError("缺少 SILICONFLOW_API_KEY")
 
-    base = (os.getenv("SILICONFLOW_BASE_URL") or DEFAULT_SILICONFLOW_BASE).strip().rstrip(
-        "/"
-    )
+    base = (os.getenv("SILICONFLOW_BASE_URL") or DEFAULT_SILICONFLOW_BASE).strip().rstrip("/")
     if not base:
         base = DEFAULT_SILICONFLOW_BASE
     url = f"{base}/rerank"

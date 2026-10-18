@@ -66,9 +66,7 @@ def _spec_to_structured_tool(spec: CapabilitySpec) -> StructuredTool:
     )
 
 
-def as_structured_tools(
-    *, filter: CapabilityFilter | None = None
-) -> list[BaseTool]:
+def as_structured_tools(*, filter: CapabilityFilter | None = None) -> list[BaseTool]:
     """将可见且带 ``args_schema`` 的能力转为 StructuredTool 列表（可选）。
 
     无 args_schema → 跳过（与 ``schemas_for_llm`` 钉死行为一致）。

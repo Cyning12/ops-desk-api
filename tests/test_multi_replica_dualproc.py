@@ -93,9 +93,7 @@ def _http(
         return exc.code, payload
 
 
-def _sse_stream(
-    port: int, query: str, thread_id: str, token: str
-) -> tuple[str, list[dict]]:
+def _sse_stream(port: int, query: str, thread_id: str, token: str) -> tuple[str, list[dict]]:
     """POST /lg-rag/stream 收全帧；返回 (run_id, frames)（frames = data JSON 序列）。"""
     req = urllib.request.Request(
         f"http://127.0.0.1:{port}/api/ops/lg-rag/stream",
@@ -119,9 +117,7 @@ def _sse_stream(
     return run_id, frames
 
 
-def _replay(
-    port: int, run_id: str, token: str, after_seq: int = 0
-) -> tuple[int, list[dict]]:
+def _replay(port: int, run_id: str, token: str, after_seq: int = 0) -> tuple[int, list[dict]]:
     """POST /lg-rag/replay；返回 (HTTP code, frames)。404 时 frames 为空。"""
     req = urllib.request.Request(
         f"http://127.0.0.1:{port}/api/ops/lg-rag/replay",
@@ -286,7 +282,11 @@ def _create_user(prefix: str, name: str) -> tuple[str, str]:
         _db_exec(
             "INSERT INTO ops_users (id, username, role, created_at, updated_at)"
             " VALUES ($1, $2, $3, $4, $5)",
-            user_id, f"{prefix}-{name}", "viewer", now, now,
+            user_id,
+            f"{prefix}-{name}",
+            "viewer",
+            now,
+            now,
         )
     )
     asyncio.run(
@@ -296,7 +296,12 @@ def _create_user(prefix: str, name: str) -> tuple[str, str]:
             " VALUES ($1, $2, $3, $4, $5, $6)",
             # session 真源须 ∈ ALLOWED_TENANTS；dualproc_server 的 "dualproc" 是 HITL
             # store 字段，不是 session 租户（否则 normalize_tenant → 422 unknown_tenant）
-            uuid.uuid4(), user_id, hash_token(token), expires, now, "ops-desk-pilot",
+            uuid.uuid4(),
+            user_id,
+            hash_token(token),
+            expires,
+            now,
+            "ops-desk-pilot",
         )
     )
     return str(user_id), token
@@ -407,7 +412,10 @@ def test_cross_instance_replay(dualproc) -> None:
     assert_distinct_instances(dualproc.a, dualproc.b)
     thread_id = f"{dualproc.prefix}-replay"
     run_id, frames_live = _sse_stream(
-        dualproc.a.port, f"{dualproc.prefix} 部署为什么失败", thread_id, dualproc.alice.token,
+        dualproc.a.port,
+        f"{dualproc.prefix} 部署为什么失败",
+        thread_id,
+        dualproc.alice.token,
     )
     assert frames_live and frames_live[-1]["event_type"] == "done"
 
@@ -417,12 +425,10 @@ def test_cross_instance_replay(dualproc) -> None:
     assert seqs == list(range(1, len(seqs) + 1)), f"B replay seq 不连续: {seqs}"
     # 内容一致：B 读回的帧与 A live 发出的帧逐帧对拍（事件表跨实例可读实证）
     live_key = [
-        (f["seq"], f["event_type"], json.dumps(f["payload"], sort_keys=True))
-        for f in frames_live
+        (f["seq"], f["event_type"], json.dumps(f["payload"], sort_keys=True)) for f in frames_live
     ]
     replay_key = [
-        (f["seq"], f["event_type"], json.dumps(f["payload"], sort_keys=True))
-        for f in frames_b
+        (f["seq"], f["event_type"], json.dumps(f["payload"], sort_keys=True)) for f in frames_b
     ]
     assert replay_key == live_key, "B replay 帧与 A live 帧不一致"
     assert all(f["run_id"] == run_id for f in frames_b)
@@ -559,8 +565,7 @@ def test_resume_wrong_thread_409(dualproc) -> None:
     assert code == 200 and req_id, f"手工建申请失败 HTTP {code}: {created}"
 
     dec = json.dumps(
-        {"request_id": req_id, "decision": "approved",
-         "decision_by": f"{dualproc.prefix}-approver"}
+        {"request_id": req_id, "decision": "approved", "decision_by": f"{dualproc.prefix}-approver"}
     ).encode("utf-8")
     code, _ = _http(
         "POST",
@@ -607,8 +612,11 @@ def test_resume_without_checkpointer_503(dualproc) -> None:
         assert req_id in ids, "C 看不到申请（hitl store 不是 db？前置失败）"
 
         dec = json.dumps(
-            {"request_id": req_id, "decision": "approved",
-             "decision_by": f"{dualproc.prefix}-approver"}
+            {
+                "request_id": req_id,
+                "decision": "approved",
+                "decision_by": f"{dualproc.prefix}-approver",
+            }
         ).encode("utf-8")
         code, _ = _http(
             "POST",

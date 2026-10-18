@@ -4,6 +4,7 @@ chat-history-api（B1）：追加**只读**历史查询面——按 user 列 thr
 （GROUP BY 聚合 + keyset 分页）、按 thread 拉全量事件（聚合在
 ``history.py`` 纯函数层完成）。零新表/迁移/写路径。
 """
+
 from __future__ import annotations
 
 import logging
@@ -71,9 +72,7 @@ async def run_owner(run_id: str) -> str | None:
     async with AsyncSessionLocal() as db:
         row = (
             await db.execute(
-                select(OpsLgRagRunEvent.user_id)
-                .where(OpsLgRagRunEvent.run_id == run_id)
-                .limit(1)
+                select(OpsLgRagRunEvent.user_id).where(OpsLgRagRunEvent.run_id == run_id).limit(1)
             )
         ).first()
     return str(row[0]) if row else None
@@ -86,9 +85,7 @@ async def last_seq(run_id: str) -> int:
     async with AsyncSessionLocal() as db:
         row = (
             await db.execute(
-                select(func.max(OpsLgRagRunEvent.seq)).where(
-                    OpsLgRagRunEvent.run_id == run_id
-                )
+                select(func.max(OpsLgRagRunEvent.seq)).where(OpsLgRagRunEvent.run_id == run_id)
             )
         ).first()
     return int(row[0] or 0) if row else 0
@@ -183,21 +180,18 @@ async def list_open_runs(
         .group_by(OpsLgRagRunEvent.run_id)
         .subquery()
     )
-    stmt = (
-        select(
-            OpsLgRagRunEvent.run_id,
-            OpsLgRagRunEvent.user_id,
-            OpsLgRagRunEvent.thread_id,
-            OpsLgRagRunEvent.seq.label("max_seq"),
-            OpsLgRagRunEvent.created_at.label("last_activity_at"),
-        )
-        .join(
-            max_seq_sq,
-            and_(
-                OpsLgRagRunEvent.run_id == max_seq_sq.c.rid,
-                OpsLgRagRunEvent.seq == max_seq_sq.c.mx,
-            ),
-        )
+    stmt = select(
+        OpsLgRagRunEvent.run_id,
+        OpsLgRagRunEvent.user_id,
+        OpsLgRagRunEvent.thread_id,
+        OpsLgRagRunEvent.seq.label("max_seq"),
+        OpsLgRagRunEvent.created_at.label("last_activity_at"),
+    ).join(
+        max_seq_sq,
+        and_(
+            OpsLgRagRunEvent.run_id == max_seq_sq.c.rid,
+            OpsLgRagRunEvent.seq == max_seq_sq.c.mx,
+        ),
     )
     if stale_after_seconds > 0:
         cutoff = now_utc() - timedelta(seconds=stale_after_seconds)
@@ -328,9 +322,7 @@ async def list_thread_activity_page(
                 ),
             )
         )
-    stmt = stmt.order_by(
-        last_activity.desc(), OpsLgRagRunEvent.thread_id.asc()
-    ).limit(limit)
+    stmt = stmt.order_by(last_activity.desc(), OpsLgRagRunEvent.thread_id.asc()).limit(limit)
     async with AsyncSessionLocal() as db:
         rows = (await db.execute(stmt)).all()
     return [

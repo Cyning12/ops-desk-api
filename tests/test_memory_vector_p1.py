@@ -12,6 +12,7 @@ fake embedder：关键词命中间 → 正交单位基向量（1024 维），无
 
 ⚠️ 全文件 async def（asyncio_mode=auto）；不要自建 event loop。
 """
+
 from __future__ import annotations
 
 import logging
@@ -141,9 +142,7 @@ async def test_paraphrase_query_recalls_fact_via_vector_path(
     assert "project.primary_repo" not in {f.key for f in deterministic}  # 前提：确定性漏掉
 
     # 改写 query（"我主要负责哪个仓库" ≈ primary_repo；fake embedder 同基向量）
-    fused = await recall_with_vector(
-        _TENANT, user, "我主要负责哪个仓库", limit=2, embedder=fake
-    )
+    fused = await recall_with_vector(_TENANT, user, "我主要负责哪个仓库", limit=2, embedder=fake)
     assert fused[0].key == "project.primary_repo"  # 向量通路真召回且排首
     assert str(fused[0].id) == str(target.id)
 
@@ -156,7 +155,7 @@ async def test_null_embedding_rows_stay_on_deterministic_path(
 ):
     # 开关关时写入 = P0 行为：embedding 留 NULL（既有行不回填等价态）
     # 显式钉 off：宿主 .env 可能设 MEMORY_FACTS_VECTOR_RECALL_ENABLED=true
-    #（test-baseline-reds 全量回归 unmask：网络可用时写入路径会真嵌向量）
+    # （test-baseline-reds 全量回归 unmask：网络可用时写入路径会真嵌向量）
     monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
     user = "u-null"
     fact = await write_fact(_candidate(user_id=user))
@@ -173,9 +172,7 @@ async def test_null_embedding_rows_stay_on_deterministic_path(
 # ---------------- ⑤ 向量降级：embedder 抛错 → 回退确定性 + memory_vector_degraded ----------------
 
 
-async def test_embedder_failure_degrades_with_marker(
-    monkeypatch: pytest.MonkeyPatch, caplog
-):
+async def test_embedder_failure_degrades_with_marker(monkeypatch: pytest.MonkeyPatch, caplog):
     monkeypatch.setenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", "true")
     user = "u-degrade"
     await write_fact(_candidate(user_id=user))
@@ -242,9 +239,7 @@ async def test_mutation_wrong_fact_vector_recalled_then_revoke(
 
     n = await revoke_by_source(src)
     assert n == 1
-    fused_after = await recall_with_vector(
-        _TENANT, user, "部署到哪里？", limit=1, embedder=fake
-    )
+    fused_after = await recall_with_vector(_TENANT, user, "部署到哪里？", limit=1, embedder=fake)
     assert all(f.key != "project.deploy_target" for f in fused_after)  # 消失
 
     # 装配面同断言：注入块先污染、revoke 后痊愈
@@ -272,9 +267,7 @@ async def test_mutation_wrong_fact_vector_recalled_then_revoke(
     )
     healed_blocks = [str(m.content) for m in healed if isinstance(m, SystemMessage)]
     assert not any("wrong-again" in b for b in healed_blocks)
-    assert not any(
-        MEMORY_FACTS_HEADER in b and "deploy_target" in b for b in healed_blocks
-    )
+    assert not any(MEMORY_FACTS_HEADER in b and "deploy_target" in b for b in healed_blocks)
 
 
 # ---------------- 跨 tenant：向量查询必带 tenant 谓词 ----------------
@@ -324,6 +317,7 @@ def test_vector_recall_env_invalid_fallback(monkeypatch: pytest.MonkeyPatch, cap
     monkeypatch.setenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", "1")
     assert memory_facts_vector_recall_enabled() is True
 
+
 # ---------------- memory-preference-profile · 向量通路召回的 preference 进偏好节 ----------------
 
 
@@ -336,9 +330,7 @@ async def test_vector_recalled_preference_lands_in_preference_section(
     fake = FakeEmbedder()
     user = "u-pref-vec"
     pref = await write_fact(
-        _candidate(
-            user_id=user, key="pref.deploy_tone", value="极简", kind="preference"
-        ),
+        _candidate(user_id=user, key="pref.deploy_tone", value="极简", kind="preference"),
         embedder=fake,
     )
     distractor = await write_fact(
@@ -366,4 +358,3 @@ async def test_vector_recalled_preference_lands_in_preference_section(
     assert MEMORY_PREFERENCES_HEADER in block
     assert "pref.deploy_tone=极简" in block
     assert MEMORY_FACTS_HEADER not in block  # 向量捞回的 preference 不污染事实节
-

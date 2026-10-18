@@ -205,9 +205,5 @@ def test_packs_module_no_session_or_chat_imports():
             imported.update(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module:
             imported.add(node.module)
-    offenders = {
-        name
-        for name in imported
-        if name.startswith(("app.ops.session", "app.ops.chat"))
-    }
+    offenders = {name for name in imported if name.startswith(("app.ops.session", "app.ops.chat"))}
     assert not offenders, f"packs 不得 import session/chat 流路径: {offenders}"

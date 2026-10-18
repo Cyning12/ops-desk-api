@@ -17,6 +17,7 @@ token sink；终答节点调 ``complete_answer_streaming`` ——
 token 归属 **仅** aggregator / direct_answer 的 LLM 调用；其他节点 LLM
 token 不进 SSE。禁止 import app.ops.session / app.ops.chat。
 """
+
 from __future__ import annotations
 
 import contextvars
@@ -30,8 +31,8 @@ logger = logging.getLogger(__name__)
 # sink(agent_role, chunk_text)：把终答 token chunk 交给 SSE emit 循环
 AnswerTokenSink = Callable[[str, str], Awaitable[None]]
 
-_answer_token_sink: contextvars.ContextVar[AnswerTokenSink | None] = (
-    contextvars.ContextVar("lg_rag_answer_token_sink", default=None)
+_answer_token_sink: contextvars.ContextVar[AnswerTokenSink | None] = contextvars.ContextVar(
+    "lg_rag_answer_token_sink", default=None
 )
 
 

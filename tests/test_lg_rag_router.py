@@ -2,6 +2,7 @@
 
 说明书：docs/guides/DESIGN_langgraph-lg-rag-phase2-router_v1.md §7。
 """
+
 from __future__ import annotations
 
 from types import SimpleNamespace

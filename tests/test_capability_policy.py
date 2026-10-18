@@ -128,6 +128,7 @@ def test_policy_decision_frozen():
 
 def test_tenant_scoped_missing_predicate_blocked():
     """D：tenant_scoped 缺租户谓词 → policy_blocked。"""
+
     def _fn(_: str) -> dict:
         return {"ok": True}
 

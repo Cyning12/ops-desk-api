@@ -1,4 +1,5 @@
 """RAG_SECOND_PATH：第二路 fts（默认）| sparse（C 臂）；默认不回归现网 FTS。"""
+
 from __future__ import annotations
 
 from types import SimpleNamespace

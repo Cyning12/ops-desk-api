@@ -85,17 +85,13 @@ def scenario_trim(
     if risk_hint == "high":
         final = [s for s in specs if str(s.risk_level) == "low"]
         stripped = [
-            (s.capability_id, REASON_RISK_HIGH_TIGHTEN)
-            for s in specs
-            if str(s.risk_level) != "low"
+            (s.capability_id, REASON_RISK_HIGH_TIGHTEN) for s in specs if str(s.risk_level) != "low"
         ]
         return final, stripped
     return specs, []
 
 
-def audit_scenario_stripped(
-    stripped: list[tuple[str, str]], *, would_strip: bool = False
-) -> None:
+def audit_scenario_stripped(stripped: list[tuple[str, str]], *, would_strip: bool = False) -> None:
     """剔除台账（D3）：logger 结构化行 + span metadata；id+reason 码+计数。
 
     记动作不记内容：不含 query/intent 原文；off 模式调用方短路（零日志）。

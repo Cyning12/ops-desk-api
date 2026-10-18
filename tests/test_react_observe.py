@@ -44,9 +44,7 @@ _CAPS_PATCH = "app.ops.lg_rag.multi.nodes.list_capabilities"
 
 
 def _fake_caps(*_a, **_kw):
-    return [
-        SimpleNamespace(capability_id=_TOOL, description="Mock 查询", risk_level="low")
-    ]
+    return [SimpleNamespace(capability_id=_TOOL, description="Mock 查询", risk_level="low")]
 
 
 def _plan_row(sid: str, **kw) -> dict:
@@ -199,10 +197,12 @@ async def test_replan_fallback_carries_unresolved_steps():
         subtask_results=[_ok(_T1), _err(_T2)],
         plan_prefix_ids=[_T1],
     )
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=lambda *a, **k: SimpleNamespace(
-            complete=AsyncMock(return_value="这不是 JSON")
-        )
+    with (
+        patch(_CAPS_PATCH, new=_fake_caps),
+        patch(
+            _PLAN_PATCH,
+            new=lambda *a, **k: SimpleNamespace(complete=AsyncMock(return_value="这不是 JSON")),
+        ),
     ):
         out = await supervisor_node(state)
     assert [r["subtask_id"] for r in out["subtasks"]] == [_T1, _T2], (
@@ -228,10 +228,12 @@ async def test_replan_with_valid_suffix_replaces_not_carries_control():
         subtask_results=[_ok(_T1), _err(_T2)],
         plan_prefix_ids=[_T1],
     )
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=lambda *a, **k: SimpleNamespace(
-            complete=AsyncMock(return_value=suffix)
-        )
+    with (
+        patch(_CAPS_PATCH, new=_fake_caps),
+        patch(
+            _PLAN_PATCH,
+            new=lambda *a, **k: SimpleNamespace(complete=AsyncMock(return_value=suffix)),
+        ),
     ):
         out = await supervisor_node(state)
     # 前缀原样 + 新后缀（seq 前进 ⇒ 新 id）
@@ -254,10 +256,12 @@ async def test_replan_success_drops_superseded_failure():
         subtask_results=[_ok(_T1), _err(_T2)],
         plan_prefix_ids=[_T1],
     )
-    with patch(_CAPS_PATCH, new=_fake_caps), patch(
-        _PLAN_PATCH, new=lambda *a, **k: SimpleNamespace(
-            complete=AsyncMock(return_value=suffix)
-        )
+    with (
+        patch(_CAPS_PATCH, new=_fake_caps),
+        patch(
+            _PLAN_PATCH,
+            new=lambda *a, **k: SimpleNamespace(complete=AsyncMock(return_value=suffix)),
+        ),
     ):
         out = await supervisor_node(state)
     assert out["subtask_results"].replace is True
@@ -322,8 +326,7 @@ def _hitl_state(**kw) -> dict:
         subtasks=[_plan_row(_T1), _plan_row(_T2)],
         subtask_results=[
             _ok(_T1),
-            _err(_T2, "需要重跑已执行步骤", blocked_by="prefix_touch_required",
-                 hitl_required=True),
+            _err(_T2, "需要重跑已执行步骤", blocked_by="prefix_touch_required", hitl_required=True),
         ],
         plan_prefix_ids=[_T1],
     )
@@ -346,9 +349,7 @@ def _observe_only_graph():
     builder = StateGraph(LgRagState)
     builder.add_node("observe", observe_node)
     builder.add_edge(START, "observe")
-    builder.add_conditional_edges(
-        "observe", route_after_react, {"replan": END, "settle": END}
-    )
+    builder.add_conditional_edges("observe", route_after_react, {"replan": END, "settle": END})
     return builder.compile(checkpointer=InMemorySaver())
 
 
@@ -428,9 +429,7 @@ async def test_resume_approves_unlocks_and_replans():
     payload, graph, cfg = await _run_until_interrupt(_hitl_state())
     assert payload is not None
 
-    out = await graph.ainvoke(
-        Command(resume={"approved": [_T1], "decided_by": "张三"}), cfg
-    )
+    out = await graph.ainvoke(Command(resume={"approved": [_T1], "decided_by": "张三"}), cfg)
     obs = out["react_observation"]
     assert obs["verdict"] == "replan", obs["verdict"]
     assert out["hitl_unlocked_ids"] == [_T1]
@@ -491,9 +490,7 @@ async def test_persist_hitl_is_idempotent_across_resume():
         assert len(first) == 1
 
         # 模拟恢复：state 里的 hitl_requests 是空的（挂起时没写进去）
-        again, _ = await _persist_hitl(
-            {**_hitl_state(), "hitl_requests": []}, obs
-        )
+        again, _ = await _persist_hitl({**_hitl_state(), "hitl_requests": []}, obs)
         assert len(again) == 1, f"恢复后重复建申请了：{again}"
         assert again[0]["id"] == first[0]["id"]
         assert len(await store.alist(status="pending")) == 1
@@ -529,8 +526,7 @@ async def test_failure_survives_replan_and_reaches_final_state():
         {
             "subtasks": [
                 {"id": "t1", "type": "tool", "tool": _TOOL, "input": "甲"},
-                {"id": "t2", "type": "tool", "tool": _TOOL, "input": "乙",
-                 "depends_on": ["t1"]},
+                {"id": "t2", "type": "tool", "tool": _TOOL, "input": "乙", "depends_on": ["t1"]},
             ]
         },
         ensure_ascii=False,
@@ -540,9 +536,11 @@ async def test_failure_survives_replan_and_reaches_final_state():
     async def _tool_call(name, args, ctx=None):
         sid = str((ctx or {}).get("subtask_id"))
         seen.append(sid)
-        return (SimpleNamespace(ok=True, output={"assignee": "张三"}, error=None, meta={})
-                if sid.endswith(":1")
-                else SimpleNamespace(ok=False, output={}, error="boom", meta={}))
+        return (
+            SimpleNamespace(ok=True, output={"assignee": "张三"}, error=None, meta={})
+            if sid.endswith(":1")
+            else SimpleNamespace(ok=False, output={}, error="boom", meta={})
+        )
 
     async def _prov_complete(msgs, model=None):
         # 首次给计划；之后一律给拿不到后缀的垃圾 ⇒ 触发 carry 路径
@@ -551,14 +549,16 @@ async def test_failure_survives_replan_and_reaches_final_state():
     from app.ops.lg_rag.multi.graph import build_supervisor_agent
 
     graph = build_supervisor_agent(checkpointer=InMemorySaver())
-    with patch(
-        "app.ops.strategy.intent.acomplete_structured",
-        new=AsyncMock(return_value=intent_ok),
-    ), patch(
-        _PLAN_PATCH,
-        new=lambda *a, **k: SimpleNamespace(complete=_prov_complete),
-    ), patch(
-        "app.ops.lg_rag.multi.nodes.capability_ainvoke", new=_tool_call
+    with (
+        patch(
+            "app.ops.strategy.intent.acomplete_structured",
+            new=AsyncMock(return_value=intent_ok),
+        ),
+        patch(
+            _PLAN_PATCH,
+            new=lambda *a, **k: SimpleNamespace(complete=_prov_complete),
+        ),
+        patch("app.ops.lg_rag.multi.nodes.capability_ainvoke", new=_tool_call),
     ):
         out = await graph.ainvoke(
             {"messages": [HumanMessage(content="复合问题")], "run_id": _RUN},
@@ -568,9 +568,7 @@ async def test_failure_survives_replan_and_reaches_final_state():
     results = out["subtask_results"]
     ids = [r["subtask_id"] for r in results]
     assert len(ids) == len(set(ids)), f"同一个 subtask_id 重复了：{ids}"
-    assert any("boom" in str(r.get("error") or "") for r in results), (
-        f"失败被静默抹掉了：{results}"
-    )
+    assert any("boom" in str(r.get("error") or "") for r in results), f"失败被静默抹掉了：{results}"
     # 前缀（已成功的 t1）没有被重跑
     assert seen.count(_T1) == 1, f"前缀被重跑了：{seen}"
     # 收口判定留痕

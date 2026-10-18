@@ -1,4 +1,5 @@
 """tracing · Generation I/O 截断与 no-op。"""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch

@@ -66,9 +66,7 @@ def _tenant_from_ctx(ctx: dict[str, Any] | None) -> str:
     return tenant
 
 
-async def get_issue_by_number(
-    payload: Any, *, ctx: dict[str, Any] | None = None
-) -> dict[str, Any]:
+async def get_issue_by_number(payload: Any, *, ctx: dict[str, Any] | None = None) -> dict[str, Any]:
     """按 number + tenant_id 查本库 Issue；跨租户未命中 → LookupError(issue_not_found)。"""
     number = _parse_first_int(payload)
     tenant = _tenant_from_ctx(ctx)
@@ -93,9 +91,7 @@ async def get_issue_by_number(
     }
 
 
-async def get_pr_by_number(
-    payload: Any, *, ctx: dict[str, Any] | None = None
-) -> dict[str, Any]:
+async def get_pr_by_number(payload: Any, *, ctx: dict[str, Any] | None = None) -> dict[str, Any]:
     """按 number + tenant_id 查本库 PR；跨租户未命中 → LookupError(pr_not_found)。"""
     number = _parse_first_int(payload)
     tenant = _tenant_from_ctx(ctx)

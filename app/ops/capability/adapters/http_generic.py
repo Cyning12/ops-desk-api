@@ -56,9 +56,7 @@ _VAR_RE = re.compile(r"\{\{(\w+)\}\}")
 _EXACT_VAR_RE = re.compile(r"^\{\{(\w+)\}\}$")
 
 # Host 注入变量（不需在 args_schema.properties 里声明）
-HOST_INJECTED_VARS: frozenset[str] = frozenset(
-    {"_user_id", "_date", "_tenant_id", "_subtask_id"}
-)
+HOST_INJECTED_VARS: frozenset[str] = frozenset({"_user_id", "_date", "_tenant_id", "_subtask_id"})
 
 # JSONPath 取值与"缺失"哨兵：与 receipt_capture / output_schema 共用一份实现
 # （见 capability/jsonpath.py），避免"回执抓到了但契约说缺字段"这种自相矛盾。
@@ -269,9 +267,7 @@ class UrllibHttpTransport:
         timeout_s: float,
     ) -> HttpResponse:
         if params:
-            query = urllib.parse.urlencode(
-                {k: v for k, v in params.items() if v is not None}
-            )
+            query = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
             if query:
                 url = f"{url}{'&' if '?' in url else '?'}{query}"
         data = None
@@ -279,9 +275,7 @@ class UrllibHttpTransport:
         if body is not None:
             data = json.dumps(body).encode("utf-8")
             send_headers.setdefault("Content-Type", "application/json")
-        req = urllib.request.Request(
-            url, data=data, headers=send_headers, method=method.upper()
-        )
+        req = urllib.request.Request(url, data=data, headers=send_headers, method=method.upper())
         try:
             with self._opener.open(req, timeout=timeout_s) as resp:
                 raw = resp.read().decode("utf-8", errors="replace")
@@ -290,16 +284,17 @@ class UrllibHttpTransport:
             detail = exc.read().decode("utf-8", errors="replace")[:200]
             # 注意：不回显请求头/请求体（可能含凭证）
             raise HttpCapabilityError(
-                UPSTREAM_ERROR, f"HTTP {exc.code}: {detail}", cause=CAUSE_HTTP_STATUS, http_status=int(getattr(exc, "code", 0) or 0)
+                UPSTREAM_ERROR,
+                f"HTTP {exc.code}: {detail}",
+                cause=CAUSE_HTTP_STATUS,
+                http_status=int(getattr(exc, "code", 0) or 0),
             ) from exc
         except urllib.error.URLError as exc:
             raise HttpCapabilityError(
                 UPSTREAM_ERROR, f"网络错误: {exc.reason!r}", cause=CAUSE_TRANSPORT
             ) from exc
         except TimeoutError as exc:
-            raise HttpCapabilityError(
-                UPSTREAM_ERROR, "请求超时", cause=CAUSE_TRANSPORT
-            ) from exc
+            raise HttpCapabilityError(UPSTREAM_ERROR, "请求超时", cause=CAUSE_TRANSPORT) from exc
         return HttpResponse(status=status, payload=_parse_payload(raw))
 
 
@@ -540,7 +535,9 @@ class GenericHttpAdapter:
                 "duplicate_of": claim.receipt_id,
                 "idempotency_key": prepared.idempotency_key,
             }
-        raise HttpCapabilityError(DUPLICATE_ID, "同一幂等键正在执行中（in-flight）", cause=CAUSE_BUSINESS)
+        raise HttpCapabilityError(
+            DUPLICATE_ID, "同一幂等键正在执行中（in-flight）", cause=CAUSE_BUSINESS
+        )
 
     def _claim(self, prepared: _Prepared) -> dict[str, Any] | None:
         """抢执行权。返回非 ``None`` 表示**不该真的发请求**（已完成 / 正在执行）。"""
@@ -552,7 +549,8 @@ class GenericHttpAdapter:
             # DB 版只有异步接口：同步路径用它会是错的（而且会阻塞事件循环）
             raise HttpCapabilityError(
                 UPSTREAM_ERROR,
-                f"{type(store).__name__} 只支持异步接口，请走 ainvoke", cause=CAUSE_LOCAL
+                f"{type(store).__name__} 只支持异步接口，请走 ainvoke",
+                cause=CAUSE_LOCAL,
             )
         claim = claim_fn(
             prepared.idempotency_key,
@@ -591,13 +589,9 @@ class GenericHttpAdapter:
         """
         if not prepared.idempotency_key or exc.code not in RELEASE_SAFE_ERROR_CODES:
             return
-        self._store_impl().release(
-            prepared.idempotency_key, tenant_id=prepared.tenant_id
-        )
+        self._store_impl().release(prepared.idempotency_key, tenant_id=prepared.tenant_id)
 
-    async def _asettle_failure(
-        self, prepared: _Prepared, exc: HttpCapabilityError
-    ) -> None:
+    async def _asettle_failure(self, prepared: _Prepared, exc: HttpCapabilityError) -> None:
         if not prepared.idempotency_key or exc.code not in RELEASE_SAFE_ERROR_CODES:
             return
         await self._astore_call(
@@ -635,9 +629,7 @@ class GenericHttpAdapter:
             # 成功就把键标完成——**"执行完成了"是适配器掌握的事实**，
             # 不能等上层来标（否则直接用适配器的调用会一直卡在 in_flight）。
             # 回执 id 由 gateway 在落完回执后补上（complete 支持二次调用更新关联）。
-            self._store_impl().complete(
-                prepared.idempotency_key, tenant_id=prepared.tenant_id
-            )
+            self._store_impl().complete(prepared.idempotency_key, tenant_id=prepared.tenant_id)
         return out
 
     async def _afinish(self, prepared: _Prepared, resp: HttpResponse) -> dict[str, Any]:
@@ -688,8 +680,7 @@ class GenericHttpAdapter:
             "params": self._render_map(http.get("query_map"), scope),
             "body": self._render_map(http.get("body_map"), scope),
             "headers": {
-                str(k): str(v)
-                for k, v in self._render_map(http.get("header_map"), scope).items()
+                str(k): str(v) for k, v in self._render_map(http.get("header_map"), scope).items()
             },
         }
 
@@ -697,10 +688,7 @@ class GenericHttpAdapter:
     def _render_map(mapping: Any, scope: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(mapping, dict):
             return {}
-        return {
-            str(k): GenericHttpAdapter._render_value(v, scope)
-            for k, v in mapping.items()
-        }
+        return {str(k): GenericHttpAdapter._render_value(v, scope) for k, v in mapping.items()}
 
     @staticmethod
     def _render_value(value: Any, scope: dict[str, Any]) -> Any:
@@ -710,9 +698,7 @@ class GenericHttpAdapter:
         if exact:
             # 整串就是一个变量 → 保留原类型（不要在 int 上做字符串化）
             return scope.get(exact.group(1), "")
-        return _VAR_RE.sub(
-            lambda m: str(scope.get(m.group(1), "") or ""), value
-        )
+        return _VAR_RE.sub(lambda m: str(scope.get(m.group(1), "") or ""), value)
 
     @staticmethod
     def _host_vars(ctx: dict[str, Any] | None) -> dict[str, Any]:
@@ -759,7 +745,9 @@ class GenericHttpAdapter:
         where = str(param.get("in") or "").strip().lower()
         name = str(param.get("name") or "").strip()
         if not name:
-            raise HttpCapabilityError(ARGS_SCHEMA_INVALID, "tenant_param.name 为空", cause=CAUSE_LOCAL)
+            raise HttpCapabilityError(
+                ARGS_SCHEMA_INVALID, "tenant_param.name 为空", cause=CAUSE_LOCAL
+            )
         if where == "query":
             rendered["params"][name] = value
         elif where == "body":
@@ -856,8 +844,12 @@ class GenericHttpAdapter:
         if isinstance(error_map, dict) and code_raw is not _MISSING:
             mapped = error_map.get(str(code_raw))
             if mapped:
-                return HttpCapabilityError(str(mapped), f"upstream_code={code_raw}", cause=CAUSE_BUSINESS)
-        return HttpCapabilityError(UPSTREAM_ERROR, f"HTTP {status}", cause=CAUSE_HTTP_STATUS, http_status=int(status or 0))
+                return HttpCapabilityError(
+                    str(mapped), f"upstream_code={code_raw}", cause=CAUSE_BUSINESS
+                )
+        return HttpCapabilityError(
+            UPSTREAM_ERROR, f"HTTP {status}", cause=CAUSE_HTTP_STATUS, http_status=int(status or 0)
+        )
 
     def _capture(self, payload: dict[str, Any]) -> dict[str, Any]:
         out: dict[str, Any] = {}

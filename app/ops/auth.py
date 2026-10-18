@@ -1,4 +1,5 @@
 """Authentication endpoints."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -79,9 +80,7 @@ async def login(
             detail="Invalid or expired invite token",
         )
 
-    user_result = await db.execute(
-        select(OpsUser).where(OpsUser.username == body.username)
-    )
+    user_result = await db.execute(select(OpsUser).where(OpsUser.username == body.username))
     user = user_result.scalar_one_or_none()
     if user is None:
         user = OpsUser(username=body.username, role=invite.role)
@@ -119,9 +118,7 @@ async def logout(
     cookie_token = request.cookies.get(settings.session_cookie_name)
     if cookie_token:
         token_hash = hash_token(cookie_token)
-        await db.execute(
-            delete(OpsSession).where(OpsSession.token_hash == token_hash)
-        )
+        await db.execute(delete(OpsSession).where(OpsSession.token_hash == token_hash))
         await db.commit()
 
     _delete_session_cookie(response)
@@ -133,9 +130,7 @@ async def me(request: Request, user: OpsUser = CurrentUser) -> dict:
     """Return current user info and session tenant."""
     tenant_id = getattr(request.state, "ops_tenant_id", TENANT_A)
     return {
-        "user": UserOut(
-            id=str(user.id), username=user.username, role=user.role
-        ).model_dump(),
+        "user": UserOut(id=str(user.id), username=user.username, role=user.role).model_dump(),
         "tenant_id": tenant_id,
     }
 

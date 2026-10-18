@@ -1,4 +1,5 @@
 """Tests for graph snapshot read-only endpoint."""
+
 from __future__ import annotations
 
 import pytest

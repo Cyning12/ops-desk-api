@@ -8,6 +8,7 @@
 - live 缺 key 显式失败：进程内 preflight 抛错 + CLI 子进程退出码 2
   （key 检查在 preflight 首位，子进程不触网不触 DB）
 """
+
 from __future__ import annotations
 
 import os
@@ -261,9 +262,7 @@ def test_sweep_27_combos_complete_and_recommendation_structure():
     sweep = run_sweep(para)
     combos = sweep["combos"]
     assert len(combos) == 27
-    triples = {
-        (c["half_life_days"], c["sim_floor"], c["source_weight_extract"]) for c in combos
-    }
+    triples = {(c["half_life_days"], c["sim_floor"], c["source_weight_extract"]) for c in combos}
     assert len(triples) == 27  # 网格无重无漏
     for c in combos:
         assert c["paraphrase_top1"] is not None
@@ -319,9 +318,7 @@ def test_patched_fusion_constants_override_and_restore():
 
     # 覆盖（抑制性反向 patch：7d 半衰 + 高地板）：同一真 _fuse_recall 排名翻转
     # （实证：0.5^(90/7)≈1.3e-4 压出 top3；保留「patch 可翻转排名」的检验意图）
-    with patched_fusion_constants(
-        half_life_days=7.0, sim_floor=0.7, source_weight_extract=1.0
-    ):
+    with patched_fusion_constants(half_life_days=7.0, sim_floor=0.7, source_weight_extract=1.0):
         patched_rank = _rank_scenario(aged90, limit=3, now=now)
         assert aged90.target_id not in patched_rank
     # with 块外现场恢复（零生产默认值改动）

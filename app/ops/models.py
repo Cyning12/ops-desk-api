@@ -1,4 +1,5 @@
 """Shared Pydantic models for Ops Desk endpoints."""
+
 from typing import Any
 
 from pydantic import BaseModel

@@ -7,6 +7,7 @@
   双不可达→非零退出+stderr 显式错误 · 含子进程命令输出断言）
 - 只读断言（桩客户端写方法零调用 + fake PG 全部 SQL 均为 SELECT）
 """
+
 from __future__ import annotations
 
 import os
@@ -82,7 +83,13 @@ class FakePgConn:
 class StubQdrantClient:
     """count/scroll 桩；写方法全部入账（E5 断言零写调用）。"""
 
-    WRITE_METHODS = ("upsert", "delete", "create_collection", "delete_collection", "update_collection")
+    WRITE_METHODS = (
+        "upsert",
+        "delete",
+        "create_collection",
+        "delete_collection",
+        "update_collection",
+    )
 
     def __init__(self, ids: set[int], *, page_size: int = 2):
         self._ids = sorted(ids)
@@ -130,6 +137,7 @@ def _run_main(tmp_path: Path, monkeypatch, *, pg_conn=None, qdrant_ids=None, qdr
     if pg_conn is not None:
         kwargs["pg_connect"] = _fake_connect(pg_conn)
     if qdrant_exc is not None:
+
         def _boom(**kw):
             raise qdrant_exc
 

@@ -289,8 +289,12 @@ def test_callback_approves_and_returns_receipt(monkeypatch):
         asyncio.run(store.acreate(req))
         res = _post_callback(
             client,
-            {"request_id": req["id"], "decision": "approved",
-             "decision_by": "张三", "note": "同意重跑"},
+            {
+                "request_id": req["id"],
+                "decision": "approved",
+                "decision_by": "张三",
+                "note": "同意重跑",
+            },
         )
     assert res.status_code == 200
     assert res.json()["request"]["status"] == STATUS_APPROVED
@@ -348,8 +352,7 @@ def test_list_requests_requires_signature(monkeypatch):
             headers={
                 HEADER_TIMESTAMP: str(ts),
                 HEADER_NONCE: "n-list",
-                HEADER_SIGNATURE: sign(body=b"", timestamp=ts, nonce="n-list",
-                                       secret="s3cr3t"),
+                HEADER_SIGNATURE: sign(body=b"", timestamp=ts, nonce="n-list", secret="s3cr3t"),
             },
         )
         assert res.status_code == 200
@@ -417,24 +420,16 @@ async def test_db_store_alist_really_executes_on_asyncpg():
         assert len(got) == 2, got
 
         # ② status=None（显式）
-        got = [
-            r
-            for r in await store.alist(status=None)
-            if str(r["id"]).startswith(prefix)
-        ]
+        got = [r for r in await store.alist(status=None) if str(r["id"]).startswith(prefix)]
         assert len(got) == 2, got
 
         # ③ 按 status 过滤：pending 命中、approved 不命中
         pend = [
-            r
-            for r in await store.alist(status=STATUS_PENDING)
-            if str(r["id"]).startswith(prefix)
+            r for r in await store.alist(status=STATUS_PENDING) if str(r["id"]).startswith(prefix)
         ]
         assert len(pend) == 2, pend
         appr = [
-            r
-            for r in await store.alist(status=STATUS_APPROVED)
-            if str(r["id"]).startswith(prefix)
+            r for r in await store.alist(status=STATUS_APPROVED) if str(r["id"]).startswith(prefix)
         ]
         assert appr == []
 
@@ -442,9 +437,7 @@ async def test_db_store_alist_really_executes_on_asyncpg():
         decided = await store.adecide(rows[0], decision=STATUS_APPROVED, by="张三")
         assert decided is not None and decided["status"] == STATUS_APPROVED
         pend = [
-            r
-            for r in await store.alist(status=STATUS_PENDING)
-            if str(r["id"]).startswith(prefix)
+            r for r in await store.alist(status=STATUS_PENDING) if str(r["id"]).startswith(prefix)
         ]
         assert [r["id"] for r in pend] == [rows[1]], pend
 

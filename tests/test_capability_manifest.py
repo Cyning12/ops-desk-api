@@ -122,9 +122,7 @@ capabilities:
                         "risk_level": "low",
                         "enabled": True,
                         "args_schema": {"type": "object", "properties": {}},
-                        "adapter": (
-                            "local_fn:app.ops.capability.defaults:mock_get_issue_status"
-                        ),
+                        "adapter": ("local_fn:app.ops.capability.defaults:mock_get_issue_status"),
                     }
                 ],
             }
@@ -369,9 +367,7 @@ def test_no_http_hook_in_capability_package():
         text += py.read_text(encoding="utf-8")
     assert "APIRouter" not in text
     assert "@router" not in text
-    assert "reload_capability_manifest" in (
-        cap_root / "manifest.py"
-    ).read_text(encoding="utf-8")
+    assert "reload_capability_manifest" in (cap_root / "manifest.py").read_text(encoding="utf-8")
 
 
 def test_lookups_adapter_prefix_allowed(tmp_path: Path):
@@ -456,8 +452,6 @@ capabilities:
     return _write_yaml(tmp_path / "contract.yaml", body)
 
 
-
-
 # ---------------- V10：结果契约形状（拼错 = 没有契约）----------------
 
 
@@ -501,9 +495,7 @@ def test_output_schema_valid_shape_loads(tmp_path: Path):
     path = _write_output_schema_manifest(tmp_path, block)
     result = load_capability_manifest(path)
     assert "probe_contract" in set(result.registered_ids)
-    spec = next(
-        s for s in list_capabilities() if s.capability_id == "probe_contract"
-    )
+    spec = next(s for s in list_capabilities() if s.capability_id == "probe_contract")
     assert spec.output_schema == {
         "required": ["$.data.ticketId"],
         "min_items": {"$.data.items": 1},
@@ -514,8 +506,6 @@ def test_output_schema_valid_shape_loads(tmp_path: Path):
 
 
 # ---------------- 失败成因分类（熔断的判定依据）----------------
-
-
 
 
 # ---------------- 失败成因分类（熔断的判定依据）----------------

@@ -1,4 +1,5 @@
 """grader Prompt 版本切换（v1 基线 / v2 实验）。"""
+
 from __future__ import annotations
 
 from app.ops.rag import grader as grader_mod

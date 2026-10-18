@@ -41,14 +41,11 @@ class SkillStubAdapter:
             "ctx_keys": sorted((ctx or {}).keys()),
             "engine": "stub",
             "note": (
-                "P3 stub · provide 仅注入占位上下文；"
-                "人读 Skill 见 docs/skills/；完整执行引擎未实现"
+                "P3 stub · provide 仅注入占位上下文；人读 Skill 见 docs/skills/；完整执行引擎未实现"
             ),
         }
 
     def invoke(self, args: Any, *, ctx: dict[str, Any] | None = None) -> Any:
         """预留：可执行步骤。P3 **未**实现完整引擎 → ``NotImplementedError``。"""
         del args, ctx
-        raise NotImplementedError(
-            "kind=skill invoke() 预留：完整 Skill 执行引擎未实现（P3 stub）"
-        )
+        raise NotImplementedError("kind=skill invoke() 预留：完整 Skill 执行引擎未实现（P3 stub）")

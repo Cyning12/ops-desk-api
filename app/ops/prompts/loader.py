@@ -76,9 +76,7 @@ def load_asset(template_id: str) -> tuple[str, str]:
             f"prompt 资产 version 非 v<N> 格式: {path} (version={meta['version']!r})"
         )
     if not body:
-        raise PromptAssetError(
-            f"prompt 资产 body 为空: {path} (template_id={template_id})"
-        )
+        raise PromptAssetError(f"prompt 资产 body 为空: {path} (template_id={template_id})")
     return meta["version"], body
 
 
