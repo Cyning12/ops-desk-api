@@ -26,6 +26,6 @@
 
 ## 四、交付移交
 
-- commit/PR：（commit 后回填）· 合并后 active 清零
+- commit `9b65364` · PR #281（https://github.com/Cyning12/ops-desk-api/pull/281）· 合并后 active 清零
 - 遗留呈维护者：① 结案报告 §7 签字位（有条件通过定稿）② G63 误答/9 疑似误拒归因复核另 task 候选 ③ widget 缺口（API 404 · 持 UI 会话者重试路径在案）④ terminal_status 埋点缺口（FP-L4 另立 SPEC 面）⑤ 构造非法回退语义裁定口（embedder 档 §四.4）
 - goal-eb568703 剩余：C2 生产水位（卡生产 Qdrant 只读凭据）· E backups/ 保留期（默认保留）——均呈报待维护者示下
