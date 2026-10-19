@@ -138,6 +138,10 @@ supervisor 图改为 **无 LLM 的 Builder → supervisor**；**首次规划**�
   - `tests/test_lg_rag_structured_output_p2.py:121-140` 与 `tests/test_lg_rag_supervisor_capability_catalog.py:143`（`supervisor_fallback` 元数据断言）→ **逐条处置**：属重规划沿用后缀分支者**保持绿**（FP-5 回归）；属首次失败静默单 rag 旧语义者**转红改写**（D2 改 `error.stage=supervisor_plan`）。
   - `tests/test_lg_rag_sse_stream.py:32,289` · `tests/test_lg_rag_sse_run_worker.py:66,135,199,252,500` · `tests/test_lg_rag_sse_disconnect_completion.py:24`（假流夹具 yield `intent_node` 事件）→ **夹具同步**（D1 摘节点后夹具同步 · 不构成行为断言变更）。
   - `tests/test_strategy_scenario.py`（`scenario_trim`/`intent_fallback` 24 命中）→ **逐条确认**：`scenario_trim` 纯函数用例预期**保持绿**；`_apply_scenario_stage` 相关用例（`:193-280`）逐条核对后标注处置。
+  - `tests/test_lg_rag_multi.py:179-195` `test_decompose_invalid_json_fallback_single_rag` → **转红改写 · 30 发现补录 · 00 定夺 2026-10-19**（同一被 D2 废止语义：首次·无 locked·规划失败→静默单 rag · 镜像转红改写为 raises `SupervisorPlanError` · 非范围分叉）。
+  - `tests/test_lg_rag_multi.py:198-212` `test_decompose_llm_exception_fallback_single_rag` → **转红改写 · 30 发现补录 · 00 定夺 2026-10-19**（同上）。
+  - `tests/test_lg_rag_multi.py:229-259` `test_invalid_tool_id_in_plan_fallback_single_rag` → **转红改写 · 30 发现补录 · 00 定夺 2026-10-19**（同上）。
+  - `tests/test_lg_rag_supervisor_capability_catalog.py:204-233` `test_supervisor_tool_not_in_allowlist_fallback_single_rag` → **转红改写 · 30 发现补录 · 00 定夺 2026-10-19**（同上）。
 
 ## 依赖
 
@@ -215,5 +219,6 @@ supervisor 图改为 **无 LLM 的 Builder → supervisor**；**首次规划**�
 | 日期 | 说明 |
 |------|------|
 | 2026-10-19 | HG-AUDIT-R1=approved（维护者本窗指示「签收，开始后续任务」· 00 代签 · 30 可开工） |
+| 2026-10-19 | 10-task TC11 补录（30 中期发现 4 条枚举外旧测同 D2 废止语义 · 00 定夺镜像转红改写为 raises SupervisorPlanError · 纯文档增量） |
 | 2026-10-19 | 10-task 补列（20-task-audit R1-B1：TC11 旧测 grep 影响面 + 自检结论行 · 纯文档增量 · 范围实质与其他字段不动） |
 | 2026-10-19 | 10-task 草稿（吸收 R1 审查 N1/N3/N4 + 三条 00 定夺）：范围承 SPEC D1/D2/D3 · failure_paths FP-1~FP-9（FP-1b=N2 归 error）· 验收 TC1–TC10（TC6=S4 显式断言 · TC9=05 §4.2+01_modules 回写）· 下游棒=ops-desk-web 展示同步 · HG-AUDIT-R1=pending |
