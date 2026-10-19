@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 BGE_M3_MODEL = "BAAI/bge-m3"
 DEFAULT_EMBED_BACKEND = "siliconflow"
 DEFAULT_SILICONFLOW_BASE = "https://api.siliconflow.cn/v1"
+DEFAULT_EMBED_API_BATCH_SIZE = 128  # 签注裁定钉死（safe zone ≈500 的 1/4 · ~4s/批 << timeout 60s）
 
 
 class Embedder(Protocol):
@@ -70,6 +71,7 @@ class ApiEmbedder:
         base_url: str | None = None,
         api_key: str | None = None,
         max_retries: int = 3,
+        batch_size: int | None = None,
     ) -> None:
         self.name = model
         self._base = (
@@ -80,10 +82,51 @@ class ApiEmbedder:
             logger.error("ApiEmbedder missing SILICONFLOW_API_KEY; refusing local ST fallback")
             raise RuntimeError("缺少 SILICONFLOW_API_KEY")
         self._max_retries = max_retries
+        if batch_size is not None and batch_size <= 0:
+            logger.warning(
+                "invalid batch_size=%d; fallback to %d",
+                batch_size,
+                DEFAULT_EMBED_API_BATCH_SIZE,
+            )
+            batch_size = None
+        self._batch_size = (
+            batch_size if batch_size is not None else _embed_api_batch_size()
+        )
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
+        # 内部批切：≤batch_size 逐批 POST，跨批保序拼接（ingest zip strict 强依赖）；
+        # ≤batch_size 时恰一批发出，payload 与批切前逐字节等价。
+        batches = [
+            texts[i : i + self._batch_size]
+            for i in range(0, len(texts), self._batch_size)
+        ]
+        total = len(batches)
+        started = time.monotonic()
+        vectors: list[list[float]] = []
+        for i, batch in enumerate(batches, 1):
+            t0 = time.monotonic()
+            # 批级失败纪律 fail-fast：批内重试耗尽即整单 raise，不缓存/不部分返回
+            vectors.extend(self._embed_batch(batch))
+            logger.info(
+                "embed batch %d/%d: %d chunks in %.1fs",
+                i,
+                total,
+                len(batch),
+                time.monotonic() - t0,
+            )
+        elapsed = time.monotonic() - started
+        logger.info(
+            "embed done: %d chunks in %d batches, %.1fs total (%.1f chunks/s)",
+            len(texts),
+            total,
+            elapsed,
+            len(texts) / elapsed if elapsed > 0 else 0.0,
+        )
+        return vectors
+
+    def _embed_batch(self, texts: list[str]) -> list[list[float]]:
         payload = {"model": self.name, "input": texts}
         headers = {"Authorization": f"Bearer {self._key}"}
         last_exc: Exception | None = None
@@ -108,6 +151,26 @@ class ApiEmbedder:
                 logger.warning("embed 第 %d 次失败: %s；%ds 后重试", attempt + 1, exc, wait)
                 time.sleep(wait)
         raise RuntimeError(f"embed failed: {last_exc}")
+
+
+def _embed_api_batch_size() -> int:
+    """RAG_EMBED_API_BATCH_SIZE 解析：未设/空 → 默认 128；非法/≤0 → warning + 回退默认
+    （承 embed_backend env 解析先例）。"""
+    raw = (os.getenv("RAG_EMBED_API_BATCH_SIZE") or "").strip()
+    if not raw:
+        return DEFAULT_EMBED_API_BATCH_SIZE
+    try:
+        value = int(raw)
+    except ValueError:
+        value = -1
+    if value <= 0:
+        logger.warning(
+            "invalid RAG_EMBED_API_BATCH_SIZE=%r; fallback to %d",
+            raw,
+            DEFAULT_EMBED_API_BATCH_SIZE,
+        )
+        return DEFAULT_EMBED_API_BATCH_SIZE
+    return value
 
 
 def embed_backend() -> str:
