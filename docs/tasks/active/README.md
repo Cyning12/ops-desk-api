@@ -4,6 +4,9 @@
 
 | task | 说明 |
 |---|---|
+| （无进行中 task） | 2026-10-19：**批量关账·第三波** `task_api_embedder_internal_batching`（PR #278 合 · squash `056d874` · ApiEmbedder 内部批切 env `RAG_EMBED_API_BATCH_SIZE` 默认 128 · fail-fast · 红测先行 RED5→GREEN28 · F3a 1200 chunks 单 embed()→10 批全 200 OK · 70.9 chunks/s · 8648 零扰动 · G-L1 rag 行备注 · F3b 签注不授权未执行）归档至 `done/`；CLOSE 档 `docs/tasks/close/close_api_embedder_internal_batching_20261019.md`；R1 审查文随 PR 落址A |
+| （无进行中 task） | 2026-10-19：**批量关账·第三波** `task_host_v1_sli_dashboard_live_evidence`（PR #279 合 · squash `72aebad` · TC-D1 Langfuse 实证补录：凭据实判 PASS（project=Ops-desk-agent · dev 1026 traces）· capability_ok=0.7129（72/101）· p99=562052.0ms（n=84）真实出数 · avail.success/cost 缺口照登（terminal_status 未埋+缺单价铁律触发 unknown）· widget 缺口延续 API404 零伪造 · CLOSE §四.2/§四.5 已消账）归档至 `done/`；CLOSE 档 `docs/tasks/close/close_host_v1_sli_dashboard_live_evidence_20261019.md`；R1 审查文随 PR 落址A |
+| （无进行中 task） | 2026-10-19：**批量关账·第三波** `task_rag_golden_eval_live_run`（PR #280 合 · squash `4ab5f3a` · R-4 结案真跑：73/73 全量 partial=false ≈56.6min（FP-3 两连处置如实记）· **zh2en MET 19/26=73.08%** vs ≥1/3 · Wilson CI=[0.54,0.86] confidence=low · 拒答正确率 10/11（误答 G63 · 疑似误拒 9 照登）· 整体建议「有条件通过」签字位留维护者 · 结案报告+Demo 证据四象限齐 · 契约零漂移）归档至 `done/`；CLOSE 档 `docs/tasks/close/close_rag_golden_eval_live_run_20261019.md`；R1 审查文随 PR 落址A |
 | （无进行中 task） | 2026-10-18：**单档关账** `task_local_rag_knowledge_rebuild`（PR #276 合 · squash `8ac8ec0` · 本地 RAG 重建 8648 双侧对齐水位 match · 40 单棒零落码） |
 | （无进行中 task） | 2026-10-18：**单档关账** `task_ruff_baseline_cleanup`（PR #274 合 · squash `b73bb8a` · ruff check 52→0 · format 223→0 · CI 接 ruff==0.15.21 闸） |
 | （无进行中 task） | 2026-10-18：**单档关账** `task_local_qdrant_orphan_points_cleanup`（PR #272 合 · squash `6ee1f61` · 8574 孤儿点白名单批删 · 删后水位 verdict=match 0/0/0 · 快照备份留存本机） |

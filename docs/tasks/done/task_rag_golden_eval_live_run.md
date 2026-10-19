@@ -1,6 +1,6 @@
 # Task：rag-golden-eval-live-run（R-4 结案真跑：现集 73 条 golden 对本地知识库全量真跑 + 结案报告 + R-5 Demo 证据表回填）
 
-> **状态**：approved 待 40（四闸 approved · 维护者「全做」授权 + 授权链 m00238/m01101 00 代录 2026-10-19 · R1 签收 nit 知悉照登 · 零落码裁定承建议 · 未 commit）
+> **状态**：done（2026-10-19 CLOSE · PR #280 MERGED squash 4ab5f3a · TC-LR-1~6 全 PASS · zh2en MET 19/26=73.08%（门槛≥1/3 · Wilson CI=[0.54,0.86] · confidence=low）· 拒答正确率 10/11 · 整体建议「有条件通过」签字位留维护者 · 归档 done/）
 > **类型**：评测真跑（40 轨 · **含 LLM 调用与配额消耗** · 建议零落码——优先复用既有管线全链零新码 · 承 task_local_rag_knowledge_rebuild「零落码 40 单棒」先例）
 > **上游**：[`task_rag_golden_eval_r4_r5.md`](../done/task_rag_golden_eval_r4_r5.md) 已 CLOSE（PR #262 · CLOSE 档 [`close_rag_golden_eval_r4_r5_20261017.md`](../close/close_rag_golden_eval_r4_r5_20261017.md)）——**TC-R4-5「结案真跑」移交本 task**，HG-EVAL-LIVE-RUN 维护者 2026-10-19（会话「全做」）选定推进，授权口径由 00 签闸时统一代录
 > **分支**：无（建议零落码 · 零 git 操作纪律；报告/invoke 产物提交与否由 00/维护者事后裁定）
@@ -212,3 +212,4 @@ TC-LR-1..6：实证项（前置/真跑/报告/证据表）均可对命令输出�
 | 2026-10-19 | 10-task 落稿（R-4 结案真跑 + R-5 Demo 证据表回填 · 零落码建议 40 单棒 · 四闸 pending 待维护者签/00 代录 · 未 commit）；10 亲跑实证锚点：73 条四象限计数 · PG==Qdrant==8648 · SILICONFLOW_API_KEY 在 .env · 18 份旧过程稿 |
 | 2026-10-19 | 维护者「全做」授权 + 授权链（m00238/m01101）00 代录四闸 approved；20 R1 书面审通过（零阻塞 nit×2 照登） |
 | 2026-10-19 | 40 实证完成：73/73 全量真跑（FP-3 两连处置：NO_PROXY 双写双洗 + 全洗代理直连 --resume 续跑 · FP-2 中断如实记）→ 结案报告 zh2en **MET**（19/26=73.08% · Wilson CI=[0.54,0.86]）· 拒答 10/11 · 误答 G63 + 疑似误拒 9 条照登 → Demo 证据表 4 条（G62 拒答演示契约 4c 逐字）→ TC-LR-1..6 勾选 + 自检结论回填；产物：reports/r4_live_20261019T032150Z.yaml · r4_final_live_20261019T032150Z.{yaml,md} · demo_evidence_20261019T033800Z.md · invoke_20261019_40_live_run.md + 证据附件 |
+| 2026-10-19 | 50 CLOSE（goal-eb568703 承授权链合并）：PR #280 squash 4ab5f3a 已并 · 归档 done/ · 状态行 CLOSED · README 登记 · 遗留=结案报告 §7 签字位 + G63 误答/9 疑似误拒归因复核另 task 候选 |
