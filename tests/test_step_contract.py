@@ -550,9 +550,15 @@ def _cap(ok: bool, output=None, error=None):
 
 
 @pytest.mark.asyncio
-async def test_predecessor_failure_means_zero_downstream_tool_calls():
+async def test_predecessor_failure_means_zero_downstream_tool_calls(monkeypatch):
     """R14 最强形态：前驱失败 ⇒ 后继工具**一次都没打**（不是"打了但忽略结果"）。"""
     from langgraph.checkpoint.memory import InMemorySaver
+
+    # supervisor-first（D2）夹具同步：t1 失败后 replan 第二轮 provider 输出不可解析，
+    # locked 空前缀下默认 fail-closed 会 raise（D2 本意，由 test_lg_rag_multi/
+    # structured_output_p2 的 fail-closed 用例覆盖）。本条测的是 depends_on 拦截契约，
+    # 与 fail-closed 正交 → 用灾备档 single_rag 保持旧收尾形态，断言零改动。
+    monkeypatch.setenv("LG_RAG_SUPERVISOR_PLAN_ON_FAIL", "single_rag")
 
     from app.ops.lg_rag.multi.graph import build_supervisor_agent
     from app.ops.lg_rag.schemas import IntentV1

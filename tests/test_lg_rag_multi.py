@@ -21,21 +21,11 @@ from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 
 from app.ops.lc_evidence_chain.types import ChainResult
-from app.ops.lg_rag.multi.nodes import route_next_subtask
-from app.ops.lg_rag.schemas import IntentV1
+from app.ops.lg_rag.multi.nodes import SupervisorPlanError, route_next_subtask
 
 _MULTI_PROVIDER_PATCH = "app.ops.lg_rag.multi.nodes.get_llm_provider"
 _ROUTER_PROVIDER_PATCH = "app.ops.lg_rag.nodes.get_llm_provider"
 _CHAIN_PATCH = "app.ops.lg_rag.nodes.ainvoke_evidence_answer"
-_INTENT_COMPLETE_PATCH = "app.ops.strategy.intent.acomplete_structured"
-_INTENT_OK = IntentV1(
-    domain="ops_kb",
-    needs_tool=True,
-    needs_skill=False,
-    is_composite=True,
-    risk_hint="low",
-    summary="复合运维查询",
-)
 _QUERY = "超时问题查一下，顺带抽取发版信息，再看看 issue 状态"
 _AGGREGATED = "## 综合结论\n已覆盖全部子任务。"
 
@@ -83,14 +73,14 @@ def _build():
 
 
 async def _run(graph, query: str = _QUERY, thread_id: str = "t-p4"):
-    with patch(_INTENT_COMPLETE_PATCH, new=AsyncMock(return_value=_INTENT_OK)):
-        return await graph.ainvoke(
-            {
-                "messages": [HumanMessage(content=query)],
-                "run_id": "multirun",
-            },
-            {"configurable": {"thread_id": thread_id}},
-        )
+    # supervisor-first（D1）：图内已无 intent_node，无需 mock intent SO。
+    return await graph.ainvoke(
+        {
+            "messages": [HumanMessage(content=query)],
+            "run_id": "multirun",
+        },
+        {"configurable": {"thread_id": thread_id}},
+    )
 
 
 def _host_plan_ok(subtasks: list[dict], *, alias: str, type_: str, input_: str) -> None:
@@ -177,39 +167,22 @@ async def test_cap_four_truncation():
 
 
 @pytest.mark.asyncio
-async def test_decompose_invalid_json_fallback_single_rag():
-    """拆解输出非法 → fallback 单 rag 子任务（宁退化不失败）。"""
+async def test_decompose_invalid_json_fails_closed():
+    """D2/TC3：首次拆解输出非法 → fail-closed，supervisor 抛 SupervisorPlanError 停图。
+
+    旧语义（静默 fallback 单 rag）已废止：规划失败不得冒充成功计划进 aggregator。
+    """
     multi = _provider("这个问题我拆不了", _AGGREGATED)
-    router = _provider('{"route": "rag"}')
-    chain = AsyncMock(return_value=_result("兜底检索答案"))
-    with (
-        patch(_MULTI_PROVIDER_PATCH, return_value=multi),
-        patch(_ROUTER_PROVIDER_PATCH, return_value=router),
-        patch(_CHAIN_PATCH, new=chain),
-    ):
-        out = await _run(_build())
-    assert out["subtasks"][0]["type"] == "rag"
-    _host_plan_ok(out["subtasks"], alias="t1", type_="rag", input_=_QUERY)
-    assert len(out["subtask_results"]) == 1
-    assert out["subtask_results"][0]["output"] == "兜底检索答案"
-    assert out["messages"][-1].content == _AGGREGATED
+    with patch(_MULTI_PROVIDER_PATCH, return_value=multi), pytest.raises(SupervisorPlanError):
+        await _run(_build())
 
 
 @pytest.mark.asyncio
-async def test_decompose_llm_exception_fallback_single_rag():
-    """拆解 LLM 异常 → 同样 fallback 单 rag 子任务。"""
+async def test_decompose_llm_exception_fails_closed():
+    """D2/TC2：首次拆解 LLM 异常 → 同样 fail-closed（SupervisorPlanError）。"""
     multi = _provider(RuntimeError("llm down"), _AGGREGATED)
-    router = _provider('{"route": "rag"}')
-    chain = AsyncMock(return_value=_result("兜底检索答案"))
-    with (
-        patch(_MULTI_PROVIDER_PATCH, return_value=multi),
-        patch(_ROUTER_PROVIDER_PATCH, return_value=router),
-        patch(_CHAIN_PATCH, new=chain),
-    ):
-        out = await _run(_build())
-    assert out["subtasks"][0]["type"] == "rag"
-    _host_plan_ok(out["subtasks"], alias="t1", type_="rag", input_=_QUERY)
-    assert out["subtask_results"][0]["output"] == "兜底检索答案"
+    with patch(_MULTI_PROVIDER_PATCH, return_value=multi), pytest.raises(SupervisorPlanError):
+        await _run(_build())
 
 
 @pytest.mark.asyncio
@@ -227,8 +200,8 @@ async def test_extract_invalid_json_falls_back_empty():
 
 
 @pytest.mark.asyncio
-async def test_invalid_tool_id_in_plan_fallback_single_rag():
-    """H1：plan 含非法 tool id → supervisor 整 plan fallback 单 rag（不进入 tool_exec）。"""
+async def test_invalid_tool_id_in_plan_fails_closed():
+    """D2/TC3：首次 plan 含非法 tool id → 整 plan 作废，fail-closed（不进入 tool_exec）。"""
     supervisor_out = _subtasks_json(
         [
             {"id": "t1", "type": "tool", "input": "查点什么", "tool": "no_such_tool"},
@@ -240,23 +213,9 @@ async def test_invalid_tool_id_in_plan_fallback_single_rag():
             },
         ]
     )
-    # route=direct：rag 子图要 router.complete 两次（分类 + direct_answer）。
-    # 只给 1 次时 direct_answer StopAsyncIteration → 记 error → critic retry_planner。
-    # 给 2 次则本轮无 error（critic pass）；仍预留第二轮 multi，避免回归再炸。
-    router = _provider('{"route": "direct"}', '{"route": "direct"}')
-    chain = AsyncMock(return_value=_result("direct 答案"))
-    multi = _provider(supervisor_out, _AGGREGATED, supervisor_out, _AGGREGATED)
-    with (
-        patch(_MULTI_PROVIDER_PATCH, return_value=multi),
-        patch(_ROUTER_PROVIDER_PATCH, return_value=router),
-        patch(_CHAIN_PATCH, new=chain),
-    ):
-        out = await _run(_build())
-    assert len(out["subtasks"]) == 1
-    assert out["subtasks"][0]["type"] == "rag"
-    assert len(out["subtask_results"]) == 1
-    assert out["messages"][-1].content == _AGGREGATED
-    assert out["critic_verdict"]["outcome"] == "pass"
+    multi = _provider(supervisor_out, _AGGREGATED)
+    with patch(_MULTI_PROVIDER_PATCH, return_value=multi), pytest.raises(SupervisorPlanError):
+        await _run(_build())
 
 
 @pytest.mark.asyncio
@@ -284,12 +243,12 @@ async def test_unknown_tool_at_invoke_recorded_and_continues():
 
 
 def test_supervisor_graph_includes_strategy_builder_node():
-    """S1：supervisor 图拓扑含 strategy_builder 前置节点。"""
+    """S1/TC1：supervisor 图拓扑含 strategy_builder 前置节点、不再含 intent_node。"""
     from app.ops.lg_rag.multi.graph import build_supervisor_agent
 
     graph = build_supervisor_agent()
     node_names = set(graph.get_graph().nodes.keys())
-    assert "intent_node" in node_names
+    assert "intent_node" not in node_names
     assert "strategy_builder" in node_names
     assert "supervisor" in node_names
 

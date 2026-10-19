@@ -134,7 +134,7 @@
 | `subtask.progress` | `rag_subtask` / `info_extract` / `tool_exec` | 子任务进度 / 结果摘要 |
 | `answer` | `aggregator` / `direct_answer` | 最终答案（**T5 已实现**：token delta 多帧 `{"delta": "<chunk>"}` 按 `seq` 有序拼接 + 终帧 `{"content": "<full>", "final": true}`；T2 兼容——旧客户端仅看 `content` 行为不变；流式降级时仅终帧整段）。**T5.1**：`delta` 须在生成过程中持续 SSE 刷出，**不得**等 aggregator / direct_answer 节点整段结束后再批量 flush（应然；见 §10.4.1） |
 | `done` | `system` | 正常结束；可选 `payload.status`：`waiting_approval`（HITL）· `disconnected`（仅补偿/worker 死无终帧）· 缺省≡completed |
-| `error` | `system` | 失败；`retryable` 布尔；**Wave B** `payload.stage` 钉 `lg_rag.worker_failed`（worker 异常；禁 silent 新 event_type） |
+| `error` | `system` | 失败；`retryable` 布尔；**Wave B** `payload.stage` 钉 `lg_rag.worker_failed`（worker 异常；禁 silent 新 event_type）；**supervisor-first（2026-10-19）** `payload.stage` 增 `supervisor_plan`（supervisor 首次规划失败 fail-closed 停图 · 灾备 env `LG_RAG_SUPERVISOR_PLAN_ON_FAIL=error(默认)|single_rag`，single_rag 降级续跑终帧 `done.degraded=true`） |
 | `cursor`（可选 · T4） | `system` | 供 replay 的游标提示（**可选** `event_type`；本波 SoT 见下行顶层字段） |
 
 **T4 顶层 `cursor` 字段（freeze `lg-rag-sse-v1` 扩展 · 2026-08-31）**

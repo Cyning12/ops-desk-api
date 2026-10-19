@@ -45,6 +45,7 @@ from app.ops.lg_rag.answer_stream import (
     reset_answer_token_sink,
     set_answer_token_sink,
 )
+from app.ops.lg_rag.multi.nodes import SupervisorPlanError
 from app.ops.lg_rag.progress_stream import (
     reset_subtask_progress_sink,
     set_subtask_progress_sink,
@@ -348,6 +349,7 @@ async def _iter_lg_rag_sse_core(
             astream_fn = astream_supervisor_agent
 
     saw_answer = False
+    supervisor_degraded = False  # D2 灾备 single_rag：终帧 done.degraded 数据源
     waiting_approval = False  # 被 interrupt() 挂起：在等人批，不是跑完了
     # 已发 done/error 收尾（含 waiting_approval / disconnected）→ 勿再补补偿帧
     stream_settled = False
@@ -456,6 +458,12 @@ async def _iter_lg_rag_sse_core(
                 )
                 break
             for node_name, node_output in update.items():
+                if (
+                    node_name == "supervisor"
+                    and isinstance(node_output, dict)
+                    and node_output.get("supervisor_degraded")
+                ):
+                    supervisor_degraded = True
                 event_type, role, payload = map_node_update(node_name, node_output)
                 if event_type == "answer":
                     saw_answer = True
@@ -486,6 +494,8 @@ async def _iter_lg_rag_sse_core(
                 "run_id": rid,
                 "thread_id": thread_id,
                 "latency_ms": int((time.perf_counter() - started) * 1000),
+                # D2 灾备：仅降级时带 degraded=true（正常终帧零 diff）
+                **({"degraded": True} if supervisor_degraded else {}),
             },
         )
         stream_settled = True
@@ -511,6 +521,24 @@ async def _iter_lg_rag_sse_core(
         # worker Task cancel：补偿落盘，避免孤儿永久 409
         await _settle_disconnected()
         raise
+    except SupervisorPlanError as exc:
+        # supervisor-first（D2）：首次规划失败 fail-closed —— 恰一帧
+        # error{stage=supervisor_plan} 即终态（其后无业务帧/无 done），停图。
+        while not pending_frames.empty():
+            yield pending_frames.get_nowait()
+        logger.warning("lg-rag supervisor plan failed run_id=%s err=%r", rid, exc)
+        yield await emit(
+            "error",
+            "system",
+            {
+                "stage": "supervisor_plan",
+                "message": "任务规划失败",
+                "retryable": True,
+                "detail": _truncate(repr(exc), 200),
+            },
+        )
+        stream_settled = True
+        await _drain_persist()
     except Exception as exc:
         while not pending_frames.empty():
             yield pending_frames.get_nowait()

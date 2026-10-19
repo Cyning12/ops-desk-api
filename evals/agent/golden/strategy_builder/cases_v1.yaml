@@ -20,15 +20,15 @@ cases:
     expect:
       allowed_capability_ids:
         - utc_now_iso
-  - id: builder_needs_tool_false_empty
+  # supervisor-first（D3）：builder 不再消费 intent（needs_tool 语义废止）；
+  # 基线 visible ∩ candidates 交集即出口——镜像 tests/test_strategy_builder.py 的
+  # test_builder_needs_tool_false_still_intersects_candidates。
+  - id: builder_no_intent_baseline_intersection
     query: "你好"
     setup:
-      intent:
-        domain: general
-        needs_tool: false
-        needs_skill: false
-        is_composite: false
-        risk_hint: low
-        summary: ""
+      candidate_capability_ids:
+        - utc_now_iso
+        - bogus_tool
     expect:
-      allowed_capability_ids: []
+      allowed_capability_ids:
+        - utc_now_iso

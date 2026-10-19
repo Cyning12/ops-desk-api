@@ -21,7 +21,8 @@ from app.ops.lg_rag.run_worker import is_run_worker_active
 async def _hanging_astream(
     query: str, *, thread_id: str = "t", **_kwargs: Any
 ) -> AsyncIterator[dict[str, Any]]:
-    yield {"intent_node": {"intent": {"domain": "kb", "needs_tool": False}}}
+    # supervisor-first（D1）：首节点 strategy_builder（intent_node 已去前置）
+    yield {"strategy_builder": {"allowed_capability_ids": []}}
     await asyncio.Event().wait()
 
 
@@ -57,7 +58,7 @@ async def test_subscriber_aclose_does_not_kill_worker() -> None:
         saw_progress = False
         try:
             async for raw in agen:
-                if "node.progress" in raw or "intent" in raw:
+                if "node.progress" in raw:
                     saw_progress = True
                     break
             assert saw_progress

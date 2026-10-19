@@ -29,7 +29,7 @@ def _no_pg_checkpointer_by_default(monkeypatch):
 async def _fake_supervisor_stream(
     query: str, *, thread_id: str = "t", checkpointer: Any = None, **_kwargs
 ) -> AsyncIterator[dict[str, Any]]:
-    yield {"intent_node": {"intent": {"domain": "kb", "needs_tool": False}}}
+    # supervisor-first（D1）：supervisor 图已无 intent_node，首节点为 strategy_builder。
     yield {"strategy_builder": {"allowed_capability_ids": []}}
     yield {"supervisor": {"subtasks": [{"id": "t1", "type": "rag", "input": query}]}}
     yield {"rag_subtask": {"subtask_results": [{"id": "t1", "type": "rag", "output": "hit"}]}}
@@ -286,7 +286,7 @@ async def test_keepalive_comment_before_slow_update() -> None:
         query: str, *, thread_id: str = "t", **_kwargs: Any
     ) -> AsyncIterator[dict[str, Any]]:
         await asyncio.sleep(0.12)
-        yield {"intent_node": {"intent": {"domain": "kb"}}}
+        yield {"strategy_builder": {"allowed_capability_ids": []}}
 
     frames: list[str] = []
     with (
@@ -318,3 +318,105 @@ async def test_keepalive_comment_before_slow_update() -> None:
         assert kwargs.get("event_type") != "keepalive"
         payload = kwargs.get("payload") or {}
         assert "keepalive" not in str(payload).lower()
+
+
+def _frame_event(frame: str) -> tuple[str, str]:
+    """把一行 SSE 帧拆成 (event 名, data JSON 串)。"""
+    event = ""
+    data = ""
+    for line in frame.splitlines():
+        if line.startswith("event:"):
+            event = line[len("event:") :].strip()
+        elif line.startswith("data:"):
+            data = line[len("data:") :].strip()
+    return event, data
+
+
+@pytest.mark.parametrize("bad_env", [None, "bogus", "SINGLE_RAGX"])
+async def test_supervisor_plan_failure_sse_error_frame(
+    monkeypatch, bad_env: str | None
+) -> None:
+    """TC2/TC4：首次规划失败（env=error 默认/非法值回退 error）→ SSE 恰一帧
+    error{stage=supervisor_plan} 即终态（其后无业务帧、无 done），停图。"""
+    from unittest.mock import AsyncMock
+
+    from app.ops.lg_rag.multi.nodes import SupervisorPlanError
+    from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
+
+    if bad_env is None:
+        monkeypatch.delenv("LG_RAG_SUPERVISOR_PLAN_ON_FAIL", raising=False)
+    else:
+        monkeypatch.setenv("LG_RAG_SUPERVISOR_PLAN_ON_FAIL", bad_env)
+
+    async def _failing_astream(
+        query: str, *, thread_id: str = "t", **_kwargs: Any
+    ) -> AsyncIterator[dict[str, Any]]:
+        yield {"strategy_builder": {"allowed_capability_ids": ["utc_now_iso"]}}
+        raise SupervisorPlanError("supervisor plan parse failed")
+
+    frames: list[str] = []
+    with patch(
+        "app.ops.lg_rag.event_store.persist_run_event",
+        new_callable=AsyncMock,
+    ):
+        async for frame in iter_lg_rag_sse(
+            query="复合问",
+            mode="supervisor",
+            thread_id="th-plan-err",
+            user_id="u-plan",
+            astream_fn=_failing_astream,
+        ):
+            frames.append(frame)
+
+    events = [_frame_event(f) for f in frames if f.startswith("event:")]
+    errors = [(ev, data) for ev, data in events if ev == "error"]
+    assert len(errors) == 1, f"恰一帧 error，实际：{[ev for ev, _ in events]}"
+    payload = json.loads(errors[0][1])["payload"]
+    assert payload["stage"] == "supervisor_plan"
+    # error 即终态：其为最后一帧 data 帧，全程无 done
+    assert events[-1][0] == "error"
+    assert all(ev != "done" for ev, _ in events)
+
+
+async def test_supervisor_plan_failure_env_single_rag_done_degraded(monkeypatch) -> None:
+    """TC4：LG_RAG_SUPERVISOR_PLAN_ON_FAIL=single_rag → 灾备单 rag 续跑，
+    终帧 done 带 degraded=true（不冒充全量成功）。"""
+    from unittest.mock import AsyncMock
+
+    from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
+
+    monkeypatch.setenv("LG_RAG_SUPERVISOR_PLAN_ON_FAIL", "single_rag")
+
+    async def _degraded_astream(
+        query: str, *, thread_id: str = "t", **_kwargs: Any
+    ) -> AsyncIterator[dict[str, Any]]:
+        yield {"strategy_builder": {"allowed_capability_ids": ["utc_now_iso"]}}
+        yield {
+            "supervisor": {
+                "subtasks": [{"id": "t1", "type": "rag", "input": query}],
+                "supervisor_degraded": True,
+            }
+        }
+        yield {"rag_subtask": {"subtask_results": [{"id": "t1", "type": "rag", "output": "hit"}]}}
+        yield {"aggregator": {"messages": [AIMessage(content="降级答案")]}}
+        yield {"critic_node": {"critic_verdict": "pass"}}
+
+    frames: list[str] = []
+    with patch(
+        "app.ops.lg_rag.event_store.persist_run_event",
+        new_callable=AsyncMock,
+    ):
+        async for frame in iter_lg_rag_sse(
+            query="复合问",
+            mode="supervisor",
+            thread_id="th-plan-deg",
+            user_id="u-plan",
+            astream_fn=_degraded_astream,
+        ):
+            frames.append(frame)
+
+    events = [_frame_event(f) for f in frames if f.startswith("event:")]
+    assert all(ev != "error" for ev, _ in events)
+    assert events[-1][0] == "done"
+    done_payload = json.loads(events[-1][1])["payload"]
+    assert done_payload["degraded"] is True

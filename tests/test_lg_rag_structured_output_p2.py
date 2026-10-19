@@ -15,6 +15,7 @@ from langchain_core.messages import HumanMessage
 
 from app.ops.capability import list_capabilities
 from app.ops.lg_rag.multi.nodes import (
+    SupervisorPlanError,
     _parse_subtasks,
     info_extract_node,
     supervisor_node,
@@ -118,7 +119,72 @@ def test_parse_subtasks_cap_ignores_extra_bad_items():
 
 
 @pytest.mark.asyncio
-async def test_supervisor_fallback_metadata_flag():
+async def test_supervisor_first_plan_failure_fails_closed():
+    """D2/TC2：首次规划解析失败（无 locked 前缀）→ fail-closed 抛 SupervisorPlanError；
+    span 记 supervisor_plan_failed=True，不再同标 supervisor_fallback=true 冒充成功。"""
+    recorded: list[dict] = []
+    provider = SimpleNamespace(complete=AsyncMock(return_value="拆不了"))
+    with (
+        patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider),
+        patch(
+            "app.ops.lg_rag.multi.nodes._record_span_metadata",
+            side_effect=lambda m: recorded.append(m),
+        ),
+        patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+        pytest.raises(SupervisorPlanError),
+    ):
+        await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
+    assert recorded
+    assert recorded[0]["supervisor_plan_failed"] is True
+    assert recorded[0]["structured_output_fallback"] is True
+
+
+@pytest.mark.asyncio
+async def test_supervisor_plan_failure_with_preserved_only_still_fails_closed():
+    """TC2b：locked 空 + preserved 非空（HITL 批准待重跑形态）规划失败 → 仍 fail-closed。
+
+    重规划沿用判据**不扩**：仅 locked 前缀触发沿用；preserved 非空不改变
+    error 归类（N2 形态归 error，不沿用、不静默单 rag）。
+    """
+    recorded: list[dict] = []
+    provider = SimpleNamespace(complete=AsyncMock(side_effect=RuntimeError("llm down")))
+    sid = "structrun:1"
+    state = _full_allowlist_state([HumanMessage(content="重跑查时间")])
+    state.update(
+        {
+            "subtasks": [
+                {
+                    "id": sid,
+                    "subtask_id": sid,
+                    "type": "tool",
+                    "tool": "utc_now_iso",
+                    "input": "查时间",
+                }
+            ],
+            "subtask_results": [],  # approved 步旧结果已剪：无终态
+            "plan_prefix_ids": [],  # locked 空
+            "hitl_unlocked_ids": [sid],  # preserved 非空
+            "host_subtask_seq": 1,
+        }
+    )
+    with (
+        patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider),
+        patch(
+            "app.ops.lg_rag.multi.nodes._record_span_metadata",
+            side_effect=lambda m: recorded.append(m),
+        ),
+        patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+        pytest.raises(SupervisorPlanError),
+    ):
+        await supervisor_node(state)
+    assert recorded
+    assert recorded[0]["supervisor_plan_failed"] is True
+
+
+@pytest.mark.asyncio
+async def test_supervisor_plan_failure_env_single_rag_degrades(monkeypatch):
+    """TC4：env=single_rag → 灾备单 rag 续跑 + degraded 标记（state + span），不扩权。"""
+    monkeypatch.setenv("LG_RAG_SUPERVISOR_PLAN_ON_FAIL", "single_rag")
     recorded: list[dict] = []
     provider = SimpleNamespace(complete=AsyncMock(return_value="拆不了"))
     with (
@@ -131,14 +197,28 @@ async def test_supervisor_fallback_metadata_flag():
     ):
         out = await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
     row = out["subtasks"][0]
-    assert row["alias"] == "t1"
-    assert row["type"] == "rag"
-    assert row["input"] == "复合问题"
-    assert row["id"] == row["subtask_id"]
-    assert row["subtask_id"] == "structrun:1"
-    assert recorded
+    assert len(out["subtasks"]) == 1
+    assert row["alias"] == "t1" and row["type"] == "rag" and row["input"] == "复合问题"
+    assert out["supervisor_degraded"] is True
+    assert recorded[0]["supervisor_degraded"] is True
     assert recorded[0]["supervisor_fallback"] is True
-    assert recorded[0]["structured_output_fallback"] is True
+    assert recorded[0].get("supervisor_plan_failed") is not True
+    # 不扩权：灾备 plan 不携带 delegation_scope（不允许借机扩大能力面）
+    assert "delegation_scope" not in out
+
+
+@pytest.mark.asyncio
+async def test_supervisor_plan_failure_env_invalid_defaults_to_error(monkeypatch):
+    """TC4：env 非法值 → 回退默认 error（fail-closed 抛 SupervisorPlanError）。"""
+    monkeypatch.setenv("LG_RAG_SUPERVISOR_PLAN_ON_FAIL", "bogus")
+    provider = SimpleNamespace(complete=AsyncMock(return_value="拆不了"))
+    with (
+        patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider),
+        patch("app.ops.lg_rag.multi.nodes._record_span_metadata"),
+        patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+        pytest.raises(SupervisorPlanError),
+    ):
+        await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
 
 
 @pytest.mark.asyncio

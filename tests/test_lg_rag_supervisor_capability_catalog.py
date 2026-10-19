@@ -12,6 +12,7 @@ from langchain_core.messages import HumanMessage
 from app.ops.capability import invoke, list_capabilities
 from app.ops.lg_rag.multi.nodes import (
     _SUPERVISOR_CAP_FILTER,
+    SupervisorPlanError,
     _subtasks_have_valid_tool_ids,
     supervisor_node,
 )
@@ -112,8 +113,8 @@ async def test_supervisor_messages_include_capability_catalog():
 
 
 @pytest.mark.asyncio
-async def test_supervisor_invalid_tool_id_fallback_single_rag():
-    """H1-c：非法 tool id → 整 plan fallback 单 rag。"""
+async def test_supervisor_invalid_tool_id_fails_closed():
+    """H1-c/D2：首次 plan 含非法 tool id → 整 plan 作废，fail-closed 抛 SupervisorPlanError。"""
     recorded: list[dict] = []
     plan = json.dumps(
         {
@@ -136,11 +137,11 @@ async def test_supervisor_invalid_tool_id_fallback_single_rag():
             side_effect=lambda m: recorded.append(m),
         ),
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+        pytest.raises(SupervisorPlanError),
     ):
-        out = await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
-    _assert_host_rag(out["subtasks"], "复合问题")
+        await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
     assert recorded
-    assert recorded[0]["supervisor_fallback"] is True
+    assert recorded[0]["supervisor_plan_failed"] is True
     assert recorded[0]["supervisor_invalid_tool_id"] is True
     assert recorded[0]["capability_catalog_count"] >= 1
 
@@ -202,8 +203,8 @@ async def test_supervisor_restricted_allowlist_hides_tool_from_catalog():
 
 
 @pytest.mark.asyncio
-async def test_supervisor_tool_not_in_allowlist_fallback_single_rag():
-    """S1-d：plan 中 tool 不在本轮可见集 → fallback 单 rag。"""
+async def test_supervisor_tool_not_in_allowlist_fails_closed():
+    """S1-d/D2：首次 plan 中 tool 不在本轮可见集 → 整 plan 作废，fail-closed。"""
     plan = json.dumps(
         {
             "subtasks": [
@@ -222,15 +223,15 @@ async def test_supervisor_tool_not_in_allowlist_fallback_single_rag():
         patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider),
         patch("app.ops.lg_rag.multi.nodes._record_span_metadata"),
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+        pytest.raises(SupervisorPlanError),
     ):
-        out = await supervisor_node(
-            {
-                "messages": [HumanMessage(content="复合问题")],
-                "allowed_capability_ids": ["utc_now_iso"],
-                "run_id": "catrun",
-            }
-        )
-    _assert_host_rag(out["subtasks"], "复合问题")
+        await supervisor_node(
+                {
+                    "messages": [HumanMessage(content="复合问题")],
+                    "allowed_capability_ids": ["utc_now_iso"],
+                    "run_id": "catrun",
+                }
+            )
 
 
 @pytest.mark.asyncio

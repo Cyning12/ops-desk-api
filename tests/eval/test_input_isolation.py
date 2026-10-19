@@ -205,7 +205,10 @@ async def test_overreach_zero_request_double_assertion(monkeypatch: pytest.Monke
     ① 装配层混入未声明内容（绕过 wrap_slot 直拼）→ mock provider 计数=0
        **且** span input_isolation_rejected 出现；
     ② G4 注入诱导 supervisor 规划非法 tool id → capability gateway 计数=0
-       **且** span supervisor_invalid_tool_id 出现（既有 fallback 先例形态）。
+       **且** span supervisor_invalid_tool_id + supervisor_plan_failed 出现
+       （supervisor-first D2：首次规划失败 fail-closed 抛 SupervisorPlanError，
+       旧「静默 fallback 单 rag」语义已废止——与 00 定夺（2026-10-19）批准的
+       枚举缺口补录同类镜像改写）。
     """
     monkeypatch.setenv(_ENV, "true")
 
@@ -223,7 +226,7 @@ async def test_overreach_zero_request_double_assertion(monkeypatch: pytest.Monke
     assert {"input_isolation_rejected": True} in spans, "缺拒收路径标记 = 假通过"
     monkeypatch.undo()  # 恢复 wrap_slot 后再走 ②（避免泄漏到图内 answer 面）
 
-    # ② G4 · supervisor invalid_tool_id fallback（gateway 零请求）
+    # ② G4 · supervisor invalid_tool_id fail-closed（D2 · gateway 零请求）
     monkeypatch.setenv(_ENV, "true")
     g4 = _case("G4")
     gateway = AsyncMock(side_effect=AssertionError("越权工具调用不得触达 gateway"))
@@ -242,14 +245,16 @@ async def test_overreach_zero_request_double_assertion(monkeypatch: pytest.Monke
         patch(
             "app.ops.lg_rag.multi.nodes._record_span_metadata",
             side_effect=lambda m: span_calls.append(m),
-        ),
+        ),pytest.raises(multi_nodes.SupervisorPlanError)
     ):
-        out = await _run(_build(), query=g4["sentinel"])
+        await _run(_build(), query=g4["sentinel"])
     assert gateway.await_count == 0, "非法 tool id 不得触达 capability gateway"
     assert any(s.get("supervisor_invalid_tool_id") is True for s in span_calls), (
         "缺 supervisor_invalid_tool_id 拒收标记 = 「没发出去」与「没走到」不可区分"
     )
-    assert out["subtasks"][0]["type"] == "rag"  # 整单 fallback（既有语义零改动）
+    assert any(s.get("supervisor_plan_failed") is True for s in span_calls), (
+        "缺 supervisor_plan_failed 标记 = fail-closed 路径不可观测"
+    )
 
 
 @redline("P4")

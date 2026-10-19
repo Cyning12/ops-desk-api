@@ -108,22 +108,23 @@ async def test_intent_node_fallback_on_exception():
     assert recorded[0]["structured_output_fallback"] is True
 
 
-def test_supervisor_graph_intent_then_builder():
-    """supervisor 图：START → intent_node → strategy_builder。
+def test_supervisor_graph_start_goes_straight_to_strategy_builder():
+    """TC1：supervisor 图 START → strategy_builder → supervisor（去前置 intent_node）。
 
-    节点 id 不能叫 intent：与 LgRagState.intent 冲突（LangGraph）。
+    supervisor-first 改造：supervisor 图不再挂 intent_node（IntentV1 模块保留，
+    供 router/basic 轨与单测对照）；首条边直达 strategy_builder。
     """
     from app.ops.lg_rag.multi.graph import build_supervisor_agent
 
     graph = build_supervisor_agent()
     node_names = set(graph.get_graph().nodes.keys())
-    assert "intent_node" in node_names
+    assert "intent_node" not in node_names
     assert "strategy_builder" in node_names
     edges = _edge_pairs(graph)
-    assert ("__start__", "intent_node") in edges
-    assert ("intent_node", "strategy_builder") in edges
+    assert ("__start__", "strategy_builder") in edges
     assert ("strategy_builder", "supervisor") in edges
-    assert ("__start__", "strategy_builder") not in edges
+    assert ("__start__", "intent_node") not in edges
+    assert ("intent_node", "strategy_builder") not in edges
 
 
 def test_router_graph_start_still_router():

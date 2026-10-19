@@ -68,6 +68,11 @@ def scenario_trim(
     - S5 risk_hint ∈ {low, medium} → 不追加裁剪（基线即终态）。
     """
     specs = list(base_visible or [])
+    # supervisor-first（D3）：主路径不再写 intent —— 无 intent（缺键/None/空/非 dict）
+    # 即无裁剪依据，S1–S5 全短路不裁（含 S4 缺省 risk_hint→high 收紧路径：
+    # 收紧 ≠ 基线 ∩ candidates 即红，TC6）。
+    if intent is None or (isinstance(intent, dict) and not intent):
+        return specs, []
     if intent_fallback:
         return [], [(s.capability_id, REASON_INTENT_FALLBACK) for s in specs]
     mapping = intent if isinstance(intent, dict) else {}
