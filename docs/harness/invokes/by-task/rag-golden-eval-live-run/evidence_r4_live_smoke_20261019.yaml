@@ -1,0 +1,150 @@
+run: eval-rag-20261019-031641-r4
+arm: rerank
+rerank_enabled: true
+recall_k_each: 20
+coarse_top_n: 20
+embed: BAAI/bge-m3
+grader: Qwen/Qwen3.6-27B
+corpus: ops_knowledge_chunks(N=8648)
+results:
+- id: G01
+  quadrant: zh2en
+  top5:
+  - 1089#2
+  - 2720#4
+  - 1089#3
+  - 1075#0
+  filtered_out:
+  - contracts/rag-knowledge-contract-v1.md#14
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2720#0
+  - contracts/rag-knowledge-contract-v1.md#14
+  - 2720#1
+  - 1585#0
+  - 2427#0
+  - 1146#2
+  - 1585#2
+  - 1177#0
+  - 2720#6
+  - 1089#2
+  - 1149#0
+  - 1075#0
+  - 1177#2
+  - 1023#0
+  - 1177#5
+  - 2720#4
+  - 1089#3
+  - 1177#4
+  - 1146#0
+  - 426#0
+  keyword_hits:
+  - contracts/rag-knowledge-contract-v1.md#14
+- id: G02
+  quadrant: zh2en
+  top5:
+  - 2720#4
+  - 2720#6
+  - 2720#3
+  filtered_out:
+  - contracts/rag-knowledge-contract-v1.md#14
+  recall_at5: pass
+  best_relevance: exact
+  min_relevance: pass
+  citation_in_hits: pass
+  must_refuse: null
+  gate_action: answer
+  verdict: pass
+  fail_reasons: []
+  semantic_hits:
+  - 2720#6
+  - 2720#4
+  - 2720#3
+  - 2720#5
+  - contracts/rag-knowledge-contract-v1.md#14
+  - 2720#2
+  - 120#0
+  - 840#0
+  - 1156#1
+  - 1129#2
+  - 1129#0
+  - 324#0
+  - 2498#1
+  - 1156#2
+  - 1313#0
+  - 2720#1
+  - 1156#0
+  - 324#1
+  - 840#1
+  - 2498#0
+  keyword_hits:
+  - contracts/rag-knowledge-contract-v1.md#14
+- id: G03
+  quadrant: zh2en
+  top5:
+  - 178#0
+  filtered_out:
+  - contracts/rag-knowledge-contract-v1.md#14
+  recall_at5: fail
+  best_relevance: weak
+  min_relevance: fail
+  citation_in_hits: fail
+  must_refuse: null
+  gate_action: refuse
+  verdict: fail
+  fail_reasons:
+  - 'recall@5: {''source_type'': ''issue'', ''source_id'': ''2720''} not in top'
+  - 'min_relevance: expect_hit 未召回，无法评级'
+  - 'citation_in_hits: expect_hit 不在命中集'
+  semantic_hits:
+  - contracts/rag-knowledge-contract-v1.md#14
+  - 1177#2
+  - 1177#0
+  - 2427#0
+  - 1177#3
+  - 1177#5
+  - 489#24
+  - 1055#2
+  - 178#0
+  - 489#21
+  - 489#20
+  - 834#0
+  - 1887#0
+  - 2084#0
+  - 416#2
+  - 412#2
+  - 2311#7
+  - 489#0
+  - 800#0
+  - 1177#4
+  keyword_hits:
+  - contracts/rag-knowledge-contract-v1.md#14
+summary:
+  pass: 2/3
+  recall_at5_by_quadrant:
+    zh2en: 2/3
+  negative_refuse: 0/0
+  grade_stability_agree: 1.0
+  measurement_source: observed
+  confidence: low
+  comparability: not_comparable
+  partial: false
+  completed: 3
+  arm: rerank
+  rerank_enabled: true
+  recall_k_each: 20
+  coarse_top_n: 20
+  grader_prompt: v1
+  rerank_model: BAAI/bge-reranker-v2-m3
+  rerank_min_score: 0.4
+  rerank_score_ratio: 0.75
+  compare_with: reports/r4-R-misrun-no-ce.yaml
+rerank_model: BAAI/bge-reranker-v2-m3
+compare_with: reports/r4-R-misrun-no-ce.yaml
