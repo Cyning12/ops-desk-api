@@ -1,6 +1,6 @@
 # Task：host-v1-sli-dashboard-live-evidence（04 测评轨 · Host v1.0 SLI 看板真实 Langfuse 实证补录）
 
-> **状态**：approved 待 40（三闸 approved · 维护者「全做」授权 + 授权链 m00238/m01101 00 代录 2026-10-19 · R1 签收 nit 知悉照登 · 零改码 40 轨 · 未 commit）
+> **状态**：done（2026-10-19 CLOSE · PR #279 MERGED squash 72aebad · TC-L1~L6 全绿（capability_ok=0.7129 真实出数 · p99=562052.0ms n=84 · widget 缺口照登不假绿 · CLOSE §四.2/§四.5 已消账）· 归档 done/）
 > **类型**：observability / eval follow-up（**40 轨实证补录** · 外部系统访问面 · 零改码预判 · `graph_change_layer=none`）
 > **依据**：`docs/tasks/close/close_host_v1_sli_dashboard_20261017.md` §四.1/§七（FP-1 降级钉案 + 获权后补实证路径指引）· `docs/tasks/done/task_host_v1_sli_dashboard.md`（TC-D1 移交口径）· `docs/reports/host_v1_exit_review/SLI_DASHBOARD_EVIDENCE_20261017_30.md` §3（补实证操作真值）· `docs/spec/agent-infra/eval/GUIDE_host_v1_sli_dashboard_v1.md`（看板操作真值）· `docs/spec/agent-infra/eval/SLI_host_v1_four_metrics_v1.md`（定义 signed 2026-09-24）
 > **维护者选定**：2026-10-19 会话「全做」——凭据面已勘察（`.env` 含 `LANGFUSE_PUBLIC_KEY`/`LANGFUSE_SECRET_KEY`/`LANGFUSE_BASE_URL`/`LANGFUSE_ENV`，存在即权限可能在，40 实判有效性）→ 推进真实实证补录
@@ -191,3 +191,4 @@ TC-L1/L2 对文件存在性与截图/样例断言；TC-L3/L4 对命令输出断�
 | 2026-10-19 | 10-task 初稿落盘（帽 10 · 闸全 pending 待维护者签 · 禁 40 · 零 git · 仅新增 untracked 文件） |
 | 2026-10-19 | 20-task-audit R1 落盘 + 维护者签三闸 approved（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES）· 40 开工许可到位 |
 | 2026-10-19 | 40 实证补录交付：凭据实判 PASS · widget 面照登（Dashboards API 404 + 无 UI 会话 · 不假绿）· 四项筛选表 API 复开 · 真实脱敏样例入仓 + 四键对拍（capability_ok/latency 真实出数 · avail.success null 照登 · cost 前提缺口 + unknown 铁律实证）· pytest 9 passed · 零改码零越界（证据文 `SLI_DASHBOARD_LIVE_EVIDENCE_20261019_40.md` · 40 invoke · 样例 `sli_live_export_sample_20261019.json`） |
+| 2026-10-19 | 50 CLOSE（goal-eb568703 承授权链合并）：PR #279 squash 72aebad 已并 · 归档 done/ · 状态行 CLOSED · README 登记 · 遗留=widget 缺口延续（API 404+UI 会话 · 重试路径在案）+ terminal_status 埋点缺口（FP-L4 另立 SPEC 面） |

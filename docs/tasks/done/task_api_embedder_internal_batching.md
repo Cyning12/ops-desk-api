@@ -1,6 +1,6 @@
 # Task：api-embedder-internal-batching（ApiEmbedder 内部批切：大体量 ingest 全量单请求超时收口 · 30 落码棒）
 
-> **状态**：approved 待 30（三闸 approved · 维护者「全做」授权 + 授权链 m00238/m01101 00 代录 2026-10-19 · 签注三裁定：默认批大小=128 · 失败纪律=fail-fast · F3b 端到端写面复跑=不授权 · R1 签收 nit 知悉照登）
+> **状态**：done（2026-10-19 CLOSE · PR #278 MERGED squash 056d874 · TC-EB-1~5 全 PASS（红测先行 · F3a 1200 chunks 10 批全 200 OK · 70.9 chunks/s · 8648 零扰动）· 归档 done/）
 > **类型**：功能缺口收口（bugfix/robustness 性质 · **有码改 · 30 棒分支 PR 流** · 含图谱闸评估）
 > **上游**：[`close_local_rag_knowledge_rebuild_20261018.md`](../close/close_local_rag_knowledge_rebuild_20261018.md) §三.2 偏差照登：ApiEmbedder 无内部批切，ingest.py:225 全量单请求 ~8.6k 文本超时（探测实证 API 单批上限≈500），40 棒靠 `--limit 75` 分批 25 步 248s 绕开；§五 遗留移交「ApiEmbedder 内部批切另立 task」；维护者 2026-10-19（会话「全做」）选定推进
 > **分支**：`task/api-embedder-internal-batching`（30 开工时自 master 切出 · 本帽零 git 操作）
@@ -192,3 +192,4 @@ F1：`embed()` 内部切批 ≤batch_size 逐批 POST、各批按 index 排序�
 | 2026-10-19 | 10 落稿：承 close_local_rag_knowledge_rebuild_20261018 §三.2/§五 批切建议 · 实证锚点亲跑复核（master 4a5e755 · 22 passed · PG 8648）· 三闸 pending 待维护者签 |
 | 2026-10-19 | 维护者签闸（授权链 00 代录）：三闸 approved · 签注三裁定（默认批=128 · fail-fast · F3b 不授权）· R1 通过零阻塞 |
 | 2026-10-19 | 30 落码回填：红测先行→实现→F3a 实证全绿（TC-EB-1~5 逐项见 自检结论 + invoke_20261019_30_impl.md）· 图谱闸实判 G-L1 rag 行备注已落 · PR 流待并 |
+| 2026-10-19 | 50 CLOSE（goal-eb568703 承授权链合并）：PR #278 squash 056d874 已并 · 归档 done/ · 状态行 CLOSED · README 登记 · invoke_20261019_50_close.md（批量目录 close_batch_20261019）· 无遗留开账项 |
