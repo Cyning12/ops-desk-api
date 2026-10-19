@@ -173,18 +173,16 @@ async def test_decompose_invalid_json_fails_closed():
     旧语义（静默 fallback 单 rag）已废止：规划失败不得冒充成功计划进 aggregator。
     """
     multi = _provider("这个问题我拆不了", _AGGREGATED)
-    with patch(_MULTI_PROVIDER_PATCH, return_value=multi):
-        with pytest.raises(SupervisorPlanError):
-            await _run(_build())
+    with patch(_MULTI_PROVIDER_PATCH, return_value=multi), pytest.raises(SupervisorPlanError):
+        await _run(_build())
 
 
 @pytest.mark.asyncio
 async def test_decompose_llm_exception_fails_closed():
     """D2/TC2：首次拆解 LLM 异常 → 同样 fail-closed（SupervisorPlanError）。"""
     multi = _provider(RuntimeError("llm down"), _AGGREGATED)
-    with patch(_MULTI_PROVIDER_PATCH, return_value=multi):
-        with pytest.raises(SupervisorPlanError):
-            await _run(_build())
+    with patch(_MULTI_PROVIDER_PATCH, return_value=multi), pytest.raises(SupervisorPlanError):
+        await _run(_build())
 
 
 @pytest.mark.asyncio
@@ -216,9 +214,8 @@ async def test_invalid_tool_id_in_plan_fails_closed():
         ]
     )
     multi = _provider(supervisor_out, _AGGREGATED)
-    with patch(_MULTI_PROVIDER_PATCH, return_value=multi):
-        with pytest.raises(SupervisorPlanError):
-            await _run(_build())
+    with patch(_MULTI_PROVIDER_PATCH, return_value=multi), pytest.raises(SupervisorPlanError):
+        await _run(_build())
 
 
 @pytest.mark.asyncio

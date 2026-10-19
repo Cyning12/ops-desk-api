@@ -2,8 +2,8 @@
 
 说明书：docs/guides/DESIGN_langgraph-lg-rag-phase4-multiagent_v1.md §1。
 
-拓扑（**外层 ReAct + 内层 plan-and-execute**）：
-START → intent_node（S2 细意图）→ strategy_builder（S1 allowlist）→ supervisor（LLM 拆解 ≤4 子任务）→ subtask_join
+拓扑（**外层 ReAct + 内层 plan-and-execute** · supervisor-first）：
+START → strategy_builder（S1 allowlist）→ supervisor（LLM 拆解 ≤4 子任务）→ subtask_join
   ├─ 无依赖同批 Send：rag / extract / tool 可同时在飞，按 Host subtask_id 归并后回 join
   ├─ 有 depends_on 的等前驱终态再下发，不与前驱同批
   └─ 没有待发步骤 → **observe**（执行层收口，不再直连 aggregator）
@@ -48,7 +48,6 @@ from app.ops.lg_rag.multi.nodes import (
 from app.ops.lg_rag.state import LgRagState
 from app.ops.strategy.builder import strategy_builder_node
 from app.ops.strategy.critic import critic_node, route_after_critic
-from app.ops.strategy.intent import intent_node
 
 # dispatch 条件边映射：三专业 agent 或"没有待发步骤"进 observe（外层 ReAct 收口）
 _DISPATCH_MAP = {
@@ -78,12 +77,13 @@ _AGENT_NODES = ("rag_subtask", "info_extract", "tool_exec")
 
 
 def build_supervisor_agent(*, checkpointer: Any | None = None):
-    """START → intent_node → strategy_builder → supervisor → dispatch → aggregator → critic_node。
+    """START → strategy_builder → supervisor → dispatch → aggregator → critic_node。
 
-    节点 id 用 ``intent_node`` / ``critic_node``：LangGraph 禁止与 state key 同名。
+    supervisor-first：去前置 ``intent_node``（IntentV1 模块保留，本图不再挂载）；
+    主路径不再写 ``intent``，Builder/scenario 以基线可见集 ∩ candidates 直接出 allowlist。
+    节点 id 用 ``critic_node``：LangGraph 禁止与 state key 同名。
     """
     builder = StateGraph(LgRagState)
-    builder.add_node("intent_node", intent_node)
     builder.add_node("strategy_builder", strategy_builder_node)
     builder.add_node("supervisor", supervisor_node)
     builder.add_node("rag_subtask", rag_subtask_node)
@@ -93,8 +93,7 @@ def build_supervisor_agent(*, checkpointer: Any | None = None):
     builder.add_node("critic_node", critic_node)
     builder.add_node("subtask_join", _join_subtasks)
     builder.add_node("observe", observe_node)
-    builder.add_edge(START, "intent_node")
-    builder.add_edge("intent_node", "strategy_builder")
+    builder.add_edge(START, "strategy_builder")
     builder.add_edge("strategy_builder", "supervisor")
     builder.add_edge("supervisor", "subtask_join")
     builder.add_conditional_edges("subtask_join", route_next_subtask, _DISPATCH_MAP)

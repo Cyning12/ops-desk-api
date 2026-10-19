@@ -371,7 +371,7 @@ async def test_supervisor_plan_failure_sse_error_frame(
     events = [_frame_event(f) for f in frames if f.startswith("event:")]
     errors = [(ev, data) for ev, data in events if ev == "error"]
     assert len(errors) == 1, f"恰一帧 error，实际：{[ev for ev, _ in events]}"
-    payload = json.loads(errors[0][1])
+    payload = json.loads(errors[0][1])["payload"]
     assert payload["stage"] == "supervisor_plan"
     # error 即终态：其为最后一帧 data 帧，全程无 done
     assert events[-1][0] == "error"
@@ -418,5 +418,5 @@ async def test_supervisor_plan_failure_env_single_rag_done_degraded(monkeypatch)
     events = [_frame_event(f) for f in frames if f.startswith("event:")]
     assert all(ev != "error" for ev, _ in events)
     assert events[-1][0] == "done"
-    done_payload = json.loads(events[-1][1])
+    done_payload = json.loads(events[-1][1])["payload"]
     assert done_payload["degraded"] is True

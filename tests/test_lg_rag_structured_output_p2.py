@@ -131,9 +131,9 @@ async def test_supervisor_first_plan_failure_fails_closed():
             side_effect=lambda m: recorded.append(m),
         ),
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+        pytest.raises(SupervisorPlanError),
     ):
-        with pytest.raises(SupervisorPlanError):
-            await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
+        await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
     assert recorded
     assert recorded[0]["supervisor_plan_failed"] is True
     assert recorded[0]["structured_output_fallback"] is True
@@ -174,9 +174,9 @@ async def test_supervisor_plan_failure_with_preserved_only_still_fails_closed():
             side_effect=lambda m: recorded.append(m),
         ),
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+        pytest.raises(SupervisorPlanError),
     ):
-        with pytest.raises(SupervisorPlanError):
-            await supervisor_node(state)
+        await supervisor_node(state)
     assert recorded
     assert recorded[0]["supervisor_plan_failed"] is True
 
@@ -202,7 +202,7 @@ async def test_supervisor_plan_failure_env_single_rag_degrades(monkeypatch):
     assert out["supervisor_degraded"] is True
     assert recorded[0]["supervisor_degraded"] is True
     assert recorded[0]["supervisor_fallback"] is True
-    assert recorded[0]["supervisor_plan_failed"] is not True
+    assert recorded[0].get("supervisor_plan_failed") is not True
     # 不扩权：灾备 plan 不携带 delegation_scope（不允许借机扩大能力面）
     assert "delegation_scope" not in out
 
@@ -216,9 +216,9 @@ async def test_supervisor_plan_failure_env_invalid_defaults_to_error(monkeypatch
         patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider),
         patch("app.ops.lg_rag.multi.nodes._record_span_metadata"),
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+        pytest.raises(SupervisorPlanError),
     ):
-        with pytest.raises(SupervisorPlanError):
-            await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
+        await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
 
 
 @pytest.mark.asyncio

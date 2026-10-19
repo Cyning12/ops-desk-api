@@ -3,7 +3,9 @@
 说明书：docs/guides/DESIGN_langgraph-lg-rag-phase4-multiagent_v1.md §3–§5。
 
 原则：
-- supervisor 拆解失败/非法 → fallback 单 rag（须已有 run_id；否则不派工人）；
+- supervisor 首次规划失败/非法 → fail-closed 抛 ``SupervisorPlanError`` 停图（D2；
+  灾备 env ``LG_RAG_SUPERVISOR_PLAN_ON_FAIL=single_rag`` 降级单 rag 并打 degraded 标记；
+  重规划 ``if locked:`` 例外沿用未解决后缀）；须已有 run_id，否则不派工人；
 - 无依赖子任务同批 Send 给多个工人；有 depends_on 的等前驱终态再下发；
 - 归并键是 Host subtask_id，不用模型别名，也不用结果列表长度当下标；
 - 单个子任务异常 → 该 id 占错误终态，不卡住收齐。
@@ -1066,8 +1068,33 @@ def _worker_state(state: LgRagState, subtask: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
+class SupervisorPlanError(RuntimeError):
+    """supervisor-first（D2）：首次规划失败（无 locked 前缀）fail-closed 信号。
+
+    触发面：LLM 异常/超时、输出无法解析、plan 含非法 tool id —— 整 plan 作废，
+    由 SSE 边界捕获映射为单帧 ``error{stage=supervisor_plan}`` 后收终态（停图）。
+    灾备 env ``LG_RAG_SUPERVISOR_PLAN_ON_FAIL=single_rag`` 时不抛，走降级单 rag；
+    重规划例外（``if locked:``）沿用未解决后缀，不进入本路径（判据不扩）。
+    """
+
+
+ENV_SUPERVISOR_PLAN_ON_FAIL = "LG_RAG_SUPERVISOR_PLAN_ON_FAIL"
+
+
+def _supervisor_plan_on_fail() -> str:
+    """灾备开关：``error``（默认）| ``single_rag``；非法值回退 ``error``（fail-closed）。"""
+    raw = os.environ.get(ENV_SUPERVISOR_PLAN_ON_FAIL, "error").strip().lower()
+    if raw in ("error", "single_rag"):
+        return raw
+    logger.warning(
+        "lg_rag supervisor plan_on_fail env 非法值 %r，回退默认 error（fail-closed）",
+        raw,
+    )
+    return "error"
+
+
 async def supervisor_node(state: LgRagState) -> dict:
-    """LLM 拆解复合问题为 ≤4 子任务；失败/非法/非法 tool id → fallback 单 rag。
+    """LLM 拆解复合问题为 ≤4 子任务；首次失败/非法/非法 tool id → fail-closed（D2）。
 
     可见集 = ``list_capabilities(filter)`` ∩ ``state.allowed_capability_ids``（S1）；
     空 allowlist / 缺字段 → 整 plan fallback 单 rag；``type=tool`` id 须在本轮可见集内。
@@ -1149,11 +1176,14 @@ async def supervisor_node(state: LgRagState) -> dict:
                     raw[:200],
                 )
                 subtasks = None
-        except Exception as exc:  # LLM 异常/超时 → 宁退化不失败
-            logger.warning("lg_rag supervisor LLM 失败，fallback 单 rag err=%r", exc)
+        except Exception as exc:  # LLM 异常/超时 → 规划失败（默认 fail-closed，见下）
+            logger.warning("lg_rag supervisor LLM 失败 run_id=%s err=%r", _run_id_of(state), exc)
     fallback = subtasks is None
     if fallback and raw and not invalid_tool_id:
-        logger.warning("lg_rag supervisor 输出非法，fallback 单 rag raw=%r", raw[:200])
+        logger.warning(
+            "lg_rag supervisor 输出非法 run_id=%s raw=%r", _run_id_of(state), raw[:200]
+        )
+    degraded = False
     if fallback:
         if locked:
             # 前缀已锁定：拿不到后缀就**沿用上一轮未解决的后缀**，
@@ -1190,8 +1220,46 @@ async def supervisor_node(state: LgRagState) -> dict:
             subtasks = []
             fallback = False
         else:
+            # supervisor-first（D2）：首次规划失败（无 locked 前缀）默认 **fail-closed** ——
+            # 静默单 rag 会把「规划失败」包装成「成功给出单 rag 计划」，aggregator
+            # 冒充成功路径（SPEC failure_paths FP）。抛 SupervisorPlanError 停图，
+            # 由 SSE 边界映射单帧 error{stage=supervisor_plan} 收终态。
+            # 判据不扩：locked 空 + preserved 非空（HITL 批准待重跑形态）同归 error（FP-1b）。
+            if _supervisor_plan_on_fail() != "single_rag":
+                fail_meta: dict = {
+                    "capability_catalog_count": len(caps),
+                    "subtask_count": 0,
+                    "subtask_types": [],
+                    "supervisor_fallback": True,
+                    "structured_output_fallback": True,
+                    "supervisor_plan_failed": True,
+                    "supervisor_raw": raw[:200],
+                    "plan_prefix_len": len(locked),
+                }
+                if invalid_tool_id:
+                    fail_meta["supervisor_invalid_tool_id"] = True
+                _record_span_metadata(fail_meta)
+                logger.warning(
+                    "lg_rag supervisor 首次规划失败，fail-closed 停图 run_id=%s raw=%r",
+                    _run_id_of(state),
+                    raw[:200],
+                )
+                raise SupervisorPlanError(
+                    "supervisor first plan failed (no locked prefix); "
+                    "set LG_RAG_SUPERVISOR_PLAN_ON_FAIL=single_rag to degrade"
+                )
+            # 灾备：single_rag 降级 —— 全程打 degraded 标记（state + span + SSE 终帧），
+            # 不冒充全量成功；delegation_scope 不写入（不扩权）。
+            degraded = True
+            logger.warning(
+                "lg_rag supervisor 首次规划失败，灾备降级单 rag run_id=%s raw=%r",
+                _run_id_of(state),
+                raw[:200],
+            )
             subtasks = [{"id": "t1", "type": "rag", "input": query}]
     stamped = _stamp_host_plan(state, subtasks or [], locked=locked, preserved=preserved)
+    if degraded:
+        stamped["supervisor_degraded"] = True
     issued = stamped.get("subtasks") or []
     # Host V1-A · A2：声明∩裁剪（只收窄不放宽 · off 模式整段短路零 diff）。
     # 有效 scope 写 state，作签发 capability_set 上界；越界剔除 + 截断留痕。
@@ -1230,6 +1298,8 @@ async def supervisor_node(state: LgRagState) -> dict:
     }
     if locked:
         span_meta["replan_suffix_only"] = True
+    if degraded:
+        span_meta["supervisor_degraded"] = True
     if invalid_tool_id:
         span_meta["supervisor_invalid_tool_id"] = True
     span_meta.update(scope_span)

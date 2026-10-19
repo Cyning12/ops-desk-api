@@ -11,8 +11,8 @@ from langchain_core.messages import HumanMessage
 
 from app.ops.capability import invoke, list_capabilities
 from app.ops.lg_rag.multi.nodes import (
-    SupervisorPlanError,
     _SUPERVISOR_CAP_FILTER,
+    SupervisorPlanError,
     _subtasks_have_valid_tool_ids,
     supervisor_node,
 )
@@ -137,9 +137,9 @@ async def test_supervisor_invalid_tool_id_fails_closed():
             side_effect=lambda m: recorded.append(m),
         ),
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+        pytest.raises(SupervisorPlanError),
     ):
-        with pytest.raises(SupervisorPlanError):
-            await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
+        await supervisor_node(_full_allowlist_state([HumanMessage(content="复合问题")]))
     assert recorded
     assert recorded[0]["supervisor_plan_failed"] is True
     assert recorded[0]["supervisor_invalid_tool_id"] is True
@@ -223,9 +223,9 @@ async def test_supervisor_tool_not_in_allowlist_fails_closed():
         patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider),
         patch("app.ops.lg_rag.multi.nodes._record_span_metadata"),
         patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+        pytest.raises(SupervisorPlanError),
     ):
-        with pytest.raises(SupervisorPlanError):
-            await supervisor_node(
+        await supervisor_node(
                 {
                     "messages": [HumanMessage(content="复合问题")],
                     "allowed_capability_ids": ["utc_now_iso"],

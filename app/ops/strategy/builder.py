@@ -143,11 +143,11 @@ def _record_builder_span(metadata: dict) -> None:
 async def strategy_builder_node(state: LgRagState) -> dict:
     """写本轮 ``allowed_capability_ids``（及空 ``allowed_skill_ids``）。
 
-    S2：读 ``state.intent``。
-    - ``needs_tool is False`` → 空 capability allowlist（supervisor fallback 单 rag）
-    - ``needs_tool is True`` 或缺 intent → 仍 ⊆ Registry∩Policy（S1 求交）
-    - ``needs_skill`` 本波仍写空 ``allowed_skill_ids``
-    - ``risk_hint`` 不得绕过 Policy（始终 deny_high_risk）
+    supervisor-first（D3）：**不读** ``state.intent``（``needs_tool`` 语义废止；
+    主路径无 intent）。allowlist = 显式 candidates（agent_type/mode 键）∩
+    Registry∩Policy 基线可见集（S1 求交 · 未知 key → [] 非全开）；
+    场景维裁剪（stage 2）在无 intent 时短路不裁（scenario.py D3）。
+    ``needs_skill`` 本波仍写空 ``allowed_skill_ids``。
     """
     bump = bump_supervisor_step(state)
     with trace_span("strategy_builder", run_type="chain"):
@@ -157,23 +157,14 @@ async def strategy_builder_node(state: LgRagState) -> dict:
         # 交集（nodes.py effective_scope_from_requested 处）天然不越场景维。
         visible = _apply_scenario_stage(visible, state)
         visible_ids = frozenset(s.capability_id for s in visible)
-        intent = state.get("intent") or {}
-        needs_tool = intent.get("needs_tool")
-        if needs_tool is False:
-            allowed, stripped = [], []
-        else:
-            # 按 agent_type / mode 显式 allowlist；未知 key → []（非全开）
-            agent_type = None
-            if isinstance(intent, dict):
-                raw_at = intent.get("agent_type")
-                if raw_at is not None:
-                    agent_type = str(raw_at)
-            mode = state.get("mode")
-            mode_s = str(mode) if mode is not None else None
-            candidates = get_candidate_capability_ids(
-                agent_type=agent_type, mode=mode_s or "supervisor"
-            )
-            allowed, stripped = build_allowlist_from_candidates(candidates, visible_ids=visible_ids)
+        # 按 mode 显式 allowlist；未知 key → []（非全开）。
+        # agent_type 不再来自 intent（D1 图内无 intent_node）——固定 None。
+        mode = state.get("mode")
+        mode_s = str(mode) if mode is not None else None
+        candidates = get_candidate_capability_ids(
+            agent_type=None, mode=mode_s or "supervisor"
+        )
+        allowed, stripped = build_allowlist_from_candidates(candidates, visible_ids=visible_ids)
         span_meta: dict = {
             "module": "strategy_builder",
             "strategy_builder_catalog_count": len(visible),
@@ -181,9 +172,6 @@ async def strategy_builder_node(state: LgRagState) -> dict:
         }
         if stripped:
             span_meta["strategy_builder_stripped_ids"] = stripped
-        if intent:
-            span_meta["intent_needs_tool"] = needs_tool
-            span_meta["intent_risk_hint"] = intent.get("risk_hint")
         _record_builder_span(span_meta)
         return {
             **bump,

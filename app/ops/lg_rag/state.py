@@ -244,6 +244,9 @@ class LgRagState(MessagesState):
     delegation_token（Host V1-A）：subtask_join 分发路径签发的委派令牌
         （序列化 dict · Send 载荷 · tool_exec 自取注入 capability ctx）；
         老 checkpoint 无此键：.get 返回 None → 验签门按 R-a 处理。
+    supervisor_degraded（supervisor-first · D2 灾备）：env ``LG_RAG_SUPERVISOR_PLAN_ON_FAIL=single_rag``
+        下首次规划失败降级单 rag 的显式标记；SSE 终帧 ``done.degraded`` 数据源。
+        默认 fail-closed（error）路径不写入；老 checkpoint 无此键 → falsy。
     intent_fallback（Host V1-B）：intent_node 写入的意图健康度标记
         （SO/LLM 成功=False · 失败/异常=True）；场景维裁剪 S1 的输入
         （fallback=意图不可信 → 可见集退化为空集 · 安全默认）。
@@ -287,3 +290,4 @@ class LgRagState(MessagesState):
     supervisor_step_count: Annotated[int, merge_supervisor_step_count]
     supervisor_budget_exhausted: Annotated[bool, merge_budget_flag]
     supervisor_started_at: float
+    supervisor_degraded: bool
