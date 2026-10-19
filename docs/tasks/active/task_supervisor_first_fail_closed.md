@@ -1,6 +1,6 @@
 # Task：supervisor-first-fail-closed（主编排优先 · 规划失败即失败 · 意图后置）
 
-> **状态**：draft（10-task 起草 · 待 20-task-audit + 维护者签 HG-AUDIT-R1 · **签前 30 拒改码**）
+> **状态**：signed（HG-AUDIT-R1=approved 2026-10-19 · 30 可开工 · 红测先行）
 > **类型**：feature（supervisor 图入口顺序 + 首次规划失败语义；**不**新增路由 / 表 / 一级模块 / SSE `event_type`）
 > **依据**：SPEC `docs/spec/supervisor-first-fail-closed/SPEC-supervisor-first-fail-closed_v0.md`（signed · HG-SPEC-SIGNOFF=approved 2026-10-19）· 20-spec-audit R1 审查 `docs/harness/reviews/spec_supervisor-first-fail-closed_audit_R1_20261019.md`（conditional_pass · N1–N4 移交）· 00 三条定夺 `docs/harness/invokes/by-task/supervisor-first-fail-closed/invoke_20261019_00_start.md`（**00 定夺 2026-10-19**）
 > **分支**：`task/supervisor-first-fail-closed`（已切好）
@@ -34,7 +34,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
 | HG-SPEC-SIGNOFF | approved | 10, 20 | 2026-10-19 维护者本窗指示「其他条目都按照建议来执行」· 00 代签 · 见 SPEC 闸表 |
-| **HG-AUDIT-R1** | **pending** | **30** | 待本 task 草稿 → 20-task-audit → 维护者人签；**签前 30 拒改码** |
+| **HG-AUDIT-R1** | **approved** | ~~30~~ | 2026-10-19 维护者本窗指示「签收，开始后续任务」· 00 代签 · 前置：20-task-audit R1=fail(B1) 已闭环（10-task 补列 TC11 · `40ab986`） |
 | HG-GRAPH-MODULES | approved | 30 | 01_modules.md:79 · 2026-08-30（graph_change_layer=none 预期，不再签） |
 
 ---
@@ -214,5 +214,6 @@ supervisor 图改为 **无 LLM 的 Builder → supervisor**；**首次规划**�
 
 | 日期 | 说明 |
 |------|------|
+| 2026-10-19 | HG-AUDIT-R1=approved（维护者本窗指示「签收，开始后续任务」· 00 代签 · 30 可开工） |
 | 2026-10-19 | 10-task 补列（20-task-audit R1-B1：TC11 旧测 grep 影响面 + 自检结论行 · 纯文档增量 · 范围实质与其他字段不动） |
 | 2026-10-19 | 10-task 草稿（吸收 R1 审查 N1/N3/N4 + 三条 00 定夺）：范围承 SPEC D1/D2/D3 · failure_paths FP-1~FP-9（FP-1b=N2 归 error）· 验收 TC1–TC10（TC6=S4 显式断言 · TC9=05 §4.2+01_modules 回写）· 下游棒=ops-desk-web 展示同步 · HG-AUDIT-R1=pending |
