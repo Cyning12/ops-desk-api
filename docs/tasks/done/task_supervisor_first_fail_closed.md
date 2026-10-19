@@ -1,6 +1,6 @@
 # Task：supervisor-first-fail-closed（主编排优先 · 规划失败即失败 · 意图后置）
 
-> **状态**：signed（HG-AUDIT-R1=approved 2026-10-19 · 30 可开工 · 红测先行）
+> **状态**：closed（2026-10-19 30 实现 → 40 验收 pass → [PR #282](https://github.com/Cyning12/ops-desk-api/pull/282) 合入 master（`35b8f95`）· CI 全绿 · 下游棒=ops-desk-web 另 task 待立）
 > **类型**：feature（supervisor 图入口顺序 + 首次规划失败语义；**不**新增路由 / 表 / 一级模块 / SSE `event_type`）
 > **依据**：SPEC `docs/spec/supervisor-first-fail-closed/SPEC-supervisor-first-fail-closed_v0.md`（signed · HG-SPEC-SIGNOFF=approved 2026-10-19）· 20-spec-audit R1 审查 `docs/harness/reviews/spec_supervisor-first-fail-closed_audit_R1_20261019.md`（conditional_pass · N1–N4 移交）· 00 三条定夺 `docs/harness/invokes/by-task/supervisor-first-fail-closed/invoke_20261019_00_start.md`（**00 定夺 2026-10-19**）
 > **分支**：`task/supervisor-first-fail-closed`（已切好）
@@ -218,6 +218,7 @@ supervisor 图改为 **无 LLM 的 Builder → supervisor**；**首次规划**�
 
 | 日期 | 说明 |
 |------|------|
+| 2026-10-19 | CLOSE：40 验收 pass（1851 passed/1 skipped · ruff 0.15.21 全净 · graph-compile EXIT=0）· PR #282 CI 四项全绿合入 master · 归档 active→done · 下游棒 ops-desk-web 展示同步另 task（00 定夺 2026-10-19 第 1 条） |
 | 2026-10-19 | HG-AUDIT-R1=approved（维护者本窗指示「签收，开始后续任务」· 00 代签 · 30 可开工） |
 | 2026-10-19 | 10-task TC11 补录（30 中期发现 4 条枚举外旧测同 D2 废止语义 · 00 定夺镜像转红改写为 raises SupervisorPlanError · 纯文档增量） |
 | 2026-10-19 | 10-task 补列（20-task-audit R1-B1：TC11 旧测 grep 影响面 + 自检结论行 · 纯文档增量 · 范围实质与其他字段不动） |
