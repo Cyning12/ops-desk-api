@@ -310,8 +310,11 @@ def test_api_embedder_batch_size_default_and_env(monkeypatch: pytest.MonkeyPatch
     # 构造参数优先于 env
     monkeypatch.setenv("RAG_EMBED_API_BATCH_SIZE", "7")
     assert ApiEmbedder(batch_size=3)._batch_size == 3
-    # 构造参数非法（≤0）→ 回退默认 + warning
+    # 构造参数非法（≤0）→ warning + 视为未设，沿链回退（env 未设落默认 128 · 已设落 env）
+    monkeypatch.delenv("RAG_EMBED_API_BATCH_SIZE", raising=False)
     assert ApiEmbedder(batch_size=0)._batch_size == 128
+    monkeypatch.setenv("RAG_EMBED_API_BATCH_SIZE", "7")
+    assert ApiEmbedder(batch_size=0)._batch_size == 7
 
 
 def test_api_embedder_invalid_batch_size_env_warns(
