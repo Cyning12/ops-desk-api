@@ -1,0 +1,748 @@
+{
+ "e2e_latency": [
+  {
+   "run_id": "96164fdeac4afebb3308cb57ae4f1e43",
+   "duration_ms": 8431.0
+  },
+  {
+   "run_id": "1987341511a79080598cd4e231f50aba",
+   "duration_ms": 9742.0
+  },
+  {
+   "run_id": "3d26e93fb074d6d6b6fa2fffd06d9ec6",
+   "duration_ms": 24070.0
+  },
+  {
+   "run_id": "f71ae70d340ae5bc8548c02dbb5c670e",
+   "duration_ms": 26280.0
+  },
+  {
+   "run_id": "4790693def8797b5599be7abb29daeca",
+   "duration_ms": 60250.0
+  },
+  {
+   "run_id": "49d029440c10afe4d84ec8fd494ac484",
+   "duration_ms": 44232.0
+  },
+  {
+   "run_id": "7623a3617528fa327425283625d5d51f",
+   "duration_ms": 36693.0
+  },
+  {
+   "run_id": "1e5e9c5228d97081a8a450d8109b45da",
+   "duration_ms": 23649.0
+  },
+  {
+   "run_id": "2959fa75953fe01c59d059d83efc2937",
+   "duration_ms": 18073.0
+  },
+  {
+   "run_id": "1b8148bfc8ed763164936f9517848d43",
+   "duration_ms": 31624.0
+  },
+  {
+   "run_id": "00bced4488715760ff59644014711e8a",
+   "duration_ms": 39461.0
+  },
+  {
+   "run_id": "3d3611ed45359e2797ae2daab56c5686",
+   "duration_ms": 78821.0
+  },
+  {
+   "run_id": "ac00949c36c14c5141ecdad34b565bf5",
+   "duration_ms": 307.0
+  },
+  {
+   "run_id": "5d8dc1c182c26ec9331d86088acbd27c",
+   "duration_ms": 360.0
+  },
+  {
+   "run_id": "e960cb0b9d2fca2c3abdb080ac387699",
+   "duration_ms": 780.0
+  },
+  {
+   "run_id": "3b20ed5d670c8cb9f1db4e1b44b0f562",
+   "duration_ms": 55930.0
+  },
+  {
+   "run_id": "4cc64d5529cf307398d1c98b11a74d6e",
+   "duration_ms": 85342.0
+  },
+  {
+   "run_id": "749ac0b588ce988b94d04d705161bc84",
+   "duration_ms": 25851.0
+  },
+  {
+   "run_id": "b62aafb174ad2b8db393926e6774aaed",
+   "duration_ms": 8.0
+  },
+  {
+   "run_id": "a01e2142c59f950f90b196f2a092cd1a",
+   "duration_ms": 8.0
+  },
+  {
+   "run_id": "16dadf43cfd43711e920f72e324d5b4b",
+   "duration_ms": 7.0
+  },
+  {
+   "run_id": "2daf6d20fd7f48a1a04a6238213d2f40",
+   "duration_ms": 9.0
+  },
+  {
+   "run_id": "ace7a64fb1a414f301a6d2e443ff9453",
+   "duration_ms": 8.0
+  },
+  {
+   "run_id": "07dbd4f7fba0124fbac1c4a64aece9e3",
+   "duration_ms": 8.0
+  },
+  {
+   "run_id": "d5dadaaa053268c304aa198883f8fb8b",
+   "duration_ms": 1.0
+  },
+  {
+   "run_id": "6d411abeb7d9d8e1cdfd9c269660b623",
+   "duration_ms": 6.0
+  },
+  {
+   "run_id": "91a2696de0db442dc64e7da0b7809805",
+   "duration_ms": 8.0
+  },
+  {
+   "run_id": "4e5e05f6c9e805dd2d451ec76e39c1bc",
+   "duration_ms": 8.0
+  },
+  {
+   "run_id": "3471790598b62ea9ddbe8b9b583003ff",
+   "duration_ms": 8.0
+  },
+  {
+   "run_id": "788bca332c37dd7e32ea85b160b65c7b",
+   "duration_ms": 7.0
+  },
+  {
+   "run_id": "f8f99a3a2b8498ad157f62849614b07c",
+   "duration_ms": 7.0
+  },
+  {
+   "run_id": "94448c31b304f9ab32108fbe45ef9741",
+   "duration_ms": 7.0
+  },
+  {
+   "run_id": "7c97d83321d567ba98d52b8467342b0d",
+   "duration_ms": 8.0
+  },
+  {
+   "run_id": "67a6fbd645b63ad038d3377e98c5a341",
+   "duration_ms": 2.0
+  },
+  {
+   "run_id": "fa3d33860bde6d5553c0be1ea674e587",
+   "duration_ms": 7.0
+  },
+  {
+   "run_id": "354a2c427f69247c2fbfa3d09319b3db",
+   "duration_ms": 8.0
+  },
+  {
+   "run_id": "f968462be73e046ba45af1be156c1740",
+   "duration_ms": 8.0
+  },
+  {
+   "run_id": "9a12b4ab8afabfcf35f8d781961c970f",
+   "duration_ms": 8.0
+  },
+  {
+   "run_id": "f2bd660173358caa6ee472eb8efa4497",
+   "duration_ms": 7.0
+  },
+  {
+   "run_id": "c3cf52b4b54c924c6f3f7184d87d7a63",
+   "duration_ms": 7.0
+  },
+  {
+   "run_id": "a6703f7009b2c5a929fcaf094fc57a98",
+   "duration_ms": 7.0
+  },
+  {
+   "run_id": "3f8b59e2b0a5f3fbad320b71a173062c",
+   "duration_ms": 7.0
+  },
+  {
+   "run_id": "21352dce8db2656c945873d0c2d12f1a",
+   "duration_ms": 1.0
+  },
+  {
+   "run_id": "7c8c57cd81370cda416dbcd003bbb08f",
+   "duration_ms": 8.0
+  },
+  {
+   "run_id": "de7872b280aa22987e0a1582c4d624bf",
+   "duration_ms": 9.0
+  },
+  {
+   "run_id": "c6531475bd9e00a6d06f181dff892add",
+   "duration_ms": 25975.0
+  },
+  {
+   "run_id": "7d759652ba74c6e6f4d1ecb3413b7f4e",
+   "duration_ms": 212304.0
+  },
+  {
+   "run_id": "91f8e24ba8d343e1c022c620207292ed",
+   "duration_ms": 225452.0
+  },
+  {
+   "run_id": "8954770c19a852a2fce53b85f8eb6fff",
+   "duration_ms": 26642.0
+  },
+  {
+   "run_id": "78d8dd35e1a5dfa31b1a1c7795afe221",
+   "duration_ms": 153461.0
+  },
+  {
+   "run_id": "7af9f53262bf868e552a81ea15085675",
+   "duration_ms": 36138.0
+  },
+  {
+   "run_id": "9c2528673889af26dc1fab5d4ac901a2",
+   "duration_ms": 37321.0
+  },
+  {
+   "run_id": "a83fb7772bd894b6811e799fb88be0ec",
+   "duration_ms": 37875.0
+  },
+  {
+   "run_id": "3831027cc08c212189c208d655114080",
+   "duration_ms": 32462.0
+  },
+  {
+   "run_id": "99ef692adf82cefa93dee08a5cb5d5ef",
+   "duration_ms": 17070.0
+  },
+  {
+   "run_id": "0605f678dd3d820dfaaaa76b5582cc71",
+   "duration_ms": 86377.0
+  },
+  {
+   "run_id": "a773f1bd86d36f11ba0f6ffc8d1bfd86",
+   "duration_ms": 89384.0
+  },
+  {
+   "run_id": "b47e0300ae15405089667de5bf764024",
+   "duration_ms": 52421.0
+  },
+  {
+   "run_id": "9fa95976814aa722e22f72e395169bea",
+   "duration_ms": 27235.0
+  },
+  {
+   "run_id": "d196cb498cedea9bc840e13f925e24fb",
+   "duration_ms": 22189.0
+  },
+  {
+   "run_id": "f522924400427de7be626bed5d64809a",
+   "duration_ms": 28189.0
+  },
+  {
+   "run_id": "dd80676b110c8cf1749f1ae133f9bc38",
+   "duration_ms": 90272.0
+  },
+  {
+   "run_id": "eb08cbb78dae9e140462d3ed61f784a4",
+   "duration_ms": 119484.0
+  },
+  {
+   "run_id": "3812c2b0c99d13c9cbeaa3698c181ad5",
+   "duration_ms": 26977.0
+  },
+  {
+   "run_id": "ef1432226cc95c3fc31cf4deccb9fe5e",
+   "duration_ms": 26764.0
+  },
+  {
+   "run_id": "ee9ef52483d6ed5610c5fb99ccffa5d6",
+   "duration_ms": 31679.0
+  },
+  {
+   "run_id": "52eaf2bab6fc8c34a307428cb59b7827",
+   "duration_ms": 17826.0
+  },
+  {
+   "run_id": "324b6b2eb3fa59a00b49cefb855a9b7e",
+   "duration_ms": 70057.0
+  },
+  {
+   "run_id": "012f6c157bfaac2e8812bdee4e524ae3",
+   "duration_ms": 119413.0
+  },
+  {
+   "run_id": "0026d7779fa0fd3b2c75ad4bebc55cf6",
+   "duration_ms": 82336.0
+  },
+  {
+   "run_id": "b5f576e61efc00ee51da74aa325d8bfb",
+   "duration_ms": 472841.0
+  },
+  {
+   "run_id": "e89e550b861fff6deeb65e41aaf96026",
+   "duration_ms": 403484.0
+  },
+  {
+   "run_id": "adfaf27da7c4371d266182d6aff07e20",
+   "duration_ms": 562052.0
+  },
+  {
+   "run_id": "0790c96071dc232efa8d0c20f4f31365",
+   "duration_ms": 341813.0
+  },
+  {
+   "run_id": "301944f5462d74a003ea307bb4fc8ac6",
+   "duration_ms": 277805.0
+  },
+  {
+   "run_id": "1af47f824c3a92a846e696a09e132fbb",
+   "duration_ms": 137718.0
+  },
+  {
+   "run_id": "9b9bf1666580da99cba5c4dd0c14caff",
+   "duration_ms": 247000.0
+  },
+  {
+   "run_id": "8bc619b4a4b7cf7cff47ca9af7986c6f",
+   "duration_ms": 47776.0
+  },
+  {
+   "run_id": "c8f964b66f1f7fc8b17d3c30119d4ad5",
+   "duration_ms": 122742.0
+  },
+  {
+   "run_id": "ab826df637251b7891f2db1b55912dff",
+   "duration_ms": 333075.0
+  },
+  {
+   "run_id": "6b2f40dc3d4da65fc96e44acaecd9cf2",
+   "duration_ms": 84149.0
+  },
+  {
+   "run_id": "9ec98d96aded3d0caf1756a43b049ff2",
+   "duration_ms": 118677.0
+  },
+  {
+   "run_id": "bed0f497d063f8f95521b50938a29cb3",
+   "duration_ms": 292735.0
+  },
+  {
+   "run_id": "516d723e205d78bb187a9a2482b4fc16",
+   "duration_ms": 94.0
+  }
+ ],
+ "task_terminals": [],
+ "capability_calls": [
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "no_such_tool",
+   "ok": false
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_issue_status",
+   "ok": true
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": false
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": true
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": false
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": true
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": false
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "get_issue_by_number",
+   "ok": false
+  },
+  {
+   "capability_id": "get_issue_by_number",
+   "ok": false
+  },
+  {
+   "capability_id": "get_issue_by_number",
+   "ok": false
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "no_such_tool",
+   "ok": false
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_issue_status",
+   "ok": true
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": false
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": true
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": false
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": true
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": false
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "get_issue_by_number",
+   "ok": false
+  },
+  {
+   "capability_id": "get_issue_by_number",
+   "ok": false
+  },
+  {
+   "capability_id": "get_issue_by_number",
+   "ok": false
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "no_such_tool",
+   "ok": false
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_issue_status",
+   "ok": true
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": false
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": true
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": false
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": true
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": false
+  },
+  {
+   "capability_id": "test_delegation_read_cap",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "get_issue_by_number",
+   "ok": false
+  },
+  {
+   "capability_id": "get_issue_by_number",
+   "ok": false
+  },
+  {
+   "capability_id": "get_issue_by_number",
+   "ok": false
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_issue_status",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": false
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": false
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": false
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": false
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": false
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": false
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "testing.write.echo",
+   "ok": true
+  },
+  {
+   "capability_id": "get_issue_by_number",
+   "ok": false
+  },
+  {
+   "capability_id": "mock_get_issue_status",
+   "ok": true
+  },
+  {
+   "capability_id": "get_issue_by_number",
+   "ok": false
+  },
+  {
+   "capability_id": "mock_get_issue_status",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_issue_status",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_issue_status",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_issue_status",
+   "ok": true
+  },
+  {
+   "capability_id": "utc_now_iso",
+   "ok": true
+  },
+  {
+   "capability_id": "get_issue_by_number",
+   "ok": true
+  },
+  {
+   "capability_id": "mock_get_deploy_info",
+   "ok": true
+  }
+ ],
+ "cost_rows": []
+}
