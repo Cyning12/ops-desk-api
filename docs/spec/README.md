@@ -31,6 +31,11 @@
 | `memory-compliance-delete` | [`memory-compliance-delete/`](./memory-compliance-delete/) | **signed · 已实施**（2026-09-22 · PR #163 已合 master · 40 核验 22/22 PASS · 默认干跑+双闸门） | 记忆合规物理删除权 M4（purge_by_user · 两通路零残留 · 审计记动作不记内容） |
 | `multi-replica-verify` | [`multi-replica-verify/`](./multi-replica-verify/) | **signed · 已实施**（2026-09-22 · PR #165 已合 master · 40 核验 26/26 PASS · verify track 零生产码） | L0 多副本验证（双进程 pytest + 部署实测 + 进程内状态边界清单 8 条目） |
 | `chat-history-hitl-ux` | [`chat-history-hitl-ux/`](./chat-history-hitl-ux/) | draft（2026-09-30 · 20-spec-audit → HG-SPEC-SIGNOFF） | 会话历史 + 中断续看 + HITL 审批面（事件表真源 · SSE 零动 · 前端专项 SPEC 另立） |
+| `query-coref-rewrite` | [`query-coref-rewrite/`](./query-coref-rewrite/) | draft（2026-10-19 · 待 20-spec-audit/HG-SPEC-SIGNOFF） | 多轮指代消解 · 装配层查询重写（env 默认关 · 审核发现① · **建议序 1/5**） |
+| `memory-injection-consumer` | [`memory-injection-consumer/`](./memory-injection-consumer/) | draft（2026-10-19 · 待 20-spec-audit/HG-SPEC-SIGNOFF） | memory 注入消费者实证与处置（先证后修 · 审核疑点 #2 · **建议序 2/5**） |
+| `scenario-stage-rewire` | [`scenario-stage-rewire/`](./scenario-stage-rewire/) | draft（2026-10-19 · 待 20-spec-audit/HG-SPEC-SIGNOFF） | scenario stage 恒短路处置（推荐摘除 · 审核疑点 #3 · **建议序 3/5**） |
+| `delegation-naming-boundary` | [`delegation-naming-boundary/`](./delegation-naming-boundary/) | draft（2026-10-19 · 待 20-spec-audit/HG-SPEC-SIGNOFF） | 委派令牌正名 + write 护栏解耦（零行为变更铁律 · 名实审查 · **建议序 4/5**） |
+| `tech-graph-flow-resync` | [`tech-graph-flow-resync/`](./tech-graph-flow-resync/) | draft（2026-10-19 · 待 20-spec-audit/HG-SPEC-SIGNOFF · 前置依赖建议序 1–4） | lg_rag 图谱 flow/l2 重生成（supervisor-first 对拍 5 差异 · **建议序 5/5 最后做**） |
 
 ---
 
@@ -64,3 +69,4 @@
 | 2026-09-21 | `memory-facts-p1` signed → 已实施（task 闭环 · 40 PASS · 归档 done） |
 | 2026-09-21 | 新增 `memory-golden-eval`（signed · M1）+ 9 个占位 SPEC（含接续指引 · 建议序 2–10） |
 | 2026-09-21 | `memory-golden-eval` 已实施（task 闭环 · 40 PASS · 归档 done · 真跑裁决待维护者） |
+| 2026-10-19 | 新增 5 份 draft SPEC（supervisor 全流程审核产出 · 建议序 1→5：query-coref-rewrite / memory-injection-consumer / scenario-stage-rewire / delegation-naming-boundary / tech-graph-flow-resync · 全部待 HG-SPEC-SIGNOFF） |
