@@ -1,6 +1,6 @@
 # SPEC：scenario stage 裁剪死代码处置（v0）
 
-> **状态**：`draft`（HG-SPEC-SIGNOFF=pending）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved** · 2026-10-19 维护者会话签收 · **裁定分支 (a) 摘除** · 20-spec-audit R2 pass）
 > **track**：`cleanup`（死代码处置：摘除或重接，二选一由本 SPEC 裁定；不新增路由 / 表 / event_type）
 > **上游**：2026-10-19 supervisor 全流程审核疑点 #3：supervisor-first（PR #282）摘除 `intent_node` 后，scenario stage 裁剪的触发键 `state.intent` 失去唯一写入方，`_apply_scenario_stage` 恒不触发——**名存实亡**
 > **建议序**：**3/5**
@@ -31,7 +31,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | **pending** | 待 20-spec-audit 或维护者人签 |
+| **HG-SPEC-SIGNOFF** | approved（2026-10-19 维护者） | 维护者会话签收并**裁定分支 (a) 摘除**；审查文 `spec_scenario-stage-rewire_audit_R1_20261019`（R2 pass · N1–N4 移交 task 吸收） |
 
 ---
 
@@ -59,7 +59,7 @@ scenario stage 裁剪（S1–S5 按意图场景收窄能力菜单）依赖 `stat
 |---|---|
 | 删 | `builder.py` 内 `_apply_scenario_stage` 调用与 scenario 相关分支；allowlist 语义固定为 `candidates ∩ visible_ids`（基线可见 ∩ candidates，与现行恒短路行为**逐值等价**） |
 | 留 | `app/ops/strategy/scenario.py` 模块本体不删（后续「意图恢复」波次可能复用），文件头加 dormant 注释 |
-| env | `OPS_STRATEGY_SCENARIO_*` 相关 env 键标注 deprecated（读取处删除，文档登记） |
+| env | `LG_RAG_VISIBILITY_SCENARIO_MODE` env 键标注 deprecated（读取处删除，文档登记） |
 | 图谱 | `01_modules.md` strategy 行备注「scenario 裁剪已摘除（恒短路清理 · 2026-10-xx）」 |
 
 ### D2 · 分支（b）：重接（备选，需维护者点名）
@@ -120,7 +120,7 @@ scenario stage 裁剪（S1–S5 按意图场景收窄能力菜单）依赖 `stat
 |---|---|
 | 摘除后某隐藏路径仍依赖 scenario 裁剪 | FP-1 逐值回归 + grep 全仓引用点清单落 invoke |
 | 未来恢复场景裁剪时要重写 | `scenario.py` 保留；git 历史可查 |
-| 分支选择争议 | 本 SPEC 推荐 (a)；维护者签 HG-SPEC-SIGNOFF 时一并裁定分支 |
+| 分支选择争议 | 本 SPEC 推荐 (a)；维护者签 HG-SPEC-SIGNOFF 时一并裁定分支 → **2026-10-19 已裁定 (a) 摘除** |
 
 回滚：分支 (a) 回滚=git revert（行为本来就逐值等价）。
 
@@ -164,3 +164,5 @@ scenario stage 裁剪（S1–S5 按意图场景收窄能力菜单）依赖 `stat
 | 日期 | 说明 |
 |---|---|
 | 2026-10-19 | v0 draft：supervisor 审核疑点 #3 落盘（scenario 恒短路 · 推荐摘除 · 分支裁定留签收） |
+| 2026-10-19 | v0.1：20-spec-audit R1 阻塞项 B1 修订（env 键名正名为 `LG_RAG_VISIBILITY_SCENARIO_MODE` · 审查文 `spec_scenario-stage-rewire_audit_R1_20261019`） |
+| 2026-10-19 | HG-SPEC-SIGNOFF=approved（维护者会话签收 · R2 pass）· **分支裁定：(a) 摘除**；交 00 起草 task |

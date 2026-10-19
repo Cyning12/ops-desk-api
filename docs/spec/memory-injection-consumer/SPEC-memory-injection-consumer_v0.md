@@ -1,13 +1,13 @@
-# SPEC：memory 注入消费者实证与处置（v0 · 先证后修）
+# SPEC：memory 注入消费者实证与处置（v0.1 · 先证后修）
 
-> **状态**：`draft`（HG-SPEC-SIGNOFF=pending）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved** · 2026-10-19 维护者会话签收 · 20-spec-audit R2 终裁 conditional_pass）
 > **track**：`verify+feature`（Phase A 实证零改码 → Phase B 按实证结论二选一修复；不新增路由 / 表 / event_type）
 > **上游**：2026-10-19 supervisor 全流程审核疑点 #2（高置信）：memory facts/episodes 注入进 `state.messages`，但 supervisor 链路疑似**没有任何节点消费它**
 > **建议序**：**2/5**
 > **现状锚点**：
 > - 注入侧：facts `continuity.py:341-354`（`[已知事实]`/`[用户偏好]` 独立 SystemMessage 插前缀系统消息后）、episodes :483-514（`[相似经验]`）；开关 `MEMORY_FACTS_ENABLED` / `MEMORY_EPISODES_ENABLED` 均**默认关**；
-> - 疑似无消费者：planner 只吃 query（`multi/nodes.py:1163-1170`）；aggregator 只吃 query+子任务结果（:2035-2043）；rag 工人子图输入隔离重建 fresh messages（:1432-1435，不传 history）；`_worker_state`（:1041-1063）虽带全量 messages 但 rag 工人内部不用；
-> - **但** router/basic 模式主图直接吃 `state.messages`（direct_answer/rag 节点），注入在那两条链路**可能**有效——「零效果」疑似为 supervisor 模式特有。
+> - 疑似无消费者：planner 只吃 query（`multi/nodes.py:1163-1170`）；aggregator 只吃 query+子任务结果（off 态 `_aggregator_plain_messages` :2035-2043；on 态 `_aggregator_isolated_messages` :2046-2063 同样只吃 query+results+payload）；rag 工人调 `astream_router_agent` 未传 `history_turns`（:1432-1435；`graph.py:278` 缺省 None，fresh 装配在 `graph.py:199-206`），子图按 query 重新装配；`_worker_state`（:1041-1063）虽带全量 messages 但 rag 工人内部不用；
+> - router/basic 同样疑似无消费者：rag_node（`nodes.py:153-154`）、direct_answer_node（:255-263）、router_node（:119）、rewrite_node（:209-218）均只取 `_last_user_text`（:48-53，仅取末条 HumanMessage）或重建双消息 prompt；basic 图（`graph.py:56-62`）唯一节点也是 rag_node——注入块疑似**三模式均到不了任何 LLM**，「零效果」非 supervisor 特有；仍须 Phase A 实证矩阵最终坐实。
 > **下游**：20-spec-audit / HG-SPEC-SIGNOFF → 00 出 task → 20-task-audit → HG-AUDIT-R1 → 30
 > **Open Folder（实现）**：`ops-desk-api/`
 
@@ -29,7 +29,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | **pending** | 待 20-spec-audit 或维护者人签 |
+| **HG-SPEC-SIGNOFF** | approved（2026-10-19 维护者） | 维护者会话签收；审查文 `spec_memory-injection-consumer_audit_R1_20261019`（R2 终裁 conditional_pass · 第三结局分支由 Phase A 实证在 task 签收时裁定） |
 
 ---
 
@@ -47,7 +47,7 @@ V1-B 波次交付了 memory facts/episodes 注入（默认关），但审核发�
 
 ## 2. 范围
 
-单 task（Phase A + Phase B 同 task 两阶段；Phase B 方向由 Phase A 证据触发，两条分支的实现方案都已在 §4 预写，30 不临场发明第三方案）。
+单 task（Phase A + Phase B 同 task 两阶段；Phase B 方向由 Phase A 证据触发，全部结局的处置方案都已在下表预写，30 不临场发明表外方案）。
 
 ### Phase A · 实证（零生产码改动）
 
@@ -63,6 +63,7 @@ V1-B 波次交付了 memory facts/episodes 注入（默认关），但审核发�
 |---|---|---|
 | **B-a 接线** | supervisor 零消费坐实，且产品判断「supervisor 应有记忆增强」 | planner system 尾部 + aggregator user 头部注入 `[已知事实]`/`[用户偏好]`/`[相似经验]` 块（复用 continuity 已产出的注入文本，不重复查询）；rag 工人**不**接（输入隔离是设计，另案） |
 | **B-b 收窄** | supervisor 零消费坐实，且判断「本波不接」 | supervisor 模式跳过注入（省无谓查询与 token）；router/basic 维持；`01_modules.md` memory 行写明「supervisor 不消费」 |
+| **三模式均零消费坐实** | router/basic 亦无消费者坐实（承 B1 静态证据指向的最可能结局） | 由维护者按 Phase A 证据二选一裁定（两案均预写，30 不临场发明）：**(a) 扩展接线**：在 B-a 基础上将接线面扩至 router/basic 消费点——direct_answer/rag 节点 prompt 组装注入 `[已知事实]`/`[用户偏好]`/`[相似经验]` 块（复用注入文本，不重复查询）；**(b) 全模式收窄**：三模式统一跳过注入 + `01_modules.md` memory 行与文档写明「当前无任何消费点，功能休眠」，消费点需求另立 SPEC 再接 |
 | 实证推翻疑点 | 三模式均有消费者 | Phase B 整体不做，invoke 记录「疑点不成立」关 task |
 
 ---
@@ -93,7 +94,7 @@ V1-B 波次交付了 memory facts/episodes 注入（默认关），但审核发�
 |---|---|---|
 | FP-1 | 开关默认关 | 三模式零 diff（spy 断言无任何注入块） |
 | FP-2 | 注入开 × supervisor | 实证记录每个 LLM 节点的消息清单；若 planner/aggregator 消息内无注入块 → 疑点坐实 |
-| FP-3 | 注入开 × router/basic | 同上；若 direct_answer/rag 收到注入块 → 「零效果为 supervisor 特有」坐实 |
+| FP-3 | 注入开 × router/basic | 同上；若 direct_answer/rag 亦未收到注入块 → 「三模式均零消费」坐实，走 §2 第三结局行；若收到 → 「零效果为 supervisor 特有」坐实 |
 | FP-4 | B-a 接线后 | planner/aggregator prompt 含注入块；facts  revoked/为空时不出现空块标题 |
 | FP-5 | B-b 收窄后 | supervisor 模式不再查询 facts/episodes（spy DB 断言）；router/basic 不变 |
 | FP-6 | 实证推翻疑点 | 关 task，零生产码改动落盘 |
@@ -106,6 +107,7 @@ V1-B 波次交付了 memory facts/episodes 注入（默认关），但审核发�
 - [ ] Phase B 分支选择有 Phase A 证据引用（invoke 内写明「因 FP-x 选 B-a/B-b/关闭」）
 - [ ] 若 B-a：金样断言 planner 与 aggregator 实际收到注入块；rag 工人不收到
 - [ ] 若 B-b：supervisor 模式注入查询被跳过（零 DB 命中）；图谱 memory 行备注更新
+- [ ] 若三模式均零消费坐实：invoke 写明所选结局及 Phase A 证据引用；选扩展接线则金样断言 direct_answer/rag 实际收到注入块，选全模式收窄则三模式注入查询全跳过（零 DB 命中）+ 图谱/文档休眠声明落盘
 - [ ] 全程默认关零 diff；pytest 绿；不增 event_type/路由/表
 
 ---
@@ -160,3 +162,5 @@ V1-B 波次交付了 memory facts/episodes 注入（默认关），但审核发�
 | 日期 | 说明 |
 |---|---|
 | 2026-10-19 | v0 draft：supervisor 审核疑点 #2 落盘（先证后修 · B-a/B-b 双分支预写） |
+| 2026-10-19 | v0.1：20-spec-audit R1 退回修订（B1 三模式零消费自述更正 · B2 第三结局分支补齐 · N1/N2 锚点措辞 · 审查文 spec_memory-injection-consumer_audit_R1_20261019） |
+| 2026-10-19 | HG-SPEC-SIGNOFF=approved（维护者会话签收 · R2 conditional_pass · R2-N1~N3 移交 task）；交 00 起草 task |

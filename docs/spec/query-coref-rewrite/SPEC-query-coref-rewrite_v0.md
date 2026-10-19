@@ -1,6 +1,6 @@
 # SPEC：多轮指代消解 · 装配层查询重写（v0 · 默认关）
 
-> **状态**：`draft`（HG-SPEC-SIGNOFF=pending · 待 20-spec-audit 或维护者人签）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved** · 2026-10-19 维护者会话签收 · 20-spec-audit R1 pass）
 > **track**：`feature`（历史感知的 query 重写，注入 continuity 装配层；不新增路由 / 表 / SSE event_type）
 > **上游**：2026-10-19 supervisor 全流程架构审核会话（m00021 用户观察①：「supervisor 的 query 没做指代消解，多轮必然出现问题」——审核坐实，且比预想更彻底：planner 连历史都看不到）
 > **建议序**：**1/5**（query-coref-rewrite → memory-injection-consumer → scenario-stage-rewire → delegation-naming-boundary → tech-graph-flow-resync）
@@ -31,7 +31,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | **pending** | 待 20-spec-audit 书面审或维护者人签 |
+| **HG-SPEC-SIGNOFF** | approved（2026-10-19 维护者） | 维护者会话签收；审查文 `spec_query-coref-rewrite_audit_R1_20261019`（pass · N1–N3 移交 task 吸收） |
 
 ---
 
@@ -183,3 +183,4 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-10-19 | v0 draft：supervisor 全流程审核发现①落盘（指代消解缺失 · 装配层插入 · 默认关） |
+| 2026-10-19 | HG-SPEC-SIGNOFF=approved（维护者会话签收 · R1 pass · N1–N3 移交 task）；交 00 起草 task |

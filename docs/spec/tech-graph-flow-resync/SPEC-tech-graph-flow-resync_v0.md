@@ -1,6 +1,6 @@
 # SPEC：lg_rag 图谱 flow/l2 索引重生成（v0 · supervisor-first 对拍）
 
-> **状态**：`draft`（HG-SPEC-SIGNOFF=pending）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved** · 2026-10-19 维护者会话签收 · **裁定 D2-a 续冻** · 20-spec-audit R1 conditional_pass）
 > **track**：`docs`（图谱与注释重同步；唯一代码面改动是 `multi/__init__.py` docstring 修正，注释-only）
 > **上游**：2026-10-19 supervisor 全流程审核「图谱对拍」节：15 项一致 + 5 项差异，最大差异是 `l1/10_flow_lg_rag.md`（version 2026-10-14）仍画 `START → intent_node`，与代码（PR #282 supervisor-first）和 `01_modules.md:35` 行末备注（2026-10-19「去前置 Intent」）**自相矛盾**
 > **建议序**：**5/5**（最后做——等前四项修复落定、拓扑稳定后一次重生成，避免刚同步又漂移）
@@ -31,7 +31,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | **pending** | 待 20-spec-audit 或维护者人签；l2 索引扩/冻裁定在签收时一并做（见 D2） |
+| **HG-SPEC-SIGNOFF** | approved（2026-10-19 维护者） | 维护者会话签收并**裁定 D2-a 续冻**（l2 索引加显式冻结声明 + s_intent 标 dormant）；审查文 `spec_tech-graph-flow-resync_audit_R1_20261019`（R1 conditional_pass · N1–N5 移交 task 吸收） |
 
 ---
 
@@ -170,3 +170,4 @@ lg_rag 图谱与 supervisor-first 代码全面对拍：flow 文档重生成、�
 | 日期 | 说明 |
 |---|---|
 | 2026-10-19 | v0 draft：图谱对拍 5 项差异落盘（flow 重生成 + l2 扩/冻裁定 + docstring 修正 · 建议序 5/5 最后做） |
+| 2026-10-19 | HG-SPEC-SIGNOFF=approved（维护者会话签收 · R1 conditional_pass）· **D2 裁定：(a) 续冻**；建议序 5/5，待 1–4 落定后交 00 起草 task |

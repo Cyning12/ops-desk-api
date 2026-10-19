@@ -1,11 +1,11 @@
-# SPEC：委派令牌正名与边界清理（v0）
+# SPEC：委派令牌正名与边界清理（v0.1）
 
-> **状态**：`draft`（HG-SPEC-SIGNOFF=pending）
+> **状态**：`signed`（HG-SPEC-SIGNOFF=**approved** · 2026-10-19 维护者会话签收 · 20-spec-audit R2 pass）
 > **track**：`refactor`（命名与边界归位，**零行为变更**铁律；不新增路由 / 表 / event_type / 一级模块）
 > **上游**：2026-10-19 委派令牌模块名实审查（子代理 B 报告）：模块实际职责远超「令牌」二字，含 10 项超名功能；其中最名实不符的是 write 孪生护栏挂在 delegation 开关下
 > **建议序**：**4/5**
 > **现状锚点**：
-> - `app/ops/delegation.py`（600 行，纯函数零 LLM 零 IO）：令牌模型/签名验签/nonce registry/签发器 supersede/`auto_approve_ok` 签发审批/审计五动作词表；
+> - `app/ops/capability/delegation.py`（600 行，纯函数零 LLM 零 IO）：令牌模型/签名验签/nonce registry/签发器 supersede/`auto_approve_ok` 签发审批/审计五动作词表；
 > - 图内接线 `app/ops/lg_rag/multi/nodes.py`：`_approval_consumed` HITL 消费门（:325-377）、签发审批（:400-426）、scope 声明∩裁剪（:1264-1286）、分发签发（:1328-1337）、tool_exec 注入（:1564-1572）、**write 孪生护栏（:825-865）**；
 > - 验签门 `app/ops/capability/gateway.py:277-334`（在 lookup 之前）；
 > - 三档 `off/observe/enforce` **默认 off**（`nodes.py:261-263`）。
@@ -23,14 +23,14 @@
 | **test_strategy** | `required` |
 | **test_strategy_note** | 重构铁律：既有测试**逐字不改**全绿（除 import 路径/符号名同步）· write 护栏解耦后独立开关三档行为断言（delegation off 时护栏仍生效）· 行为等价金样（同输入同审计词表同拒绝码 R-a~R-f） |
 | **默认分支** | `task/delegation-naming-boundary` |
-| **graph_change_layer** | `none` 预期（符号重命名 + 内部归属移动；`01_modules.md` delegation 行备注更新职责边界描述） |
+| **graph_change_layer** | `none` 预期（符号重命名 + 内部归属移动；`01_modules.md` capability 行 delegation 备注段（+ lg_rag 行接线备注如需）更新职责边界描述） |
 | **freeze_id** | 委派审计五动作词表 / 拒绝码 R-a~R-f / SSE / HTTP **全部零变更**；若 30 发现必须改任一对外词表 → 回本 SPEC 升 freeze |
 
 ### 人工闸（SPEC 阶段）
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | **pending** | 待 20-spec-audit 或维护者人签 |
+| **HG-SPEC-SIGNOFF** | approved（2026-10-19 维护者） | 维护者会话签收；审查文 `spec_delegation-naming-boundary_audit_R1_20261019`（R2 pass · N3/N5/N6/N7 移交 task 吸收 · FP-2 唯一行为变化签署知情） |
 
 ---
 
@@ -45,7 +45,7 @@
 
 1. `auto_approve_ok` 正名——它实际是「签发审批策略」判定，名字读起来像布尔开关；
 2. **write 孪生护栏从 delegation 开关解耦**——它是反回环/反自引用护栏（防 write 类子任务孪生重复），本质独立于委派令牌，挂在 `delegation_mode()!=off` 下导致「关委派就关掉了一个安全护栏」，是最名实不符的一处；
-3. 其余 8 项超名功能**不动结构**（SPEC §4 Q3 已裁定不新增一级模块），只在图谱备注把职责边界写实。
+3. 其余 8 项超名功能**不动结构**（承 host-v1-delegation-token SPEC §4 Q3 已裁定不新增一级模块，出处：`docs/spec/host-v1-delegation-token/SPEC-host-v1-delegation-token_v0.md` §4 Q3），只在图谱备注把职责边界写实。
 
 ### 一句话目标
 
@@ -78,14 +78,14 @@
 
 | 项 | 约定 |
 |---|---|
-| 图谱 | `01_modules.md` delegation 行备注补齐 10 项实际职责（审计台账/签发审批/HITL 消费门/scope 收窄/supersede/nonce/write 护栏解耦后位置/参数约束/三档/主体绑定） |
+| 图谱 | `01_modules.md` capability 行 delegation 备注段（+ lg_rag 行接线备注如需）补齐 10 项实际职责（审计台账/签发审批/HITL 消费门/scope 收窄/supersede/nonce/write 护栏解耦后位置/参数约束/三档/主体绑定） |
 | 不改 | `DelegationToken` 类型名、模块文件名、目录层级 |
 
 ---
 
 ## 3. 非范围
 
-- ❌ 新增一级模块（SPEC §4 Q3 已裁定）
+- ❌ 新增一级模块（承 host-v1-delegation-token SPEC §4 Q3 已裁定）
 - ❌ 委派预算、跨进程 nonce/单飞、回执联动、撤销列表（审查点名的「未做」项，均为后续波次另案）
 - ❌ worktree 脏改动（重复 import）——在 worktree 分支自行修复
 - ❌ 改审计五动作词表 / 拒绝码 R-a~R-f / TTL 默认值（600s）/ HITL 消费 TTL（3600s）
@@ -98,7 +98,7 @@
 
 | 方案 | 内容 | 裁定 |
 |---|---|---|
-| A 全面拆模块 | 按 10 项职责拆多个一级模块 | **弃**。SPEC §4 Q3 已裁定；动静大收益小 |
+| A 全面拆模块 | 按 10 项职责拆多个一级模块 | **弃**。承 host-v1-delegation-token SPEC §4 Q3 已裁定；动静大收益小 |
 | B 只改文档 | 图谱备注写实，代码不动 | **弃（单独做不够）**。write 护栏挂错开关是实际安全语义问题，不只是文档问题 |
 | C 本 SPEC：正名+解耦+写实 | 最小成本路径 | **采纳** |
 | D 改 `DelegationToken` 类型名 | 连类型一起正名 | **弃**。类型名本身准确（它确实是令牌模型），超名的是模块职责不是类型 |
@@ -124,7 +124,7 @@
 - [ ] `auto_approve_ok` 全仓零残留，调用点同步，测试绿
 - [ ] write 孪生护栏独立开关默认开；FP-2/3/4 矩阵断言绿
 - [ ] 审计词表/拒绝码/TTL 默认值零变更断言
-- [ ] `01_modules.md` delegation 行备注写实（10 项职责 + 护栏解耦声明）
+- [ ] `01_modules.md` capability 行 delegation 备注段（+ lg_rag 行接线备注如需）写实（10 项职责 + 护栏解耦声明）
 - [ ] invoke 显式声明唯一行为变化点（FP-2）
 - [ ] 不增一级模块/路由/表/event_type
 
@@ -180,3 +180,5 @@
 | 日期 | 说明 |
 |---|---|
 | 2026-10-19 | v0 draft：委派令牌名实审查落盘（正名 + write 护栏解耦 + 图谱写实 · 零行为变更铁律除 FP-2） |
+| 2026-10-19 | v0.1：20-spec-audit R1 建议修订（M1 路径正名 `app/ops/capability/delegation.py` · M2 图谱行措辞 capability+lg_rag 行 · N4 Q3 出处补引 · 审查文 `spec_delegation-naming-boundary_audit_R1_20261019`） |
+| 2026-10-19 | HG-SPEC-SIGNOFF=approved（维护者会话签收 · R2 pass · N3/N5/N6/N7 移交 task）；交 00 起草 task |
