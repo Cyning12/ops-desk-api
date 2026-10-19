@@ -19,6 +19,8 @@ _TEMPLATE_IDS = (
     "lg_rag.aggregator.system",
     "memory.extract.system",
     "session.summary.system",
+    # query-coref-rewrite D2：指代消解重写器（无变量 · 历史经 user 消息传入）
+    "lg_rag.query_rewrite.system",
 )
 
 TEMPLATES: dict[str, dict[str, str]] = {

@@ -116,7 +116,7 @@ def get_fallback_chain(provider: str) -> list[ModelInfo]:
 # 不炸请求。grader 档并入既有 RAG_GRADER_MODEL 覆盖链（不破坏现网配置）。
 # 策略包缺省未设 = 现状逐字节（不读 YAML）。
 
-TASK_TYPES: tuple[str, ...] = ("answer", "grader", "extract", "structured", "summary")
+TASK_TYPES: tuple[str, ...] = ("answer", "grader", "extract", "structured", "summary", "rewrite")
 
 #: 档默认表：None = 不落档（回退 settings.ops_llm_model / provider 默认）。
 #: grader 档默认 = 现网 RAG_GRADER_MODEL 未设时的取值（契约 4b 便宜模型）。
@@ -129,6 +129,10 @@ TASK_TIER_MODELS: dict[str, str | None] = {
     # 不同（懒生成在请求路径 · extract 是 background 面），独立档独立调档；
     # 默认 None = 不落档沿用现网默认（灰度期 OPS_LLM_TIER_SUMMARY_MODEL 调档零改码）
     "summary": None,
+    # query-coref-rewrite（D4 新增 rewrite 档）：指代消解是请求路径上的轻量改写，
+    # 独立档独立调档；默认 None = 不落档沿用现网默认（灰度期
+    # OPS_LLM_TIER_REWRITE_MODEL 调档零改码 · 仿 summary 档先例）
+    "rewrite": None,
 }
 
 
@@ -215,11 +219,12 @@ RULE_TIER_TEMPLATES: dict[str, str] = {
 TASK_TIER_FALLBACKS: dict[str, tuple[str, ...]] = {
     # answer 是终答面：耗尽先退小模型档，再退固定文案（标记 degraded 跟数据走）
     "answer": ("deepseek-ai/DeepSeek-V4-Flash", "rule:static_refusal"),
-    # 背景档无声明：grader/extract/structured/summary 耗尽 = 明确失败
+    # 背景档无声明：grader/extract/structured/summary/rewrite 耗尽 = 明确失败
     "grader": (),
     "extract": (),
     "structured": (),
     "summary": (),
+    "rewrite": (),
 }
 
 #: 降级链长度上限（承 capability/fallback B3 链条有界 · SPEC FP-8）
