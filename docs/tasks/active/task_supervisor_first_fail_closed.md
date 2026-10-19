@@ -131,6 +131,13 @@ supervisor 图改为 **无 LLM 的 Builder → supervisor**；**首次规划**�
 - [ ] **TC8 Policy 回归**：plan/ctx 顶层 `allow_write` 等模型放行字段仍不生效（Host-only 零改动）。
 - [ ] **TC9 契约回写（R1-N3 · 00 定夺 2026-10-19）**：回写 `docs/spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md` §4.2 `error.stage` 词表（新增 `supervisor_plan` 字面量）+ `docs/_tech_graph/l1/01_modules.md` 备注；**不**升 freeze、**不**新增 SSE `event_type`；`graph-compile` EXIT=0。
 - [ ] **TC10 反回归全量**：`pytest` 全量绿（新增覆盖上述路径）；`ruff` 触及路径绿。
+- [ ] **TC11 旧测 grep 影响面（20-task-audit R1-B1 · K7 行为变更类）**：30 红测先行前按下列实证清单逐项处置（行号录自 R1 审查 grep · 30 按实校正），**枚举外既有用例默认保持绿**（误删合法回归即红）：
+  - `tests/test_intent_node.py:112-124`（断言图边 `("__start__","intent_node")`、`("intent_node","strategy_builder")`）→ **转红改写**（D1 必破 · 改写为 TC1 编译图边口径）。
+  - `tests/test_lg_rag_multi.py:292`（`"intent_node" in node_names`）→ **转红改写**（D1 必破）。
+  - `tests/test_strategy_builder.py:120-131` `test_builder_needs_tool_false_empty_allowlist` → **转红改写**（D3 必破：Builder 不再因前置意图 `needs_tool is False` 清空 allowlist）。
+  - `tests/test_lg_rag_structured_output_p2.py:121-140` 与 `tests/test_lg_rag_supervisor_capability_catalog.py:143`（`supervisor_fallback` 元数据断言）→ **逐条处置**：属重规划沿用后缀分支者**保持绿**（FP-5 回归）；属首次失败静默单 rag 旧语义者**转红改写**（D2 改 `error.stage=supervisor_plan`）。
+  - `tests/test_lg_rag_sse_stream.py:32,289` · `tests/test_lg_rag_sse_run_worker.py:66,135,199,252,500` · `tests/test_lg_rag_sse_disconnect_completion.py:24`（假流夹具 yield `intent_node` 事件）→ **夹具同步**（D1 摘节点后夹具同步 · 不构成行为断言变更）。
+  - `tests/test_strategy_scenario.py`（`scenario_trim`/`intent_fallback` 24 命中）→ **逐条确认**：`scenario_trim` 纯函数用例预期**保持绿**；`_apply_scenario_stage` 相关用例（`:193-280`）逐条核对后标注处置。
 
 ## 依赖
 
@@ -153,6 +160,7 @@ supervisor 图改为 **无 LLM 的 Builder → supervisor**；**首次规划**�
 3. 上列锚点文件全文相关段（禁信转述 · 行号按实校正）。
 4. `docs/standards/CODING_BACKEND_L2_v1_zh.md`。
 5. freeze 先例：`docs/tasks/done/task_lg_rag_sse_run_worker.md` · `docs/tasks/done/task_lg_rag_sse_disconnect_completion.md`（同 freeze 扩 `error.stage` 字面量 + 回写 05 纪律）。
+6. 30 注意（20-task-audit R1 非阻塞 N-a/N-b）：`builder.py:147` 为 docstring 行（代码行 `:162-163`），锚点行号按实校正；`nodes.py:1098-1112` 空 allowlist 预检分支（`supervisor_empty_allowlist` → 单 rag `t1`）非「规划 LLM 失败」路径，**本波语义不动**，勿与 D2「默认不写单 rag」混淆。
 
 ## 思考轮控制
 
@@ -198,6 +206,7 @@ supervisor 图改为 **无 LLM 的 Builder → supervisor**；**首次规划**�
 - **三条 00 定夺逐条可追溯**（文中均标注「00 定夺 2026-10-19」）：① web 同步 → 「下游/后续棒」节 + 非范围；② N2 归 error → FP-1b + TC2b + D2 分叉判据行；③ N1/N3/N4 按建议 → TC6（S4 显式）· TC9（05 §4.2 + 01_modules.md 回写）· 本 invoke 目录文件已在册（N4 由 00 补 `invoke_20261019_00_start.md` 闭环）。
 - **R1-N1/N2/N3 落点**：N1→TC6 · N2→FP-1b/TC2b · N3→TC9 + 元信息 freeze_id 行。
 - **闸纪律**：HG-AUDIT-R1=pending 在表 · R5 residual 同；本帽未改 `app/` / `tests/`。
+- **K7 旧测 grep 影响面（20-task-audit R1-B1 补列）**：已列 TC11——枚举 R1 审查第二节实证清单逐项标注「转红改写 / 保持绿 / 夹具同步 / 逐条确认」，并声明枚举外旧测默认保绿（误删合法回归即红）；本次为纯文档增量，范围实质与其他字段不动。
 
 ---
 
@@ -205,4 +214,5 @@ supervisor 图改为 **无 LLM 的 Builder → supervisor**；**首次规划**�
 
 | 日期 | 说明 |
 |------|------|
+| 2026-10-19 | 10-task 补列（20-task-audit R1-B1：TC11 旧测 grep 影响面 + 自检结论行 · 纯文档增量 · 范围实质与其他字段不动） |
 | 2026-10-19 | 10-task 草稿（吸收 R1 审查 N1/N3/N4 + 三条 00 定夺）：范围承 SPEC D1/D2/D3 · failure_paths FP-1~FP-9（FP-1b=N2 归 error）· 验收 TC1–TC10（TC6=S4 显式断言 · TC9=05 §4.2+01_modules 回写）· 下游棒=ops-desk-web 展示同步 · HG-AUDIT-R1=pending |
