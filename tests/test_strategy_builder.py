@@ -117,9 +117,17 @@ async def test_strategy_builder_restricted_config():
 
 
 @pytest.mark.asyncio
-async def test_builder_needs_tool_false_empty_allowlist():
-    """S2：needs_tool=False → 空 capability allowlist。"""
+async def test_builder_needs_tool_false_still_intersects_candidates():
+    """D3/TC6：needs_tool=False 不再清空 allowlist；allowlist = 基线可见 ∩ candidates。
+
+    supervisor-first 主路径不写 intent；IntentV1 仅 router/basic 轨使用，
+    不能凭 needs_tool=False 把 capability 面裁空（意图不再可信源）。
+    """
     with (
+        patch(
+            "app.ops.strategy.builder.get_candidate_capability_ids",
+            return_value=["utc_now_iso", "bogus_tool"],
+        ),
         patch("app.ops.strategy.builder._record_builder_span"),
         patch("app.ops.strategy.builder.trace_span", return_value=_span_cm()),
     ):
@@ -136,8 +144,26 @@ async def test_builder_needs_tool_false_empty_allowlist():
                 },
             }
         )
-    assert out["allowed_capability_ids"] == []
+    assert out["allowed_capability_ids"] == ["utc_now_iso"]
     assert out["allowed_skill_ids"] == []
+
+
+@pytest.mark.asyncio
+async def test_builder_no_intent_uses_baseline_intersection():
+    """D3/TC6：无 intent（主路径形态）→ allowlist ≡ 基线可见 ∩ candidates；
+    且不写回 intent / intent_fallback（主路径不当 intent_fallback=true）。"""
+    with (
+        patch(
+            "app.ops.strategy.builder.get_candidate_capability_ids",
+            return_value=["utc_now_iso", "bogus_tool"],
+        ),
+        patch("app.ops.strategy.builder._record_builder_span"),
+        patch("app.ops.strategy.builder.trace_span", return_value=_span_cm()),
+    ):
+        out = await strategy_builder_node({"messages": [HumanMessage(content="q")]})
+    assert out["allowed_capability_ids"] == ["utc_now_iso"]
+    assert "intent" not in out
+    assert "intent_fallback" not in out
 
 
 @pytest.mark.asyncio

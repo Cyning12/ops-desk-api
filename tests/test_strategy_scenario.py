@@ -256,6 +256,50 @@ def test_enforce_fallback_empties_with_audit(monkeypatch, base_visible, caplog):
     assert sc.REASON_INTENT_FALLBACK in caplog.text
 
 
+@pytest.mark.parametrize("mode", ["off", "observe", "enforce"])
+def test_no_intent_short_circuits_all_modes(monkeypatch, base_visible, caplog, mode):
+    """D3/TC6：无 intent（supervisor-first 主路径形态）→ S1–S5 全短路不裁。
+
+    visible 进=出逐 id 对拍；enforce 档同样短路（含 S4 缺省 risk_hint→high
+    收紧路径——无 intent 即无裁剪依据，只放行基线可见集）；零 warning 台账。
+    """
+    monkeypatch.setenv(sc.ENV_SCENARIO_MODE, mode)
+    with caplog.at_level(logging.WARNING, logger="app.ops.strategy.scenario"):
+        out = _apply_scenario_stage(base_visible, {})
+    assert [s.capability_id for s in out] == [s.capability_id for s in base_visible]
+    assert "visibility_scenario" not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_builder_enforce_no_intent_passes_baseline_through(monkeypatch, caplog):
+    """D3/TC6（Builder 集成）：enforce 档 + 无 intent → allowlist ≡ 基线 ∩ candidates，
+    不被 S4 缺省 high 收紧路径裁掉 medium（收紧≠基线∩candidates 即红）。"""
+    monkeypatch.setenv(sc.ENV_SCENARIO_MODE, "enforce")
+    register(
+        CapabilitySpec(
+            capability_id=MEDIUM_CAP,
+            kind="local_fn",
+            description="中风险读探针",
+            risk_level="medium",
+            side_effect="read",
+        ),
+        LocalFnAdapter(lambda args: {"echo": args}),
+    )
+    state = {"messages": [HumanMessage(content="q")]}
+    with (
+        patch(
+            "app.ops.strategy.builder.get_candidate_capability_ids",
+            return_value=[MEDIUM_CAP, "utc_now_iso"],
+        ),
+        patch("app.ops.strategy.builder._record_builder_span"),
+        patch("app.ops.strategy.builder.trace_span", return_value=_span_cm()),
+        caplog.at_level(logging.WARNING, logger="app.ops.strategy.scenario"),
+    ):
+        out = await strategy_builder_node(state)
+    assert sorted(out["allowed_capability_ids"]) == sorted([MEDIUM_CAP, "utc_now_iso"])
+    assert "visibility_scenario" not in caplog.text
+
+
 # ---------------------------------------------------------------------------
 # Builder 集成 + supervisor 交集输入 = 场景维后有效可见集（B-1）
 # ---------------------------------------------------------------------------

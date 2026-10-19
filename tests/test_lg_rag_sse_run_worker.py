@@ -63,7 +63,7 @@ async def test_tc_b1_subscriber_aclose_worker_continues_to_done() -> None:
     async def _astream(
         query: str, *, thread_id: str = "t", **kw: Any
     ) -> AsyncIterator[dict[str, Any]]:
-        yield {"intent_node": {"intent": {"domain": "kb", "needs_tool": False}}}
+        yield {"strategy_builder": {"allowed_capability_ids": []}}
         await gate.wait()
         yield {"aggregator": {"messages": [AIMessage(content="后半段答案")]}}
 
@@ -89,7 +89,7 @@ async def test_tc_b1_subscriber_aclose_worker_continues_to_done() -> None:
         saw_progress = False
         try:
             async for raw in agen:
-                if "node.progress" in raw or "intent" in raw:
+                if "node.progress" in raw:
                     saw_progress = True
                     break
             assert saw_progress
@@ -132,7 +132,7 @@ async def test_tc_b1_replay_after_disconnect_includes_tail(
     async def _astream(
         query: str, *, thread_id: str = "t", **kw: Any
     ) -> AsyncIterator[dict[str, Any]]:
-        yield {"intent_node": {"intent": {"domain": "kb", "needs_tool": False}}}
+        yield {"strategy_builder": {"allowed_capability_ids": []}}
         await gate.wait()
         yield {"aggregator": {"messages": [AIMessage(content="replay后半段")]}}
 
@@ -196,7 +196,7 @@ async def test_tc_b2_worker_failure_emits_worker_failed_stage() -> None:
     async def _boom(
         query: str, *, thread_id: str = "t", **kw: Any
     ) -> AsyncIterator[dict[str, Any]]:
-        yield {"intent_node": {"intent": {"domain": "kb"}}}
+        yield {"strategy_builder": {"allowed_capability_ids": []}}
         raise RuntimeError("injected worker failure")
         yield  # pragma: no cover
 
@@ -249,7 +249,7 @@ async def test_tc_b4_in_flight_refuse_zero_diff(seeded_maintainer) -> None:
     async def _hang(
         query: str, *, thread_id: str = "t", **kw: Any
     ) -> AsyncIterator[dict[str, Any]]:
-        yield {"intent_node": {"intent": {"domain": "kb"}}}
+        yield {"strategy_builder": {"allowed_capability_ids": []}}
         await hang.wait()
 
     with patch(
@@ -497,7 +497,7 @@ async def test_tc_b5_active_worker_not_compensated(seeded_maintainer) -> None:
     async def _hang(
         query: str, *, thread_id: str = "t", **kw: Any
     ) -> AsyncIterator[dict[str, Any]]:
-        yield {"intent_node": {"intent": {"domain": "kb"}}}
+        yield {"strategy_builder": {"allowed_capability_ids": []}}
         await hang.wait()
 
     with patch(
