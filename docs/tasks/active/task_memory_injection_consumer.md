@@ -35,7 +35,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
 | HG-SPEC-SIGNOFF | approved | 10, 20 | 2026-10-19 维护者会话签收 · 见 SPEC 闸表与审查文（R1 fail → v0.1 → R2 终裁 conditional_pass · R2-N1~N3 移交本 task 吸收） |
-| **HG-AUDIT-R1** | **pending** | 30 | 仅维护者可签（维护者已授权 00 代签后续文档闸 · **落闸动作在 20-task-audit 之后由 00 执行**；本帽起草时写 pending · 00/AI 不得在本棒代签）；签前 30 拒改码（含 Phase A 的 tests/ 新增） |
+| **HG-AUDIT-R1** | **approved** | 30 | 2026-10-19 维护者授权 00 代签（会话原话「授权00签收后续文档」）· 依据审查文 `docs/harness/reviews/task_memory_injection_consumer_audit_R1_20261019.md`（R1=conditional_pass · 阻塞 0 · 锚点 30 处零漂移 · N1 未覆盖象限径按 FP-9 处置 / N2 TC5 收紧白名单 / N3 开关锚点行号按实校正，三条均 30 吸收） |
 | HG-GRAPH-MODULES | approved | 30 | `docs/_tech_graph/l1/01_modules.md` 闸登记表在册 approved（`memory` 行 :36 · `lg_rag` 行 :35 起在册）· graph_change_layer=none 预期不再签；30 实判越出 → 回本表补签 |
 | **HG-PHASE-B-DECISION** | **pending** | 30（Phase B） | **Phase B 显式裁定点**：Phase A 实证表落 invoke 后，由维护者（或经授权 00）按 Phase A 证据裁定结局分支并在本表 + invoke 裁定记录位落签（写明「因 Phase A 实证行 X → 裁定结局 Y」）；30 **不得临场发明表外方案**（承 SPEC §2 自锁条款原样继承）；Phase A（观测-only）不受本闸阻塞 |
 
