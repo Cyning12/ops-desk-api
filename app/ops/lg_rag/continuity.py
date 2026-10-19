@@ -15,6 +15,13 @@ active facts 渲染为**系统消息尾部独立块**（`[已知事实]`，每�
 经验渲染为**独立 SystemMessage 分节**（`[相似经验]`，与 `[已知事实]`/
 `[用户偏好]` 物理分节），三闸预算（条数默认 3 · 单条 ≤200 · 整块 ≤800
 尾部截断）；召回失败降级不注入。
+
+多轮指代消解查询重写（query-coref-rewrite D1）在同一装配面、两条装配分支
+（session_summary on/off）**之前**一次算出 resolved_query：**默认关**
+（LG_RAG_QUERY_REWRITE_ENABLED），off / 首轮无历史 / 任何失败均原文零 diff
+（降级经 span 标记与「没走」区分）；末位 HumanMessage 与记忆向量召回统一
+吃 resolved_query（先重写后召回 · 禁颠倒）；落盘与 run.start 仍记原文
+（本面以下零感知）。实现真值在同包子模块 app.ops.lg_rag.query_rewrite。
 """
 
 from __future__ import annotations
@@ -27,6 +34,7 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
+from app.ops.lg_rag.query_rewrite import maybe_rewrite_query
 from app.ops.prompts.slots import (
     SlotIsolationError,
     assert_slots_declared,
@@ -425,9 +433,14 @@ async def _assemble_graph_messages_with_memory_impl(
     span metadata 记 `memory_facts_injected=N`；有 preference 时并列
     `memory_preferences_injected=M`（tracing 未开时静默 no-op）。
     """
+    # query-coref-rewrite D1（先重写后召回 · 钉死顺序）：resolved_query 在两条
+    # 装配分支（session_summary on/off）之前一次算出；末位 HumanMessage（经下方
+    # 两分支统一）与记忆向量召回统一吃它；off / 首轮无历史 / 任何失败 → 原文
+    # 零 diff（降级经 span query_rewrite_fallback=true 与「没走」区分）。
+    resolved_query = await maybe_rewrite_query(query, history_turns)
     if session_summary_enabled():
         messages = await _assemble_with_session_summary(
-            query,
+            resolved_query,
             history_turns,
             thread_id=thread_id,
             max_full_turns=max_full_turns,
@@ -435,7 +448,7 @@ async def _assemble_graph_messages_with_memory_impl(
         )
     else:
         messages = assemble_graph_messages(
-            query,
+            resolved_query,
             history_turns,
             max_full_turns=max_full_turns,
             group_size=group_size,
@@ -454,7 +467,7 @@ async def _assemble_graph_messages_with_memory_impl(
                     facts = await memory_service.recall_with_vector(
                         tenant_id.strip(),
                         user_id.strip(),
-                        query,
+                        resolved_query,
                         limit=memory_facts_max_items(),
                     )
                 else:

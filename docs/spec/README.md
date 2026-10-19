@@ -31,21 +31,27 @@
 | `memory-compliance-delete` | [`memory-compliance-delete/`](./memory-compliance-delete/) | **signed · 已实施**（2026-09-22 · PR #163 已合 master · 40 核验 22/22 PASS · 默认干跑+双闸门） | 记忆合规物理删除权 M4（purge_by_user · 两通路零残留 · 审计记动作不记内容） |
 | `multi-replica-verify` | [`multi-replica-verify/`](./multi-replica-verify/) | **signed · 已实施**（2026-09-22 · PR #165 已合 master · 40 核验 26/26 PASS · verify track 零生产码） | L0 多副本验证（双进程 pytest + 部署实测 + 进程内状态边界清单 8 条目） |
 | `chat-history-hitl-ux` | [`chat-history-hitl-ux/`](./chat-history-hitl-ux/) | draft（2026-09-30 · 20-spec-audit → HG-SPEC-SIGNOFF） | 会话历史 + 中断续看 + HITL 审批面（事件表真源 · SSE 零动 · 前端专项 SPEC 另立） |
+| `query-coref-rewrite` | [`query-coref-rewrite/`](./query-coref-rewrite/) | **signed**（2026-10-19 · HG-SPEC-SIGNOFF approved · R1 pass · 待 00 出 task） | 多轮指代消解 · 装配层查询重写（env 默认关 · 审核发现① · **建议序 1/5**） |
+| `memory-injection-consumer` | [`memory-injection-consumer/`](./memory-injection-consumer/) | **signed**（2026-10-19 · HG-SPEC-SIGNOFF approved · R2 conditional_pass · 待 00 出 task） | memory 注入消费者实证与处置（先证后修 · 审核疑点 #2 · **建议序 2/5**） |
+| `scenario-stage-rewire` | [`scenario-stage-rewire/`](./scenario-stage-rewire/) | **signed**（2026-10-19 · HG-SPEC-SIGNOFF approved · **裁定 (a) 摘除** · 待 00 出 task） | scenario stage 恒短路处置（已裁摘除 · 审核疑点 #3 · **建议序 3/5**） |
+| `delegation-naming-boundary` | [`delegation-naming-boundary/`](./delegation-naming-boundary/) | **signed**（2026-10-19 · HG-SPEC-SIGNOFF approved · R2 pass · 待 00 出 task） | 委派令牌正名 + write 护栏解耦（零行为变更铁律 · 名实审查 · **建议序 4/5**） |
+| `tech-graph-flow-resync` | [`tech-graph-flow-resync/`](./tech-graph-flow-resync/) | **signed**（2026-10-19 · HG-SPEC-SIGNOFF approved · **裁定 D2-a 续冻** · 前置依赖建议序 1–4） | lg_rag 图谱 flow/l2 重生成（supervisor-first 对拍 5 差异 · **建议序 5/5 最后做**） |
 
 ---
 
 ## 占位 SPEC（待启动 · 含接续指引）
 
-> **用法**：按「建议序」选下一项 → 新会话声明「接续 <slug>」→ 10-spec 补全（R0–R5/方案对比/failure_paths/验收断言化）→ 人签 → 标准五棒流。每个占位 SPEC 内含范围草案 + 关键锚点（file 指引）+ 验收方向 + 接续指引。
+> **用法**：按「建议序」选下一项 → 新会话声明「接续 」→ 10-spec 补全（R0–R5/方案对比/failure_paths/验收断言化）→ 人签 → 标准五棒流。每个占位 SPEC 内含范围草案 + 关键锚点（file 指引）+ 验收方向 + 接续指引。
 
 **占位队列已清零（2026-09-22）**：9 个占位 SPEC 全部完成五棒流并合入 master——llm-layer-hardening（#148）· memory-embedding-backfill（#151）· continuity-dedup（#153）· prompt-asset-roadmap 阶段一（#155 · 阶段二三待后续波次）· memory-preference-profile（#157）· session-summary-fallback（#159）· security-hardening W1（#161 · W2–W4 待后续波次）· memory-compliance-delete（#163）· multi-replica-verify（#165）。memory-golden-eval 经 #146 合入（维护者裁决）。
 
 > 排序原则（手册 §3.4/B.1）：缺了会不会造成**不可逆或静默**的错 → 承重墙缺角优先；放大器按迭代瓶颈排；成熟度标志等量级。
 
 ---
+
 ## 历史债 · 根级裸 SPEC
 
-> **已清零（2026-09-11 · `task_specwave_cleanup_2_1_3`）**：原 8 条根级裸 SPEC 全部迁入专属夹（见上表 · 夹内保留原文件名）；`spec-wave check` 零 WARN。感知通道维持：`check` WARN 再发即新增债。
+> **已清零（2026-09-11 ·** `task_specwave_cleanup_2_1_3`**）**：原 8 条根级裸 SPEC 全部迁入专属夹（见上表 · 夹内保留原文件名）；`spec-wave check` 零 WARN。感知通道维持：`check` WARN 再发即新增债。
 
 ---
 
@@ -64,3 +70,5 @@
 | 2026-09-21 | `memory-facts-p1` signed → 已实施（task 闭环 · 40 PASS · 归档 done） |
 | 2026-09-21 | 新增 `memory-golden-eval`（signed · M1）+ 9 个占位 SPEC（含接续指引 · 建议序 2–10） |
 | 2026-09-21 | `memory-golden-eval` 已实施（task 闭环 · 40 PASS · 归档 done · 真跑裁决待维护者） |
+| 2026-10-19 | 新增 5 份 draft SPEC（supervisor 全流程审核产出 · 建议序 1→5：query-coref-rewrite / memory-injection-consumer / scenario-stage-rewire / delegation-naming-boundary / tech-graph-flow-resync · 全部待 HG-SPEC-SIGNOFF） |
+| 2026-10-19 | 5 份 SPEC 全部 signed（维护者会话签收 · 20-spec-audit 审查 5 份落 `docs/harness/reviews/` · #3 裁定 (a) 摘除 · #5 裁定 D2-a 续冻）；按建议序进入 task 阶段 |

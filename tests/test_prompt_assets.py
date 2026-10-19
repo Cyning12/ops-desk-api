@@ -31,6 +31,8 @@ EXPECTED_IDS = {
     # session-summary-fallback D1：新增摘要资产（B1 漏扫本文件集合等式断言 →
     # 处置=改编：集合等式口径不变，仅登记新模板；见 30 invoke B1 回填）
     "session.summary.system": "v1",
+    # query-coref-rewrite D2：新增指代消解重写资产（集合等式口径不变 · 仅登记新模板）
+    "lg_rag.query_rewrite.system": "v1",
 }
 
 #: 渲染变量锚点（string.Template 语法）；除此之外 body 不得含 `$`

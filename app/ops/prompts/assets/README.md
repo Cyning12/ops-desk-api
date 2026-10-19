@@ -31,6 +31,7 @@
 | lg_rag.aggregator.system | v1 | 无 |
 | memory.extract.system | v4 | 无 |
 | session.summary.system | v1 | 无 |
+| lg_rag.query_rewrite.system | v1 | 无 |
 
 新增变量 = 改调用方代码，属开发变更，不走本目录文案路径。
 特例（本目录不覆盖 · SPEC 设计纪律 3）：`rag/grader.py`（env 切版实验面）·
