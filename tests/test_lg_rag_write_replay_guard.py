@@ -292,7 +292,7 @@ _BASE = "d337486"
 # 00 裁定 O1（语义照抄先例）：波次窗 = _BASE.._WAVE_TIP（合并 commit · 由 00
 # 于 CLOSE 时钉死）。合并 commit 未定期间以「钉锚后仅本波次文件」判定逻辑
 # 等价处理；_WAVE_TIP 钉死后 _touched_in_wave 恢复全量历史判定。
-_WAVE_TIP: str | None = None
+_WAVE_TIP: str | None = "c17e63b"  # 00 钉锚（2026-10-20 · PR #288 合并 commit · #287 先例）
 
 _APP_ALLOWED = frozenset(
     {
