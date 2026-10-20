@@ -37,7 +37,7 @@
 | HG-SPEC-SIGNOFF | approved | 10, 20 | 2026-10-19 维护者会话签收 · 见 SPEC 闸表与审查文（R1 fail → v0.1 → R2 终裁 conditional_pass · R2-N1~N3 移交本 task 吸收） |
 | **HG-AUDIT-R1** | **approved** | 30 | 2026-10-19 维护者授权 00 代签（会话原话「授权00签收后续文档」）· 依据审查文 `docs/harness/reviews/task_memory_injection_consumer_audit_R1_20261019.md`（R1=conditional_pass · 阻塞 0 · 锚点 30 处零漂移 · N1 未覆盖象限径按 FP-9 处置 / N2 TC5 收紧白名单 / N3 开关锚点行号按实校正，三条均 30 吸收） |
 | HG-GRAPH-MODULES | approved | 30 | `docs/_tech_graph/l1/01_modules.md` 闸登记表在册 approved（`memory` 行 :36 · `lg_rag` 行 :35 起在册）· graph_change_layer=none 预期不再签；30 实判越出 → 回本表补签 |
-| **HG-PHASE-B-DECISION** | **pending** | 30（Phase B） | **Phase B 显式裁定点**：Phase A 实证表落 invoke 后，由维护者（或经授权 00）按 Phase A 证据裁定结局分支并在本表 + invoke 裁定记录位落签（写明「因 Phase A 实证行 X → 裁定结局 Y」）；30 **不得临场发明表外方案**（承 SPEC §2 自锁条款原样继承）；Phase A（观测-only）不受本闸阻塞 |
+| **HG-PHASE-B-DECISION** | **approved（裁定 ④b）** | 30（Phase B） | **Phase B 显式裁定点**：**2026-10-20 维护者会话裁定——因 Phase A 实证（三模式 9 个 LLM 消费点全零收到注入块 · 结局④前提命中 · 见 invoke_20261019_30_phaseA_spy_matrix.md 实证矩阵）→ 裁定结局 ④b（全模式收窄 + 功能休眠声明）**；维护者同示：④a（扩展接线）留待未来真实构建 memory-facts 时另立 task，对接文档 docs/tasks/deferred/task_memory_facts_build_4a.md（开工前须先做遗留问题分析）；30 **不得临场发明表外方案**（承 SPEC §2 自锁条款原样继承）；Phase A（观测-only）不受本闸阻塞 |
 
 ---
 
