@@ -453,7 +453,7 @@ _BANNED_PREFIXES = ("scripts/", "alembic/")
 # 文件」判定逻辑等价处理——本闸在波次内即钉死改动面 ⊆ 声明面（_allowed），
 # 故越界路径只可能来自后续波次（foreign → 可审计 skip）；_WAVE_TIP 钉死后
 # _touched_in_wave 恢复全量历史判定（波次窗内未登记面被触碰 → fail 保牙）。
-_WAVE_TIP: str | None = None
+_WAVE_TIP: str | None = "63bad3d"  # 00 钉锚 2026-10-20：#3 合并 commit（PR #286）· 态 2 牙全量生效
 
 
 def _allowed(path: str) -> bool:
