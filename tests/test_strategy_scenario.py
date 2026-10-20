@@ -433,6 +433,9 @@ _APP_ALLOWED = {
 }
 _TREE_ALLOWED_FILES = {
     "tests/test_strategy_scenario.py",
+    # 00 裁定（2026-10-20 · 跨波次基线修正）：#2 白名单闸追加第四态
+    #（钉锚命中 ∧ 越出面全为后续波次产物 → 可审计 skip），触及本文件。
+    "tests/test_memory_injection_consumer.py",
     "docs/_tech_graph/l1/01_modules.md",
     "docs/guides/GUIDE_env_inventory_v1.md",
     "docs/tasks/active/task_scenario_stage_rewire.md",

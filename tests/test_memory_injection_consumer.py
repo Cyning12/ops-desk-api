@@ -530,6 +530,11 @@ def test_markers_match_render_truth() -> None:
 # ---------------------------------------------------------------------------
 
 _BASE = "414270d"
+# 波次尖端：PR #285 合并后 master（51e75c9）——本闸使命完成时点。
+# 跨波次基线修正（00 裁定 2026-10-20）：钉锚命中后 diff 越出面若全为
+# 51e75c9 之后合入的后续任务产物 → 可审计 skip；越出面含本波次
+# （_BASE.._WAVE_TIP）内触碰文件 → 仍 fail（回归牙保留）。
+_WAVE_TIP = "51e75c9"
 _APP_ALLOWED = {
     "app/ops/lg_rag/continuity.py",
     "app/ops/memory/README.md",
@@ -550,6 +555,9 @@ _UPSTREAM_SIGN_PATHS = {
     "docs/tasks/deferred/task_memory_facts_build_4a.md",
     "docs/tasks/PRIORITY_DEFERRED.md",
     "docs/harness/reviews/task_memory_injection_consumer_review40_20261020.md",
+    # CLOSE 移动面补登记（55424d4 [00] 将 task 自 active/ 移至 done/ ·
+    # 00 落签面同类 · 00 裁定 2026-10-20 跨波次基线修正）：
+    "docs/tasks/done/task_memory_injection_consumer.md",
 }
 _BANNED_PREFIXES = ("scripts/", "alembic/")
 
@@ -580,6 +588,21 @@ def _git_ok(root: Path, *args: str) -> tuple[bool, str]:
         ["git", *args], cwd=root, capture_output=True, text=True, check=False
     )
     return proc.returncode == 0, proc.stdout.strip()
+
+
+def _touched_in_wave(root: Path, path: str) -> bool:
+    """path 是否被本波次（_BASE.._WAVE_TIP）内提交触碰（00 裁定第四态判定键）。
+
+    _WAVE_TIP 不可解析（如波次合并前 CI 对象库无该提交）或 log 异常 →
+    保守按波内处理（fail 牙保留 · 绝不静默 skip）。
+    """
+    ok, _ = _git_ok(root, "rev-parse", "--verify", f"{_WAVE_TIP}^{{commit}}")
+    if not ok:
+        return True
+    ok, out = _git_ok(
+        root, "log", "--format=%H", f"{_BASE}..{_WAVE_TIP}", "--", path
+    )
+    return (not ok) or bool(out)
 
 
 def _resolve_base(root: Path) -> str:
@@ -622,6 +645,16 @@ def test_phase_b_diff_whitelist() -> None:
     untracked = set(_git(root, "ls-files", "--others", "--exclude-standard"))
 
     violations = sorted(p for p in changed if not _allowed(p))
+    if violations and base == _BASE:
+        # 第四态（00 裁定 2026-10-20）：钉锚命中 ∧ diff 越出白名单 ∧ 越出面
+        # 全非本波次产物（基线后后续任务合入）→ 可审计 skip；
+        # 越出面含本波次（_BASE.._WAVE_TIP）内触碰文件 → 仍 fail（回归牙）。
+        internal = [p for p in violations if _touched_in_wave(root, p)]
+        assert not internal, f"diff 越白名单（含本波次内文件被改动）: {internal}"
+        pytest.skip(
+            "TC5 白名单闸使命已于 PR #285 完成：基线后已有后续任务合入 · "
+            f"实测越界文件清单（均后续波次产物）: {violations}"
+        )
     assert not violations, f"diff 越白名单: {violations}"
     banned = sorted(p for p in changed | untracked if _banned(p))
     assert not banned, f"禁改面（scripts/ alembic/ 及其余 app/）出现改动: {banned}"
