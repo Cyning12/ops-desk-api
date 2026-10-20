@@ -1263,10 +1263,10 @@ async def supervisor_node(state: LgRagState) -> dict:
     issued = stamped.get("subtasks") or []
     # Host V1-A · A2：声明∩裁剪（只收窄不放宽 · off 模式整段短路零 diff）。
     # 有效 scope 写 state，作签发 capability_set 上界；越界剔除 + 截断留痕。
-    # Host V1-B（R1 审查 B-1 澄清钉死）：交集输入 allowed_ids 已是**场景维后
-    # 有效可见集**——Builder 两阶段（基线→scenario_trim）收窄 allowlist 后经
+    # 交集输入 allowed_ids 即 Builder 直出 allowlist（candidates ∩ 基线可见集
+    # 直接求交 · scenario 阶段已摘除 2026-10-20），经
     # _resolve_supervisor_visible_caps 传导至此 ⇒ delegation_scope =
-    # requested_scope ∩ 有效可见集（三重交集 · 委派令牌不越场景维）。
+    # requested_scope ∩ allowlist（只收窄不放宽 · 委派令牌不越 allowlist）。
     scope_span: dict = {}
     if _delegation_active() and not fallback and subtasks:
         requested_scope = _parse_requested_scope(raw)

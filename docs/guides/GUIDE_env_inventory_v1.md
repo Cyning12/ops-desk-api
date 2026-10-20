@@ -32,7 +32,7 @@
 | `LG_RAG_REACT_SATISFACTION` | lg_rag | `—（代码/动态）` |  |
 | `LG_RAG_ROUTER_MODEL` | lg_rag | `—（代码/动态）` |  |
 | `LG_RAG_ROUTER_PROVIDER` | lg_rag | `—（代码/动态）` |  |
-| `LG_RAG_VISIBILITY_SCENARIO_MODE` | lg_rag | `—（代码/动态）` | V1-A~C |
+| `LG_RAG_VISIBILITY_SCENARIO_MODE` | lg_rag | `—（代码/动态）` | V1-A~C · **已废弃 deprecated（2026-10-20 · scenario 阶段摘除 · 生产零消费 · scenario.py 本体 dormant 保留）** |
 | `SESSION_COOKIE_SECURE` | lg_rag | `false` |  |
 | `SESSION_SUMMARY_ENABLED` | lg_rag | `—（代码/动态）` |  |
 | `BAILIAN_API_KEY` | llm | `sk-xxxxxxxx` |  |

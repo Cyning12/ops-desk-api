@@ -1,4 +1,13 @@
-"""场景维第二阶段裁剪（Host V1-B · scenario_trim）。
+"""[dormant · 2026-10-20] 场景维第二阶段裁剪（Host V1-B · scenario_trim）。
+
+**本模块已 dormant（休眠保留 · 2026-10-20 · task scenario-stage-rewire）**：
+生产消费侧（strategy Builder 内调用点与 import）已摘除，全仓零生产
+调用方；env LG_RAG_VISIBILITY_SCENARIO_MODE 已废弃（2026-10-20 ·
+生产读取调用随摘除删除，本文件内 os.environ.get 仅为 dormant 本体
+残留，无任何生产效应）。模块本体保留仅供考古/复用参考；**复用须另立
+SPEC 走全流程**，禁止直接接线。
+
+（以下为摘除前原始设计文档，保留备查）
 
 SPEC：docs/spec/host-v1-visibility-scenario-policy/SPEC-host-v1-visibility-scenario-policy_v0.md（signed）。
 
