@@ -336,8 +336,8 @@ def _spec(cid, *, side_effect="read", kind="local_fn"):
     return SimpleNamespace(capability_id=cid, side_effect=side_effect, kind=kind)
 
 
-def test_auto_approve_readonly_in_scope():
-    ok, _ = dl.auto_approve_ok([_spec("a")], effective_scope={"a", "b"})
+def test_issuance_policy_allows_readonly_in_scope():
+    ok, _ = dl.issuance_policy_allows([_spec("a")], effective_scope={"a", "b"})
     assert ok is True
 
 
@@ -350,14 +350,14 @@ def test_auto_approve_readonly_in_scope():
         ({"kind": "cli"}, {"a"}),
     ],
 )
-def test_auto_approve_denies_write_and_sandbox_cli(spec_kwargs, scope):
-    ok, why = dl.auto_approve_ok([_spec("a", **spec_kwargs)], effective_scope=scope)
+def test_issuance_policy_allows_denies_write_and_sandbox_cli(spec_kwargs, scope):
+    ok, why = dl.issuance_policy_allows([_spec("a", **spec_kwargs)], effective_scope=scope)
     assert ok is False
     assert why
 
 
-def test_auto_approve_denies_out_of_scope():
-    ok, _ = dl.auto_approve_ok([_spec("a")], effective_scope={"b"})
+def test_issuance_policy_allows_denies_out_of_scope():
+    ok, _ = dl.issuance_policy_allows([_spec("a")], effective_scope={"b"})
     assert ok is False
 
 

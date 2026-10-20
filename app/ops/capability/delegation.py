@@ -476,7 +476,7 @@ def issue_token(
 # ---------------------------------------------------------------------------
 
 
-def auto_approve_ok(
+def issuance_policy_allows(
     specs: list[Any],
     *,
     effective_scope: set[str] | frozenset[str],

@@ -465,9 +465,11 @@ def _allowed(path: str) -> bool:
 
 
 def _banned(path: str) -> bool:
-    if path.startswith(_BANNED_PREFIXES):
-        return True
-    return path.startswith("app/") and path not in _APP_ALLOWED
+    # 00 裁定（2026-10-20 · 跨波次碰撞修正 · #4 delegation-naming-boundary）：
+    # 前置硬 fail 仅限 _BANNED_PREFIXES；app/ 白名单越界一律走下波次分类
+    # （foreign → 态③可审计 skip · 波内 → 态② fail 保牙）——O2 本意是禁区
+    # （scripts//alembic/）不被 skip 掩盖，而非把后续波次登记面演进钉死。
+    return path.startswith(_BANNED_PREFIXES)
 
 
 def _git(root: Path, *args: str) -> list[str]:
@@ -545,9 +547,11 @@ def test_diff_whitelist_scenario_stage_rewire() -> None:
     untracked = set(_git(root, "ls-files", "--others", "--exclude-standard"))
 
     # 00 裁定 O2（2026-10-20）：禁区断言先于第四态 skip 判定——
-    # 越界全 foreign 但含 scripts//alembic/（或其余 app/）时必须 fail 而非 skip。
+    # 越界全 foreign 但含 scripts//alembic/ 时必须 fail 而非 skip。
+    # 00 裁定（2026-10-20 · 跨波次碰撞修正 · #4）：硬 fail 面收窄至
+    # _BANNED_PREFIXES；app/ 越界改由下方 violations 走波次分类。
     banned = sorted(p for p in changed | untracked if _banned(p))
-    assert not banned, f"禁改面（scripts/ alembic/ 及其余 app/）出现改动: {banned}"
+    assert not banned, f"禁改面（scripts/ alembic/）出现改动: {banned}"
 
     violations = sorted(p for p in changed if not _allowed(p))
     if violations:
