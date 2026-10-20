@@ -33,7 +33,7 @@ modules:
     tech_modules: [lg_rag, capability]
     flows: [10_flow_lg_rag, 10_flow_capability]
     paths: [app/ops/strategy/scenario.py, app/ops/capability/]
-    future: { wave: null, gap_summary: "" }
+    future: { wave: null, gap_summary: "scenario stage 已摘除（2026-10-20 #3 · scenario.py dormant 保留 · 可见集两阶段真值走 lg_rag visibility）" }
     sources:
       - docs/discussions/agent-host-current-architecture/modules/M03_visibility-trim.md
 
@@ -94,7 +94,7 @@ modules:
     tech_modules: [memory]
     flows: []
     paths: [app/ops/memory/]
-    future: { wave: N5, gap_summary: "跨进程记忆 D3 属 v2.0；情景/事实已有默认关" }
+    future: { wave: N5, gap_summary: "注入面已休眠（2026-10-20 #2 ④b 裁定 · 实证三模式零消费 · 真构建走 DEF-005 另案）；跨进程记忆 D3 属 v2.0" }
     sources:
       - docs/discussions/agent-host-current-architecture/modules/M09_memory-layered.md
 
@@ -150,11 +150,11 @@ modules:
 
   - host_id: 15
     title: 意图解析
-    status: 已落地
+    status: 部分
     tech_modules: [lg_rag]
     flows: [10_flow_lg_rag]
     paths: [app/ops/lg_rag/, app/ops/strategy/]
-    future: { wave: null, gap_summary: "" }
+    future: { wave: null, gap_summary: "supervisor 拓扑已摘除 intent 节点（2026-10-20 #3 摘除 + #5 dormant 标注 · intent.py:52 留尸不删）；恢复/重接需另案" }
     sources:
       - docs/discussions/agent-host-current-architecture/modules/M15_intent.md
 
