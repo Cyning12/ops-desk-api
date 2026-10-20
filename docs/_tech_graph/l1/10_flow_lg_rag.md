@@ -1,13 +1,13 @@
 ---
 graph_id: 10_flow_lg_rag
-version: 2026-10-14
-generated_at: sha256-3b81f56b18d5d6dd
+version: 2026-10-20
+generated_at: sha256-f43fa3e051045cd0
 source: 10_flow_lg_rag.graph.yaml
 ---
 
 # LG RAG 旁路三模式流程（basic / router / supervisor · Critic）
 
-POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。T5：终答 answer 多帧 delta（{delta}）+ 终帧 {content, final:true}（aggregator / direct_answer 经 answer_stream.py contextvar token sink 桥 complete_stream；降级整段）。T5.1：persist 后台调度不阻塞 SSE yield。§10.6：等待 update 期间 SSE comment keepalive（不落盘、不占 seq）。§10.7：子任务 running 起步帧 + step 里程碑（progress_stream · rag_subtask astream_router + evidence step_hook · status=running/step/done）；§10.7 增补：running/step/done 帧可选 message 中文短句（subtask_message.py 确定性模板 · 截断 200 · 生成失败降级帧仍发 · 旧客户端忽略未知键）。2026-09-21：supervisor 增 subtask_join（ready=依赖全终态+步骤契约闸 consumes/produces · prefix_touch_required→hitl_required）与 observe 执行层收口（没有待发步骤不再直连 aggregator；hitl_required 真 interrupt() 挂起 → /hitl/* 批准 → hitl/resume.py Command(resume) 恢复 · 事件接同一 run_id + replay cursor）；外层 ReAct replan→supervisor / settle→aggregator 有界 LG_RAG_REACT_MAX_ROUNDS=2（Policy 类拒绝不触发 HITL）。2026-09-30 chat-history-api（B1 · task_chat_history_api）：新增只读历史端点 GET /api/ops/chat/threads 与 GET /api/ops/chat/threads/{thread_id}/history（lg_rag/history_router.py · 事件表 ops_lg_rag_run_events 真源 · 当前用户聚合 · 跨用户 404 · cursor/limit 分页 · 聚合超时 10s→504 · answer 截断 32000）；裁定 A1：run.start payload 增可选 query 键（非新 event_type · freeze lg-rag-sse-v1 语义不动 · 存量旧 run 无键按 FP-4 标题降级）；聚合纯函数 lg_rag/history.py + event_store.py 只读扩展；零新表/迁移/SSE 事件类型。2026-10-14 lg-rag-sse-run-worker（Wave B）：RunWorker（run_worker.py · 进程内 Task · run_id 单飞）持有 astream→event_store；StreamSubscriber（sse_subscribe.py）只读 fanout；HTTP 断连不 cancel worker；成功普通 done · 失败 error{stage:lg_rag.worker_failed}；补偿可 disconnected（不赌 ASGI）；真在飞 409 / HITL waiting_approval 零 diff。
+POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。T5：终答 answer 多帧 delta（{delta}）+ 终帧 {content, final:true}（aggregator / direct_answer 经 answer_stream.py contextvar token sink 桥 complete_stream；降级整段）。T5.1：persist 后台调度不阻塞 SSE yield。§10.6：等待 update 期间 SSE comment keepalive（不落盘、不占 seq）。§10.7：子任务 running 起步帧 + step 里程碑（progress_stream · rag_subtask astream_router + evidence step_hook · status=running/step/done）；§10.7 增补：running/step/done 帧可选 message 中文短句（subtask_message.py 确定性模板 · 截断 200 · 生成失败降级帧仍发 · 旧客户端忽略未知键）。2026-09-21：supervisor 增 subtask_join（ready=依赖全终态+步骤契约闸 consumes/produces · prefix_touch_required→hitl_required）与 observe 执行层收口（没有待发步骤不再直连 aggregator；hitl_required 真 interrupt() 挂起 → /hitl/* 批准 → hitl/resume.py Command(resume) 恢复 · 事件接同一 run_id + replay cursor）；外层 ReAct replan→supervisor / settle→aggregator 有界 LG_RAG_REACT_MAX_ROUNDS=2（Policy 类拒绝不触发 HITL）。2026-09-30 chat-history-api（B1 · task_chat_history_api）：新增只读历史端点 GET /api/ops/chat/threads 与 GET /api/ops/chat/threads/{thread_id}/history（lg_rag/history_router.py · 事件表 ops_lg_rag_run_events 真源 · 当前用户聚合 · 跨用户 404 · cursor/limit 分页 · 聚合超时 10s→504 · answer 截断 32000）；裁定 A1：run.start payload 增可选 query 键（非新 event_type · freeze lg-rag-sse-v1 语义不动 · 存量旧 run 无键按 FP-4 标题降级）；聚合纯函数 lg_rag/history.py + event_store.py 只读扩展；零新表/迁移/SSE 事件类型。2026-10-14 lg-rag-sse-run-worker（Wave B）：RunWorker（run_worker.py · 进程内 Task · run_id 单飞）持有 astream→event_store；StreamSubscriber（sse_subscribe.py）只读 fanout；HTTP 断连不 cancel worker；成功普通 done · 失败 error{stage:lg_rag.worker_failed}；补偿可 disconnected（不赌 ASGI）；真在飞 409 / HITL waiting_approval 零 diff。2026-10-20 supervisor-first 图谱重同步（PR #282 · task tech-graph-flow-resync）：supervisor 图实际拓扑 START → strategy_builder → supervisor → subtask_join（Send 分发）→ observe → aggregator → critic_node（去前置 intent_node）；IntentV1 保留未挂载（dormant · app/ops/strategy/intent.py:52 intent_node 在册 · 代码保留不删 · 承 01_modules.md:18 legacy/dormant 一律不删约定）。
 
 ## Mermaid
 
@@ -27,7 +27,6 @@ flowchart TB
     r_rag["rag_node（黑盒调 lc chain）"]
     r_evaluate["evaluate_node（复用 chain gate · 零额外 LLM）"]
     r_rewrite["rewrite_node（LLM 改写 · 熔断封顶）"]
-    s_intent["intent_node（S2 IntentV1 · acomplete_structured）"]
     s_strategy_builder["strategy_builder_node（S1 allowlist · Registry∩Policy）"]
     s_supervisor["supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag）"]
     s_dispatch["subtask_join（ready 判定 + 一次下发无依赖工人 · 按 Host subtask_id 归并）"]
@@ -103,23 +102,21 @@ flowchart TB
     %% → app/ops/lg_rag/nodes.py#L269
     r_rewrite -->|"complete"| llm
     %% → app/ops/lg_rag/nodes.py#L230
-    sup_graph -->|"START → intent_node"| s_intent
-    %% → app/ops/lg_rag/multi/graph.py#L73
-    s_intent -->|"intent dict"| s_strategy_builder
-    %% → app/ops/lg_rag/multi/graph.py#L74
+    sup_graph -->|"START → strategy_builder（supervisor-first · 去前置 intent_node）"| s_strategy_builder
+    %% → app/ops/lg_rag/multi/graph.py#L96
     s_strategy_builder -->|"allowed_capability_ids"| s_supervisor
-    %% → app/ops/lg_rag/multi/graph.py#L75
+    %% → app/ops/lg_rag/multi/graph.py#L97
     s_supervisor -->|"subtasks（≤4）"| s_dispatch
-    %% → app/ops/lg_rag/multi/graph.py#L76
+    %% → app/ops/lg_rag/multi/graph.py#L98
     s_dispatch -->|"[同批 Send · type=rag]"| s_rag
-    %% → app/ops/lg_rag/multi/graph.py#L42
-    %% → app/ops/lg_rag/multi/nodes.py#L238
+    %% → app/ops/lg_rag/multi/graph.py#L99
+    %% → app/ops/lg_rag/multi/nodes.py#L1339
     s_dispatch -->|"[同批 Send · type=extract]"| s_extract
-    %% → app/ops/lg_rag/multi/graph.py#L43
-    %% → app/ops/lg_rag/multi/nodes.py#L238
+    %% → app/ops/lg_rag/multi/graph.py#L99
+    %% → app/ops/lg_rag/multi/nodes.py#L1339
     s_dispatch -->|"[同批 Send · type=tool]"| s_tool
-    %% → app/ops/lg_rag/multi/graph.py#L44
-    %% → app/ops/lg_rag/multi/nodes.py#L238
+    %% → app/ops/lg_rag/multi/graph.py#L99
+    %% → app/ops/lg_rag/multi/nodes.py#L1339
     s_dispatch -->|"[没有待发步骤 → observe（不再直连 aggregator）]"| s_observe
     %% → app/ops/lg_rag/multi/graph.py::_DISPATCH_MAP
     %% → app/ops/lg_rag/multi/nodes.py::route_next_subtask
@@ -135,41 +132,37 @@ flowchart TB
     hitl_gw -->|"批准 → Command(resume) 恢复（同一 run_id + replay cursor）"| s_observe
     %% → app/ops/hitl/resume.py::resume_hitl_run
     s_rag -->|"按 subtask_id 归并回 join"| s_dispatch
-    %% → app/ops/lg_rag/multi/graph.py#L78
+    %% → app/ops/lg_rag/multi/graph.py#L100
     s_extract -->|"按 subtask_id 归并回 join"| s_dispatch
-    %% → app/ops/lg_rag/multi/graph.py#L78
+    %% → app/ops/lg_rag/multi/graph.py#L100
     s_tool -->|"按 subtask_id 归并回 join"| s_dispatch
-    %% → app/ops/lg_rag/multi/graph.py#L78
+    %% → app/ops/lg_rag/multi/graph.py#L100
     s_aggregator -->|"综合后进入 Critic"| s_critic
-    %% → app/ops/lg_rag/multi/graph.py#L79
+    %% → app/ops/lg_rag/multi/graph.py#L103
     s_critic -->|"[pass#124;end → END]"| s_end
-    %% → app/ops/lg_rag/multi/graph.py#L80
+    %% → app/ops/lg_rag/multi/graph.py#L104
     %% → app/ops/strategy/critic.py::route_after_critic
     s_critic -->|"[retry_planner → supervisor]"| s_supervisor
-    %% → app/ops/lg_rag/multi/graph.py#L51
+    %% → app/ops/lg_rag/multi/graph.py#L104
     %% → app/ops/strategy/critic.py::route_after_critic
     s_critic -->|"[rebind → strategy_builder]"| s_strategy_builder
-    %% → app/ops/lg_rag/multi/graph.py#L52
+    %% → app/ops/lg_rag/multi/graph.py#L104
     %% → app/ops/strategy/critic.py::route_after_critic
     s_rag -->|"ainvoke_router_agent（复用 router 子图）"| router_graph
-    %% → app/ops/lg_rag/multi/nodes.py#L266
+    %% → app/ops/lg_rag/multi/nodes.py#L1420
     %% → app/ops/lg_rag/graph.py::ainvoke_router_agent
     s_supervisor -->|"complete（拆解）"| llm
-    %% → app/ops/lg_rag/multi/nodes.py#L200
+    %% → app/ops/lg_rag/multi/nodes.py#L1193
     s_extract -->|"complete（抽取）"| llm
-    %% → app/ops/lg_rag/multi/nodes.py#L299
+    %% → app/ops/lg_rag/multi/nodes.py#L1529
     s_aggregator -->|"complete_answer_streaming（delta 桥 → SSE；降级 complete）"| llm
-    %% → app/ops/lg_rag/multi/nodes.py#L361
+    %% → app/ops/lg_rag/multi/nodes.py#L2147
     r_router -->|"parse_only / schema 校验"| structured_output_gw
     %% → app/ops/lg_rag/nodes.py::_classify_route
     s_supervisor -->|"parse SubtasksPlan"| structured_output_gw
     %% → app/ops/lg_rag/multi/nodes.py::supervisor_node
     s_extract -->|"parse ExtractResult"| structured_output_gw
     %% → app/ops/lg_rag/multi/nodes.py::info_extract_node
-    s_intent -->|"acomplete_structured（max_retries=1）"| structured_output_gw
-    %% → app/ops/strategy/intent.py::intent_node
-    s_intent -->|"complete（细意图）"| llm
-    %% → app/ops/strategy/intent.py::intent_node
     s_strategy_builder -->|"list_capabilities（Builder catalog）"| capability_gw
     %% → app/ops/strategy/builder.py::strategy_builder_node
     s_supervisor -->|"list_capabilities ∩ allowlist"| capability_gw
@@ -181,7 +174,7 @@ flowchart TB
     classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef doc fill:#fff8e1,stroke:#ff6f00,stroke-width:1px
     classDef infra fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-    class lg_invoke,lg_stream,lg_replay,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_intent,s_strategy_builder,s_supervisor,s_dispatch,s_step_contract,s_observe,s_rag,s_extract,s_tool,s_aggregator,s_critic phase
+    class lg_invoke,lg_stream,lg_replay,b_rag,r_router,r_direct,r_refuse,r_rag,r_evaluate,r_rewrite,s_strategy_builder,s_supervisor,s_dispatch,s_step_contract,s_observe,s_rag,s_extract,s_tool,s_aggregator,s_critic phase
     class basic_graph,router_graph,sup_graph doc
     class client,hitl_gw,structured_output_gw,capability_gw,s_end,lc_chain,llm,db,main_doc infra
 ```
@@ -206,7 +199,6 @@ flowchart TB
 | r_rag | rag_node（黑盒调 lc chain） | flow |
 | r_evaluate | evaluate_node（复用 chain gate · 零额外 LLM） | flow |
 | r_rewrite | rewrite_node（LLM 改写 · 熔断封顶） | flow |
-| s_intent | intent_node（S2 IntentV1 · acomplete_structured） | flow |
 | s_strategy_builder | strategy_builder_node（S1 allowlist · Registry∩Policy） | flow |
 | s_supervisor | supervisor_node（LLM 拆解 ≤4 · 失败 fallback 单 rag） | flow |
 | s_dispatch | subtask_join（ready 判定 + 一次下发无依赖工人 · 按 Host subtask_id 归并） | flow |
@@ -256,8 +248,7 @@ flowchart TB
 | r_rewrite | r_rag | ?> | branches | [有新 query → 重试 rag；熔断置空 → END] | 2 anchor(s) |
 | r_direct | llm | -> | depends_on | complete_answer_streaming（delta 桥 → SSE；降级 complete） | 1 anchor(s) |
 | r_rewrite | llm | -> | depends_on | complete | 1 anchor(s) |
-| sup_graph | s_intent | -> | depends_on | START → intent_node | 1 anchor(s) |
-| s_intent | s_strategy_builder | -> | depends_on | intent dict | 1 anchor(s) |
+| sup_graph | s_strategy_builder | -> | depends_on | START → strategy_builder（supervisor-first · 去前置 intent_node） | 1 anchor(s) |
 | s_strategy_builder | s_supervisor | -> | depends_on | allowed_capability_ids | 1 anchor(s) |
 | s_supervisor | s_dispatch | -> | depends_on | subtasks（≤4） | 1 anchor(s) |
 | s_dispatch | s_rag | ?> | branches | [同批 Send · type=rag] | 2 anchor(s) |
@@ -283,8 +274,6 @@ flowchart TB
 | r_router | structured_output_gw | ::triggers | triggers | parse_only / schema 校验 | 1 anchor(s) |
 | s_supervisor | structured_output_gw | ::triggers | triggers | parse SubtasksPlan | 1 anchor(s) |
 | s_extract | structured_output_gw | ::triggers | triggers | parse ExtractResult | 1 anchor(s) |
-| s_intent | structured_output_gw | ::triggers | triggers | acomplete_structured（max_retries=1） | 1 anchor(s) |
-| s_intent | llm | -> | depends_on | complete（细意图） | 1 anchor(s) |
 | s_strategy_builder | capability_gw | ::triggers | triggers | list_capabilities（Builder catalog） | 1 anchor(s) |
 | s_supervisor | capability_gw | ::triggers | triggers | list_capabilities ∩ allowlist | 1 anchor(s) |
 | s_tool | capability_gw | ::triggers | triggers | capability.invoke | 1 anchor(s) |

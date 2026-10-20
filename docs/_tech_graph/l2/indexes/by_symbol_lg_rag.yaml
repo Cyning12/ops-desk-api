@@ -2,6 +2,11 @@
 # 源：l1/10_flow_lg_rag.graph.yaml 全部 implementedBy
 # 系列约束：docs/spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md §9
 # 共享 symbol：by_symbol 取主 node_id，also_node_ids 列其余（如 rag_node）
+# ── 冻结声明（D2-a 续冻 · 2026-10-20 task tech-graph-flow-resync 落）──
+# 冻结日期：version "2026-08-31" 维持原值（不加新版本 · 声明走文件头注释，不动 version 字段）
+# 覆盖边界：截至 2026-08-31 的 implementedBy 面；显式缺口——Wave B 新文件 run_worker.py / sse_subscribe.py、后期符号 observe_node / _join_subtasks / _persist_hitl / _issue_plan、hitl 模块；引用时须知止步于此
+# 冻结原因：维护者 2026-10-19 D2-a 裁定（索引维护成本高、审核引用少 · SpecWave #40「图谱先读」纪律未落地）
+# 解冻条件：SpecWave #40 落地索引成高频入口，或维护者另行裁定 → 走 D2-b 扩面另案（非本 task）
 
 version: "2026-08-31"
 graph_id: "10_flow_lg_rag"
@@ -217,6 +222,7 @@ by_symbol:
     path: app/ops/strategy/intent.py
     node_id: s_intent
     kind: method
+    note: "dormant（保留未挂载 · 2026-10-19 supervisor-first 去前置 · lg_rag 三图零挂载 · 承 01_modules.md:18 legacy/dormant 一律不删约定）"
   strategy_builder_node:
     path: app/ops/strategy/builder.py
     node_id: s_strategy_builder

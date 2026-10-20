@@ -1,8 +1,8 @@
 schema_version: "inform_graph.v3"
 graph_id: "10_flow_lg_rag"
 title: "LG RAG 旁路三模式流程（basic / router / supervisor · Critic）"
-description: "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。T5：终答 answer 多帧 delta（{delta}）+ 终帧 {content, final:true}（aggregator / direct_answer 经 answer_stream.py contextvar token sink 桥 complete_stream；降级整段）。T5.1：persist 后台调度不阻塞 SSE yield。§10.6：等待 update 期间 SSE comment keepalive（不落盘、不占 seq）。§10.7：子任务 running 起步帧 + step 里程碑（progress_stream · rag_subtask astream_router + evidence step_hook · status=running/step/done）；§10.7 增补：running/step/done 帧可选 message 中文短句（subtask_message.py 确定性模板 · 截断 200 · 生成失败降级帧仍发 · 旧客户端忽略未知键）。2026-09-21：supervisor 增 subtask_join（ready=依赖全终态+步骤契约闸 consumes/produces · prefix_touch_required→hitl_required）与 observe 执行层收口（没有待发步骤不再直连 aggregator；hitl_required 真 interrupt() 挂起 → /hitl/* 批准 → hitl/resume.py Command(resume) 恢复 · 事件接同一 run_id + replay cursor）；外层 ReAct replan→supervisor / settle→aggregator 有界 LG_RAG_REACT_MAX_ROUNDS=2（Policy 类拒绝不触发 HITL）。2026-09-30 chat-history-api（B1 · task_chat_history_api）：新增只读历史端点 GET /api/ops/chat/threads 与 GET /api/ops/chat/threads/{thread_id}/history（lg_rag/history_router.py · 事件表 ops_lg_rag_run_events 真源 · 当前用户聚合 · 跨用户 404 · cursor/limit 分页 · 聚合超时 10s→504 · answer 截断 32000）；裁定 A1：run.start payload 增可选 query 键（非新 event_type · freeze lg-rag-sse-v1 语义不动 · 存量旧 run 无键按 FP-4 标题降级）；聚合纯函数 lg_rag/history.py + event_store.py 只读扩展；零新表/迁移/SSE 事件类型。2026-10-14 lg-rag-sse-run-worker（Wave B）：RunWorker（run_worker.py · 进程内 Task · run_id 单飞）持有 astream→event_store；StreamSubscriber（sse_subscribe.py）只读 fanout；HTTP 断连不 cancel worker；成功普通 done · 失败 error{stage:lg_rag.worker_failed}；补偿可 disconnected（不赌 ASGI）；真在飞 409 / HITL waiting_approval 零 diff。"
-version: "2026-10-14"
+description: "POST /api/ops/lg-rag/invoke（freeze lg-rag-http-v1）按 mode 分派三图；另 POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1 · 默认 supervisor · astream updates · 帧可选 cursor）与 POST /api/ops/lg-rag/replay（T4 断联续看）。stream/invoke 按 thread_id 加载独立表历史并窗口压缩后注入图输入。basic / router / supervisor；rag 黑盒复用 lc_evidence_chain；默认不进入 chat/graph。T5：终答 answer 多帧 delta（{delta}）+ 终帧 {content, final:true}（aggregator / direct_answer 经 answer_stream.py contextvar token sink 桥 complete_stream；降级整段）。T5.1：persist 后台调度不阻塞 SSE yield。§10.6：等待 update 期间 SSE comment keepalive（不落盘、不占 seq）。§10.7：子任务 running 起步帧 + step 里程碑（progress_stream · rag_subtask astream_router + evidence step_hook · status=running/step/done）；§10.7 增补：running/step/done 帧可选 message 中文短句（subtask_message.py 确定性模板 · 截断 200 · 生成失败降级帧仍发 · 旧客户端忽略未知键）。2026-09-21：supervisor 增 subtask_join（ready=依赖全终态+步骤契约闸 consumes/produces · prefix_touch_required→hitl_required）与 observe 执行层收口（没有待发步骤不再直连 aggregator；hitl_required 真 interrupt() 挂起 → /hitl/* 批准 → hitl/resume.py Command(resume) 恢复 · 事件接同一 run_id + replay cursor）；外层 ReAct replan→supervisor / settle→aggregator 有界 LG_RAG_REACT_MAX_ROUNDS=2（Policy 类拒绝不触发 HITL）。2026-09-30 chat-history-api（B1 · task_chat_history_api）：新增只读历史端点 GET /api/ops/chat/threads 与 GET /api/ops/chat/threads/{thread_id}/history（lg_rag/history_router.py · 事件表 ops_lg_rag_run_events 真源 · 当前用户聚合 · 跨用户 404 · cursor/limit 分页 · 聚合超时 10s→504 · answer 截断 32000）；裁定 A1：run.start payload 增可选 query 键（非新 event_type · freeze lg-rag-sse-v1 语义不动 · 存量旧 run 无键按 FP-4 标题降级）；聚合纯函数 lg_rag/history.py + event_store.py 只读扩展；零新表/迁移/SSE 事件类型。2026-10-14 lg-rag-sse-run-worker（Wave B）：RunWorker（run_worker.py · 进程内 Task · run_id 单飞）持有 astream→event_store；StreamSubscriber（sse_subscribe.py）只读 fanout；HTTP 断连不 cancel worker；成功普通 done · 失败 error{stage:lg_rag.worker_failed}；补偿可 disconnected（不赌 ASGI）；真在飞 409 / HITL waiting_approval 零 diff。2026-10-20 supervisor-first 图谱重同步（PR #282 · task tech-graph-flow-resync）：supervisor 图实际拓扑 START → strategy_builder → supervisor → subtask_join（Send 分发）→ observe → aggregator → critic_node（去前置 intent_node）；IntentV1 保留未挂载（dormant · app/ops/strategy/intent.py:52 intent_node 在册 · 代码保留不删 · 承 01_modules.md:18 legacy/dormant 一律不删约定）。"
+version: "2026-10-20"
 layer: "G-L1"
 primary_layer: "G-L1"
 depth: "method"
@@ -155,14 +155,6 @@ nodes:
       path: "app/ops/lg_rag/nodes.py"
       symbol: "rewrite_node"
       # also: app/ops/lg_rag/nodes.py#route_after_rewrite (method)
-
-  - id: "s_intent"
-    label: "intent_node（S2 IntentV1 · acomplete_structured）"
-    kind: flow
-    layer_hint: "G-L2"
-    implementedBy:
-      path: "app/ops/strategy/intent.py"
-      symbol: "intent_node"
 
   - id: "s_strategy_builder"
     label: "strategy_builder_node（S1 allowlist · Registry∩Policy）"
@@ -492,32 +484,25 @@ edges:
         line: 230
 
   - from: "sup_graph"
-    to: "s_intent"
-    label: "START → intent_node"
-    anchors:
-      - path: "app/ops/lg_rag/multi/graph.py"
-        line: 73
-
-  - from: "s_intent"
     to: "s_strategy_builder"
-    label: "intent dict"
+    label: "START → strategy_builder（supervisor-first · 去前置 intent_node）"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 74
+        line: 96
 
   - from: "s_strategy_builder"
     to: "s_supervisor"
     label: "allowed_capability_ids"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 75
+        line: 97
 
   - from: "s_supervisor"
     to: "s_dispatch"
     label: "subtasks（≤4）"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 76
+        line: 98
 
   - from: "s_dispatch"
     to: "s_rag"
@@ -526,9 +511,9 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 42
+        line: 99
       - path: "app/ops/lg_rag/multi/nodes.py"
-        line: 238
+        line: 1339
 
   - from: "s_dispatch"
     to: "s_extract"
@@ -537,9 +522,9 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 43
+        line: 99
       - path: "app/ops/lg_rag/multi/nodes.py"
-        line: 238
+        line: 1339
 
   - from: "s_dispatch"
     to: "s_tool"
@@ -548,9 +533,9 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 44
+        line: 99
       - path: "app/ops/lg_rag/multi/nodes.py"
-        line: 238
+        line: 1339
 
   - from: "s_dispatch"
     to: "s_observe"
@@ -612,28 +597,28 @@ edges:
     label: "按 subtask_id 归并回 join"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 78
+        line: 100
 
   - from: "s_extract"
     to: "s_dispatch"
     label: "按 subtask_id 归并回 join"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 78
+        line: 100
 
   - from: "s_tool"
     to: "s_dispatch"
     label: "按 subtask_id 归并回 join"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 78
+        line: 100
 
   - from: "s_aggregator"
     to: "s_critic"
     label: "综合后进入 Critic"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 79
+        line: 103
 
   - from: "s_critic"
     to: "s_end"
@@ -642,7 +627,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 80
+        line: 104
       - path: "app/ops/strategy/critic.py"
         symbol: "route_after_critic"
 
@@ -653,7 +638,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 51
+        line: 104
       - path: "app/ops/strategy/critic.py"
         symbol: "route_after_critic"
 
@@ -664,7 +649,7 @@ edges:
     type: "branches"
     anchors:
       - path: "app/ops/lg_rag/multi/graph.py"
-        line: 52
+        line: 104
       - path: "app/ops/strategy/critic.py"
         symbol: "route_after_critic"
 
@@ -675,7 +660,7 @@ edges:
     label: "ainvoke_router_agent（复用 router 子图）"
     anchors:
       - path: "app/ops/lg_rag/multi/nodes.py"
-        line: 266
+        line: 1420
       - path: "app/ops/lg_rag/graph.py"
         symbol: "ainvoke_router_agent"
 
@@ -684,21 +669,21 @@ edges:
     label: "complete（拆解）"
     anchors:
       - path: "app/ops/lg_rag/multi/nodes.py"
-        line: 200
+        line: 1193
 
   - from: "s_extract"
     to: "llm"
     label: "complete（抽取）"
     anchors:
       - path: "app/ops/lg_rag/multi/nodes.py"
-        line: 299
+        line: 1529
 
   - from: "s_aggregator"
     to: "llm"
     label: "complete_answer_streaming（delta 桥 → SSE；降级 complete）"
     anchors:
       - path: "app/ops/lg_rag/multi/nodes.py"
-        line: 361
+        line: 2147
 
   - from: "r_router"
     to: "structured_output_gw"
@@ -726,22 +711,6 @@ edges:
     anchors:
       - path: "app/ops/lg_rag/multi/nodes.py"
         symbol: "info_extract_node"
-
-  - from: "s_intent"
-    to: "structured_output_gw"
-    label: "acomplete_structured（max_retries=1）"
-    mark: "::triggers"
-    type: "triggers"
-    anchors:
-      - path: "app/ops/strategy/intent.py"
-        symbol: "intent_node"
-
-  - from: "s_intent"
-    to: "llm"
-    label: "complete（细意图）"
-    anchors:
-      - path: "app/ops/strategy/intent.py"
-        symbol: "intent_node"
 
   - from: "s_strategy_builder"
     to: "capability_gw"

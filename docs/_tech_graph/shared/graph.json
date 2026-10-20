@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_e42e95d67c050b36_V1",
-  "generated_at": "sha256-e42e95d67c050b36",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_2746c8600a8addc6_V1",
+  "generated_at": "sha256-2746c8600a8addc6",
   "graphs": [
     {
       "id": "00_main",
@@ -508,11 +508,6 @@
       "graph_id": "10_flow_lg_rag",
       "id": "r_rewrite",
       "label": "rewrite_node（LLM 改写 · 熔断封顶）"
-    },
-    {
-      "graph_id": "10_flow_lg_rag",
-      "id": "s_intent",
-      "label": "intent_node（S2 IntentV1 · acomplete_structured）"
     },
     {
       "graph_id": "10_flow_lg_rag",
@@ -2628,29 +2623,14 @@
     {
       "graph_id": "10_flow_lg_rag",
       "from": "sup_graph",
-      "to": "s_intent",
-      "mark": "->",
-      "type": "depends_on",
-      "label": "START → intent_node",
-      "anchors": [
-        {
-          "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 73
-        }
-      ],
-      "sync": true
-    },
-    {
-      "graph_id": "10_flow_lg_rag",
-      "from": "s_intent",
       "to": "s_strategy_builder",
       "mark": "->",
       "type": "depends_on",
-      "label": "intent dict",
+      "label": "START → strategy_builder（supervisor-first · 去前置 intent_node）",
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 74
+          "line": 96
         }
       ],
       "sync": true
@@ -2665,7 +2645,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 75
+          "line": 97
         }
       ],
       "sync": true
@@ -2680,7 +2660,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 76
+          "line": 98
         }
       ],
       "sync": true
@@ -2695,11 +2675,11 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 42
+          "line": 99
         },
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
-          "line": 238
+          "line": 1339
         }
       ],
       "sync": true
@@ -2714,11 +2694,11 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 43
+          "line": 99
         },
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
-          "line": 238
+          "line": 1339
         }
       ],
       "sync": true
@@ -2733,11 +2713,11 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 44
+          "line": 99
         },
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
-          "line": 238
+          "line": 1339
         }
       ],
       "sync": true
@@ -2850,7 +2830,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 78
+          "line": 100
         }
       ],
       "sync": true
@@ -2865,7 +2845,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 78
+          "line": 100
         }
       ],
       "sync": true
@@ -2880,7 +2860,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 78
+          "line": 100
         }
       ],
       "sync": true
@@ -2895,7 +2875,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 79
+          "line": 103
         }
       ],
       "sync": true
@@ -2910,7 +2890,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 80
+          "line": 104
         },
         {
           "path": "app/ops/strategy/critic.py",
@@ -2929,7 +2909,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 51
+          "line": 104
         },
         {
           "path": "app/ops/strategy/critic.py",
@@ -2948,7 +2928,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/graph.py",
-          "line": 52
+          "line": 104
         },
         {
           "path": "app/ops/strategy/critic.py",
@@ -2967,7 +2947,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
-          "line": 266
+          "line": 1420
         },
         {
           "path": "app/ops/lg_rag/graph.py",
@@ -2986,7 +2966,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
-          "line": 200
+          "line": 1193
         }
       ],
       "sync": true
@@ -3001,7 +2981,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
-          "line": 299
+          "line": 1529
         }
       ],
       "sync": true
@@ -3016,7 +2996,7 @@
       "anchors": [
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
-          "line": 361
+          "line": 2147
         }
       ],
       "sync": true
@@ -3062,36 +3042,6 @@
         {
           "path": "app/ops/lg_rag/multi/nodes.py",
           "symbol": "info_extract_node"
-        }
-      ],
-      "sync": true
-    },
-    {
-      "graph_id": "10_flow_lg_rag",
-      "from": "s_intent",
-      "to": "structured_output_gw",
-      "mark": "::triggers",
-      "type": "triggers",
-      "label": "acomplete_structured（max_retries=1）",
-      "anchors": [
-        {
-          "path": "app/ops/strategy/intent.py",
-          "symbol": "intent_node"
-        }
-      ],
-      "sync": true
-    },
-    {
-      "graph_id": "10_flow_lg_rag",
-      "from": "s_intent",
-      "to": "llm",
-      "mark": "->",
-      "type": "depends_on",
-      "label": "complete（细意图）",
-      "anchors": [
-        {
-          "path": "app/ops/strategy/intent.py",
-          "symbol": "intent_node"
         }
       ],
       "sync": true
