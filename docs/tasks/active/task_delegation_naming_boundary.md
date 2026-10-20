@@ -35,7 +35,7 @@
 | 闸 | 状态 | 阻塞 | 备注 |
 |---|---|---|---|
 | HG-SPEC-SIGNOFF | **approved**（2026-10-19 维护者） | 20 书面审 | SPEC v0.1 文末 |
-| HG-AUDIT-R1 | **pending**（维护者已授权 00 代签 · 落闸动作在 20-task-audit 后） | 30 改码 | 审查文落盘 `docs/harness/reviews/` 后由 00 执行代签 |
+| HG-AUDIT-R1 | **approved**（2026-10-20 维护者授权 00 代签 · R2=pass · R1 M1–M3 闭合） | 30 改码 | 审查文 docs/harness/reviews/task_delegation_naming_boundary_audit_R1_20261020.md + _R2_20261020.md（锚点 24 命中/2 漂移 · 门控修正核验成立）；授权链 invoke_20261020_gate_sign_hg_audit_r1.md |
 | HG-GRAPH-MODULES | **approved**（graph_change_layer 评估：正名+独立开关**不触发图谱行变更**——capability/lg_rag 行内备注回写即可，不增行/边/implementedBy/路由/表/SSE 事件类型，承 §4 Q3 与 :116 先例） | 30 改码 | `graph_change_layer=none` 预期不再签；30 实判越出（新行/新边）→ 回炉补签 |
 
 ---
