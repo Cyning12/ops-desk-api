@@ -542,11 +542,13 @@ _TREE_ALLOWED_PREFIXES = (
     "docs/_tech_graph/l1/01_modules.md",
 )
 # 00/维护者落签面（非 30 产出 · 已在分支提交 29cd456/ed2c150 带 [00] 标记）：
-# 闸表裁定、DEF-005 对接文档与其优先级登记——30 禁改，仅登记为既有分支 delta
+# 闸表裁定、DEF-005 对接文档与其优先级登记——30 禁改，仅登记为既有分支 delta；
+# 40 审查文（approve · 2026-10-20）与 00 落签面同类，同登记
 _UPSTREAM_SIGN_PATHS = {
     "docs/tasks/active/task_memory_injection_consumer.md",
     "docs/tasks/deferred/task_memory_facts_build_4a.md",
     "docs/tasks/PRIORITY_DEFERRED.md",
+    "docs/harness/reviews/task_memory_injection_consumer_review40_20261020.md",
 }
 _BANNED_PREFIXES = ("scripts/", "alembic/")
 
