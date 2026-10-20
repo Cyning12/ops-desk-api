@@ -1,23 +1,19 @@
-"""task_memory_injection_consumer · Phase A 实证矩阵（观测-only · 零生产码改动）。
+"""task_memory_injection_consumer · Phase B ④b 验收（全模式收窄 · 功能休眠）。
 
-SpyProvider 逐次记录三模式（basic / router / supervisor）下各节点发往 LLM 的
-消息清单，断言注入块（facts / preferences / episodes）是否到达 LLM 请求面。
-结论表落 docs/harness/invokes/by-task/memory-injection-consumer/，
-作为 HG-PHASE-B-DECISION 裁定的唯一依据。
+HG-PHASE-B-DECISION=approved（2026-10-20 维护者裁定结局④b ·
+docs/harness/invokes/by-task/memory-injection-consumer/invoke_20261020_phase_b_decision_4b.md）：
+三模式（basic / router / supervisor）记忆注入路径整体收窄——装配面不再读
+MEMORY_FACTS_ENABLED / MEMORY_EPISODES_ENABLED、不再调任何 recall、不再注入块；
+功能休眠（实现保留），复活对接 docs/tasks/deferred/task_memory_facts_build_4a.md。
 
-锚点（行号基于 base 414270d 校正）：
-- 装配面：app/ops/lg_rag/continuity.py assemble_graph_messages_with_memory :559
-  （facts 开关 :144 / episodes 开关 :215，os.getenv 运行时读、默认 false；
-   facts skip 条件 :458 tenant/user 缺一即跳；episodes skip 条件 :500 tenant 缺即跳）
-- 入口：app/ops/lg_rag/graph.py:218 ainvoke_basic_agent / :255 ainvoke_router_agent；
-  app/ops/lg_rag/multi/graph.py:108 ainvoke_supervisor_agent
-- LLM 消费点：
-  - app/ops/lg_rag/nodes.py:85 router_node(classify) / :214 rewrite_node / :258 direct_answer_node
-  - app/ops/lg_rag/multi/nodes.py:1164 supervisor_node(planner) / :2110 aggregator_node
-    （critic / strategy_builder / observe 默认路径为规则实现，无 LLM ——
-     test_lg_rag_multi.py:140 注释同证；observe 的 _satisfied_by_model 受
-     LG_RAG_REACT_SATISFACTION!=1 默认短路）
-  - app/ops/lc_evidence_chain/grader.py:28 grade_chunk(LLM) / answer.py:153 answer_question
+本文件验收（红测先行）：
+- TC8/FP-5：注入开下三模式 recall（facts 确定性/向量 + episodes）全零调用；
+- 注入开/关行为零 diff：spy 记录的 LLM 请求清单与 state.messages 对拍相等
+  （对拍 Phase A 基线 invoke_20261019_30_phaseA_spy_matrix.md：九消费点本就零消费，
+   收窄后请求面逐字节不变）；
+- TC2：默认关零 diff（recall 零调用 ∧ 注入块零出现 ∧ 流程照常）；
+- TC5：diff 白名单（tests/ + invoke docs/ + continuity.py + memory README/__init__
+  + 01_modules.md；scripts/ alembic/ 及其余 app/ 禁现）。
 """
 
 from __future__ import annotations
@@ -38,6 +34,10 @@ from app.ops.lg_rag.continuity import (
     MEMORY_EPISODES_HEADER,
     MEMORY_FACTS_HEADER,
     MEMORY_PREFERENCES_HEADER,
+    assemble_graph_messages,
+    inject_memory_facts_block,
+    render_memory_episodes_block,
+    render_memory_facts_block,
 )
 from app.ops.lg_rag.graph import ainvoke_basic_agent, ainvoke_router_agent
 from app.ops.lg_rag.multi.graph import ainvoke_supervisor_agent
@@ -45,12 +45,12 @@ from app.ops.prompts import render
 from app.ops.tenant_context import TENANT_A, reset_current_tenant, set_current_tenant
 
 # ---------------------------------------------------------------------------
-# 哨兵与 markers：注入块内容唯一可辨，命中 LLM 请求面即「消费」
+# 哨兵与 markers：注入块内容唯一可辨；④b 后任何面命中即收窄失守
 # ---------------------------------------------------------------------------
 
-FACT_VALUE = "PHASEA-SENTINEL-FACT-7f3d2c"
-PREF_VALUE = "PHASEA-SENTINEL-PREF-51aa"
-EPISODE_SUMMARY = "PHASEA-SENTINEL-EPISODE-先查日志再重启"
+FACT_VALUE = "PHASEB-SENTINEL-FACT-8e4a1d"
+PREF_VALUE = "PHASEB-SENTINEL-PREF-62bb"
+EPISODE_SUMMARY = "PHASEB-SENTINEL-EPISODE-先查日志再重启"
 
 FACT_MARKERS = [MEMORY_FACTS_HEADER, MEMORY_PREFERENCES_HEADER, FACT_VALUE, PREF_VALUE]
 EPISODE_MARKERS = [MEMORY_EPISODES_HEADER, EPISODE_SUMMARY]
@@ -58,10 +58,11 @@ ALL_MARKERS = FACT_MARKERS + EPISODE_MARKERS
 
 _QUERY = "服务超时怎么排查"  # 避开 nodes.py:45 _ISSUE_NO_RE 规则快路径（#数字 跳过 classify LLM）
 _SUBTASK_QUERY = "检索服务超时处置步骤"
-_USER = "phasea-user"
+_USER = "phaseb-user"
 _REWRITE_OUT = "服务超时如何定位并恢复"
 _GRADE_REFUSE = '[{"chunk_id": 1, "relevance": "irrelevant", "reason": "首轮不相关"}]'
 _GRADE_EXACT = '[{"chunk_id": 1, "relevance": "exact", "reason": "二轮命中"}]'
+_ANSWER_OUT = "答案：先查日志再重启"
 _AGG_OUT = "## 综合结论\n先查日志再重启。"
 
 
@@ -141,12 +142,10 @@ def _assembled_text(out: dict) -> str:
     return "\n".join(str(m.content) for m in out["messages"])
 
 
-def _assert_assembled(out: dict) -> None:
-    """装配面前提：注入块确实存在于图状态消息（否则「零消费」断言无意义）。"""
+def _norm(calls: list[RecordedCall]) -> list[tuple[str, str, list[tuple[str, str]]]]:
+    """归一化 LLM 调用清单：spy 名去掉 .on/.off 尾标（同一位点的开/关双拍须可比）。"""
 
-    assembled = _assembled_text(out)
-    missing = [marker for marker in ALL_MARKERS if marker not in assembled]
-    assert not missing, f"装配面缺注入块 markers: {missing}"
+    return [(re.sub(r"\.(on|off)$", "", c.spy), c.method, c.messages) for c in calls]
 
 
 # ---------------------------------------------------------------------------
@@ -163,10 +162,11 @@ _MULTI_PROVIDER = "app.ops.lg_rag.multi.nodes.get_llm_provider"
 
 @pytest.fixture
 def injection_on(monkeypatch: pytest.MonkeyPatch):
-    """注入开（facts + episodes）+ 双 recall mock + tenant ContextVar + tracing 关闭。
+    """注入开（facts + episodes）+ 全 recall 通路 stub + tenant ContextVar + tracing 关闭。
 
-    tracing 关闭是为对本机 .env（可能带 LANGFUSE 双键）免疫：trace_span 全 no-op，
-    矩阵观测面只剩 provider 消息清单。
+    ④b 休眠态下三通路 stub 均**零调用**（TC8/FP-5 核心断言面）；向量通路 stub
+    置 AssertionError side_effect——任何触达即显式红（不依赖 await_count 口径）。
+    tracing 关闭为对本机 .env（可能带 LANGFUSE 双键）免疫。
     """
 
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
@@ -176,9 +176,6 @@ def injection_on(monkeypatch: pytest.MonkeyPatch):
         "LANGFUSE_SECRET_KEY",
         "OPS_CHAT_TRACER",
         "LG_RAG_REACT_SATISFACTION",
-        # continuity.py:464 向量召回分流：本机 .env 置 true 会绕过 recall_active
-        # mock 走 recall_with_vector（DB 依赖）→ facts 块缺席；观测面钉确定性通路
-        "MEMORY_FACTS_VECTOR_RECALL_ENABLED",
     ):
         monkeypatch.delenv(key, raising=False)
     for target in (
@@ -191,16 +188,20 @@ def injection_on(monkeypatch: pytest.MonkeyPatch):
 
     facts_recall = AsyncMock(
         return_value=[
-            {"key": "project.phasea_probe", "value": FACT_VALUE, "kind": "fact"},
-            {"key": "style.phasea_probe", "value": PREF_VALUE, "kind": "preference"},
+            {"key": "project.phaseb_probe", "value": FACT_VALUE, "kind": "fact"},
+            {"key": "style.phaseb_probe", "value": PREF_VALUE, "kind": "preference"},
         ]
     )
     monkeypatch.setattr("app.ops.memory.service.recall_active", facts_recall)
+    vector_recall = AsyncMock(
+        side_effect=AssertionError("④b 休眠：向量召回通路不应被触达")
+    )
+    monkeypatch.setattr("app.ops.memory.service.recall_with_vector", vector_recall)
     episodes_recall = AsyncMock(
         return_value=[
             {
                 "tenant_id": TENANT_A,
-                "run_id": "phasea-run",
+                "run_id": "phaseb-run",
                 "task_domain": "ops",
                 "context_fingerprint": "fp",
                 "plan_summary": EPISODE_SUMMARY,
@@ -214,8 +215,44 @@ def injection_on(monkeypatch: pytest.MonkeyPatch):
         "app.ops.memory.episode_service.recall_success_episodes", episodes_recall
     )
     token = set_current_tenant(TENANT_A)
-    yield SimpleNamespace(facts=facts_recall, episodes=episodes_recall)
+    yield SimpleNamespace(facts=facts_recall, vector=vector_recall, episodes=episodes_recall)
     reset_current_tenant(token)
+
+
+def _switches_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    """注入关（默认形态）：双开关删除（stub 仍在——关/开两面 recall 都须零调用）。"""
+
+    monkeypatch.delenv("MEMORY_FACTS_ENABLED", raising=False)
+    monkeypatch.delenv("MEMORY_EPISODES_ENABLED", raising=False)
+    monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
+
+
+def _assert_dormant(
+    injection_on: SimpleNamespace, out: dict, calls: list[RecordedCall], ctx: str
+) -> None:
+    """④b 休眠三断言：recall 全通路零调用 ∧ state.messages 零注入块 ∧ LLM 请求面零命中。"""
+
+    assert injection_on.facts.await_count == 0, f"{ctx}: facts recall 被调（收窄失守）"
+    assert injection_on.vector.await_count == 0, f"{ctx}: 向量 recall 被调（收窄失守）"
+    assert injection_on.episodes.await_count == 0, f"{ctx}: episodes recall 被调（收窄失守）"
+    leaked = [m for m in ALL_MARKERS if m in _assembled_text(out)]
+    assert not leaked, f"{ctx}: 注入块进入 state.messages: {leaked}"
+    _assert_no_markers(calls, ALL_MARKERS, ctx)
+
+
+def _assert_on_off_parity(
+    on_out: dict,
+    on_calls: list[RecordedCall],
+    off_out: dict,
+    off_calls: list[RecordedCall],
+    ctx: str,
+) -> None:
+    """注入开/关行为零 diff：LLM 请求清单与装配消息逐字节相等（对拍 Phase A 基线）。"""
+
+    assert _norm(on_calls) == _norm(off_calls), f"{ctx}: 注入开/关 LLM 请求面不等"
+    assert _assembled_text(on_out) == _assembled_text(off_out), (
+        f"{ctx}: 注入开/关 state.messages 不等"
+    )
 
 
 def _fake_retrieve() -> RetrieveResult:
@@ -266,105 +303,50 @@ def _multi_call_site(call: RecordedCall) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 实证矩阵：注入开 × 三模式
+# ④b 场景 runner：同一图形态跑两次（注入开 / 关），产出 spy 记录供对拍
 # ---------------------------------------------------------------------------
 
 
-async def test_matrix_basic_rag_zero_consumption(
-    monkeypatch: pytest.MonkeyPatch, injection_on: SimpleNamespace
-) -> None:
-    """basic(rag) × 注入开：装配块进 state.messages；grader/answer 两消费点零命中。"""
-
-    grader = SpyProvider("chain.grader", _GRADE_EXACT)
-    answer = SpyProvider("chain.answer", "答案：先查日志再重启")
+async def _run_basic_rag(monkeypatch: pytest.MonkeyPatch, tag: str):
+    grader = SpyProvider(f"chain.grader.{tag}", _GRADE_EXACT)
+    answer = SpyProvider(f"chain.answer.{tag}", _ANSWER_OUT)
     _patch_chain(monkeypatch, grader=grader, answer=answer)
-
-    out = await ainvoke_basic_agent(_QUERY, thread_id="phasea-basic", user_id=_USER)
-
-    _assert_assembled(out)
-    assert [c.method for c in grader.calls] == ["complete"]
-    assert [c.method for c in answer.calls] == ["complete"]
-    _assert_no_markers(grader.calls + answer.calls, ALL_MARKERS, "basic/grader+answer")
-    # 装配面单点：facts / episodes 各恰好 recall 一次
-    assert injection_on.facts.await_count == 1
-    assert injection_on.episodes.await_count == 1
+    out = await ainvoke_basic_agent(_QUERY, thread_id=f"phaseb-basic-{tag}", user_id=_USER)
+    return out, grader.calls + answer.calls
 
 
-async def test_matrix_router_rag_rewrite_loop_zero_consumption(
-    monkeypatch: pytest.MonkeyPatch, injection_on: SimpleNamespace
-) -> None:
-    """router(rag→rewrite 回环) × 注入开：classify/rewrite + grader×2 + answer 全零命中。
-
-    首轮 grader 判 irrelevant → gate refuse → kept 空 → answer 不调 LLM →
-    quality low → rewrite 新 query → 二轮 grader 判 exact → kept → answer 调 LLM。
-    """
-
-    nodes_spy = SpyProvider("lg_rag.nodes", '{"route": "rag"}', _REWRITE_OUT)
-    grader = SpyProvider("chain.grader", _GRADE_REFUSE, _GRADE_EXACT)
-    answer = SpyProvider("chain.answer", "答案：先查日志再重启")
+async def _run_router_rag_rewrite(monkeypatch: pytest.MonkeyPatch, tag: str):
+    nodes_spy = SpyProvider(f"lg_rag.nodes.{tag}", '{"route": "rag"}', _REWRITE_OUT)
+    grader = SpyProvider(f"chain.grader.{tag}", _GRADE_REFUSE, _GRADE_EXACT)
+    answer = SpyProvider(f"chain.answer.{tag}", _ANSWER_OUT)
     _patch_chain(monkeypatch, grader=grader, answer=answer)
     monkeypatch.setattr(_NODES_PROVIDER, lambda *a, **k: nodes_spy)
-
-    out = await ainvoke_router_agent(_QUERY, thread_id="phasea-router-rag", user_id=_USER)
-
-    sites = [_nodes_call_site(c) for c in nodes_spy.calls]
-    assert sites == ["router_node.classify", "rewrite_node"], sites
-    # classify / rewrite 的 user 消息 = 原始 query（nodes.py:94 / :217），无注入块
-    for call in nodes_spy.calls:
-        assert call.messages[-1] == ("user", _QUERY), call.messages
-    assert [c.method for c in grader.calls] == ["complete", "complete"]
-    assert [c.method for c in answer.calls] == ["complete"]
-    _assert_no_markers(
-        nodes_spy.calls + grader.calls + answer.calls, ALL_MARKERS, "router-rag-rewrite"
+    out = await ainvoke_router_agent(
+        _QUERY, thread_id=f"phaseb-router-rag-{tag}", user_id=_USER
     )
-    _assert_assembled(out)
-    assert injection_on.facts.await_count == 1
-    assert injection_on.episodes.await_count == 1
+    return out, nodes_spy.calls + grader.calls + answer.calls, nodes_spy.calls
 
 
-async def test_matrix_router_direct_zero_consumption(
-    monkeypatch: pytest.MonkeyPatch, injection_on: SimpleNamespace
-) -> None:
-    """router(direct) × 注入开：classify + direct_answer 两消费点零命中（不触 chain）。"""
-
-    nodes_spy = SpyProvider("lg_rag.nodes", '{"route": "direct"}', "直答：先查日志")
+async def _run_router_direct(monkeypatch: pytest.MonkeyPatch, tag: str):
+    nodes_spy = SpyProvider(f"lg_rag.nodes.{tag}", '{"route": "direct"}', "直答：先查日志")
     monkeypatch.setattr(_NODES_PROVIDER, lambda *a, **k: nodes_spy)
     monkeypatch.setattr(
         _CHAIN_RETRIEVE,
         AsyncMock(side_effect=AssertionError("direct 路径不应发生检索")),
     )
-
-    out = await ainvoke_router_agent(_QUERY, thread_id="phasea-router-direct", user_id=_USER)
-
-    sites = [_nodes_call_site(c) for c in nodes_spy.calls]
-    assert sites == ["router_node.classify", "direct_answer_node"], sites
-    # direct_answer 的 user 消息 = _last_user_text(state.messages)（nodes.py:255/:262），
-    # 即纯 query 文本而非整包 state.messages —— 注入块（SystemMessage）不进 LLM 请求
-    assert nodes_spy.calls[1].messages[-1] == ("user", _QUERY)
-    _assert_no_markers(nodes_spy.calls, ALL_MARKERS, "router-direct")
-    _assert_assembled(out)
+    out = await ainvoke_router_agent(
+        _QUERY, thread_id=f"phaseb-router-direct-{tag}", user_id=_USER
+    )
+    return out, nodes_spy.calls
 
 
-async def test_matrix_supervisor_zero_consumption(
-    monkeypatch: pytest.MonkeyPatch, injection_on: SimpleNamespace
-) -> None:
-    """supervisor × 注入开：planner/aggregator/内层 classify 三消费点零命中。
-
-    wiring 观测（钉死当前形态，供 Phase B 裁定）：
-    - 外层入口装配一次（facts + episodes）；
-    - 内层 rag 工人经 astream_router_agent 复跑装配——user_id 未传致 facts
-      跳过（continuity.py:458），tenant ContextVar 仍在致 episodes 再 recall
-      一次（continuity.py:500 不命中 skip）；
-    - 内层 classify 的 user 消息 = 子任务 input；aggregator 的 user 消息 =
-      原始 query + 子任务结果 JSON——均不含注入块。
-    """
-
+async def _run_supervisor(monkeypatch: pytest.MonkeyPatch, tag: str):
     plan = json.dumps(
         {"subtasks": [{"id": "t1", "type": "rag", "input": _SUBTASK_QUERY}]},
         ensure_ascii=False,
     )
-    multi_spy = SpyProvider("multi.nodes", plan, _AGG_OUT)
-    inner_router = SpyProvider("lg_rag.nodes.inner", '{"route": "rag"}')
+    multi_spy = SpyProvider(f"multi.nodes.{tag}", plan, _AGG_OUT)
+    inner_router = SpyProvider(f"lg_rag.nodes.inner.{tag}", '{"route": "rag"}')
     chain = AsyncMock(
         return_value=ChainResult(
             query=_SUBTASK_QUERY,
@@ -376,27 +358,100 @@ async def test_matrix_supervisor_zero_consumption(
     monkeypatch.setattr(_MULTI_PROVIDER, lambda *a, **k: multi_spy)
     monkeypatch.setattr(_NODES_PROVIDER, lambda *a, **k: inner_router)
     monkeypatch.setattr(_NODES_CHAIN, chain)
-
     out = await ainvoke_supervisor_agent(
-        _QUERY, thread_id="phasea-supervisor", user_id=_USER, run_id="phasea-run"
+        # run_id 常量：supervisor 子任务 id 嵌入 run_id，开/关双拍须同值才可比
+        # （隔离由 thread_id 承担）；spy 位点区分仍靠 tag
+        _QUERY, thread_id=f"phaseb-supervisor-{tag}", user_id=_USER, run_id="phaseb-run"
     )
-
-    sites = [_multi_call_site(c) for c in multi_spy.calls]
-    assert sites == ["supervisor_node.planner", "aggregator_node"], sites
-    assert [c.method for c in inner_router.calls] == ["complete"]
-    assert _nodes_call_site(inner_router.calls[0]) == "router_node.classify"
-    assert inner_router.calls[0].messages[-1] == ("user", _SUBTASK_QUERY)
-    chain.assert_awaited_once()
-    assert chain.await_args_list[0].args[0] == _SUBTASK_QUERY
-    _assert_no_markers(multi_spy.calls + inner_router.calls, ALL_MARKERS, "supervisor")
-    _assert_assembled(out)
-    # wiring 实证：facts 1 次（外层） vs episodes 2 次（外层 + 内层工人复装配）
-    assert injection_on.facts.await_count == 1
-    assert injection_on.episodes.await_count == 2
+    return out, multi_spy.calls + inner_router.calls, multi_spy.calls, inner_router.calls, chain
 
 
 # ---------------------------------------------------------------------------
-# TC2：默认关回归（零 diff 语义——recall 零调用 ∧ 注入块零出现）
+# ④b 验收：注入开 × 三模式 → 休眠三断言 + 开/关零 diff 对拍
+# ---------------------------------------------------------------------------
+
+
+async def test_4b_basic_rag_dormant_and_on_off_parity(
+    monkeypatch: pytest.MonkeyPatch, injection_on: SimpleNamespace
+) -> None:
+    """basic(rag) × 注入开：recall 零调用 ∧ 零注入块；开/关 LLM 请求面逐字节相等。"""
+
+    on_out, on_calls = await _run_basic_rag(monkeypatch, "on")
+    assert [c.method for c in on_calls] == ["complete", "complete"]  # grader + answer 照常
+    _assert_dormant(injection_on, on_out, on_calls, "basic/on")
+
+    _switches_off(monkeypatch)
+    off_out, off_calls = await _run_basic_rag(monkeypatch, "off")
+    _assert_on_off_parity(on_out, on_calls, off_out, off_calls, "basic")
+    _assert_dormant(injection_on, off_out, off_calls, "basic/off")
+
+
+async def test_4b_router_rag_rewrite_loop_dormant_and_on_off_parity(
+    monkeypatch: pytest.MonkeyPatch, injection_on: SimpleNamespace
+) -> None:
+    """router(rag→rewrite 回环) × 注入开：classify/rewrite + grader×2 + answer 全链路休眠。
+
+    首轮 grader 判 irrelevant → gate refuse → kept 空 → answer 不调 LLM →
+    quality low → rewrite 新 query → 二轮 grader 判 exact → kept → answer 调 LLM。
+    """
+
+    on_out, on_calls, on_nodes = await _run_router_rag_rewrite(monkeypatch, "on")
+    sites = [_nodes_call_site(c) for c in on_nodes]
+    assert sites == ["router_node.classify", "rewrite_node"], sites
+    for call in on_nodes:
+        assert call.messages[-1] == ("user", _QUERY), call.messages
+    _assert_dormant(injection_on, on_out, on_calls, "router-rag/on")
+
+    _switches_off(monkeypatch)
+    off_out, off_calls, _ = await _run_router_rag_rewrite(monkeypatch, "off")
+    _assert_on_off_parity(on_out, on_calls, off_out, off_calls, "router-rag")
+    _assert_dormant(injection_on, off_out, off_calls, "router-rag/off")
+
+
+async def test_4b_router_direct_dormant_and_on_off_parity(
+    monkeypatch: pytest.MonkeyPatch, injection_on: SimpleNamespace
+) -> None:
+    """router(direct) × 注入开：classify + direct_answer 休眠（不触 chain）；开/关零 diff。"""
+
+    on_out, on_calls = await _run_router_direct(monkeypatch, "on")
+    sites = [_nodes_call_site(c) for c in on_calls]
+    assert sites == ["router_node.classify", "direct_answer_node"], sites
+    assert on_calls[1].messages[-1] == ("user", _QUERY)
+    _assert_dormant(injection_on, on_out, on_calls, "router-direct/on")
+
+    _switches_off(monkeypatch)
+    off_out, off_calls = await _run_router_direct(monkeypatch, "off")
+    _assert_on_off_parity(on_out, on_calls, off_out, off_calls, "router-direct")
+    _assert_dormant(injection_on, off_out, off_calls, "router-direct/off")
+
+
+async def test_4b_supervisor_dormant_and_on_off_parity(
+    monkeypatch: pytest.MonkeyPatch, injection_on: SimpleNamespace
+) -> None:
+    """supervisor × 注入开：planner/aggregator/内层 classify 休眠；开/关零 diff。
+
+    Phase A 实证 supervisor 存在内层 rag 工人复装配（episodes recall 2 次）——
+    ④b 收窄后外层与内层复装配同走 impl 单点，本测试 episodes 零调用断言同时
+    覆盖内层复装配面（若内层仍 recall 即红）。
+    """
+
+    on_out, on_calls, on_multi, on_inner, on_chain = await _run_supervisor(monkeypatch, "on")
+    sites = [_multi_call_site(c) for c in on_multi]
+    assert sites == ["supervisor_node.planner", "aggregator_node"], sites
+    assert [c.method for c in on_inner] == ["complete"]
+    assert _nodes_call_site(on_inner[0]) == "router_node.classify"
+    assert on_inner[0].messages[-1] == ("user", _SUBTASK_QUERY)
+    on_chain.assert_awaited_once()
+    _assert_dormant(injection_on, on_out, on_calls, "supervisor/on")
+
+    _switches_off(monkeypatch)
+    off_out, off_calls, _, _, _ = await _run_supervisor(monkeypatch, "off")
+    _assert_on_off_parity(on_out, on_calls, off_out, off_calls, "supervisor")
+    _assert_dormant(injection_on, off_out, off_calls, "supervisor/off")
+
+
+# ---------------------------------------------------------------------------
+# TC2：默认关回归（零 diff 语义——recall 零调用 ∧ 注入块零出现 ∧ 流程照常）
 # ---------------------------------------------------------------------------
 
 
@@ -405,24 +460,20 @@ async def test_switches_default_off_zero_recall_zero_injection(
 ) -> None:
     """双开关默认关（删 env）→ recall 零 await ∧ state.messages 无注入块 ∧ 流程照常。"""
 
-    monkeypatch.delenv("MEMORY_FACTS_ENABLED", raising=False)
-    monkeypatch.delenv("MEMORY_EPISODES_ENABLED", raising=False)
+    _switches_off(monkeypatch)
     grader = SpyProvider("chain.grader", _GRADE_EXACT)
-    answer = SpyProvider("chain.answer", "答案：先查日志再重启")
+    answer = SpyProvider("chain.answer", _ANSWER_OUT)
     _patch_chain(monkeypatch, grader=grader, answer=answer)
 
-    out = await ainvoke_basic_agent(_QUERY, thread_id="phasea-off", user_id=_USER)
+    out = await ainvoke_basic_agent(_QUERY, thread_id="phaseb-off", user_id=_USER)
 
-    assert injection_on.facts.await_count == 0
-    assert injection_on.episodes.await_count == 0
-    assembled = _assembled_text(out)
-    leaked = [marker for marker in ALL_MARKERS if marker in assembled]
-    assert not leaked, f"默认关下注入块泄漏: {leaked}"
-    assert out["messages"][-1].content == "答案：先查日志再重启"
+    _assert_dormant(injection_on, out, grader.calls + answer.calls, "default-off")
+    assert out["messages"][-1].content == _ANSWER_OUT
 
 
 # ---------------------------------------------------------------------------
-# harness 自牙测：断言器对含哨兵的调用必 raise（防空转绿）
+# harness 自牙测：断言器对含哨兵的调用必 raise；markers 与渲染真值对齐
+# （防空转绿——④b 后注入路径不存在，牙须咬在「若注入发生必被看见」上）
 # ---------------------------------------------------------------------------
 
 
@@ -438,14 +489,80 @@ async def test_spy_assertion_has_teeth() -> None:
     _assert_no_markers(clean.calls, ALL_MARKERS, "selfcheck-clean")
 
 
+def test_markers_match_render_truth() -> None:
+    """markers 与 render/inject 真值对齐：若注入块真出现，必含 marker 并被装配面看见。"""
+
+    facts_block = render_memory_facts_block(
+        [
+            {"key": "project.phaseb_probe", "value": FACT_VALUE, "kind": "fact"},
+            {"key": "style.phaseb_probe", "value": PREF_VALUE, "kind": "preference"},
+        ]
+    )
+    for marker in FACT_MARKERS:
+        assert marker in facts_block, f"render 真值缺 marker: {marker}"
+    episode_block = render_memory_episodes_block(
+        [
+            {
+                "tenant_id": TENANT_A,
+                "run_id": "phaseb-run",
+                "task_domain": "ops",
+                "context_fingerprint": "fp",
+                "plan_summary": EPISODE_SUMMARY,
+                "tool_sequence": ["logs.read"],
+                "outcome": "success",
+                "status": "active",
+            }
+        ]
+    )
+    for marker in EPISODE_MARKERS:
+        assert marker in episode_block, f"render 真值缺 marker: {marker}"
+    # 注入块一旦进装配产物，state.messages 文本面必可见（休眠断言非空真）
+    msgs = inject_memory_facts_block(assemble_graph_messages("q", []), facts_block)
+    text = "\n".join(str(m.content) for m in msgs)
+    assert FACT_VALUE in text and MEMORY_FACTS_HEADER in text
+
+
 # ---------------------------------------------------------------------------
-# TC5（N2 吸收 · 白名单形态）：diff ⊆ tests/ + invoke docs/；
-# app/ | scripts/ | alembic/ 显式禁现（含 untracked，防新文件绕过）
+# TC5（N2 吸收 · 白名单形态 · Phase B 版）：diff ⊆ tests/ + invoke docs/
+# + continuity.py + memory README/__init__ + 01_modules.md；
+# scripts/ alembic/ 及其余 app/ 显式禁现（含 untracked，防新文件绕过）
 # ---------------------------------------------------------------------------
 
 _BASE = "414270d"
-_ALLOWED = re.compile(r"^(tests/|docs/harness/invokes/by-task/memory-injection-consumer/)")
-_BANNED = re.compile(r"^(app/|scripts/|alembic/)")
+_APP_ALLOWED = {
+    "app/ops/lg_rag/continuity.py",
+    "app/ops/memory/README.md",
+    "app/ops/memory/__init__.py",
+    # 切割连带：continuity 不再 import memory，三条 ignore 条目随切割移除
+    ".importlinter",
+}
+_TREE_ALLOWED_PREFIXES = (
+    "tests/",
+    "docs/harness/invokes/by-task/memory-injection-consumer/",
+    "docs/_tech_graph/l1/01_modules.md",
+)
+# 00/维护者落签面（非 30 产出 · 已在分支提交 29cd456/ed2c150 带 [00] 标记）：
+# 闸表裁定、DEF-005 对接文档与其优先级登记——30 禁改，仅登记为既有分支 delta
+_UPSTREAM_SIGN_PATHS = {
+    "docs/tasks/active/task_memory_injection_consumer.md",
+    "docs/tasks/deferred/task_memory_facts_build_4a.md",
+    "docs/tasks/PRIORITY_DEFERRED.md",
+}
+_BANNED_PREFIXES = ("scripts/", "alembic/")
+
+
+def _allowed(path: str) -> bool:
+    return (
+        path in _APP_ALLOWED
+        or path in _UPSTREAM_SIGN_PATHS
+        or path.startswith(_TREE_ALLOWED_PREFIXES)
+    )
+
+
+def _banned(path: str) -> bool:
+    if path.startswith(_BANNED_PREFIXES):
+        return True
+    return path.startswith("app/") and path not in _APP_ALLOWED
 
 
 def _git(root: Path, *args: str) -> list[str]:
@@ -455,18 +572,18 @@ def _git(root: Path, *args: str) -> list[str]:
     return [line.strip() for line in out.stdout.splitlines() if line.strip()]
 
 
-def test_phase_a_diff_whitelist() -> None:
+def test_phase_b_diff_whitelist() -> None:
     root = Path(__file__).resolve().parents[1]
     changed: set[str] = set()
     for args in (
         ("diff", "--name-only", _BASE),  # 工作区 vs base（未暂存）
         ("diff", "--name-only", "--cached", _BASE),  # 暂存区 vs base
-        ("diff", "--name-only", _BASE, "HEAD"),  # 已提交 delta
+        ("diff", "--name-only", _BASE, "HEAD"),  # 已提交 delta（含 Phase A a9fde63）
     ):
         changed.update(_git(root, *args))
     untracked = set(_git(root, "ls-files", "--others", "--exclude-standard"))
 
-    violations = sorted(p for p in changed if not _ALLOWED.match(p))
-    assert not violations, f"diff 越白名单（仅允许 tests/ 与 invoke docs/）: {violations}"
-    banned = sorted(p for p in changed | untracked if _BANNED.match(p))
-    assert not banned, f"禁改面（app/ scripts/ alembic/）出现改动: {banned}"
+    violations = sorted(p for p in changed if not _allowed(p))
+    assert not violations, f"diff 越白名单: {violations}"
+    banned = sorted(p for p in changed | untracked if _banned(p))
+    assert not banned, f"禁改面（scripts/ alembic/ 及其余 app/）出现改动: {banned}"

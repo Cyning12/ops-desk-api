@@ -20,12 +20,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 import yaml
-from langchain_core.messages import SystemMessage
 
 from app.ops.lg_rag.continuity import (
     MEMORY_FACTS_HEADER,
     MEMORY_PREFERENCES_GUIDE,
     MEMORY_PREFERENCES_HEADER,
+    assemble_graph_messages,
     assemble_graph_messages_with_memory,
     render_memory_facts_block,
 )
@@ -52,19 +52,6 @@ def _load_inventory() -> dict:
         return yaml.safe_load(f)
 
 
-async def _assemble_with_recall(monkeypatch: pytest.MonkeyPatch, question: str, facts):
-    """MEMORY_FACTS_ENABLED=true + 桩召回（无 DB），返回注入块 SystemMessage 文本集。"""
-    monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
-    # 钉确定性召回通路（同 test_memory_injection._patch_recall 理由：
-    # 宿主 .env 开向量召回 + 网络可用时 recall_with_vector 与桩 dicts 不兼容）
-    monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
-    monkeypatch.setattr("app.ops.memory.service.recall_active", AsyncMock(return_value=facts))
-    out = await assemble_graph_messages_with_memory(
-        question, [], tenant_id="redline-tenant", user_id="u-redline"
-    )
-    return [str(m.content) for m in out if isinstance(m, SystemMessage)]
-
-
 @redline("P0")
 def test_inventory_matches_implementation():
     """清单 ↔ 实现一一对应：多声明 = 假防护，少声明 = 暗改。"""
@@ -76,29 +63,39 @@ def test_inventory_matches_implementation():
 
 
 @redline("P1")
-async def test_no_preference_memory_no_preference_section(
+async def test_no_preference_memory_no_preference_section_dormant(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """无记忆用户问偏好类问题（金样 G1–G4）→ 注入上下文零偏好节（物理不存在）。
+    """④b 休眠断言：注入开下装配面 recall_active 零调用、输出与
+    assemble_graph_messages 基线逐字节一致 ⇒ 零偏好节（物理不存在）。
 
-    反向对照：同一装配路径下有 preference 行 → 节必须出现（防空真）。
+    ④b 收窄后红线更强成立（无注入面 ⇒ 偏好节无载体）；反向对照由
+    「stub 零调用 + 逐字节基线」承担（防空真）。④a（DEF-005 对接文档
+    docs/tasks/deferred/task_memory_facts_build_4a.md）复活时按清单恢复
+    原反向对照：有 preference 行 → 偏好节必须出现。
     """
     cases = _load_inventory()["golden_cases"]
     assert len(cases) >= 3, "金样太少不足以称金样"
+    monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    # 钉确定性召回通路（同 test_memory_injection._patch_recall 理由：
+    # 宿主 .env 开向量召回时分流绕过 recall_active 桩）
+    monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
+    stub = AsyncMock(side_effect=AssertionError("④b 休眠：recall 不应被调用"))
+    monkeypatch.setattr("app.ops.memory.service.recall_active", stub)
     for case in cases:
-        blocks = await _assemble_with_recall(monkeypatch, case["question"], [])
+        baseline = assemble_graph_messages(case["question"], [])
+        out = await assemble_graph_messages_with_memory(
+            case["question"], [], tenant_id="redline-tenant", user_id="u-redline"
+        )
+        assert [(type(m).__name__, str(m.content)) for m in out] == [
+            (type(m).__name__, str(m.content)) for m in baseline
+        ], f"[{case['id']}] 注入开/基线输出不逐字节一致：{case['question']}"
+        blocks = [str(m.content) for m in out]
         assert not any(MEMORY_PREFERENCES_HEADER in b for b in blocks), (
             f"[{case['id']}] 无偏好记忆却渲染出偏好节：{case['question']}"
         )
         assert not any(MEMORY_PREFERENCES_GUIDE in b for b in blocks)
-
-    # 反向对照：有 preference 行 → 偏好节出现（证明上面的"无节"不是坏掉的渲染）
-    blocks = await _assemble_with_recall(
-        monkeypatch,
-        cases[0]["question"],
-        [{"key": "pref.answer_lang", "value": "中文", "kind": "preference"}],
-    )
-    assert any(MEMORY_PREFERENCES_HEADER in b for b in blocks)
+    stub.assert_not_awaited()
 
 
 @redline("P2")

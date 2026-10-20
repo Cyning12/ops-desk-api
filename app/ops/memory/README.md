@@ -11,7 +11,7 @@
 |------|------|
 | `gate.py` | `should_write(candidate)` 写入闸**纯函数**；三判据落成显式规则，拒绝返回稳定原因码（`REJECT_REASONS`）。**闸拒 = 不落库**。kind 集合 `ALLOWED_KINDS={fact, preference}`；双向 key 域绑定违反 → `key_kind_mismatch`。 |
 | `service.py` | 状态机：`write_fact`（过闸 → 落库；同 `(tenant_id,user_id,key,kind)` 有 active 则**同一事务**内置旧 `superseded` + 新行 `supersedes` 指旧 id——查重谓词含 kind，跨 kind 同 key 互不影响）· `revoke_by_source`（按源头批量 `revoked`，幂等，审计日志记影响行数）· `revoke_by_key`（按 key 一键 `revoked`，显式声明 `source_run_id` 为空的纠错入口；必带 tenant+user 谓词 · 幂等 · 审计）· `sweep_expired`（过期置 `expired`）· `recall_active`（仅 active 且未过期，`updated_at desc` top-N，**无 kind 谓词**——分节在渲染层）· `purge_by_user`（按 `(tenant_id,user_id)` **全 status 整行物理删除**——合规删除权 · 管理面唯一入口 · 见「合规物理删除」节）。 |
-| `../lg_rag/continuity.py`（注入点） | `assemble_graph_messages_with_memory`：装配 + 可选记忆注入；渲染/插入助手 `render_memory_facts_block` / `inject_memory_facts_block`。P1：`MEMORY_FACTS_VECTOR_RECALL_ENABLED=true` 时召回走 `service.recall_with_vector` 混合召回，否则 P0 确定性路径。 |
+| `../lg_rag/continuity.py`（注入点 · ④b 休眠） | `assemble_graph_messages_with_memory`：装配面。**④b 收窄休眠（2026-10-20 · HG-PHASE-B-DECISION）**：Phase A spy 实证三模式 LLM 消费点零消费，装配面不再召回（recall_active / recall_with_vector / recall_success_episodes 零调用）、不再注入块；渲染/插入助手 `render_memory_facts_block` / `inject_memory_facts_block` 与 `recall_with_vector` 混合召回保留，复活对接 `docs/tasks/deferred/task_memory_facts_build_4a.md`。 |
 | `extract.py`（P1） | LLM 离线候选抽取（默认关）：run 完成后后台点火 → structured_output 管道 → 候选逐条过闸 → `write_fact`（带 `source_run_id`/`source_turn`）。 |
 
 存储：`ops_memory_facts`（`app/db/models.py::OpsMemoryFact`；migration `alembic/versions/20260921_memory_facts.py`，CHECK 放宽 `kind IN ('fact','preference')` 见 `20260922_memory_kind_preference.py`——回滚须先清 preference 行）。失效一律走状态机，运行期**不物理删**（旧值留表供审计对账）；合规物理删除只走管理面 `purge_by_user`（见下节）。

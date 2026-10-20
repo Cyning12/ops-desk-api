@@ -16,7 +16,6 @@ import uuid
 from datetime import timedelta
 
 import pytest
-from langchain_core.messages import SystemMessage
 from sqlalchemy import text
 
 from app.db.models import now_utc
@@ -205,7 +204,12 @@ async def test_recall_limit_truncates_oldest_first():
 async def test_mutation_wrong_fact_pollutes_then_revoke_erases(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """缺第一步（断言污染真的进入注入块），"撤销成功"就是假通过。"""
+    """三态变异检验（④b 休眠形态）：写入 → 服务层召回可见污染（通路非空真）→
+    装配面恒零注入块（④b 收窄不变量）→ revoke → 服务层召回归零。
+
+    写入侧零改动；装配消费面已收窄，污染/痊愈语义由服务层 recall_active 承担。
+    ④a 复活时按 docs/tasks/deferred/task_memory_facts_build_4a.md 清单恢复注入块三态断言。
+    """
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
     user = "u-mutation"
     src = "run-wrong-" + uuid.uuid4().hex[:8]
@@ -214,22 +218,23 @@ async def test_mutation_wrong_fact_pollutes_then_revoke_erases(
         source_run_id=src,
     )
 
+    # 第一态：服务层通路是通的——错误事实确实可召回（撤销语义非空真）
+    recalled = await recall_active(_TENANT, user)
+    assert any(f.key == "project.deploy_target" and f.value == "wrong-prod-host" for f in recalled)
+    # ④b 收窄不变量：装配面恒零注入块（即使开关开、库内有污染）
     polluted = await assemble_graph_messages_with_memory(
         "部署到哪里？", [], tenant_id=_TENANT, user_id=user
     )
-    blocks = [str(m.content) for m in polluted if isinstance(m, SystemMessage)]
-    # 第一步：通路是通的——错误事实确实出现在注入块
-    assert any(MEMORY_FACTS_HEADER in b for b in blocks)
-    assert any("project.deploy_target=wrong-prod-host" in b for b in blocks)
+    assert not any(MEMORY_FACTS_HEADER in str(m.content) for m in polluted)
 
     await revoke_by_source(src)
 
+    assert await recall_active(_TENANT, user) == []  # 服务层痊愈
     healed = await assemble_graph_messages_with_memory(
         "部署到哪里？", [], tenant_id=_TENANT, user_id=user
     )
-    healed_blocks = [str(m.content) for m in healed if isinstance(m, SystemMessage)]
-    assert not any("wrong-prod-host" in b for b in healed_blocks)
-    assert not any(MEMORY_FACTS_HEADER in b for b in healed_blocks)
+    assert not any("wrong-prod-host" in str(m.content) for m in healed)
+    assert not any(MEMORY_FACTS_HEADER in str(m.content) for m in healed)
 
 
 # ---------------- 跨 tenant 隔离 ----------------
@@ -368,23 +373,23 @@ async def test_mutation_wrong_preference_pollutes_then_revoke_by_key_erases(
     user = "u-pref-mutation"
     await write_fact(_pref_candidate(user_id=user, value="wrong-klingon"))
 
+    # 第一态：服务层通路是通的——错误偏好确实可召回（撤销语义非空真）
+    recalled = await recall_active(_TENANT, user)
+    assert any(f.key == "pref.answer_lang" and f.value == "wrong-klingon" for f in recalled)
+    # ④b 收窄不变量：装配面恒零偏好节/事实节块（即使开关开、库内有污染）
     polluted = await assemble_graph_messages_with_memory(
         "我以后用什么语言回答？", [], tenant_id=_TENANT, user_id=user
     )
-    blocks = [str(m.content) for m in polluted if isinstance(m, SystemMessage)]
-    # 第一态：通路是通的——错误偏好确实出现在注入块的偏好节
-    assert any(MEMORY_PREFERENCES_HEADER in b for b in blocks)
-    assert any("pref.answer_lang=wrong-klingon" in b for b in blocks)
-    # 且不污染事实节
-    assert not any(MEMORY_FACTS_HEADER in b and "wrong-klingon" in b for b in blocks)
+    assert not any(MEMORY_PREFERENCES_HEADER in str(m.content) for m in polluted)
+    assert not any(MEMORY_FACTS_HEADER in str(m.content) for m in polluted)
 
     n = await revoke_by_key(_TENANT, user, "pref.answer_lang")
     assert n == 1
 
+    assert await recall_active(_TENANT, user) == []  # 服务层痊愈
     healed = await assemble_graph_messages_with_memory(
         "我以后用什么语言回答？", [], tenant_id=_TENANT, user_id=user
     )
-    healed_blocks = [str(m.content) for m in healed if isinstance(m, SystemMessage)]
-    # 第三态：污染消失 + 偏好节物理不存在（无 preference → 无偏好节）
-    assert not any("wrong-klingon" in b for b in healed_blocks)
-    assert not any(MEMORY_PREFERENCES_HEADER in b for b in healed_blocks)
+    # 第三态：污染消失 + 装配面恒零偏好节（④b 下恒成立）
+    assert not any("wrong-klingon" in str(m.content) for m in healed)
+    assert not any(MEMORY_PREFERENCES_HEADER in str(m.content) for m in healed)

@@ -28,7 +28,6 @@ from app.ops.lc_evidence_chain.answer import (
 from app.ops.lc_evidence_chain.types import EvidenceItem
 from app.ops.lg_rag import continuity as continuity_mod
 from app.ops.lg_rag.continuity import (
-    MEMORY_FACTS_HEADER,
     assemble_graph_messages,
     assemble_graph_messages_with_memory,
 )
@@ -242,24 +241,30 @@ async def test_continuity_on_attributes_slots_role_order_unchanged(
         assert m.additional_kwargs["slot_ids"] == ["history_turn"]
 
 
-async def test_continuity_on_memory_block_attributed_memory_fact(
+async def test_continuity_on_memory_dormant_no_memory_slot(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """memory 面并入 memory_fact 槽声明（语义不变 · 声明补全 · 渲染零改动）。"""
+    """④b 休眠断言：注入开下 recall 零调用、装配面零 memory 块/零 memory_fact 槽；
+    归因面不变（out[-1]=user_query、history=history_turn），与 off 基线逐字节一致。
+
+    （④a 复活时按 docs/tasks/deferred/task_memory_facts_build_4a.md 清单恢复
+    「memory 面并入 memory_fact 槽声明」断言。）
+    """
     monkeypatch.setenv(_ENV, "true")
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
-    # 钉确定性召回通路（同 test_memory_injection._patch_recall 理由：宿主 .env
-    # 开向量召回时装配改走 recall_with_vector，与 mocked recall_active 不兼容）
     monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
-    monkeypatch.setattr(
-        "app.ops.memory.service.recall_active",
-        AsyncMock(return_value=[{"key": "project.primary_repo", "value": "cyning/ops-desk"}]),
-    )
+    stub = AsyncMock(side_effect=AssertionError("④b 休眠：recall 不应被调用"))
+    monkeypatch.setattr("app.ops.memory.service.recall_active", stub)
+    baseline = assemble_graph_messages("q", [])
     out = await assemble_graph_messages_with_memory("q", [], tenant_id="t-sec", user_id="u-sec")
-    blocks = [m for m in out if str(m.content).startswith(MEMORY_FACTS_HEADER)]
-    assert len(blocks) == 1
-    assert blocks[0].additional_kwargs["slot_ids"] == ["memory_fact"]
-    assert "project.primary_repo=cyning/ops-desk" in str(blocks[0].content)
+    stub.assert_not_awaited()
+    assert [(type(m).__name__, str(m.content)) for m in out] == [
+        (type(m).__name__, str(m.content)) for m in baseline
+    ]
+    assert not any(
+        "memory_fact" in m.additional_kwargs.get("slot_ids", []) for m in out
+    )
+    assert out[-1].additional_kwargs["slot_ids"] == ["user_query"]
 
 
 async def test_continuity_on_rejection_raises_with_span(monkeypatch: pytest.MonkeyPatch):

@@ -1,20 +1,20 @@
 """lg-rag 窗口压缩与图输入装配（不依赖 chat/session）。
 
 `compress_window` / `assemble_graph_messages` 保持纯函数（无 DB · 无 IO）。
-事实型记忆注入（memory-facts-p0）集中在
-`assemble_graph_messages_with_memory`：**默认关**（`MEMORY_FACTS_ENABLED`），
-关闭时输出与 `assemble_graph_messages` 逐字节一致；开启时把召回到的
-active facts 渲染为**系统消息尾部独立块**（`[已知事实]`，每条 `key=value` 一行）。
-会话真摘要（session-summary-fallback）接线在同一装配面、记忆注入**之前**：
-**默认关**（`SESSION_SUMMARY_ENABLED`），off / on-态全失败均与占位模式
-逐字节一致；占位条内容替换走 `app/ops/session/summary.py`（经 importlib
-运行期解析，守住 lg_rag 不静态依赖 session 的边界测试）。
-情景记忆召回注入（host-v1-episodic-memory-feedback D3）在同一装配面、事实
-注入**之后**：**默认关**（`MEMORY_EPISODES_ENABLED`），off = 装配逐字节
-零 diff；on 时把同 tenant + success + active + fingerprint 匹配的相似成功
-经验渲染为**独立 SystemMessage 分节**（`[相似经验]`，与 `[已知事实]`/
-`[用户偏好]` 物理分节），三闸预算（条数默认 3 · 单条 ≤200 · 整块 ≤800
-尾部截断）；召回失败降级不注入。
+
+记忆注入消费点（memory-facts / episodes 注入装配面）已按 ④b 裁定**休眠**
+（2026-10-20 · HG-PHASE-B-DECISION · docs/tasks/deferred/task_memory_facts_build_4a.md）：
+Phase A spy 实证三模式全部 LLM 消费点零消费，`assemble_graph_messages_with_memory`
+不再召回、不再产出 `[已知事实]`/`[用户偏好]`/`[相似经验]` 块，注入开/关
+输出与 `assemble_graph_messages` 逐字节一致。写入侧（memory service/gate/
+episode、recall API）与本文件渲染 helper（`render_memory_facts_block` /
+`render_memory_episodes_block` / `inject_memory_facts_block`）全部保留，供
+④a 真实构建复活（恢复清单见 deferred 对接文档）。
+
+会话真摘要（session-summary-fallback）接线在同一装配面：**默认关**
+（`SESSION_SUMMARY_ENABLED`），off / on-态全失败均与占位模式逐字节一致；
+占位条内容替换走 `app/ops/session/summary.py`（经 importlib 运行期解析，
+守住 lg_rag 不静态依赖 session 的边界测试）。
 
 多轮指代消解查询重写（query-coref-rewrite D1）在同一装配面、两条装配分支
 （session_summary on/off）**之前**一次算出 resolved_query：**默认关**
@@ -122,7 +122,7 @@ def assemble_graph_messages(
     return _assemble_messages_from_compressed(query, compressed)
 
 
-# ---------------- 事实型记忆注入（memory-facts-p0 · 默认关） ----------------
+# ---------------- 记忆 facts helper（memory-facts-p0 · ④b 休眠：装配面不再消费，helper 保留供 ④a 复活） ----------------
 
 #: 注入块事实节首行标记；节内每条事实 `key=value` 一行
 MEMORY_FACTS_HEADER = "[已知事实]"
@@ -419,19 +419,22 @@ async def _assemble_graph_messages_with_memory_impl(
     max_full_turns: int = DEFAULT_MAX_FULL_TURNS,
     group_size: int = DEFAULT_GROUP_SIZE,
 ) -> list[BaseMessage]:
-    """装配 + 可选真摘要 + 可选记忆注入。**开关全关时与 assemble_graph_messages 逐字节一致。**
+    """装配 + 可选真摘要。**输出恒与 assemble_graph_messages 系逐字节一致。**
 
     摘要面（session-summary-fallback · `SESSION_SUMMARY_ENABLED` 默认关）：
-    接线在记忆注入**之前**；off（未设/false/非法值）→ 跳过本面，与现网
-    **逐字节一致**（off 三态对拍断言钉死）；on 态任何失败 → 该 chunk 保留
-    占位符降级（span `session_summary_degraded=N`），与 off 态逐字节一致。
+    off（未设/false/非法值）→ 跳过本面，与现网**逐字节一致**（off 三态
+    对拍断言钉死）；on 态任何失败 → 该 chunk 保留占位符降级（span
+    `session_summary_degraded=N`），与 off 态逐字节一致。
     thread_id 仅供摘要缓存 key（身份取自请求上下文既有校验链）。
 
     身份纪律：tenant/user 由调用方从请求 ctx 取（tenant_context ContextVar /
     阶段 T 头校验链路 / session 用户）后**显式传入**；模型产出不得参与。
-    召回故障 → 记 log + span `memory_degraded`，降级为不注入（不拖垮请求）。
-    span metadata 记 `memory_facts_injected=N`；有 preference 时并列
-    `memory_preferences_injected=M`（tracing 未开时静默 no-op）。
+
+    记忆注入面：已按 ④b 裁定休眠（2026-10-20 · HG-PHASE-B-DECISION）——
+    本函数不再召回 facts/episodes、不再注入块、不再产出 memory_* span；
+    tenant_id/user_id/task_domain/intent_features/tool_sequence 形参保留
+    （签名稳定 · 调用方零改动），④a 复活时按
+    docs/tasks/deferred/task_memory_facts_build_4a.md 清单接回。
     """
     # query-coref-rewrite D1（先重写后召回 · 钉死顺序）：resolved_query 在两条
     # 装配分支（session_summary on/off）之前一次算出；末位 HumanMessage（经下方
@@ -453,78 +456,17 @@ async def _assemble_graph_messages_with_memory_impl(
             max_full_turns=max_full_turns,
             group_size=group_size,
         )
-    if memory_facts_enabled():
-        if not (tenant_id or "").strip() or not (user_id or "").strip():
-            logger.warning("MEMORY_FACTS_ENABLED on but tenant/user missing; skip injection")
-        else:
-            try:
-                # 延迟 import：continuity 保持纯函数可独立加载；memory 依赖 db
-                from app.ops.memory import service as memory_service
-
-                if memory_service.memory_facts_vector_recall_enabled():
-                    # P1 混合召回（默认关）：确定性 top-N ∪ 向量 top-M → 融合排序；
-                    # 向量通路失败内部回退确定性 + memory_vector_degraded
-                    facts = await memory_service.recall_with_vector(
-                        tenant_id.strip(),
-                        user_id.strip(),
-                        resolved_query,
-                        limit=memory_facts_max_items(),
-                    )
-                else:
-                    facts = await memory_service.recall_active(
-                        tenant_id.strip(),
-                        user_id.strip(),
-                        limit=memory_facts_max_items(),
-                    )
-            except Exception:
-                logger.exception("memory facts recall failed; degrade to no injection")
-                update_current_span_metadata({"memory_degraded": True})
-            else:
-                if not facts:
-                    update_current_span_metadata({"memory_facts_injected": 0})
-                else:
-                    block = render_memory_facts_block(facts)
-                    # span 双计数（D2）：facts/preferences 分别记；preference 为 0 时不出
-                    # 该 key（fact-only 流量与 P0/P1 观测面逐字节一致）
-                    n_prefs = sum(1 for f in facts if _fact_kind(f) == "preference")
-                    span: dict[str, Any] = {"memory_facts_injected": len(facts) - n_prefs}
-                    if n_prefs:
-                        span["memory_preferences_injected"] = n_prefs
-                    update_current_span_metadata(span)
-                    messages = inject_memory_facts_block(messages, block)
-
-    # ---------------- 情景记忆召回注入（D3 · 默认关 · 独立分节） ----------------
-    if not memory_episodes_enabled():
-        return messages
-    if not (tenant_id or "").strip():
-        logger.warning("MEMORY_EPISODES_ENABLED on but tenant missing; skip episode injection")
-        return messages
-    try:
-        # 延迟 import（同 memory service 先例）：off 态静态加载链零变化
-        from app.ops.memory import episode_gate, episode_service
-
-        # 当前意图 fingerprint 与写入同规则计算（domain+意图特征+工具序列骨架）
-        fingerprint = episode_gate.compute_context_fingerprint(
-            task_domain or "", intent_features, tool_sequence
-        )
-        episodes = await episode_service.recall_success_episodes(
-            tenant_id.strip(),
-            fingerprint,
-            limit=memory_episodes_max_items(),
-        )
-    except Exception:
-        # 召回失败降级不注入（承 :369 事实召回先例），不拖垮请求
-        logger.exception("memory episodes recall failed; degrade to no injection")
-        update_current_span_metadata({"memory_episodes_degraded": True})
-        return messages
-    if not episodes:
-        update_current_span_metadata({"memory_episodes_injected": 0})
-        return messages
-    episode_block = render_memory_episodes_block(episodes)
-    # span 记注入条数（tracing 未开时静默 no-op，承 memory_facts_injected 先例）
-    update_current_span_metadata({"memory_episodes_injected": len(episodes)})
-    # 独立 SystemMessage 分节：插在前缀系统消息（含事实块）之后
-    return inject_memory_facts_block(messages, episode_block)
+    # ---------------- ④b 全模式收窄：记忆注入消费点休眠 ----------------
+    # 2026-10-20 维护者裁定结局④b（HG-PHASE-B-DECISION · invoke 落签
+    # docs/harness/invokes/by-task/memory-injection-consumer/invoke_20261020_phase_b_decision_4b.md）：
+    # Phase A spy 实证矩阵证实 basic/router/supervisor 三模式全部 9 个 LLM 消费点对
+    # 注入块零消费，故此收窄——三模式注入路径（含 supervisor 内层复装配）整体移除，
+    # 注入开/关行为逐字节一致。写入侧（memory service/gate/episode、recall API、渲染
+    # helper）全部保留；本装配面不再调用 recall_active / recall_with_vector /
+    # recall_success_episodes，不再产出 [已知事实]/[用户偏好]/[相似经验] 块与
+    # memory_* span 计数。复活路径（④a 真实构建）与恢复清单见
+    # docs/tasks/deferred/task_memory_facts_build_4a.md。
+    return messages
 
 
 # ---------------- 输入结构隔离边界（security-input-isolation W1 · 默认关） ----------------
@@ -569,10 +511,11 @@ async def assemble_graph_messages_with_memory(
     max_full_turns: int = DEFAULT_MAX_FULL_TURNS,
     group_size: int = DEFAULT_GROUP_SIZE,
 ) -> list[BaseMessage]:
-    """装配 + 可选真摘要 + 可选记忆注入 + 可选输入结构隔离边界。
+    """装配 + 可选真摘要 + 可选输入结构隔离边界。
 
-    装配语义见 `_assemble_graph_messages_with_memory_impl`；开关全关时与
-    `assemble_graph_messages` **逐字节一致**。
+    装配语义见 `_assemble_graph_messages_with_memory_impl`；记忆注入面已按
+    ④b 裁定休眠（2026-10-20 · 见 impl docstring），输出恒与
+    `assemble_graph_messages` 系**逐字节一致**。
 
     输入结构隔离（security-input-isolation D2 · `SECURITY_INPUT_ISOLATION_ENABLED`
     默认关）：on 态对装配产物做消息级槽位归因（`history_turn`/`user_query`/

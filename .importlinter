@@ -229,10 +229,10 @@ ignore_imports =
     app.ops.lg_rag.router -> app.db.models
     app.ops.lg_rag.thread_store -> app.db.models
     app.ops.lg_rag.thread_store -> app.db.session
-    # 记忆装配/抽取（图谱 memory 消费方 · 出边未列）
-    app.ops.lg_rag.continuity -> app.ops.memory.episode_gate
-    app.ops.lg_rag.continuity -> app.ops.memory.episode_service
-    app.ops.lg_rag.continuity -> app.ops.memory.service
+    # 记忆抽取点火（图谱 memory 消费方 · 出边未列）；④b 收窄（2026-10-20 ·
+    # task_memory_injection_consumer）后 continuity 装配面不再 import memory，
+    # 原 continuity -> memory.{service,episode_gate,episode_service} 三条 ignore
+    # 随切割移除（④a 复活时随消费点接回）
     app.ops.lg_rag.router -> app.ops.memory.extract
     app.ops.lg_rag.sse_stream -> app.ops.memory.extract
     # basic 模式 grader
