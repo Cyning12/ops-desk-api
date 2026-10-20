@@ -14,11 +14,6 @@ from app.ops.capability.types import CapabilityFilter, CapabilitySpec
 from app.ops.lg_rag.multi.budget import bump_supervisor_step
 from app.ops.lg_rag.state import LgRagState
 from app.ops.strategy.config import get_candidate_capability_ids
-from app.ops.strategy.scenario import (
-    audit_scenario_stripped,
-    scenario_mode,
-    scenario_trim,
-)
 from app.ops.tracing import trace_span, tracing_enabled, update_current_span_metadata
 
 logger = logging.getLogger(__name__)
@@ -108,26 +103,6 @@ def effective_scope_from_requested(
     return scope, stripped, truncated
 
 
-def _apply_scenario_stage(visible: list[CapabilitySpec], state: LgRagState) -> list[CapabilitySpec]:
-    """stage 2 场景维（Host V1-B）：基线 → scenario_trim → 有效可见集。
-
-    off = 短路（现状零 diff · 零日志）；observe = 计算剔除但**不生效**
-    （台账记 would_strip）；enforce = 剔除生效（台账记 stripped）。
-    裁剪键只取 state.intent + state.intent_fallback（Host 权威 · Q2 裁定）。
-    """
-    mode = scenario_mode()
-    if mode == "off":
-        return visible
-    final, stripped = scenario_trim(
-        visible, state.get("intent"), bool(state.get("intent_fallback"))
-    )
-    if mode == "observe":
-        audit_scenario_stripped(stripped, would_strip=True)
-        return visible
-    audit_scenario_stripped(stripped)
-    return final
-
-
 def _record_builder_span(metadata: dict) -> None:
     if not tracing_enabled():
         return
@@ -146,16 +121,16 @@ async def strategy_builder_node(state: LgRagState) -> dict:
     supervisor-first（D3）：**不读** ``state.intent``（``needs_tool`` 语义废止；
     主路径无 intent）。allowlist = 显式 candidates（agent_type/mode 键）∩
     Registry∩Policy 基线可见集（S1 求交 · 未知 key → [] 非全开）；
-    场景维裁剪（stage 2）在无 intent 时短路不裁（scenario.py D3）。
+    allowlist = candidates ∩ 基线可见集直接求交（scenario 阶段已摘除 ·
+    2026-10-20 · 与摘除前恒短路输出逐值等价）。
     ``needs_skill`` 本波仍写空 ``allowed_skill_ids``。
     """
     bump = bump_supervisor_step(state)
     with trace_span("strategy_builder", run_type="chain"):
         visible = get_policy_visible_catalog()
-        # Host V1-B 两阶段：基线（stage 1）→ 场景维（stage 2）→ 有效可见集。
-        # allowlist 求交输入随之收窄 ⇒ supervisor 规划与 delegation_scope
-        # 交集（nodes.py effective_scope_from_requested 处）天然不越场景维。
-        visible = _apply_scenario_stage(visible, state)
+        # allowlist = candidates ∩ 基线可见集直接求交（scenario 阶段已摘除 ·
+        # 2026-10-20）；supervisor 规划与 delegation_scope 交集
+        #（nodes.py effective_scope_from_requested 处）天然不越 allowlist。
         visible_ids = frozenset(s.capability_id for s in visible)
         # 按 mode 显式 allowlist；未知 key → []（非全开）。
         # agent_type 不再来自 intent（D1 图内无 intent_node）——固定 None。
