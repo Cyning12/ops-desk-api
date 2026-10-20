@@ -19,6 +19,7 @@ MEMORY_FACTS_ENABLED / MEMORY_EPISODES_ENABLED、不再调任何 recall、不再
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 from dataclasses import dataclass
@@ -574,13 +575,48 @@ def _git(root: Path, *args: str) -> list[str]:
     return [line.strip() for line in out.stdout.splitlines() if line.strip()]
 
 
+def _git_ok(root: Path, *args: str) -> tuple[bool, str]:
+    proc = subprocess.run(
+        ["git", *args], cwd=root, capture_output=True, text=True, check=False
+    )
+    return proc.returncode == 0, proc.stdout.strip()
+
+
+def _resolve_base(root: Path) -> str:
+    """基线锚点解析（CI 浅克隆健壮化 · 2026-10-20 PR #285 修复）。
+
+    探测序：
+    1. 本地全量历史：钉死 {_BASE}（docs 线尖端 · 回归语义不变）；
+    2. 浅克隆（fetch-depth=1 对象库无该提交）退化：merge-base HEAD
+       origin/{GITHUB_BASE_REF}（未设则 origin/master）；
+    3. 仍不可得：pytest.skip 并带实测 ref 状态——绝不静默 pass 也不 fail。
+    """
+    ok, _ = _git_ok(root, "rev-parse", "--verify", f"{_BASE}^{{commit}}")
+    if ok:
+        return _BASE
+    tried = [f"{_BASE}^{{commit}} 不在对象库（浅克隆?）"]
+    base_ref = os.environ.get("GITHUB_BASE_REF", "").strip() or "master"
+    for ref in dict.fromkeys((f"origin/{base_ref}", "origin/master")):
+        ok, _ = _git_ok(root, "rev-parse", "--verify", f"{ref}^{{commit}}")
+        if not ok:
+            tried.append(f"{ref} 不可用")
+            continue
+        ok, mb = _git_ok(root, "merge-base", "HEAD", ref)
+        if ok and mb:
+            print(f"[TC5] 基线退化：{_BASE} 不可用，取 merge-base HEAD {ref} = {mb[:12]}")
+            return mb
+        tried.append(f"{ref} 在册但 merge-base HEAD 不可得（浅克隆无共祖）")
+    pytest.skip("TC5 基线锚点不可解析（" + "；".join(tried) + "）")
+
+
 def test_phase_b_diff_whitelist() -> None:
     root = Path(__file__).resolve().parents[1]
+    base = _resolve_base(root)
     changed: set[str] = set()
     for args in (
-        ("diff", "--name-only", _BASE),  # 工作区 vs base（未暂存）
-        ("diff", "--name-only", "--cached", _BASE),  # 暂存区 vs base
-        ("diff", "--name-only", _BASE, "HEAD"),  # 已提交 delta（含 Phase A a9fde63）
+        ("diff", "--name-only", base),  # 工作区 vs base（未暂存）
+        ("diff", "--name-only", "--cached", base),  # 暂存区 vs base
+        ("diff", "--name-only", base, "HEAD"),  # 已提交 delta（含 Phase A a9fde63）
     ):
         changed.update(_git(root, *args))
     untracked = set(_git(root, "ls-files", "--others", "--exclude-standard"))
