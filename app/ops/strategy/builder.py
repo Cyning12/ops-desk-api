@@ -120,9 +120,8 @@ async def strategy_builder_node(state: LgRagState) -> dict:
 
     supervisor-first（D3）：**不读** ``state.intent``（``needs_tool`` 语义废止；
     主路径无 intent）。allowlist = 显式 candidates（agent_type/mode 键）∩
-    Registry∩Policy 基线可见集（S1 求交 · 未知 key → [] 非全开）；
-    allowlist = candidates ∩ 基线可见集直接求交（scenario 阶段已摘除 ·
-    2026-10-20 · 与摘除前恒短路输出逐值等价）。
+    Registry∩Policy 基线可见集直接求交（S1 求交 · 未知 key → [] 非全开 ·
+    scenario 阶段已摘除 2026-10-20 · 与摘除前恒短路输出逐值等价）。
     ``needs_skill`` 本波仍写空 ``allowed_skill_ids``。
     """
     bump = bump_supervisor_step(state)

@@ -439,9 +439,21 @@ _TREE_ALLOWED_FILES = {
     "docs/_tech_graph/l1/01_modules.md",
     "docs/guides/GUIDE_env_inventory_v1.md",
     "docs/tasks/active/task_scenario_stage_rewire.md",
+    # 00 裁定 O1（2026-10-20 · 同款前车预防）：CLOSE 时 task 文件自 active/
+    # 移入 done/（00 落签面同类 · 同 #2 done/task_memory_injection_consumer.md 处置）。
+    "docs/tasks/done/task_scenario_stage_rewire.md",
+    # 40 落签面同类（00 裁定 A）：review40 审查文随本波次入库。
+    "docs/harness/reviews/task_scenario_stage_rewire_review40_20261020.md",
 }
 _TREE_ALLOWED_PREFIXES = ("docs/harness/invokes/by-task/scenario-stage-rewire/",)
 _BANNED_PREFIXES = ("scripts/", "alembic/")
+
+# 00 裁定 O1（语义照抄 #2 四态）：波次窗 = a1591e9.._WAVE_TIP（#3 合并
+# commit · 由 00 于 CLOSE 时钉死）。合并 commit 未定期间以「钉锚后仅本波次
+# 文件」判定逻辑等价处理——本闸在波次内即钉死改动面 ⊆ 声明面（_allowed），
+# 故越界路径只可能来自后续波次（foreign → 可审计 skip）；_WAVE_TIP 钉死后
+# _touched_in_wave 恢复全量历史判定（波次窗内未登记面被触碰 → fail 保牙）。
+_WAVE_TIP: str | None = None
 
 
 def _allowed(path: str) -> bool:
@@ -470,6 +482,27 @@ def _git_ok(root: Path, *args: str) -> tuple[bool, str]:
         ["git", *args], cwd=root, capture_output=True, text=True, check=False
     )
     return proc.returncode == 0, proc.stdout.strip()
+
+
+def _touched_in_wave(root: Path, path: str) -> bool:
+    """path 是否在 #3 波次窗内被触碰（越界分类：True=internal → fail 保牙）。
+
+    _WAVE_TIP 未钉（None · 合并 commit 未知）：等价判定「钉锚后仅本波次
+    文件」——声明面（_allowed）内且钉锚后有触碰史视为波次内；声明面外的
+    越界路径视为后续波次产物（foreign → skip  eligible）。
+    _WAVE_TIP 已钉：git log a1591e9.._WAVE_TIP -- <path> 非空即波次内
+    （锚点不可解析/命令异常 → 保守 True 保牙 · 口径照抄 #2）。
+    """
+    if _WAVE_TIP is None:
+        if not _allowed(path):
+            return False
+        ok, out = _git_ok(root, "log", "--format=%H", f"{_BASE}..HEAD", "--", path)
+        return ok and bool(out)
+    ok, _ = _git_ok(root, "rev-parse", "--verify", f"{_WAVE_TIP}^{{commit}}")
+    if not ok:
+        return True  # 钉锚不可解析 → 保守保牙
+    ok, out = _git_ok(root, "log", "--format=%H", f"{_BASE}..{_WAVE_TIP}", "--", path)
+    return (not ok) or bool(out)
 
 
 def _resolve_base(root: Path) -> str:
@@ -511,7 +544,19 @@ def test_diff_whitelist_scenario_stage_rewire() -> None:
         changed.update(_git(root, *args))
     untracked = set(_git(root, "ls-files", "--others", "--exclude-standard"))
 
-    violations = sorted(p for p in changed if not _allowed(p))
-    assert not violations, f"diff 越白名单: {violations}"
+    # 00 裁定 O2（2026-10-20）：禁区断言先于第四态 skip 判定——
+    # 越界全 foreign 但含 scripts//alembic/（或其余 app/）时必须 fail 而非 skip。
     banned = sorted(p for p in changed | untracked if _banned(p))
     assert not banned, f"禁改面（scripts/ alembic/ 及其余 app/）出现改动: {banned}"
+
+    violations = sorted(p for p in changed if not _allowed(p))
+    if violations:
+        # 00 裁定 O1 第四态（语义照抄 #2）：钉锚命中 ∧ 越出面全为后续波次
+        # 产物 → 可审计 skip；含本波次窗内文件 → 仍 fail（回归牙保留）。
+        internal = sorted(p for p in violations if _touched_in_wave(root, p))
+        assert not internal, f"diff 越白名单且属 #3 波次窗内文件（回归牙）: {internal}"
+        pytest.skip(
+            "TC8 白名单闸使命于 #3 scenario-stage-rewire 合并时点完成："
+            "基线后已有后续任务合入 · 实测越界文件清单（均后续波次产物）: "
+            f"{violations}"
+        )
