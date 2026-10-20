@@ -35,7 +35,7 @@
 | 闸 | 状态 | 阻塞 | 备注 |
 |---|---|---|---|
 | HG-SPEC-SIGNOFF | **approved**（2026-10-19 维护者） | 20 书面审 | SPEC v0.1 文末 · 含裁定记录：分支 **(a) 摘除** |
-| HG-AUDIT-R1 | **pending** | 30 改码 | 维护者已授权 00 代签后续文档闸 · **落闸动作在 20-task-audit 之后由 00 执行**，起草时一律 pending；**未签不得 30** |
+| HG-AUDIT-R1 | **approved**（2026-10-20 维护者授权 00 代签 · R1=conditional_pass 阻塞 0） | 30 改码 | 审查文 docs/harness/reviews/task_scenario_stage_rewire_audit_R1_20261020.md（锚点 20 命中/2 行号漂移 · nits N1–N3 留 30 吸收）；授权链 invoke_20261020_gate_sign_hg_audit_r1.md |
 | HG-GRAPH-MODULES | **approved**（在册 · `docs/_tech_graph/l1/01_modules.md` 闸登记表） | 30 改码 | `graph_change_layer=none` 预期不再签；30 实判越出（新行/新边）→ 回炉补签 |
 
 ---
