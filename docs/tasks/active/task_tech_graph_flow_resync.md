@@ -35,7 +35,7 @@
 | 闸 | 状态 | 阻塞 | 备注 |
 |---|---|---|---|
 | HG-SPEC-SIGNOFF | **approved**（2026-10-19 维护者 · **裁定 D2-a 续冻**：l2 索引加显式冻结声明 + s_intent 标 dormant · 不扩 l2 重生成） | 20 书面审 | SPEC v0 文末签收记录 |
-| HG-AUDIT-R1 | **pending**（维护者已授权 00 代签后续文档闸 · m00147 授权在案 · 落闸动作在 20-task-audit 之后由 00 执行，起草时 pending） | 30 改码 | 审查文落 `docs/harness/reviews/`；授权链 invoke 落 `docs/harness/invokes/by-task/tech-graph-flow-resync/` |
+| HG-AUDIT-R1 | **approved**（2026-10-20 · 00 代签 · 维护者扩展授权 m00147 在案 · R1=conditional_pass 阻塞 0 · 代签即确认 N4 收窄：SPEC §6 dormant 三处一致 → 两处一致 + __init__.py:5 docstring 挂账移交另案） | 30 改码 | 审查文落 `docs/harness/reviews/`；授权链 invoke 落 `docs/harness/invokes/by-task/tech-graph-flow-resync/` |
 | HG-GRAPH-MODULES | **approved**（本 task 即图谱文档面重同步：不新增/不撤销一级模块 · 零新跨模块边 · 不增 implementedBy · 零新路由/表/SSE 事件类型 · l2 续冻裁定含维护者签收） | 30 改码 | `graph_change_layer=docs` 预期不再签；30 实判越出（动 app/ · 扩 l2 · 增行/边）→ 回炉补签 |
 
 ---
