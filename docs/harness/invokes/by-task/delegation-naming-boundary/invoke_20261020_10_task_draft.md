@@ -46,7 +46,24 @@
 
 | 产出 | 状态 |
 |---|---|
-| `docs/tasks/active/task_delegation_naming_boundary.md` | draft v0.1 · 191 行 · `npx dsh-coding-kit task lint --file` **PASS**（仅 W5 思考轮槽位 warn-only 过渡提醒 · E 零） |
+| `docs/tasks/active/task_delegation_naming_boundary.md` | draft v0.1 · 191 行 → **v0.2 · 194 行**（M1–M3 闭合 · 见第六节）· `npx dsh-coding-kit task lint --file` **PASS**（仅 W5 思考轮槽位 warn-only 过渡提醒 · E 零） |
 | HG-SPEC-SIGNOFF | approved（2026-10-19 维护者） |
 | HG-AUDIT-R1 | **pending**（blocks 30 · 落闸在 20-task-audit 后 00 代签授权在） |
 | HG-GRAPH-MODULES | approved（graph_change_layer=none 预期口径：行内备注回写 · 不增行/边/implementedBy/路由/表/SSE 事件类型 · 越出回炉补签） |
+
+## 六、v0.2 修订记录（2026-10-20 · 20-task-audit R1=conditional_pass 签前闭合）
+
+审查文：`docs/harness/reviews/task_delegation_naming_boundary_audit_R1_20261020.md`
+
+| 项 | 闭合落点（task 行号 · v0.2） |
+|---|---|
+| **M1**（TC1×TC8 互斥 · 实证 `tests/test_capability_testing_write.py:185/:412/:468` 三处注释含旧名） | D1 改名面补登（task :61 注释级改名同步 · 逻辑零改）+ TC8 白名单补登（task :126） |
+| **M2**（`01_modules.md:116` 闸登记表历史行含旧名 · 不可变历史记录） | TC1 豁免清单补②「闸登记表既有历史回写行」（task :119） |
+| **M3**（env 台账措辞事实错误） | D2（task :76）+ R1 轮小节（task :166）改「delegation 三键已登记 GUIDE :12-14 capability 段 · 新键补登记 lg_rag 段」 |
+| N-a | TC8 实现注：态④锚不可解析时 banned 检测以「vs HEAD + untracked」兜底（task :126） |
+| N-d | D2 开关 bullet 注明 `SESSION_SUMMARY_ENABLED` 先例默认关 vs 本键默认开方向相反 · 仅承解析模式防误抄（task :73） |
+| N-e | TC1 口径注明：SPEC FP-1「全仓」vs 三面窄化 + 两类豁免后等价全仓（task :119） |
+| N-b | def 行 off-by-one 维持「30 按实校正」（不改） |
+| N-c | 仅知会（不改） |
+
+v0.2 写入面：仅 task 文档 + 本 invoke · 零 `app/` 改码 · 未改 SPEC · 未代签闸 · lint PASS（W5 warn-only）

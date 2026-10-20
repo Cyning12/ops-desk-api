@@ -1,6 +1,6 @@
 # Task：delegation-naming-boundary（委派令牌正名 + write 护栏解耦 · FP-2 唯一有意行为变化）
 
-- **状态**：draft（2026-10-20 10-task 落稿 · 待 20-task-audit R1 → HG-AUDIT-R1 → 30）
+- **状态**：draft v0.2（2026-10-20 10-task 修订 · 20-task-audit R1=conditional_pass M1–M3 签前闭合（审查文 \`docs/harness/reviews/task_delegation_naming_boundary_audit_R1_20261020.md\`）· 待 R2/HG-AUDIT-R1 → 30）
 - **类型**：refactor（纯符号正名 · 无 deprecation 过渡）+ **intentional behavior change（FP-2 护栏默认开 · 唯一）**
 - **依据**：`docs/spec/delegation-naming-boundary/SPEC-delegation-naming-boundary_v0.md`（v0.1 · **signed · HG-SPEC-SIGNOFF=approved 2026-10-19 维护者**）+ `docs/harness/reviews/spec_delegation-naming-boundary_audit_R1_20261019.md`（R1 conditional_pass 阻塞 0 · 锚点 8/9 → v0.1 闭合 → R2 pass）
 - **建议序**：4/5（query-coref-rewrite 已合 PR #284 · memory-injection-consumer 已合 PR #285 · scenario-stage-rewire 已合 PR #286 → **本 task** → tech-graph-flow-resync）
@@ -58,6 +58,7 @@ D1 正名 `auto_approve_ok` → `issuance_policy_allows`（直接改名 · 不�
 - 定义：`app/ops/capability/delegation.py:479` `def auto_approve_ok(specs, *, effective_scope)` 三条件纯函数（:479-505）
 - 调用：`app/ops/lg_rag/multi/nodes.py:420` `dl.auto_approve_ok([entry[0]], effective_scope=scope)`；docstring 提及 `nodes.py:408`
 - 测试：`tests/test_capability_delegation.py:338-360` 区域——`test_auto_approve_*` 三例（:338/:352/:359）+ 调用 :340/:354/:360，测试函数名与符号同步
+- 测试（注释级 · 20-task-audit R1 M1 全仓实证补登）：`tests/test_capability_testing_write.py:185/:412/:468` 三处注释含旧名（`# 触发 auto_approve_ok 条件②不放行` 等）——**注释级改名同步 · 逻辑零改**（落入 TC1 tests/ 断言面 · TC8 白名单已补登）
 - 图谱：`docs/_tech_graph/l1/01_modules.md:35` lg_rag 行 T1 备注「`auto_approve_ok` 纯函数零 IO」字样同步
 - 判定逻辑（三条件）**逐字节保持**，diff 仅符号名 + docstring（TC2 机断）
 - 历史 docs（reviews / tasks/done / invokes / specs）旧名引用属**不可变历史记录 · 不动**；TC1 grep 断言面 = `app/` `tests/` `docs/_tech_graph/`，豁免清单落 invoke
@@ -69,10 +70,10 @@ D1 正名 `auto_approve_ok` → `issuance_policy_allows`（直接改名 · 不�
   - `app/ops/lg_rag/multi/nodes.py:931` `if _delegation_active() and str(row.get("type") or "") == "tool":` guard-skip 块头——块内含 :932 write_key 计算、:933-963 异 sid 命中 guard-skip（**:941-942 台账键 `write_replay_guard_skip`/`replay_of` = 金样钩子**）、:964-967 同批双胞胎次发挂起
   - 关联行：:930 `write_key = None` 初始化、:987-988 `if write_key is not None: batch_write_keys[write_key] = sid`（首发登记在门控块外 · 由 write_key 惰性控 · 解耦后随 write_key 自然跟随——30 须核对此跟随关系不破）
 - **N3 校正**：R1 审查文列第三处 `:970` 系同形 `if` 行误并——`:970` 实为签发审批门 `issue_reason = await _delegation_issue_block_reason(state, row)` 块头，属 delegation 本体功能，**不在解耦面**，保持 `_delegation_active()` 耦合不动；`:1271` `if _delegation_active() and not fallback and subtasks:` 同理不动
-- **新开关定为 `LG_RAG_WRITE_REPLAY_GUARD_ENABLED`**（布尔 · **默认 true=开** · 非法值回退开 · 解析承 `SESSION_SUMMARY_ENABLED` 先例；键名对齐台账 `write_replay_guard_*`）。SPEC 允许三档或布尔，本 task 定布尔
+- **新开关定为 `LG_RAG_WRITE_REPLAY_GUARD_ENABLED`**（布尔 · **默认 true=开** · 非法值回退开 · 解析承 `SESSION_SUMMARY_ENABLED` 先例——**仅承解析模式**：该先例默认关、本键默认开，方向相反，防误抄（R1 N-d）；键名对齐台账 `write_replay_guard_*`）。SPEC 允许三档或布尔，本 task 定布尔
 - 语义：护栏激活条件 = 新开关 on，**不再依赖** `_delegation_active()`；delegation on 时行为与 master 逐字节一致（TC5 牙）
 - **FP-2 声明**：delegation off（默认态）下护栏由「从不生效」变「默认生效」——既有 supervisor 委派链路如依赖「护栏不生效」旧行为将首次被拦；此为 intentional behavior change，落 invoke + 图谱 lg_rag 行备注显式声明（TC10 牙）
-- env 台账 `docs/guides/GUIDE_env_inventory_v1.md` lg_rag 段补登记新键（先例 :35 `LG_RAG_VISIBILITY_SCENARIO_MODE` 行）
+- env 台账 `docs/guides/GUIDE_env_inventory_v1.md`：delegation 三键（`LG_RAG_DELEGATION_TOKEN_MODE`/`SECRET`/`TTL_SECONDS`）已登记 :12-14 capability 段（20-task-audit R1 M3 事实校正）；新键 `LG_RAG_WRITE_REPLAY_GUARD_ENABLED` 补登记 lg_rag 段（先例 :35 `LG_RAG_VISIBILITY_SCENARIO_MODE` 行）
 
 ### D3 图谱 `01_modules.md` 回写
 
@@ -115,14 +116,14 @@ task 级补充：
 
 ## 验收标准
 
-- [ ] **TC1 改名零残留（承 SPEC FP-1）**：`grep -rn "auto_approve_ok" app/ tests/ docs/_tech_graph/` 零命中（历史 docs reviews/tasks/done/invokes/specs 豁免 · 豁免清单落 invoke）。
+- [ ] **TC1 改名零残留（承 SPEC FP-1）**：`grep -rn "auto_approve_ok" app/ tests/ docs/_tech_graph/` 零命中。豁免清单（落 invoke）：① 历史 docs reviews/tasks/done/invokes/specs（不可变历史记录）；② `01_modules.md` **闸登记表既有历史回写行**（:116 等 · 同不可变历史记录 · 20-task-audit R1 M2 补登）。口径注明（R1 N-e）：SPEC FP-1 表述「全仓」vs 本 TC 三面窄化——三面断言 + 两类豁免后等价全仓口径，非缩水。
 - [ ] **TC2 正名落位与等价（承 SPEC FP-5）**：`delegation.py` `def issuance_policy_allows(specs, *, effective_scope)` 落位 + 三条件判定逐字节保持（diff 仅符号名/docstring）+ `nodes.py:420` 调用与 :408 docstring 同步 + `pytest tests/test_capability_delegation.py` 全绿（`test_issuance_policy_allows_*` 同步）。
 - [ ] **TC3 默认开拦截（FP-2 正牙）**：env 全不设（delegation 默认 off）→ supervisor write 双胞胎重放金样被拦 · 台账含 `write_replay_guard_skip` + `replay_of`（钩子 nodes.py:941-942）。
 - [ ] **TC4 关恢复旧行为（FP-2 逆牙 · 承 SPEC FP-4）**：`LG_RAG_WRITE_REPLAY_GUARD_ENABLED=false` + delegation off → 行为与 master 基线逐字节一致。
 - [ ] **TC5 delegation on 矩阵回归（承 SPEC FP-3 邻面）**：delegation on × guard on → 与 master 逐字节零 diff；× guard off → 护栏不生效但签发审批门（:970）照常（delegation 耦合不动）。
 - [ ] **TC6 freeze 零变化（承 SPEC FP-3/FP-6）**：审计五动作词表 / 拒绝码 R-a~R-f / SSE 事件类型 / HTTP 面 grep+diff 断言空；freeze `lg-rag-sse-v1`/`lg-rag-http-v1` 不升；既有 enforce 档用例全绿。
 - [ ] **TC7 env 非法回退（承 SPEC FP-7）**：`LG_RAG_WRITE_REPLAY_GUARD_ENABLED` 非法值（如 `"2"`/`""`）→ 回退默认开 + 护栏生效断言。
-- [ ] **TC8 diff 白名单 + _resolve_base 式四态**：改动面 ⊆ {`app/ops/capability/delegation.py`、`app/ops/lg_rag/multi/nodes.py`、`tests/test_capability_delegation.py`、新增护栏矩阵测试文件、`docs/_tech_graph/l1/01_modules.md`、`docs/guides/GUIDE_env_inventory_v1.md`、`docs/harness/invokes/by-task/delegation-naming-boundary/**`、`docs/tasks/active/task_delegation_naming_boundary.md`}；基线锚点解析四态——① `git rev-parse --verify {钉锚}^{commit}` → ② 退化 `merge-base HEAD origin/{GITHUB_BASE_REF 或 master}`（双 ref 试）→ ③ 钉锚命中 ∧ 越白名单 ∧ 越出面全非本波次（_WAVE_TIP 判定）→ 可审计 skip（越出面含本波次仍 fail）→ ④ 仍不可得 `pytest.skip` 带实测 ref 状态（绝不静默 pass/fail）；**banned 禁区断言（`scripts/` `alembic/` 白名单外 `app/`）前置于全部 skip 出口**（task 级强化 · 蓝本 :659-660 置尾承改为前置——skip 不得掩盖禁区触碰）；实现照抄 `tests/test_memory_injection_consumer.py:608-660` + `tests/test_strategy_scenario.py:451-536` 口径。
+- [ ] **TC8 diff 白名单 + _resolve_base 式四态**：改动面 ⊆ {`app/ops/capability/delegation.py`、`app/ops/lg_rag/multi/nodes.py`、`tests/test_capability_delegation.py`、`tests/test_capability_testing_write.py`（仅注释级改名 · R1 M1 补登）、新增护栏矩阵测试文件、`docs/_tech_graph/l1/01_modules.md`、`docs/guides/GUIDE_env_inventory_v1.md`、`docs/harness/invokes/by-task/delegation-naming-boundary/**`、`docs/tasks/active/task_delegation_naming_boundary.md`}；基线锚点解析四态——① `git rev-parse --verify {钉锚}^{commit}` → ② 退化 `merge-base HEAD origin/{GITHUB_BASE_REF 或 master}`（双 ref 试）→ ③ 钉锚命中 ∧ 越白名单 ∧ 越出面全非本波次（_WAVE_TIP 判定）→ 可审计 skip（越出面含本波次仍 fail）→ ④ 仍不可得 `pytest.skip` 带实测 ref 状态（绝不静默 pass/fail）；**banned 禁区断言（`scripts/` `alembic/` 白名单外 `app/`）前置于全部 skip 出口**（task 级强化 · 蓝本 :659-660 置尾承改为前置——skip 不得掩盖禁区触碰）；实现注（R1 N-a）：态④锚不可解析时 banned 检测以「vs HEAD + untracked」兜底，不可因基线缺失整体豁免禁区；实现照抄 `tests/test_memory_injection_consumer.py:608-660` + `tests/test_strategy_scenario.py:451-536` 口径。
 - [ ] **TC9 静态与全量**：`ruff check app tests` 绿 + `pytest tests` 全量绿（既有测试除符号名同步逐字不改）。
 - [ ] **TC10 文档三落位**：`01_modules.md` capability :34 + lg_rag :35 回写（正名同步 + 护栏解耦/新开关 + FP-2 声明 + 闸登记表新行）断言；`GUIDE_env_inventory_v1.md` lg_rag 段 `LG_RAG_WRITE_REPLAY_GUARD_ENABLED` 在册断言；invoke 目录 10/20/30/40 齐；`./scripts/graph-compile.sh` EXIT=0。
 
@@ -162,7 +163,7 @@ SPEC v0.1（D1 正名 / D2 解耦默认开 / D3 图谱写实 · FP-1~FP-7 · fre
 
 ### R1 轮：锚点亲读复核（master `31924af`）
 
-护栏耦合**两处真门控** :903/:931（+ :930/:987-988 关联行）；R1 N3 第三处 :970 系签发审批门误并，不在解耦面（D2 显式校正）。改名面 5 处代码/测试 + 1 处图谱字样。capability 行 :34、lg_rag 行 :35 无 delegation 独立行（承 Q3）。env 台账 delegation 系 env 未登记在先。
+护栏耦合**两处真门控** :903/:931（+ :930/:987-988 关联行）；R1 N3 第三处 :970 系签发审批门误并，不在解耦面（D2 显式校正）。改名面 8 处代码/测试（含 v0.2 M1 补登 test_capability_testing_write.py 注释级三处）+ 1 处图谱字样（闸登记历史行 :116 等不动 · TC1 豁免②）。capability 行 :34、lg_rag 行 :35 无 delegation 独立行（承 Q3）。env 台账：delegation 三键已登记 GUIDE :12-14 capability 段（v0.2 M3 校正 v0.1「未登记在先」误述）· 新键补登记 lg_rag 段。
 
 ### R2 轮：格局沿用
 
@@ -183,9 +184,11 @@ FP-1~FP-8 对齐 SPEC FP-1~FP-7 + task 级 FP-8（基线锚点静默）；banned
 - FP-2 行为变化验收：TC3 默认开拦截 + TC4 关恢复 + TC5 矩阵 + FP-2 行「用户可见=是」✔
 - 改名兼容处置：承 SPEC 直接改名不留别名/无 deprecation（D1 写明 · TC1 零残留牙）✔
 - 本起草阶段零 `app/` 改码、未改 SPEC、未代签任何闸 ✔
+- v0.2（20-task-audit R1 conditional_pass 签前闭合）：M1 D1+TC8 补登 test_capability_testing_write.py ✔ M2 TC1 豁免②闸登记历史行 ✔ M3 env 台账措辞校正 ✔ nits N-a（banned 兜底）/N-d（先例方向）/N-e（口径注明）吸收 ✔ N-b 维持「30 按实校正」· N-c 仅知会 ✔
 
 ## 修订记录
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | v0.1 | 2026-10-20 | 10-task 起草（master `31924af` 亲读复核锚点 · N3 坐标校正 :903/:931 两处真门控 + :970 误并澄清 · 开放点收口新名/开关键名） |
+| v0.2 | 2026-10-20 | 20-task-audit R1=conditional_pass 签前闭合：M1 D1 改名面+TC8 白名单补登 `tests/test_capability_testing_write.py:185/:412/:468`（注释级）· M2 TC1 豁免②闸登记表既有历史回写行 · M3 env 台账措辞校正（delegation 三键已登记 GUIDE :12-14 capability 段）· nits N-a banned 态④「vs HEAD+untracked」兜底 / N-d 解析先例方向注明 / N-e TC1 口径注明（N-b 维持 30 按实校正 · N-c 仅知会） |
