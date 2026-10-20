@@ -20,13 +20,12 @@ from collections.abc import AsyncIterator, Iterable
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage
 
 from app.llm.schema import BaseProvider, LlmChunk, LlmMessage, LlmProviderError
 from app.ops.lg_rag.continuity import (
     assemble_graph_messages,
     assemble_graph_messages_with_memory,
-    render_memory_facts_block,
 )
 from app.ops.memory import extract as extract_mod
 from app.ops.memory.extract import (
@@ -159,29 +158,27 @@ async def test_both_switches_off_byte_identical(
     assert _shape(out) == _shape(baseline)
 
 
-async def test_vector_switch_off_uses_p0_deterministic_path(
+async def test_assemble_never_recalls_det_or_vector_dormant(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """MEMORY_FACTS_ENABLED=true 且向量开关关：召回 = P0 确定性路径，向量通路零触达。"""
+    """④b 休眠断言：MEMORY_FACTS_ENABLED=true 下装配面 det/vec 双通路零触达，输出逐字节等于基线。
+
+    （④a 复活时按 docs/tasks/deferred/task_memory_facts_build_4a.md 清单恢复
+    「向量开关关 = P0 确定性路径」分流断言。）
+    """
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
     monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
-    facts = [{"key": "project.primary_repo", "value": "cyning/ops-desk"}]
-    det = AsyncMock(return_value=facts)
-    vec = AsyncMock(side_effect=AssertionError("vector path must stay untouched"))
+    det = AsyncMock(side_effect=AssertionError("④b 休眠：recall_active 不应被调用"))
+    vec = AsyncMock(side_effect=AssertionError("④b 休眠：recall_with_vector 不应被调用"))
     monkeypatch.setattr("app.ops.memory.service.recall_active", det)
     monkeypatch.setattr("app.ops.memory.service.recall_with_vector", vec)
-
-    def _no_embedder():
-        raise AssertionError("embedder must not be resolved when vector recall off")
-
-    monkeypatch.setattr("app.ops.rag.embedder.get_query_embedder", _no_embedder)
+    baseline = assemble_graph_messages("q", [])
     out = await assemble_graph_messages_with_memory(
         "q", [], tenant_id="ops-desk-pilot", user_id="u-1"
     )
-    assert det.await_count == 1
+    assert det.await_count == 0
     assert vec.await_count == 0
-    blocks = [str(m.content) for m in out if isinstance(m, SystemMessage)]
-    assert render_memory_facts_block(facts) in blocks  # P0 注入块语义逐字节
+    assert _shape(out) == _shape(baseline)
 
 
 # ---------------- 入口接线：invoke / SSE run 完成后点火 ----------------

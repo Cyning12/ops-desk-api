@@ -126,75 +126,78 @@ def test_episodes_max_items_default_and_fallback(monkeypatch: pytest.MonkeyPatch
     assert memory_episodes_max_items() == 5
 
 
-async def test_episodes_enabled_but_missing_tenant_skips(monkeypatch: pytest.MonkeyPatch, caplog):
+async def test_episodes_enabled_but_missing_tenant_no_skip_warning_dormant(
+    monkeypatch: pytest.MonkeyPatch, caplog
+):
+    """④b 休眠断言：装配面不再走 episode 注入路径——tenant 缺失场景无 skip 告警、输出逐字节不变。"""
     monkeypatch.setenv("MEMORY_EPISODES_ENABLED", "true")
     history = _fixture_turns()
     baseline = assemble_graph_messages("q", history)
     with caplog.at_level(logging.WARNING, logger="app.ops.lg_rag.continuity"):
         out = await assemble_graph_messages_with_memory("q", history, task_domain="ops_kb")
     assert _shape(out) == _shape(baseline)
-    assert "skip episode injection" in caplog.text
+    assert "skip episode injection" not in caplog.text
 
 
 # ---------------- [相似经验] 独立分节（变异检验③锚点） ----------------
 
 
-async def test_episode_section_is_physically_separate(monkeypatch: pytest.MonkeyPatch):
-    """[相似经验] 是独立 SystemMessage 分节，不与 [已知事实]/[用户偏好] 合并。
+async def test_episode_section_never_appears_dormant(monkeypatch: pytest.MonkeyPatch):
+    """④b 休眠断言：注入开下召回桩零触达、装配产物零 [相似经验]/[已知事实] 块、逐字节不变。
 
-    变异检验③：把经验注入并入事实块（摘 [相似经验] 头）→ 本断言必挂。
+    （render_memory_episodes_block 的分节渲染真值由本文件渲染段测试继续钉住；
+    ④a 复活时按 docs/tasks/deferred/task_memory_facts_build_4a.md 清单恢复装配面断言。）
     """
     monkeypatch.setenv("MEMORY_EPISODES_ENABLED", "true")
-    _patch_episode_recall(
+    stub = _patch_episode_recall(
         monkeypatch,
         episodes=[_episode_dict("先查日志再重启", ["logs.read", "svc.restart"])],
     )
+    history = _fixture_turns()
+    baseline = assemble_graph_messages("服务挂了怎么办", history)
     out = await assemble_graph_messages_with_memory(
         "服务挂了怎么办",
-        _fixture_turns(),
+        history,
         tenant_id="ops-desk-pilot",
         user_id="u-1",
         task_domain="ops_kb",
     )
-    episode_msgs = [
-        m
-        for m in out
-        if isinstance(m, SystemMessage) and str(m.content).startswith(MEMORY_EPISODES_HEADER)
-    ]
-    assert len(episode_msgs) == 1  # 独立 SystemMessage
-    content = str(episode_msgs[0].content)
-    assert MEMORY_FACTS_HEADER not in content  # 不掺事实节
-    assert "先查日志再重启" in content
-    # 零泄漏：事实块不掺经验内容
+    stub.assert_not_awaited()
+    assert _shape(out) == _shape(baseline)
     assert not any(
         isinstance(m, SystemMessage)
-        and str(m.content).startswith(MEMORY_FACTS_HEADER)
-        and "先查日志再重启" in str(m.content)
+        and (
+            str(m.content).startswith(MEMORY_EPISODES_HEADER)
+            or str(m.content).startswith(MEMORY_FACTS_HEADER)
+        )
         for m in out
     )
 
 
-async def test_episode_recall_called_with_tenant_and_fingerprint(
+async def test_episode_recall_never_called_dormant(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """召回谓词 = 同 tenant + 当前意图 fingerprint（写入同规则计算）。"""
+    """④b 休眠断言（FP-5 核心）：注入开 + 完整身份/意图参数下 episode 召回零调用。
+
+    ④a 复活时按 docs/tasks/deferred/task_memory_facts_build_4a.md 清单恢复
+    「召回谓词 = 同 tenant + fingerprint」断言（谓词真值：
+    compute_context_fingerprint("ops_kb", {"needs_tool": True}, ["logs.read"])）。
+    """
     monkeypatch.setenv("MEMORY_EPISODES_ENABLED", "true")
     mock = _patch_episode_recall(monkeypatch, episodes=[])
-    await assemble_graph_messages_with_memory(
+    history = _fixture_turns()
+    baseline = assemble_graph_messages("q", history)
+    out = await assemble_graph_messages_with_memory(
         "q",
-        _fixture_turns(),
+        history,
         tenant_id="ops-desk-pilot",
         user_id="u-1",
         task_domain="ops_kb",
         intent_features={"needs_tool": True},
         tool_sequence=["logs.read"],
     )
-    expected_fp = compute_context_fingerprint("ops_kb", {"needs_tool": True}, ["logs.read"])
-    mock.assert_awaited_once()
-    args, kwargs = mock.await_args
-    assert args[0] == "ops-desk-pilot"
-    assert args[1] == expected_fp
-    assert kwargs["limit"] == 3  # 条数闸默认 3
+    mock.assert_not_awaited()
+    assert _shape(out) == _shape(baseline)
 
 
 # ---------------- 三闸预算渲染 ----------------
@@ -256,52 +259,65 @@ def _capture_span(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
     return captured
 
 
-async def test_span_memory_episodes_injected_count(monkeypatch: pytest.MonkeyPatch):
+async def test_span_no_episodes_count_dormant(monkeypatch: pytest.MonkeyPatch):
+    """④b 休眠断言：注入开下 episode 召回零调用、无 memory_episodes span 键、输出逐字节不变。"""
     monkeypatch.setenv("MEMORY_EPISODES_ENABLED", "true")
     captured = _capture_span(monkeypatch)
-    _patch_episode_recall(
+    stub = _patch_episode_recall(
         monkeypatch,
         episodes=[_episode_dict("e1"), _episode_dict("e2")],
     )
-    await assemble_graph_messages_with_memory(
-        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1", task_domain="ops_kb"
+    history = _fixture_turns()
+    baseline = assemble_graph_messages("q", history)
+    out = await assemble_graph_messages_with_memory(
+        "q", history, tenant_id="ops-desk-pilot", user_id="u-1", task_domain="ops_kb"
     )
+    stub.assert_not_awaited()
     ep_spans = [m for m in captured if any(k.startswith("memory_episodes") for k in m)]
-    assert ep_spans == [{"memory_episodes_injected": 2}]
+    assert ep_spans == []
+    assert _shape(out) == _shape(baseline)
 
 
-async def test_span_memory_episodes_injected_zero(monkeypatch: pytest.MonkeyPatch):
+async def test_span_zero_recall_also_zero_span_dormant(monkeypatch: pytest.MonkeyPatch):
+    """④b 休眠断言：零 episodes 桩同样零触达——无 span 键、无 [相似经验] 块。"""
     monkeypatch.setenv("MEMORY_EPISODES_ENABLED", "true")
     captured = _capture_span(monkeypatch)
-    _patch_episode_recall(monkeypatch, episodes=[])
+    stub = _patch_episode_recall(monkeypatch, episodes=[])
+    history = _fixture_turns()
+    baseline = assemble_graph_messages("q", history)
     out = await assemble_graph_messages_with_memory(
-        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1", task_domain="ops_kb"
+        "q", history, tenant_id="ops-desk-pilot", user_id="u-1", task_domain="ops_kb"
     )
+    stub.assert_not_awaited()
     ep_spans = [m for m in captured if any(k.startswith("memory_episodes") for k in m)]
-    assert ep_spans == [{"memory_episodes_injected": 0}]
+    assert ep_spans == []
+    assert _shape(out) == _shape(baseline)
     assert not any(
         isinstance(m, SystemMessage) and str(m.content).startswith(MEMORY_EPISODES_HEADER)
         for m in out
     )
 
 
-async def test_episode_recall_failure_degrades_to_no_injection(
+async def test_episode_recall_never_called_no_degrade_dormant(
     monkeypatch: pytest.MonkeyPatch, caplog
 ):
-    """召回失败降级不注入（承事实召回 :369 先例）：输出与 off 逐字节一致。"""
+    """④b 休眠断言：故障桩零触达——无 memory_episodes_degraded、无降级告警、输出逐字节不变。"""
     monkeypatch.setenv("MEMORY_EPISODES_ENABLED", "true")
     captured = _capture_span(monkeypatch)
     history = _fixture_turns()
     baseline = assemble_graph_messages("q", history)
-    _patch_episode_recall(monkeypatch, error=RuntimeError("db down"))
+    stub = _patch_episode_recall(
+        monkeypatch, error=AssertionError("④b 休眠：episode 召回不应被调用")
+    )
     with caplog.at_level(logging.ERROR, logger="app.ops.lg_rag.continuity"):
         out = await assemble_graph_messages_with_memory(
             "q", history, tenant_id="ops-desk-pilot", user_id="u-1", task_domain="ops_kb"
         )
+    stub.assert_not_awaited()
     assert _shape(out) == _shape(baseline)
     ep_spans = [m for m in captured if any(k.startswith("memory_episodes") for k in m)]
-    assert ep_spans == [{"memory_episodes_degraded": True}]
-    assert "degrade to no injection" in caplog.text
+    assert ep_spans == []
+    assert "degrade to no injection" not in caplog.text
 
 
 # ================= DB 段（真 PostgreSQL · opsdesk_test） =================

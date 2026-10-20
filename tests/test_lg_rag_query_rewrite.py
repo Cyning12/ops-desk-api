@@ -423,8 +423,16 @@ def test_tc7_env_tier_override(monkeypatch: pytest.MonkeyPatch):
 # ---------------- TC8 · 先重写后召回（调用序断言） ----------------
 
 
-async def test_tc8_rewrite_before_vector_recall(monkeypatch: pytest.MonkeyPatch):
-    """记忆向量召回实收 resolved_query；调用序 rewrite → recall 钉死（禁颠倒）。"""
+async def test_tc8_rewrite_applied_recall_never_called_dormant(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """④b 休眠断言：重写仍生效（末位 HumanMessage 实收 resolved_query），
+    记忆向量召回**零调用**（注入双开关全开也不触达——消费点已收窄）。
+
+    原 TC8「先重写后召回 rewrite → recall 调用序」断言随 ④b 切割失效；
+    ④a 复活时按 docs/tasks/deferred/task_memory_facts_build_4a.md 清单恢复
+    （recall 实收 resolved_query ∧ 调用序钉死）。
+    """
     from app.ops.memory import service as memory_service
 
     monkeypatch.setenv("LG_RAG_QUERY_REWRITE_ENABLED", "true")
@@ -434,14 +442,10 @@ async def test_tc8_rewrite_before_vector_recall(monkeypatch: pytest.MonkeyPatch)
     rewritten = "支付网关间歇 502 现在恢复了吗"
     provider = _FakeProvider(text=rewritten, order=order)
     _patch_face(monkeypatch, provider)
-    captured: dict = {}
 
     async def _fake_recall(tenant_id: str, user_id: str, query: str, *, limit: int):
         order.append("recall")
-        captured["tenant_id"] = tenant_id
-        captured["user_id"] = user_id
-        captured["query"] = query
-        return []
+        raise AssertionError("④b 休眠：向量召回通路不应被触达")
 
     monkeypatch.setattr(memory_service, "recall_with_vector", _fake_recall)
     out = await assemble_graph_messages_with_memory(
@@ -451,8 +455,7 @@ async def test_tc8_rewrite_before_vector_recall(monkeypatch: pytest.MonkeyPatch)
         user_id="user-1",
         thread_id="th-qr-t8",
     )
-    assert order == ["rewrite", "recall"]
-    assert captured["query"] == rewritten
+    assert order == ["rewrite"]  # 重写照常；recall 零触达
     assert str(out[-1].content) == rewritten
 
 

@@ -5,8 +5,10 @@
 - `service`：`write_fact`（过闸 + 同事务 supersede）· `revoke_by_source`
   （批量 revoked + 审计日志）· `sweep_expired` · `recall_active`（查询路径
   自带过期过滤的双保险）。
-- 装配注入在 `app.ops.lg_rag.continuity.assemble_graph_messages_with_memory`
-  （默认关，关闭时与现网逐字节一致）。
+- 装配注入点 `app.ops.lg_rag.continuity.assemble_graph_messages_with_memory`
+  已按 ④b 裁定休眠（2026-10-20 · HG-PHASE-B-DECISION）：不再召回不再注入，
+  写入侧与渲染 helper 保留；复活对接
+  `docs/tasks/deferred/task_memory_facts_build_4a.md`。
 
 P0 候选来源只有显式调用（service API / 测试）；**LLM 自动抽取是 P1**。
 无对外 HTTP 端点；无向量召回；无画像。

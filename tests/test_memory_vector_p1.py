@@ -242,11 +242,12 @@ async def test_mutation_wrong_fact_vector_recalled_then_revoke(
     fused_after = await recall_with_vector(_TENANT, user, "部署到哪里？", limit=1, embedder=fake)
     assert all(f.key != "project.deploy_target" for f in fused_after)  # 消失
 
-    # 装配面同断言：注入块先污染、revoke 后痊愈
-    from langchain_core.messages import SystemMessage
-
+    # 装配面（④b 休眠断言）：注入开 + 向量开关开下装配面恒零注入块、输出逐字节等于
+    # 基线；污染/痊愈三态由服务层 recall_with_vector 断言承担（写入侧零改动对拍）。
+    # ④a 复活时按 docs/tasks/deferred/task_memory_facts_build_4a.md 清单恢复注入块断言。
     from app.ops.lg_rag.continuity import (
         MEMORY_FACTS_HEADER,
+        assemble_graph_messages,
         assemble_graph_messages_with_memory,
     )
 
@@ -256,18 +257,25 @@ async def test_mutation_wrong_fact_vector_recalled_then_revoke(
         source_run_id=src2,
         embedder=fake,
     )
+    # 服务层通路是通的：新污染同样经向量通路真召回（装配休眠断言非空真）
+    fused2 = await recall_with_vector(_TENANT, user, "部署到哪里？", limit=8, embedder=fake)
+    assert any(f.key == "project.deploy_target" and f.value == "wrong-again" for f in fused2)
+    baseline = assemble_graph_messages("部署到哪里？", [])
     polluted = await assemble_graph_messages_with_memory(
         "部署到哪里？", [], tenant_id=_TENANT, user_id=user
     )
-    blocks = [str(m.content) for m in polluted if isinstance(m, SystemMessage)]
-    assert any("wrong-again" in b for b in blocks)  # 通路是通的
+    assert [(type(m).__name__, str(m.content)) for m in polluted] == [
+        (type(m).__name__, str(m.content)) for m in baseline
+    ]
+    assert not any(MEMORY_FACTS_HEADER in str(m.content) for m in polluted)
     await revoke_by_source(src2)
+    fused2_after = await recall_with_vector(_TENANT, user, "部署到哪里？", limit=8, embedder=fake)
+    assert all(f.value != "wrong-again" for f in fused2_after)  # 服务层痊愈
     healed = await assemble_graph_messages_with_memory(
         "部署到哪里？", [], tenant_id=_TENANT, user_id=user
     )
-    healed_blocks = [str(m.content) for m in healed if isinstance(m, SystemMessage)]
-    assert not any("wrong-again" in b for b in healed_blocks)
-    assert not any(MEMORY_FACTS_HEADER in b and "deploy_target" in b for b in healed_blocks)
+    assert not any("wrong-again" in str(m.content) for m in healed)
+    assert not any(MEMORY_FACTS_HEADER in str(m.content) for m in healed)
 
 
 # ---------------- 跨 tenant：向量查询必带 tenant 谓词 ----------------

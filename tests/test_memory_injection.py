@@ -60,17 +60,20 @@ def test_enabled_invalid_value_warns_and_falls_back(monkeypatch: pytest.MonkeyPa
     assert "MEMORY_FACTS_ENABLED" in caplog.text
 
 
-async def test_enabled_but_missing_identity_skips_injection(
+async def test_enabled_but_missing_identity_no_skip_warning_dormant(
     monkeypatch: pytest.MonkeyPatch, caplog
 ):
-    """身份缺失（无 ctx）→ 不注入、不触 DB；现网输出不变。"""
+    """④b 休眠断言：装配面不再走注入路径——身份缺失场景无 skip 告警、输出逐字节不变。
+
+    （④a 复活时按 docs/tasks/deferred/task_memory_facts_build_4a.md 清单恢复 skip 告警断言。）
+    """
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
     history = _fixture_turns()
     baseline = assemble_graph_messages("q", history)
     with caplog.at_level(logging.WARNING, logger="app.ops.lg_rag.continuity"):
         out = await assemble_graph_messages_with_memory("q", history)
     assert _shape(out) == _shape(baseline)
-    assert "skip injection" in caplog.text
+    assert "skip injection" not in caplog.text
 
 
 # ---------------- 渲染与插入 ----------------
@@ -144,24 +147,23 @@ def test_max_items_default_and_fallback(monkeypatch: pytest.MonkeyPatch, caplog)
 # ---------------- 召回故障降级（不拖垮请求） ----------------
 
 
-async def test_recall_failure_degrades_to_no_injection(monkeypatch: pytest.MonkeyPatch, caplog):
-    from unittest.mock import AsyncMock, patch
+async def test_recall_never_called_no_degrade_dormant(monkeypatch: pytest.MonkeyPatch, caplog):
+    """④b 休眠断言：注入开下 recall 零调用（stub 触达即炸）、无降级告警、输出逐字节不变。"""
+    from unittest.mock import AsyncMock
 
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
+    monkeypatch.delenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", raising=False)
+    stub = AsyncMock(side_effect=AssertionError("④b 休眠：recall 不应被调用"))
+    monkeypatch.setattr("app.ops.memory.service.recall_active", stub)
     history = _fixture_turns()
     baseline = assemble_graph_messages("q", history)
-    with (
-        patch(
-            "app.ops.memory.service.recall_active",
-            new=AsyncMock(side_effect=RuntimeError("db down")),
-        ),
-        caplog.at_level(logging.ERROR, logger="app.ops.lg_rag.continuity"),
-    ):
+    with caplog.at_level(logging.ERROR, logger="app.ops.lg_rag.continuity"):
         out = await assemble_graph_messages_with_memory(
             "q", history, tenant_id="ops-desk-pilot", user_id="u-1"
         )
+    stub.assert_not_awaited()
     assert _shape(out) == _shape(baseline)
-    assert "degrade to no injection" in caplog.text
+    assert "degrade to no injection" not in caplog.text
 
 
 # ---------------- span `memory_facts_injected` 专门单测（memory-embedding-backfill D3） ----------------
@@ -197,53 +199,57 @@ def _patch_recall(monkeypatch: pytest.MonkeyPatch, *, facts=None, error=None):
     return mock
 
 
-async def test_span_memory_facts_injected_count(monkeypatch: pytest.MonkeyPatch):
-    """有 facts：span 收到 {"memory_facts_injected": N} 且 N == 实际注入条数。"""
+async def test_span_no_memory_facts_count_dormant(monkeypatch: pytest.MonkeyPatch):
+    """④b 休眠断言：注入开下零 span 计数、零注入块、recall 零调用、输出逐字节不变。"""
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
     captured = _capture_span(monkeypatch)
-    facts = [
-        {"key": "project.primary_repo", "value": "cyning/ops-desk"},
-        {"key": "user.display_tz", "value": "Asia/Shanghai"},
-    ]
-    _patch_recall(monkeypatch, facts=facts)
-
-    out = await assemble_graph_messages_with_memory(
-        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+    stub = _patch_recall(
+        monkeypatch,
+        facts=[
+            {"key": "project.primary_repo", "value": "cyning/ops-desk"},
+            {"key": "user.display_tz", "value": "Asia/Shanghai"},
+        ],
     )
-    assert captured == [{"memory_facts_injected": 2}]
-    # N 与实际注入条数一致（注入块真含两条）
-    blocks = [str(m.content) for m in out if isinstance(m, SystemMessage)]
-    assert any("project.primary_repo=cyning/ops-desk" in b for b in blocks)
-    assert any("user.display_tz=Asia/Shanghai" in b for b in blocks)
+
+    history = _fixture_turns()
+    baseline = assemble_graph_messages("q", history)
+    out = await assemble_graph_messages_with_memory(
+        "q", history, tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    stub.assert_not_awaited()
+    assert captured == []
+    assert _shape(out) == _shape(baseline)
 
 
-async def test_span_memory_facts_injected_zero(monkeypatch: pytest.MonkeyPatch):
-    """零 facts：span 收到 {"memory_facts_injected": 0}（continuity.py:240 分支）。"""
+async def test_span_zero_recall_also_zero_span_dormant(monkeypatch: pytest.MonkeyPatch):
+    """④b 休眠断言：零 facts 桩同样零触达——无 span 计数、无注入块（:240 分支已收窄）。"""
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
     captured = _capture_span(monkeypatch)
-    _patch_recall(monkeypatch, facts=[])
+    stub = _patch_recall(monkeypatch, facts=[])
 
+    history = _fixture_turns()
+    baseline = assemble_graph_messages("q", history)
     out = await assemble_graph_messages_with_memory(
-        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+        "q", history, tenant_id="ops-desk-pilot", user_id="u-1"
     )
-    assert captured == [{"memory_facts_injected": 0}]
-    assert not any(
-        isinstance(m, SystemMessage) and str(m.content).startswith(MEMORY_FACTS_HEADER) for m in out
-    )
+    stub.assert_not_awaited()
+    assert captured == []
+    assert _shape(out) == _shape(baseline)
 
 
-async def test_span_memory_degraded_on_recall_failure(monkeypatch: pytest.MonkeyPatch):
-    """召回故障：span 收到 {"memory_degraded": True} 且全程无 memory_facts_injected。"""
+async def test_span_no_degraded_no_recall_dormant(monkeypatch: pytest.MonkeyPatch):
+    """④b 休眠断言：故障桩零触达——无 memory_degraded、无任何记忆 span、输出逐字节不变。"""
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
     captured = _capture_span(monkeypatch)
-    _patch_recall(monkeypatch, error=RuntimeError("db down"))
+    stub = _patch_recall(monkeypatch, error=AssertionError("④b 休眠：recall 不应被调用"))
 
+    history = _fixture_turns()
+    baseline = assemble_graph_messages("q", history)
     out = await assemble_graph_messages_with_memory(
-        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+        "q", history, tenant_id="ops-desk-pilot", user_id="u-1"
     )
-    assert captured == [{"memory_degraded": True}]
-    assert all("memory_facts_injected" not in m for m in captured)
-    baseline = assemble_graph_messages("q", _fixture_turns())
+    stub.assert_not_awaited()
+    assert captured == []
     assert _shape(out) == _shape(baseline)
 
 
@@ -326,55 +332,58 @@ def test_render_preference_section_anchors():
     assert "无偏好" in block and ("假设" in block or "编造" in block)
 
 
-async def test_span_dual_counts_mixed_kinds(monkeypatch: pytest.MonkeyPatch):
-    """span 双计数：facts/preferences 分别记；注入仍是**单条** SystemMessage 双节。"""
+async def test_span_no_dual_counts_dormant(monkeypatch: pytest.MonkeyPatch):
+    """④b 休眠断言：混合 kind 桩零触达——无 facts/preferences 双计数、无注入块。"""
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
     captured = _capture_span(monkeypatch)
-    facts = [
-        {"key": "project.primary_repo", "value": "cyning/ops-desk"},
-        {"key": "pref.answer_lang", "value": "中文", "kind": "preference"},
-    ]
-    _patch_recall(monkeypatch, facts=facts)
+    stub = _patch_recall(
+        monkeypatch,
+        facts=[
+            {"key": "project.primary_repo", "value": "cyning/ops-desk"},
+            {"key": "pref.answer_lang", "value": "中文", "kind": "preference"},
+        ],
+    )
 
+    history = _fixture_turns()
+    baseline = assemble_graph_messages("q", history)
     out = await assemble_graph_messages_with_memory(
-        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+        "q", history, tenant_id="ops-desk-pilot", user_id="u-1"
     )
-    assert captured == [{"memory_facts_injected": 1, "memory_preferences_injected": 1}]
-    memory_msgs = [
-        m for m in out if isinstance(m, SystemMessage) and MEMORY_FACTS_HEADER in str(m.content)
-    ]
-    assert len(memory_msgs) == 1  # 单条 SystemMessage
-    content = str(memory_msgs[0].content)
-    assert MEMORY_PREFERENCES_HEADER in content  # 双节同块
+    stub.assert_not_awaited()
+    assert captured == []
+    assert _shape(out) == _shape(baseline)
 
 
-async def test_span_fact_only_no_preferences_key(monkeypatch: pytest.MonkeyPatch):
-    """fact-only：span 不带 memory_preferences_injected key（与 P0/P1 观测面一致）。"""
+async def test_span_fact_only_also_zero_dormant(monkeypatch: pytest.MonkeyPatch):
+    """④b 休眠断言：fact-only 桩零触达——无任何记忆 span key、输出逐字节不变。"""
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
     captured = _capture_span(monkeypatch)
-    _patch_recall(monkeypatch, facts=[{"key": "project.primary_repo", "value": "cyning/ops-desk"}])
-    await assemble_graph_messages_with_memory(
-        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+    stub = _patch_recall(
+        monkeypatch, facts=[{"key": "project.primary_repo", "value": "cyning/ops-desk"}]
     )
-    assert captured == [{"memory_facts_injected": 1}]
+    history = _fixture_turns()
+    baseline = assemble_graph_messages("q", history)
+    out = await assemble_graph_messages_with_memory(
+        "q", history, tenant_id="ops-desk-pilot", user_id="u-1"
+    )
+    stub.assert_not_awaited()
+    assert captured == []
+    assert _shape(out) == _shape(baseline)
 
 
-async def test_span_preference_only_facts_zero(monkeypatch: pytest.MonkeyPatch):
-    """preference-only：facts=0 / preferences=1 并列计数；注入块无事实节。"""
+async def test_span_preference_only_also_zero_dormant(monkeypatch: pytest.MonkeyPatch):
+    """④b 休眠断言：preference-only 桩零触达——无并列计数、无偏好节块。"""
     monkeypatch.setenv("MEMORY_FACTS_ENABLED", "true")
     captured = _capture_span(monkeypatch)
-    _patch_recall(
+    stub = _patch_recall(
         monkeypatch,
         facts=[{"key": "pref.answer_lang", "value": "中文", "kind": "preference"}],
     )
+    history = _fixture_turns()
+    baseline = assemble_graph_messages("q", history)
     out = await assemble_graph_messages_with_memory(
-        "q", _fixture_turns(), tenant_id="ops-desk-pilot", user_id="u-1"
+        "q", history, tenant_id="ops-desk-pilot", user_id="u-1"
     )
-    assert captured == [{"memory_facts_injected": 0, "memory_preferences_injected": 1}]
-    memory_msgs = [
-        str(m.content)
-        for m in out
-        if isinstance(m, SystemMessage) and MEMORY_PREFERENCES_HEADER in str(m.content)
-    ]
-    assert len(memory_msgs) == 1
-    assert MEMORY_FACTS_HEADER not in memory_msgs[0]
+    stub.assert_not_awaited()
+    assert captured == []
+    assert _shape(out) == _shape(baseline)
