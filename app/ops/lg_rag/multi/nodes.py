@@ -263,6 +263,31 @@ def _delegation_active() -> bool:
     return dl.delegation_mode() != dl.MODE_OFF
 
 
+ENV_WRITE_REPLAY_GUARD_ENABLED = "LG_RAG_WRITE_REPLAY_GUARD_ENABLED"
+_GUARD_TRUTHY = ("1", "true", "yes", "on")
+_GUARD_FALSY = ("0", "false", "no", "off")
+
+
+def _write_replay_guard_enabled() -> bool:
+    """write 孪生重放护栏独立开关（delegation-naming-boundary D2 解耦）。
+
+    布尔默认 true=开；非法值回退开（fail-closed 反向）+ warning 留痕。
+    解析承 continuity.py session_summary_enabled 先例（_TRUTHY/_FALSY
+    词表一致 · strip().lower()），唯默认/回退方向相反（R1 N-d 防误抄）。
+    FP-2 唯一 intentional behavior change：delegation off 下护栏由从不
+    生效变默认生效。
+    """
+    raw = (os.getenv(ENV_WRITE_REPLAY_GUARD_ENABLED) or "").strip().lower()
+    if not raw:
+        return True
+    if raw in _GUARD_TRUTHY:
+        return True
+    if raw in _GUARD_FALSY:
+        return False
+    logger.warning("invalid LG_RAG_WRITE_REPLAY_GUARD_ENABLED=%r; fallback to true", raw)
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Host V1-A · 签发审批消费门（D1：批准 → 可消费的授权）
 # ---------------------------------------------------------------------------
@@ -405,7 +430,7 @@ async def _delegation_issue_block_reason(state: LgRagState, row: dict) -> str | 
 
     D1 消费门：sync 纯判定判出需审批后、返回拦截原因**前**，先消费 HITL store
     匹配的 approved 单据（三元组 + TTL · fail-closed）——命中即放行签发（None），
-    未命中 / 读异常维持拦截。消费读在编排层本函数内，``auto_approve_ok``
+    未命中 / 读异常维持拦截。消费读在编排层本函数内，``issuance_policy_allows``
     保持纯函数零 IO（capability 包零触）。
     """
     tool = str(row.get("tool") or "").strip()
@@ -417,7 +442,7 @@ async def _delegation_issue_block_reason(state: LgRagState, row: dict) -> str | 
     entry = _cap_registry().get(tool)
     if entry is None:
         return "委派签发审批：capability 未注册，无法判定审批口径（安全默认交人）"
-    ok, why = dl.auto_approve_ok([entry[0]], effective_scope=scope)
+    ok, why = dl.issuance_policy_allows([entry[0]], effective_scope=scope)
     if ok:
         return None
     sid = str(row.get("subtask_id") or "")
@@ -898,9 +923,13 @@ async def _join_subtasks(state: LgRagState) -> dict:
         ready: list[str] = []
         blocked_meta: dict[str, int] = {}
         # hitl-approved-replan-quality（契约一）：write 成功终态 canonical
-        # 索引 + 本批已派发 write 键——孪生步结构护栏数据面（off 模式整段
-        # 不建索引，零触达承 off 零 diff 先例）。
-        write_done_keys = _write_success_call_keys(done, by_id) if _delegation_active() else {}
+        # 索引 + 本批已派发 write 键——孪生步结构护栏数据面。delegation-
+        # naming-boundary D2：门控自 _delegation_active() 解耦至独立开关
+        # LG_RAG_WRITE_REPLAY_GUARD_ENABLED（默认开 · 关时整段不建索引，
+        # 恢复 master 基线零 diff）。
+        write_done_keys = (
+            _write_success_call_keys(done, by_id) if _write_replay_guard_enabled() else {}
+        )
         batch_write_keys: dict[str, str] = {}
         for row in plan:
             sid = str(row["subtask_id"])
@@ -928,7 +957,7 @@ async def _join_subtasks(state: LgRagState) -> dict:
             # 单），output 照抄原终态 + replay_of 台账。FP-3：approved
             # unlocked 步自身旧结果已被剪掉（无终态）⇒ 天然不命中自身。
             write_key = None
-            if _delegation_active() and str(row.get("type") or "") == "tool":
+            if _write_replay_guard_enabled() and str(row.get("type") or "") == "tool":
                 write_key = _guard_write_key(row)
                 if write_key is not None:
                     orig_sid = write_done_keys.get(write_key)

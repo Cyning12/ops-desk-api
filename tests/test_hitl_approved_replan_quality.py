@@ -355,6 +355,9 @@ async def test_tc2_intra_batch_twins_deferred_then_guard_skipped(cap_env, monkey
 async def test_tc2_guard_zero_touch_when_delegation_off(cap_env, monkeypatch, caplog):  # noqa: F811
     """off 模式零介入先例：护栏整段不触达，孪生照常派发（无签发拦截）。"""
     monkeypatch.setenv(dl.ENV_MODE, "off")
+    # 00 裁定（2026-10-20 · #4 delegation-naming-boundary FP-2 忠实翻译）：本钉语义=
+    # 「护栏关时零介入」；FP-2 起护栏默认开，两开关同关方为旧行为忠实译法（夹具级增补）。
+    monkeypatch.setenv("LG_RAG_WRITE_REPLAY_GUARD_ENABLED", "false")
     run_id = "run-" + uuid.uuid4().hex[:8]
     s1, s2 = run_id + ":1", run_id + ":2"
     args = {"request_id": "r-off", "note": "off 零 diff"}

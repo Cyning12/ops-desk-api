@@ -182,7 +182,7 @@ def test_a6_manifest_loads_and_fields_pinned():
     entry = get_registry().get(_TESTING_CAP)
     assert entry is not None
     spec, adapter = entry
-    assert spec.side_effect == "write"  # 触发 auto_approve_ok 条件②不放行
+    assert spec.side_effect == "write"  # 触发 issuance_policy_allows 条件②不放行
     assert spec.kind == "local_fn"
     assert spec.hitl_required is True  # V2 强制 · 与本 capability 用途自洽
     assert spec.idempotency_key  # 顶层幂等键非空（裁定四声明位）
@@ -409,7 +409,7 @@ async def test_a4_enforce_chain_suspend_pending_decide_resume(monkeypatch):
         "allowed_capability_ids": [_TESTING_CAP],
     }
 
-    # ① 挂起：真判定链（auto_approve_ok 条件②不放行 → 委派签发需人工审批）
+    # ① 挂起：真判定链（issuance_policy_allows 条件②不放行 → 委派签发需人工审批）
     joined = await _join_subtasks({**state, "inflight_subtask_ids": []})
     assert sid not in joined.get("inflight_subtask_ids", [])
     blocked = [r for r in joined["subtask_results"] if r.get("hitl_required") is True]
@@ -465,7 +465,7 @@ async def test_a4_enforce_chain_suspend_pending_decide_resume(monkeypatch):
     # 设计真态钉死（D1 消费门落地后语义 · 双断言 · 边界否定由 TA2 全组承接）：
     # ① 有消费形态（匹配 approved 单据 · 三元组命中 · decided_at 新鲜）→
     #   重下发同 tool 放行签发（None）——批准接成可消费的授权；
-    # ② 无消费形态（消费键不命中：换 run_id）→ auto_approve_ok 仍判非只读 →
+    # ② 无消费形态（消费键不命中：换 run_id）→ issuance_policy_allows 仍判非只读 →
     #   再拦（无匹配单据时审批逐次有效语义不变）。
     post = dict(merged)
     post["hitl_unlocked_ids"] = final["hitl_unlocked_ids"]
