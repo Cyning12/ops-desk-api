@@ -317,6 +317,10 @@ _TREE_ALLOWED_FILES = frozenset(
         "docs/_tech_graph/l1/01_modules.md",
         "docs/guides/GUIDE_env_inventory_v1.md",
         "docs/tasks/active/task_delegation_naming_boundary.md",
+        # 00 裁定（2026-10-20 · #3 O1 先例）：CLOSE done/ 移动面预登记——CLOSE
+        # commit 将 git mv task 至 done/，active/ 原路径保留覆盖 deletion，
+        # 避免 CLOSE 后闸落态③ foreign skip 削弱态①严格 pass 语义。
+        "docs/tasks/done/task_delegation_naming_boundary.md",
         # 00 裁定（2026-10-20 · 40=approve 非阻塞观察 O2 · 裁定甲先例）：审查文
         # 入库并纳入白名单，避免态③ foreign skip 削弱严格 pass 语义。
         "docs/harness/reviews/task_delegation_naming_boundary_review40_20261020.md",
