@@ -25,3 +25,16 @@
 ## 闸态
 
 HG-SPEC-SIGNOFF=approved · HG-AUDIT-R1=**pending**（本帽不代签 · M 闭合后 00 依授权代签）· HG-GRAPH-MODULES=approved（口径写明）。人签前维持：30 拒开工。
+## 七、v0.2 R2 复核记录（2026-10-20 · 20-task-audit R2=pass）
+
+审查文：\`docs/harness/reviews/task_delegation_naming_boundary_audit_R2_20261020.md\`
+
+| 复核项 | 结论 |
+|---|---|
+| M1（TC1×TC8 互斥） | ✔ 闭合（D1 :61 + TC8 :126 · 三注释坐标 master \`31924af\` 实测零漂移） |
+| M2（TC1 豁免②闸登记历史行） | ✔ 闭合（:119） |
+| M3（env 台账措辞） | ✔ 闭合（:76 + :166） |
+| nits N-a/N-d/N-e | ✔ 吸收（:126/:73/:119）· N-b/N-c 维持不改（符合 R1） |
+| 修订面无夹带 | ✔（\`39101d9..a892547\` 仅 task + 10 invoke · 闸表/范围/TC 语义零触碰） |
+
+写入面：仅审查文 + 本 invoke 补记（零 task/SPEC/app/ 改动 · 未代签闸）。
