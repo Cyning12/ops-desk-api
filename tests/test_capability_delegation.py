@@ -237,6 +237,60 @@ def test_constraint_pattern_pass_and_fail():
     assert _verify(bad, args={"q": "12a"}).reject_class == dl.REJECT_PARAM_VIOLATION
 
 
+# ---------------------------------------------------------------------------
+# pattern 整串匹配（re.fullmatch · fail-closed 收紧 · fix-delegation-pattern-fullmatch）
+# ---------------------------------------------------------------------------
+
+
+def test_constraint_pattern_fullmatch_rejects_substring_hit():
+    r"""TC1：未锚定 \d+ 命中子串（"123abc" 含 "123"）→ 拒（re.search 语义下本用例红）。"""
+    token = _issue(param_constraints={"cap.read": {"q": {"pattern": r"\d+"}}})
+    verdict = _verify(token, args={"q": "123abc"})
+    assert verdict.ok is False
+    assert verdict.reject_class == dl.REJECT_PARAM_VIOLATION
+    assert verdict.violated_field == "q"
+
+
+def test_constraint_pattern_fullmatch_rejects_trailing_newline():
+    r"""TC2：^[a-z]+$ + "abc\n" → 拒（Python `$` 匹配换行前 · re.search 放行 / fullmatch 拒）。"""
+    token = _issue(param_constraints={"cap.read": {"q": {"pattern": "^[a-z]+$"}}})
+    verdict = _verify(token, args={"q": "abc\n"})
+    assert verdict.ok is False
+    assert verdict.reject_class == dl.REJECT_PARAM_VIOLATION
+    assert verdict.violated_field == "q"
+
+
+def test_constraint_pattern_fullmatch_rejects_path_traversal_newline():
+    r"""TC3 两态判别：^[\w./-]+$ + "../../etc/passwd\n" → 拒（re.search 放行 / fullmatch 拒）。
+
+    注：纯 "../../etc/passwd"（无换行）整串本即匹配此宽字符集 pattern，
+    fullmatch 下仍放行——字符集过宽系独立问题，登记 task out_of_scope 另 task。
+    """
+    token = _issue(param_constraints={"cap.read": {"q": {"pattern": r"^[\w./-]+$"}}})
+    verdict = _verify(token, args={"q": "../../etc/passwd\n"})
+    assert verdict.ok is False
+    assert verdict.reject_class == dl.REJECT_PARAM_VIOLATION
+    assert verdict.violated_field == "q"
+
+
+def test_constraint_pattern_fullmatch_positive_no_false_reject():
+    r"""TC4 正向防误伤：\d+ + "123"、^[a-z]+$ + "abc" 整串匹配 → 通过。"""
+    token = _issue(param_constraints={"cap.read": {"q": {"pattern": r"\d+"}}})
+    assert _verify(token, args={"q": "123"}).ok is True
+    token2 = _issue(param_constraints={"cap.read": {"q": {"pattern": "^[a-z]+$"}}})
+    assert _verify(token2, args={"q": "abc"}).ok is True
+
+
+@pytest.mark.parametrize("value", [123, ["a"], None])
+def test_constraint_pattern_fullmatch_rejects_non_str(value):
+    """TC5：非 str 值（int / list / None）配 pattern 约束 → 拒（not isinstance 分支语义不变）。"""
+    token = _issue(param_constraints={"cap.read": {"q": {"pattern": r"\d+"}}})
+    verdict = _verify(token, args={"q": value})
+    assert verdict.ok is False
+    assert verdict.reject_class == dl.REJECT_PARAM_VIOLATION
+    assert verdict.violated_field == "q"
+
+
 def test_unknown_constraint_type_rejects_issue(caplog):
     with caplog.at_level(logging.WARNING, logger="app.ops.capability.delegation"):
         token = _issue(param_constraints={"cap.read": {"x": {"regex": ".*"}}})
