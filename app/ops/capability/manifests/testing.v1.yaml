@@ -41,6 +41,7 @@ capabilities:
           type: string
           description: 任意备注（罐头回显）
       additionalProperties: true
+    output_fields: [tool, input, written, note]
     reversible: true
     execution_type: instant
     max_reversal_latency: 0
