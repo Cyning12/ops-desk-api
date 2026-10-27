@@ -6,13 +6,17 @@
 
 ## 根因（已钉案，2026-10-27 双 run 实证）
 
-planner（supervisor）声明 produces/consumes 时，可见信息只有能力 id/描述/入参 schema——`CapabilitySpec`（`app/ops/capability/types.py:72`）**无输出字段声明**，catalog 渲染 `_format_capability_catalog`（`app/ops/lg_rag/multi/nodes.py:1219` 调用点）自然也给不出。模型只能按语义猜（"issue 大概有 status 字段"→ 实际 `state`），猜错空间 100%。
+planner（supervisor）声明 produces/consumes 时，catalog 实渲染仅能力 id/描述/risk（`nodes.py:107`，连入参 schema 都不进 catalog）——`CapabilitySpec`（`app/ops/capability/types.py:72`）**无输出字段声明**，catalog 渲染 `_format_capability_catalog`（`app/ops/lg_rag/multi/nodes.py:1219` 调用点）自然也给不出任何输出侧信息（R1 审查 N2 修正）。模型只能按语义猜（"issue 大概有 status 字段"→ 实际 `state`），猜错空间 100%。
 
 ## 修复设计（三层）
 
-1. **契约类型**：`CapabilitySpec` 增 `output_fields: tuple[str, ...] = ()`——声明产出 dict 的字段名清单；**空 = 自由文本/不校验**（承 `step_contract.py:176-185` `output_fields()`「str/list/None 不校验、不替模型猜」既有纪律）。只声明字段名存在性，业务不变量不进 schema（`types.py:3-5` P-16 纪律）。YAML manifest 加载面（`app/ops/capability/manifest.py`）同步支持该键。
-2. **真值回填**：`defaults.py` 五能力 + `testing.write.echo`（`manifests/testing.v1.yaml`）填真值；真值以 adapter 实际返回 dict keys 为准（如 `get_issue_by_number` → `number/title/state/html_url/updated_at/labels/body`，`app/ops/capability/lookups.py:69-89`）。
-3. **planner prompt 渲染 + 计划期 fail-fast**：catalog 块渲染各能力 output_fields → 声明从「猜」变「从清单选」；声明字段 ∉ 前驱 output_fields（非空时）→ **裁剪该字段 + span/事件留痕**（不拒整 plan、不替模型改语义；裁剪 vs 拒签的口径如 20-audit 有异议，退回维护者裁）。
+1. **契约类型**：`CapabilitySpec` 增 `output_fields: tuple[str, ...] = ()`——声明产出 dict 的字段名清单；**空 = 自由文本/不校验**（承 `step_contract.py:176-185` `output_fields()`「str/list/None 不校验、不替模型猜」既有纪律）。只声明字段名存在性，业务不变量不进 schema（`types.py:3-5` P-16 纪律）。YAML manifest 加载面同步支持该键：`app/ops/capability/manifest.py` `spec = CapabilitySpec(...)` 构造点 `:601`、既有 `output_schema` 解析校验段 `:525-529` 同区（list[str] 校验 + 空/缺省 = `()`）。命名分工钉死（R1 审查 N1）：既有 `output_schema`（`types.py:110-115`）是 **P0-1 结果契约**（运行期校验「成功长什么样」：必填字段/最小条数/空可疑，loader V10 `manifest.py:283`），新 `output_fields` 是**面向 planner 的字段名清单**（计划期可见性）——两层各管各的，不复用不合并。
+2. **真值回填（三加载面 · R1 审查 B1 回填）**：主加载面是 YAML 非硬编码——`defaults.py:159-173 ensure_default_capabilities` 优先 `builtin.v1.yaml`（`manifest.py` `BUILTIN_MANIFEST_PATH` 存在即走 YAML），硬编码 `_DEFAULT_SPECS` 仅是文件缺失时的回退。故三面对齐回填：
+   - **主**：`app/ops/capability/manifests/builtin.v1.yaml` 五能力；
+   - **回退对齐**：`app/ops/capability/defaults.py` `_DEFAULT_SPECS` 硬编码（与 builtin.v1.yaml 逐字段齐，防「YAML 缺失回退时行为漂移」）；
+   - **测试面**：`app/ops/capability/manifests/testing.v1.yaml` `testing.write.echo`（`:18` 纪律：字段族对齐 builtin.v1.yaml 逐字段齐）。
+   真值以 adapter 实际返回 dict keys 为准（如 `get_issue_by_number` → `number/title/state/html_url/updated_at/labels/body`，`app/ops/capability/lookups.py:69-89`）。
+3. **planner prompt 渲染 + 计划期 fail-fast**：catalog 块渲染各能力 output_fields → 声明从「猜」变「从清单选」；声明字段 ∉ 前驱 output_fields（非空时）→ **裁剪该字段 + span/事件留痕**（不拒整 plan、不替模型改语义；裁剪 vs 拒签的口径如 20-audit 有异议，退回维护者裁）。语义钉死（R1 审查 N4）：某步声明**全被裁空** → 视为「空 = 不校验」，与未声明同语义——不得因裁剪产生新的拦截面。
 
 ## 非范围
 
@@ -25,7 +29,7 @@ planner（supervisor）声明 produces/consumes 时，可见信息只有能力 i
 
 - [ ] 1. 单测：catalog prompt 块含各能力 output_fields 清单；**未声明（空）能力所在行的渲染与现状逐字节一致**（零 diff 口径只在未声明能力上成立）。
 - [ ] 2. 单测：声明 produces/consumes 含清单外字段 → 裁剪 + 留痕断言；全在清单内 → 原样通过零 diff。
-- [ ] 3. 防漂移钉：测试直接调 adapter 对拍 `get_issue_by_number` 等 output_fields == 实际返回 keys（声明腐化即红）。
+- [ ] 3. 防漂移钉：测试直接调 adapter 对拍 `get_issue_by_number` 等 output_fields == 实际返回 keys（声明腐化即红）；**对拍对象必须是运行期实际生效的注册表**（`ensure_default_capabilities()` 后从 registry 取 spec——覆盖 builtin.v1.yaml 主路径，R1 审查 B1' 回填；硬编码回退面同钉）。
 - [ ] 4. `.venv/bin/ruff check app tests` 绿（钉版 0.15.21）；`pytest tests` 不引入新红（既有 28 红基线口径，承 PR #293 维护者裁决）。
 - [ ] 5. 40 live：复跑 d3a49 场景（#2140 query），t1 produces 收敛为真实字段、t2 write 实际执行成功（LLM 弹性项，失败须附 run 事件链分析）。
 
@@ -55,7 +59,7 @@ planner（supervisor）声明 produces/consumes 时，可见信息只有能力 i
 
 ### 自检结论
 
-结构对齐本仓已合并先例（task_supervisor_replan_error_feedback · PR #293）；元信息块预填含 wiki_delta（承 K4/lint-wiki-delta 首红教训）。姊妹 task B（闸语义）互指非范围，两案可独立签收独立分支。
+结构对齐本仓已合并先例（task_supervisor_replan_error_feedback · PR #293）；元信息块预填含 wiki_delta（承 K4/lint-wiki-delta 首红教训）。姊妹 task B（闸语义）互指非范围，两案可独立签收独立分支。R1 审查（`docs/harness/reviews/task_lg_rag_capability_output_schema_audit_R1_20261027.md`）B1/B1'/N1/N2/N4 已回填（2026-10-27），范围未实质扩大，按审查结论无需重签 HG-AUDIT-R1。
 
 ## 人工闸表
 
