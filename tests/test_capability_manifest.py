@@ -76,6 +76,9 @@ def test_builtin_yaml_aligns_with_default_specs():
         assert loaded.args_schema == spec.args_schema
         # H4：YAML 与硬编码回退必须对 side_effect 一致（否则回退路径语义漂移）
         assert loaded.side_effect == spec.side_effect
+        # output_fields 字段族对齐（task lg-rag-capability-output-schema）：
+        # 主加载面（YAML）与硬编码回退面必须逐字段一致，否则回退路径契约漂移
+        assert loaded.output_fields == spec.output_fields
     now = invoke("utc_now_iso", "")
     assert now.ok is True
     assert now.output["tool"] == utc_now_iso("")["tool"]
