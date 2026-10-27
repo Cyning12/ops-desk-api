@@ -781,12 +781,52 @@ def _unlocked_preserved_rows(state: LgRagState, locked: list[dict]) -> list[dict
     ]
 
 
-def _format_prefix_block(locked: list[dict], terminals: dict[str, dict] | None = None) -> str:
+# 失败摘要行截断上限：比终态摘要（200）宽——纠错回路的关键信息（死因 +
+# 前驱可用字段清单）必须活下来，截掉了重规划还是只能猜字段名（run cb2548）。
+_FAILURE_LINE_MAX_CHARS = 400
+
+
+def _failed_row_line(row: dict, term: dict | None) -> str:
+    """失败步行：与锁定行同格式（id / type / input / tool）+ 失败摘要行。
+
+    supervisor-replan-error-feedback（实测 run cb2548）：terminal 含
+    error/blocked_by 时追加「→ 失败：{blocked_by}：{error 截断}」——
+    模型至少知道这步死了、死因是什么。blocked_by 缺失（工人执行失败等
+    无拦截码形态）时退化为「→ 失败：{error}」，不伪造空段。
+    """
+    alias = str(row.get("alias") or row.get("subtask_id") or "")
+    line = f"- {alias}（{row.get('type') or 'rag'}）：{row.get('input') or ''}"
+    if row.get("tool"):
+        line += f" [tool={row['tool']}]"
+    if term and ("error" in term or term.get("blocked_by")):
+        error_text = str(term.get("error") or "")
+        if len(error_text) > _FAILURE_LINE_MAX_CHARS:
+            error_text = error_text[:_FAILURE_LINE_MAX_CHARS] + "…(截断)"
+        blocked_by = str(term.get("blocked_by") or "")
+        if blocked_by:
+            line += f"\n  → 失败：{blocked_by}：{error_text}"
+        else:
+            line += f"\n  → 失败：{error_text}"
+    return line
+
+
+def _format_prefix_block(
+    locked: list[dict],
+    terminals: dict[str, dict] | None = None,
+    failed: list[dict] | None = None,
+) -> str:
     """前缀摘要：只读视图（id / type / input / tool）+ 终态结果摘要。
 
     approved-replan-quality：带上已完成步的终态 output 摘要（截断防爆），
     破「LLM 不知晓已完成步产出」——需要数据时 consumes 引用即可，
     不为重取产出重复规划同语义步骤（SPEC §9 序1）。
+
+    supervisor-replan-error-feedback：failed（上一轮失败终态步，按计划
+    顺序）追加失败摘要段——破「重规划照抄同一错误声明」（run cb2548：
+    write 步被契约闸拦，重规划两轮原样照抄同一错误 consumes 声明）。
+    失败步**不在锁定前缀内**（失败终态不进 _locked_prefix），单列一段
+    避免被模板抬头「已完成且不可更改」误标——它需要被修正后重新规划。
+    failed 为空时输出与此前逐字节一致（主路径零 diff 钉死）。
     """
     lines = []
     for row in locked:
@@ -801,6 +841,16 @@ def _format_prefix_block(locked: list[dict], terminals: dict[str, dict] | None =
                 summary = summary[:200] + "…(截断)"
             line += f"\n  → 终态结果：{summary}"
         lines.append(line)
+    if failed:
+        if lines:
+            lines.append("")
+        lines.append(
+            "以下步骤上一轮执行失败（未锁定，需在新后缀中修正声明后重新规划；"
+            "失败原因如下，切勿原样照抄上一轮的 consumes/produces 声明）："
+        )
+        for row in failed:
+            term = (terminals or {}).get(str(row.get("subtask_id") or ""))
+            lines.append(_failed_row_line(row, term))
     return "\n".join(lines) or "（无）"
 
 
@@ -1176,9 +1226,24 @@ async def supervisor_node(state: LgRagState) -> dict:
         # preserved 空 ⇒ 仍走 else 基础模板，主路径逐字节零 diff（FP-3 钉死）。
         _plan_ids = {str(r["subtask_id"]) for r in _plan_rows(state)}
         _terminals = _terminal_index(list(state.get("subtask_results") or []), _plan_ids)
+        # supervisor-replan-error-feedback（run cb2548）：失败终态步（被拦/
+        # 工人失败）不进锁定前缀，但它们的死因必须反哺重规划 prompt——
+        # 否则模型不知道上一轮哪步死了、为什么死，只能照抄同一错误声明。
+        # 无失败步时 _failed 为空 ⇒ prompt 逐字节零 diff（FP 口径沿用
+        # preserved_block 先例，由专项测试钉死）。
+        _locked_ids = {str(r.get("subtask_id") or "") for r in locked}
+        _failed = [
+            row
+            for row in _plan_rows(state)
+            if str(row["subtask_id"]) not in _locked_ids
+            and (
+                "error" in (_terminals.get(str(row["subtask_id"])) or {})
+                or (_terminals.get(str(row["subtask_id"])) or {}).get("blocked_by")
+            )
+        ]
         system_content = _build_supervisor_suffix_system(
             catalog_block,
-            _format_prefix_block(locked, _terminals),
+            _format_prefix_block(locked, _terminals, failed=_failed),
             max(0, MAX_SUBTASKS - len(locked)),
             preserved_block=_format_preserved_block(preserved),
         )

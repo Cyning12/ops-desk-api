@@ -193,6 +193,21 @@ def missing_fields(output: Any, fields: list[str]) -> list[str]:
     return [f for f in fields if f not in mapping]
 
 
+def _missing_field_detail(head: str, dep: str, output: Any) -> str:
+    """缺字段拦截 detail：附前驱**实际可用字段清单**（sorted keys）。
+
+    supervisor-replan-error-feedback（实测 run cb2548）：被拦步的错误终态
+    会反哺重规划 prompt——把「猜字段名」变成「从清单选字段名」。能走到
+    这里说明 missing 非空 ⇒ output_fields 判过 output 是 dict（非 dict
+    不校验、不替模型猜，既有语义不变）。
+    """
+    available = sorted(str(key) for key in (output_fields(output) or {}))
+    return (
+        f"{head}；前驱 {dep} 实际产出字段 {available}"
+        "（声明的字段不存在，请从实际产出字段中选择）"
+    )
+
+
 def gate(
     *,
     row: dict,
@@ -225,7 +240,8 @@ def gate(
         missing = missing_fields(term.get("output"), list(consumed[dep] or []))
         if missing:
             reason = BLOCKED_PREFIX_TOUCH if dep in prefix_ids else BLOCKED_CONTRACT_MISSING
-            return reason, f"前驱 {dep} 输出缺少字段 {missing}"
+            head = f"前驱 {dep} 输出缺少字段 {missing}"
+            return reason, _missing_field_detail(head, dep, term.get("output"))
 
     for dep in deps:
         promised = list((by_id.get(dep) or {}).get("produces") or [])
@@ -237,7 +253,8 @@ def gate(
         missing = missing_fields(term.get("output"), promised)
         if missing:
             reason = BLOCKED_PREFIX_TOUCH if dep in prefix_ids else BLOCKED_CONTRACT_MISSING
-            return reason, f"前驱 {dep} 未兑现自己声明的 produces {missing}"
+            head = f"前驱 {dep} 未兑现自己声明的 produces {missing}"
+            return reason, _missing_field_detail(head, dep, term.get("output"))
     return None, ""
 
 
