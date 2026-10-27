@@ -1,6 +1,6 @@
-# task（feature · HG-AUDIT-R1 已签 · 30 进行中）：supervisor 重规划错误反哺（契约闸失败原因 + 可用字段进 prompt）
+# task（completed）：supervisor 重规划错误反哺（契约闸失败原因 + 可用字段进 prompt）
 
-> **状态**：HG-AUDIT-R1 维护者 2026-10-27 会话签收（00 转录入表）。
+> **状态**：completed（2026-10-27 · PR [#293](https://github.com/Cyning12/ops-desk-api/pull/293) **MERGED** · squash `be78b5a` · CI 4/4 绿）。CLOSE 档 `docs/tasks/close/close_supervisor_replan_error_feedback_20261027.md`。
 > **由来**：2026-10-27 实测 run cb25483697624aafbb1cf864015c3b10——write 步被契约闸拦（`contract_missing_field`：声明 `['title','body','status']`，前驱实际字段 `state`），重规划**原样照抄同一错误声明**，两轮后 `budget_exhausted` 收场。用户裁定方向：第一轮的错误必须反哺第二轮。
 > **分支**：task/supervisor-replan-error-feedback（feature，非紧急 fix）。
 
