@@ -1,6 +1,6 @@
-# task（草案 · 人工闸 pending · 拒开工）：capability manifest 补 output_fields（planner 契约声明从「猜」变「从清单选」）
+# task（active）：capability manifest 补 output_fields（planner 契约声明从「猜」变「从清单选」）
 
-> **状态**：草案待维护者签 HG-AUDIT-R1，未签前拒开工。
+> **状态**：active（2026-10-27 维护者签收，00 转录闸表）。
 > **由来**：2026-10-27 复跑实证 run `d3a49527929248cc953b7a5327cae2d0`（query「#2140 这个 issue 在说什么？调用write本地落盘结论」）：t1 produces 仍猜 `['title','body','status']`（实际字段 `state`），与钉案 run `cb25483697624aafbb1cf864015c3b10` 同款猜错。已合并的 B 层错误反哺（PR #293）只能事后纠错，且修不动已锁定前缀的声明——源头消灭猜测须另立本 task（PR #293 task 非范围已声明）。
 > **分支**：task/lg-rag-capability-output-schema（维护者签收后新建，本窗不建）。
 
@@ -61,5 +61,5 @@ planner（supervisor）声明 produces/consumes 时，可见信息只有能力 i
 
 | 闸 | 状态 | 备注 |
 |---|---|---|
-| HG-AUDIT-R1 | pending | 待维护者签 |
+| HG-AUDIT-R1 | approved | 2026-10-27 维护者签收（m00272「签收A，消除猜测」），00 转录 |
 | HG-GRAPH-MODULES | n/a | 不动图谱分层 |
