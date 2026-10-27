@@ -4,6 +4,24 @@
 > **由来**：2026-10-27 实测 run cb25483697624aafbb1cf864015c3b10——write 步被契约闸拦（`contract_missing_field`：声明 `['title','body','status']`，前驱实际字段 `state`），重规划**原样照抄同一错误声明**，两轮后 `budget_exhausted` 收场。用户裁定方向：第一轮的错误必须反哺第二轮。
 > **分支**：task/supervisor-replan-error-feedback（feature，非紧急 fix）。
 
+## Harness 元信息
+
+| 字段 | 值 |
+|---|---|
+| **task_slug** | `supervisor-replan-error-feedback` |
+| **git_branch** | `task/supervisor-replan-error-feedback` |
+| **implement_repo** | `ops-desk-api` |
+| **test_strategy** | `required` |
+| **test_strategy_note** | spy 断言重规划 prompt 内容 + 两轮闭环收敛 + 主路径逐字节零 diff；不连真网 |
+| **code_quality_bar** | `L2_backend` |
+| **graph_change_layer** | `none` |
+| **graph_delta** | `n/a` |
+| **wiki_delta** | `n/a` |
+| **review_hat** | `20` |
+| **required_invoke_hats** | `10,30` |
+| **invoke_retention_profile** | `minimal` |
+| **close_pr_policy** | `required` |
+
 ## 根因（已钉案，2026-10-27）
 
 重规划 prompt 的全部输入 = 能力菜单 + `_format_prefix_block` + `_format_preserved_block`（app/ops/lg_rag/multi/nodes.py:1170-1184 调 `_build_supervisor_suffix_system`），三样里**零错误信息**：
