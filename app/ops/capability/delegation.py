@@ -287,7 +287,11 @@ def validate_param_constraints(constraints: Any) -> str | None:
 
 
 def check_param_constraints(token: DelegationToken, capability_id: str, args: Any) -> str | None:
-    """验签时校验调用参数；违规 → 字段名，通过 → None（纯代码校验 · 零 IO）。"""
+    """验签时校验调用参数；违规 → 字段名，通过 → None（纯代码校验 · 零 IO）。
+
+    pattern 约束按**整串匹配**（re.fullmatch · fail-closed 收紧）：未锚定 pattern
+    不退化为子串包含，`$` 亦不匹配换行前（2026-10-26 fix-delegation-pattern-fullmatch）。
+    """
     per_args = (token.param_constraints or {}).get(capability_id) or {}
     if not per_args:
         return None
@@ -301,7 +305,7 @@ def check_param_constraints(token: DelegationToken, capability_id: str, args: An
         ):
             return str(arg_name)
         if _CONSTRAINT_PATTERN in rule and (
-            not isinstance(value, str) or re.search(rule[_CONSTRAINT_PATTERN], value) is None
+            not isinstance(value, str) or re.fullmatch(rule[_CONSTRAINT_PATTERN], value) is None
         ):
             return str(arg_name)
     return None
