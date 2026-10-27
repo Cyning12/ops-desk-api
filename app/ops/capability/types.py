@@ -113,6 +113,13 @@ class CapabilitySpec:
     # 而"查到 0 条"和"被限流返回空"在系统里长得一模一样，会污染整条链路。
     # 形状见 result_contract.py；加载期校验见 manifest V10。
     output_schema: dict[str, Any] | None = None
+    # ---- 面向 planner 的产出字段名清单（与 output_schema 分工，勿混）----
+    # `output_schema` 是 P0-1 **结果契约**（运行期校验「成功长什么样」）；
+    # `output_fields` 只是**字段名清单**，供 catalog 渲染与计划期裁剪
+    # （produces/consumes 从「猜」变「从清单选」）。空 = 未声明 = 自由文本/
+    # 不校验（承 step_contract.output_fields「str/list/None 不校验、不替
+    # 模型猜」纪律）；只声明字段名存在性，业务不变量不进 schema（P-16）。
+    output_fields: tuple[str, ...] = ()
     # 可见性声明（departments / roles / projects / classification_max）。
     # None = **未声明**：不受可见性规则裁剪（沿用 CapabilityFilter 语义），
     # 但会在 span 上留 ``visibility_undeclared`` 痕，让遗漏可度量。

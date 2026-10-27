@@ -528,6 +528,15 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
     if isinstance(output_schema_raw, dict):
         _validate_output_schema(output_schema_raw, loc=f"{loc}.output_schema")
 
+    # 面向 planner 的产出字段名清单（与 output_schema 分工见 types.py 字段注释）。
+    # list[str] 校验；空/缺省 = () = 未声明（不裁剪不校验，向后兼容零 diff）。
+    output_fields_raw = raw.get("output_fields")
+    if output_fields_raw is not None and not isinstance(output_fields_raw, list):
+        raise ManifestError(f"{loc} output_fields 必须是 list[str]")
+    output_fields = tuple(
+        token for token in (str(item).strip() for item in (output_fields_raw or ())) if token
+    )
+
     http_block = raw.get("http")
     if kind != "http" and isinstance(http_block, dict) and http_block:
         # V7：仅 kind=http 可声明 http 块。
@@ -629,6 +638,7 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
         receipt_capture=tuple(str(x) for x in capture_raw),
         # 结果契约（P0-1）：None = 未声明，不做契约校验（见 result_contract 模块 docstring）
         output_schema=(dict(output_schema_raw) if isinstance(output_schema_raw, dict) else None),
+        output_fields=output_fields,
         visibility=(dict(visibility_raw) if isinstance(visibility_raw, dict) else None),
         fallback=dict(fallback_raw) if isinstance(fallback_raw, dict) else None,
         # 可撤销性四字段（V1-B）：声明了必须合法；缺字段不报错（向后兼容）
