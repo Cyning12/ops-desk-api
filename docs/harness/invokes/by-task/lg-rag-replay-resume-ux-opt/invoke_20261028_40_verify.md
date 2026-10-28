@@ -90,3 +90,22 @@ TypeError: can't subtract offset-naive and offset-aware datetimes
 | TC6 live F2 | PASS |
 
 **40 结论：退回 30 修 B-1（单点 · 钉案齐），其余面全部达标，修后复验范围=TC1–TC4+三钉+全量对拍+live 409 实证。**
+
+---
+
+## 复验补记（40 · B-1 修复后 · 2026-10-28 20:35）
+
+受验：`0722f75`（fix）+ `e9c0faf`（docs · task v0.5）。范围收敛：仅复验 B-1 相关四面，已 PASS 的 7 面不重验。**复验结论：PASS（B-1 愈 · 可合并面达标）**。
+
+| 项 | 结论 | 实证 |
+|---|---|---|
+| ① 修复 diff 亲读 + 回归钉 RED | PASS | `0722f75` 仅触 `event_store.py`(+24/-3 净)+测试(+17)：抽纯函数 `_utc_age_seconds`（now=`datetime.now(UTC)` aware · DB naive 补 `tzinfo=UTC` · aware 直用），:248 单行换调；不承 SQL 侧 cutoff 的两条理由（精确 age 须回 FP-1 日志 · 会话 TZ coercion 隐患）已入 docstring，成立。回归钉 `test_utc_age_seconds_handles_naive_and_aware_datetimes` 双形态直传+age≈5s 断言；RED 独立复证：worktree 检出修复前码面 `c55b436` 拷入新测试 → `ImportError` failed（0.10s），与 30 声称 RED 形式一致 |
+| ② 新测 14 枚 + 三钉 | PASS | 判红前 `TRUNCATE ops_hitl_requests`（清 8 行）；`test_lg_rag_replay_resume_follow.py` **14/14 PASS**（0.43s）；三钉 37 passed/**2 failed** 同旧红集（`test_tc8_diff_whitelist`+`test_hitl_cross_instance_resume`）零新增 |
+| ③ live P1 409（timestamptz dev 库 · 合成在写窗） | PASS | dev 库 `opsdesk`（`created_at`=timestamptz aware）克隆 seq10 合成 `hitl.resumed@20`（created_at=now）→ uvicorn :8013 跑 e9c0faf：`follow=false` → **409 + `retry-after: 2` + detail「Resume is writing new events; retry after it settles.」**（修复前同形态 500×2，愈）；附带 P2 `follow=true` → 200 不 409（推出 seq10→20 存量后轮询，掐断无异常） |
+| ④ live P4 stale 分支可达性 | PASS | 合成行 `created_at` 回拨 7200s → `follow=false` → **200 放行**（20 帧）；uvicorn 日志实收 FP-1：`ERROR ... 超 stale 阈（疑似崩溃残留 · FP-1）run_id=633dba... age=7201.1s threshold=900.0s ⇒ 谓词回落 False`——精确 age 回日志的设计理由实证成立；修复前该分支在 canonical schema 永不可达，现可达 |
+
+**ruff 口径钉**：复验中发现 PATH 上 miniconda `ruff 0.9.10` 对未触达文件报 13×UP038（环境噪音）；CI 钉版 `ruff==0.15.21`（`.github/workflows/pytest.yml:44`，维护者签注明裁）且跑 `.venv/bin/ruff` → HEAD `All checks passed!`。B-1 修复与初验 PASS 结论均以钉版二进制为准，无漂移。
+
+**复验副作用清理**：合成 seq20 行已 DELETE（`633dba00` 恢复 19 行原态）；uvicorn :8013 已停；验证 worktree 已清。
+
+**40 终态：PASS。** 验收面 1–8 全部达标（初验 7 面 + 复验 B-1 愈），task 可进入合并流程（PR 前 `graph-compile.sh`+CI 绿按仓规）。
