@@ -19,8 +19,10 @@ supervisor 图会在 observe 里被 interrupt() 挂起等人审批，那一刻�
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import os
 import uuid
 from collections.abc import AsyncIterator
 from typing import Any, Literal
@@ -42,6 +44,7 @@ from app.ops.lg_rag.checkpointer import apostgres_saver, use_postgres_checkpoint
 from app.ops.lg_rag.event_store import (
     LgRagRunInFlightError,
     LgRagRunNotFoundError,
+    LgRagRunResumeInProgressError,
     load_events_after,
 )
 from app.ops.lg_rag.run_worker import start_run_worker
@@ -99,6 +102,134 @@ class ReplayRequest(BaseModel):
     run_id: str | None = Field(default=None, max_length=64)
     after_seq: int | None = Field(default=None, ge=0)
     cursor: str | None = Field(default=None, max_length=96)
+    # task_lg_rag_replay_resume_ux_opt D2：follow=true = live-tail
+    # （推存量 → 事件表轮询按 seq 推增量 → 见新收尾帧收尾）；缺省 false = 存量重放字面零 diff。
+    follow: bool = False
+
+
+# ---------------------------------------------------------------------------
+# replay follow live-tail 环境面（task_lg_rag_replay_resume_ux_opt D2 · 承 run_worker env 体例）
+# ---------------------------------------------------------------------------
+
+_REPLAY_FOLLOW_MAX_DEFAULT_SECONDS = 900.0
+# 定稿理由（30 实证裁定 · FP-3）：恢复段实测 68–289s（2026-10-28 PG 实证
+# run 38cb1138… latency_ms=289607 / 1039c1a9… ≈68s · 仅两数据点），总时长上限取
+# max 实测约 3 倍余量定默认 900s（≥600s 建议线）；到点流自然结束、禁伪造帧，
+# 客户端同请求重连即可续 tail。
+_REPLAY_FOLLOW_POLL_DEFAULT_SECONDS = 2.0
+_REPLAY_FOLLOW_POLL_MIN_SECONDS = 1.0
+
+
+def _replay_follow_max_seconds() -> float:
+    """读 env LG_RAG_REPLAY_FOLLOW_MAX_SECONDS；缺省/非法/≤0 回退默认。"""
+    raw = os.environ.get("LG_RAG_REPLAY_FOLLOW_MAX_SECONDS", "").strip()
+    if not raw:
+        return _REPLAY_FOLLOW_MAX_DEFAULT_SECONDS
+    try:
+        value = float(raw)
+    except ValueError:
+        logger.warning("LG_RAG_REPLAY_FOLLOW_MAX_SECONDS 非法值 %r，回退默认 %.0fs", raw, _REPLAY_FOLLOW_MAX_DEFAULT_SECONDS)
+        return _REPLAY_FOLLOW_MAX_DEFAULT_SECONDS
+    if value <= 0:
+        logger.warning("LG_RAG_REPLAY_FOLLOW_MAX_SECONDS 须 >0（%r），回退默认 %.0fs", raw, _REPLAY_FOLLOW_MAX_DEFAULT_SECONDS)
+        return _REPLAY_FOLLOW_MAX_DEFAULT_SECONDS
+    return value
+
+
+def _replay_follow_poll_seconds() -> float:
+    """读 env LG_RAG_REPLAY_FOLLOW_POLL_SECONDS；缺省/非法/≤0 回退默认；环境面 floor 1.0s（FP-6 防锤库）。"""
+    raw = os.environ.get("LG_RAG_REPLAY_FOLLOW_POLL_SECONDS", "").strip()
+    if not raw:
+        return _REPLAY_FOLLOW_POLL_DEFAULT_SECONDS
+    try:
+        value = float(raw)
+    except ValueError:
+        logger.warning("LG_RAG_REPLAY_FOLLOW_POLL_SECONDS 非法值 %r，回退默认 %.0fs", raw, _REPLAY_FOLLOW_POLL_DEFAULT_SECONDS)
+        return _REPLAY_FOLLOW_POLL_DEFAULT_SECONDS
+    if value <= 0:
+        logger.warning("LG_RAG_REPLAY_FOLLOW_POLL_SECONDS 须 >0（%r），回退默认 %.0fs", raw, _REPLAY_FOLLOW_POLL_DEFAULT_SECONDS)
+        return _REPLAY_FOLLOW_POLL_DEFAULT_SECONDS
+    return max(value, _REPLAY_FOLLOW_POLL_MIN_SECONDS)
+
+
+def _replay_follow_keepalive_interval_s() -> float:
+    """复用 sse_stream keepalive 体例（延迟 import · 模块属性运行时读，承 sse_subscribe 可 patch 先例）。"""
+    from app.ops.lg_rag import sse_stream
+
+    return float(sse_stream._KEEPALIVE_INTERVAL_S)
+
+
+def _format_replay_sse_frame(ev: dict[str, Any]) -> str:
+    """replay 面 SSE 帧体例（freeze lg-rag-sse-v1 · 存量重放与 follow 共用，逐字节一致）。"""
+    return f"event: {ev['event_type']}\ndata: {json.dumps(ev, ensure_ascii=False)}\n\n"
+
+
+async def _iter_replay_follow_sse(
+    *,
+    run_id: str,
+    user_id: str,
+    after_seq: int,
+    initial_events: list[dict[str, Any]],
+    poll_seconds: float,
+    keepalive_interval_s: float,
+    max_seconds: float,
+) -> AsyncIterator[str]:
+    """follow=true live-tail：推存量 → 事件表轮询按 seq 推增量 → 见新收尾帧收尾。
+
+    契约（task_lg_rag_replay_resume_ux_opt D2）：
+    - 轮询真源 = load_events_after（refuse_in_flight=False · follow=等待语义不写闸，
+      故在飞/恢复段在写窗 follow 不返 409）；
+    - 收尾条件 = 推出 seq > after_seq 的 done/error（含再挂起 done{waiting_approval} ·
+      FP-7）；初始批已含收尾帧 ⇒ 推完即结束、零轮询；
+    - keepalive = SSE comment（``: keepalive`` · 延迟 import 复用 sse_stream 体例）
+      不进 data · 防 idle 掐断（FP-2）；
+    - 总时长上限到点流自然结束，禁伪造 done/error/任何帧（FP-3 · 末帧永远来自事件表）；
+    - 帧字节与存量重放逐字节同构（freeze lg-rag-sse-v1 零新 event_type）；
+    - 无后台任务：客户端断连（aclose/CancelledError）即取消本循环，零残留。
+    """
+    from app.ops.lg_rag.sse_stream import _KEEPALIVE_FRAME
+
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + max_seconds
+    cursor = after_seq
+    for ev in initial_events:
+        cursor = max(cursor, int(ev["seq"]))
+        yield _format_replay_sse_frame(ev)
+        if ev["event_type"] in ("done", "error"):
+            return
+    last_data = loop.time()
+    next_poll = last_data  # 立即首 poll 追已落增量
+    next_keepalive = last_data + keepalive_interval_s
+    while True:
+        now = loop.time()
+        if now >= deadline:
+            return
+        if now >= next_poll:
+            events = await load_events_after(
+                run_id,
+                user_id,
+                cursor,
+                refuse_in_flight=False,
+            )
+            now = loop.time()
+            next_poll = now + poll_seconds
+            if events:
+                for ev in events:
+                    cursor = max(cursor, int(ev["seq"]))
+                    yield _format_replay_sse_frame(ev)
+                    if ev["event_type"] in ("done", "error"):
+                        return
+                last_data = loop.time()
+                next_keepalive = last_data + keepalive_interval_s
+                continue
+        if now >= next_keepalive:
+            yield _KEEPALIVE_FRAME
+            next_keepalive = now + keepalive_interval_s
+            continue
+        wake_at = min(next_poll, next_keepalive, deadline)
+        delay = wake_at - loop.time()
+        if delay > 0:
+            await asyncio.sleep(delay)
 
 
 class ChainMetaOut(BaseModel):
@@ -378,6 +509,10 @@ async def replay_lg_rag(
 
     未知/跨用户 run_id → 404；run 仍在流式写入（无收尾帧）→ 409 +
     Retry-After（F-OBS-2），客户端退避重试，沉降后同请求零 diff。
+    HITL 恢复段在写窗（hitl.resumed 已落、尚无新收尾帧）→ 409 + Retry-After，
+    detail 与首段在飞可区分（task_lg_rag_replay_resume_ux_opt D1）。
+    follow=true（D2）→ live-tail：推存量 → 事件表轮询按 seq 推增量 → 见新收尾帧
+    收尾；等待语义不写在飞/在写窗闸（不返 409）；总时长上限到点自然结束、禁伪造帧。
     """
     try:
         run_id, after_seq = resolve_replay_target(
@@ -396,8 +531,17 @@ async def replay_lg_rag(
             run_id,
             str(user.id),
             after_seq,
-            refuse_in_flight=True,
+            refuse_in_flight=not body.follow,
         )
+    except LgRagRunResumeInProgressError:
+        # D1：恢复段在写窗 replay 语义化——该形态既有在飞闸不拦（done{waiting_approval}
+        # 挂起帧算收尾 · F-OBS-2 刻意口径），若无本映射则 replay 合法 200 零帧无语义区分；
+        # detail 刻意区别于首段在飞 409，客户端退避重试，恢复段沉降后同请求零 diff。
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Resume is writing new events; retry after it settles.",
+            headers={"Retry-After": "2"},
+        ) from None
     except LgRagRunInFlightError:
         # F-OBS-2：在飞 replay 语义化——run 仍在流式写入时读路径不稳定（web 联调
         # FP-1 实证瞬返 500），前置判定为 409 + Retry-After 让客户端退避重试；
@@ -413,9 +557,30 @@ async def replay_lg_rag(
             detail="Run not found",
         ) from None
 
+    if body.follow:
+        # D2 follow=true live-tail：初始批不写在飞/在写窗闸（上方 refuse_in_flight=False），
+        # 存量推完未收尾则事件表轮询续 tail；上限/轮询/keepalive 全走环境面 helper。
+        return StreamingResponse(
+            _iter_replay_follow_sse(
+                run_id=run_id,
+                user_id=str(user.id),
+                after_seq=after_seq,
+                initial_events=events,
+                poll_seconds=_replay_follow_poll_seconds(),
+                keepalive_interval_s=_replay_follow_keepalive_interval_s(),
+                max_seconds=_replay_follow_max_seconds(),
+            ),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "X-Ops-Lg-Rag-Run-Id": run_id,
+            },
+        )
+
     async def event_gen() -> AsyncIterator[str]:
         for ev in events:
-            yield (f"event: {ev['event_type']}\ndata: {json.dumps(ev, ensure_ascii=False)}\n\n")
+            yield _format_replay_sse_frame(ev)
 
     return StreamingResponse(
         event_gen(),

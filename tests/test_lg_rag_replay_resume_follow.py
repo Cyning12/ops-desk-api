@@ -299,8 +299,9 @@ async def test_follow_generator_frame_order_keepalive_and_close() -> None:
     # keepalive：挂起期 SSE comment，不进 data
     assert comments, "挂起轮询期必须发 keepalive comment 防 idle 掐断（FP-2）"
     assert all(c == ": keepalive\n\n" for c in comments)
-    # 轮询真源=load_events_after 且 refuse_in_flight 恒 False（follow=等待语义）；cursor 单调推进
-    assert poll_calls == [(5, False), (5, False), (7, False)]
+    # 轮询真源=load_events_after 且 refuse_in_flight 恒 False（follow=等待语义）；cursor 单调推进。
+    # 4 次轮询：两次空批（seq 停 5）→ 增量批 [ev6, ev7]（seq 停 5 拉取、推完进 7）→ 收尾批 [ev8]（seq 7 拉取）。
+    assert poll_calls == [(5, False), (5, False), (5, False), (7, False)]
 
 
 async def test_follow_generator_settled_initial_batch_closes_immediately() -> None:
