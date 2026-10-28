@@ -861,6 +861,17 @@ def _unlocked_preserved_rows(state: LgRagState, locked: list[dict]) -> list[dict
 # 前驱可用字段清单）必须活下来，截掉了重规划还是只能猜字段名（run cb2548）。
 _FAILURE_LINE_MAX_CHARS = 400
 
+# 带内逃生口指引（task lg-rag-gate-produces-unfulfilled · 实证 run d3a49）：
+# 已终态前驱进锁定前缀、_stamp_host_plan 逐字保留 ⇒ 重规划**改不动**它的
+# produces 声明（实证：locked 行原样前置，LLM 项一律签发新 id）——唯一合法
+# 出路是以修正后的 produces 重发等价**新步**，或只消费实际产出字段。
+_REISSUE_PREDECESSOR_REASONS = (sc.BLOCKED_CONTRACT_MISSING, sc.BLOCKED_PREFIX_TOUCH)
+_REISSUE_PREDECESSOR_GUIDANCE = (
+    "指引：若失败因前驱声明的 produces 字段未兑现——已终态前驱已锁定不可改写："
+    "以修正后的 produces 重发前驱步（作为新步、新 subtask_id），"
+    "或让后续步只消费前驱实际产出字段；勿照抄原声明。"
+)
+
 
 def _failed_row_line(row: dict, term: dict | None) -> str:
     """失败步行：与锁定行同格式（id / type / input / tool）+ 失败摘要行。
@@ -927,6 +938,17 @@ def _format_prefix_block(
         for row in failed:
             term = (terminals or {}).get(str(row.get("subtask_id") or ""))
             lines.append(_failed_row_line(row, term))
+        if any(
+            str(
+                ((terminals or {}).get(str(row.get("subtask_id") or "")) or {}).get(
+                    "blocked_by"
+                )
+                or ""
+            )
+            in _REISSUE_PREDECESSOR_REASONS
+            for row in failed
+        ):
+            lines.append(_REISSUE_PREDECESSOR_GUIDANCE)
     return "\n".join(lines) or "（无）"
 
 

@@ -20,7 +20,7 @@ from unittest.mock import patch
 
 from app.ops.lg_rag.multi import nodes
 from app.ops.lg_rag.multi import step_contract as sc
-from app.ops.lg_rag.multi.nodes import _join_subtasks
+from app.ops.lg_rag.multi.nodes import _format_prefix_block, _join_subtasks
 
 _RUN = "rund3a49"
 _T1 = f"{_RUN}:1"
@@ -239,3 +239,45 @@ async def test_join_no_observation_span_when_fulfilled():
     assert _T2 in out["inflight_subtask_ids"]
     assert all("step_contract_produces_unfulfilled" not in meta for meta in recorded)
 
+
+# ---------------------------------------------------------------------------
+# B2 · 带内逃生口指引
+# ---------------------------------------------------------------------------
+
+
+def _failed_row(sid: str) -> dict:
+    return {
+        "subtask_id": sid,
+        "alias": "t2",
+        "type": "tool",
+        "tool": "mock_notify",
+        "input": "发通知",
+    }
+
+
+def test_failed_section_has_reissue_guidance_for_contract_missing():
+    """验收③：blocked_by=contract_missing_field ⇒ 失败摘要段含重发前驱步指引。"""
+    terms = {"run-x:2": {"error": "前驱输出缺少字段", "blocked_by": "contract_missing_field"}}
+    out = _format_prefix_block([], terms, failed=[_failed_row("run-x:2")])
+    assert "重发前驱步" in out, "失败摘要段须含「重发前驱步」逃生口指引"
+    assert "produces" in out
+    assert "新 subtask_id" in out
+    assert "勿照抄原声明" in out
+
+
+def test_failed_section_has_reissue_guidance_for_prefix_touch():
+    """验收③：blocked_by=prefix_touch_required ⇒ 同样附逃生口指引。"""
+    terms = {"run-x:2": {"error": "缺字段", "blocked_by": "prefix_touch_required"}}
+    out = _format_prefix_block([], terms, failed=[_failed_row("run-x:2")])
+    assert "重发前驱步" in out
+
+
+def test_failed_section_no_guidance_for_other_reasons():
+    """反向对照：非契约缺字段死因（如前驱失败）⇒ 不附逃生口指引。"""
+    terms = {"run-x:2": {"error": "前驱为失败终态", "blocked_by": "predecessor_failed"}}
+    out = _format_prefix_block([], terms, failed=[_failed_row("run-x:2")])
+    assert "重发前驱步" not in out
+    # 工人失败（无拦截码）同样不附
+    terms2 = {"run-x:2": {"error": "下游 500"}}
+    out2 = _format_prefix_block([], terms2, failed=[_failed_row("run-x:2")])
+    assert "重发前驱步" not in out2
