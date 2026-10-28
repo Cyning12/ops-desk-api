@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import and_, func, or_, select
 
-from app.db.models import OpsLgRagRunEvent, now_utc
+from app.db.models import OpsLgRagRunEvent
 from app.db.session import AsyncSessionLocal
 from app.ops.lg_rag.sse_replay import format_sse_event
 
@@ -181,6 +181,27 @@ async def run_stream_closed(run_id: str) -> bool:
     return row is not None
 
 
+def _utc_age_seconds(last_created_at: datetime) -> float:
+    """距末帧秒数（tz 归一 · B-1 钉案 · 40 验收退回修复）。
+
+    背景：`now_utc()` 为 offset-naive（`app/db/models.py:27` datetime.utcnow），
+    而迁移 canonical schema `created_at`=timestamptz
+    （`alembic/versions/20260831_lg_rag_run_events.py:32`）→ asyncpg 返
+    offset-aware；`opsdesk_test` 由 create_all 按模型建 naive timestamp
+    （schema 漂移 · 对齐迁移属基建另立 task）。两侧统一归一到 UTC aware 再
+    相减：DB 值 naive 按 UTC 补 tzinfo（与 now_utc 语义一致），aware 直用。
+
+    选 python 侧归一而非承 :305 SQL 侧 cutoff 的理由：本路径要把精确
+    age_seconds 带回 FP-1 error 日志（运维诊断值），SQL 侧比较拿不到该值；
+    且 naive cutoff 对 timestamptz 列的比较依赖会话 TimeZone  coercion，
+    服务端 TZ 非 UTC 时会静默误判——显式归一消除该类隐患。
+    """
+    now = datetime.now(UTC)
+    if last_created_at.tzinfo is None:
+        last_created_at = last_created_at.replace(tzinfo=UTC)
+    return (now - last_created_at).total_seconds()
+
+
 async def run_resume_in_progress(
     run_id: str,
     *,
@@ -245,7 +266,7 @@ async def run_resume_in_progress(
         ).scalar()
     if last_created_at is None:
         return False
-    age_seconds = (now_utc() - last_created_at).total_seconds()
+    age_seconds = _utc_age_seconds(last_created_at)
     if age_seconds > stale_after_seconds:
         logger.error(
             "lg-rag 恢复段在写窗超 stale 阈（疑似崩溃残留 · FP-1）run_id=%s age=%.1fs threshold=%.1fs ⇒ 谓词回落 False",

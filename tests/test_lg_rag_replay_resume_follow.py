@@ -476,3 +476,20 @@ async def test_follow_generator_disconnect_no_residue() -> None:
     await asyncio.sleep(0.05)
     tasks_after = set(asyncio.all_tasks())
     assert tasks_after <= tasks_before, "follow 循环不得残留后台任务"
+def test_utc_age_seconds_handles_naive_and_aware_datetimes() -> None:
+    """B-1 回归钉（40 退回钉案）：迁移 canonical schema created_at=timestamptz
+
+    → asyncpg 返 offset-aware；opsdesk_test create_all 按模型建 naive timestamp
+    （schema 漂移 · 基建另立）。_utc_age_seconds 必须对 naive/aware 两种
+    DB 返回形态都算出正确秒差（naive 按 UTC 解释），不再抛
+    TypeError: can't subtract offset-naive and offset-aware datetimes。
+    """
+    from datetime import UTC, datetime
+
+    from app.ops.lg_rag.event_store import _utc_age_seconds
+
+    naive_utc = datetime.utcnow() - timedelta(seconds=5.0)  # noqa: DTZ003 — 刻意构造 naive 形态
+    aware_utc = datetime.now(UTC) - timedelta(seconds=5.0)
+    for value in (naive_utc, aware_utc):
+        age = _utc_age_seconds(value)
+        assert 4.0 <= age <= 10.0, f"age 应≈5s（{value!r} tzinfo={value.tzinfo}），实测 {age}"
