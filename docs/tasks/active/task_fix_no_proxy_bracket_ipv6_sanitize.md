@@ -1,12 +1,12 @@
-# task（fix 草案 · 人工闸 pending · 拒开工）：启动期清洗 NO_PROXY 方括号 IPv6 条目（httpx InvalidURL ':1]' 根治）
+# task（fix · active）：启动期清洗 NO_PROXY 方括号 IPv6 条目（httpx InvalidURL ':1]' 根治）
 
-> **状态**：草案待维护者签 HG-AUDIT-R1，未签前拒开工。
+> **状态**：active（2026-10-28 维护者签收 m00416「也一次性修复了，两个task一起验收吧」，00 转录闸表；与 task_lg_rag_capability_output_schema 合并验收 5 同场复跑）。
 > **由来**：2026-10-27 复跑 supervisor-replan-error-feedback 验收场景时，run `0fbebc8e8708459fb8e9e347e0236f62` seq19 `lg_rag.worker_failed`：旁路流式调用失败 `InvalidURL("Invalid port: ':1]'")`。同款钉案先例：`docs/tasks/close/close_vector_waterline_local_rerun_20261017.md` §四.1（当时剥代理重跑绕过，未根治）。
 > **分支**：fix/no-proxy-bracket-ipv6-sanitize（fix，非紧急，仍走 task 流程）。
 
 ## 根因（已钉案，2026-10-27 实证）
 
-本机 shell 代理配置 `NO_PROXY=localhost,127.0.0.1,::1,[::1]`（Clash 系客户端常见写法）。uvicorn 进程继承 shell env，httpx 处理 proxy bypass 列表时把方括号 IPv6 条目 `[::1]` 当 URL 解析，`:1]` 被截为端口 → `InvalidURL`。凡旁路 LLM 流式调用（`app/llm/providers/base.py:385` `httpx.AsyncClient` 按调用构造、默认 `trust_env=True`）即炸，**每次手动重启进程都可能再踩**（今天 00 用 nohup 重启继承脏 env 即实证第三次）。
+本机 shell 代理配置 `NO_PROXY=localhost,127.0.0.1,::1,[::1]`（Clash 系客户端常见写法）。uvicorn 进程继承 shell env，httpx 处理 proxy bypass 列表时把方括号 IPv6 条目 `[::1]` 当 URL 解析，`:1]` 被截为端口 → `InvalidURL`。凡旁路 LLM 流式调用（`app/llm/providers/base.py:385` `httpx.AsyncClient` 按调用构造、默认 `trust_env=True`）即炸，**每次手动重启进程都可能再踩**（今天 00 用 nohup 重启继承脏 env 即实证第三次）。2026-10-28 **第四实证**：00 重启时仅覆盖大写 `NO_PROXY`，小写 `no_proxy` 仍带 `[::1]` 漏入进程（httpx 按 urllib 惯例小写优先）→ 同 query 复跑 seq 同炸——佐证双写清洗（验收 3）不可省。
 
 ## 修复设计（最小面）
 
@@ -62,5 +62,5 @@ app 启动早期（`app/main.py` import 期，承 `_init_logging()` N-40-1 行�
 
 | 闸 | 状态 | 备注 |
 |---|---|---|
-| HG-AUDIT-R1 | pending | 待维护者签 |
+| HG-AUDIT-R1 | approved | 2026-10-28 维护者签收（m00416「也一次性修复了，两个task一起验收吧」），00 转录 |
 | HG-GRAPH-MODULES | n/a | 不动图谱分层 |
