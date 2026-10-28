@@ -99,16 +99,26 @@ def test_gate_blocks_missing_consumed_field():
     assert "assignee" in detail
 
 
-def test_gate_producer_breach_blocks_dependent():
-    """前驱声明了 produces 却没兑现 → 后继也停（声明了就要兑现）。"""
+def test_gate_producer_breach_observed_not_blocked():
+    """produces 未兑现但后继未消费缺失字段 → 放行 + 观察留痕（d3a49 收窄）。
+
+    收窄前本用例断言 contract_missing_field——那正是 run d3a49 死锁拦因：
+    前驱已终态锁定、重规划改不动它的声明，而 worker 只见 consumes 绑定值，
+    未被消费的未兑现声明不构成实际数据流，拦它只有死锁没有防御收益。
+    新语义：降级为 span 观察留痕（task lg-rag-gate-produces-unfulfilled）。
+    """
     done = {_T1: _term(_T1, output={"status": "open"})}
+    row = _row(_T2, deps=[_T1])
+    by_id = {_T1: _row(_T1, produces=["status", "assignee"])}
     reason, _ = sc.gate(
-        row=_row(_T2, deps=[_T1]),
+        row=row,
         terminals=done,
-        by_id={_T1: _row(_T1, produces=["status", "assignee"])},
+        by_id=by_id,
         prefix_ids=frozenset(),
     )
-    assert reason == sc.BLOCKED_CONTRACT_MISSING
+    assert reason is None
+    observed = sc.unfulfilled_produces(row=row, terminals=done, by_id=by_id)
+    assert [o["missing"] for o in observed] == [["assignee"]]
 
 
 def test_gate_prefix_touch_needs_hitl():

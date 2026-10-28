@@ -861,6 +861,17 @@ def _unlocked_preserved_rows(state: LgRagState, locked: list[dict]) -> list[dict
 # 前驱可用字段清单）必须活下来，截掉了重规划还是只能猜字段名（run cb2548）。
 _FAILURE_LINE_MAX_CHARS = 400
 
+# 带内逃生口指引（task lg-rag-gate-produces-unfulfilled · 实证 run d3a49）：
+# 已终态前驱进锁定前缀、_stamp_host_plan 逐字保留 ⇒ 重规划**改不动**它的
+# produces 声明（实证：locked 行原样前置，LLM 项一律签发新 id）——唯一合法
+# 出路是以修正后的 produces 重发等价**新步**，或只消费实际产出字段。
+_REISSUE_PREDECESSOR_REASONS = (sc.BLOCKED_CONTRACT_MISSING, sc.BLOCKED_PREFIX_TOUCH)
+_REISSUE_PREDECESSOR_GUIDANCE = (
+    "指引：若失败因前驱声明的 produces 字段未兑现——已终态前驱已锁定不可改写："
+    "以修正后的 produces 重发前驱步（作为新步、新 subtask_id），"
+    "或让后续步只消费前驱实际产出字段；勿照抄原声明。"
+)
+
 
 def _failed_row_line(row: dict, term: dict | None) -> str:
     """失败步行：与锁定行同格式（id / type / input / tool）+ 失败摘要行。
@@ -927,6 +938,17 @@ def _format_prefix_block(
         for row in failed:
             term = (terminals or {}).get(str(row.get("subtask_id") or ""))
             lines.append(_failed_row_line(row, term))
+        if any(
+            str(
+                ((terminals or {}).get(str(row.get("subtask_id") or "")) or {}).get(
+                    "blocked_by"
+                )
+                or ""
+            )
+            in _REISSUE_PREDECESSOR_REASONS
+            for row in failed
+        ):
+            lines.append(_REISSUE_PREDECESSOR_GUIDANCE)
     return "\n".join(lines) or "（无）"
 
 
@@ -1048,6 +1070,10 @@ async def _join_subtasks(state: LgRagState) -> dict:
     else:
         ready: list[str] = []
         blocked_meta: dict[str, int] = {}
+        # 判定 3 收窄留痕（task lg-rag-gate-produces-unfulfilled · 实证 run
+        # d3a49）：produces 未兑现但未被本步 consumes 引用 → 放行，观察写 span
+        # （复用既有 _record_span_metadata 通道，不新增事件类型）。
+        unfulfilled_obs: list[dict] = []
         # hitl-approved-replan-quality（契约一）：write 成功终态 canonical
         # 索引 + 本批已派发 write 键——孪生步结构护栏数据面。delegation-
         # naming-boundary D2：门控自 _delegation_active() 解耦至独立开关
@@ -1077,6 +1103,8 @@ async def _join_subtasks(state: LgRagState) -> dict:
                 done[sid] = blocked
                 blocked_meta[reason] = blocked_meta.get(reason, 0) + 1
                 continue
+            for item in sc.unfulfilled_produces(row=row, terminals=done, by_id=by_id):
+                unfulfilled_obs.append({"subtask_id": sid, **item})
             # hitl-approved-replan-quality（SPEC §9 序1 · 契约一）：write
             # 孪生步结构护栏——**先于签发检查**：命中异 sid 同 canonical
             # 成功终态即 guard-skip（不派发 · 不消费单据 · 不产孤儿 HITL
@@ -1150,6 +1178,8 @@ async def _join_subtasks(state: LgRagState) -> dict:
                     "step_contract_blocked_by_reason": blocked_meta,
                 }
             )
+        if unfulfilled_obs:
+            _record_span_metadata({"step_contract_produces_unfulfilled": unfulfilled_obs})
     if extras:
         updates["subtask_results"] = SubtaskResultBatch(extras, plan_ids)
     return updates

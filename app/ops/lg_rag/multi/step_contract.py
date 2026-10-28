@@ -220,8 +220,15 @@ def gate(
     判定顺序（先挡最贵的）：
     1. 前驱失败终态 → ``predecessor_failed``（Q4 缺陷二的字面病灶）；
     2. ``consumes`` 字段在产出里找不到 → 前驱在不可变前缀内 ⇒ ``prefix_touch_required``
-       （Q8：要满足它得改历史，交人），否则 ``contract_missing_field``；
-    3. 前驱自己声明的 ``produces`` 没兑现 → 同上分类。
+       （Q8：要满足它得改历史，交人），否则 ``contract_missing_field``。
+
+    判定 3（前驱 ``produces`` 未兑现）已收窄为**观察留痕**（task
+    lg-rag-gate-produces-unfulfilled · 实证 run d3a49 死锁）：worker 只拿
+    ``collect_values`` 按 consumes 显式绑定且产出里真实存在的字段，未被
+    消费的未兑现声明不构成实际数据流——拦它没有防御收益，只在前驱已
+    终态锁定（声明改不动）时制造死锁。缺失字段被本步 consumes 引用的
+    情形由判定 2 拦截（语义零回归）；其余由编排层调
+    ``unfulfilled_produces`` 写 span 观察留痕后放行。
     """
     deps = [str(d) for d in (row.get("depends_on") or [])]
     consumed = row.get("consumes_resolved") or {}
@@ -243,6 +250,23 @@ def gate(
             head = f"前驱 {dep} 输出缺少字段 {missing}"
             return reason, _missing_field_detail(head, dep, term.get("output"))
 
+    return None, ""
+
+
+def unfulfilled_produces(
+    *, row: dict, terminals: dict[str, dict], by_id: dict[str, dict]
+) -> list[dict]:
+    """判定 3 收窄后的观察项：前驱声明 ``produces`` 未兑现、且缺失字段
+    **未被本步 consumes 引用**。
+
+    返回 ``[{"dep": ..., "missing": [...], "available": [...]}]``（按
+    depends_on 声明顺序），供编排层写 span 留痕；空列表 = 无需留痕。
+    consumes 引用的缺失字段由 ``gate`` 判定 2 拦截，不在此重复留痕。
+    纯函数、零 IO（与本模块其余部分同纪律）。
+    """
+    deps = [str(d) for d in (row.get("depends_on") or [])]
+    consumed = row.get("consumes_resolved") or {}
+    out: list[dict] = []
     for dep in deps:
         promised = list((by_id.get(dep) or {}).get("produces") or [])
         if not promised:
@@ -251,11 +275,19 @@ def gate(
         if term is None:
             continue
         missing = missing_fields(term.get("output"), promised)
-        if missing:
-            reason = BLOCKED_PREFIX_TOUCH if dep in prefix_ids else BLOCKED_CONTRACT_MISSING
-            head = f"前驱 {dep} 未兑现自己声明的 produces {missing}"
-            return reason, _missing_field_detail(head, dep, term.get("output"))
-    return None, ""
+        # 本步 consumes 引用的缺失字段由判定 2 拦截，不重复留痕
+        observed = [f for f in missing if f not in set(consumed.get(dep) or [])]
+        if observed:
+            out.append(
+                {
+                    "dep": dep,
+                    "missing": observed,
+                    "available": sorted(
+                        str(key) for key in (output_fields(term.get("output")) or {})
+                    ),
+                }
+            )
+    return out
 
 
 # ---------------------------------------------------------------------------
