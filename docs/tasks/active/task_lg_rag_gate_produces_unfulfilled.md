@@ -1,6 +1,6 @@
 # task（草案 · 人工闸 pending · 拒开工）：契约闸 produces 未兑现收窄 + 前缀锁定死锁带内逃生口
 
-> **状态**：草案待维护者签 HG-AUDIT-R1，未签前拒开工。
+> **状态**：HG-AUDIT-R1 已签（2026-10-28 · m00811），可开工。
 > **由来**：2026-10-27 复跑实证 run `d3a49527929248cc953b7a5327cae2d0`（635 事件 · 400s · budget_exhausted）：t2 consumes 已收敛 `['title','body']`（全部真实存在），仍被拦 `contract_missing_field`——拦因是闸判定 3「produces 未兑现」，与 consumes 无关。
 > **分支**：task/lg-rag-gate-produces-unfulfilled（维护者签收后新建，本窗不建）。
 
@@ -67,5 +67,5 @@
 
 | 闸 | 状态 | 备注 |
 |---|---|---|
-| HG-AUDIT-R1 | pending | 待维护者签 |
+| HG-AUDIT-R1 | approved | 维护者 2026-10-28 签收（m00811「签收，删除草稿」） |
 | HG-GRAPH-MODULES | n/a | 不动图谱分层 |
