@@ -57,6 +57,34 @@ freeze lg-rag-sse-v1 帧形状零触达 · 零新 event_type · 零新表/迁移
 3. 恢复段时长优化与 web 侧适配按 D3 另立 task（本 task 非范围第八条）。
 4. follow 模式生产参数（轮询 2.0s / 上限 900s）建议 40 live 对照后按实微调。
 
+---
+
+## 补记：B-1 修复（40 退回 · commit 0722f75 · 2026-10-28）
+
+40 独立验收（`invoke_20261028_40_verify.md` · c55b436）退回唯一阻断 B-1：谓词内
+`now_utc() - last_created_at`（原 event_store.py:248）在迁移 canonical schema
+（timestamptz → asyncpg 返 aware）下抛 TypeError，live 实测 500×2；测试库
+create_all naive schema 漂移使 TC1–TC4 全绿成假象。
+
+**修复方案定稿（二选一取 python 侧 tz 归一）**：抽纯函数 `_utc_age_seconds`——
+now 侧 `datetime.now(UTC)` aware；DB 值 naive 按 UTC 补 tzinfo（与 now_utc 语义
+一致），aware 直用。**不承 :305 SQL 侧 cutoff 的理由**：①本路径需把精确
+age_seconds 带回 FP-1 error 日志（运维诊断值），SQL 侧比较拿不到该值；②naive
+cutoff 对 timestamptz 列的比较依赖会话 TimeZone coercion，服务端 TZ 非 UTC 时
+静默误判——显式归一消除该类隐患。
+
+**回归钉**：`test_utc_age_seconds_handles_naive_and_aware_datetimes`（红测先行：
+RED=ImportError → GREEN）直传 naive/aware 双形态覆盖减法路径；测试库 schema
+对齐迁移属基建另立 task（经验捕获 7）。
+
+**修后实证**：新测 14/14 PASS · 三钉 68 passed/2 failed 同旧红集零新增 ·
+ruff PASS · live（timestamptz dev 库 `opsdesk` · uvicorn :8012 验毕已停）四探针：
+在写窗 follow=false → **409 + Retry-After:2 + detail「Resume is writing new
+events; retry after it settles.」**；follow=true → 200 不 409；纯挂起 follow=false
+→ 200 零 diff；stale 超阈（created_at 回拨 7200s）→ 200 回落放行（修复前该分支
+在 canonical schema 下永不可达）。live 副作用已清（合成事件 19 行/铸 session 1 行
+删除 · 零 pending hitl 行产生）。
+
 ## 签收栏
 
 30 实现交付 · 委派子 Agent 落盘 · 2026-10-28 · 三闸 approved · VERIFY PASS · 禁 push/PR（交 00 收口）

@@ -199,6 +199,9 @@ TC1 谓词矩阵红测先行（RED 签名 = AttributeError 同形 · 承 `test_l
 3. **判红纪律**：前波次 diff 白名单闸（`test_tc8_diff_whitelist`）会随后续波次合法 app/ 改动转红（其 banned 清单含后续波次合法改动文件）；任何「新增红」先 stash/base 对拍归因再动手。本次全量 26 红经 HEAD vs base `0a5d610` 同集合复跑证实零新增。
 4. **测试 DB 残留污染**：`opsdesk_test.ops_hitl_requests` pending 残留（live 累积 109 行）使 dualproc 分页断言截断假红；环境性红先清库复跑再判签名。
 5. **生成器可测性**：异步生成器接显式 kwargs（`poll_seconds`/`keepalive_interval_s`/`max_seconds`）承 `sse_subscribe` keepalive_interval_s 先例，测试免 patch env/模块属性即可 deterministic 断言帧序/keepalive/上限。
+6. **datetime tz 形态必须按 canonical schema 设计**（B-1 · 40 退回钉案）：迁移 `created_at`=timestamptz → asyncpg 返 aware，而 `now_utc()` naive；python 侧 `now_utc() - DB datetime` 减法在迁移建库必抛 TypeError。全仓先例 `event_store.py:305` 是 SQL 侧 cutoff（比较发生在 DB 不崩）；凡新增 python 侧减法必须先做 tz 归一（本 task 定稿 `_utc_age_seconds`：now 侧 aware UTC + DB 值 naive 补 UTC tzinfo）。
+7. **测试库 schema 与迁移漂移会制造全绿假象**（40 过程发现 · 基建 task 候选）：`opsdesk_test` 由 create_all 按模型建 naive timestamp，与迁移 canonical timestamptz 漂移——TC1–TC4 全绿恰被漂移掩盖；凡涉及 DB 值 python 侧运算的谓词，须补「直传 aware datetime」级回归钉（本 task `test_utc_age_seconds_handles_naive_and_aware_datetimes`），不能仅信测试库端到端。
+8. **对拍必须同环境（.env）**（40 过程发现）：base 裸 worktree（无 .env）全量仅 3 红，拷入 .env 后 26 红且与 HEAD 同 node 集——23/26 枚「环境红」由 .env 决定（capability/redline 类在有真 key+可通网时断言失败）；跨代码态对拍若不同环境，红集差异全是噪音。
 
 ---
 
@@ -211,3 +214,4 @@ TC1 谓词矩阵红测先行（RED 签名 = AttributeError 同形 · 承 `test_l
 | 2026-10-28 | v0.1 · 00 代录 HG-TASK-DRAFT=approved（维护者授权 m00236）· 派 20-task-audit R1 |
 | 2026-10-28 | v0.3 · 00 代录 HG-AUDIT-R1 + HG-GRAPH-MODULES = approved（维护者授权 m00236）· R1 PASS+NIT×3 闭合 · 30 解锁（红测先行 · 全程本地） |
 | 2026-10-28 | v0.4 · 30 交付：F1/F2 实现（`a2684e3` RED → `93ca95e` 绿）· TC1–TC4 13/13 · 三钉零新增红（stash 对拍）· 全量 1973 passed/26 failed 与 base 同 26 红对拍一致 · ruff PASS · graph-compile EXIT=0 · 图谱 lg_rag 行 + 05 §10.3 回写 · 自检结论（30 帽）+ 经验捕获落盘 |
+| 2026-10-28 | v0.5 · 40 退回 B-1 修复（`0722f75`）：谓词 tz 归一 `_utc_age_seconds`（python 侧 · 理由见代码注释+invoke 30 补记）· 回归钉 aware/naive 双形态（RED=ImportError→GREEN）· 新测 14/14 · 三钉 68p/2f 同旧红集 · ruff PASS · live timestamptz 库四探针实证（在写窗 409+Retry-After:2 · follow=true 200 · 纯挂起 200 · stale 超阈 200 回落）· 经验捕获 +3（40 过程发现两条 + B-1 教训） |
