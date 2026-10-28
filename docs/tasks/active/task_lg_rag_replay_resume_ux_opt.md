@@ -179,6 +179,27 @@ TC1 谓词矩阵红测先行（RED 签名 = AttributeError 同形 · 承 `test_l
 
 结构对齐本仓已合并先例（`task_hitl_resume_replay_contract` · PR #248）；元信息块预填含 wiki_delta / freeze_id / required_invoke_hats；全部本仓锚点行号亲读核真（base `0a5d610`）：`router.py:473-489/:506-517/:534-537/:580-615` · `resume.py:54-162` · `event_store.py:129-149/:225-265` · `sse_replay.py:36-83` · `run_worker.py:71-80,93-165` · `sse_subscribe.py:23-63`。形态决策 D 表三决议留痕（含三备选驳回理由）；跨仓协调节明示 web 影响面与 freeze 冻结面声明。
 
+### 自检结论（30 帽 · 2026-10-28）
+
+- **GATE_VERIFY PASS**：HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 均 approved（task 闸表）；`npx spec-wave verify` EXIT=0。分支 `task/lg-rag-replay-resume-ux-opt`（base `0a5d610`）。
+- **F1**：`event_store.run_resume_in_progress` 只读谓词（∃ `hitl.resumed` seq > 最新 done/error seq · 事件表真源 · 不读进程内 `_RESUME_IN_FLIGHT`）+ `LgRagRunResumeInProgressError` + `load_events_after` 在飞闸后第二闸（仅 `refuse_in_flight=True` 生效 · 既有在飞闸逐字未动）。stale 阈定稿默认 **900s**：实测恢复段 68–289s 两数据点 ×3 余量（FP-1 防崩溃后永久 409）；`LG_RAG_RESUME_STALE_SECONDS` 可调 · 非法/≤0 回退默认+warning · 超阈回落放行+error 日志（stale 判定用末帧 `created_at`）。
+- **F2**：`ReplayRequest.follow: bool = False`；follow=true = 推存量→DB 轮询按 seq 增量（`LG_RAG_REPLAY_FOLLOW_POLL_SECONDS` 默认 2.0 · 环境面 floor 1.0）→见新收尾帧（done/error seq>after_seq）自然收尾；keepalive 复用 `sse_stream._KEEPALIVE_FRAME` comment 不占 seq；总上限 `LG_RAG_REPLAY_FOLLOW_MAX_SECONDS` 默认 900s（289s×3）到点自然结束**零伪造帧**；follow=true 在飞/在写窗不返 409；follow=false 字面零 diff。恢复段在写窗 follow=false 命中 → **409 + Retry-After:2 + 可区分 detail**（「Resume is writing new events; retry after it settles.」 vs 首段在飞「Run is still in flight; retry after it settles.」）。
+- **F3 红→绿证据**：红测 commit `a2684e3` RED=11 failed（AttributeError 同形 `tests/test_lg_rag_sse_resume.py:214` 先例）；实现 commit `93ca95e` 后 `tests/test_lg_rag_replay_resume_follow.py` **13/13 PASS**（TC1 谓词矩阵含 (d) stale 回拨 · TC2 409 可区分 detail · TC3 帧序/keepalive/逐字节钉 + HTTP 级 follow=true 不 409 · TC4 上限零伪造帧 + aclose 零残留）。
+- **旧测三钉零新增红**：`test_lg_rag_write_replay_guard.py` / `test_hitl_auto_resume.py` / `test_multi_replica_dualproc.py` 首跑 67 passed 3 failed → **stash 无改动态复跑同 3 failed**（①`test_tc8_diff_whitelist`=前波次 diff 白名单闸对后续合法 app/ 改动转红的结构性旧红 ②③dualproc 两枚环境性）。
+- **TC5 全量**：`pytest tests` 1973 passed / 26 failed（19min）→ 同 26 集合在 **base `0a5d610` 码面复跑完全相同 26 红**（同 node id 同签名）⇒ **全量维度零新增红**。
+- **质量门**：`ruff check app tests` PASS；`./scripts/graph-compile.sh` EXIT=0 零再生噪音。
+- **freeze**：lg-rag-sse-v1 帧形状零触达 · 零新 event_type · 零新表/迁移；resume 200 JSON / decide / callback / OA / 首段 stream bus / `run_is_terminal` / `run_stream_closed` 零 diff（三钉+TC2 再挂起钉佐证）。
+- **graph_delta 按实判**：`docs/_tech_graph/l1/01_modules.md` **lg_rag 行已回写**（备注级 · 体例承 hitl-resume-replay-contract 条）；**hitl 行判 none**（hitl 模块本 task 零改动）；`docs/spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md` §10.3 T4「api 提供」单元格已加 dated 注。
+- **遗留风险**：①`test_hitl_cross_instance_resume` 环境性旧红（净库后推进至 :521「resume 后 state 为空」· 疑 LLM 外网依赖图续跑 · 与 base 同签名同点）；②`opsdesk_test` 库 `ops_hitl_requests` pending 残留（live 历次累积 · 已清 109 行）会污染 dualproc 分页断言，后续判红先清库复跑；③恢复段时长优化与 web 侧适配按 D3 另立 task。
+
+### 经验捕获（experience_capture=required · 30 帽）
+
+1. **补丁三层转义坑**（本窗连踩三连）：run_code TS 模板字面量含反引号炸 String.raw；bash heredoc 内 python 字符串 `\n` 被 TS→bash→python 三层各吃一层；bash 多行命令无 `&&` 串联时前行失败被后行成功遮蔽。根治：长补丁用 write 落 `.py` 脚本文件 + python r-string 执行；stderr 必打印；锚点串先 grep 核真换行位置。
+2. **mock 钉 patch 点决定接线层**：本仓既有 replay 钉族全部 patch `app.ops.lg_rag.router.load_events_after`（模块全局引用），故新闸接线必须住 `event_store.load_events_after` 内部——端点层直加 DB 调用会击穿全部旧钉。改码前先 grep patch 点再选接线层。
+3. **判红纪律**：前波次 diff 白名单闸（`test_tc8_diff_whitelist`）会随后续波次合法 app/ 改动转红（其 banned 清单含后续波次合法改动文件）；任何「新增红」先 stash/base 对拍归因再动手。本次全量 26 红经 HEAD vs base `0a5d610` 同集合复跑证实零新增。
+4. **测试 DB 残留污染**：`opsdesk_test.ops_hitl_requests` pending 残留（live 累积 109 行）使 dualproc 分页断言截断假红；环境性红先清库复跑再判签名。
+5. **生成器可测性**：异步生成器接显式 kwargs（`poll_seconds`/`keepalive_interval_s`/`max_seconds`）承 `sse_subscribe` keepalive_interval_s 先例，测试免 patch env/模块属性即可 deterministic 断言帧序/keepalive/上限。
+
 ---
 
 ## 修订记录
@@ -189,3 +210,4 @@ TC1 谓词矩阵红测先行（RED 签名 = AttributeError 同形 · 承 `test_l
 | 2026-10-28 | v0 · 10 落稿：维护者原话锚 m00321（replay 优化 + 审批后 SSE 续流）· 上游钉案 web invoke 20261028_30（PG run 38cb1138 seq 1–19 无洞 · 恢复段 68/289s · chase 56s 必耗尽 · 在写窗合法空 200）· 本仓锚点亲读核真（base `0a5d610`）· D 表定稿（D1 409+Retry-After 新谓词 · D2 replay opt-in follow live-tail · D3 时长优化入非范围）· F1–F4 范围 · TC1–TC6 验收 · FP-1–FP-8 · R0–R5 思考轮（early_stop at R5）· 三闸 pending 待人签 |
 | 2026-10-28 | v0.1 · 00 代录 HG-TASK-DRAFT=approved（维护者授权 m00236）· 派 20-task-audit R1 |
 | 2026-10-28 | v0.3 · 00 代录 HG-AUDIT-R1 + HG-GRAPH-MODULES = approved（维护者授权 m00236）· R1 PASS+NIT×3 闭合 · 30 解锁（红测先行 · 全程本地） |
+| 2026-10-28 | v0.4 · 30 交付：F1/F2 实现（`a2684e3` RED → `93ca95e` 绿）· TC1–TC4 13/13 · 三钉零新增红（stash 对拍）· 全量 1973 passed/26 failed 与 base 同 26 红对拍一致 · ruff PASS · graph-compile EXIT=0 · 图谱 lg_rag 行 + 05 §10.3 回写 · 自检结论（30 帽）+ 经验捕获落盘 |
