@@ -40,6 +40,39 @@ def _init_logging() -> None:
 _init_logging()
 
 
+def _sanitize_no_proxy_env() -> None:
+    """启动期清洗 NO_PROXY/no_proxy 方括号 IPv6 条目（import 期 · 幂等 · 纯 stdlib）。
+
+    - 背景：Clash 系客户端常写 NO_PROXY=localhost,127.0.0.1,::1,[::1]；httpx
+      （trust_env）构造 client 时把 '[::1]' 当 URL 解析，':1]' 被截为端口 →
+      InvalidURL("Invalid port: ':1]'")，凡旁路 LLM 流式调用即炸
+      （lg_rag.worker_failed · run 0fbebc8e seq19 钉案）。
+    - 双键覆盖：httpx 按 urllib 惯例小写 no_proxy 优先，只洗大写会被小写绕过
+      （2026-10-28 第四实证），故 NO_PROXY / no_proxy 同处理。
+    - 逐条目剥方括号（'[::1]' → '::1'），其余条目与顺序不动；仅实际变化时
+      回写 os.environ（无方括号条目 → 零 diff，env 逐字节不变）。
+    - client **构造时**读 env，import 期清洗覆盖其后全部构造；--reload 子进程
+      继承 supervisor env，import 期清洗天然覆盖每次 reload。幂等：重跑零 diff。
+    """
+    for key in ("NO_PROXY", "no_proxy"):
+        raw = os.environ.get(key)
+        if raw is None or "[" not in raw:
+            continue
+        entries = raw.split(",")
+        cleaned = [
+            entry[1:-1] if entry.startswith("[") and entry.endswith("]") else entry
+            for entry in entries
+        ]
+        sanitized = ",".join(cleaned)
+        if sanitized != raw:
+            os.environ[key] = sanitized
+
+
+# 同 N-40-1 行序约束：必须先于任何 app 包 import（import 链窗口期即可能构造
+# httpx client 的先例见上方注释块）；纯 stdlib，无循环 import 风险。
+_sanitize_no_proxy_env()
+
+
 from app.config import settings  # noqa: E402
 from app.ops.hitl import auto_resume  # noqa: E402
 from app.ops.router import router as ops_router  # noqa: E402
