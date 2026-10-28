@@ -1,8 +1,8 @@
-# task（草案 · 人工闸 pending · 拒开工）：lg-rag replay 恢复段在写窗口语义化 + 审批后 SSE 续流（replay follow live-tail）
+# task（done · 2026-10-28 验收通过 CLOSE）：lg-rag replay 恢复段在写窗口语义化 + 审批后 SSE 续流（replay follow live-tail）
 
-> **状态**：draft（草案 · HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES 均 **pending** · 30 拒开工）
+> **状态**：done（2026-10-28 CLOSE · 三闸 approved · 30 交付 → 40 初验退回 B-1 → 修复 `0722f75` → 40 复验 PASS · 本地验收链闭环 · 分支 `task/lg-rag-replay-resume-ux-opt` 未 push · PR 合码待维护者裁决）
 > **由来**：维护者原话锚（web 仓 00 转发 · m00321）：「给api仓起草一份replay的优化task，同时思考审批通过后也继续为SSE的方式通信的方案，审批后等待中间过长」——两大诉求：①replay 优化；②**审批通过后继续以 SSE 流式通信**的方案（替代轮询 replay），消解「审批后等待中间过长」。上游实证钉案：ops-desk-web invoke `../ops-desk-web/docs/harness/invokes/by-task/web-hitl-approval-overlay-ux/invoke_20261028_30_implement.md`（2026-10-28 · PG 实证 + 根因链）。
-> **分支**：task/lg-rag-replay-resume-ux-opt（维护者签收后新建，本窗不建）。
+> **分支**：task/lg-rag-replay-resume-ux-opt（00 依维护者授权 m00236 代建 · base `0a5d610` · 八 commit 679411f→a2684e3→93ca95e→b11c401→c55b436→0722f75→e9c0faf→041506e · 未 push）。
 > **锚点核真**：本仓 base master `0a5d610`，全部行号 10 亲读逐字复核（禁信转述）。
 
 ## Harness 元信息
@@ -192,6 +192,18 @@ TC1 谓词矩阵红测先行（RED 签名 = AttributeError 同形 · 承 `test_l
 - **graph_delta 按实判**：`docs/_tech_graph/l1/01_modules.md` **lg_rag 行已回写**（备注级 · 体例承 hitl-resume-replay-contract 条）；**hitl 行判 none**（hitl 模块本 task 零改动）；`docs/spec/agent-infra/05_lg_rag_transport_and_session_plan_v0.md` §10.3 T4「api 提供」单元格已加 dated 注。
 - **遗留风险**：①`test_hitl_cross_instance_resume` 环境性旧红（净库后推进至 :521「resume 后 state 为空」· 疑 LLM 外网依赖图续跑 · 与 base 同签名同点）；②`opsdesk_test` 库 `ops_hitl_requests` pending 残留（live 历次累积 · 已清 109 行）会污染 dualproc 分页断言，后续判红先清库复跑；③恢复段时长优化与 web 侧适配按 D3 另立 task。
 
+### 自检结论（40 帽 · 2026-10-28 初验退回 → 复验 PASS）
+
+- **初验**（invoke_20261028_40_verify.md · commit `c55b436`）：验收面 1–8 中 7 面 PASS（红测先行真实 · 26 枚旧红与 base 同 node id 独立复证 · 冻结面零 diff · F2 follow live 18.1s 收全 seq10→19 自然收尾零伪造帧）；唯一阻断 **B-1**：`event_store.py:248` naive−aware datetime 减法 TypeError（测试库 create_all naive schema 与迁移 timestamptz 漂移掩盖 · canonical schema 下在写窗 follow=false live 500×2 · 本 task 引入且比 base 更糟）。
+- **复验**（同 invoke 补记 · commit `041506e`）：**PASS 四面**——①0722f75 diff 亲读 + 回归钉 RED 独立复证（修复前码面 ImportError failed 同签名）；②新测 14/14 + 三钉 37p/2f 同旧红集（判红前清库）；③live P1 在写窗 follow=false → 409+retry-after:2+可区分 detail（愈）· P2 follow=true 200；④live P4 stale 回拨 7200s → 200 回落放行 + FP-1 ERROR 日志实收（精确 age 设计理由实证成立）。
+- **过程钉**：ruff 以 CI 钉版 .venv/bin/ruff 0.15.21 为准（PATH 上 0.9.10 误报 13×UP038）。
+
+### CLOSE 落账（00 · 2026-10-28 · 维护者授权 m00085/m00236：本地直验 · 验收过再 CLOSE）
+
+- 验收链：10 落稿 → 20 R1 PASS+NIT×3 → v0.2 勘误 → 00 代录三闸 → 30 红测先行交付（4 commits）→ 40 初验退回 B-1 → 30 修复（2 commits）→ 40 复验 PASS（1 commit）→ 本 CLOSE commit。
+- 终态：分支 `task/lg-rag-replay-resume-ux-opt` 九 commit 未 push 未开 PR；`close_pr_policy=required` 偏差 = 全程本地（承 web 链授权先例），**PR 合码 + CI 绿 + 分支清理移交维护者终审**。
+- 遗留移交：①恢复段时长优化（68–289s 根因）另立 task；②web 侧 chase→follow 单连接迁移另立 task；③测试库 schema 与迁移漂移基建 task 候选（经验捕获 7）；④follow 生产参数（2.0s/900s）按 40 live 建议按实微调。
+
 ### 经验捕获（experience_capture=required · 30 帽）
 
 1. **补丁三层转义坑**（本窗连踩三连）：run_code TS 模板字面量含反引号炸 String.raw；bash heredoc 内 python 字符串 `\n` 被 TS→bash→python 三层各吃一层；bash 多行命令无 `&&` 串联时前行失败被后行成功遮蔽。根治：长补丁用 write 落 `.py` 脚本文件 + python r-string 执行；stderr 必打印；锚点串先 grep 核真换行位置。
@@ -215,3 +227,4 @@ TC1 谓词矩阵红测先行（RED 签名 = AttributeError 同形 · 承 `test_l
 | 2026-10-28 | v0.3 · 00 代录 HG-AUDIT-R1 + HG-GRAPH-MODULES = approved（维护者授权 m00236）· R1 PASS+NIT×3 闭合 · 30 解锁（红测先行 · 全程本地） |
 | 2026-10-28 | v0.4 · 30 交付：F1/F2 实现（`a2684e3` RED → `93ca95e` 绿）· TC1–TC4 13/13 · 三钉零新增红（stash 对拍）· 全量 1973 passed/26 failed 与 base 同 26 红对拍一致 · ruff PASS · graph-compile EXIT=0 · 图谱 lg_rag 行 + 05 §10.3 回写 · 自检结论（30 帽）+ 经验捕获落盘 |
 | 2026-10-28 | v0.5 · 40 退回 B-1 修复（`0722f75`）：谓词 tz 归一 `_utc_age_seconds`（python 侧 · 理由见代码注释+invoke 30 补记）· 回归钉 aware/naive 双形态（RED=ImportError→GREEN）· 新测 14/14 · 三钉 68p/2f 同旧红集 · ruff PASS · live timestamptz 库四探针实证（在写窗 409+Retry-After:2 · follow=true 200 · 纯挂起 200 · stale 超阈 200 回落）· 经验捕获 +3（40 过程发现两条 + B-1 教训） |
+| 2026-10-28 | v1.0 · 40 复验 PASS（invoke 补记 · `041506e`）· 00 CLOSE：状态 done · 归档 done/ · CLOSE 档 `docs/tasks/close/close_lg_rag_replay_resume_ux_opt_20261028.md` · 分支未 push · PR 合码待维护者裁决 |
