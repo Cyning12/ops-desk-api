@@ -24,6 +24,7 @@ capabilities:
       type: [string, object]
       properties: {}
       additionalProperties: true
+    output_fields: [tool, input, issue, status, assignee, updated_at]
     reversible: true
     execution_type: instant
     max_reversal_latency: 0
@@ -43,6 +44,7 @@ capabilities:
       type: [string, object]
       properties: {}
       additionalProperties: true
+    output_fields: [tool, input, env, version, deployed_at, status]
     reversible: true
     execution_type: instant
     max_reversal_latency: 0
@@ -62,6 +64,7 @@ capabilities:
       type: [string, object, "null"]
       properties: {}
       additionalProperties: true
+    output_fields: [tool, utc, note]
     reversible: true
     execution_type: instant
     max_reversal_latency: 0
@@ -84,6 +87,7 @@ capabilities:
           type: [integer, string]
           description: issue/PR 号
       additionalProperties: true
+    output_fields: [number, title, state, html_url, updated_at, labels, body]
     reversible: true
     execution_type: instant
     max_reversal_latency: 0
@@ -106,6 +110,7 @@ capabilities:
           type: [integer, string]
           description: issue/PR 号
       additionalProperties: true
+    output_fields: [number, title, state, html_url, updated_at, ci_status, draft, body]
     reversible: true
     execution_type: instant
     max_reversal_latency: 0

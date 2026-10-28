@@ -101,10 +101,21 @@ _SUPERVISOR_CAP_FILTER = baseline_filter(node_role="supervisor")
 
 
 def _format_capability_catalog(specs: list[CapabilitySpec]) -> str:
-    """赋能目录摘要（id · description · risk）供 supervisor system 注入。"""
+    """赋能目录摘要（id · description · risk · output_fields）供 supervisor system 注入。
+
+    ``output_fields`` 非空时追加产出字段名清单——planner 声明 produces/consumes
+    从「猜」变「从清单选」（task lg-rag-capability-output-schema）；
+    未声明（空）能力的行与此前**逐字节一致**（验收 1 零 diff 口径）。
+    """
     if not specs:
         return "（当前无可用 local_fn 工具）"
-    lines = [f"- {s.capability_id}：{s.description}（risk={s.risk_level}）" for s in specs]
+    lines = []
+    for s in specs:
+        # getattr 宽容：旧测以 SimpleNamespace 伪造 spec（无 output_fields 属性）——
+        # 缺属性视同未声明，行渲染保持零 diff
+        declared = getattr(s, "output_fields", None) or ()
+        extra = f"；output_fields=[{', '.join(declared)}]" if declared else ""
+        lines.append(f"- {s.capability_id}：{s.description}（risk={s.risk_level}{extra}）")
     return "\n".join(lines)
 
 
@@ -563,6 +574,68 @@ def _cyclic_ids(rows: list[dict]) -> set[str]:
     return cyclic
 
 
+def _cap_output_fields(tool_id: str) -> tuple[str, ...]:
+    """能力声明的产出字段名清单；未注册 / 未声明 → ()（空 = 不裁剪）。"""
+    if not tool_id:
+        return ()
+    entry = _cap_registry().get(tool_id)
+    if entry is None:
+        return ()
+    return tuple(entry[0].output_fields or ())
+
+
+def _trim_fields_by_output_fields(
+    issued: list[dict],
+    locked_rows: list[dict],
+    *,
+    skip: set[str],
+) -> list[dict]:
+    """计划期裁剪：声明字段 ∉ 相关能力 output_fields（非空时）→ 裁掉并留痕。
+
+    纪律（task lg-rag-capability-output-schema · 承 step_contract「不替模型猜」）：
+    只裁字段、不拒整 plan、不改语义；某步 / 某前驱声明**全被裁空 → 视同空 = 不校验**。
+    produces 对照本步 tool；consumes_resolved 逐前驱对照前驱 tool。
+    """
+    by_sid = {str(row["subtask_id"]): row for row in locked_rows + issued}
+    trims: list[dict] = []
+    for row in issued:
+        sid = str(row["subtask_id"])
+        if sid in skip:
+            continue
+        produces = row.get("produces")
+        if produces:
+            declared = _cap_output_fields(str(row.get("tool") or ""))
+            if declared:
+                kept = [f for f in produces if f in declared]
+                removed = [f for f in produces if f not in declared]
+                if removed:
+                    trims.append({"subtask_id": sid, "kind": "produces", "removed": removed})
+                    if kept:
+                        row["produces"] = kept
+                    else:
+                        row.pop("produces", None)
+        consumes = row.get("consumes_resolved")
+        if consumes:
+            for dep in sorted(consumes):
+                pred_tool = str((by_sid.get(dep) or {}).get("tool") or "")
+                declared = _cap_output_fields(pred_tool)
+                if not declared:
+                    continue
+                kept = [f for f in consumes[dep] if f in declared]
+                removed = [f for f in consumes[dep] if f not in declared]
+                if removed:
+                    trims.append(
+                        {"subtask_id": sid, "kind": "consumes", "dep": dep, "removed": removed}
+                    )
+                if kept:
+                    consumes[dep] = kept
+                else:
+                    consumes.pop(dep)
+            if not consumes:
+                row.pop("consumes_resolved", None)
+    return trims
+
+
 def _issue_plan(
     items: list[dict],
     *,
@@ -650,6 +723,9 @@ def _issue_plan(
         for row in issued
         if str(row["subtask_id"]) in illegal
     ]
+    trims = _trim_fields_by_output_fields(issued, locked_rows, skip=set(illegal))
+    if trims:
+        _record_span_metadata({"capability_output_fields_trimmed": trims})
     return issued, errors, seq
 
 
