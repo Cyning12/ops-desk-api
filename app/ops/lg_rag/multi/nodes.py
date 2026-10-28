@@ -1048,6 +1048,10 @@ async def _join_subtasks(state: LgRagState) -> dict:
     else:
         ready: list[str] = []
         blocked_meta: dict[str, int] = {}
+        # 判定 3 收窄留痕（task lg-rag-gate-produces-unfulfilled · 实证 run
+        # d3a49）：produces 未兑现但未被本步 consumes 引用 → 放行，观察写 span
+        # （复用既有 _record_span_metadata 通道，不新增事件类型）。
+        unfulfilled_obs: list[dict] = []
         # hitl-approved-replan-quality（契约一）：write 成功终态 canonical
         # 索引 + 本批已派发 write 键——孪生步结构护栏数据面。delegation-
         # naming-boundary D2：门控自 _delegation_active() 解耦至独立开关
@@ -1077,6 +1081,8 @@ async def _join_subtasks(state: LgRagState) -> dict:
                 done[sid] = blocked
                 blocked_meta[reason] = blocked_meta.get(reason, 0) + 1
                 continue
+            for item in sc.unfulfilled_produces(row=row, terminals=done, by_id=by_id):
+                unfulfilled_obs.append({"subtask_id": sid, **item})
             # hitl-approved-replan-quality（SPEC §9 序1 · 契约一）：write
             # 孪生步结构护栏——**先于签发检查**：命中异 sid 同 canonical
             # 成功终态即 guard-skip（不派发 · 不消费单据 · 不产孤儿 HITL
@@ -1150,6 +1156,8 @@ async def _join_subtasks(state: LgRagState) -> dict:
                     "step_contract_blocked_by_reason": blocked_meta,
                 }
             )
+        if unfulfilled_obs:
+            _record_span_metadata({"step_contract_produces_unfulfilled": unfulfilled_obs})
     if extras:
         updates["subtask_results"] = SubtaskResultBatch(extras, plan_ids)
     return updates
