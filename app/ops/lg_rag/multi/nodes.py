@@ -19,7 +19,7 @@ import logging
 import os
 import time
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Optional
 
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
@@ -2122,7 +2122,8 @@ def _apply_hitl_decision(state: LgRagState, obs: dict, resumed: Any) -> dict:
     return updates
 
 
-async def observe_node(state: LgRagState, config: RunnableConfig | None = None) -> dict:
+# config 注解只认 Optional[RunnableConfig]（见 :27-32 警告块）；noqa 防 ruff UP045/--fix 再咬回 X | None（#274 回归源）。
+async def observe_node(state: LgRagState, config: Optional[RunnableConfig] = None) -> dict:  # noqa: UP045
     """外层 ReAct 的"观察 + 判定"：这一轮活干完了没有？
 
     内层是 plan-and-execute（supervisor 拆 ≤4 步、按依赖并行执行）；
