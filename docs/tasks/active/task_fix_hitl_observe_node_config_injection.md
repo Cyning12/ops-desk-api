@@ -1,6 +1,6 @@
 # task（fix · active）：observe_node config 注解形态致 HITL 审批单 thread_id 空 → resume 409 根治
 
-> **状态**：active（2026-10-28 维护者授权立案 m00603「同意，开始fix task」；草案 HG-AUDIT-R1 **pending** → 30 拒开工，待维护者签收后 00 转录）。
+> **状态**：active（2026-10-28 维护者签收 m00627「签收」，00 转录闸表；修复落地后其验收 4 与 task A/NO_PROXY fix 验收 5 同场复跑补完）。
 > **由来**：2026-10-28 task A（capability output_fields · PR #294）+ NO_PROXY fix（PR #295）合并验收 5 复跑「#2140 这个 issue 在说什么？调用write本地落盘结论」，run `0ebcbf86938c47b4a9cdc51d762fb953` seq8 hitl.waiting、seq9 done{waiting_approval}；维护者点击批准后 run 不继续。
 > **分支**：fix/hitl-observe-node-config-injection（fix，非紧急，仍走 task 流程）。
 
@@ -73,11 +73,11 @@
 
 ### 自检结论
 
-结构对齐本仓已合并 fix 先例（task_fix_no_proxy_bracket_ipv6_sanitize · PR #295）；元信息块预填含 wiki_delta（承 K4/lint-wiki-delta 首红教训）。dsh-coding-kit task lint 余项 E2（状态行措辞枚举）与 merged 先例同型，属该 lint 在本仓的既有口径差，不阻塞。
+结构对齐本仓已合并 fix 先例（task_fix_no_proxy_bracket_ipv6_sanitize · PR #295）；元信息块预填含 wiki_delta（承 K4/lint-wiki-delta 首红教训）。dsh-coding-kit task lint PASS 零余项（仅 W2/W4 轻量提醒，bugfix 轨合法豁免）。
 
 ## 人工闸表
 
 | 闸 | 状态 | 备注 |
 |---|---|---|
-| HG-AUDIT-R1 | pending | 2026-10-28 草案（m00603 授权立案）；待维护者签收后 00 转录，30 方可开工 |
+| HG-AUDIT-R1 | approved | 2026-10-28 维护者签收（m00627「签收」；草案授权 m00603），00 转录 |
 | HG-GRAPH-MODULES | n/a | 不动图谱分层 |
