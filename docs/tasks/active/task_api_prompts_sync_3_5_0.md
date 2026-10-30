@@ -187,6 +187,24 @@ cli-sync-prompts.js：白名单 12 prompts + TASK_TEMPLATE.md；dry-run 零写�
 
 ---
 
+### 验收结论（40 独立验收）
+
+**40 独立验收回填 · 2026-10-30 · invoke：`docs/harness/invokes/by-task/api-prompts-sync-3-5-0/invoke_20261030_40_acceptance.md`（minimal）· 对象：c6bb1c3 + ec1f774（基线 2b6d2c0）· 不信 30 自报逐项亲跑**
+
+**结论：PASS**（建议维护者关账裁决）
+
+| 验收项 | 40 亲跑实证 |
+|--------|-------------|
+| ① diff 面与量 | c6bb1c3 = 9 文件 +50/-2（prompts 8 + templates/TASK_TEMPLATE 1 · 全在白名单面内）· ec1f774 = task 文 + 30 invoke · 全量 diff 亲读 · 零 app/ 零其他 |
+| ② conflict 8 台账 | 实抽全 8 枚（超 ≥3）：7 枚合并件与 node_modules/spec-wave@3.5.0 包内资产逐一 diff **全 ZERO-DIFF**；30-execute-code 恰 1 行差异——本地 `_tech_graph/` 读序项存续 + 上游条件条款并存（残留 conflict 系有意保留 · 属实） |
+| ③ V1–V7 复跑 | dry-run 复跑 skip 12 / add 0 / conflict 1 · EXIT=0；FRAGMENT sha256 `3739570a…f565` 两侧一致；白名单外零 diff；graph-compile EXIT=0 图谱零 diff；task lint PASS EXIT=0；存量 verify worktree 基线法（2b6d2c0 vs HEAD）输出逐字一致（双侧 VERIFY: BLOCKED · HG-AUDIT-R1 pending · EXIT=2）；本 task verify PASS EXIT=0（INFO graph_path_unreachable 与 S5 照登一致） |
+| ④ 条款质量 | FRAGMENT 生效条件与各帽「条件触发」措辞语义连贯；00/10/20/30 义务一一对应；相对链接目标存在；零虚构图谱指引 |
+| ⑤ 30 落账 | invoke minimal 在盘 · 自检与亲跑逐项吻合无拔高 · v0.5 一致 · 遗留四条（残留 conflict 1 / 物化≠接入 / web 对照差异根因 / 跨分支引用悬空）照登合理且均经实证 |
+
+零 --force 内容级佐证：30-execute-code 本地项存续（--force 必灭失）+ 7 枚对齐上游零 diff。维护者脏文件 `docs/arch-browser/dist/site-data.json` 全程未动。
+
+---
+
 ## 修订记录
 
 | 日期 | 说明 |
@@ -195,4 +213,5 @@ cli-sync-prompts.js：白名单 12 prompts + TASK_TEMPLATE.md；dry-run 零写�
 | 2026-10-30 | v0.2 · 闸代录：HG-TASK-DRAFT pending→approved（00 代录 · 授权锚 m00500 · 维护者令启动后续 task）；HG-AUDIT-R1 等其余闸保持 pending 不动 |
 | 2026-10-30 | v0.3 · 10 回填：R1 审查通过零阻塞（docs/harness/reviews/task_api_prompts_sync_3_5_0_audit_R1_20261030.md）· NIT N1–N4 全采纳（N1 S2 首句改中性「逐枚判定差异性质」+ 实证照登 · N2 验收标准补 §5 编号（lint E3 须「## 验收标准」字面起首 → 落「## 验收标准（§5）」）· N3 §7 跨分支悬空照登 · N4 R4 early_stop 与 R2 措辞张力调和）· 闸表 HG-AUDIT-R1 行字面校正（20-R1 通过后 00 代录 · 授权锚 m00500） |
 | 2026-10-30 | v0.4 · 闸代录：HG-AUDIT-R1 pending→approved（00 代录 · 授权锚 m00500 · R1 审查文 task_api_prompts_sync_3_5_0_audit_R1_20261030.md 通过零阻塞）· 审查文随本提交入库 |
+| 2026-10-30 | v0.6 · 40 独立验收：**PASS**（逐项亲跑 · 不信自报）——diff 面 9+2 文件零越界；conflict 8 台账全枚亲核（7 枚与上游零 diff · 30-execute-code 残留系有意保留 `_tech_graph/`）；V1–V7 复跑全绿（dry-run 收敛 skip12/add0/conflict1 · sha256 一致 · graph-compile/lint/verify 全过 · 存量 verify worktree 基线对照逐字一致）；40 invoke minimal 落盘 · 待维护者关账裁决 |
 | 2026-10-30 | v0.5 · 30 执行回填：S1–S5 / V1–V7 全绿（实现 commit c6bb1c3 · 30 invoke minimal 落盘）· conflict 8 全部人工合并（7 枚对齐上游零 diff · 30-execute-code 保留 `_tech_graph/` 为唯一残留 conflict 明示保留项）· FRAGMENT_graph_first_read_v1_zh 物化（物化≠接入照登）· 状态 draft→in_progress 待维护者关账裁决 |
