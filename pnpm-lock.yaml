@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       spec-wave:
-        specifier: 3.3.0
-        version: 3.3.0
+        specifier: 3.5.0
+        version: 3.5.0
 
 packages:
 
@@ -21,8 +21,8 @@ packages:
     resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
     hasBin: true
 
-  spec-wave@3.3.0:
-    resolution: {integrity: sha512-zVFuB/g6+7eDYdt528xszPS8xw3gjEnctT0An8cysEZxiH3AVMViJn/YFk0IYagVek877fQLRxC6PnAAeKYrKQ==}
+  spec-wave@3.5.0:
+    resolution: {integrity: sha512-BBNvTw7y86deJpTkBQK2xelIYbMsFEr6muOPG1hXEsCAlZ39rRRDinC2KJmv+Xq/X+BMlU4BSh/RlwMO8cyVxA==}
     engines: {node: ^22.19.0 || >=24.0.0}
     hasBin: true
     peerDependencies:
@@ -45,6 +45,6 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
-  spec-wave@3.3.0:
+  spec-wave@3.5.0:
     dependencies:
       js-yaml: 4.3.2
