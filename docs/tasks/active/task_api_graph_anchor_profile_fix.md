@@ -136,7 +136,28 @@ enabled 后 judgeGraphAnchor 词表抽取要 `01_struct.md`「## 1. 模块边界
 
 ### 自检结论（执行者）
 
-（draft 期占位 · close 前由执行帽回填：S1–S4 逐项 + V1–V7 矩阵 + graph_anchor 输出逐字照登 + 词表适配差距记录）
+30 帽 2026-10-30 回填（invoke：`docs/harness/invokes/by-task/api-graph-anchor-profile-fix/invoke_20261030_30_implement.md` · minimal 面）。
+
+**S 逐项**
+
+- [x] S1 profile 单行修正：`.cyning-harness/profile.json:5` `graph_modules_path` = `"l1/01_modules"` → `"docs/_tech_graph/l1"`（其余字段零改 · JSON 合法 · 不新建 .coding-kit/profile.json）。
+- [x] S2 生效实测（V2）：输出零 `graph_path_unreachable`；graph_anchor 行逐字照登见下 V2 行（`vocabulary_empty` skipped · 仍不挡 · 未拔高为「检查已生效」）。
+- [x] S3 存量 task verify 回归（V3）：active `task_lg_rag_gate_produces_unfulfilled.md` + done `task_specwave_upgrade_3_5_0.md` 修正前后输出 diff 为空、EXIT 不变——零新增缺口 · graph_anchor 相关行差异：无（两档修正前后均因各自前置 BLOCKED 未达 graph_anchor 挂点 · 差异行照登=零行）。
+- [x] S4 词表面适配差距照登（不实施）：`vocabulary_empty` → 真判定所需适配面 = 上游契约 `<dir>/01_struct.md` 含「## 1. 模块边界表」节且首列反引号词表（graph-anchor.js:54-57 extractGraphAnchorModuleVocab · 节 RE :43）；本仓真值 `docs/_tech_graph/l1/01_modules.md` 节名为「## 模块表（必填）」不匹配——新建 01_struct.md 或改节名均属图谱面新增（HG-GRAPH-MODULES 闸 · 另案），双真值（01_struct vs 01_modules 模块表）漂移风险照登，供维护者裁决另案。
+
+**V 矩阵**
+
+| 验收 | 结果 | 实证 |
+|------|------|------|
+| V1 profile 合法且可达 | ✅ | 值断言 EXIT=0 · isDirectory EXIT=0 · JSON.parse 通过 |
+| V2 本 task verify | ✅ | EXIT=0 · `VERIFY: PASS`；graph_anchor 行逐字：`verify: INFO · 图谱锚点引用检查 · 图谱锚点检查未生效（已跳过 · vocabulary_empty · 模块词表抽取失败（01_struct.md 缺失））`；`graph_path_unreachable` 计数=0（修正前同一命令输出为 `已跳过 · graph_path_unreachable · graph_modules_path=l1/01_modules`） |
+| V3 回归对照 | ✅ | active EXIT=2（HG-AUDIT-R1 pending）/ done EXIT=2（missing R<n> review）——前后逐字节 diff 为空 · EXIT 与缺口集合零新增 |
+| V4 仓级 verify | ✅ | EXIT=2 照登不掩饰 · reviews 缺口恰 5 枚基线（fix_hitl_observe_node_config_injection / fix_no_proxy_bracket_ipv6_sanitize 缺审查文 · lg_rag_capability_output_schema / query_coref_rewrite / supervisor_first_fail_closed 结论不可机读通过）· 前后 diff 为空 · 无新增缺口类别 |
+| V5 graph-compile | ✅ | `./scripts/graph-compile.sh` EXIT=0（真码 · 非管道截断）· `git status --porcelain docs/_tech_graph/` 空 · 图谱 md 零 diff |
+| V6 task lint | ✅ | `npx spec-wave@3.5.0 task lint --file <本 task>` → `LINT: PASS` EXIT=0 |
+| V7 diff 面 | ✅ | 实现面 = `.cyning-harness/profile.json` 单行值变更；留痕面 = 本 task 自检/修订记录 + invoke 新增；零其他（维护者脏文件 `docs/arch-browser/dist/site-data.json` 全程未动） |
+
+**回退口**：profile 单行 `git checkout` 复原即归 `graph_path_unreachable` skip 原态（已备查未触发）。
 
 ---
 
@@ -148,3 +169,4 @@ enabled 后 judgeGraphAnchor 词表抽取要 `01_struct.md`「## 1. 模块边界
 | 2026-10-30 | v0.2 · 闸代录：HG-TASK-DRAFT pending→approved（00 代录 · 授权锚 m00500 · 维护者令启动后续 task）；HG-AUDIT-R1 等其余闸保持 pending 不动 |
 | 2026-10-30 | v0.3 · 10 回填：R1 审查通过零阻塞（docs/harness/reviews/task_api_graph_anchor_profile_fix_audit_R1_20261030.md）· NIT-1~5 全采纳（NIT-1 行号引用勘误：节 RE :43 · 节匹配 :59-61 · judgeGraphAnchor :214 · :54-57=extractGraphAnchorModuleVocab · NIT-2 FEEDBACK 推测改引 §2:22 · NIT-3 验收标准补 §5 编号（lint E3 须「## 验收标准」字面起首 → 落「## 验收标准（§5）」）· NIT-4 failure_paths 补通用回退口「profile 单行 git checkout 复原」对照 web D4 · NIT-5 §7 跨分支悬空照登）· 闸表 HG-AUDIT-R1 行字面校正（20-R1 通过后 00 代录 · 授权锚 m00500） |
 | 2026-10-30 | v0.4 · 闸代录：HG-AUDIT-R1 pending→approved（00 代录 · 授权锚 m00500 · R1 审查文 task_api_graph_anchor_profile_fix_audit_R1_20261030.md 通过零阻塞）· 审查文随本提交入库 |
+| 2026-10-30 | v0.5 · 30 执行回填：S1 profile 单行修正落地（l1/01_modules → docs/_tech_graph/l1）· V1–V7 全绿（graph_anchor 由 graph_path_unreachable 毕业至 vocabulary_empty · 回归/仓级基线零新增 · graph-compile/lint 绿）· 自检结论回填 + 30 invoke 落盘（minimal 面）· 词表适配差距照登另案 |
