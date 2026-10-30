@@ -1,6 +1,6 @@
 # Task：api-prompts-sync-3-5-0（spec-wave 3.5.0 包内 prompts 同步 · chore）
 
-> **状态**：`draft`（2026-10-30 · 10 落稿 v0.1 · 双闸 pending 待维护者签收 · 拒开工）
+> **状态**：`in_progress`（2026-10-30 · 30 执行完毕 · S1–S5 / V1–V7 全绿 · 双闸 approved · 待维护者关账裁决）
 > **类型**：仓级 chore（harness prompts 同步 · 零业务码改动 · 本地定制零覆盖）
 > **分支**：`task/api-prompts-sync-3-5-0`（维护者签收后新建）
 > **先例**：web 仓 commit e70a2b0（2026-10-30 · spec-wave 3.3.0→3.5.0 + sync prompts · conflict 9 全部本地保留零 --force · FRAGMENT_graph_first_read_v1_zh.md 新增）；出处 `docs/spec/doc-health/feedback/2026-10-30_3.5.0_ops-desk-api_upgrade.md` §6.1（升级 task 遗留①）
@@ -135,7 +135,55 @@ cli-sync-prompts.js：白名单 12 prompts + TASK_TEMPLATE.md；dry-run 零写�
 
 ### 自检结论（执行者）
 
-（draft 期占位 · close 前由执行帽回填：S1–S5 逐项 + V1–V7 矩阵 + dry-run/apply 输出逐字 + conflict 8 逐枚结论 + web 对照）
+**30 执行回填 · 2026-10-30 · invoke：`docs/harness/invokes/by-task/api-prompts-sync-3-5-0/invoke_20261030_30_execute.md`（minimal）· 实现 commit c6bb1c3**
+
+#### S1 dry-run 复跑（照登）
+
+`npx spec-wave@3.5.0 sync prompts --target .` → EXIT=0 · **skip 4**（40-self-check / FRAGMENT_30_gate_verify / FRAGMENT_hat_reanchor / TEMPLATE_30_gate_stop）· **add 1**（FRAGMENT_graph_first_read_v1_zh.md）· **conflict 8**（00-orchestrator / 10-task-requirements / 10-spec-requirements / 20-task-audit / 20-spec-audit / 30-execute-code / FRAGMENT_00_delegate_only / templates/TASK_TEMPLATE.md）——与起草基线**逐字一致 · 零漂移**。
+
+#### S2 conflict 8 逐枚处置台账
+
+| # | 文件 | 差异性质 | 处置 | 合并条款 |
+|---|------|----------|------|----------|
+| 1 | prompts/00-orchestrator.md | 上游实质新增被本地旧版遮蔽 | 合并（与上游零 diff） | 「图谱先读」条件条款：profile graph_modules_path 可达 → 派发前确认任务书含图谱先读条款 |
+| 2 | prompts/10-task-requirements.md | 同上 | 合并（与上游零 diff） | 图谱先读：task 必读列表含图谱入口 · 涉 01_struct 模块标注图谱锚点 |
+| 3 | prompts/10-spec-requirements.md | 同上 | 合并（与上游零 diff） | 图谱先读：SPEC 必读列表含图谱入口 · 涉 01_struct 模块标注图谱锚点 |
+| 4 | prompts/20-task-audit.md | 同上 | 合并（与上游零 diff） | 图谱先读：核对图谱锚点引用真实性（grep 级）· 缺引用退回 10 |
+| 5 | prompts/20-spec-audit.md | 同上（2 hunk：只做什么 + 输出形状） | 合并（与上游零 diff） | 图谱锚点核对条款 + 输出形状核对表括注「另核图谱锚点引用」 |
+| 6 | prompts/30-execute-code.md | 同上（上游将 `_tech_graph/` 硬编码条件化） | **合并 = 保留本地 `_tech_graph/` + 吸收上游条件条款并存**（本仓图谱实体目录 · 与包内仍存 1 行差异 · 复跑 dry-run 唯一残留 conflict · 明示保留） | 图谱先读：profile 可达时开工必读另含图谱入口 |
+| 7 | prompts/FRAGMENT_00_delegate_only_v1_zh.md | 同上（+第 4 条 +「图谱先读（必备 · 条件触发）」整节） | 合并（与上游零 diff） | 委派任务书必含图谱先读条款 · 禁止留空占位符派发 |
+| 8 | templates/TASK_TEMPLATE.md | 上游实质新增（非图谱条款）：闸表格式说明 | 合并（与上游零 diff） | 「闸表须 4 列 · id 单元格内不要用粗体」说明行 |
+
+仓内零 cyning-harness-local 块（与 R1 审查实证一致）· 全程零 --force。
+
+#### S3 apply（照登）
+
+`sync prompts --target . --yes`（零 --force）→ **EXIT=1**（conflict 1 未覆盖提示 · cli-sync-prompts.js:156-157 预期语义 · 照登项非失败）· written 1 = `docs/harness/prompts/FRAGMENT_graph_first_read_v1_zh.md` · skip 11（S2 合并 7 枚已转 skip）。
+
+#### S4 回归
+
+- `./scripts/graph-compile.sh` → **EXIT=0** · 9 graphs / 142 nodes / 207 edges · check 全 OK · `git status docs/_tech_graph/` 零 diff
+- `task lint --file docs/tasks/active/task_api_prompts_sync_3_5_0.md` → **LINT: PASS · EXIT=0**（v0.5 回填后复跑仍 PASS）
+- `verify --task docs/tasks/active/task_lg_rag_gate_produces_unfulfilled.md` 抽跑：同步前（stash 法取基线）与同步后输出**逐字一致**（VERIFY: BLOCKED · HG-AUDIT-R1 pending · EXIT=2）· 零行为变化
+
+#### S5 生效面与 web 对照（照登）
+
+- **web 对照**：web e70a2b0 conflict 9 **全部本地保留**（零合并）；本仓 conflict 8 **全部人工合并**（7 枚对齐上游零 diff + 1 枚保留 `_tech_graph/`）· 差异根因：本仓 R1 实证 conflict 差异全为上游实质新增遮蔽、本地零定制块，故走合并路径；处置路线不同但纪律同（零 --force）。
+- **物化 ≠ 接入**：FRAGMENT_graph_first_read 生效前提 = profile `graph_modules_path` 可达目录（task_api_graph_anchor_profile_fix 修正面 · 本仓当前 `graph_path_unreachable` · verify INFO skipped 照登）+ 帽条文引用（本 task 已完成合并面）；物化不等于图谱先读已生效，措辞禁拔高。
+
+#### V1–V7 验收矩阵
+
+| 项 | 结论 | 实证 |
+|----|------|------|
+| V1 dry-run 照登 | ✅ | skip4/add1/conflict8 与基线零漂移（S1） |
+| V2 conflict 8 逐枚结论 | ✅ | S2 台账（8 枚全「实质新增+人工合并」） |
+| V3 fragment sha256 | ✅ | `3739570a6a40b2f41110a061e1dfdb0864bd596db3371c67569584da29f3f565` 两侧一致；apply EXIT=1 照登 |
+| V4 sha256 前后 | ✅ | conflict 8 枚 post-merge 与 post-apply sha256 逐枚不变（apply 零越写；30-execute-code `9c33ac9d…f71f` 系合并保留版） |
+| V5 graph-compile | ✅ | EXIT=0 · 图谱 md 零 diff |
+| V6 task lint | ✅ | LINT: PASS · EXIT=0 |
+| V7 verify 对照 + diff 面 | ✅ | verify 前后逐字一致；git diff 面 = add 1 + S2 合并 8 枚 + 本 task 文/invoke · 零其他（维护者脏文件 site-data.json 全程未动） |
+
+**复跑收敛证据**：apply 后 dry-run → skip 12 / add 0 / conflict 1（30-execute-code · 明示保留 `_tech_graph/`）· EXIT=0。
 
 ---
 
@@ -147,3 +195,4 @@ cli-sync-prompts.js：白名单 12 prompts + TASK_TEMPLATE.md；dry-run 零写�
 | 2026-10-30 | v0.2 · 闸代录：HG-TASK-DRAFT pending→approved（00 代录 · 授权锚 m00500 · 维护者令启动后续 task）；HG-AUDIT-R1 等其余闸保持 pending 不动 |
 | 2026-10-30 | v0.3 · 10 回填：R1 审查通过零阻塞（docs/harness/reviews/task_api_prompts_sync_3_5_0_audit_R1_20261030.md）· NIT N1–N4 全采纳（N1 S2 首句改中性「逐枚判定差异性质」+ 实证照登 · N2 验收标准补 §5 编号（lint E3 须「## 验收标准」字面起首 → 落「## 验收标准（§5）」）· N3 §7 跨分支悬空照登 · N4 R4 early_stop 与 R2 措辞张力调和）· 闸表 HG-AUDIT-R1 行字面校正（20-R1 通过后 00 代录 · 授权锚 m00500） |
 | 2026-10-30 | v0.4 · 闸代录：HG-AUDIT-R1 pending→approved（00 代录 · 授权锚 m00500 · R1 审查文 task_api_prompts_sync_3_5_0_audit_R1_20261030.md 通过零阻塞）· 审查文随本提交入库 |
+| 2026-10-30 | v0.5 · 30 执行回填：S1–S5 / V1–V7 全绿（实现 commit c6bb1c3 · 30 invoke minimal 落盘）· conflict 8 全部人工合并（7 枚对齐上游零 diff · 30-execute-code 保留 `_tech_graph/` 为唯一残留 conflict 明示保留项）· FRAGMENT_graph_first_read_v1_zh 物化（物化≠接入照登）· 状态 draft→in_progress 待维护者关账裁决 |
