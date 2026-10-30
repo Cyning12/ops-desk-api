@@ -310,4 +310,4 @@ Task_KPI%: 100 · D1 范围钉死（总步 32 · 耗尽→aggregate · 墙钟降
 | Hub | engineering 域补登 |
 | 跟进（不扩 W） | 阶段 T（第二租户数据前置）；完整墙钟硬门若产品需要可另开 |
 | Git | commit `6911483` · 已 push；**排除**无关 `uv.lock` / `.agents/` |
-| PR | [#141](https://github.com/Cyning12/ops-desk-api/pull/141)（待合入；合入后机读 `close_pr_merged` 可过） |
+| PR | [#141](https://github.com/Cyning12/ops-desk-api/pull/141)（~~待合入~~ **已 MERGED 2026-09-18** · merge commit `4896701`；修订注记 2026-10-30：原「待合入」为陈旧表述，按 `git log 4896701` 实证更正） |

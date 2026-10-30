@@ -1,6 +1,6 @@
 # Task：Structured Output Gateway · P2（接入 lg_rag 结构化节点）
 
-> **状态**：completed（P2 50 PASS · 同分支待合入；2026-08-26）  
+> **状态**：completed（P2 50 PASS · ~~同分支待合入~~ **已随 PR #58 MERGED 2026-08-26** · merge commit `15064ed`；修订注记 2026-10-30：原「待合入」为陈旧表述，按磁盘实态更正）  
 > **类型**：feature / agent-infra（Structured Output Gateway 第三波）  
 > **上游 SPEC**：`docs/spec/agent-infra/SPEC-structured-output-gateway_v0.md` §4 P2 / §5  
 > **前置**：P0/P1 50 PASS（同分支）  

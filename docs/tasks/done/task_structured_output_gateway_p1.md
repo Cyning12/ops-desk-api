@@ -1,6 +1,6 @@
 # Task：Structured Output Gateway · P1（complete_structured + 预算重试）
 
-> **状态**：completed（P1 50 PASS · 同分支待合入；2026-08-26）  
+> **状态**：completed（P1 50 PASS · ~~同分支待合入~~ **已随 PR #58 MERGED 2026-08-26** · merge commit `15064ed`；修订注记 2026-10-30：原「待合入」为陈旧表述，按磁盘实态更正）  
 > **类型**：feature / agent-infra（Structured Output Gateway 第二波）  
 > **上游 SPEC**：`docs/spec/agent-infra/SPEC-structured-output-gateway_v0.md`（active · `HG-SPEC-SIGNOFF=approved`）  
 > **前置**：`structured-output-gateway-p0`（50 PASS · 同分支）  
