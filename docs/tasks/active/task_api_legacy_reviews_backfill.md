@@ -141,7 +141,36 @@ verify 输出两类：2 枚 `missing R<n> review`（无审查文 → 新 R1）�
 
 ### 自检结论（执行者）
 
-（draft 期占位 · close 前由执行帽回填：S1a–S1e/S2/S3 逐项 + V1–V7 矩阵 + verify 清零输出逐字 + 仓规条文逐字）
+30 帽回填（2026-10-30 · 分支 task/api-legacy-reviews-backfill）：
+
+**S1a–S1e 逐件补审结论**（证据链：done task + close 文档/invoke + 交付 commit 链 master 实证 + 现行代码抽查）：
+
+| 缺口 | 补审件 | 结论 | 实质问题 |
+|------|--------|------|----------|
+| S1a fix_hitl_observe_node_config_injection（missing） | 新 R1 task_fix_hitl_observe_node_config_injection_audit_R1_20261030.md | PASS（PR #296/27fd930 · 验收 4 条 + failure_paths 5 条全落实） | 零 |
+| S1b fix_no_proxy_bracket_ipv6_sanitize（missing） | 新 R1 task_fix_no_proxy_bracket_ipv6_sanitize_audit_R1_20261030.md | PASS（PR #295/1d26aa7 · 验收 4 条 + live 补验 + failure_paths 4 条全落实） | 零 |
+| S1c lg_rag_capability_output_schema（机读不过） | R2 task_lg_rag_capability_output_schema_audit_R2_20261030.md | PASS（R1-B1 经 8cd8584 回填闭环 · PR #294/bfed4cd · 前审沿革独立成节） | 零 |
+| S1d query_coref_rewrite（机读不过） | R2 task_query_coref_rewrite_audit_R2_20261030.md | PASS（R1 内容面 pass 维持 · PR #284/4b36b3b+fc5d9bd · TC1–TC12 实录 38 例先红后绿） | 零 |
+| S1e supervisor_first_fail_closed（机读不过） | R2 task_supervisor_first_fail_closed_audit_R2_20261030.md | PASS（R1-B1 经 TC11 补列 40ab986 闭环 · PR #282/35b8f95 · 1851 passed/1 skipped） | 零 |
+
+**S2 仓规条文逐字**（落位 AGENTS.md cyning-harness-local 块 :159-160 · begin/end 标记外零改）：
+
+- 条款一：「升级/流程类 task 禁用 `--allow-no-review`，一律走 20-R1 审查文」
+- 条款二：「legacy-gate-exempt 扩列须带截止条件或回填义务（在四字段纪律之上 · 截止条件/回填义务写入 reason 字段）」；落文已写明语义面人审非机断（截止条件/回填义务由人审核对 · spec-wave 四字段校验为机械面 · 语义面不机判 · R1 审查 O2）
+
+**S3 清零实证**（裸 verify 逐字照登）：`npx spec-wave verify --target .` → EXIT=0 ·「VERIFY: PASS（裸 verify · 仓级 reviews 扫描）」· 缺口 5→0（豁免命中留痕行不含本 5 枚 slug）。
+
+**V1–V7 矩阵**：
+
+| 验收 | 结果 |
+|------|------|
+| V1 5 枚审查文落盘（2×R1 + 3×R2 · 命名址A · slug 归一） | ✅ |
+| V2 每枚含审查对象锚/范围验收 failure_paths 核对/前审沿革（R2）/干净结论节 | ✅（机读契约逐项自检过 review-gates.js 三正则） |
+| V3 裸 verify 5→0 · PASS 字面照登 | ✅（见 S3） |
+| V4 仓规两则落位 + 条文逐字入本节 | ✅（AGENTS.md :159-160） |
+| V5 自身闭环：R1 审查文在库 + HG-AUDIT-R1 approved 后 verify --task PASS（零 --allow-no-review · 零 --allow-invoke-gap） | ✅（VERIFY: PASS EXIT=0） |
+| V6 task lint PASS | ✅（LINT: PASS EXIT=0） |
+| V7 diff 面 = reviews/+5 + AGENTS.md 定制块 + 本 task/invoke 留痕 · legacy-gate-exempt.yaml 零 diff · done 档零 diff | ✅ |
 
 ---
 
@@ -153,3 +182,4 @@ verify 输出两类：2 枚 `missing R<n> review`（无审查文 → 新 R1）�
 | 2026-10-30 | v0.2 · 闸代录：HG-TASK-DRAFT pending→approved（00 代录 · 授权锚 m00500 · 维护者令启动后续 task）；HG-AUDIT-R1 等其余闸保持 pending 不动 |
 | 2026-10-30 | v0.3 · 10 回填：R1 审查通过零阻塞（docs/harness/reviews/task_api_legacy_reviews_backfill_audit_R1_20261030.md）· 观察 O1–O3 全采纳（O1 状态行/分支行/R5「双闸 pending」「维护者签收后新建」陈旧表述校正 · O2 S2 条款二写明语义面人审非机断 · O3 V3 补 PASS 字面照登提醒）· 闸表 HG-AUDIT-R1 行字面校正（20-R1 通过后 00 代录 · 授权锚 m00500） |
 | 2026-10-30 | v0.4 · 闸代录：HG-AUDIT-R1 pending→approved（00 代录 · 授权锚 m00500 · R1 审查文 task_api_legacy_reviews_backfill_audit_R1_20261030.md 通过零阻塞）· 审查文随本提交入库 |
+| 2026-10-30 | v0.5 · 30 执行回填：S1a–S1e 五件补审落盘（2×R1 + 3×R2 · 全 PASS 零实质问题）· S2 仓规两则落 AGENTS.md 定制块 :159-160 · S3 裸 verify 缺口 5→0「VERIFY: PASS（裸 verify · 仓级 reviews 扫描）」EXIT=0 · task lint / verify --task 双 PASS（零 --allow 旗标）· 30 invoke 落盘 · 自检结论 V1–V7 全绿 |

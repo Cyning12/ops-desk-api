@@ -156,4 +156,6 @@ alembic upgrade head
 - **pre-30 invoke 缺失**（v2.14+ · default 须有 10 等）→ **拒改码**；用户「开工」≠ 闸
 - 关键词补充：`HG-PILOT-OPSDESK-GLAYER`、`G-L0`
 - 图谱闸路径：`HG-GRAPH-MODULES` → `docs/_tech_graph/l1/01_modules.md`（profile `graph_modules_path`）
+- **仓规条款一**（2026-10-30 · task_api_legacy_reviews_backfill S2）：升级/流程类 task 禁用 `--allow-no-review`，一律走 20-R1 审查文
+- **仓规条款二**（2026-10-30 · task_api_legacy_reviews_backfill S2）：`docs/harness/legacy-gate-exempt.yaml` 扩列须带截止条件或回填义务（在四字段纪律之上 · 截止条件/回填义务写入 reason 字段）；语义面人审非机断——截止条件/回填义务由人审核对，spec-wave 四字段校验为机械面，语义面不机判（R1 审查 O2）
 <!-- cyning-harness-local:end -->
