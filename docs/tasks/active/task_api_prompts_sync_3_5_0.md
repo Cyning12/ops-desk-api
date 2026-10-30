@@ -30,7 +30,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
 | HG-TASK-DRAFT | approved | 22-R1, 30 | 2026-10-30 · 10 落稿 v0.1 · 2026-10-30 维护者签收（00 代录 · 授权锚 m00500） |
-| HG-AUDIT-R1 | pending | 30 | 待 20-R1 审查文落盘 docs/harness/reviews/ + 维护者签收（新原则 · 禁 --allow-no-review · 禁 00 代录） |
+| HG-AUDIT-R1 | pending | 30 | 待 20-R1 审查文落盘 docs/harness/reviews/ + 维护者签收（新原则 · 禁 --allow-no-review · 20-R1 通过后 00 代录 · 授权锚 m00500） |
 | HG-GRAPH-MODULES | n/a | — | 图谱源档零改动（graph_change_layer=none） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 无外部试点面 |
 
@@ -44,7 +44,7 @@
 ## 2. 范围
 
 - [ ] S1 dry-run 复跑照登：`npx spec-wave@3.5.0 sync prompts --target .`（零写入）——skip/add/conflict 三类计数与清单与起草基线对照，漂移逐字照登
-- [ ] S2 conflict 8 逐枚 diff 审阅：包内 `assets/harness/prompts|templates` 对照仓内 `docs/harness/...`——确认差异 = 仓内定制（cyning-harness-local 块 · 仓路径钉 · 先例增补）；若判出「上游实质新增被本地旧版遮蔽」→ 人工合并入本地定制块（仍零 --force），合并清单与 diff 逐枚照登自检
+- [ ] S2 conflict 8 逐枚 diff 审阅：包内 `assets/harness/prompts|templates` 对照仓内 `docs/harness/...`——逐枚判定差异性质（仓内定制 / 上游实质新增遮蔽 · R1 审查实证：仓内 prompts 零 cyning-harness-local 块 · conflict 8 中 7 枚差异为上游新增「图谱先读」条款被本地旧版遮蔽，执行帽应预期走 failure_paths 第 2 行人工合并路径）；若判出「上游实质新增被本地旧版遮蔽」→ 人工合并入本地定制块（仍零 --force），合并清单与 diff 逐枚照登自检
 - [ ] S3 apply：`npx spec-wave@3.5.0 sync prompts --target . --yes`（**零 --force**）→ add 1 物化 `docs/harness/prompts/FRAGMENT_graph_first_read_v1_zh.md`；apply 后 EXIT=1（conflict 未覆盖提示）为预期语义照登
 - [ ] S4 回归：`./scripts/graph-compile.sh` EXIT=0 图谱零 diff；`task lint` 本 task PASS；`verify --task docs/tasks/active/task_lg_rag_gate_produces_unfulfilled.md` 抽跑与同步前输出对照（prompts 面改动不应改变 verify 行为 · 差异照登）
 - [ ] S5 生效面与 web 对照照登：web e70a2b0 conflict 9 vs 本仓 conflict 8 差异入自检；FRAGMENT_graph_first_read 生效前提照登——该片段条件触发于 profile `graph_modules_path` 可达目录（task_api_graph_anchor_profile_fix 修正面），且本地帽条文（conflict 保留）未引用该片段，**物化 ≠ 接入帽条文**如实记自检
@@ -68,7 +68,7 @@
 | sync 写入越白名单面 | sync 只写白名单 add 项（读码钉案）；git diff 白名单外零越界复核 · 越界即复原 | 是 | git diff 审 |
 | FRAGMENT_graph_first_read 被误读为「图谱先读已生效」 | 生效前提 = profile 可达目录（task 1）+ 帽条文引用（conflict 人工合并面）· 本 task 只物化 · S5 照登 | — | 自检措辞审 |
 
-## 验收标准
+## 验收标准（§5）
 
 - [ ] V1 dry-run 输出逐字照登（skip/add/conflict 三类计数与清单 · 与起草基线对照差异说明）
 - [ ] V2 conflict 8 逐枚 diff 结论落自检结论（每枚一行：差异性质 = 仓内定制保留 / 实质新增+人工合并处置）
@@ -90,6 +90,8 @@
 - `docs/tasks/active/task_api_graph_anchor_profile_fix.md`：FRAGMENT_graph_first_read 生效条件（profile 可达目录）即其修正面——两件合并后图谱先读片段方具生效前提。
 - `docs/tasks/active/task_api_legacy_reviews_backfill.md`：本 task 执行纪律受其仓规条款约束（升级/流程类禁 --allow-no-review）。
 
+> 注（R1 审查 N3 照登）：上述两件关联 task 档在本分支不存在（各在 sibling 分支 task/api-graph-anchor-profile-fix / task/api-legacy-reviews-backfill 在制 · 未合入 master），本分支视角引用悬空；双分支合并后自解。
+
 ## 8. 测试策略（Harness）
 
 **test_strategy**: `recommended` —— 文档资产同步面以 sync 输出逐字照登 + sha256 对照 + graph-compile/lint 回归为证；预期零 `app/` / `tests/` diff，pytest 构造性恒等不强制。
@@ -102,7 +104,7 @@
 | R1 | sync 语义读码：白名单 12+1 · --yes 只写 add · conflict 默认不覆盖 · apply 后 EXIT=1 为提示非失败 | no | — | none |
 | R2 | 处置原则：承 web e70a2b0 —— conflict 全保留零 --force · 实质新增走人工合并 | no | — | S2 判出实质新增的概率存在（合并面照登兜底） |
 | R3 | 生效面辨析：物化 ≠ 接入（profile 前提在 task 1 · 帽条文引用在 conflict 合并面）· 措辞禁拔高 | no | — | none |
-| R4 | 闸与粒度：单 task 直通 · 双闸 pending · 新原则走 20-R1 禁豁免旗 | yes | R0–R3 已闭环语义/原则/生效面 · 无残余分叉 | 见 R2 |
+| R4 | 闸与粒度：单 task 直通 · 双闸 pending · 新原则走 20-R1 禁豁免旗 | yes | R0–R3 已闭环语义/原则/生效面 · 无残余未兜住分叉（R2 残余风险=S2 判出实质新增概率 · 已被 S2 分支/failure_paths 机制兜住照登） | 见 R2 |
 | R5 | （未开） | — | early_stop at R4 | — |
 
 **actual_last_round**：R4 · **early_stop**：yes · **residual_risks**：见 R2
@@ -143,3 +145,4 @@ cli-sync-prompts.js：白名单 12 prompts + TASK_TEMPLATE.md；dry-run 零写�
 |------|------|
 | 2026-10-30 | v0.1 · 10 落稿：升级 task 遗留①立案（sync prompts 未执行）；起草期 dry-run 基线实测（skip4/add1/conflict8）；承 web e70a2b0 零 --force 先例；双闸 pending 待维护者签收（不代录）；新原则走 20-R1 禁 --allow-no-review |
 | 2026-10-30 | v0.2 · 闸代录：HG-TASK-DRAFT pending→approved（00 代录 · 授权锚 m00500 · 维护者令启动后续 task）；HG-AUDIT-R1 等其余闸保持 pending 不动 |
+| 2026-10-30 | v0.3 · 10 回填：R1 审查通过零阻塞（docs/harness/reviews/task_api_prompts_sync_3_5_0_audit_R1_20261030.md）· NIT N1–N4 全采纳（N1 S2 首句改中性「逐枚判定差异性质」+ 实证照登 · N2 验收标准补 §5 编号（lint E3 须「## 验收标准」字面起首 → 落「## 验收标准（§5）」）· N3 §7 跨分支悬空照登 · N4 R4 early_stop 与 R2 措辞张力调和）· 闸表 HG-AUDIT-R1 行字面校正（20-R1 通过后 00 代录 · 授权锚 m00500） |
