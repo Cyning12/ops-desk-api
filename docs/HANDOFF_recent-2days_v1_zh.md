@@ -14,7 +14,7 @@
 |---|---|
 | 仓库 | `ops-desk-api`（本仓）+ `ops-desk-workspace`（`deploy/` 两文件） |
 | 分支 | `chore/upgrade-langgraph-1.2` |
-| 相对 master | **领先 25 个提交（09-20 的 18 个 + 09-21 本轮的若干个），尚未合并、未开 PR** |
+| 相对 master | ~~领先 25 个提交（09-20 的 18 个 + 09-21 本轮的若干个），尚未合并、未开 PR~~ **已合入：`chore/upgrade-langgraph-1.2` 经 PR #143 MERGED 2026-09-21 · merge commit `852454a`**（修订注记 2026-10-30：原「尚未合并、未开 PR」为 09-21 时点快照，现已与磁盘实态冲突，更正） |
 | 依赖基线 | langgraph `1.2.11` / checkpoint `4.2.0` / checkpoint-postgres `3.1.2` / prebuilt `1.1.0` / langchain-core `1.6.3`（伞包 `langchain` 已卸） |
 | 全量单测 | `1013 passed / 2 failed / 1 skipped` —— 那 2 条**恒为** `tests/test_chat_ws.py` 的 asyncio 偶发（既有，与近期改动无关；有时 1 条有时 2 条） |
 | DB 迁移 | 已到 head `20260920_hitl_requests`（`ops_hitl_requests` 表 + 2 索引在位） |

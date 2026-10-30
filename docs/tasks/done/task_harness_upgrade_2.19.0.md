@@ -98,5 +98,5 @@
 | 项 | 内容 |
 |---|---|
 | **日期** | 2026-07-28 |
-| **PR** | [#22](https://github.com/Cyning12/ops-desk-api/pull/22)（同波 · 待合入） |
+| **PR** | [#22](https://github.com/Cyning12/ops-desk-api/pull/22)（同波 · ~~待合入~~ **已 MERGED 2026-07-28** · merge commit `0cb5524`；修订注记 2026-10-30：原「待合入」为陈旧表述，按磁盘实态更正） |
 | **manifest** | `2.19.0` |

@@ -1,6 +1,7 @@
 # Task：阶段 T · 只读租户谓词下推 + 跨租户负样本
 
-> **状态**：`done`（2026-09-21 归档 · 代码已在 `chore/upgrade-langgraph-1.2` 入库：`app/ops/tenant_context.py` · `alembic/versions/20260918_tenant_readonly.py` · models/lookups `tenant_id`；**PR 未开、未合 master**，见 `docs/HANDOFF_recent-2days_v1_zh.md` §3-P0；生产 B 种子另轨）  
+> **状态**：`done`（2026-09-21 归档 · 代码已入库：`app/ops/tenant_context.py` · `alembic/versions/20260918_tenant_readonly.py` · models/lookups `tenant_id`；~~PR 未开、未合 master~~ **已合 master：PR [#142](https://github.com/Cyning12/ops-desk-api/pull/142) MERGED 2026-09-18 · merge commit `8be477c` · `f048c57` ∈ master**（`git branch --contains f048c57` 实证）；另 `chore/upgrade-langgraph-1.2` 线经 PR #143 MERGED 2026-09-21（`852454a`）；见 `docs/HANDOFF_recent-2days_v1_zh.md` §3-P0；生产 B 种子另轨）  
+> 修订注记（2026-10-30）：header 原「PR 未开、未合 master」为陈旧表述，与磁盘实态冲突，按维护者变更请求更正（文档健康修复 · 证据：`8be477c` / `f048c57`）。  
 > **类型**：feature / 只读多租户  
 > **上游**：workspace `docs/05-plan/06_stage_t_second_tenant_prep_v0_zh.md` · `docs/contracts/api-v1-tenant-readonly-context-draft.md` · 讨论稿 §8 阶段 T  
 > **分支**：`task/tenant-readonly-predicate`（建议；base：`master`）  
@@ -229,3 +230,4 @@ H 只解决「缺租户拒」；T 解决「有租户后真隔离」。
 | 2026-09-18 | 30 Fixture 本地跑通 · T0–T5 勾选 · invoke `invoke_20260918_30_*` |
 | 2026-09-18 | 40 自检回填 · invoke `invoke_20260918_40_verify_*` · 未 commit |
 | 2026-09-21 | 代码随两日集中开发入库 `chore/upgrade-langgraph-1.2`（脱离 specwave 过程，见 HANDOFF）；task 归档 active→done；PR 待开 |
+| 2026-10-30 | header 更正：PR #142 已 MERGED 2026-09-18（merge commit `8be477c`）· `f048c57` ∈ master（`git branch --contains` 实证）；「PR 未开、未合 master」陈旧表述作废（维护者变更请求 · 文档健康修复） |

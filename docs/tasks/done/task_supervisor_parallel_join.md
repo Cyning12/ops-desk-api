@@ -1,6 +1,7 @@
 # Task：Supervisor 无依赖子任务并发下发并按 Host subtask_id 归并
 
-> **状态**：`done`（2026-09-21 归档 · 代码已在 `chore/upgrade-langgraph-1.2` 入库：`034fe7c` 并发归并 + `e80378c` ReAct 收口 + `tests/test_supervisor_parallel_join.py`；**PR 未开、未合 master**，见 `docs/HANDOFF_recent-2days_v1_zh.md` §3-P0）  
+> **状态**：`done`（2026-09-21 归档 · 代码已在 `chore/upgrade-langgraph-1.2` 入库：`034fe7c` 并发归并 + `e80378c` ReAct 收口 + `tests/test_supervisor_parallel_join.py`；~~PR 未开、未合 master~~ **已合 master：随 `chore/upgrade-langgraph-1.2` 经 PR #143 MERGED 2026-09-21 · merge commit `852454a` · `034fe7c`/`e80378c` ∈ master**（`git branch --contains` 实证），见 `docs/HANDOFF_recent-2days_v1_zh.md` §3-P0）  
+> 修订注记（2026-10-30）：header 原「PR 未开、未合 master」为陈旧表述，与磁盘实态冲突，按维护者变更请求更正（文档健康修复）。  
 > **关联图谱**：`docs/_tech_graph/l1/01_modules.md` · `docs/_tech_graph/l1/10_flow_lg_rag.md` · `docs/_tech_graph/l1/10_flow_lg_rag.graph.yaml`  
 > **落盘**：`docs/tasks/done/task_supervisor_parallel_join.md`（2026-09-21 已 `git mv` 归档）  
 > **分支**：`task/supervisor-parallel-join`（自 `master` `8be477c`）  
