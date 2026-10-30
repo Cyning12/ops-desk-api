@@ -40,6 +40,7 @@ from app.ops.capability import delegation as dl
 from app.ops.capability import get_registry as _cap_registry
 from app.ops.capability import list_capabilities
 from app.ops.capability.baseline import baseline_filter
+from app.ops.capability.gateway import _args_summary as _cap_args_summary  # 单一实现
 from app.ops.capability.types import WRITE_SIDE_EFFECTS, CapabilitySpec
 from app.ops.lc_evidence_chain.step_hook import (
     reset_chain_step_hook,
@@ -306,6 +307,22 @@ def _write_replay_guard_enabled() -> bool:
 ENV_APPROVAL_CONSUMPTION_TTL_SECONDS = "OPS_HITL_APPROVAL_CONSUMPTION_TTL_SECONDS"
 DEFAULT_APPROVAL_CONSUMPTION_TTL_SECONDS = 3600
 _BLOCKED_BY_DELEGATION_ISSUE = "delegation_issue_hitl_required"
+# 阶段 W（api-controlled-write-hitl · HG-STAGE-W-DESIGN 签收）：写执行审批闸
+# 拦单类。fail-closed：write 类 capability 无新鲜 approved 单据一律挂起 HITL
+# （复用既有 HITL 回路）；``OPS_CAPABILITY_ALLOW_WRITE`` 只过 gateway Policy
+# 写闸，**不豁免**本闸——两道闸缺一不可（棒次红线钉死）。
+_BLOCKED_BY_CAPABILITY_WRITE = "capability_write_hitl_required"
+# 写执行可消费的 approved 单据类：本闸拦单类 + 委派签发审批类（后者签发理由
+# 串已声明「非只读」· enforce 链不双审批；其消费语义维持既有三元组口径 ·
+# M1 保留一行不动）。
+_WRITE_CONSUMABLE_BLOCKED_BY = frozenset(
+    {_BLOCKED_BY_DELEGATION_ISSUE, _BLOCKED_BY_CAPABILITY_WRITE}
+)
+# D2 回填适用类：拦截对象即被拦步自身（空 unlock_subtask_id → 回填 sid 自身，
+# resume 不 409 的前提）；prefix_touch_required 类维持空 unlock（TA6 钉死）。
+_SELF_UNLOCK_BLOCKED_BY = frozenset(
+    {_BLOCKED_BY_DELEGATION_ISSUE, _BLOCKED_BY_CAPABILITY_WRITE}
+)
 
 
 def _approval_consumption_ttl_seconds() -> int:
@@ -341,6 +358,46 @@ def _decided_at_ts(raw: Any) -> float | None:
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=UTC)
         return dt.timestamp()
+    return None
+
+
+def _match_fresh_approved(
+    rows: list[dict],
+    *,
+    run_id: str,
+    subtask_id: str,
+    capability_id: str,
+    blocked_by: frozenset[str],
+) -> tuple[dict, int] | None:
+    """approved 单据匹配核心（Q1 三元组 + Q5 读时 TTL · **单一实现禁第二份**）。
+
+    命中 ``(run_id, subtask_id, payload.capability_id)`` 精确匹配且未过期 →
+    ``(row, ttl_remaining_seconds)``；否则 ``None``。``blocked_by`` 单据类守卫
+    由调用方声明（委派签发门只收委派类；写执行闸收写闸类 + 委派类）。
+    fail-closed：旧单据无 payload / 缺 capability_id 键 / ``decided_at`` 不可
+    归一 / 过期 → 一律不匹配。**不写回单据状态**（授权效力 = 读取时刻的活状态）。
+    """
+    now = time.time()
+    ttl = _approval_consumption_ttl_seconds()
+    for row in rows:
+        if str(row.get("blocked_by") or "") not in blocked_by:
+            continue  # 单据类型守卫：prefix_touch_required 类一行不动
+        if str(row.get("run_id") or "") != run_id:
+            continue
+        if str(row.get("subtask_id") or "") != subtask_id:
+            continue
+        payload = row.get("payload")
+        if not isinstance(payload, dict):
+            continue  # 旧单据无 payload → 不消费（fail-closed）
+        if str(payload.get("capability_id") or "") != capability_id:
+            continue  # 旧单据缺 capability_id 键 → 不消费（fail-closed）
+        decided_ts = _decided_at_ts(row.get("decided_at"))
+        if decided_ts is None:
+            continue
+        remaining = ttl - (now - decided_ts)
+        if remaining <= 0:
+            continue  # Q5：读时判过期（不写回单据状态）
+        return row, int(remaining)
     return None
 
 
@@ -382,35 +439,96 @@ async def _approval_consumed(state: LgRagState, *, subtask_id: str, capability_i
             exc,
         )
         return False
-    now = time.time()
-    ttl = _approval_consumption_ttl_seconds()
-    for row in rows:
-        if str(row.get("blocked_by") or "") != _BLOCKED_BY_DELEGATION_ISSUE:
-            continue  # 单据类型守卫：prefix_touch_required 类一行不动
-        if str(row.get("run_id") or "") != run_id:
-            continue
-        if str(row.get("subtask_id") or "") != subtask_id:
-            continue
-        payload = row.get("payload")
-        if not isinstance(payload, dict):
-            continue  # 旧单据无 payload → 不消费（fail-closed）
-        if str(payload.get("capability_id") or "") != capability_id:
-            continue  # 旧单据缺 capability_id 键 → 不消费（fail-closed）
-        decided_ts = _decided_at_ts(row.get("decided_at"))
-        if decided_ts is None:
-            continue
-        remaining = ttl - (now - decided_ts)
-        if remaining <= 0:
-            continue  # Q5：读时判过期（不写回单据状态）
-        _audit_approval_consumed(
-            request_id=str(row.get("id") or ""),
-            subtask_id=subtask_id,
-            capability_id=capability_id,
-            decision_by=str(row.get("decision_by") or ""),
-            ttl_remaining_seconds=int(remaining),
+    hit = _match_fresh_approved(
+        rows,
+        run_id=run_id,
+        subtask_id=subtask_id,
+        capability_id=capability_id,
+        blocked_by=frozenset({_BLOCKED_BY_DELEGATION_ISSUE}),  # 单据类型守卫不动
+    )
+    if hit is None:
+        return False
+    row, remaining = hit
+    _audit_approval_consumed(
+        request_id=str(row.get("id") or ""),
+        subtask_id=subtask_id,
+        capability_id=capability_id,
+        decision_by=str(row.get("decision_by") or ""),
+        ttl_remaining_seconds=remaining,
+    )
+    return True
+
+
+async def _write_execution_approval(
+    state: LgRagState, *, subtask_id: str, capability_id: str
+) -> dict | None:
+    """写执行审批消费（阶段 W · W0/W2/W3）：命中 → 可消费的 approved 单据行。
+
+    调用方凭返回行注入 Host 单次写放行 + ``approval_id`` 审计串链；**fail-closed**
+    未命中 → ``None``（维持拦截）：读失败 / 过期 / 三元组不符 / 类型不符 /
+    capability_write 类单据 ``tenant_id`` 缺失或与当前租户不一致（W2 跨租户写
+    拦死 · 租户以 session 真源下推为准）。委派签发类
+    （``delegation_issue_hitl_required``）单据维持既有三元组消费语义
+    （M1 保留 · 一行不动）。台账记动作不记内容（不落参数原值）。
+    """
+    from app.ops.hitl import get_hitl_store
+
+    run_id = _run_id_of(state)
+    if not (run_id and subtask_id and capability_id):
+        return None
+    try:
+        rows = await get_hitl_store().alist(status="approved", limit=200)
+    except Exception as exc:  # 读失败 fail-closed + warning（承 FP-1 形态）
+        logger.warning(
+            "capability_write_approval_read_failed subtask=%s capability=%s err=%r",
+            subtask_id,
+            capability_id,
+            exc,
         )
-        return True
-    return False
+        return None
+    hit = _match_fresh_approved(
+        rows,
+        run_id=run_id,
+        subtask_id=subtask_id,
+        capability_id=capability_id,
+        blocked_by=_WRITE_CONSUMABLE_BLOCKED_BY,
+    )
+    if hit is None:
+        return None
+    row, remaining = hit
+    if str(row.get("blocked_by") or "") == _BLOCKED_BY_CAPABILITY_WRITE:
+        # W2：写闸类单据必须带租户且与当前租户一致（跨租户写 fail-closed）；
+        # 委派类单据不进入本守卫（既有三元组语义保留）。
+        row_tenant = str(row.get("tenant_id") or "")
+        if not row_tenant or row_tenant != current_tenant_or_default():
+            return None
+    logger.info(
+        "capability_write_approval_consumed %s",
+        json.dumps(
+            {
+                "approval_id": str(row.get("id") or ""),
+                "blocked_by": str(row.get("blocked_by") or ""),
+                "capability_id": capability_id,
+                "decision_by": str(row.get("decision_by") or ""),
+                "subtask_id": subtask_id,
+                "tenant_id": current_tenant_or_default(),
+                "ttl_remaining_seconds": remaining,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
+    )
+    _record_span_metadata(
+        {
+            "capability_write_approval_consumed": True,
+            "approval_id": str(row.get("id") or ""),
+            "subtask_id": subtask_id,
+            "capability_id": capability_id,
+            "tenant_id": current_tenant_or_default(),
+            "ttl_remaining_seconds": remaining,
+        }
+    )
+    return row
 
 
 def _parse_requested_scope(raw: str) -> Any:
@@ -1739,6 +1857,62 @@ async def tool_exec_node(state: LgRagState) -> dict:
         }
     result = _base_result(subtask)
     tool_name = str(subtask.get("tool") or "")
+    # B：args 优先；兼容 input（写审批闸的意图摘要需要 → 提到 running 帧之前）
+    raw_args = subtask.get("args")
+    if isinstance(raw_args, dict):
+        call_args: object = raw_args
+    else:
+        call_args = result["input"]
+    # ------------------------------------------------------------------
+    # 阶段 W · W0 写执行审批闸（fail-closed · 在 running 帧之前：一步未跑）。
+    # write 类 capability 无新鲜 approved 单据 → 挂起 HITL（复用既有 HITL
+    # 回路：blocked terminal → _persist_hitl → interrupt）。本闸与 gateway
+    # Policy 写闸**正交两道闸**：OPS_CAPABILITY_ALLOW_WRITE 只过 Policy 层，
+    # 不豁免本闸（棒次红线「无审批直接写 = fail-closed」钉死）。
+    # ------------------------------------------------------------------
+    entry = _cap_registry().get(tool_name)
+    spec = entry[0] if entry else None
+    write_approval: dict | None = None
+    if spec is not None and spec.side_effect in WRITE_SIDE_EFFECTS:
+        write_approval = await _write_execution_approval(
+            state, subtask_id=result["id"], capability_id=tool_name
+        )
+        if write_approval is None:
+            gate_tenant = current_tenant_or_default()
+            blocked = _error_terminal(
+                subtask, "写操作未获人工审批，已挂起等待 HITL 审批（fail-closed）"
+            )
+            blocked["blocked_by"] = _BLOCKED_BY_CAPABILITY_WRITE
+            blocked["hitl_required"] = True
+            blocked["tenant_id"] = gate_tenant
+            # 写意图结构钉死：capability_id + tenant_id + args 摘要 + 幂等键模板
+            # （随单落库于 payload.write_intent · 复用既有 hitl 载荷最小化）。
+            blocked["write_intent"] = {
+                "capability_id": tool_name,
+                "tenant_id": gate_tenant,
+                "args_summary": _cap_args_summary(call_args),
+                "idempotency_key": str(getattr(spec, "idempotency_key", "") or ""),
+            }
+            logger.info(
+                "capability_write_hitl_required %s",
+                json.dumps(
+                    {
+                        "capability_id": tool_name,
+                        "subtask_id": result["id"],
+                        "tenant_id": gate_tenant,
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+            )
+            _record_span_metadata(
+                {
+                    "capability_write_hitl_required": True,
+                    "subtask_id": result["id"],
+                    "capability_id": tool_name,
+                }
+            )
+            return {"subtask_results": [blocked]}
     # §10.7：重活前发 running 起步帧（无 sink 时为空操作）
     await emit_subtask_running(
         agent_role="tool_exec",
@@ -1746,12 +1920,6 @@ async def tool_exec_node(state: LgRagState) -> dict:
         type=result["type"] or "tool",
         input_preview=result["input"],
     )
-    # B：args 优先；兼容 input
-    raw_args = subtask.get("args")
-    if isinstance(raw_args, dict):
-        call_args: object = raw_args
-    else:
-        call_args = result["input"]
     pilot_tenant = current_tenant_or_default()
     cap_ctx: dict = {
         "tenant_id": pilot_tenant,
@@ -1770,6 +1938,12 @@ async def tool_exec_node(state: LgRagState) -> dict:
         raw_token = state.get("delegation_token")
         if raw_token:
             cap_ctx["_delegation_token"] = raw_token
+    if write_approval is not None:
+        # 审批命中（W0 闸放行）：Host 单次写放行（policy.write_allowed 读
+        # _host_policy · 只对这一次调用有效）+ approval_id 审计串链（W3 ·
+        # gateway.py:1318 预留启用）。单据凭证在编排层消费，不穿透 capability 包。
+        cap_ctx["_host_policy"] = {"allow_write": True}
+        cap_ctx["approval_id"] = str(write_approval.get("id") or "")
     with trace_span("tool_exec", run_type="tool"):
         cap = await capability_ainvoke(tool_name, call_args, ctx=cap_ctx)
         if not cap.ok:
@@ -1955,27 +2129,16 @@ async def _approved_fresh_for_subtask(
             exc,
         )
         return False
-    now = time.time()
-    ttl = _approval_consumption_ttl_seconds()
-    for row in rows:  # 匹配循环镜像 _approval_consumed（契约四 · 同一守卫语义）
-        if str(row.get("blocked_by") or "") != _BLOCKED_BY_DELEGATION_ISSUE:
-            continue
-        if str(row.get("run_id") or "") != run_id:
-            continue
-        if str(row.get("subtask_id") or "") != subtask_id:
-            continue
-        payload = row.get("payload")
-        if not isinstance(payload, dict):
-            continue
-        if str(payload.get("capability_id") or "") != capability_id:
-            continue
-        decided_ts = _decided_at_ts(row.get("decided_at"))
-        if decided_ts is None:  # FP-3：异常时间戳不匹配（不扩面）
-            continue
-        if ttl - (now - decided_ts) <= 0:
-            continue
-        return True
-    return False
+    hit = _match_fresh_approved(
+        rows,
+        run_id=run_id,
+        subtask_id=subtask_id,
+        capability_id=capability_id,
+        # 契约四：与消费门同一份匹配实现；阶段 W 扩至写闸类单据（新鲜 approved
+        # 的 capability_write 单同样抑制重复建单）。
+        blocked_by=_WRITE_CONSUMABLE_BLOCKED_BY,
+    )
+    return hit is not None
 
 
 async def _persist_hitl(
@@ -2025,10 +2188,11 @@ async def _persist_hitl(
             if str(dep) in set(state.get("plan_prefix_ids") or []):
                 unlock = str(dep)
                 break
-        if not unlock and str(term.get("blocked_by") or "") == (_BLOCKED_BY_DELEGATION_ISSUE):
-            # D2 空形态回填（形态守卫仅 delegation_issue 类）：无前驱前缀时
-            # 批准 = 授权（重）下发**被拦步骤自身**（与 D1 消费配对成环）；
-            # prefix_touch_required 类空 unlock 维持现状（router 409 保留）。
+        if not unlock and str(term.get("blocked_by") or "") in _SELF_UNLOCK_BLOCKED_BY:
+            # D2 空形态回填（形态守卫 = 拦截对象即被拦步自身的单据类：delegation_issue
+            # + 阶段 W capability_write）：无前驱前缀时批准 = 授权（重）下发**被拦
+            # 步骤自身**（与消费门配对成环）；prefix_touch_required 类空 unlock
+            # 维持现状（router 409 保留 · TA6 钉死）。
             unlock = sid
         # D1 消费键（Q1）：payload jsonb 增记 capability_id（零迁移 · 既有读取兼容）。
         # 真源 = _error_terminal 保留的 tool 字段。30 裁定留痕：tool 为空时**不落键**
@@ -2037,6 +2201,12 @@ async def _persist_hitl(
         capability_id = str(term.get("tool") or "").strip()
         if capability_id:
             payload["capability_id"] = capability_id
+        write_intent = term.get("write_intent")
+        if isinstance(write_intent, dict):
+            # 阶段 W：写意图随单落库（capability_id + tenant_id + args 摘要 +
+            # 幂等键模板 · 结构由 tests/test_write_approval_gate.py 钉死；
+            # 复用既有 payload jsonb 列 · 不扩 hitl 表结构）。
+            payload["write_intent"] = write_intent
         # hitl-replan-carry-and-persist-guard 契约四：同 (run_id, subtask_id,
         # capability_id) 已有新鲜 approved 单据 ⇒ 跳过建单（防 resume 重放
         # 孤儿 pending）；命中不产新行也不伪造行（契约八 · interrupt 语义不动）。
