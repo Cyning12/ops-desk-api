@@ -1,6 +1,6 @@
-# Task：api-legacy-reviews-backfill（仓级 5 存量 reviews 缺口补审 + 仓规条款增补 · 流程）
+# Task（done · 2026-10-30 验收通过 CLOSE）：api-legacy-reviews-backfill（仓级 5 存量 reviews 缺口补审 + 仓规条款增补 · 流程）
 
-> **状态**：`active`（2026-10-30 · HG-TASK-DRAFT / HG-AUDIT-R1 双闸 approved（00 代录 · 授权锚 m00500）· v0.5 30 交付三件套 · v0.6 40 独立验收 PASS 落账 · 待维护者签收/关账）
+> **状态**：`done`（2026-10-30 CLOSE · HG-TASK-DRAFT / HG-AUDIT-R1 双闸 approved（00 代录 · 授权锚 m00500）· v0.5 30 交付三件套 · v0.6 40 独立验收 PASS 落账（commit e191ebd）· 00 代签 CLOSE（授权锚 m00085/m00500）· 全程本地零 push · PR 合码待维护者裁决）
 > **类型**：仓级流程（追溯补审 + 仓规增补 + 清零实证 · 零业务码改动）
 > **分支**：`task/api-legacy-reviews-backfill`（已建 · 本分支即真值）
 > **先例/出处**：`docs/spec/doc-health/feedback/2026-10-30_3.5.0_ops-desk-api_upgrade.md` §5（缺口实证 + master 3.3.0 对照「存量非本波引入」）；豁免机制口径 `docs/harness/legacy-gate-exempt.yaml` 头部注释（task_specwave_verify_baseline D1 裁定）
@@ -187,6 +187,13 @@ verify 输出两类：2 枚 `missing R<n> review`（无审查文 → 新 R1）�
 
 ---
 
+### CLOSE 落账（00 代签 · 2026-10-30 · 维护者授权 m00085/m00500：验收过才 CLOSE · 全程本地 commit 可 push/PR 禁）
+
+- 验收链：10 落稿 v0.1 → 00 代录 HG-TASK-DRAFT approved（`001a188` · 授权锚 m00500）→ 20 R1 审查通过零阻塞（`0ae43e9` NIT 全采纳）→ 00 代录 HG-AUDIT-R1 approved + R1 审查文入库（`c1ec310`）→ 30 交付三件套（`1a9f54b` 五件补审落盘 2×R1+3×R2 全 PASS 零实质问题 + `5f00a03` 仓规两则落 AGENTS.md 定制块 :159-160 + 30 invoke + 自检回填 v0.5 · 裸 verify 缺口 5→0 EXIT=0 · lint/verify --task 双绿）→ 40 独立验收七项逐项亲验全 PASS（`e191ebd` · v0.6）→ 本 CLOSE commit。
+- 终态：分支 `task/api-legacy-reviews-backfill` 六 commit（`001a188`..`e191ebd`）+ 本 CLOSE commit 未 push 未开 PR；`close_pr_policy=required` 偏差 = 全程本地（维护者授权 m00085），**PR 合码 + CI 绿 + 分支清理移交维护者终审**。
+- NIT×2 照登（40 登记 · 不阻塞）：**NIT-1** capability R2 括注 8cd8584「实证在 master」失实（squash 吸收 · 任务分支可达 · 实质结论不受影响 · 措辞校正建议 20/10 帽 · **待维护者裁决**）；**NIT-2** 文首状态行陈旧（c1ec310 存量 · 已被 40 随 v0.6 顺手校正 · 本次 CLOSE 落 done 终态）。
+- 遗留移交：①NIT-1 措辞校正待维护者裁决（返 20/10 帽或照登）；②仓规两则已落位 AGENTS.md 仓内定制块 :159-160 生效——后续升级/流程类 task 一律走 20-R1 审查文禁 `--allow-no-review` · legacy-gate-exempt 扩列须带截止条件/回填义务；③web 仓对应缺口与仓规条款另仓另案（本 task 非范围）。
+
 ## 修订记录
 
 | 日期 | 说明 |
@@ -197,3 +204,4 @@ verify 输出两类：2 枚 `missing R<n> review`（无审查文 → 新 R1）�
 | 2026-10-30 | v0.4 · 闸代录：HG-AUDIT-R1 pending→approved（00 代录 · 授权锚 m00500 · R1 审查文 task_api_legacy_reviews_backfill_audit_R1_20261030.md 通过零阻塞）· 审查文随本提交入库 |
 | 2026-10-30 | v0.5 · 30 执行回填：S1a–S1e 五件补审落盘（2×R1 + 3×R2 · 全 PASS 零实质问题）· S2 仓规两则落 AGENTS.md 定制块 :159-160 · S3 裸 verify 缺口 5→0「VERIFY: PASS（裸 verify · 仓级 reviews 扫描）」EXIT=0 · task lint / verify --task 双 PASS（零 --allow 旗标）· 30 invoke 落盘 · 自检结论 V1–V7 全绿 |
 | 2026-10-30 | v0.6 · 40 独立验收落账：七项逐项亲验全 PASS（diff 面/实证锚/机读契约/裸 verify/仓规落位/lint·--task 复跑/30 落账抽核）· 40 invoke 落盘 · 自检结论节内嵌 40 逐项表 · NIT-1（capability R2 括注 8cd8584 master 实证失实 · squash 吸收 · 不阻塞）登记 · NIT-2（文首状态行陈旧 · c1ec310 存量）本帽顺手校正 |
+| 2026-10-30 | v1.0 · 00 代签 CLOSE（授权锚 m00085/m00500 · 40 PASS commit e191ebd 验收过后关账）：状态行落 done · 归档 docs/tasks/done/ · CLOSE 档 docs/tasks/close/close_api_legacy_reviews_backfill_20261030.md · NIT×2 照登（NIT-1 措辞校正待维护者裁决 · NIT-2 已被 40 顺手校正）· README 关账行落（活跃余件 = task_lg_rag_gate_produces_unfulfilled 一件）· 分支未 push · PR 合码待维护者裁决 |
