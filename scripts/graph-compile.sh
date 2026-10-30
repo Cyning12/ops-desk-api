@@ -23,12 +23,15 @@ set -euo pipefail
 # 2026-10-17：GRAPH_CLI 默认值钉版对齐 3.3.0（task ci-specwave-pin-align ·
 #   对齐 package.json/.coding-kit/manifest.json/pnpm-lock 已生效版本，消除
 #   CI/脚本钉版分裂致的形状闸静默降级；历史钉法缘由见上 2026-10-11 段）。
+# 2026-10-30：GRAPH_CLI 默认值钉版对齐 3.5.0（task specwave-upgrade-3-5-0 ·
+#   对齐 package.json/.coding-kit/manifest.json 已生效版本；3.4.0 review-gates
+#   址B 双址扫描 + 3.5.0 图谱锚点检查 graph_anchor 条件触发，无强制迁移）。
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 GRAPH_DIR="${ROOT_DIR}/docs/_tech_graph"
 GRAPH_JSON="${GRAPH_DIR}/shared/graph.json"
-GRAPH_CLI="${GRAPH_CLI:-spec-wave@3.3.0}"
+GRAPH_CLI="${GRAPH_CLI:-spec-wave@3.5.0}"
 
 cd "${ROOT_DIR}"
 

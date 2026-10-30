@@ -185,6 +185,8 @@
 | 2026-10-15 | CLOSE **hitl-resume-async** `#252`（squash `0e5f6b1` · HITL resume 端点异步化 JC-F1 B 方案 · asyncio 派发秒回 200 携 replay cursor · 响应面零改 · 红测先行 · 40 live 8 PASS · web 复验 TC1–TC7 · 三闸 00 代录 · 归档 done/ · CLOSE 文档 `docs/tasks/close/` 落盘 · 分支移交 00 清理）——近两次 CLOSE 漏登本表，本棒按体例补登 |
 | 2026-10-16 | CLOSE **demo-agent-host-surface**（三方演示展示面名实分离 · 对外只讲 Agent Host · 三 PR 齐：web #70 `44a77db` + web #71（D4 修正 · `46c8c54`）+ api #255 squash `370cee4` CI 四绿 · TC-1–TC-8 全绿（api 载体 grep 零命中 · display 政策管线 · SPEC 纪律 3 修订 · app/·_tech_graph 零 diff）· 双闸 00 代录 · 归档 done/ · Hub 补登 · CLOSE 文档 `docs/tasks/close/` 落盘 · worktree+分支移交 00 清理 · **钉案：混合脏树切分 worktree 隔离 · graph-compile freeze 副作用须回滚 · web 路由语义先验再挂名（D4 教训）**） |
 
+| 2026-10-30 | CLOSE **specwave-upgrade-3-5-0**（spec-wave 3.3.0→3.5.0 工具链钉版升级 · chore · 维护者令「更新specwave」· 升级类精简形态 · 双闸 00 代录 approved（授权锚 m00236）· 钉位全量对齐：package.json/双 lock/manifest/graph-compile.sh/lint-wiki-delta.yml · app/ 零 diff（S7/S8 env 单源实证）· V1–V8 全绿 · 3.5.0 graph_anchor INFO skip（graph_path_unreachable）与 3.4.0 址B 双址扫描无回归实证 · exempt 扩列四字段 · 无 R1 审查文照登 --allow-no-review 留痕豁免 · FEEDBACK `docs/spec/doc-health/feedback/2026-10-30_3.5.0_ops-desk-api_upgrade.md` · **全程本地零 push/PR（维护者令）· 分支 task/specwave-upgrade-3-5-0 移交维护者裁决** · 遗留：prompts sync 与 legacy profile graph_modules_path 修正另案 · task 档 `task_specwave_upgrade_3_5_0.md`） |
+
 ## 给维护者
 
 `done`、`domain`、`Hub`、`_views`、`freeze_id`、`Epic`
