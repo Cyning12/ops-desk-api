@@ -1,6 +1,6 @@
 # Task：api-legacy-reviews-backfill（仓级 5 存量 reviews 缺口补审 + 仓规条款增补 · 流程）
 
-> **状态**：`draft`（2026-10-30 · 10 落稿 v0.1 · HG-TASK-DRAFT approved（00 代录 · 授权锚 m00500）· HG-AUDIT-R1 pending 待维护者签收 · 拒开工）
+> **状态**：`active`（2026-10-30 · HG-TASK-DRAFT / HG-AUDIT-R1 双闸 approved（00 代录 · 授权锚 m00500）· v0.5 30 交付三件套 · v0.6 40 独立验收 PASS 落账 · 待维护者签收/关账）
 > **类型**：仓级流程（追溯补审 + 仓规增补 + 清零实证 · 零业务码改动）
 > **分支**：`task/api-legacy-reviews-backfill`（已建 · 本分支即真值）
 > **先例/出处**：`docs/spec/doc-health/feedback/2026-10-30_3.5.0_ops-desk-api_upgrade.md` §5（缺口实证 + master 3.3.0 对照「存量非本波引入」）；豁免机制口径 `docs/harness/legacy-gate-exempt.yaml` 头部注释（task_specwave_verify_baseline D1 裁定）
@@ -172,6 +172,19 @@ verify 输出两类：2 枚 `missing R<n> review`（无审查文 → 新 R1）�
 | V6 task lint PASS | ✅（LINT: PASS EXIT=0） |
 | V7 diff 面 = reviews/+5 + AGENTS.md 定制块 + 本 task/invoke 留痕 · legacy-gate-exempt.yaml 零 diff · done 档零 diff | ✅ |
 
+**40 帽独立验收逐项表**（2026-10-30 · 独立亲验不背书 30 自报 · 40 invoke docs/harness/invokes/by-task/api-legacy-reviews-backfill/invoke_20261030_40_acceptance.md）：
+
+| 验收项 | 40 亲验结论 | 实证锚 |
+|--------|------------|--------|
+| 1 diff 面 | ✅ | c1ec310..HEAD = 8 档 +283/−1（reviews/+5 · AGENTS.md +2 · invoke · 本 task）· app/ tests/ 零触碰 · exempt yaml/done 档零 diff |
+| 2 补审实证锚抽核（≥2 件 · 实抽全 5 件代码锚） | ✅ | nodes.py:2156 签名+noqa · main.py:43/:73 · types.py:122 · builtin.v1.yaml 5 条 output_fields(:27/:47/:67/:90/:113) · query_rewrite.py:54-66 · supervisor nodes.py:1260/:1269/:1426-1435 · 4 钉测档现存 · 10 枚 commit 链 merge-base 实证在 master |
+| 3 R2 机读契约 | ✅ | 直引仓装 review-gates.js evalReviewConclusion 跑 5/5 pass=true · R2 三件「前审沿革」独立成节 · 结论节 REVIEW_NEG_RE 零命中 |
+| 4 裸 verify | ✅ | EXIT=0 ·「VERIFY: PASS（裸 verify · 仓级 reviews 扫描）」逐字 · 豁免留痕 96 行 · 5 枚 slug grep 零出现（缺口 5→0） |
+| 5 AGENTS.md 仓规两则 | ✅ | :159 条款一 · :160 条款二（块 :153/:161 内 · 标记外零改 · 与 30 报一致） |
+| 6 lint / verify --task | ✅ | LINT: PASS EXIT=0 · VERIFY --task PASS EXIT=0（零 --allow 旗标）· R1 审查文 + 30 invoke 在库 |
+| 7 30 落账抽核 | ✅ | S1/S2/S3/V1–V7 自报逐项与本帽实测一致 |
+| **40 总裁定** | **PASS（NIT×2 登记）** | NIT-1：capability R2 括注 8cd8584「实证在 master」失实（squash 吸收 · 任务分支可达 · 实质结论不受影响 · 建议 20/10 帽校正）· NIT-2：文首状态行陈旧（c1ec310 存量 · 本帽随 v0.6 校正） |
+
 ---
 
 ## 修订记录
@@ -183,3 +196,4 @@ verify 输出两类：2 枚 `missing R<n> review`（无审查文 → 新 R1）�
 | 2026-10-30 | v0.3 · 10 回填：R1 审查通过零阻塞（docs/harness/reviews/task_api_legacy_reviews_backfill_audit_R1_20261030.md）· 观察 O1–O3 全采纳（O1 状态行/分支行/R5「双闸 pending」「维护者签收后新建」陈旧表述校正 · O2 S2 条款二写明语义面人审非机断 · O3 V3 补 PASS 字面照登提醒）· 闸表 HG-AUDIT-R1 行字面校正（20-R1 通过后 00 代录 · 授权锚 m00500） |
 | 2026-10-30 | v0.4 · 闸代录：HG-AUDIT-R1 pending→approved（00 代录 · 授权锚 m00500 · R1 审查文 task_api_legacy_reviews_backfill_audit_R1_20261030.md 通过零阻塞）· 审查文随本提交入库 |
 | 2026-10-30 | v0.5 · 30 执行回填：S1a–S1e 五件补审落盘（2×R1 + 3×R2 · 全 PASS 零实质问题）· S2 仓规两则落 AGENTS.md 定制块 :159-160 · S3 裸 verify 缺口 5→0「VERIFY: PASS（裸 verify · 仓级 reviews 扫描）」EXIT=0 · task lint / verify --task 双 PASS（零 --allow 旗标）· 30 invoke 落盘 · 自检结论 V1–V7 全绿 |
+| 2026-10-30 | v0.6 · 40 独立验收落账：七项逐项亲验全 PASS（diff 面/实证锚/机读契约/裸 verify/仓规落位/lint·--task 复跑/30 落账抽核）· 40 invoke 落盘 · 自检结论节内嵌 40 逐项表 · NIT-1（capability R2 括注 8cd8584 master 实证失实 · squash 吸收 · 不阻塞）登记 · NIT-2（文首状态行陈旧 · c1ec310 存量）本帽顺手校正 |
