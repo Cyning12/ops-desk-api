@@ -30,7 +30,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
 | HG-TASK-DRAFT | approved | 22-R1, 30 | 2026-10-30 · 10 落稿 v0.1 · 2026-10-30 维护者签收（00 代录 · 授权锚 m00500） |
-| HG-AUDIT-R1 | pending | 30 | 待本 task 自身 20-R1 审查文落盘 + 维护者签收（新原则首单 · 禁 --allow-no-review · 20-R1 通过后 00 代录 · 授权锚 m00500） |
+| HG-AUDIT-R1 | approved | 30 | 2026-10-30 · 00 代录 · 授权锚 m00500 · R1 审查文 docs/harness/reviews/task_api_legacy_reviews_backfill_audit_R1_20261030.md 通过零阻塞（新原则首单 · 禁 --allow-no-review） |
 | HG-GRAPH-MODULES | n/a | — | 图谱源档零改动（graph_change_layer=none） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 无外部试点面 |
 
@@ -152,3 +152,4 @@ verify 输出两类：2 枚 `missing R<n> review`（无审查文 → 新 R1）�
 | 2026-10-30 | v0.1 · 10 落稿：仓级 5 缺口补审立案（维护者新原则「走补审不走豁免」）；起草期 verify 实证缺口分类（2 missing + 3 机读不过）；仓规落点定夺 AGENTS.md 仓内定制块；双闸 pending 待维护者签收（不代录） |
 | 2026-10-30 | v0.2 · 闸代录：HG-TASK-DRAFT pending→approved（00 代录 · 授权锚 m00500 · 维护者令启动后续 task）；HG-AUDIT-R1 等其余闸保持 pending 不动 |
 | 2026-10-30 | v0.3 · 10 回填：R1 审查通过零阻塞（docs/harness/reviews/task_api_legacy_reviews_backfill_audit_R1_20261030.md）· 观察 O1–O3 全采纳（O1 状态行/分支行/R5「双闸 pending」「维护者签收后新建」陈旧表述校正 · O2 S2 条款二写明语义面人审非机断 · O3 V3 补 PASS 字面照登提醒）· 闸表 HG-AUDIT-R1 行字面校正（20-R1 通过后 00 代录 · 授权锚 m00500） |
+| 2026-10-30 | v0.4 · 闸代录：HG-AUDIT-R1 pending→approved（00 代录 · 授权锚 m00500 · R1 审查文 task_api_legacy_reviews_backfill_audit_R1_20261030.md 通过零阻塞）· 审查文随本提交入库 |
