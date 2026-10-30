@@ -26,6 +26,7 @@ metadata:
 - **默认 R0 + R1–R5** 思考，结论写入 SPEC「思考轮」节 + **思考轮控制** 表
 - 对话内 **缺口短评**（阻塞 vs 建议）；契约变更标 **freeze_id** 升级点
 - 产出 **「下一棒可复制 Prompt」**（通常：00 起草 task，或 20-spec-audit 审 SPEC 签收）
+- 若仓 profile 声明 `graph_modules_path` 且路径可达，则 SPEC 必读列表含图谱入口；验收 / failure_paths 涉及 `01_struct` 模块表声明模块时，标注图谱锚点（节点/边 ID 或图谱文件路径）（条件触发 · [`FRAGMENT_graph_first_read_v1_zh.md`](./FRAGMENT_graph_first_read_v1_zh.md)）
 
 ## 禁止什么
 

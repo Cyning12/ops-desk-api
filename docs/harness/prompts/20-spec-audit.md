@@ -28,6 +28,7 @@ metadata:
 - **轻量路径**：10-spec 思考轮已充分时，单轮 R1 即可
 - 通过 → 建议 00 起草 task；**不**附 30 Prompt
 - **v2.8+ 机械闸**（**本包已接线**：`verify --spec` 真闸 · findSpecReview src/cli-checks.ts 单一实现源 · PRD_DEF-003 后续棒 · test/cli-verify-spec.test.ts 钉死）：00 前跑 `npx spec-wave verify --spec <SPEC路径>`——机器只查审查文**存在性**（`docs/harness/reviews` 或 `reviews/` 命中 `spec_<slug>_audit_R<n>_*` / `*_ACCEPT_R<n>_*`）；缺失 `VERIFY: BLOCKED · missing spec R<n> review` exit 2。豁免：`--allow-no-spec-review`（留痕）· bugfix / `skip_spec_audit`（旧包 `--workspace-root` 双仓根旗标本包不支持）
+- 若仓 profile 声明 `graph_modules_path` 且路径可达，核对图谱锚点引用真实性（锚点在图谱语料中存在 · grep 级）；缺引用 → 写入阻塞清单退回 10（条件触发 · [`FRAGMENT_graph_first_read_v1_zh.md`](./FRAGMENT_graph_first_read_v1_zh.md)）
 
 ## 禁止什么
 
@@ -37,7 +38,7 @@ metadata:
 
 ## 输出形状
 
-元信息 → 核对表（范围/非范围/验收/failure_paths/思考轮闭合）→ 阻塞/非阻塞 → **HG-SPEC-SIGNOFF 建议** → 下一棒（00 起草 task / 退回 10-spec）
+元信息 → 核对表（范围/非范围/验收/failure_paths/思考轮闭合；若 profile 声明 `graph_modules_path` 且路径可达，另核图谱锚点引用）→ 阻塞/非阻塞 → **HG-SPEC-SIGNOFF 建议** → 下一棒（00 起草 task / 退回 10-spec）
 
 ## 修订记录
 
