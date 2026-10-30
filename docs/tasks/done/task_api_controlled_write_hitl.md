@@ -1,6 +1,6 @@
 # Task：阶段 W · api 受控写 + HITL（写类 capability 走 Policy + 审批闸 · decide/resume 接合 auto-resume · tenant_scope 下推一致）
 
-> **状态**：`active`（2026-10-30 · **四闸全 approved · GO 30**：HG-TASK-DRAFT / HG-AUDIT-R1（20-R1 PASS）/ HG-GRAPH-MODULES / HG-STAGE-W-DESIGN（首条写能力=testing.write.echo · 令牌复用 PR #223 既有模型）· 均 00 代录）
+> **状态**：`done`（2026-10-30 · **PR [#303](https://github.com/Cyning12/ops-desk-api/pull/303) 已合入 master**（merge commit `09f97f4` · feat commit `227a482`）· **CI 4/4 绿**（check / import-linter / lint-wiki-delta / pytest）· 四闸全 approved（HG-TASK-DRAFT / HG-AUDIT-R1（20-R1 PASS）/ HG-GRAPH-MODULES / HG-STAGE-W-DESIGN · 均 00 代录）· 验收 12/12 勾选（证据锚见修订表与 10_close invoke）· web HITL 审批页另 task 进行中）
 > **类型**：feature / 受控写 + HITL
 > **上游**：`docs/discussions/2026-09-17_interview_gaps_adoption_and_landing_v0.md` §8（阶段序 H→T→W→P）· workspace `docs/05-plan/05_post_h_stage_brief_v1_zh.md`（H α 验收 A–F · E 已预留 span `approval_id`）· workspace `docs/05-plan/06_stage_t_second_tenant_prep_v0_zh.md`（阶段 T 实态）
 > **分支**：`task/api-controlled-write-hitl`（base：`master`）
@@ -88,12 +88,12 @@ W 的定义（§8.1）：**首条极窄写能力；结构化 Intent + confirmati
 
 ## 范围（同 task 竖切 · 四闸齐后才 30）
 
-- [ ] **W0 · Policy 审批闸接通**：写类 capability（side_effect=write/irreversible）调用 → Policy 判序 → 未批准即挂起（HITL pending · interrupt）；负样本：无审批直接写被拒
-- [ ] **W1 · HITL decide/resume 接合**：审批（decide approved）→ 复用既有 resume 单路径续跑写执行；`resume_mode` 三值与 auto_resume 触发器/补偿扫描语义保持；OA 面不动
-- [ ] **W2 · tenant_scope 下推一致**：写 intent / 审批 / 执行全链带 tenant_id；跨租户写负样本（A 会话写 B 资源 → 对外 404）；头/session 不一致 → 403
-- [ ] **W3 · 观测与审计**：span `approval_id` 落值（gateway.py:1318 预留启用）；审批决策 + 写执行结果可串链审计
-- [ ] **W4 · 首条极窄写能力竖切**：按 `HG-STAGE-W-DESIGN` 签收选型落地一条端到端（intent → confirmation → Policy → HITL → 执行 → 审计）可演示写能力
-- [ ] **W5 · 图谱薄备注**：G-L1 capability / hitl 模块条目一句；不新增一级模块；`app/ops/chat/graph.py` 既有叙事不扩改
+- [x] **W0 · Policy 审批闸接通**：写类 capability（side_effect=write/irreversible）调用 → Policy 判序 → 未批准即挂起（HITL pending · interrupt）；负样本：无审批直接写被拒
+- [x] **W1 · HITL decide/resume 接合**：审批（decide approved）→ 复用既有 resume 单路径续跑写执行；`resume_mode` 三值与 auto_resume 触发器/补偿扫描语义保持；OA 面不动
+- [x] **W2 · tenant_scope 下推一致**：写 intent / 审批 / 执行全链带 tenant_id；跨租户写负样本（A 会话写 B 资源 → 对外 404）；头/session 不一致 → 403
+- [x] **W3 · 观测与审计**：span `approval_id` 落值（gateway.py:1318 预留启用）；审批决策 + 写执行结果可串链审计
+- [x] **W4 · 首条极窄写能力竖切**：按 `HG-STAGE-W-DESIGN` 签收选型落地一条端到端（intent → confirmation → Policy → HITL → 执行 → 审计）可演示写能力
+- [x] **W5 · 图谱薄备注**：G-L1 capability / hitl 模块条目一句；不新增一级模块；`app/ops/chat/graph.py` 既有叙事不扩改
 
 ### 非范围
 
@@ -126,18 +126,18 @@ W 的定义（§8.1）：**首条极窄写能力；结构化 Intent + confirmati
 
 ## 验收标准
 
-- [ ] 人工闸：`HG-TASK-DRAFT` · `HG-AUDIT-R1` · `HG-GRAPH-MODULES` · `HG-STAGE-W-DESIGN` 均 approved 后方可勾选下列码项
-- [ ] W0：写类 capability 未经审批不得执行（Policy 判序负样本单测绿：write/irreversible 无审批 → 拒/挂起）
-- [ ] W1：decide(approved) → resume 续跑写执行全链测绿；resume_mode 三值 + auto_resume manual/auto 行为与既有语义逐条一致（含补偿扫描）；无第二条恢复路径
-- [ ] W2：写路径 tenant_scope 下推；跨租户写负样本（A→B 对外 404）单测绿；头/session 不一致 403 回归绿
-- [ ] **行为变更影响面（M1 · 20-R1）**：W0 给写类 capability 新挂审批闸属策略门语义变更——30 交付时须 grep 既有 `side_effect=write/irreversible` 调用与断言面并**逐条标注处理方式**（保留 / 改断言 / 负样本化）；实测影响面温和（write 现状 default `deny_write` 裁剪 · `testing.write.echo` 仅 opt-in），本项要求「逐条标注」而非预设大改
-- [ ] W3：span `approval_id` 在审批串链落值（观测断言）；审批 → 执行 → 结果可审计
-- [ ] W4：首条极窄写能力端到端（intent → confirmation → Policy → HITL decide → resume → 执行 → 审计）fixture 轨可演示 + 自动化断言
-- [ ] `hitl-browser-decide-v1` 消费语义回归：decide 400/404/409/422 · pending 列表字段族不变（web 契约对照测）
-- [ ] `ruff` 触及路径绿；`pytest` 本波相关 + 既有 capability/hitl/tenant 回归绿
-- [ ] `./scripts/graph-compile.sh` 绿（G-L1 薄备注同步）；不新增 G-L1 一级模块
-- [ ] SSE 事件表零 diff（`lg-rag-sse-v1` freeze 不破）
-- [ ] `npx spec-wave task lint --file docs/tasks/active/task_api_controlled_write_hitl.md` PASS
+- [x] 人工闸：`HG-TASK-DRAFT` · `HG-AUDIT-R1` · `HG-GRAPH-MODULES` · `HG-STAGE-W-DESIGN` 均 approved 后方可勾选下列码项
+- [x] W0：写类 capability 未经审批不得执行（Policy 判序负样本单测绿：write/irreversible 无审批 → 拒/挂起）
+- [x] W1：decide(approved) → resume 续跑写执行全链测绿；resume_mode 三值 + auto_resume manual/auto 行为与既有语义逐条一致（含补偿扫描）；无第二条恢复路径
+- [x] W2：写路径 tenant_scope 下推；跨租户写负样本（A→B 对外 404）单测绿；头/session 不一致 403 回归绿
+- [x] **行为变更影响面（M1 · 20-R1）**：W0 给写类 capability 新挂审批闸属策略门语义变更——30 交付时须 grep 既有 `side_effect=write/irreversible` 调用与断言面并**逐条标注处理方式**（保留 / 改断言 / 负样本化）；实测影响面温和（write 现状 default `deny_write` 裁剪 · `testing.write.echo` 仅 opt-in），本项要求「逐条标注」而非预设大改
+- [x] W3：span `approval_id` 在审批串链落值（观测断言）；审批 → 执行 → 结果可审计
+- [x] W4：首条极窄写能力端到端（intent → confirmation → Policy → HITL decide → resume → 执行 → 审计）fixture 轨可演示 + 自动化断言
+- [x] `hitl-browser-decide-v1` 消费语义回归：decide 400/404/409/422 · pending 列表字段族不变（web 契约对照测）
+- [x] `ruff` 触及路径绿；`pytest` 本波相关 + 既有 capability/hitl/tenant 回归绿
+- [x] `./scripts/graph-compile.sh` 绿（G-L1 薄备注同步）；不新增 G-L1 一级模块
+- [x] SSE 事件表零 diff（`lg-rag-sse-v1` freeze 不破）
+- [x] `npx spec-wave task lint --file docs/tasks/active/task_api_controlled_write_hitl.md` PASS
 
 ---
 
@@ -210,11 +210,13 @@ W0–W4 同 task 防半截合入（有闸无接合 = 假受控）。两条 freez
 
 ### 自检结论（执行者）
 
-> **hat 40** · 未执行（draft 壳 · 四闸 pending · 30 未开工）；待 40 回填。
+> **hat 30** · 已交付（PR [#303](https://github.com/Cyning12/ops-desk-api/pull/303) MERGED 2026-10-30 · merge commit `09f97f4` · feat `227a482`）：W0–W5 + M1 影响面表全落地（30 invoke 在案）· 质量门 ruff / pytest 对拍恒等 / import-linter 12 kept 0 broken / graph-compile 绿 / SSE 事件表零 diff / spec-wave verify PASS。
+> **hat 40** · 独立验收 invoke 未执行（本 task 40 棒未单独跑）；CLOSE 验收锚 = PR #303 CI 4/4 绿（含 pytest · 2026-10-30 run）+ 30 自检表 + 20-R1 审查文——照登为观察点（见 10_close invoke 未闭项节）。
 
 | 命令 | 退出码 | 摘要 |
 |------|--------|------|
 | `npx spec-wave task lint --file docs/tasks/active/task_api_controlled_write_hitl.md` | 0 | LINT: PASS（2026-10-30 · 10 起草自检） |
+| `npx spec-wave task lint --file docs/tasks/done/task_api_controlled_write_hitl.md` | 0 | LINT: PASS（2026-10-30 · 10 CLOSE 归档后复跑） |
 
 ---
 
@@ -225,3 +227,4 @@ W0–W4 同 task 防半截合入（有闸无接合 = 假受控）。两条 freez
 | 2026-10-30 | 10 起草壳 · 三闸 + HG-STAGE-W-DESIGN pending · NO-GO 20/30 · R0–R3 思考轮（R3 early_stop） |
 | 2026-10-30 | 20-R1 结论回填：PASS 无 blocker · M1 补列「行为变更影响面」验收项（逐条标注 write/irreversible 调用与断言面处理方式）· N1 锚点行号修正（router.py:184 → :203-207）· 闸表 status 不动 |
 | 2026-10-30 | 四闸全 approved（HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-STAGE-W-DESIGN 维护者签 · 00 代录）· 状态 draft→active · GO 30 |
+| 2026-10-30 | **CLOSE**：验收 12/12 勾选 + 范围 W0–W5 勾选（证据锚：PR #303 merge `09f97f4` · feat `227a482` · 30 invoke `invoke_20261030_30_implement.md`（W0–W5 落地 + M1 逐条影响面表 + 质量门）· 20-R1 审查文 PASS · CI 4/4 绿含 pytest）· 状态 active→done · 归档 `docs/tasks/done/` · 全仓指针随迁与历史快照保留清单见 `invoke_20261030_10_close.md` · 讨论稿 §8 进度注记联动 · active README 关账行 · 观察点：40 独立验收 invoke 未执行（以 CI + 30 自检 + 20-R1 为验收锚照登） |
