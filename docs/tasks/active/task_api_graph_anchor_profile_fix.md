@@ -30,7 +30,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
 | HG-TASK-DRAFT | approved | 22-R1, 30 | 2026-10-30 · 10 落稿 v0.1 · 2026-10-30 维护者签收（00 代录 · 授权锚 m00500） |
-| HG-AUDIT-R1 | pending | 30 | 待 20-R1 审查文落盘 docs/harness/reviews/ + 维护者签收（新原则 · 禁 --allow-no-review · 禁 00 代录） |
+| HG-AUDIT-R1 | pending | 30 | 待 20-R1 审查文落盘 docs/harness/reviews/ + 维护者签收（新原则 · 禁 --allow-no-review · 20-R1 通过后 00 代录 · 授权锚 m00500） |
 | HG-GRAPH-MODULES | n/a | — | 图谱源档零改动（graph_change_layer=none · 仅 profile 指针） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 无外部试点面 |
 
@@ -38,8 +38,8 @@
 
 - spec-wave 3.5.0 新增 graph_anchor 图谱锚点引用检查（条件触发）：profile 声明 `graph_modules_path` 且解析为**可达目录**才真判定（挂点 node_modules spec-wave lib/cli/verify.js:498+ · 探测 lib/checks/graph-anchor.js probeGraphAnchor）。
 - 本仓 legacy `.cyning-harness/profile.json` 声明 `graph_modules_path: "l1/01_modules"`——相对仓根不可达（仓根无 `l1/`）→ probe 恒 `graph_path_unreachable` → verify 输出 INFO 一行 + skipped · exit 不变不挡（升级 task 实证在案 · FEEDBACK §2）。
-- **起草期读码修正 FEEDBACK 推测**（graph-anchor.js:30-40）：probe 判可达用 `statSync(graphPath).isDirectory()`——目标必须是**目录**。FEEDBACK §6.2 推测「改指 docs/_tech_graph/l1/01_modules.md」不成立（文件路径仍 unreachable）。正确修正值：`docs/_tech_graph/l1`（目录在案 · 含 01_modules.md 与 10_flow_* 图谱对）。
-- **修正后行为预断**（读码 graph-anchor.js:54-57）：judgeGraphAnchor 词表抽取要求 `<dir>/01_struct.md` 含「## 1. 模块边界表」节；本仓 l1/ 无 01_struct.md（模块真值在 01_modules.md「## 模块表（必填）」节）→ `skipped: vocabulary_empty` 仍不挡。即本 task 交付的是「路径不可达 skip → 词表空 skip」的诚实毕业；真判定所需词表面适配另案裁决。
+- **起草期读码修正 FEEDBACK 推测**（graph-anchor.js:30-40）：probe 判可达用 `statSync(graphPath).isDirectory()`——目标必须是**目录**。FEEDBACK §2:22 推测「改指 docs/_tech_graph/l1/01_modules.md」不成立（文件路径仍 unreachable · §6 第 2 项仅回指 §2，推测出处在 §2:22）。正确修正值：`docs/_tech_graph/l1`（目录在案 · 含 01_modules.md 与 10_flow_* 图谱对）。
+- **修正后行为预断**（读码 graph-anchor.js：节 RE :43 · extractGraphAnchorModuleVocab :54-57 · 节匹配 :59-61 · judgeGraphAnchor 本体 :214）：judgeGraphAnchor 词表抽取要求 `<dir>/01_struct.md` 含「## 1. 模块边界表」节；本仓 l1/ 无 01_struct.md（模块真值在 01_modules.md「## 模块表（必填）」节）→ `skipped: vocabulary_empty` 仍不挡。即本 task 交付的是「路径不可达 skip → 词表空 skip」的诚实毕业；真判定所需词表面适配另案裁决。
 - 目标：profile 指向可达目录 + 生效实测逐字照登 + 存量 task verify 零新增缺口回归。
 
 ## 2. 范围
@@ -66,8 +66,9 @@
 | 修正后存量 task 被 graph_anchor 真判定新 BLOCKED（面A/面B 缺锚点） | STOP 回维护者裁决；本 task 不修存量；临时 `--allow-no-graph-anchor` 须 waived 留痕 + 另案 | 是 | verify BLOCKED 点名面A/面B 照登 |
 | vocabulary_empty 被误读为「检查已真生效」 | 验收 V2 要求 skipped 原因逐字照登 · 不得措辞拔高 | — | 自检结论措辞审 |
 | 顺手建 01_struct.md 补齐词表 | 越图谱面（HG-GRAPH-MODULES 未过）→ 拒 · 回非范围 | — | git diff 图谱面零越界复核 |
+| 任意修正后异常需整体回退（通用回退口） | profile 单行 `git checkout` 复原即复归 unreachable skip 原态（对照 web D4 双 profile 一行 revert 先例）· 复原后再行裁决 | 是 | git diff + verify 输出照登 |
 
-## 验收标准
+## 验收标准（§5）
 
 - [ ] V1 profile 合法且可达：`node -e "const p=require('./.cyning-harness/profile.json');if(p.graph_modules_path!=='docs/_tech_graph/l1')process.exit(1)"` EXIT=0 · 且 `node -e "if(!require('fs').statSync('docs/_tech_graph/l1').isDirectory())process.exit(1)"` EXIT=0
 - [ ] V2 `npx spec-wave@3.5.0 verify --target . --task docs/tasks/active/task_api_graph_anchor_profile_fix.md`（闸 approved 后）→ 输出零 `graph_path_unreachable` · graph_anchor 行逐字照登自检
@@ -89,6 +90,8 @@
 - `docs/tasks/active/task_api_prompts_sync_3_5_0.md`：sync 物化的 FRAGMENT_graph_first_read_v1_zh 生效条件即本 task 修正的 profile 可达目录——两件合并后图谱先读片段方具生效前提（帽条文接入仍属 prompts conflict 人工合并裁决面）。
 - `docs/tasks/active/task_api_legacy_reviews_backfill.md`：本 task 执行纪律受其仓规条款约束（升级/流程类禁 --allow-no-review）；仓级 verify 缺口基线互为对照（本 task V4 以 5 缺口为基线 · 清零后口径随其闭环更新）。
 - web 仓同题 task（另仓立案 · 另案推进 · 互不惊动）。
+
+> 注（R1 审查 NIT-5 照登）：上述两件关联 task 档在本分支不存在（各在 sibling 分支 task/api-prompts-sync-3-5-0 / task/api-legacy-reviews-backfill 在制 · 未合入 master），本分支视角引用悬空；分支合并后自解。
 
 ## 8. 测试策略（Harness）
 
@@ -143,3 +146,4 @@ enabled 后 judgeGraphAnchor 词表抽取要 `01_struct.md`「## 1. 模块边界
 |------|------|
 | 2026-10-30 | v0.1 · 10 落稿：升级 task 遗留②立案（legacy profile graph_modules_path 不可达）；读码修正 FEEDBACK 文件路径推测（isDirectory → 目录值 docs/_tech_graph/l1）；双闸 pending 待维护者签收（不代录）；新原则走 20-R1 禁 --allow-no-review |
 | 2026-10-30 | v0.2 · 闸代录：HG-TASK-DRAFT pending→approved（00 代录 · 授权锚 m00500 · 维护者令启动后续 task）；HG-AUDIT-R1 等其余闸保持 pending 不动 |
+| 2026-10-30 | v0.3 · 10 回填：R1 审查通过零阻塞（docs/harness/reviews/task_api_graph_anchor_profile_fix_audit_R1_20261030.md）· NIT-1~5 全采纳（NIT-1 行号引用勘误：节 RE :43 · 节匹配 :59-61 · judgeGraphAnchor :214 · :54-57=extractGraphAnchorModuleVocab · NIT-2 FEEDBACK 推测改引 §2:22 · NIT-3 验收标准补 §5 编号（lint E3 须「## 验收标准」字面起首 → 落「## 验收标准（§5）」）· NIT-4 failure_paths 补通用回退口「profile 单行 git checkout 复原」对照 web D4 · NIT-5 §7 跨分支悬空照登）· 闸表 HG-AUDIT-R1 行字面校正（20-R1 通过后 00 代录 · 授权锚 m00500） |
