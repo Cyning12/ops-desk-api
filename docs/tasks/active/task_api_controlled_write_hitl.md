@@ -1,6 +1,6 @@
 # Task：阶段 W · api 受控写 + HITL（写类 capability 走 Policy + 审批闸 · decide/resume 接合 auto-resume · tenant_scope 下推一致）
 
-> **状态**：`draft`（2026-10-30 · 10 起草壳 · **三闸 pending · NO-GO 20/30** · 待维护者签 `HG-TASK-DRAFT`）
+> **状态**：`draft`（2026-10-30 · 10 起草壳 · **HG-TASK-DRAFT approved** · 余三闸 pending · NO-GO 30）
 > **类型**：feature / 受控写 + HITL
 > **上游**：`docs/discussions/2026-09-17_interview_gaps_adoption_and_landing_v0.md` §8（阶段序 H→T→W→P）· workspace `docs/05-plan/05_post_h_stage_brief_v1_zh.md`（H α 验收 A–F · E 已预留 span `approval_id`）· workspace `docs/05-plan/06_stage_t_second_tenant_prep_v0_zh.md`（阶段 T 实态）
 > **分支**：`task/api-controlled-write-hitl`（base：`master`）
@@ -36,7 +36,7 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 本壳未经 20 审查 · 未维护者签 → 拒派 20/30 |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | 2026-10-30 维护者签收（00 代录）· 解锁 20-R1；30 仍须其余三闸齐 |
 | HG-AUDIT-R1 | **pending** | **30** | 20-R1 审查文未落盘 `docs/harness/reviews/` + 维护者签 → 30 拒开工 |
 | HG-GRAPH-MODULES | **pending** | **30** | 预估 G-L1 薄增量、不新增一级模块；30 前须维护者确认 `docs/_tech_graph/l1/01_modules.md` 口径 |
 | **HG-STAGE-W-DESIGN** | **pending** | **30** | 讨论稿 §8 W 进入条件「审批与令牌设计签收」：首条极窄写能力选型 + 结构化 Intent/confirmation 载荷 + 审批令牌（审批者身份/时效/范围）设计签收；未签 → 拒 30 |
