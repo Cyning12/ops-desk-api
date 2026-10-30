@@ -30,7 +30,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
 | HG-TASK-DRAFT | approved | 22-R1, 30 | 2026-10-30 · 10 落稿 v0.1 · 2026-10-30 维护者签收（00 代录 · 授权锚 m00500） |
-| HG-AUDIT-R1 | pending | 30 | 待 20-R1 审查文落盘 docs/harness/reviews/ + 维护者签收（新原则 · 禁 --allow-no-review · 20-R1 通过后 00 代录 · 授权锚 m00500） |
+| HG-AUDIT-R1 | approved | 30 | 2026-10-30 · 00 代录 · 授权锚 m00500 · R1 审查文 docs/harness/reviews/task_api_prompts_sync_3_5_0_audit_R1_20261030.md 通过零阻塞（新原则 · 禁 --allow-no-review） |
 | HG-GRAPH-MODULES | n/a | — | 图谱源档零改动（graph_change_layer=none） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 无外部试点面 |
 
@@ -146,3 +146,4 @@ cli-sync-prompts.js：白名单 12 prompts + TASK_TEMPLATE.md；dry-run 零写�
 | 2026-10-30 | v0.1 · 10 落稿：升级 task 遗留①立案（sync prompts 未执行）；起草期 dry-run 基线实测（skip4/add1/conflict8）；承 web e70a2b0 零 --force 先例；双闸 pending 待维护者签收（不代录）；新原则走 20-R1 禁 --allow-no-review |
 | 2026-10-30 | v0.2 · 闸代录：HG-TASK-DRAFT pending→approved（00 代录 · 授权锚 m00500 · 维护者令启动后续 task）；HG-AUDIT-R1 等其余闸保持 pending 不动 |
 | 2026-10-30 | v0.3 · 10 回填：R1 审查通过零阻塞（docs/harness/reviews/task_api_prompts_sync_3_5_0_audit_R1_20261030.md）· NIT N1–N4 全采纳（N1 S2 首句改中性「逐枚判定差异性质」+ 实证照登 · N2 验收标准补 §5 编号（lint E3 须「## 验收标准」字面起首 → 落「## 验收标准（§5）」）· N3 §7 跨分支悬空照登 · N4 R4 early_stop 与 R2 措辞张力调和）· 闸表 HG-AUDIT-R1 行字面校正（20-R1 通过后 00 代录 · 授权锚 m00500） |
+| 2026-10-30 | v0.4 · 闸代录：HG-AUDIT-R1 pending→approved（00 代录 · 授权锚 m00500 · R1 审查文 task_api_prompts_sync_3_5_0_audit_R1_20261030.md 通过零阻塞）· 审查文随本提交入库 |
