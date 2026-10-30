@@ -62,7 +62,7 @@ W 的定义（§8.1）：**首条极窄写能力；结构化 Intent + confirmati
 | 写判定词表 | `app/ops/capability/types.py` · `SIDE_EFFECTS` / `WRITE_SIDE_EFFECTS` · `side_effect` 字段 | write/irreversible 分类已有；Policy 挂点 = side_effect（types.py:7-12 注释钉死「写操作闸（与 HITL）的唯一挂钩点」） |
 | Policy 写闸 | `app/ops/capability/registry.py:120-121` · `deny_write` / `allow_write_tags_any` | deny_write 拦写；豁免只放一层 · `deny_high_risk` 永不豁免 |
 | 审批串链 | `app/ops/capability/gateway.py:1318` · span `approval_id` 预留 | **预留未启用**（H α 验收 E）；W 落值 |
-| HITL 端点面 | `app/ops/hitl/router.py` · pending / decide / resume / callback / requests | decide 两步钉死（默认不自动 resume）· `resume_mode ∈ {inherit, immediate, manual}`（router.py:184 白名单 · 未知值 **400**）· 重复已决 409 · 未知/跨用户 404 |
+| HITL 端点面 | `app/ops/hitl/router.py` · pending / decide / resume / callback / requests | decide 两步钉死（默认不自动 resume）· `resume_mode ∈ {inherit, immediate, manual}`（router.py:203-207 白名单 · 未知值 **400**）· 重复已决 409 · 未知/跨用户 404 |
 | auto-resume | `app/ops/hitl/auto_resume.py` · `OPS_HITL_AUTO_RESUME` ∈ {manual（默认）, auto} | PG 行锁认领（FOR UPDATE SKIP LOCKED）· 补偿扫描兜底 · 恢复**单路径** `router._execute_decided_resume`（禁 HTTP 自调 · 禁第二条实现） |
 | 恢复驱动 | `app/ops/hitl/resume.py` · `resume_hitl_run` | Command(resume=…) 喂 checkpoint；`stranded_checkpoint` 竞态已有只读就绪探针 |
 | 租户上下文 | `app/ops/tenant_context.py` + 阶段 T 迁移 `alembic/versions/20260918_tenant_readonly.py` | F1–F6：session 真源 + `X-Ops-Tenant-Id` 一致否则 403 · 跨租户对外 404 · A=`ops-desk-pilot` / B=`ops-desk-pilot-b` |
@@ -130,6 +130,7 @@ W 的定义（§8.1）：**首条极窄写能力；结构化 Intent + confirmati
 - [ ] W0：写类 capability 未经审批不得执行（Policy 判序负样本单测绿：write/irreversible 无审批 → 拒/挂起）
 - [ ] W1：decide(approved) → resume 续跑写执行全链测绿；resume_mode 三值 + auto_resume manual/auto 行为与既有语义逐条一致（含补偿扫描）；无第二条恢复路径
 - [ ] W2：写路径 tenant_scope 下推；跨租户写负样本（A→B 对外 404）单测绿；头/session 不一致 403 回归绿
+- [ ] **行为变更影响面（M1 · 20-R1）**：W0 给写类 capability 新挂审批闸属策略门语义变更——30 交付时须 grep 既有 `side_effect=write/irreversible` 调用与断言面并**逐条标注处理方式**（保留 / 改断言 / 负样本化）；实测影响面温和（write 现状 default `deny_write` 裁剪 · `testing.write.echo` 仅 opt-in），本项要求「逐条标注」而非预设大改
 - [ ] W3：span `approval_id` 在审批串链落值（观测断言）；审批 → 执行 → 结果可审计
 - [ ] W4：首条极窄写能力端到端（intent → confirmation → Policy → HITL decide → resume → 执行 → 审计）fixture 轨可演示 + 自动化断言
 - [ ] `hitl-browser-decide-v1` 消费语义回归：decide 400/404/409/422 · pending 列表字段族不变（web 契约对照测）
@@ -222,3 +223,4 @@ W0–W4 同 task 防半截合入（有闸无接合 = 假受控）。两条 freez
 | 日期 | 说明 |
 |------|------|
 | 2026-10-30 | 10 起草壳 · 三闸 + HG-STAGE-W-DESIGN pending · NO-GO 20/30 · R0–R3 思考轮（R3 early_stop） |
+| 2026-10-30 | 20-R1 结论回填：PASS 无 blocker · M1 补列「行为变更影响面」验收项（逐条标注 write/irreversible 调用与断言面处理方式）· N1 锚点行号修正（router.py:184 → :203-207）· 闸表 status 不动 |
