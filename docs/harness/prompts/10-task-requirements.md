@@ -30,6 +30,7 @@ metadata:
 - **`lint-wiki-delta` `--scope` 取舍**：`--scope all`（默认）扫 active+done 全量，新拆文件缺 `wiki_delta` 即拦，最稳（bulk-split 后推荐）
 - `--scope active` 只扫 active 更快（done/ 历史缺口不在面内）；旗标仅 `all|active|done` 三个，按仓迁移阶段选择
 - 承接 **20-task-audit 审查**：按 `docs/harness/reviews/*_audit_*.md` 回填 task
+- 若仓 profile 声明 `graph_modules_path` 且路径可达，则 task 必读列表含图谱入口；验收 / failure_paths 涉及 `01_struct` 模块表声明模块时，标注图谱锚点（节点/边 ID 或图谱文件路径）（条件触发 · [`FRAGMENT_graph_first_read_v1_zh.md`](./FRAGMENT_graph_first_read_v1_zh.md)）
 
 ## 禁止什么
 

@@ -53,6 +53,7 @@
 - 为每顶帽准备 **Handoff**（路径表 + ≤15 行结论；**禁止**贴 30/总 Chat 长文）。  
 - 用 **`Task` 工具** 派发子代理；默认中间帽全部派发；收口 50+CLOSE。  
 - 触发 **CLOSE** 时核对关账清单（含 dry-run=`CLOSE: READY` ≠ `PASS`；Hub / PR 闸若启用）。
+- 若仓 profile 声明 `graph_modules_path` 且路径可达，派发前确认任务书含图谱先读条款（条件触发 · [`FRAGMENT_graph_first_read_v1_zh.md`](./FRAGMENT_graph_first_read_v1_zh.md)）。
 
 ## 禁止什么
 
