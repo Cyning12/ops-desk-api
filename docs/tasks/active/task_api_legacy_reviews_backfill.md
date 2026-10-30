@@ -1,8 +1,8 @@
 # Task：api-legacy-reviews-backfill（仓级 5 存量 reviews 缺口补审 + 仓规条款增补 · 流程）
 
-> **状态**：`draft`（2026-10-30 · 10 落稿 v0.1 · 双闸 pending 待维护者签收 · 拒开工）
+> **状态**：`draft`（2026-10-30 · 10 落稿 v0.1 · HG-TASK-DRAFT approved（00 代录 · 授权锚 m00500）· HG-AUDIT-R1 pending 待维护者签收 · 拒开工）
 > **类型**：仓级流程（追溯补审 + 仓规增补 + 清零实证 · 零业务码改动）
-> **分支**：`task/api-legacy-reviews-backfill`（维护者签收后新建）
+> **分支**：`task/api-legacy-reviews-backfill`（已建 · 本分支即真值）
 > **先例/出处**：`docs/spec/doc-health/feedback/2026-10-30_3.5.0_ops-desk-api_upgrade.md` §5（缺口实证 + master 3.3.0 对照「存量非本波引入」）；豁免机制口径 `docs/harness/legacy-gate-exempt.yaml` 头部注释（task_specwave_verify_baseline D1 裁定）
 
 ## Harness 元信息
@@ -30,7 +30,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
 | HG-TASK-DRAFT | approved | 22-R1, 30 | 2026-10-30 · 10 落稿 v0.1 · 2026-10-30 维护者签收（00 代录 · 授权锚 m00500） |
-| HG-AUDIT-R1 | pending | 30 | 待本 task 自身 20-R1 审查文落盘 + 维护者签收（新原则首单 · 禁 --allow-no-review · 禁 00 代录） |
+| HG-AUDIT-R1 | pending | 30 | 待本 task 自身 20-R1 审查文落盘 + 维护者签收（新原则首单 · 禁 --allow-no-review · 20-R1 通过后 00 代录 · 授权锚 m00500） |
 | HG-GRAPH-MODULES | n/a | — | 图谱源档零改动（graph_change_layer=none） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 无外部试点面 |
 
@@ -52,7 +52,7 @@
   - [ ] S1e `supervisor-first-fail-closed` → 补轮 R2（R1 20261019 在案无结论/签收节）：`task_supervisor_first_fail_closed_audit_R2_<yyyymmdd>.md`
   - 机读契约（照登自 verify 输出）：审查文须含以「结论/签收」起首的 ##/### 节 · 通过词落节内 · 节内不含否定结论词（退回/不通过/不予签收/no/not pass/reject 等）· slug 归一 = 档内 meta task_slug 优先 · 文件名兜底 · underscores→hyphens
   - **禁伪造审查**：补审发现实质问题 → 如实记不通过 → STOP 报维护者裁决（返修/另案）· 不为清零改结论
-- [ ] S2 仓规增补条款两则，**落点定夺：`AGENTS.md` `<!-- cyning-harness-local:begin/end -->` 块**——定夺理由：该块为仓内 harness 定制真值且 upgrade 工具不改写（AGENTS.md 头部自述「upgrade 不改写本块」）；`docs/standards/` 现仅编码规范面（CODING_BASELINE_L1 / CODING_BACKEND_L2），流程闸纪律不属其域。条款一：「升级/流程类 task 禁用 `--allow-no-review`，一律走 20-R1 审查文」；条款二：「legacy-gate-exempt 扩列须带截止条件或回填义务（在四字段纪律之上 · 截止条件/回填义务写入 reason 字段）」
+- [ ] S2 仓规增补条款两则，**落点定夺：`AGENTS.md` `<!-- cyning-harness-local:begin/end -->` 块**——定夺理由：该块为仓内 harness 定制真值且 upgrade 工具不改写（AGENTS.md 头部自述「upgrade 不改写本块」）；`docs/standards/` 现仅编码规范面（CODING_BASELINE_L1 / CODING_BACKEND_L2），流程闸纪律不属其域。条款一：「升级/流程类 task 禁用 `--allow-no-review`，一律走 20-R1 审查文」；条款二：「legacy-gate-exempt 扩列须带截止条件或回填义务（在四字段纪律之上 · 截止条件/回填义务写入 reason 字段）」——条款二落文时写明语义面人审非机断：截止条件/回填义务由人审核对 · spec-wave 四字段校验为机械面 · 语义面不机判（R1 审查 O2）
 - [ ] S3 清零实证：S1 完成后 `npx spec-wave@3.5.0 verify --target .` → reviews 缺口 5→0 · VERIFY: PASS EXIT=0 逐字照登（若 task_api_graph_anchor_profile_fix 先行合并引入 graph_anchor 行为差异 → 照登不混入本 task 结论）
 
 ## 3. 非范围
@@ -77,7 +77,7 @@
 
 - [ ] V1 5 枚审查文落盘 `docs/harness/reviews/`：2×R1 + 3×R2 · 命名 `task_<slug>_audit_R<n>_<yyyymmdd>.md` · slug 归一口径与 verify 一致
 - [ ] V2 每枚审查文含：审查对象锚（done 档 + close/PR 证据）· 范围/验收/failure_paths/思考轮核对 · 前审沿革（R2 枚）· 独立「结论/签收」起首节且通过词落节内 · 节内无否定结论词
-- [ ] V3 `npx spec-wave@3.5.0 verify --target .` → reviews 缺口 5→0 · VERIFY: PASS EXIT=0（输出逐字照登 · 豁免命中留痕行不含 5 枚 slug）
+- [ ] V3 `npx spec-wave@3.5.0 verify --target .` → reviews 缺口 5→0 · VERIFY: PASS EXIT=0（输出逐字照登 · PASS 字面为「VERIFY: PASS（裸 verify · 仓级 reviews 扫描）」照登取全行——R1 审查 O3 · 豁免命中留痕行不含 5 枚 slug）
 - [ ] V4 `AGENTS.md` 仓内定制块新增条款两则（条文逐字入自检结论 · begin/end 标记外零改）
 - [ ] V5 本 task 自身合规闭环：20-R1 审查文 `task_api_legacy_reviews_backfill_audit_R1_<yyyymmdd>.md` 落盘 + HG-AUDIT-R1 维护者签收后 verify --task 本 task PASS（零 --allow-no-review · 零 --allow-invoke-gap）
 - [ ] V6 `npx spec-wave@3.5.0 task lint --file docs/tasks/active/task_api_legacy_reviews_backfill.md` → LINT: PASS EXIT=0
@@ -109,7 +109,7 @@
 | R2 | 仓规落点定夺：AGENTS.md 仓内定制块（upgrade 不改写）优于 docs/standards/（编码规范面） | no | — | 维护者另定落点则修订照登 |
 | R3 | 清零口径：verify EXIT=0 · 缺口 5→0 · 他 task 并行面不混入 | no | — | graph_anchor 行为差异照登项（task 1 先合并情形） |
 | R4 | 风险与纪律：禁伪造审查 · 实质不通过如实记并 STOP · R2 前审沿革必述 | no | — | none |
-| R5 | 闸与粒度：单 task 三件套直通 · 双闸 pending · 本 task 自身即新原则首单执行 | yes | R0–R4 已闭环分类/落点/口径/纪律 · 无残余分叉 | none |
+| R5 | 闸与粒度：单 task 三件套直通 · HG-TASK-DRAFT 已 approved（00 代录 · 授权锚 m00500）· HG-AUDIT-R1 pending · 本 task 自身即新原则首单执行 | yes | R0–R4 已闭环分类/落点/口径/纪律 · 无残余分叉 | none |
 
 **actual_last_round**：R5 · **early_stop**：yes · **residual_risks**：见 R2/R3
 
@@ -135,7 +135,7 @@ verify 输出两类：2 枚 `missing R<n> review`（无审查文 → 新 R1）�
 
 ### R5 · 闸与粒度
 
-单 task 三件套直通；双闸 pending 待维护者签收；本 task 自身即新原则首单执行（20-R1 审查文 + 零豁免旗 verify）。early_stop at R5（轮次用尽 · 无残余分叉）。
+单 task 三件套直通；HG-TASK-DRAFT 已 approved（00 代录 · 授权锚 m00500）、HG-AUDIT-R1 pending 待维护者签收；本 task 自身即新原则首单执行（20-R1 审查文 + 零豁免旗 verify）。early_stop at R5（轮次用尽 · 无残余分叉）。
 
 ---
 
@@ -151,3 +151,4 @@ verify 输出两类：2 枚 `missing R<n> review`（无审查文 → 新 R1）�
 |------|------|
 | 2026-10-30 | v0.1 · 10 落稿：仓级 5 缺口补审立案（维护者新原则「走补审不走豁免」）；起草期 verify 实证缺口分类（2 missing + 3 机读不过）；仓规落点定夺 AGENTS.md 仓内定制块；双闸 pending 待维护者签收（不代录） |
 | 2026-10-30 | v0.2 · 闸代录：HG-TASK-DRAFT pending→approved（00 代录 · 授权锚 m00500 · 维护者令启动后续 task）；HG-AUDIT-R1 等其余闸保持 pending 不动 |
+| 2026-10-30 | v0.3 · 10 回填：R1 审查通过零阻塞（docs/harness/reviews/task_api_legacy_reviews_backfill_audit_R1_20261030.md）· 观察 O1–O3 全采纳（O1 状态行/分支行/R5「双闸 pending」「维护者签收后新建」陈旧表述校正 · O2 S2 条款二写明语义面人审非机断 · O3 V3 补 PASS 字面照登提醒）· 闸表 HG-AUDIT-R1 行字面校正（20-R1 通过后 00 代录 · 授权锚 m00500） |
