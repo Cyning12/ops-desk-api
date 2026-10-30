@@ -1,8 +1,8 @@
-# Task：api-graph-anchor-profile-fix（legacy profile graph_modules_path 不可达修正 · chore）
+# task（done · 2026-10-30 验收通过 CLOSE）：api-graph-anchor-profile-fix（legacy profile graph_modules_path 不可达修正 · chore）
 
-> **状态**：`draft`（2026-10-30 · 10 落稿 v0.1 · 双闸 pending 待维护者签收 · 拒开工）
+> **状态**：`done`（2026-10-30 CLOSE · 双闸 approved（00 代录 · 授权锚 m00500）· 30 交付 V1–V7 全绿 → 40 独立验收 PASS · 全程本地验收链闭环 · 分支 `task/api-graph-anchor-profile-fix` 未 push · PR 合码待维护者裁决）
 > **类型**：仓级 chore（配置单行修正 + 生效实测 + 回归 · 零业务码改动）
-> **分支**：`task/api-graph-anchor-profile-fix`（维护者签收后新建）
+> **分支**：`task/api-graph-anchor-profile-fix`（00 依维护者授权代建 · base `001f2fb` · commit 链 db66bce→3956ad5→f96419a→f388ac3→2a455dc→5c932b6→本 CLOSE · 未 push）
 > **先例**：`docs/tasks/done/task_specwave_upgrade_3_5_0.md`（升级类精简形态 · 遗留②即本 task）；实证锚 `docs/spec/doc-health/feedback/2026-10-30_3.5.0_ops-desk-api_upgrade.md` §2/§6.2
 
 ## Harness 元信息
@@ -171,6 +171,13 @@ enabled 后 judgeGraphAnchor 词表抽取要 `01_struct.md`「## 1. 模块边界
 
 **结论：PASS**（诚实毕业 graph_path_unreachable → vocabulary_empty 实证成立 · 无退回项）。
 
+### CLOSE 落账（00 · 2026-10-30 · 维护者授权 m00085/m00500：00 代签 CLOSE · 验收过才 CLOSE · 全程本地 commit 可 push/PR 禁）
+
+- 验收链：10 落稿 v0.1（db66bce 前后）→ 00 代录 HG-TASK-DRAFT（授权锚 m00500）→ 20 R1 通过零阻塞 NIT-1~5 全采纳（v0.3 · `3956ad5`）→ 00 代录 HG-AUDIT-R1（v0.4 · `f96419a`）→ 30 交付 V1–V7 全绿（v0.5 · `f388ac3`/`2a455dc`）→ 40 独立验收 PASS（v0.6 · `5c932b6`）→ 本 CLOSE commit。
+- 终态：分支 `task/api-graph-anchor-profile-fix` 未 push 未开 PR；`close_pr_policy=required` 偏差 = 全程本地（承维护者授权 m00085 先例），**PR 合码 + CI 绿 + 分支清理移交维护者终审**。
+- 交付一句话：`.cyning-harness/profile.json:5` `graph_modules_path` `l1/01_modules` → `docs/_tech_graph/l1`（isDirectory 可达目录），graph_anchor 由 `graph_path_unreachable` 诚实毕业至 `vocabulary_empty`（仍 skip 不挡 · 未拔高为「检查已生效」）。
+- 遗留移交：①词表面适配（上游契约 `<dir>/01_struct.md`「## 1. 模块边界表」节 vs 本仓真值 `01_modules.md`「## 模块表（必填）」节 · 图谱面新增须 HG-GRAPH-MODULES 闸）另案；②存量 task 图谱锚点引用补齐（真判定后若新红）另案；③双 profile（.coding-kit 优先于 legacy）遮蔽面观察照登。
+
 ---
 
 ## 修订记录
@@ -183,3 +190,4 @@ enabled 后 judgeGraphAnchor 词表抽取要 `01_struct.md`「## 1. 模块边界
 | 2026-10-30 | v0.4 · 闸代录：HG-AUDIT-R1 pending→approved（00 代录 · 授权锚 m00500 · R1 审查文 task_api_graph_anchor_profile_fix_audit_R1_20261030.md 通过零阻塞）· 审查文随本提交入库 |
 | 2026-10-30 | v0.5 · 30 执行回填：S1 profile 单行修正落地（l1/01_modules → docs/_tech_graph/l1）· V1–V7 全绿（graph_anchor 由 graph_path_unreachable 毕业至 vocabulary_empty · 回归/仓级基线零新增 · graph-compile/lint 绿）· 自检结论回填 + 30 invoke 落盘（minimal 面）· 词表适配差距照登另案 |
 | 2026-10-30 | v0.6 · 40 独立验收回填：**PASS**（逐项亲跑 · f96419a worktree 独立取前基线逐字吻合 · V1–V7 全绿 · diff 面纯净实现仅 profile 单行 · 波及面复核成立 · 遗留三条另案照登合理 · 无退回项）· 验收结论节 + 40 invoke 落盘（invoke_20261030_40_verify.md） |
+| 2026-10-30 | v1.0 · 00 CLOSE（维护者授权 m00085/m00500：00 代签 CLOSE · 验收过才 CLOSE · 全程本地）：状态 done · 归档 `done/` · CLOSE 档 `docs/tasks/close/close_api_graph_anchor_profile_fix_20261030.md` · README 关账行 · 分支未 push · PR 合码待维护者裁决 |
