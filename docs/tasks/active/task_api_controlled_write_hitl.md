@@ -1,6 +1,6 @@
 # Task：阶段 W · api 受控写 + HITL（写类 capability 走 Policy + 审批闸 · decide/resume 接合 auto-resume · tenant_scope 下推一致）
 
-> **状态**：`draft`（2026-10-30 · 10 起草壳 · **HG-TASK-DRAFT approved** · 余三闸 pending · NO-GO 30）
+> **状态**：`active`（2026-10-30 · **四闸全 approved · GO 30**：HG-TASK-DRAFT / HG-AUDIT-R1（20-R1 PASS）/ HG-GRAPH-MODULES / HG-STAGE-W-DESIGN（首条写能力=testing.write.echo · 令牌复用 PR #223 既有模型）· 均 00 代录）
 > **类型**：feature / 受控写 + HITL
 > **上游**：`docs/discussions/2026-09-17_interview_gaps_adoption_and_landing_v0.md` §8（阶段序 H→T→W→P）· workspace `docs/05-plan/05_post_h_stage_brief_v1_zh.md`（H α 验收 A–F · E 已预留 span `approval_id`）· workspace `docs/05-plan/06_stage_t_second_tenant_prep_v0_zh.md`（阶段 T 实态）
 > **分支**：`task/api-controlled-write-hitl`（base：`master`）
@@ -37,9 +37,9 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
 | HG-TASK-DRAFT | **approved** | 20-R1, 30 | 2026-10-30 维护者签收（00 代录）· 解锁 20-R1；30 仍须其余三闸齐 |
-| HG-AUDIT-R1 | **pending** | **30** | 20-R1 审查文未落盘 `docs/harness/reviews/` + 维护者签 → 30 拒开工 |
-| HG-GRAPH-MODULES | **pending** | **30** | 预估 G-L1 薄增量、不新增一级模块；30 前须维护者确认 `docs/_tech_graph/l1/01_modules.md` 口径 |
-| **HG-STAGE-W-DESIGN** | **pending** | **30** | 讨论稿 §8 W 进入条件「审批与令牌设计签收」：首条极窄写能力选型 + 结构化 Intent/confirmation 载荷 + 审批令牌（审批者身份/时效/范围）设计签收；未签 → 拒 30 |
+| HG-AUDIT-R1 | **approved** | **30** | 2026-10-30 维护者签（00 代录）· 依据：20-R1 审查文 `docs/harness/reviews/task_api_controlled_write_hitl_audit_R1_20261030.md` PASS 零 blocker · M1/N1 已闭环回填 |
+| HG-GRAPH-MODULES | **approved** | **30** | 2026-10-30 维护者签（00 代录）· 口径：预估 G-L1 薄增量、不新增一级模块；20-R1 抽验 `docs/_tech_graph/l1/01_modules.md` capability(:34)/hitl(:39) 条目在 · 30 交付时按实增量回签确认 |
+| **HG-STAGE-W-DESIGN** | **approved** | **30** | 2026-10-30 维护者设计签收（00 代录）：① 首条写能力 = `testing.write.echo`（极窄 opt-in）② Intent/confirmation 载荷复用既有 hitl 载荷最小化、不扩 hitl 表结构（若 30 实扫需扩 → 走修订表回填）③ 审批令牌复用 hitl-auto-resume（PR #223）既有模型，身份/时效/范围不新建 |
 
 ---
 
@@ -224,3 +224,4 @@ W0–W4 同 task 防半截合入（有闸无接合 = 假受控）。两条 freez
 |------|------|
 | 2026-10-30 | 10 起草壳 · 三闸 + HG-STAGE-W-DESIGN pending · NO-GO 20/30 · R0–R3 思考轮（R3 early_stop） |
 | 2026-10-30 | 20-R1 结论回填：PASS 无 blocker · M1 补列「行为变更影响面」验收项（逐条标注 write/irreversible 调用与断言面处理方式）· N1 锚点行号修正（router.py:184 → :203-207）· 闸表 status 不动 |
+| 2026-10-30 | 四闸全 approved（HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-STAGE-W-DESIGN 维护者签 · 00 代录）· 状态 draft→active · GO 30 |
