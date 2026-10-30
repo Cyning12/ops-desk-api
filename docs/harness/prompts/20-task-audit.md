@@ -30,6 +30,7 @@ metadata:
 - 零阻塞：写明核对项；**流程闸**与 **内容**分开写
 - 有阻塞：回填清单 + task 小节标题
 - 通过后在审查文写 **签收 / 关闭**（若本轮为终轮）
+- 若仓 profile 声明 `graph_modules_path` 且路径可达，核对图谱锚点引用真实性（锚点在图谱语料中存在 · grep 级）；缺引用 → 写入阻塞清单退回 10（条件触发 · [`FRAGMENT_graph_first_read_v1_zh.md`](./FRAGMENT_graph_first_read_v1_zh.md)）
 
 ## 禁止什么
 

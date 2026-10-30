@@ -28,7 +28,7 @@ metadata:
 
 ## 只做什么
 
-- 读 task **必读列表** + `AGENTS.md` + `_tech_graph/` + L2（涉码）
+- 读 task **必读列表** + `AGENTS.md` + `_tech_graph/` + L2（涉码）；若仓 profile 声明 `graph_modules_path` 且路径可达，开工必读另含图谱入口（条件触发 · [`FRAGMENT_graph_first_read_v1_zh.md`](./FRAGMENT_graph_first_read_v1_zh.md)）
 - `test_strategy: required` → **先** 可失败测试再改实现
 - 闸扫描通过后：运行 task **验证命令**；回填 `### 自检结论（执行者）`
 - invoke 快照落盘 `docs/harness/invokes/by-task/<task_slug>/`（须覆盖 task 要求的 hats；40 可与 30 合并为 `invoke_*_30_40_*.md`；**pre-30** 须在 30 改码前落盘，见 verify v2.14+）
