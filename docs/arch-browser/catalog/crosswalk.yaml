@@ -67,6 +67,7 @@ modules:
     future: { wave: N5, gap_summary: "图内令牌已有；跨进程 nonce 外置属 v2.0" }
     sources:
       - docs/discussions/agent-host-current-architecture/modules/M06_delegation-gateway.md
+      - docs/discussions/2026-10-19_testing-write-echo-and-delegation_v1_zh.md
 
   - host_id: 7
     title: 执行网关 · 六道门

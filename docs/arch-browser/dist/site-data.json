@@ -1,6 +1,6 @@
 {
   "schema_version": "arch_browser_site_data_v1",
-  "generated_at": "2026-10-20T10:16:06Z",
+  "generated_at": "2026-10-30T09:17:51Z",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_2746c8600a8addc6_V1",
   "graph_generated_at": "sha256-2746c8600a8addc6",
   "sources": {
@@ -434,7 +434,8 @@
         "app/ops/capability/delegation.py"
       ],
       "sources": [
-        "docs/discussions/agent-host-current-architecture/modules/M06_delegation-gateway.md"
+        "docs/discussions/agent-host-current-architecture/modules/M06_delegation-gateway.md",
+        "docs/discussions/2026-10-19_testing-write-echo-and-delegation_v1_zh.md"
       ],
       "future_wave": "N5",
       "future_gap": "图内令牌已有；跨进程 nonce 外置属 v2.0",

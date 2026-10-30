@@ -3,7 +3,8 @@
 > **大纲编号**：#6 · **层**：控制面  
 > **当前状态**：**已落地**（机制在主线/可开关）  
 > **上游目标图**：[`../../2026-09-23_agent-host-full-framework-outline_v0.md`](../../2026-09-23_agent-host-full-framework-outline_v0.md) §2/§3  
-> **总览**：[`../00_overview_current_vs_target_v1_zh.md`](../00_overview_current_vs_target_v1_zh.md)
+> **总览**：[`../00_overview_current_vs_target_v1_zh.md`](../00_overview_current_vs_target_v1_zh.md)  
+> **一次调用走读**：[testing.write.echo 与委派令牌](../../2026-10-19_testing-write-echo-and-delegation_v1_zh.md)（对照总图 §1.2「委派令牌」）
 
 ---
 
