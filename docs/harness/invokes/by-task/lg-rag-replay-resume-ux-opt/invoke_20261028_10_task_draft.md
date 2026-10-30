@@ -1,0 +1,21 @@
+# Invoke：10 起草 — lg-rag-replay-resume-ux-opt（2026-10-28）
+
+> **task**：`docs/tasks/active/task_lg_rag_replay_resume_ux_opt.md`（本 invoke 覆盖 v0 落稿 → v0.1 闸代录 → v0.2 NIT×3 勘误全链 · 现闸态 HG-TASK-DRAFT/HG-AUDIT-R1/HG-GRAPH-MODULES 均 approved 00 代录）
+> **帽**：10-task（起草 · 禁实现码 · 不切分支 · 不 commit · 不代签闸）
+> **required_invoke_hats**=10,20,30,40 含 10 ⇒ 本 invoke 快照强制落盘
+> **授权锚**：需求真值 = 维护者原话锚 m00321（web 仓 00 转发）：「给api仓起草一份replay的优化task，同时思考审批通过后也继续为SSE的方式通信的方案，审批后等待中间过长」；闸代录授权 = 维护者长期授权 m00236「授权00签收后续文档」（00 代录 · 承 m00230 先例）。**核验边界声明**：m00321/m00236 在 web 仓父窗，本帽无法亲读，以 00 单转述为准（同 20 帽 R1 审查文边界声明口径）。
+
+## 执行实录
+
+1. skill `harness-10-task` + `docs/harness/prompts/10-task-requirements.md` 加载；AGENTS.md 闸纪律确认（无 active task 不改码 → 本棒即 10 落稿；既有脏文件 `docs/arch-browser/dist/site-data.json` M 全程未触）。格式蓝本对齐最近同域先例 `docs/tasks/done/task_hitl_resume_replay_contract.md`。
+2. **本仓锚点 10 亲读核真**（base master `0a5d610` · 禁信转述）：`app/ops/hitl/router.py:473-489` preflight（docstring 自承「同步执行实测 130–310s，超前端 30s 超时」· :534-537 端点 docstring）· :506-517 `_best_effort_replay_cursor` · :520-615 resume 端点（:580-584 `asyncio.create_task` 秒回 200 + replay.cursor :587-615）· :425-464 `_execute_decided_resume` · :467-470 `_RESUME_IN_FLIGHT` 进程内单飞登记 · :243-249 decide auto 触发 `auto_resume.schedule_auto_resume`（无 HTTP 连接可升级）；`app/ops/hitl/resume.py:54-162` ResumeEventSink（:112-122 `hitl.resumed` · :124-137 close done · ResumeError sink 不关不落新收尾帧 · :447-449 注释面实在 router.py 后于 v0.2 勘正）；`app/ops/lg_rag/event_store.py:129-149` `run_stream_closed`（挂起 `done{waiting_approval}` 刻意算收尾 = 在写窗合法空 200 根因）· :225-265 `load_events_after(refuse_in_flight)` · :168-171 `list_open_runs` orphan 排除；`app/ops/lg_rag/router.py:372-428` replay 端点（:401-409 F-OBS-2 409+Retry-After:2 · :416-418 event_gen）；`sse_replay.py:71-83` format_sse_event 七键帧形状；`run_worker.py:71-80,93-165` bus registry 仅首段 + `sse_subscribe.py:23-63` + `sse_stream.py` `_KEEPALIVE_FRAME`/`_KEEPALIVE_INTERVAL_S`。
+3. **上游实证钉案亲读**：web invoke `../ops-desk-web/docs/harness/invokes/by-task/web-hitl-approval-overlay-ux/invoke_20261028_30_implement.md`——PG run `38cb1138` seq 1–19 连续无洞 · 恢复段 `hitl.resumed`@10→`answer{final}`@17→`done{resumed,latency_ms:289607}`@19 · 第二数据点 `1039c1a9` 恢复段 68s · chase 预算 2s×1.5 封顶 8s×10 次 ≈56s 墙钟必耗尽 · web 前端防御已落（空 200 不产气泡 + resumeHint + 手动续看）· 修复面归属后端。
+4. **形态决策 D 表定稿**（R2 生成 · R3 反例边界）：D1 恢复段在写窗 replay 409+Retry-After（新事件表真源谓词 ∃ `hitl.resumed` seq > 最新 done/error seq · stale 阈防崩溃永久 409）；D2 SSE 续流 = **replay 端点 opt-in `follow` live-tail**（DB 轮询事件表推新帧至新收尾帧 · keepalive comment 不进 data · 总时长上限 env ≥600s 覆盖 289s 实测 · 禁伪造帧），显式驳回留痕：B1 resume 端点升级 SSE（只覆盖 manual · auto 无连接 · 200 JSON 契约不动）、B3 新独立端点（契约面最小化）、bus 直推（恢复路径无 bus · 进程内 registry 多副本不成立 · follow 以事件表为唯一真源天然多副本安全）；D3 恢复段时长优化入非范围另立 task。
+5. **v0 落稿**（2026-10-28）：新建 `docs/tasks/active/task_lg_rag_replay_resume_ux_opt.md` 唯一文件（Harness 元信息含 freeze_id/wiki_delta/required_invoke_hats=10,20,30,40/orchestration/close_pr_policy · 三闸 pending 不代签 · F1–F4 范围 · 非范围八条 · FP-1–FP-8 · TC1–TC6+旧测 grep 项 · R0–R5 early_stop at R5 · graph_change_layer=G-L1）。lint 首轮 FAIL（E2 状态行须 ASCII token · STATUS_RE 要求 `**状态**` 后接 [a-z_]+）→ 修为 `> **状态**：draft（…）` 后 **LINT: PASS · EXIT=0**；`verify --task` EXIT=2 BLOCKED 三闸 pending（草案预期态）。
+6. **v0.1 闸代录**（00 棒 · 维护者授权 m00236 · 承 m00230 先例）：HG-TASK-DRAFT=approved 代录 → 派 20-task-audit R1。本帽配合面零改动。
+7. **v0.2 NIT×3 勘误闭合**（20 R1 结论「内容 PASS + 3 NIT 非阻塞」· 审查文 `docs/harness/reviews/task_lg_rag_replay_resume_ux_opt_audit_R1_20261028.md`）：NIT-1 FP-1 锚点勘正 `resume.py:447-449`→`app/ops/hitl/router.py:447-449`（勘误前亲读复核该行确为「ResumeError 时 sink 不关」注释）；NIT-2 思考轮控制表 R1 行 `resume.py:473-489`→`router.py:473-489`；NIT-3 承 `task_lg_rag_sse_resume.md:102` 先例新增单列验收项「旧测 grep 影响面」（`tests/test_lg_rag_write_replay_guard.py`/`test_hitl_auto_resume.py`/`test_multi_replica_dualproc.py` 三钉均实证存在 · 其余面 TC5 兜底）。修订记录追加 v0.2 行；复跑 lint **PASS · EXIT=0**；闸态不动。
+8. 全程纪律：只新建 task 文件与本 invoke 两个文件 · 未切分支 · 未 commit · 未代签任何闸（v0.1/v0.3 闸代录均 00 棒行为 · 本帽仅落稿与勘误）。
+
+## 结论
+
+10 起草棒交付闭环：v0 落稿（lint PASS）→ v0.1 闸代录（00 · m00236）→ 20 R1 内容 PASS + 3 NIT → v0.2 NIT×3 勘误闭合（lint 复跑 PASS）。闸表为真值（HG-TASK-DRAFT/HG-AUDIT-R1/HG-GRAPH-MODULES 均 approved 00 代录），pre-30 invoke 10/20 齐备 ⇒ 30 解锁（红测先行 · TC1–TC4 契约测试先行 · 全程本地 · 设计参数 stale 阈/轮询间隔/follow 上限默认值留 30 实证裁定）。

@@ -8,7 +8,8 @@ chat-history-api（B1）：追加**只读**历史查询面——按 user 列 thr
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+import os
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import and_, func, or_, select
@@ -26,6 +27,37 @@ class LgRagRunNotFoundError(Exception):
 
 class LgRagRunInFlightError(Exception):
     """run 仍在流式写入（无收尾帧）；HTTP 映射 409 + Retry-After（F-OBS-2）。"""
+
+
+class LgRagRunResumeInProgressError(Exception):
+    """HITL 恢复段正在写事件表（hitl.resumed 已落、尚无新收尾帧）；HTTP 映射 409 + Retry-After。
+
+    与 LgRagRunInFlightError 刻意区分 detail：首段在飞 = 无收尾帧；恢复段在写窗 =
+    已有旧收尾帧（done{waiting_approval}）但其后有 hitl.resumed（task_lg_rag_replay_resume_ux_opt D1）。
+    """
+
+
+_RESUME_STALE_DEFAULT_SECONDS = 900.0
+# 定稿理由（30 实证裁定 · FP-1）：恢复段实测 68–289s（2026-10-28 PG 实证
+# run 38cb1138… latency_ms=289607 / 1039c1a9… ≈68s · 仅两数据点），取 max 实测
+# 约 3 倍余量定默认 900s——正常恢复段远早于此收尾，超阈只命中「崩溃在写窗」
+# 残留形态（ResumeError 时 sink 不关不落新收尾帧），回落放行防 replay 409 永久化。
+
+
+def _resume_stale_seconds() -> float:
+    """读 env LG_RAG_RESUME_STALE_SECONDS；缺省/非法/≤0 回退默认（承 run_worker env 体例）。"""
+    raw = os.environ.get("LG_RAG_RESUME_STALE_SECONDS", "").strip()
+    if not raw:
+        return _RESUME_STALE_DEFAULT_SECONDS
+    try:
+        value = float(raw)
+    except ValueError:
+        logger.warning("LG_RAG_RESUME_STALE_SECONDS 非法值 %r，回退默认 %.0fs", raw, _RESUME_STALE_DEFAULT_SECONDS)
+        return _RESUME_STALE_DEFAULT_SECONDS
+    if value <= 0:
+        logger.warning("LG_RAG_RESUME_STALE_SECONDS 须 >0（%r），回退默认 %.0fs", raw, _RESUME_STALE_DEFAULT_SECONDS)
+        return _RESUME_STALE_DEFAULT_SECONDS
+    return value
 
 
 async def persist_run_event(
@@ -149,6 +181,103 @@ async def run_stream_closed(run_id: str) -> bool:
     return row is not None
 
 
+def _utc_age_seconds(last_created_at: datetime) -> float:
+    """距末帧秒数（tz 归一 · B-1 钉案 · 40 验收退回修复）。
+
+    背景：`now_utc()` 为 offset-naive（`app/db/models.py:27` datetime.utcnow），
+    而迁移 canonical schema `created_at`=timestamptz
+    （`alembic/versions/20260831_lg_rag_run_events.py:32`）→ asyncpg 返
+    offset-aware；`opsdesk_test` 由 create_all 按模型建 naive timestamp
+    （schema 漂移 · 对齐迁移属基建另立 task）。两侧统一归一到 UTC aware 再
+    相减：DB 值 naive 按 UTC 补 tzinfo（与 now_utc 语义一致），aware 直用。
+
+    选 python 侧归一而非承 :305 SQL 侧 cutoff 的理由：本路径要把精确
+    age_seconds 带回 FP-1 error 日志（运维诊断值），SQL 侧比较拿不到该值；
+    且 naive cutoff 对 timestamptz 列的比较依赖会话 TimeZone  coercion，
+    服务端 TZ 非 UTC 时会静默误判——显式归一消除该类隐患。
+    """
+    now = datetime.now(UTC)
+    if last_created_at.tzinfo is None:
+        last_created_at = last_created_at.replace(tzinfo=UTC)
+    return (now - last_created_at).total_seconds()
+
+
+async def run_resume_in_progress(
+    run_id: str,
+    *,
+    stale_after_seconds: float | None = None,
+) -> bool:
+    """HITL 恢复段是否正在写事件表（replay 409 语义化判定面 · task_lg_rag_replay_resume_ux_opt D1）。
+
+    判定面（事件表真源 · 禁读进程内存态，承 run_is_terminal 红线——
+    hitl/router.py 的 _RESUME_IN_FLIGHT 是 request_id 键的进程内单飞登记，
+    多副本不成立，不能作真源）：
+    「∃ hitl.resumed 帧其 seq > 最新 done/error 收尾帧 seq」⇒ 恢复段在写。
+
+    刻意判 False 的形态（与在写窗互斥 · replay 既有行为零 diff · FP-4）：
+    纯挂起（无 hitl.resumed）/ 再挂起（hitl.resumed 后新 done{waiting_approval}）/
+    沉降（hitl.resumed 后 done{resumed}）/ 恢复段失败（hitl.resumed 后 error）/
+    首段在飞（无 hitl.resumed · 走既有在飞 409 语义）。
+
+    stale 阈（FP-1）：恢复段崩溃在写窗（ResumeError 时 sink 不关不落新收尾帧 ·
+    app/ops/hitl/router.py:447-449 注释口径）时谓词恒真 → replay 409 永久化；
+    末帧 created_at 超阈 ⇒ 视为已沉降回落 False + error 日志照登（orphan 补偿不覆盖
+    此形态——done{waiting_approval} 已存在 ⇒ list_open_runs 排除——缓解不硬修）。
+    阈值默认见 _RESUME_STALE_DEFAULT_SECONDS 注释；env
+    LG_RAG_RESUME_STALE_SECONDS 可调；stale_after_seconds 显式传参覆盖
+    （<=0 关闭 stale 判定 · 承 scan_orphan_runs_for_compensation 先例）。
+    只读，无副作用。
+    """
+    if not run_id:
+        return False
+    if stale_after_seconds is None:
+        stale_after_seconds = _resume_stale_seconds()
+    closing_sq = (
+        select(func.max(OpsLgRagRunEvent.seq))
+        .where(
+            OpsLgRagRunEvent.run_id == run_id,
+            OpsLgRagRunEvent.event_type.in_(("done", "error")),
+        )
+        .scalar_subquery()
+    )
+    async with AsyncSessionLocal() as db:
+        resumed = (
+            await db.execute(
+                select(OpsLgRagRunEvent.seq)
+                .where(
+                    OpsLgRagRunEvent.run_id == run_id,
+                    OpsLgRagRunEvent.event_type == "hitl.resumed",
+                    OpsLgRagRunEvent.seq > func.coalesce(closing_sq, 0),
+                )
+                .limit(1)
+            )
+        ).first()
+        if resumed is None:
+            return False
+        if stale_after_seconds <= 0:
+            return True
+        last_created_at = (
+            await db.execute(
+                select(OpsLgRagRunEvent.created_at)
+                .where(OpsLgRagRunEvent.run_id == run_id)
+                .order_by(OpsLgRagRunEvent.seq.desc())
+                .limit(1)
+            )
+        ).scalar()
+    if last_created_at is None:
+        return False
+    age_seconds = _utc_age_seconds(last_created_at)
+    if age_seconds > stale_after_seconds:
+        logger.error(
+            "lg-rag 恢复段在写窗超 stale 阈（疑似崩溃残留 · FP-1）run_id=%s age=%.1fs threshold=%.1fs ⇒ 谓词回落 False",
+            run_id,
+            age_seconds,
+            stale_after_seconds,
+        )
+        return False
+    return True
+
+
 async def list_open_runs(
     *,
     stale_after_seconds: float = 0,
@@ -235,10 +364,18 @@ async def load_events_after(
     （无收尾帧）则抛 LgRagRunInFlightError——读路径对写入中 run 不稳定
     （live 实证 500），前置拦截语义化为 409 让客户端退避重试；缺省
     False，其余调用面零 diff。
+
+    同开时增第二闸（task_lg_rag_replay_resume_ux_opt D1）：HITL 恢复段在写窗
+    （hitl.resumed 已落、尚无新收尾帧 · 判定见 run_resume_in_progress）抛
+    LgRagRunResumeInProgressError——该形态下既有在飞闸不拦（done{waiting_approval}
+    挂起帧算收尾 · F-OBS-2 刻意口径），若无本闸则 replay 合法 200 零帧无语义区分。
+    恢复段在写窗与首段在飞/纯挂起/沉降三态互斥，故既有闸行为零 diff。
     """
     await assert_run_owned(run_id, user_id)
     if refuse_in_flight and not await run_stream_closed(run_id):
         raise LgRagRunInFlightError(run_id)
+    if refuse_in_flight and await run_resume_in_progress(run_id):
+        raise LgRagRunResumeInProgressError(run_id)
     async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(OpsLgRagRunEvent)
