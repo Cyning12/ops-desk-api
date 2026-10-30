@@ -33,8 +33,8 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 22-R1, 30 | 升级类精简 task · 双闸由 00 代录 approved（维护者长期授权 m00236「授权00签收后续文档」） |
-| HG-AUDIT-R1 | pending | 30 | 同上（授权锚 m00236 · task 文内注明） |
+| HG-TASK-DRAFT | approved | 22-R1, 30 | 2026-10-30 · 00 代录 · 维护者长期授权锚 m00236「授权00签收后续文档」· 升级类精简 task |
+| HG-AUDIT-R1 | approved | 30 | 2026-10-30 · 00 代录 · 维护者长期授权锚 m00236 · 升级类 task 精简形态维护者已授权 |
 | HG-GRAPH-MODULES | n/a | — | 图谱零改动（graph_change_layer=none） |
 | HG-PILOT-OPSDESK-GLAYER | n/a | — | 无外部试点面 |
 
@@ -127,3 +127,4 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-10-30 | 10 落稿（维护者令「更新specwave」· 升级类精简形态：invoke_retention_profile=minimal · required_invoke_hats=30 · graph_delta/wiki_delta=none+note）；双闸 pending 待 00 代录（授权锚 m00236） |
+| 2026-10-30 | 双闸代录 approved（HG-TASK-DRAFT/HG-AUDIT-R1 · 00 代录 · 授权锚 m00236）；按 3.3.0 升级先例扩列 legacy-gate-exempt.yaml 豁免条目（四字段齐 · 无 R1 审查文照登 · 本升级分支 commit 链即人审面） |
