@@ -1,8 +1,8 @@
-# Task：api-prompts-sync-3-5-0（spec-wave 3.5.0 包内 prompts 同步 · chore）
+# task（done · 2026-10-30 验收通过 CLOSE）：api-prompts-sync-3-5-0（spec-wave 3.5.0 包内 prompts 同步 · chore）
 
-> **状态**：`in_progress`（2026-10-30 · 30 执行完毕 · S1–S5 / V1–V7 全绿 · 双闸 approved · 待维护者关账裁决）
+> **状态**：`done`（2026-10-30 CLOSE · 双闸 approved（00 代录 · 授权锚 m00500）· 30 交付 S1–S5 / V1–V7 全绿 → 40 独立验收 PASS · 全程本地验收链闭环 · 分支 `task/api-prompts-sync-3-5-0` 未 push · PR 合码待维护者裁决）
 > **类型**：仓级 chore（harness prompts 同步 · 零业务码改动 · 本地定制零覆盖）
-> **分支**：`task/api-prompts-sync-3-5-0`（维护者签收后新建）
+> **分支**：`task/api-prompts-sync-3-5-0`（00 依维护者授权代建 · base `001f2fb` · commit 链 25e02d3→1ebce84→2b6d2c0→c6bb1c3→ec1f774→4fae535→本 CLOSE · 未 push）
 > **先例**：web 仓 commit e70a2b0（2026-10-30 · spec-wave 3.3.0→3.5.0 + sync prompts · conflict 9 全部本地保留零 --force · FRAGMENT_graph_first_read_v1_zh.md 新增）；出处 `docs/spec/doc-health/feedback/2026-10-30_3.5.0_ops-desk-api_upgrade.md` §6.1（升级 task 遗留①）
 
 ## Harness 元信息
@@ -203,6 +203,13 @@ cli-sync-prompts.js：白名单 12 prompts + TASK_TEMPLATE.md；dry-run 零写�
 
 零 --force 内容级佐证：30-execute-code 本地项存续（--force 必灭失）+ 7 枚对齐上游零 diff。维护者脏文件 `docs/arch-browser/dist/site-data.json` 全程未动。
 
+### CLOSE 落账（00 · 2026-10-30 · 维护者授权 m00085/m00500：00 代签 CLOSE · 验收过才 CLOSE · 全程本地 commit 可 push/PR 禁）
+
+- 验收链：10 落稿 v0.1 → 00 代录 HG-TASK-DRAFT（授权锚 m00500）→ 20 R1 通过零阻塞 NIT N1–N4 全采纳（v0.3 · `1ebce84`）→ 00 代录 HG-AUDIT-R1（v0.4 · `2b6d2c0`）→ 30 交付 S1–S5 / V1–V7 全绿（v0.5 · `c6bb1c3`/`ec1f774`）→ 40 独立验收 PASS（v0.6 · `4fae535`）→ 本 CLOSE commit。
+- 终态：分支 `task/api-prompts-sync-3-5-0` 未 push 未开 PR；`close_pr_policy=required` 偏差 = 全程本地（承维护者授权 m00085 先例），**PR 合码 + CI 绿 + 分支清理移交维护者终审**。
+- 交付一句话：spec-wave 3.5.0 sync prompts 全程零 --force——add 1 物化 `FRAGMENT_graph_first_read_v1_zh.md`（sha256 两侧一致）+ conflict 8 全枚人工合并（7 枚对齐上游零 diff · 30-execute-code 保留本地 `_tech_graph/` 读序项为唯一残留 conflict 明示保留）· apply EXIT=1 预期语义照登。
+- 遗留移交：①残留 conflict 1（30-execute-code 本地 `_tech_graph/` 项 · 明示保留）；②FRAGMENT_graph_first_read 物化 ≠ 接入——生效前提 = profile 可达目录（task_api_graph_anchor_profile_fix 面 · 当前 vocabulary_empty 仍未真判定）+ 帽条文引用（本 task 合并面已完成）；③web e70a2b0 conflict 9 全保留 vs 本仓 8 全合并的处置差异根因照登（本仓零定制块 · R1 实证）；④§7 跨分支引用悬空随双分支合并自解。
+
 ---
 
 ## 修订记录
@@ -215,3 +222,4 @@ cli-sync-prompts.js：白名单 12 prompts + TASK_TEMPLATE.md；dry-run 零写�
 | 2026-10-30 | v0.4 · 闸代录：HG-AUDIT-R1 pending→approved（00 代录 · 授权锚 m00500 · R1 审查文 task_api_prompts_sync_3_5_0_audit_R1_20261030.md 通过零阻塞）· 审查文随本提交入库 |
 | 2026-10-30 | v0.6 · 40 独立验收：**PASS**（逐项亲跑 · 不信自报）——diff 面 9+2 文件零越界；conflict 8 台账全枚亲核（7 枚与上游零 diff · 30-execute-code 残留系有意保留 `_tech_graph/`）；V1–V7 复跑全绿（dry-run 收敛 skip12/add0/conflict1 · sha256 一致 · graph-compile/lint/verify 全过 · 存量 verify worktree 基线对照逐字一致）；40 invoke minimal 落盘 · 待维护者关账裁决 |
 | 2026-10-30 | v0.5 · 30 执行回填：S1–S5 / V1–V7 全绿（实现 commit c6bb1c3 · 30 invoke minimal 落盘）· conflict 8 全部人工合并（7 枚对齐上游零 diff · 30-execute-code 保留 `_tech_graph/` 为唯一残留 conflict 明示保留项）· FRAGMENT_graph_first_read_v1_zh 物化（物化≠接入照登）· 状态 draft→in_progress 待维护者关账裁决 |
+| 2026-10-30 | v1.0 · 00 CLOSE（维护者授权 m00085/m00500：00 代签 CLOSE · 验收过才 CLOSE · 全程本地）：状态 done · 归档 `done/` · CLOSE 档 `docs/tasks/close/close_api_prompts_sync_3_5_0_20261030.md` · README 关账行 · 分支未 push · PR 合码待维护者裁决 |
