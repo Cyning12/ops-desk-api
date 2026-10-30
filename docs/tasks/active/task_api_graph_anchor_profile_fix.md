@@ -159,6 +159,18 @@ enabled 后 judgeGraphAnchor 词表抽取要 `01_struct.md`「## 1. 模块边界
 
 **回退口**：profile 单行 `git checkout` 复原即归 `graph_path_unreachable` skip 原态（已备查未触发）。
 
+### 验收结论（40 独立验收）
+
+40 帽 2026-10-30 独立验收（invoke：`docs/harness/invokes/by-task/api-graph-anchor-profile-fix/invoke_20261030_40_verify.md` · 不信 30 自报 · 逐项亲跑）：
+
+- ① 全量亲读 `git diff f96419a..HEAD`：实现面恰为 `.cyning-harness/profile.json` 单行（`l1/01_modules` → `docs/_tech_graph/l1`），其余仅 invoke + 本 task 留痕，零图谱源档/app/ 变更。
+- ② V1–V7 亲跑全绿且与 30 自报逐项吻合：V1 双断言 EXIT=0/0；V2 EXIT=0 `VERIFY: PASS` 且 graph_anchor 行逐字一致（`vocabulary_empty` · 零 `graph_path_unreachable`），f96419a detached worktree 独立取前基线逐字吻合（`已跳过 · graph_path_unreachable · graph_modules_path=l1/01_modules`）；V3 存量两 task（active EXIT=2 HG-AUDIT-R1 pending · done EXIT=2 missing R<n> review）前后逐字节 diff 为空；V4 仓级 EXIT=2 · reviews 缺口恰 5 枚基线 · 前后 diff 为空；V5 graph-compile EXIT=0 且 `docs/_tech_graph/` porcelain 空；V6 `LINT: PASS` EXIT=0；V7 diff 面纯净。
+- ③ 波及面复核成立：现役消费者仅 spec-wave（graph-anchor.js:26 · verify.js:507 · cli-lifecycle.js:193）；`.coding-kit/` 无 profile.json（S1 守约）；AGENTS.md:122 符号引用 / :158 local 块硬编码文件全路径不联动（R1 实证维持）。
+- ④ 30 落账合规：invoke minimal 在案 · 自检回填质量逐项吻合 · 措辞未拔高 vocabulary_empty · 修订记录 v0.5 一致（小疵：V7 行「reviews 留痕」系泛指，R1 审查文实在 f96419a 入库，不挡）。
+- ⑤ 遗留三条照登合理：词表面适配（图谱面 · 待 HG-GRAPH-MODULES 闸）/ 存量锚点引用（真判定后若新红）/ 合并裁决（维护者令全程本地）均另案。
+
+**结论：PASS**（诚实毕业 graph_path_unreachable → vocabulary_empty 实证成立 · 无退回项）。
+
 ---
 
 ## 修订记录
@@ -170,3 +182,4 @@ enabled 后 judgeGraphAnchor 词表抽取要 `01_struct.md`「## 1. 模块边界
 | 2026-10-30 | v0.3 · 10 回填：R1 审查通过零阻塞（docs/harness/reviews/task_api_graph_anchor_profile_fix_audit_R1_20261030.md）· NIT-1~5 全采纳（NIT-1 行号引用勘误：节 RE :43 · 节匹配 :59-61 · judgeGraphAnchor :214 · :54-57=extractGraphAnchorModuleVocab · NIT-2 FEEDBACK 推测改引 §2:22 · NIT-3 验收标准补 §5 编号（lint E3 须「## 验收标准」字面起首 → 落「## 验收标准（§5）」）· NIT-4 failure_paths 补通用回退口「profile 单行 git checkout 复原」对照 web D4 · NIT-5 §7 跨分支悬空照登）· 闸表 HG-AUDIT-R1 行字面校正（20-R1 通过后 00 代录 · 授权锚 m00500） |
 | 2026-10-30 | v0.4 · 闸代录：HG-AUDIT-R1 pending→approved（00 代录 · 授权锚 m00500 · R1 审查文 task_api_graph_anchor_profile_fix_audit_R1_20261030.md 通过零阻塞）· 审查文随本提交入库 |
 | 2026-10-30 | v0.5 · 30 执行回填：S1 profile 单行修正落地（l1/01_modules → docs/_tech_graph/l1）· V1–V7 全绿（graph_anchor 由 graph_path_unreachable 毕业至 vocabulary_empty · 回归/仓级基线零新增 · graph-compile/lint 绿）· 自检结论回填 + 30 invoke 落盘（minimal 面）· 词表适配差距照登另案 |
+| 2026-10-30 | v0.6 · 40 独立验收回填：**PASS**（逐项亲跑 · f96419a worktree 独立取前基线逐字吻合 · V1–V7 全绿 · diff 面纯净实现仅 profile 单行 · 波及面复核成立 · 遗留三条另案照登合理 · 无退回项）· 验收结论节 + 40 invoke 落盘（invoke_20261030_40_verify.md） |
