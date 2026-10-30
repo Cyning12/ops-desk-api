@@ -1,6 +1,6 @@
 # Task：specwave-upgrade-3-5-0（spec-wave 3.3.0→3.5.0 工具链升级 · chore）
 
-> **状态**：`in_progress`（2026-10-30 · 维护者令「更新specwave」· 升级类精简形态）
+> **状态**：`done`（2026-10-30 · V1–V8 全绿 · 升级类精简形态）
 > **类型**：仓级 chore（工具链钉版升级 · 零业务码改动）
 > **分支**：`task/specwave-upgrade-3-5-0`（base = master `0a5d610`）
 > **先例**：`docs/tasks/done/task_specwave_330_graph_update.md`（PR #242）· `docs/tasks/done/task_ci_specwave_pin_align.md`（PR #260）
@@ -138,13 +138,25 @@
 
 ### KPI（00）
 
-（`kpi_aggregator: CLOSE` · 关账回溯填写）
+Task_KPI%: 100 · 升级向导 EXIT=0 ✓ · 钉位全量对齐（声明面+执行面+双 lock）✓ · V1–V8 全绿 ✓ · graph_anchor 新闸实证照登 ✓ · 3.4.0 址B 双址扫描无回归实证 ✓ · FEEDBACK 落盘 ✓ · 全程本地零 push/PR ✓
+
+| D | 维度 | 得分（1–5） | 依据 |
+|---|------|------------|------|
+| D1 | 范围收敛 | 5 | S1–S9 全闭环 · app/ 零 diff · 非范围零越界 |
+| D2 | 证据质量 | 5 | 全部验收亲跑取 EXIT · 3.5.0/3.3.0 对照实证非回归 |
+| D3 | 闸纪律 | 5 | 双闸代录授权链照登 · exempt 四字段 · 禁伪造审查 |
+| D4 | 文档留痕 | 5 | FEEDBACK + 30 invoke（minimal）+ 对齐记录注释 |
+| D5 | 遗留诚实 | 5 | prompts sync / profile 路径修正照登不擅改 |
 
 ---
 
 ### 经验总结
 
-（`experience_capture: recommended` · 关账回填）
+1. **闸表 status 只吃纯字面**：`approved` 加粗带括注会被解析为 pending——括注一律挪「说明」列；done 档历史写法不追溯。
+2. **exempt 清单 ≠ --task 豁免旗**：legacy-gate-exempt.yaml 作用仓级扫描/done 降级面；--task 链 missing R<n> review 仅认 `--allow-no-review`（verify.js:410）——升级类无 R1 审查文场景须双轨照登。
+3. **graph_anchor 条件触发读码预断可全中**：legacy profile `graph_modules_path: l1/01_modules` 相对仓根不可达 → graph_path_unreachable → INFO skip 不挡；升级前预实证值得做。
+4. **测脚本退出码禁管道截断**：`cmd | head` 会得 EXIT=141（SIGPIPE 伪象）——重定向到文件取真码。
+5. **三列中文闸表头两版均不识别**：现存 task_lg_rag_gate_produces_unfulfilled.md 的 `| 闸 | 状态 | 备注 |` 在 3.3.0/3.5.0 均解析 `?`——存量格式差异非新版回归，后续 task 一律用四列英文表头。
 
 ---
 
