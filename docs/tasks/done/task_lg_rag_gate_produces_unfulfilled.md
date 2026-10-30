@@ -1,6 +1,7 @@
 # task（草案 · 人工闸 pending · 拒开工）：契约闸 produces 未兑现收窄 + 前缀锁定死锁带内逃生口
 
-> **状态**：HG-AUDIT-R1 已签（2026-10-28 · m00811），可开工。
+> **状态**：**CLOSED 2026-10-30**（PR [#297](https://github.com/Cyning12/ops-desk-api/pull/297) MERGED 2026-10-28 · squash `0a5d6109` · CLOSE 档 `docs/tasks/close/close_lg_rag_gate_produces_unfulfilled_20261030.md` · 验收⑤ 40 live 复跑 OPEN 移交维护者 checklist）。
+> ~~HG-AUDIT-R1 已签（2026-10-28 · m00811），可开工。~~
 > **由来**：2026-10-27 复跑实证 run `d3a49527929248cc953b7a5327cae2d0`（635 事件 · 400s · budget_exhausted）：t2 consumes 已收敛 `['title','body']`（全部真实存在），仍被拦 `contract_missing_field`——拦因是闸判定 3「produces 未兑现」，与 consumes 无关。
 > **分支**：task/lg-rag-gate-produces-unfulfilled（维护者签收后新建，本窗不建）。
 
