@@ -41,6 +41,19 @@ def normalize_tenant(raw: str | None) -> str:
     return value
 
 
+def tenant_from_request_state(request: object) -> str:
+    """HTTP 只读面谓词租户：``request.state.ops_tenant_id``（deps.py:43-45 注入）。
+
+    缺失/空白回落试点 A——与 ``deps.get_current_user`` 回落同值；测试经
+    ``dependency_overrides`` 绕过鉴权时 state 可能未设置，回落保证旧测语义不变
+    （谓词先例 task_tenant_readonly_predicate 的「构造性单租户」同义）。
+    图内链路用 ``current_tenant_or_default``（ContextVar）；HTTP 端点用本函数，
+    不跨用两套载体。
+    """
+    raw = getattr(getattr(request, "state", None), "ops_tenant_id", None)
+    return (raw or "").strip() or TENANT_A
+
+
 def resolve_header_against_session(session_tenant: str | None, header: str | None) -> str:
     """F1=C：session 真源；头缺失则用 session；头存在且不一致 → ValueError（调用方映射 403）。"""
     session = normalize_tenant(session_tenant)

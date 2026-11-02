@@ -62,6 +62,28 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/hitl", tags=["hitl"])
 
 
+def _approval_ttl_seconds() -> int:
+    """W-fix-1：批准执行权 TTL（单一旋钮 · 与自动扫描/T1 消费门同 env 同默认）。
+
+    惰性 import 与 auto_resume 同一防环模式；真源在
+    ``app.ops.lg_rag.multi.nodes._approval_consumption_ttl_seconds``，
+    禁在本文件或任何第二处另起 TTL 判定旋钮。
+    """
+    from app.ops.lg_rag.multi.nodes import _approval_consumption_ttl_seconds
+
+    return _approval_consumption_ttl_seconds()
+
+
+def _decided_at_ts(raw: Any) -> float | None:
+    """decided_at 归一：复用 T1 消费门同一真源函数（float|int|ISO str → Unix ts）。
+
+    失败返回 None（与 T1 一致 fail-closed：不可解析按过期处理）。
+    """
+    from app.ops.lg_rag.multi.nodes import _decided_at_ts as _normalize
+
+    return _normalize(raw)
+
+
 def _require_signed(request: Request, body: bytes) -> None:
     """外部系统调用的两个端点共用：签名不通过直接 401。"""
     try:
@@ -546,6 +568,23 @@ async def resume_request(request_id: str, _user: OpsUser | None = AdminSyncAuth)
             status_code=409,
             detail=f"申请状态为 {req_status or 'unknown'}，只有已决（approved/rejected）才能恢复",
         )
+    # W-fix-1（HG-W-FIX-DESIGN ①④ · 2026-11-02 签）：手动链批准执行权 TTL 闸。
+    # 「批准不过期，执行权过期」（task :78）：与自动扫描 aclaim_approved_for_resume /
+    # T1 消费门 _match_fresh_approved 同一 TTL 判据（单一旋钮 · 禁第二处）。
+    # 超龄 approved ⇒ 单据置 expired 终态（决策④ · STATUS_EXPIRED 死码激活）+ 409。
+    # rejected 豁免：驳回收工出结论不受执行权闸；decide 超龄 pending 不拒（决策③）。
+    if req_status == STATUS_APPROVED:
+        ttl_seconds = _approval_ttl_seconds()
+        decided_ts = _decided_at_ts(row.get("decided_at"))
+        if decided_ts is None or time.time() - decided_ts > ttl_seconds:
+            await get_hitl_store().amark_expired(request_id)
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"approval_expired：批准已超执行权 TTL（{ttl_seconds}s）过期，"
+                    "单据已置 expired 终态；请重新发起审批"
+                ),
+            )
     # 幂等防重：同一申请恢复在飞 ⇒ 409（执行已不在请求内，必须显式挡）
     if request_id in _RESUME_IN_FLIGHT:
         raise HTTPException(
