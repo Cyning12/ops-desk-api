@@ -1,6 +1,6 @@
 # Task：阶段 W 联调缺口修复（HITL TTL 语义补全 + 只读资源面租户谓词）
 
-> **状态**：`draft`（2026-11-02 · 10 起草壳 · 四闸 pending · **NO-GO 20/30**）
+> **状态**：`draft`（2026-11-02 · HG-TASK-DRAFT approved（维护者签收 · 00 代录）· GO 20-R1 · **NO-GO 30**）
 > **类型**：fix / 安全语义补全（HITL TTL · 跨租户只读封闭）
 > **上游**：workspace `docs/harness/invokes/by-task/stage-w-e2e-join-acceptance/invoke_20261102_10_c8_evidence_archive.md`（联调实证 F11/F12/F13 · §2 发现清单 · §5 过期态实验）· workspace `docs/contracts/api-v1-tenant-readonly-context-draft.md`（租户契约 F1–F6 · F4 对外 404/对内 `tenant_scope_denied`）
 > **分支**：`task/api-w-join-gap-fix`（base：`master`）
@@ -35,7 +35,7 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 维护者签收草稿；签收前 20-R1 不开、30 不动码 |
+| HG-TASK-DRAFT | **approved**（2026-11-02 维护者签收 · 00 代录） | 20-R1, 30 | 维护者签收草稿；解锁 20-R1 · 30 仍须 HG-AUDIT-R1 + HG-GRAPH-MODULES + HG-W-FIX-DESIGN 齐 |
 | HG-AUDIT-R1 | **pending** | **30** | 20-R1 审查文 PASS 后维护者签 |
 | HG-GRAPH-MODULES | **pending** | **30**（条件触发） | 预估 G-L1 薄增量、不新增一级模块；30 前须维护者确认图谱口径 |
 | **HG-W-FIX-DESIGN** | **pending** | **30** | **设计签收**：① TTL 过期错误出口语义（状态码/文案 · 建议 410 或 409+`approval_expired` 明细，与 web FP-5 mapping `/过期|expired/i` 对齐）② freeze `hitl-browser-decide-v1` 是否增补 TTL 条（增补则走契约闸）③ 过期出口作用于 decide 或仅 resume（本 task 草案建议：decide 不拒超龄 pending「批准不过期」，resume/消费环拒超龄 approved「执行权过期」）——未签 → 拒 30 |
@@ -207,3 +207,4 @@ F11 与 F12 是同一判据（TTL）在两个入口的缺失：补一处同源�
 | 日期 | 说明 |
 |------|------|
 | 2026-11-02 | 10 起草壳（维护者裁决：F12 补 api TTL 过期出口 · F13 只读资源面接租户谓词 · 联调 task 暂不 CLOSE 待修复复测）· 四闸 pending · NO-GO 20/30 · R0–R3（R3 early_stop）· 证据锚全引 workspace `invoke_20261102_10_c8_evidence_archive.md` |
+| 2026-11-02 | 维护者签收 HG-TASK-DRAFT（00 代录 · 闸表+状态行同步）· GO 20-R1 · 30 仍 NO-GO |
