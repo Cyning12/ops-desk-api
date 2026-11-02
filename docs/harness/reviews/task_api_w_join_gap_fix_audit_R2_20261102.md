@@ -12,7 +12,7 @@
 
 ## 结论摘要
 
-- **内容面**：R1 的 B1/M1/M2/M3/N3 五条 findings 逐字核验全部闭环（见下表）；双仓扩范围引入 1 个新 minor（M4 · web 仓 GATE_VERIFY 闸据缺位，30 前须补救，不阻塞本审查通过）。范围/非范围、钉死契约、failure_paths、验收可判定性、思考轮回填闭合均复检通过。
+- **内容面**：R1 的 B1/M1/M2/M3/N3 五条 findings 逐字核验全部闭环（见下表）；双仓扩范围引入 1 个新 minor（M4 · web 仓 GATE_VERIFY 闸据缺位，30 前须补救——属程序补救项，本审查结论维持通过）。范围/非范围、钉死契约、failure_paths、验收可判定性、思考轮回填闭合均复检通过。
 - **流程闸**：`HG-AUDIT-R1` = **pending**（待维护者依据本 R2 结论签收）· `HG-GRAPH-MODULES` / `HG-W-FIX-DESIGN` 均 pending。闸表未动（符合分工）。30 开工授权以维护者签闸为真值。
 
 ---
@@ -59,7 +59,7 @@
 - [ ] commit task 文档或确认已签
 - [ ] 再下发 Harness 30 Prompt
 
-30 Agent 将以 task 表为准；pending 时必须拒开工（见 `docs/harness/prompts/TEMPLATE_30_gate_stop.md`）。
+30 Agent 将以 task 表为准；pending 时 30 不得开工（见 `docs/harness/prompts/TEMPLATE_30_gate_stop.md`）。
 
 ---
 

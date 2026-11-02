@@ -35,10 +35,10 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **approved**（2026-11-02 维护者签收 · 00 代录） | 20-R1, 30 | 维护者签收草稿；解锁 20-R1 · 30 仍须 HG-AUDIT-R1 + HG-GRAPH-MODULES + HG-W-FIX-DESIGN 齐 |
-| HG-AUDIT-R1 | **approved**（2026-11-02 维护者签 · 00 代录） | **30** | 20-R2 审查文 PASS-WITH-MINOR（`docs/harness/reviews/task_api_w_join_gap_fix_audit_R2_20261102.md` · M4 已闭环=web 镜像薄壳） |
-| HG-GRAPH-MODULES | **approved**（2026-11-02 维护者签 · 00 代录） | **30**（条件触发） | G-L1 薄增量口径确认（issues/pulls/overview/hitl 模块一句备注 · 不新增一级模块 · web 侧零图谱 diff） |
-| **HG-W-FIX-DESIGN** | **approved**（2026-11-02 维护者签 · 00 代录） | **30** | **四决策已裁决**：① 出口=**409 + `approval_expired`**（detail 中文含「过期」命中 web mapping）② freeze `hitl-browser-decide-v1` **增补 TTL 条**（含 resume 路径渲染语义 · 本闸签署即生效 · freeze 文件本体随 30 棒改）③ 作用面=resume/消费环（decide 不拒超龄 pending · 「批准不过期」不 reopen）④ **启用 `STATUS_EXPIRED`**（过期拒绝时置 `expired` 终态） |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | 2026-11-02 维护者签收 · 00 代录 · 维护者签收草稿；解锁 20-R1 · 30 仍须 HG-AUDIT-R1 + HG-GRAPH-MODULES + HG-W-FIX-DESIGN 齐 |
+| HG-AUDIT-R1 | approved | **30** | 2026-11-02 维护者签 · 00 代录 · 20-R2 审查文 PASS-WITH-MINOR（`docs/harness/reviews/task_api_w_join_gap_fix_audit_R2_20261102.md` · M4 已闭环=web 镜像薄壳） |
+| HG-GRAPH-MODULES | approved | **30**（条件触发） | 2026-11-02 维护者签 · 00 代录 · G-L1 薄增量口径确认（issues/pulls/overview/hitl 模块一句备注 · 不新增一级模块 · web 侧零图谱 diff） |
+| **HG-W-FIX-DESIGN** | approved | **30** | 2026-11-02 维护者签 · 00 代录 · **四决策已裁决**：① 出口=**409 + `approval_expired`**（detail 中文含「过期」命中 web mapping）② freeze `hitl-browser-decide-v1` **增补 TTL 条**（含 resume 路径渲染语义 · 本闸签署即生效 · freeze 文件本体随 30 棒改）③ 作用面=resume/消费环（decide 不拒超龄 pending · 「批准不过期」不 reopen）④ **启用 `STATUS_EXPIRED`**（过期拒绝时置 `expired` 终态） |
 
 ---
 
