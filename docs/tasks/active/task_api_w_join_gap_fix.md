@@ -1,6 +1,6 @@
 # Task：阶段 W 联调缺口修复（HITL TTL 语义补全 + 只读资源面租户谓词）
 
-> **状态**：`draft`（2026-11-02 · HG-TASK-DRAFT approved（维护者签收 · 00 代录）· GO 20-R1 · **NO-GO 30**）
+> **状态**：`draft`（2026-11-02 · HG-TASK-DRAFT approved · 20-R2 PASS-WITH-MINOR · 待维护者签 HG-AUDIT-R1/HG-GRAPH-MODULES/HG-W-FIX-DESIGN · **NO-GO 30**）
 > **类型**：fix / 安全语义补全（HITL TTL · 跨租户只读封闭）
 > **上游**：workspace `docs/harness/invokes/by-task/stage-w-e2e-join-acceptance/invoke_20261102_10_c8_evidence_archive.md`（联调实证 F11/F12/F13 · §2 发现清单 · §5 过期态实验）· workspace `docs/contracts/api-v1-tenant-readonly-context-draft.md`（租户契约 F1–F6 · F4 对外 404/对内 `tenant_scope_denied`）
 > **分支**：`task/api-w-join-gap-fix`（base：`master`）
@@ -28,7 +28,7 @@
 | **invoke_retention_profile** | `default` |
 | **experience_capture** | `recommended` |
 | **kpi_aggregator** | `CLOSE` |
-| **orchestration** | 10 落稿 → 20 R1 审查 → 维护者签 `HG-TASK-DRAFT`/`HG-AUDIT-R1`/`HG-GRAPH-MODULES`/`HG-W-FIX-DESIGN` → 30（api 分支 `task/api-w-join-gap-fix` + web 分支 `task/web-hitl-resume-expired-mapping` · 两 PR 均合入后才可联调复测）→ 40 → 联调 task A4②/A5 复测回接（workspace `task_stage_w_e2e_join_acceptance`）→ CLOSE |
+| **orchestration** | 10 落稿 → 20 R1 审查 → R1 FAIL 修订 → 20-R2 复审 PASS-WITH-MINOR（M4 闭环=web 仓镜像薄壳）→ 维护者签 `HG-TASK-DRAFT`/`HG-AUDIT-R1`/`HG-GRAPH-MODULES`/`HG-W-FIX-DESIGN` → 30（api 分支 `task/api-w-join-gap-fix` + web 分支 `task/web-hitl-resume-expired-mapping` · **web 侧 30 闸据 = web 仓镜像薄壳 `task_web_hitl_resume_expired_mapping`（同分支名）· 四闸镜像以本 task 闸表为真值不重复签** · 两 PR 均合入后才可联调复测）→ 40 → 联调 task A4②/A5 复测回接（workspace `task_stage_w_e2e_join_acceptance`）→ CLOSE |
 | **freeze_id** | `hitl-browser-decide-v1`（**增补评估**：TTL 过期错误出口需入 freeze；本 task 只列方案，freeze 变更须维护者签 · `lg-rag-sse-v1` 默认零改） |
 
 ### 人工闸
@@ -36,7 +36,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
 | HG-TASK-DRAFT | **approved**（2026-11-02 维护者签收 · 00 代录） | 20-R1, 30 | 维护者签收草稿；解锁 20-R1 · 30 仍须 HG-AUDIT-R1 + HG-GRAPH-MODULES + HG-W-FIX-DESIGN 齐 |
-| HG-AUDIT-R1 | **pending** | **30** | 20-R1 审查文 PASS 后维护者签 |
+| HG-AUDIT-R1 | **pending** | **30** | 20-R2 审查文 PASS-WITH-MINOR（`docs/harness/reviews/task_api_w_join_gap_fix_audit_R2_20261102.md` · M4 已闭环=web 镜像薄壳）· 待维护者签 |
 | HG-GRAPH-MODULES | **pending** | **30**（条件触发） | 预估 G-L1 薄增量、不新增一级模块；30 前须维护者确认图谱口径 |
 | **HG-W-FIX-DESIGN** | **pending** | **30** | **设计签收**：① TTL 过期错误出口语义（状态码/文案 · 建议 410 或 409+`approval_expired` 明细，文案含「过期」以命中 web FP-5 mapping `/过期|expired/i`）② freeze `hitl-browser-decide-v1` 是否增补 TTL 条（增补则走契约闸）③ 过期出口作用面（**收窄**：decide 不拒超龄 pending 为已定前提「批准不过期」· 不 reopen；本点仅签 resume/消费环出口选型——建议 resume 返过期错误 · 且与 A5 可达性绑定：web `onResume` 过期 mapping 已由 B1 维护者裁决列入本 task 范围，api 出口含「过期」文案 → web 行级提示可达）④ **单据终态语义**（`STATUS_EXPIRED` 启用与否：过期拒绝时置 `expired` 或维持 approved + 错误出口 · 与正文「单据终态」行对齐）——未签 → 拒 30 |
 
@@ -143,6 +143,7 @@
 | HITL 既有面 | `docs/tasks/done/task_hitl_browser_decide.md`（freeze · 无 TTL 条）· `app/ops/hitl/{router,store,auto_resume,resume}.py` |
 | P 轨前置 | `../ops-desk-workspace/docs/05-plan/07_stage_t_data_prep_runbook_v0_zh.md` §4 P2（canary 手测期望 404 · 依赖 W-fix-2） |
 | 编码规范 | `docs/standards/CODING_BACKEND_L2_v1_zh.md` |
+| web 镜像薄壳（M4 闭环） | `../ops-desk-web/docs/tasks/active/task_web_hitl_resume_expired_mapping.md`（分支 `task/web-hitl-resume-expired-mapping` · **web 侧 30 的 GATE_VERIFY 闸据** · 四闸镜像以本 task 闸表为真值 · 不重复签） |
 
 ---
 
@@ -202,7 +203,7 @@ F11 与 F12 是同一判据（TTL）在两个入口的缺失：补一处同源�
 
 | 命令 | 退出码 | 摘要 |
 |------|--------|------|
-| `npx spec-wave task lint --file docs/tasks/active/task_api_w_join_gap_fix.md` | 0 | LINT: PASS（2026-11-02 · 10 起草自检） |
+| `npx spec-wave task lint --file docs/tasks/active/task_api_w_join_gap_fix.md` | 0 | LINT: PASS（2026-11-02 · 10 M4/N5 闭环同步复跑） |
 
 ---
 
@@ -213,3 +214,4 @@ F11 与 F12 是同一判据（TTL）在两个入口的缺失：补一处同源�
 | 2026-11-02 | 10 起草壳（维护者裁决：F12 补 api TTL 过期出口 · F13 只读资源面接租户谓词 · 联调 task 暂不 CLOSE 待修复复测）· 四闸 pending · NO-GO 20/30 · R0–R3（R3 early_stop）· 证据锚全引 workspace `invoke_20261102_10_c8_evidence_archive.md` |
 | 2026-11-02 | 维护者签收 HG-TASK-DRAFT（00 代录 · 闸表+状态行同步）· GO 20-R1 · 30 仍 NO-GO |
 | 2026-11-02 | 10 承接 **20-R1 FAIL 修订**（审查文 `docs/harness/reviews/task_api_w_join_gap_fix_audit_R1_20261102.md` · 维护者裁决 B1 方向=扩范围）：**B1 五处联动**——范围 +W-fix-1-web（web `HitlApprovalView.vue` `onResume` catch :173-180 补 `/过期|expired/i` mapping · 与 decide 路径 :111 同文案）· implement_repo 改双仓 · test_strategy_note 补 web 质量门（Vitest + `pnpm lint/test/build`）· orchestration 写入 web 分支 `task/web-hitl-resume-expired-mapping` 与双 PR 链 · graph/wiki_delta 补 web 侧评估 · 非范围「web 业务码」收窄为「web 其余业务码」· 现状锚点表补 onResume 无 mapping 实证 · 过期出口钉死行+failure_path+A5 验收链同步；**M1** 闸行补决策点④「单据终态语义（`STATUS_EXPIRED` 启用与否）」；**M2** 决策点③收窄（decide 不拒超龄 pending 为已定前提 · ③仅签 resume/消费环出口选型）；**M3** 验收补「旧测 grep 影响面」项；**N3** `tenant_id=''` 处置补「偏离从严默认须维护者签」；R3 轮增补 B1 裁决记录 · 闸表 status 未动 · lint 复跑 PASS |
+| 2026-11-02 | 10 承接 **20-R2 PASS-WITH-MINOR 的 M4/N5 闭环**（审查文 `docs/harness/reviews/task_api_w_join_gap_fix_audit_R2_20261102.md`）：**M4**——web 仓镜像薄壳 `task_web_hitl_resume_expired_mapping`（分支 `task/web-hitl-resume-expired-mapping`）落档为 web 侧 30 的 GATE_VERIFY 闸据（四闸镜像 pending · 以本 task 闸表为真值 · 不重复签）· orchestration 与依赖区登记；**N5**——语境滞后三处同步（:3 状态行「GO 20-R1」→「20-R2 PASS-WITH-MINOR · 待维护者签三闸」· :39 HG-AUDIT-R1 说明「20-R1 PASS 后签」→「20-R2 PASS-WITH-MINOR 待签」· :205 自检行注记刷新）；闸表 status 未动（三闸仍 pending · 待维护者签）· lint 复跑 PASS |
