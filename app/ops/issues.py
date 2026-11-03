@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import OpsIssue, OpsUser
 from app.db.session import get_db
 from app.ops.deps import CurrentUser
+from app.ops.tenant_context import tenant_from_request_state
 
 router = APIRouter(prefix="/issues", tags=["issues"])
 
@@ -28,6 +29,7 @@ class IssueOut(BaseModel):
 
 @router.get("")
 async def list_issues(
+    request: Request,
     state: str | None = Query(None),
     label: str | None = Query(None),
     scan_status: str | None = Query(None),
@@ -37,9 +39,16 @@ async def list_issues(
     db: AsyncSession = Depends(get_db),
     user: OpsUser = CurrentUser,
 ) -> dict:
-    """List issues with filtering and pagination."""
-    stmt = select(OpsIssue).order_by(OpsIssue.updated_at.desc())
-    count_stmt = select(func.count(OpsIssue.id))
+    """List issues with filtering and pagination.
+
+    W-fix-2（F13）：租户谓词——只读本租户行（F4 口径：跨租户列表得空集；
+    ``tenant_id=''`` 历史行从严视同租户外 · 2026-11-02 实扫 ops_issues 0 行）。
+    """
+    tenant_id = tenant_from_request_state(request)
+    stmt = (
+        select(OpsIssue).where(OpsIssue.tenant_id == tenant_id).order_by(OpsIssue.updated_at.desc())
+    )
+    count_stmt = select(func.count(OpsIssue.id)).where(OpsIssue.tenant_id == tenant_id)
 
     filters = []
     if state:

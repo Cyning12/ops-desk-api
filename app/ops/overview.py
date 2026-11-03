@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from statistics import median
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +19,7 @@ from app.db.models import (
 from app.db.session import get_db
 from app.ops.admin.service import _to_naive_utc
 from app.ops.deps import CurrentUser
+from app.ops.tenant_context import tenant_from_request_state
 
 router = APIRouter(prefix="/overview", tags=["overview"])
 
@@ -65,10 +66,16 @@ def _build_trend(issue_counts: dict, pr_counts: dict, today: datetime) -> list[d
 
 @router.get("")
 async def get_overview(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     user: OpsUser = CurrentUser,
 ) -> dict:
-    """Return overview metrics, sync status, scan summary and trend."""
+    """Return overview metrics, sync status, scan summary and trend.
+
+    W-fix-2（F13）：issue/PR 派生指标接租户谓词（F4 口径：跨租户归零）；
+    sync_run/scan_snapshot 模型无 tenant_id 列，属全局 repo 级状态，不在谓词面。
+    """
+    tenant_id = tenant_from_request_state(request)
     now = datetime.utcnow()
     cycle_since = now - timedelta(days=_CYCLE_REVIEW_WINDOW_DAYS)
     trend_since = now - timedelta(days=_TREND_WINDOW_DAYS)
@@ -76,6 +83,7 @@ async def get_overview(
     # PR cycle time: created -> merged, merged within the window.
     result = await db.execute(
         select(OpsPullRequest.created_at, OpsPullRequest.merged_at).where(
+            OpsPullRequest.tenant_id == tenant_id,
             OpsPullRequest.merged_at.is_not(None),
             OpsPullRequest.merged_at >= cycle_since,
         )
@@ -85,6 +93,7 @@ async def get_overview(
     # PR review time: created -> first review, reviewed within the window.
     result = await db.execute(
         select(OpsPullRequest.created_at, OpsPullRequest.first_review_at).where(
+            OpsPullRequest.tenant_id == tenant_id,
             OpsPullRequest.first_review_at.is_not(None),
             OpsPullRequest.first_review_at >= cycle_since,
         )
@@ -94,6 +103,7 @@ async def get_overview(
     # Issue throughput: issues closed within the trend window.
     throughput_count = await db.scalar(
         select(func.count(OpsIssue.id)).where(
+            OpsIssue.tenant_id == tenant_id,
             OpsIssue.closed_at.is_not(None),
             OpsIssue.closed_at >= trend_since,
         )
@@ -102,13 +112,18 @@ async def get_overview(
     # Trend: per-day closed issues and merged PRs.
     result = await db.execute(
         select(func.date(OpsIssue.closed_at), func.count())
-        .where(OpsIssue.closed_at.is_not(None), OpsIssue.closed_at >= trend_since)
+        .where(
+            OpsIssue.tenant_id == tenant_id,
+            OpsIssue.closed_at.is_not(None),
+            OpsIssue.closed_at >= trend_since,
+        )
         .group_by(func.date(OpsIssue.closed_at))
     )
     issue_counts = dict(result.all())
     result = await db.execute(
         select(func.date(OpsPullRequest.merged_at), func.count())
         .where(
+            OpsPullRequest.tenant_id == tenant_id,
             OpsPullRequest.merged_at.is_not(None),
             OpsPullRequest.merged_at >= trend_since,
         )

@@ -51,6 +51,8 @@ class HitlStore(Protocol):
         self, request_id: str, *, ttl_seconds: int
     ) -> dict[str, Any] | None: ...
 
+    async def amark_expired(self, request_id: str) -> dict[str, Any] | None: ...
+
 
 class InMemoryHitlStore:
     """进程内存储（联调 / 单实例）。重启即丢——**不能用于生产**。"""
@@ -123,6 +125,18 @@ class InMemoryHitlStore:
                 return None
         return dict(row)
 
+    async def amark_expired(self, request_id: str) -> dict[str, Any] | None:
+        """approved → expired 单向终态迁移（W-fix-1 决策④ · STATUS_EXPIRED 启用）。
+
+        只受理 approved：已 rejected / 已 expired 的行一律 None（不覆写终态），
+        与 DbHitlStore 的 ``WHERE status='approved'`` 严格同义。
+        """
+        row = self._items.get(request_id)
+        if row is None or row.get("status") != STATUS_APPROVED:
+            return None
+        row["status"] = STATUS_EXPIRED
+        return dict(row)
+
 
 class NullHitlStore:
     """未配置持久化：**不落库且显式标记**。
@@ -149,6 +163,9 @@ class NullHitlStore:
     async def aclaim_approved_for_resume(
         self, request_id: str, *, ttl_seconds: int
     ) -> dict[str, Any] | None:
+        return None
+
+    async def amark_expired(self, request_id: str) -> dict[str, Any] | None:
         return None
 
 
@@ -188,6 +205,12 @@ class DbHitlStore:
         "UPDATE ops_hitl_requests SET status = :decision, decision_by = :by, "
         "decision_note = :note, decided_at = now(), updated_at = now() "
         "WHERE id = :id AND status = 'pending' RETURNING id"
+    )
+    # W-fix-1 决策④：approved → expired 单向终态迁移（STATUS_EXPIRED 死码激活）。
+    # WHERE status='approved' 守卫：并发下与 decide/重复 mark 天然互斥，至多一胜。
+    _MARK_EXPIRED = (
+        "UPDATE ops_hitl_requests SET status = 'expired', updated_at = now() "
+        "WHERE id = :id AND status = 'approved' RETURNING id"
     )
     # T2（R2-N3 · 仓内首个 FOR UPDATE SKIP LOCKED 先例）：自动 resume 的行锁认领。
     # 条件=裁定四的 SQL 可判部分：status=approved ∧ decided_at 未过 TTL ∧
@@ -292,6 +315,21 @@ class DbHitlStore:
             )
             row = rows.first()
         return _row_to_dict(row)
+
+    async def amark_expired(self, request_id: str) -> dict[str, Any] | None:
+        """approved → expired 单向终态迁移（W-fix-1 决策④ · STATUS_EXPIRED 启用）。
+
+        ``WHERE status='approved'`` 守卫与 InMemory 版严格同义：并发重复 mark /
+        与 decide 竞争时至多一胜，败者 None（行已迁走，调用方按已 expired 处理）。
+        """
+        from sqlalchemy import text
+
+        async with self._session_factory() as session, session.begin():
+            res = await session.execute(text(self._MARK_EXPIRED), {"id": request_id})
+            updated = res.first() is not None
+        if not updated:
+            return None
+        return await self.aget(request_id)
 
 
 def _row_to_dict(row: Any) -> dict[str, Any] | None:

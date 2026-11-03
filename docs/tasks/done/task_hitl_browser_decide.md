@@ -194,6 +194,22 @@ fixtures（maintainer/viewer）+ 图替身（既有 `test_hitl_resume.py`）可�
 
 ---
 
+## freeze 增补条款（hitl-browser-decide-v1）
+
+> **2026-11-02 `HG-W-FIX-DESIGN` 签署生效**（维护者签 · task `task_api_w_join_gap_fix` 闸表 :41 决策② · 四决策同签）。
+> 本条款是 freeze `hitl-browser-decide-v1` 的**增补条**：只新增 resume 路径 TTL 过期出口语义，**decide 既有 400/404/409/422 语义逐字零变化**；web 契约本体（`ops-desk-web/src/api/hitl.ts` 头注释）的镜像增补按红线不在本仓落，由维护者另令。
+
+### 增补条 · resume 路径 TTL 过期出口
+
+- **触发**：`POST /hitl/requests/{id}/resume` 遇 `approved` 单据且 `now - decided_at > TTL`（或 `decided_at` 不可解析 · fail-closed 视同过期）。
+- **出口**：**409** + detail 含 `approval_expired` 字样（中文文案含「**过期**」二字，命中 web mapping `/过期|expired/i`）。
+- **终态**：拒绝同时单据置 **`expired`**（`STATUS_EXPIRED` 死码激活 · 决策④ · approved→expired 单向迁移，不覆写 rejected/已 expired 终态）。
+- **TTL 单一旋钮**：`OPS_HITL_APPROVAL_CONSUMPTION_TTL_SECONDS`（默认 **3600s** · 合法域 [1,86400] · 越界/非法回退默认 · 真源 `app/ops/lg_rag/multi/nodes.py:328`）——手动 resume 闸与自动扫描 `aclaim_approved_for_resume`、T1 消费门 `_match_fresh_approved` **同一判据，禁第二旋钮**。
+- **作用面收窄（决策③）**：闸只罩 resume/消费环；**decide 不拒超龄 pending**（「批准不过期，执行权过期」· task :78）；**rejected 单据 resume 豁免**（驳回收工出结论不受执行权闸）。
+- **渲染语义增量（web 侧承接）**：resume 错误路径新增「过期」触发面，web `HitlApprovalView.vue` `onResume` catch 按 `/过期|expired/i` mapping 渲染（W-fix-1-web · 镜像 task `task_web_hitl_resume_expired_mapping`）。
+
+---
+
 ## 修订记录
 
 | 日期 | 说明 |
@@ -202,3 +218,4 @@ fixtures（maintainer/viewer）+ 图替身（既有 `test_hitl_resume.py`）可�
 | 2026-09-30 | 维护者令「冲突部分安全推荐方案进行」→ 裁定 D 采纳 D1（`MaintainerUser`）· 裁定 E 采纳 E1（owner 过滤）；阻塞解除 |
 | 2026-09-30 | **20-task-audit R1 通过**（0 阻塞 · 4 nit 转 30 · 审查文 `docs/harness/reviews/task_hitl_browser_decide_audit_R1_20260930.md`）→ 维护者签 `HG-TASK-DRAFT`/`HG-AUDIT-R1` = approved；30 可开工（与 B1 串行） |
 | 2026-09-30 | **CLOSE**：30/40 交付（`c39e659` · 5 件 +941/-5 · 验收 14/14 机断全绿 · 4 nit 随 30 闭合 · OA 签名面/`signature.py`/resume 零 diff 实测 · N2 真 PG 重启链真跑）→ 维护者令单 PR → PR [#204](https://github.com/Cyning12/ops-desk-api/pull/204) MERGED（`eb22a66` · CI 四绿）→ 归档 done/ · Hub 补登 |
+| 2026-11-02 | **freeze `hitl-browser-decide-v1` 增补 TTL 条**：`HG-W-FIX-DESIGN` 四决策签署生效（409+`approval_expired` · 单据 `expired` 终态 · decide 不拒超龄 pending · `STATUS_EXPIRED` 启用）；增补条见上文「freeze 增补条款」节 · 30 棒随 `task_api_w_join_gap_fix` 落 |
