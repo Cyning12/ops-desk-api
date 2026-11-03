@@ -10,6 +10,9 @@
 - **W2** tenant_scope 全链下推：capability_write 类审批行 tenant_id 缺失或与当前
   租户不一致 → fail-closed 不消费（跨租户负样本）；F1–F6 由既有
   test_tenant_context.py / test_hitl_pending_decide.py 回归承接；
+- **W2-T**（api-w-hitl-tenant-fix · HG-W-TENANT-DESIGN ②③ 2026-11-03 维护者裁决）：
+  delegation 类审批行**纳入同一租户守卫**——带戳同租户可消费 / 跨租户或空 tenant
+  fail-closed 不消费（W2④ 旧形态「空 tenant 可消费」断言同步废止改写）；
 - **W3** span ``approval_id`` 审计串链（gateway.py:1318 预留启用：审批命中后执行
   注入 ``ctx["approval_id"]`` → capability span metadata 落值）；
 - **freeze 红线**：挂起载荷复用既有 ``hitl_waiting`` 形态（顶层键集 + requests
@@ -41,6 +44,7 @@ from app.ops.hitl import reset_hitl_store, set_hitl_store
 from app.ops.hitl.resume import resume_hitl_run
 from app.ops.hitl.store import STATUS_APPROVED, STATUS_REJECTED, InMemoryHitlStore
 from app.ops.lg_rag.multi.nodes import (
+    _delegation_blocked_terminal,
     _observe,
     _persist_hitl,
     observe_node,
@@ -48,7 +52,12 @@ from app.ops.lg_rag.multi.nodes import (
     tool_exec_node,
 )
 from app.ops.lg_rag.state import LgRagState
-from app.ops.tenant_context import TENANT_A, TENANT_B
+from app.ops.tenant_context import (
+    TENANT_A,
+    TENANT_B,
+    reset_current_tenant,
+    set_current_tenant,
+)
 
 _TESTING_MANIFEST = MANIFEST_DIR / "testing.v1.yaml"
 _TESTING_CAP = "testing.write.echo"
@@ -487,10 +496,60 @@ async def test_w2_missing_tenant_row_fail_closed(write_env):
     assert calls == []
 
 
-async def test_w2_delegation_class_row_still_consumed(write_env):
-    """W2④ M1 保留面：delegation_issue_hitl_required 类 approved 单据（既有
-    TA3 形态 · 无 tenant_id）在写执行闸同源可消费——enforce 链不双审批，
-    其租户语义维持既有三元组口径（一行不动）。"""
+async def test_w2_delegation_class_row_stamped_tenant_consumed(write_env):
+    """W2④（api-w-hitl-tenant-fix · HG-W-TENANT-DESIGN ② 改写）：delegation 类
+    approved 单据**带租户戳**（T-fix-2 新形态）在写执行闸同源可消费——enforce
+    链不双审批；同租户正样本放行。旧形态断言（tenant_id='' 仍可消费）已废止：
+    守卫扩列后空/跨租户 delegation 行一律 fail-closed（见下两条负样本）。"""
+    store, calls = write_env
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    sid = f"{run_id}:1"
+    state, row = _mk(run_id, sid)
+    await store.acreate(
+        _write_approved_req(
+            run_id,
+            sid,
+            blocked_by="delegation_issue_hitl_required",
+            tenant_id=TENANT_A,
+            payload={"capability_id": _TESTING_CAP},
+        )
+    )
+
+    out = await tool_exec_node({**state, "assigned_subtask": row})
+
+    result = out["subtask_results"][-1]
+    assert "error" not in result, f"委派类审批未同源放行：{result.get('error')!r}"
+    assert "output" in result
+    assert len(calls) == 1
+
+
+async def test_w2_delegation_class_cross_tenant_not_consumed(write_env):
+    """守卫扩列负样本①：delegation 类单据 tenant=B · 当前租户 A → 不消费
+    （HG-W-TENANT-DESIGN ② · 守卫真空收口 · adapter 零调用）。"""
+    store, calls = write_env
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    sid = f"{run_id}:1"
+    state, row = _mk(run_id, sid)
+    await store.acreate(
+        _write_approved_req(
+            run_id,
+            sid,
+            blocked_by="delegation_issue_hitl_required",
+            tenant_id=TENANT_B,
+            payload={"capability_id": _TESTING_CAP},
+        )
+    )
+
+    out = await tool_exec_node({**state, "assigned_subtask": row})
+
+    result = out["subtask_results"][-1]
+    assert result.get("blocked_by") == _BLOCKED_BY_WRITE  # 仍拦（fail-closed）
+    assert calls == []
+
+
+async def test_w2_delegation_class_empty_tenant_fail_closed(write_env):
+    """守卫扩列负样本②：delegation 类单据 tenant=''（历史 40 行形态）→ 不消费
+    （HG-W-TENANT-DESIGN ③ · 空 tenant 视同无授权 · fail-closed）。"""
     store, calls = write_env
     run_id = f"run-{uuid.uuid4().hex[:8]}"
     sid = f"{run_id}:1"
@@ -508,6 +567,31 @@ async def test_w2_delegation_class_row_still_consumed(write_env):
     out = await tool_exec_node({**state, "assigned_subtask": row})
 
     result = out["subtask_results"][-1]
-    assert "error" not in result, f"委派类审批未同源放行：{result.get('error')!r}"
-    assert "output" in result
-    assert len(calls) == 1
+    assert result.get("blocked_by") == _BLOCKED_BY_WRITE  # 仍拦（fail-closed）
+    assert calls == []
+
+
+async def test_w2t_delegation_persist_row_carries_tenant(write_env):
+    """T-fix-2 落库链：delegation 拦截 terminal（_delegation_blocked_terminal
+    打的戳）经 _persist_hitl 落库后审批行 tenant_id 非空且 = 当前租户 —
+    守卫扩列「查非空成立」的落库前提。"""
+    store, _calls = write_env
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    sid = f"{run_id}:1"
+    state, row = _mk(run_id, sid)
+    token = set_current_tenant(TENANT_B)
+    try:
+        blocked = _delegation_blocked_terminal(row, "委派签发需人工审批（测试）")
+    finally:
+        reset_current_tenant(token)
+    merged = {**state, "subtask_results": [blocked], "inflight_subtask_ids": []}
+    obs = _observe(merged)
+    assert obs["hitl_pending"] == [sid]
+
+    created, unpersisted = await _persist_hitl(merged, obs, thread_id="t-w2t")
+
+    assert unpersisted is False
+    req = next(r for r in created if str(r.get("subtask_id")) == sid)
+    assert req["blocked_by"] == "delegation_issue_hitl_required"
+    assert req["tenant_id"] == TENANT_B, "delegation 审批行 tenant 戳丢失（F3 真空）"
+    assert req["unlock_subtask_id"] == sid  # _SELF_UNLOCK 回填（D2 形态）

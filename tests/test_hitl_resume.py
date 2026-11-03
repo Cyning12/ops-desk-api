@@ -21,6 +21,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
+from fastapi import Request
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 
@@ -37,6 +38,7 @@ from app.ops.hitl.store import (
     STATUS_REJECTED,
     InMemoryHitlStore,
 )
+from app.ops.tenant_context import TENANT_A
 from tests.conftest import DB_AVAILABLE
 
 _RUN = "runresume"
@@ -304,7 +306,10 @@ async def test_default_graph_factory_keeps_the_injected_checkpointer():
 # ---------------------------------------------------------------------------
 
 
-def _client(monkeypatch, store):
+def _client(monkeypatch, store, *, tenant: str | None = None):
+    """裸 TestClient；``tenant`` 非空时注入 ``request.state.ops_tenant_id``
+    （模拟 cookie 会话的租户下推 · api-w-hitl-tenant-fix T-fix-1 守卫测试用；
+    默认 None = Bearer 机读形态，state 不设租户）。"""
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
@@ -314,7 +319,17 @@ def _client(monkeypatch, store):
     set_hitl_store(store)
     app = FastAPI()
     app.include_router(router, prefix="/api/ops")
-    app.dependency_overrides[require_admin_sync] = lambda: None
+
+    if tenant is None:
+        app.dependency_overrides[require_admin_sync] = lambda: None
+    else:
+        # tenant 形态：顺带把会话租户写进 request.state，复刻
+        # deps.get_current_user 的下推行（deps.py:43-45）。
+        async def _auth_with_tenant(request: Request):
+            request.state.ops_tenant_id = tenant
+            return None
+
+        app.dependency_overrides[require_admin_sync] = _auth_with_tenant
     return TestClient(app)
 
 
@@ -340,6 +355,10 @@ def _approved_row(**kw) -> dict:
         "subtask_id": _T2,
         "unlock_subtask_id": _T1,
         "blocked_by": "prefix_touch_required",
+        # api-w-hitl-tenant-fix（HG-W-TENANT-DESIGN ①③ · 维护者裁决）：新单须带
+        # 租户戳 · 空 tenant fail-closed 拒 resume —— fixture 按 A 租户补齐
+        # （旧形态无 tenant 字段 = 旧行为编码，逐条影响面见 30 PR 清单）。
+        "tenant_id": TENANT_A,
         "status": STATUS_PENDING,
         "created_at": time.time(),
     }
