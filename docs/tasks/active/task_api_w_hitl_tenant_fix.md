@@ -4,7 +4,7 @@
 > **类型**：fix / 安全语义补全（跨租户写守卫闭环 · 审计真值）
 > **上游**：workspace `docs/harness/invokes/by-task/stage-w-e2e-join-acceptance/invoke_20261102_10_c8_evidence_archive.md`（§2 F3 / N-R2-1 / 守卫真空 · §C6 实证）· workspace 同目录 `invoke_20261103_10_final_acceptance.md` §2（2026-11-03 收尾棒）· workspace backlog `docs/tasks/backlog/backlog_20261030_post_stage_w.md` B2（2026-11-03 标注「联调已坐实 · 待立 fix task」）· 维护者 issue [#311](https://github.com/Cyning12/ops-desk-api/issues/311) 令起草 · PR [#312](https://github.com/Cyning12/ops-desk-api/pull/312)（MERGED 2026-11-03 · squash `04245ef`）
 > **分支**：30 棒走部署绑定分支 `agent/hitl-tenant-fix-task-955c1cd011b6`（base：`master` · 名义分支 `task/api-w-hitl-tenant-fix` 让位绑定规则）
-> **10 注**：2026-11-03 · 起草 PR #312 合入 · 20-R1 审查 PASS（审查文 `docs/harness/invokes/by-task/api-w-hitl-tenant-fix/invoke_20261103_20_r1_audit.md`）· 维护者三闸签认（issue #311 评论 + auth311）+ HG-AUDIT-R1 随审查文落档签 · **30 改码授权生效**（维护者 auth311 六要求）
+> **10 注**：2026-11-03 · 起草 PR #312 合入 · 20-R1 审查 PASS（审查文址A `docs/harness/reviews/task_api_w_hitl_tenant_fix_audit_R1_20261103.md` · 过程档 `docs/harness/invokes/by-task/api-w-hitl-tenant-fix/invoke_20261103_20_r1_audit.md`）· 维护者三闸签认（issue #311 评论 + auth311）+ HG-AUDIT-R1 随审查文落档签 · **30 改码授权生效**（维护者 auth311 六要求）
 
 ---
 
@@ -36,7 +36,7 @@
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
 | HG-TASK-DRAFT | approved | 20-R1, 30 | 2026-11-03 维护者签（issue #311 评论 + PR #312 review · 起草质量 20-R1 已过 · 00 代录） |
-| HG-AUDIT-R1 | approved | **30** | 2026-11-03 维护者签（auth311：20-R1 审查文 `docs/harness/invokes/by-task/api-w-hitl-tenant-fix/invoke_20261103_20_r1_audit.md` 落档即签 · 00 代录） |
+| HG-AUDIT-R1 | approved | **30** | 2026-11-03 维护者签（auth311：20-R1 审查文址A `docs/harness/reviews/task_api_w_hitl_tenant_fix_audit_R1_20261103.md` 落档即签 · 过程档 invokes/by-task/api-w-hitl-tenant-fix/invoke_20261103_20_r1_audit.md · 00 代录） |
 | HG-GRAPH-MODULES | approved | **30**（条件触发） | 2026-11-03 维护者签（auth311：G-L1 薄备注 · 无新增一级模块 · 00 代录） |
 | **HG-W-TENANT-DESIGN** | approved | **30** | 2026-11-03 维护者签（PR #312 review 三决策点裁决 · auth311 代录）：① resume 链 tenant 来源 = **A+B 组合**——单据 `tenant_id` 为唯一真源做快照还原（对齐守卫 `row.tenant_id` 语义）；手动入口 session 租户存在且 ≠ 单据租户 → 403（对齐 `lg_rag/router.py:376-384` 先例）；auto-scan 无请求上下文 → 纯 A；fail-closed：单据 tenant 为空 → 拒 resume ② delegation 消费守卫 = **扩列纳入租户校验**（T-fix-2 打戳后守卫查非空成立）· 不选豁免文档化 ③ 历史 `tenant_id=''` 40 行 = **默认从严**——一律 fail-closed 拒 resume · 不回填；后续真实 resume 诉求走单独授权的数据修复 |
 
