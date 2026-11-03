@@ -60,8 +60,10 @@ def test_execute_resume_restores_row_tenant_snapshot():
     """单据 tenant=B · 无 ambient 租户 ⇒ 恢复段 ContextVar = B（快照还原），
     消费环不再回落默认租户 A（N-R2-1 现场根治）。"""
     store = InMemoryHitlStore()
-    row = _decided(store, tenant_id=TENANT_B)
+    created = _decided(store, tenant_id=TENANT_B)
     set_hitl_store(store)
+    # 执行体消费 store 里已决行（端点同款取法），不用过期的 pre-decide 副本。
+    row = asyncio.run(store.aget(created["id"]))
 
     seen: list = []
 
@@ -157,6 +159,8 @@ def test_resume_endpoint_bearer_no_session_pure_snapshot(monkeypatch):
     async def _spy(**kwargs):
         from app.ops.tenant_context import current_tenant_or_default
 
+        if kwargs.get("preflight_only"):
+            return {"preflight": True}
         seen.append(current_tenant_or_default())
         return {"thread_id": kwargs["thread_id"], "state": {}}
 

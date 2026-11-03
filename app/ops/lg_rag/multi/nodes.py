@@ -468,8 +468,9 @@ async def _write_execution_approval(
     未命中 → ``None``（维持拦截）：读失败 / 过期 / 三元组不符 / 类型不符 /
     capability_write 类单据 ``tenant_id`` 缺失或与当前租户不一致（W2 跨租户写
     拦死 · 租户以 session 真源下推为准）。委派签发类
-    （``delegation_issue_hitl_required``）单据维持既有三元组消费语义
-    （M1 保留 · 一行不动）。台账记动作不记内容（不落参数原值）。
+    （``delegation_issue_hitl_required``）单据**同入本守卫**（api-w-hitl-tenant-fix ·
+    HG-W-TENANT-DESIGN ② 扩列：T-fix-2 打戳后守卫查非空成立；空/跨租户 delegation
+    行一律 fail-closed 不消费——守卫真空收口）。台账记动作不记内容（不落参数原值）。
     """
     from app.ops.hitl import get_hitl_store
 
@@ -496,9 +497,9 @@ async def _write_execution_approval(
     if hit is None:
         return None
     row, remaining = hit
-    if str(row.get("blocked_by") or "") == _BLOCKED_BY_CAPABILITY_WRITE:
-        # W2：写闸类单据必须带租户且与当前租户一致（跨租户写 fail-closed）；
-        # 委派类单据不进入本守卫（既有三元组语义保留）。
+    if str(row.get("blocked_by") or "") in _WRITE_CONSUMABLE_BLOCKED_BY:
+        # W2 · HG-W-TENANT-DESIGN ② 扩列：写闸类 + 委派类单据均须带租户且与
+        # 当前租户一致（跨租户/空 tenant 一律 fail-closed 不消费）。
         row_tenant = str(row.get("tenant_id") or "")
         if not row_tenant or row_tenant != current_tenant_or_default():
             return None
@@ -635,6 +636,22 @@ def _error_terminal(item: dict, message: str) -> dict:
     if item.get("tool"):
         row["tool"] = str(item["tool"])
     return row
+
+
+def _delegation_blocked_terminal(item: dict, issue_reason: str) -> dict:
+    """delegation 签发审批拦截 terminal（api-w-hitl-tenant-fix · T-fix-2）。
+
+    blocked_by + hitl_required + **租户戳**（取当前租户上下文 ContextVar）——
+    对齐 capability_write 闸既有 stamping 先例（:1881-1925 同形态 · HG-W-TENANT-DESIGN
+    ② 守卫扩列后消费端查非空成立的落库前提；裁决③：历史 '' 行不回填，新单不再产
+    空租户）。无请求上下文（CLI/扫描）时 ``current_tenant_or_default`` 回落试点 A，
+    与 capability_write 闸同口径。
+    """
+    blocked = _error_terminal(item, issue_reason)
+    blocked["blocked_by"] = _BLOCKED_BY_DELEGATION_ISSUE
+    blocked["hitl_required"] = True
+    blocked["tenant_id"] = current_tenant_or_default()
+    return blocked
 
 
 def _resolve_depends(
@@ -1271,9 +1288,7 @@ async def _join_subtasks(state: LgRagState) -> dict:
             if _delegation_active() and str(row.get("type") or "") == "tool":
                 issue_reason = await _delegation_issue_block_reason(state, row)
                 if issue_reason:
-                    blocked = _error_terminal(row, issue_reason)
-                    blocked["blocked_by"] = "delegation_issue_hitl_required"
-                    blocked["hitl_required"] = True
+                    blocked = _delegation_blocked_terminal(row, issue_reason)
                     extras.append(blocked)
                     done[sid] = blocked
                     blocked_meta["delegation_issue_hitl_required"] = (
