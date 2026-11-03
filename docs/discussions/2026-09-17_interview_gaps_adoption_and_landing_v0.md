@@ -126,10 +126,11 @@
 
 **不建议**在无 HG/task 下直接改 `app/`；优先开一条 `task_capability_contract_hardening`（名自定）把 α 收进闸。
 
-> **进度（2026-09-18）**：波次 α CLOSE · PR [#138](https://github.com/Cyning12/ops-desk-api/pull/138) MERGED。波次 β `task_supervisor_budget_h_beta` **00 CLOSE** · PR [#141](https://github.com/Cyning12/ops-desk-api/pull/141)（40 reverify PASS · pytest 41 · ~~待合入~~ **已 MERGED 2026-09-18** · merge commit `4896701`）。阶段 T：~~条件核对 NO-GO 30（缺第二租户试点数据）~~ **Fixture 轨已 CLOSE**：`f048c57` ∈ master（PR [#142](https://github.com/Cyning12/ops-desk-api/pull/142) · merge commit `8be477c` · 2026-09-18）· web PR #76 · 前置见 workspace `docs/05-plan/06_stage_t_second_tenant_prep_v0_zh.md`。~~W/P 未开~~ **阶段 W api 受控写竖切已合入**（PR [#303](https://github.com/Cyning12/ops-desk-api/pull/303) · merge commit `09f97f4` · 2026-10-30）· web HITL 审批页~~另 task 进行中~~ **已 CLOSE**（2026-10-30 · web 仓 `docs/tasks/done/task_web_hitl_approval_page.md` 状态 done v1.0 · 分支已合 main · 实现 commit `a34c626` · TC9 待维护者手测回填）；P 未开。  
+> **进度（2026-09-18）**：波次 α CLOSE · PR [#138](https://github.com/Cyning12/ops-desk-api/pull/138) MERGED。波次 β `task_supervisor_budget_h_beta` **00 CLOSE** · PR [#141](https://github.com/Cyning12/ops-desk-api/pull/141)（40 reverify PASS · pytest 41 · ~~待合入~~ **已 MERGED 2026-09-18** · merge commit `4896701`）。阶段 T：~~条件核对 NO-GO 30（缺第二租户试点数据）~~ **Fixture 轨已 CLOSE**：`f048c57` ∈ master（PR [#142](https://github.com/Cyning12/ops-desk-api/pull/142) · merge commit `8be477c` · 2026-09-18）· web PR #76 · 前置见 workspace `docs/05-plan/06_stage_t_second_tenant_prep_v0_zh.md`。~~W/P 未开~~ **阶段 W api 受控写竖切已合入**（PR [#303](https://github.com/Cyning12/ops-desk-api/pull/303) · merge commit `09f97f4` · 2026-10-30）· web HITL 审批页~~另 task 进行中~~ **已 CLOSE**（2026-10-30 · web 仓 `docs/tasks/done/task_web_hitl_approval_page.md` 状态 done v1.0 · 分支已合 main · 实现 commit `a34c626` · TC9 待维护者手测回填）· 阶段 W 接合缝修复已合入（PR [#307](https://github.com/Cyning12/ops-desk-api/pull/307) · merge commit `3168b3b` · 2026-11-03 · W-fix-1 TTL 过期出口 + W-fix-2 只读资源面租户谓词 · `task_api_w_join_gap_fix`）；P 未开。  
 > 修订注记（2026-10-30）：PR #141 待合入 / 阶段 T NO-GO 30 两处为陈旧表述，已按磁盘实态（`git log 4896701` / `git branch --contains f048c57`）更正。  
 > 修订注记（2026-10-30 · 其二）：「W/P 未开」为陈旧表述，按磁盘实态更正——阶段 W api 受控写竖切已合入（PR #303 · merge commit `09f97f4` · 2026-10-30）；web HITL 审批页~~另 task 进行中~~ **已 CLOSE（2026-10-30 · TC9 待维护者手测回填）**；P 未开。  
 > 修订注记（2026-10-30 · 其三 · 文档健康巡检 night-1030）：「web HITL 审批页另 task 进行中」为同日早些时候快照——当日晚 web task 已 CLOSE 归档 `ops-desk-web/docs/tasks/done/task_web_hitl_approval_page.md`（done v1.0 · 30/40 已交付 · 分支已合 main · TC9 待维护者手测回填 · 关账 commit `200c447`）；§5 进度行 / 注记其二 / §8.4 / 修订表同词一并更正。
+> 修订注记（2026-11-03 · issue #308 分析批）：**阶段 W 接合缝修复已合入**——PR [#307](https://github.com/Cyning12/ops-desk-api/pull/307) MERGED 2026-11-03 01:08 UTC · merge commit `3168b3b`（`task_api_w_join_gap_fix` · W-fix-1 HITL TTL 过期出口 + W-fix-2 只读资源面租户谓词）；§5 进度行 / §8.4 / 修订表同步；workspace 联调 task 阻塞注记同批补回执（见 PR 说明）。
 
 ---
 
@@ -208,6 +209,7 @@
 > **阶段 H 波次 α 已 CLOSE 且合入**（PR #138）；**波次 β 已 CLOSE 且合入**（`task_supervisor_budget_h_beta` · PR [#141](https://github.com/Cyning12/ops-desk-api/pull/141) ~~待合入~~ **MERGED 2026-09-18** · merge commit `4896701`）；下一产品串行是阶段 T（只读多租户）→ W；~~T 的 30 仍阻塞于第二租户试点数据~~ **阶段 T Fixture 轨已 CLOSE**（`f048c57` ∈ master · PR [#142](https://github.com/Cyning12/ops-desk-api/pull/142) · merge commit `8be477c` · 2026-09-18 · web PR #76；前置清单见 workspace `06_stage_t_second_tenant_prep_v0_zh.md`）。  
 > 修订注记（2026-10-30）：原「PR #141 待合入」「T 的 30 仍阻塞于第二租户试点数据」为陈旧表述，按磁盘实态更正（H β PR #141 已 MERGED；阶段 T Fixture 轨 CLOSE · `f048c57` ∈ master）。  
 > 修订注记（2026-10-30 · 其二）：**阶段 W api 受控写竖切已合入**（PR [#303](https://github.com/Cyning12/ops-desk-api/pull/303) · merge commit `09f97f4` · feat commit `227a482` · 2026-10-30 · CI 4/4 绿 · `task_api_controlled_write_hitl` CLOSE 归档 done/）；**web HITL 审批页** ~~另 task 进行中~~ **已 CLOSE**（2026-10-30 · web 仓 done v1.0 · 分支已合 main · TC9 待维护者手测回填）；§8.1 阶段序 H→T→W→P 中 W 的 api 侧已完成，P 未开。  
+> 修订注记（2026-11-03 · issue #308 分析批）：**阶段 W 接合缝修复已合入**（PR [#307](https://github.com/Cyning12/ops-desk-api/pull/307) · merge commit `3168b3b` · 2026-11-03 · W-fix-1 + W-fix-2 · `task_api_w_join_gap_fix`）——W 的 api 侧收口完成，P 未开。
 > **跨仓总 00**：`ops-desk-workspace/docs/harness/invokes/by-task/ops-desk-post-h-stage/` · 简报 `05_post_h_stage_brief_v1_zh.md`
 
 ---
@@ -223,5 +225,6 @@
 | 2026-10-30 | §5 进度/§8.4：PR #141 已 MERGED 2026-09-18（merge commit `4896701`）；阶段 T Fixture 轨已 CLOSE（`f048c57` ∈ master · PR #142 · merge commit `8be477c` · 2026-09-18 · web PR #76）；陈旧「待合入」「NO-GO 30」表述更正（维护者变更请求 · 文档健康修复） |
 | 2026-10-30 | §5 进度/§8.4：阶段 W api 受控写竖切已合入（PR #303 · merge commit `09f97f4` · feat `227a482` · 2026-10-30 · CI 4/4 绿）；陈旧「W/P 未开」表述更正；web HITL 审批页~~另 task 进行中~~ 已 CLOSE 2026-10-30（见下行）；P 未开（`task_api_controlled_write_hitl` CLOSE 联动 · 文档健康修复） |
 | 2026-10-30 | §5 进度/§8.4：「web HITL 审批页另 task 进行中」更正为已 CLOSE（web task 2026-10-30 CLOSE 归档 done/ · 状态 done v1.0 · 分支已合 main · 实现 `a34c626` · TC9 待维护者手测回填 · 关账 `200c447`）；另：`docs/tasks/active/README.md` 台账五行合入状态更正（PR #304/#300/#299/#298 MERGED · `task/lg-rag-replay-resume-ux-opt` 本地合入 master `fb4a7fc`）（文档健康巡检 night-1030） |
+| 2026-11-03 | §5 进度/§8.4：阶段 W 接合缝修复已合入（PR #307 · merge commit `3168b3b` · 2026-11-03 01:08 UTC · W-fix-1 HITL TTL 过期出口 + W-fix-2 只读资源面租户谓词 · `task_api_w_join_gap_fix`）（issue #308 分析批 · 维护者过目后执行 · 跨仓指针候选面） |
 
 
