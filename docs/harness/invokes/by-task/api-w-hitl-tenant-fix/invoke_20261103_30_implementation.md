@@ -27,7 +27,7 @@
 |------|--------|------|
 | `uv run pytest tests/test_hitl_resume_tenant_fix.py tests/test_write_approval_gate.py` | 0 | 22 passed（RED dc4f4eb：7 failed/1 passed → GREEN：22 passed） |
 | `uv run pytest tests/test_hitl_resume.py test_hitl_resume_async.py test_hitl_resume_ttl_gate.py test_hitl_resume_events.py test_hitl_auto_resume.py test_hitl_pending_decide.py test_hitl_approval_consumption.py test_hitl_approved_replan_quality.py test_hitl.py test_tenant_context.py test_hitl_observe_config_injection.py` + 上两行 | 0 | 218 passed（旧测影响面修复后全绿） |
-| `uv run pytest tests`（全量） | （见 30 PR 自检行） | 全量回归（结果回填 PR） |
+| `uv run pytest tests`（全量 ×2 对拍） | 0（exit 0 含基线红） | 分支 4 failed/2032 passed vs origin/master 同集 4 failed/2020 passed——**失败集与 master 基线逐一同集**（test_tc8_diff_whitelist · embedder_failure_degrades · cross_instance_resume · diff_whitelist_scenario 四红为基线环境红 · 零新增红 · 净 +12 passed 为本波新测） |
 | `uv run ruff check app tests` | 0 | All checks passed! |
 | `./scripts/graph-compile.sh` | 0 | compile+check+normalize 全 OK（npx 走缓存二进制 · 代理间歇故障绕行记录见 §4） |
 | `spec-wave task lint` / `spec-wave verify --target . --task …` | 0/0 | LINT: PASS · VERIFY: PASS（图谱锚点 skipped vocabulary_empty 照登） |
