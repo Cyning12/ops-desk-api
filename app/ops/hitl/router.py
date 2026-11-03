@@ -56,7 +56,11 @@ from app.ops.hitl.store import (
     STATUS_PENDING,
     STATUS_REJECTED,
 )
-from app.ops.tenant_context import reset_current_tenant, set_current_tenant
+from app.ops.tenant_context import (
+    reset_current_tenant,
+    set_current_tenant,
+    tenant_from_request_state,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -707,19 +711,25 @@ async def resume_request(
 
 @router.post("/requests")
 async def create_request_manual(
+    request: Request,
     payload: dict[str, Any] = Body(...),
     _user: OpsUser | None = AdminSyncAuth,
 ) -> dict[str, Any]:
     """手工登记一条审批申请（运维补录 / 联调用）。
 
     正常路径是编排层自动落库；这个端点只为"人需要补一条"存在。
+
+    api-w-hitl-tenant-fix（T-fix-2 全类口径）：补录单同样不产空租户——
+    显式 payload.tenant_id 优先，缺省取会话租户（`request.state.ops_tenant_id`），
+    再缺回落试点 A（`tenant_from_request_state` 单源 · 与只读谓词同回落口径），
+    否则空 tenant 会在 resume 链被 fail-closed 拒（`_resume_row_tenant`）。
     """
-    request = {
+    request_row = {
         "id": str(payload.get("id") or new_request_id()),
         "run_id": str(payload.get("run_id") or ""),
         "thread_id": str(payload.get("thread_id") or ""),
         "checkpoint_id": payload.get("checkpoint_id"),
-        "tenant_id": str(payload.get("tenant_id") or ""),
+        "tenant_id": str(payload.get("tenant_id") or "") or tenant_from_request_state(request),
         "subtask_id": str(payload.get("subtask_id") or ""),
         "blocked_by": str(payload.get("blocked_by") or "prefix_touch_required"),
         "unlock_subtask_id": str(payload.get("unlock_subtask_id") or ""),
@@ -729,5 +739,5 @@ async def create_request_manual(
         "status": STATUS_PENDING,
         "created_at": time.time(),
     }
-    created = await get_hitl_store().acreate(request)
+    created = await get_hitl_store().acreate(request_row)
     return {"ok": True, "request": created}

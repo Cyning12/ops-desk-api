@@ -595,3 +595,34 @@ async def test_w2t_delegation_persist_row_carries_tenant(write_env):
     assert req["blocked_by"] == "delegation_issue_hitl_required"
     assert req["tenant_id"] == TENANT_B, "delegation 审批行 tenant 戳丢失（F3 真空）"
     assert req["unlock_subtask_id"] == sid  # _SELF_UNLOCK 回填（D2 形态）
+
+
+async def test_w2t_unstamped_class_persist_falls_back_to_current_tenant(write_env):
+    """T-fix-2 全类口径：terminal 未带戳的类（prefix_touch 等）落库时回落
+    当前租户上下文 —— 「新单不再产 tenant_id=''」对**所有**类成立，resume 链
+    单据快照真源不因单据类而断（dualproc 真链负样本的单元钉）。"""
+    store, _calls = write_env
+    run_id = f"run-{uuid.uuid4().hex[:8]}"
+    sid = f"{run_id}:1"
+    state, row = _mk(run_id, sid)
+    blocked = {
+        "subtask_id": sid,
+        "type": "tool",
+        "error": "需要重跑已执行步骤",
+        "blocked_by": "prefix_touch_required",
+        "hitl_required": True,
+    }
+    merged = {**state, "subtask_results": [blocked], "inflight_subtask_ids": []}
+    obs = _observe(merged)
+    assert obs["hitl_pending"] == [sid]
+
+    token = set_current_tenant(TENANT_B)
+    try:
+        created, unpersisted = await _persist_hitl(merged, obs, thread_id="t-w2t2")
+    finally:
+        reset_current_tenant(token)
+
+    assert unpersisted is False
+    req = next(r for r in created if str(r.get("subtask_id")) == sid)
+    assert req["blocked_by"] == "prefix_touch_required"
+    assert req["tenant_id"] == TENANT_B, "未带戳类落库未回落当前租户（新单仍产 ''）"

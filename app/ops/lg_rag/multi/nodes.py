@@ -2233,7 +2233,12 @@ async def _persist_hitl(
             "run_id": run_id,
             "thread_id": thread_id,
             "checkpoint_id": state.get("hitl_checkpoint_id"),
-            "tenant_id": str(term.get("tenant_id") or ""),
+            # api-w-hitl-tenant-fix（T-fix-2 · 契约「新单不再产 tenant_id=''」全类口径）：
+            # terminal 已带戳（capability_write 闸 / _delegation_blocked_terminal）
+            # 则原样落库；未带戳的类（prefix_touch 等）回落当前租户上下文——
+            # 与 capability_write 闸同一真源函数（current_tenant_or_default），
+            # 保证 resume 链「单据 tenant 为唯一真源」对**所有**新单成立。
+            "tenant_id": str(term.get("tenant_id") or "") or current_tenant_or_default(),
             "subtask_id": sid,
             "blocked_by": str(term.get("blocked_by") or ""),
             "unlock_subtask_id": unlock,
