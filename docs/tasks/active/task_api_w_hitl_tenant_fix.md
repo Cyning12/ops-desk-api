@@ -1,10 +1,10 @@
 # Task：阶段 W 联调缺陷修复 II（HITL resume 链租户上下文还原 + delegation 单据租户戳）
 
-> **状态**：`draft`（2026-11-03 · 四闸全 pending · NO-GO 20/30）
+> **状态**：`active`（2026-11-03 · 四闸全 approved · 设计三决策已裁决（A+B 组合 / 守卫扩列 / 历史 '' 从严 · PR #312 review 维护者签认）· **GO 30**）
 > **类型**：fix / 安全语义补全（跨租户写守卫闭环 · 审计真值）
-> **上游**：workspace `docs/harness/invokes/by-task/stage-w-e2e-join-acceptance/invoke_20261102_10_c8_evidence_archive.md`（§2 F3 / N-R2-1 / 守卫真空 · §C6 实证）· workspace 同目录 `invoke_20261103_10_final_acceptance.md` §2（2026-11-03 收尾棒）· workspace backlog `docs/tasks/backlog/backlog_20261030_post_stage_w.md` B2（2026-11-03 标注「联调已坐实 · 待立 fix task」）· 维护者 issue [#311](https://github.com/Cyning12/ops-desk-api/issues/311) 令起草
-> **分支**：30 棒 `task/api-w-hitl-tenant-fix`（base：`master`）；本 10 起草 PR 走部署绑定分支 `agent/hitl-tenant-fix-task-955c1cd011b6`（只含 task 档 · 零 `app/` diff）
-> **10 注**：2026-11-03 · 本棒仅落档 + lint PASS + PR · **禁止改 `app/`**（30 改码须四闸齐后另行授权）
+> **上游**：workspace `docs/harness/invokes/by-task/stage-w-e2e-join-acceptance/invoke_20261102_10_c8_evidence_archive.md`（§2 F3 / N-R2-1 / 守卫真空 · §C6 实证）· workspace 同目录 `invoke_20261103_10_final_acceptance.md` §2（2026-11-03 收尾棒）· workspace backlog `docs/tasks/backlog/backlog_20261030_post_stage_w.md` B2（2026-11-03 标注「联调已坐实 · 待立 fix task」）· 维护者 issue [#311](https://github.com/Cyning12/ops-desk-api/issues/311) 令起草 · PR [#312](https://github.com/Cyning12/ops-desk-api/pull/312)（MERGED 2026-11-03 · squash `04245ef`）
+> **分支**：30 棒走部署绑定分支 `agent/hitl-tenant-fix-task-955c1cd011b6`（base：`master` · 名义分支 `task/api-w-hitl-tenant-fix` 让位绑定规则）
+> **10 注**：2026-11-03 · 起草 PR #312 合入 · 20-R1 审查 PASS（审查文 `docs/harness/invokes/by-task/api-w-hitl-tenant-fix/invoke_20261103_20_r1_audit.md`）· 维护者三闸签认（issue #311 评论 + auth311）+ HG-AUDIT-R1 随审查文落档签 · **30 改码授权生效**（维护者 auth311 六要求）
 
 ---
 
@@ -13,7 +13,7 @@
 | 字段 | 值 |
 |------|-----|
 | **task_slug** | `api-w-hitl-tenant-fix` |
-| **git_branch** | `task/api-w-hitl-tenant-fix`（30 棒；10 起草 PR 用部署绑定分支） |
+| **git_branch** | `agent/hitl-tenant-fix-task-955c1cd011b6`（30 棒 · 部署绑定分支；名义 `task/api-w-hitl-tenant-fix`） |
 | **implement_repo** | `ops-desk-api`（唯一） |
 | **test_strategy** | `required` |
 | **test_strategy_note** | api 侧 pytest **红测先行**：① B 租户负样本——B 身份 approve+resume 后消费日志 `capability_write_approval_consumed.tenant_id` 与 `ops_capability_receipts.tenant_id` 必须 = B（`ops-desk-pilot-b`），回落 A 即红（钉死 N-R2-1 不复发）② delegation 建单负样本——`_persist_hitl` 建 delegation 类单据 `tenant_id` 非空且 = 当前租户（治 `''` 真空 · 联调实扫 40 行）③ 跨租户消费守卫负样本——他租户单据不被本租户消费（fail-closed）④ 同租户正样本——A 租户全链（拦单→批准→resume→消费→回执）行为零变化、resume 正样本不误拒 ⑤ 码面锚点 grep（`resume` 执行体 tenant 还原接线存在性 · 单一真源不另造第二处回落） |
@@ -28,17 +28,17 @@
 | **invoke_retention_profile** | `default` |
 | **experience_capture** | `recommended` |
 | **kpi_aggregator** | `CLOSE` |
-| **orchestration** | 10 落稿 → 维护者签 `HG-TASK-DRAFT` → 20 R1 审查 → 维护者签 `HG-AUDIT-R1` + `HG-GRAPH-MODULES` + `HG-W-TENANT-DESIGN` → 30（分支 `task/api-w-hitl-tenant-fix` · 红测先行）→ 40 → 联调 C6 复测回接（workspace `task_stage_w_e2e_join_acceptance` N-R2-1/F3 复测）→ CLOSE |
+| **orchestration** | 10 落稿（PR #312 合入 `04245ef`）→ 20-R1 审查 PASS（invoke_20261103_20_r1_audit）→ 维护者签 `HG-TASK-DRAFT`/`HG-GRAPH-MODULES`/`HG-W-TENANT-DESIGN`（issue #311 评论 + PR #312 review · auth311 代录）+ `HG-AUDIT-R1` 随审查文落档签 → **GO 30**（部署绑定分支 · 红测先行 · auth311 六要求）→ 40 → 联调 C6 复测回接（workspace `task_stage_w_e2e_join_acceptance` N-R2-1/F3 复测）→ CLOSE |
 | **freeze_id** | `lg-rag-sse-v1`（**零改红线**）· `hitl-browser-decide-v1`（**零改红线** · 文件本体不动 · 本 task 无增补提案） |
 
 ### 人工闸
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 维护者签收草稿；解锁 20-R1 · 30 仍须 HG-AUDIT-R1 + HG-GRAPH-MODULES + HG-W-TENANT-DESIGN 齐 |
-| HG-AUDIT-R1 | pending | **30** | 20-R1 审查文 PASS 后维护者签 |
-| HG-GRAPH-MODULES | pending | **30**（条件触发） | G-L1 薄增量口径确认（hitl / lg_rag-multi 模块一句备注 · 不新增一级模块） |
-| **HG-W-TENANT-DESIGN** | pending | **30** | 设计闸 · **三决策点须签**：① **resume 链 tenant 来源**——选项 A「decide/建单时快照」（以单据 `tenant_id` 为真源 · resume 执行体驱动图前 `set_current_tenant` 还原 · fail-closed：单据 tenant 为空则拒 resume）vs 选项 B「resume 时从请求头/session 重建」（复用 `deps.py:43-45` 注入的 `request.state.ops_tenant_id` · 头不一致 403 既有先例 `lg_rag/router.py:376-384` · 但 thread 不绑租户（invoke §4 实测）→ decide 后切租户再 resume 会产生「B 批 A 消费」新风险面）；A/B 或组合（session 守卫 + 单据一致性校验）由维护者钉死 ② **delegation 类消费守卫**——纳入 `_WRITE_CONSUMABLE_BLOCKED_BY` 租户守卫（`nodes.py:499-504` 扩至委派类）vs 维持豁免但**显式文档化豁免理由** ③ **历史 `tenant_id=''` 40 行处置**（联调实扫 `ops_hitl_requests`）——resume/守卫口径下默认从严（空 tenant 视同无授权 · fail-closed）须签认；要求回填历史数据须另行授权 |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | 2026-11-03 维护者签（issue #311 评论 + PR #312 review · 起草质量 20-R1 已过 · 00 代录） |
+| HG-AUDIT-R1 | approved | **30** | 2026-11-03 维护者签（auth311：20-R1 审查文 `docs/harness/invokes/by-task/api-w-hitl-tenant-fix/invoke_20261103_20_r1_audit.md` 落档即签 · 00 代录） |
+| HG-GRAPH-MODULES | approved | **30**（条件触发） | 2026-11-03 维护者签（auth311：G-L1 薄备注 · 无新增一级模块 · 00 代录） |
+| **HG-W-TENANT-DESIGN** | approved | **30** | 2026-11-03 维护者签（PR #312 review 三决策点裁决 · auth311 代录）：① resume 链 tenant 来源 = **A+B 组合**——单据 `tenant_id` 为唯一真源做快照还原（对齐守卫 `row.tenant_id` 语义）；手动入口 session 租户存在且 ≠ 单据租户 → 403（对齐 `lg_rag/router.py:376-384` 先例）；auto-scan 无请求上下文 → 纯 A；fail-closed：单据 tenant 为空 → 拒 resume ② delegation 消费守卫 = **扩列纳入租户校验**（T-fix-2 打戳后守卫查非空成立）· 不选豁免文档化 ③ 历史 `tenant_id=''` 40 行 = **默认从严**——一律 fail-closed 拒 resume · 不回填；后续真实 resume 诉求走单独授权的数据修复 |
 
 ---
 
@@ -72,15 +72,15 @@
 
 ---
 
-## 10 钉死契约（草案 · HG-W-TENANT-DESIGN 签收后升格；30 不得静默改义）
+## 10 钉死契约（HG-W-TENANT-DESIGN 2026-11-03 签认升格 · 30 不得静默改义）
 
-| 项 | 钉死（草案） |
+| 项 | 钉死（裁决值） |
 |----|----------------|
-| **resume tenant 来源** | 由 HG-W-TENANT-DESIGN 决策点①钉死：A「单据快照」/ B「请求重建」/ A+B 组合；fail-closed 语义随选项钉死（A：单据 tenant 空 → 拒 resume；B：session/头不一致 403 既有语义）。**30 禁静默自选** |
-| **delegation 建单打戳** | `_persist_hitl` delegation 签发路径 tenant 取当前租户上下文（对齐 `:1881-1925` capability_write 既有 stamping 先例 · 真源函数与 HG-W-TENANT-DESIGN ①一致）；治 `''` 真空 · 新单不再产 `tenant_id=''` |
-| **回执/日志真值** | 消费日志与 `ops_capability_receipts.tenant_id` 取运行上下文真值；**禁止回落默认 A 静默错标**（`d6bd262904544232` 场景不复发为硬验收） |
-| **守卫口径** | delegation 类是否纳入 `_WRITE_CONSUMABLE_BLOCKED_BY` 租户守卫 by HG-W-TENANT-DESIGN 决策点②（扩守卫 vs 豁免文档化）；无论哪个，resume 链还原 tenant 后 W2 守卫（`:499-504`）在 capability_write 类**真实可达**为硬验收 |
-| **历史 40 行** | `tenant_id=''` 历史单处置 by 决策点③；默认从严（空 tenant 视同无授权 · fail-closed）· 回填历史数据不在默认授权内 |
+| **resume tenant 来源（A+B 组合）** | 单据 `tenant_id` 为**唯一真源**——resume 执行体驱动图前按单据快照 `set_current_tenant` 还原（对齐守卫 `row.tenant_id` 语义）；手动入口 session 租户存在且 ≠ 单据 tenant → **403**（对齐 `lg_rag/router.py:376-384` 先例）；auto-scan 无请求上下文 → 纯 A（即仅快照还原）；**fail-closed：单据 tenant 为空 → 拒 resume** |
+| **delegation 建单打戳** | `_persist_hitl` delegation 签发路径 tenant 取当前租户上下文（对齐 `:1881-1925` capability_write 既有 stamping 先例）；治 `''` 真空 · 新单不再产 `tenant_id=''` |
+| **回执/日志真值** | 消费日志与 `ops_capability_receipts.tenant_id` 取运行上下文真值（快照还原后的 ContextVar）；**禁止回落默认 A 静默错标**（`d6bd262904544232` 场景不复发为硬验收） |
+| **守卫口径（扩列）** | delegation 类**纳入** `_WRITE_CONSUMABLE_BLOCKED_BY` 租户校验（T-fix-2 打戳后守卫查非空成立 · `nodes.py:499-504` 扩至两类）；resume 链还原 tenant 后 W2 守卫在两类**真实可达**为硬验收 |
+| **历史 40 行（从严）** | 历史 `tenant_id=''` 单一律 fail-closed 拒 resume · **不回填**；后续真实 resume 诉求走单独授权的数据修复 |
 | **双 freeze 零改** | 不新增/不改/不删 SSE `event_type`（`lg-rag-sse-v1` 不破）；`hitl-browser-decide-v1` freeze 文件本体不动（本 task 无增补提案 · 若 30 实扫认为需增补另走契约闸） |
 | **不误伤** | A 租户全链行为零变化（正样本回归）；同租户 resume 正样本不误拒；自动扫描路径与手动路径**同一** tenant 还原实现（禁第二份） |
 
@@ -209,6 +209,7 @@ N-R2-1 的修复选项 A「decide 时快照」以单据 `tenant_id` 为真源—
 | 命令 | 退出码 | 摘要 |
 |------|--------|------|
 | `npx spec-wave task lint --file docs/tasks/active/task_api_w_hitl_tenant_fix.md` | 0 | LINT: PASS（2026-11-03 · 10 起草棒） |
+| `npx spec-wave task lint --file docs/tasks/active/task_api_w_hitl_tenant_fix.md` | 0 | LINT: PASS（2026-11-03 · 闸表签收修订后复跑 · 待 30 棒起填 pytest/ruff/graph-compile） |
 
 ---
 
@@ -217,3 +218,4 @@ N-R2-1 的修复选项 A「decide 时快照」以单据 `tenant_id` 为真源—
 | 日期 | 说明 |
 |------|------|
 | 2026-11-03 | 10 起草壳（维护者 issue #311 令 · 联调实证双缺陷 N-R2-1+F3/守卫真空）· 四闸 pending · NO-GO 20/30 · R0–R3（R3 early_stop）· 红测先行入 test_strategy · 双 freeze 红线（SSE event_type / hitl-browser-decide-v1）入 failure_paths · 证据锚全引 workspace C8 invoke §C6/§2 + 终验 invoke §2 + backlog B2 · 零 `app/` diff |
+| 2026-11-03 | PR #312 合入（squash `04245ef`）· 20-R1 审查 PASS（维护者 review · 语义面逐项核对）· 维护者签 HG-TASK-DRAFT（issue #311 评论）· 审查文落档 `docs/harness/invokes/by-task/api-w-hitl-tenant-fix/invoke_20261103_20_r1_audit.md` → HG-AUDIT-R1 签（auth311）· 维护者签 HG-GRAPH-MODULES + HG-W-TENANT-DESIGN（auth311 代录）· **三决策裁决**：① A+B 组合（单据 tenant 唯一真源 · 手动入口 session≠单据 → 403 · auto-scan 纯 A · 空 tenant 拒 resume）② 守卫扩列 ③ 历史 '' 从严拒 resume 不回填 · 钉死契约表草案→裁决值全量升格 · 状态 draft→active · GO 30（auth311 六要求：红测先行可见红→绿 / 旧测影响面清单 / 同源单实现 / 双 freeze 零 diff / ruff+pytest+graph-compile 全绿 / PR 逐条对照验收）· git_branch 改钉部署绑定分支 |
