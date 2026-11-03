@@ -30,7 +30,7 @@ from app.ops.tenant_context import (
     reset_current_tenant,
     set_current_tenant,
 )
-from tests.test_hitl_resume import _RUN, _T1, _approved_row, _client, _drain
+from tests.test_hitl_resume import _RUN, _approved_row, _client, _drain
 
 
 @pytest.fixture(autouse=True)
