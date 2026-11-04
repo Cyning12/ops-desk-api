@@ -89,8 +89,8 @@ sync `POST /api/ops/lg-rag/invoke`（mode=supervisor）触发写闸时，拦单�
 
 ## 范围（竖切 · 四闸齐后才 30）
 
-- [ ] **D-fix-1 · `_run_owner_of` 无帧兜底**：`run_owner` 返 None 时按单据 `thread_id` 末位反查 `OpsLgRagThread.user_id`；失败/缺失回退 None（fail-closed 不变）；helper docstring 同步声明
-- [ ] **D-fix-2 · RUNBOOK 行为差异声明**：`docs/guides/RUNBOOK_hitl_ops_v1_zh.md` 按钉死契约③增补 sync invoke 面小节（触发 → decide 可达 → resume 无 replay 面 → 结果可见路径）
+- [x] **D-fix-1 · `_run_owner_of` 无帧兜底**：`run_owner` 返 None 时按单据 `thread_id` 末位反查 `OpsLgRagThread.user_id`；失败/缺失回退 None（fail-closed 不变）；helper docstring 同步声明 —— **30 已交付**：`thread_store.thread_owner` 新只读 + helper 兜底分支（2026-11-04 · 红测 9→绿 · 回归 124 绿）
+- [x] **D-fix-2 · RUNBOOK 行为差异声明**：`docs/guides/RUNBOOK_hitl_ops_v1_zh.md` 按钉死契约③增补 sync invoke 面小节（触发 → decide 可达 → resume 无 replay 面 → 结果可见路径） —— **30 已交付**：§1.7 落档（2026-11-04）
 
 ### 非范围
 
@@ -214,3 +214,4 @@ issue #315 把缺口从「疑似」打成「实证」：sync invoke 面写闸单
 |------|------|
 | 2026-11-04 | 10 起草壳（维护者 issue #315 评论 #6623212135 令立项 · B+C 签认 + 红线入档 · HG-DECIDE-FALLBACK-DESIGN 三决策点 · R0–R3（R3 early_stop）· 四闸 pending · NO-GO 20/30）· lint PASS |
 | 2026-11-04 | 00 代录四闸 approved（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-DECIDE-FALLBACK-DESIGN · 依据 issue #315 评论 #6623212135 + #6623253310 全程委托自签 · 20-R1 审查文 §3 三决策点裁决随档）· draft→active · GO 20/30 · **出货后 lead 复审验收并决策 merge（#6623253310 · merge 与最终验收权仍在人）** |
+| 2026-11-04 | PR #317 MERGED（squash `3075f666`）· lead 验收 APPROVED 并令「merge 后 30 按档开工，出货后我复审验收决策」→ **30 开工授权达成**（GATE_VERIFY 四闸 approved 复跑 PASS）· 30 invoke `invoke_20261104_30_implementation.md` 落档 |
