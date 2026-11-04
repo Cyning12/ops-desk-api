@@ -236,6 +236,9 @@ def _row(**kw) -> dict:
         "subtask_id": f"{_RUN}:2",
         "unlock_subtask_id": _T1,
         "blocked_by": "prefix_touch_required",
+        # api-w-hitl-tenant-fix（裁决①③）：新单须带租户戳，空 tenant fail-closed
+        # 拒 resume —— fixture 按 A 补齐（本文件测事件 sink/replay，租户语义默认）。
+        "tenant_id": "ops-desk-pilot",
         "status": STATUS_PENDING,
         "created_at": 1.0,
     }

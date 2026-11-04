@@ -56,6 +56,11 @@ from app.ops.hitl.store import (
     STATUS_PENDING,
     STATUS_REJECTED,
 )
+from app.ops.tenant_context import (
+    reset_current_tenant,
+    set_current_tenant,
+    tenant_from_request_state,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -444,6 +449,24 @@ async def _collect_decisions_or_raise(row: dict[str, Any]) -> tuple[list[str], l
     return approved, rejected
 
 
+def _resume_row_tenant(row: dict[str, Any]) -> str:
+    """resume 链租户真源（api-w-hitl-tenant-fix · HG-W-TENANT-DESIGN ① 裁决）。
+
+    单据 ``tenant_id`` 为**唯一真源**：恢复执行体按它做快照还原，消费守卫
+    查的 ``row.tenant_id`` 与之同一份。fail-closed：空 tenant → 拒 resume
+    （历史 ``''`` 行不回填，裁决③）；消费环 ``current_tenant_or_default()``
+    的默认租户回落是唯一回落点，本函数**不另造第二处**。
+    """
+    tenant = str(row.get("tenant_id") or "").strip()
+    if not tenant:
+        raise ResumeError(
+            "tenant_missing",
+            "申请行 tenant_id 为空 —— 无法还原租户上下文，拒绝恢复"
+            "（历史空租户单据不回填；如需恢复请走单独授权的数据修复）",
+        )
+    return tenant
+
+
 async def _execute_decided_resume(row: dict[str, Any]) -> dict[str, Any]:
     """**恢复执行体：手动 resume 端点与自动触发同源**（T2 F3 · 无状态恢复纪律）。
 
@@ -452,20 +475,30 @@ async def _execute_decided_resume(row: dict[str, Any]) -> dict[str, Any]:
     恢复实现。抛 `ResumeError` 由调用方各自映射：手动端点 → HTTP 状态码；
     自动触发（`auto_resume` 后台任务）→ 只落日志（不改 decide 已返回结果）。
     返回 `{req_status, thread_id, sink, outcome}` 供手动端点组装响应。
+
+    N-R2-1 根治（HG-W-TENANT-DESIGN ① A+B 组合）：驱动图前按单据 tenant
+    快照 ``set_current_tenant`` 还原（手动/自动两入口**同一实现**，本函数
+    是唯一还原点）——消费日志/回执 tenant 取还原后的运行上下文，不再回落
+    默认租户 A。reset 成对（对照 ``run_worker.py:120/153``）。
     """
     req_status = str(row.get("status") or "")
+    row_tenant = _resume_row_tenant(row)  # fail-closed：空 tenant 提前抛
     approved, rejected = await _collect_decisions_or_raise(row)
     thread_id = str(row.get("thread_id") or "").strip()
     sink = await _open_event_sink(row, thread_id)
     if sink is not None:
         await sink.open(approved=approved, decided_by=str(row.get("decision_by") or ""))
-    outcome = await resume_hitl_run(
-        thread_id=thread_id,
-        approved=approved,
-        rejected=rejected,
-        decided_by=str(row.get("decision_by") or ""),
-        update_sink=sink,
-    )
+    tenant_token = set_current_tenant(row_tenant)
+    try:
+        outcome = await resume_hitl_run(
+            thread_id=thread_id,
+            approved=approved,
+            rejected=rejected,
+            decided_by=str(row.get("decision_by") or ""),
+            update_sink=sink,
+        )
+    finally:
+        reset_current_tenant(tenant_token)
     # ResumeError 时 sink 不关（与抽取前一致：异常路径不落 done 帧）
     if sink is not None:
         await sink.close()
@@ -540,7 +573,11 @@ async def _best_effort_replay_cursor(run_id: str) -> str:
 
 
 @router.post("/requests/{request_id}/resume")
-async def resume_request(request_id: str, _user: OpsUser | None = AdminSyncAuth) -> dict[str, Any]:
+async def resume_request(
+    request: Request,
+    request_id: str,
+    _user: OpsUser | None = AdminSyncAuth,
+) -> dict[str, Any]:
     """审批出结果后**真的把挂起的图恢复起来**。
 
     两处必须说清，否则"恢复"是个假动作：
@@ -585,6 +622,24 @@ async def resume_request(request_id: str, _user: OpsUser | None = AdminSyncAuth)
                     "单据已置 expired 终态；请重新发起审批"
                 ),
             )
+    # api-w-hitl-tenant-fix（HG-W-TENANT-DESIGN ① A+B 组合 · 2026-11-03 签）：
+    # 手动入口租户守卫。单据 tenant 为唯一真源（与执行体快照还原/消费守卫
+    # 同一份）；fail-closed：空 tenant → 409 拒恢复（裁决③ 历史 '' 行不回填）；
+    # session 租户存在且 ≠ 单据 tenant → 403（对齐 lg_rag/router.py:376-384
+    # 先例）；Bearer 机读（deps 未写 request.state.ops_tenant_id）→ 纯快照不拦。
+    try:
+        row_tenant = _resume_row_tenant(row)
+    except ResumeError as exc:
+        raise HTTPException(status_code=409, detail=exc.detail) from exc
+    session_tenant = str(getattr(request.state, "ops_tenant_id", "") or "").strip()
+    if session_tenant and session_tenant != row_tenant:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                f"tenant_scope_denied：该申请属于租户 {row_tenant}，"
+                f"与当前会话租户 {session_tenant} 不一致"
+            ),
+        )
     # 幂等防重：同一申请恢复在飞 ⇒ 409（执行已不在请求内，必须显式挡）
     if request_id in _RESUME_IN_FLIGHT:
         raise HTTPException(
@@ -656,19 +711,25 @@ async def resume_request(request_id: str, _user: OpsUser | None = AdminSyncAuth)
 
 @router.post("/requests")
 async def create_request_manual(
+    request: Request,
     payload: dict[str, Any] = Body(...),
     _user: OpsUser | None = AdminSyncAuth,
 ) -> dict[str, Any]:
     """手工登记一条审批申请（运维补录 / 联调用）。
 
     正常路径是编排层自动落库；这个端点只为"人需要补一条"存在。
+
+    api-w-hitl-tenant-fix（T-fix-2 全类口径）：补录单同样不产空租户——
+    显式 payload.tenant_id 优先，缺省取会话租户（`request.state.ops_tenant_id`），
+    再缺回落试点 A（`tenant_from_request_state` 单源 · 与只读谓词同回落口径），
+    否则空 tenant 会在 resume 链被 fail-closed 拒（`_resume_row_tenant`）。
     """
-    request = {
+    request_row = {
         "id": str(payload.get("id") or new_request_id()),
         "run_id": str(payload.get("run_id") or ""),
         "thread_id": str(payload.get("thread_id") or ""),
         "checkpoint_id": payload.get("checkpoint_id"),
-        "tenant_id": str(payload.get("tenant_id") or ""),
+        "tenant_id": str(payload.get("tenant_id") or "") or tenant_from_request_state(request),
         "subtask_id": str(payload.get("subtask_id") or ""),
         "blocked_by": str(payload.get("blocked_by") or "prefix_touch_required"),
         "unlock_subtask_id": str(payload.get("unlock_subtask_id") or ""),
@@ -678,5 +739,5 @@ async def create_request_manual(
         "status": STATUS_PENDING,
         "created_at": time.time(),
     }
-    created = await get_hitl_store().acreate(request)
+    created = await get_hitl_store().acreate(request_row)
     return {"ok": True, "request": created}

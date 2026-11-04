@@ -572,6 +572,9 @@ def test_ta6_prefix_touch_empty_unlock_resume_still_409():
         "thread_id": "t-ta6",
         "subtask_id": f"{run_id}:1",
         "blocked_by": "prefix_touch_required",
+        # api-w-hitl-tenant-fix（裁决①③）：新单须带租户戳，空 tenant fail-closed
+        # 拒 resume —— fixture 按 A 补齐（本用例测空 unlock 409，租户语义默认）。
+        "tenant_id": "ops-desk-pilot",
         "unlock_subtask_id": "",  # 空形态维持（D2 形态守卫不回填该类）
         "status": STATUS_PENDING,
         "created_at": time.time(),

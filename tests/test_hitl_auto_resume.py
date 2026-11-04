@@ -71,6 +71,9 @@ def _row(**kw) -> dict:
         "subtask_id": _T2,
         "unlock_subtask_id": _T1,
         "blocked_by": "prefix_touch_required",
+        # api-w-hitl-tenant-fix（裁决①③）：新单须带租户戳，空 tenant fail-closed
+        # 拒 resume —— fixture 按 A 补齐（auto 与手动同源执行体，同口径）。
+        "tenant_id": "ops-desk-pilot",
         "reason": "需要重跑已执行步骤",
         "status": STATUS_PENDING,
         "created_at": time.time(),

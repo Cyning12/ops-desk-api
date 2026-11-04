@@ -125,6 +125,9 @@ def _row(**kw) -> dict:
         "subtask_id": _T2,
         "unlock_subtask_id": _T1,
         "blocked_by": "prefix_touch_required",
+        # api-w-hitl-tenant-fix（裁决①③）：新单须带租户戳，空 tenant fail-closed
+        # 拒 resume —— fixture 按 A 补齐（本文件测 decide/resume 状态机，租户默认）。
+        "tenant_id": "ops-desk-pilot",
         "reason": "需要重跑已执行步骤",
         "status": STATUS_PENDING,
         "created_at": time.time(),
@@ -653,7 +656,9 @@ async def test_db_decide_survives_store_rebuild_then_resume(monkeypatch):
             "run_id": run_id,
             "thread_id": tid,
             "checkpoint_id": None,
-            "tenant_id": "",
+            # api-w-hitl-tenant-fix（裁决①③）：空 tenant 现 fail-closed 拒 resume；
+            # 本用例测 store rebuild 存活链，tenant 取默认 A（原 '' 为 incidental）。
+            "tenant_id": "ops-desk-pilot",
             "subtask_id": _T2,
             "blocked_by": "prefix_touch_required",
             "unlock_subtask_id": _T1,
