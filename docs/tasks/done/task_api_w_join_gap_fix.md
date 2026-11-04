@@ -1,6 +1,6 @@
 # Task：阶段 W 联调缺口修复（HITL TTL 语义补全 + 只读资源面租户谓词）
 
-> **状态**：`active`（2026-11-02 · 四闸全 approved（维护者签 · 00 代录）· 设计四决策钉死（409+approval_expired · freeze 增补 TTL 条 · resume/消费环 · STATUS_EXPIRED 启用）· **GO 30**）
+ > **状态**：`done`（2026-11-04 关账 · PR #307 merge `3168b3b` · 回接 A4②/A5 复测全绿 invoke_20261103_10_final_acceptance · 2026-11-02 · 四闸全 approved（维护者签 · 00 代录）· 设计四决策钉死（409+approval_expired · freeze 增补 TTL 条 · resume/消费环 · STATUS_EXPIRED 启用）· **GO 30**）
 > **类型**：fix / 安全语义补全（HITL TTL · 跨租户只读封闭）
 > **上游**：workspace `docs/harness/invokes/by-task/stage-w-e2e-join-acceptance/invoke_20261102_10_c8_evidence_archive.md`（联调实证 F11/F12/F13 · §2 发现清单 · §5 过期态实验）· workspace `docs/contracts/api-v1-tenant-readonly-context-draft.md`（租户契约 F1–F6 · F4 对外 404/对内 `tenant_scope_denied`）
 > **分支**：`task/api-w-join-gap-fix`（base：`master`）
@@ -217,3 +217,4 @@ F11 与 F12 是同一判据（TTL）在两个入口的缺失：补一处同源�
 | 2026-11-02 | 10 承接 **20-R2 PASS-WITH-MINOR 的 M4/N5 闭环**（审查文 `docs/harness/reviews/task_api_w_join_gap_fix_audit_R2_20261102.md`）：**M4**——web 仓镜像薄壳 `task_web_hitl_resume_expired_mapping`（分支 `task/web-hitl-resume-expired-mapping`）落档为 web 侧 30 的 GATE_VERIFY 闸据（四闸镜像 pending · 以本 task 闸表为真值 · 不重复签）· orchestration 与依赖区登记；**N5**——语境滞后三处同步（:3 状态行「GO 20-R1」→「20-R2 PASS-WITH-MINOR · 待维护者签三闸」· :39 HG-AUDIT-R1 说明「20-R1 PASS 后签」→「20-R2 PASS-WITH-MINOR 待签」· :205 自检行注记刷新）；闸表 status 未动（三闸仍 pending · 待维护者签）· lint 复跑 PASS |
 | 2026-11-02 | 维护者三闸同签（HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-W-FIX-DESIGN · 00 代录）· 设计四决策：①409+approval_expired（中文含「过期」）②freeze 增补 TTL 条（含 resume 渲染语义）③resume/消费环出口（decide 不 reopen）④启用 STATUS_EXPIRED · 状态 draft→active · GO 30 |
 | 2026-11-02 | **30 棒 `tenant_id=''` 实扫回填**（`docker exec ops-desk-api-db-1 psql -U ops -d opsdesk`）：`ops_issues` '' 行 = **0**（881 行全 `ops-desk-pilot`）· `ops_pull_requests` '' 行 = **0**（1855 行全 `ops-desk-pilot`）· `ops_hitl_requests` '' 行 = **40**（该表 `tenant_id` 默认 '' 且 hitl 读面**不在** W-fix-2 谓词面 · task :91 范围仅 issues/pulls/overview · 如实记录不处置）。谓词面两表实扫 0 行 → 按 N3 默认**从严**直落（`tenant_id == 当前租户` 即天然排除 '' 行 · 列表空集口径），无偏离、无需维护者加签 |
+| 2026-11-04 | **维护者关账**（auth311 令「验收并开始下一个任务」· 清 active 板滞留）· PR #307 merge `3168b3b`（2026-11-03）· 回接条款复测全绿：A4② B 租户 Pulls 空集（截图 a4-2）+ A5 过期态全链（单据 `hitl_a285ff2ff195429ea8ab` 409→expired · web 行级红字渲染 · 截图 a5）· 证据 invoke_20261103_10_final_acceptance §A4②/§A5 · 状态 active→done · 档迁 done/ |
