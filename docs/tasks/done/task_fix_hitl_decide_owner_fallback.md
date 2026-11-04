@@ -1,6 +1,6 @@
 # Task：decide 归属反查对无帧 run 的兜底（sync invoke 面 HITL 审批链断点修复）
 
-> **状态**：`active`（2026-11-04 · 10 起草 + 20-R1 自签审查随档 · 四闸 approved（00 代录 · 依据 issue #315 维护者评论 #6623212135 B+C 签认 + #6623253310 全程委托自签）· **GO 20/30 · 出货后 lead 复审验收并决策 merge（#6623253310）**）
+> **状态**：`done`（2026-11-04 关账 · PR #317/#319/#320 全 MERGED · issue #315 已 CLOSE · live 复测滞留单 decide 404→200 实证）
 > **类型**：fix / 契约兜底（HITL 归属反查末位兜底 + 文档行为差异声明）
 > **上游**：issue [#315](https://github.com/Cyning12/ops-desk-api/issues/315)（sync invoke 无 run 事件帧 → decide 404 · 预存在行为非 #313 引入）· 实测锚 workspace `invoke_20261104_10_c6_retest.md` §5（O1 观察）
 > **分支**：`fix/hitl-decide-owner-fallback`（30 用 · 10/00 本档走 `agent/decide-fallback-task-c2838ef4cc6f`）
@@ -216,3 +216,4 @@ issue #315 把缺口从「疑似」打成「实证」：sync invoke 面写闸单
 | 2026-11-04 | 00 代录四闸 approved（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-DECIDE-FALLBACK-DESIGN · 依据 issue #315 评论 #6623212135 + #6623253310 全程委托自签 · 20-R1 审查文 §3 三决策点裁决随档）· draft→active · GO 20/30 · **出货后 lead 复审验收并决策 merge（#6623253310 · merge 与最终验收权仍在人）** |
 | 2026-11-04 | PR #317 MERGED（squash `3075f666`）· lead 验收 APPROVED 并令「merge 后 30 按档开工，出货后我复审验收决策」→ **30 开工授权达成**（GATE_VERIFY 四闸 approved 复跑 PASS）· 30 invoke `invoke_20261104_30_implementation.md` 落档 |
 | 2026-11-04 | 30 出货 PR #319（`fix/decide-fallback-task-c2838ef4cc6f` · 红测 9→绿 · 回归 124 · 全量零新增红）→ **MERGED `9c0bc68` · CI 4/4 绿** → lead 终审 APPROVED（逐条对照 task 档八项全 ✓）并令「合并后执行 40 独立验收 invoke，证据回填本 PR 线程」→ **40 独立验收 PASS**（合并后 master 复验十项全过 · invoke `invoke_20261104_40_acceptance.md` 落档 · 证据 PR 出货回填 #319 线程） |
+| 2026-11-04 | **维护者关账**（auth311 令「315应该也已经完成了」· lead 复核 PR #320 40 证据 + 合并后 live 复测）· PR #320 MERGED `deee8bf` · **live 复测：修复前 404 的 invoke 面滞留单 `hitl_503224fd719a42c8b0fa`（B 租户）decide → 200 approved**（latest master 重启实证 · 末位兜底生效）· issue #315 CLOSE（证据评论落档）· 状态 active→done · 档迁 done/ |
