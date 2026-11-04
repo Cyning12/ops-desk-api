@@ -24,6 +24,7 @@
 | 命令 | 退出码 | 摘要 |
 |------|--------|------|
 | `npx spec-wave task lint --file docs/tasks/active/task_fix_hitl_decide_owner_fallback.md` | 0 | LINT: PASS（2026-11-04 · 起草棒） |
+| `npx spec-wave verify --target . --task docs/tasks/active/task_fix_hitl_decide_owner_fallback.md` | 0 | VERIFY: PASS（2026-11-04 · 四闸 approved · 10/20 invoke 齐） |
 | `git diff master...HEAD --stat`（起草棒） | 0 | 仅 task 档 + 审查文 + invoke · 零 `app/` diff |
 
 ## §3 · 下一棒

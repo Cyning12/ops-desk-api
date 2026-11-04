@@ -203,7 +203,8 @@ issue #315 把缺口从「疑似」打成「实证」：sync invoke 面写闸单
 
 | 命令 | 退出码 | 摘要 |
 |------|--------|------|
-| `npx spec-wave task lint --file docs/tasks/active/task_fix_hitl_decide_owner_fallback.md` | 0 | LINT: PASS（2026-11-04 · 10 起草棒） |
+| `npx spec-wave task lint --file docs/tasks/active/task_fix_hitl_decide_owner_fallback.md` | 0 | LINT: PASS（2026-11-04 · 起草棒 + 闸表签收后复跑同 PASS） |
+| `npx spec-wave verify --target . --task docs/tasks/active/task_fix_hitl_decide_owner_fallback.md` | 0 | VERIFY: PASS（2026-11-04 · 四闸 approved · 10/20 pre-30 invoke 齐 · 图谱锚点检查 vocabulary_empty 跳过照登） |
 
 ---
 

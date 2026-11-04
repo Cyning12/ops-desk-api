@@ -23,8 +23,8 @@
 | 4 | 机制源裁决可红测 | PASS | thread 末位反查的两大前提已核码面：`_prepare_thread` 跨用户 thread 404 在建单前（`lg_rag/router.py:330-345`）· `persist_thread_turns` dispatch 后落 thread 行含 interrupt（`thread_store.py:63-89` · invoke `:426`） |
 | 5 | 作用面不越授权 | PASS | 兜底落 `_run_owner_of` 单一 helper（pending :201 / decide :240 同源）· `_open_event_sink`（:382-416 直引 run_owner）明示不动 · 无 schema 迁移 |
 | 6 | freeze 双红线 | PASS | `lg-rag-sse-v1`（事件表零 diff）+ `hitl-browser-decide-v1`（404/409 语义不破）均入 failure_paths 与验收 grep 项 · freeze 文件本体不动 |
-| 7 | 闸设计 | PASS | HG-DECIDE-FALLBACK-DESIGN 承载三决策点恰当 · 四闸 pending 起 · 00 代录随本 PR 第二棒 |
-| 8 | 机械面 | PASS | `npx spec-wave task lint --file docs/tasks/active/task_fix_hitl_decide_owner_fallback.md` → LINT: PASS（2026-11-04）· 零 `app/` diff 符合 10 帽授权 |
+| 7 | 闸设计 | PASS | HG-DECIDE-FALLBACK-DESIGN 承载三决策点恰当 · 四闸 approved（00 代录 · 本 PR 第二棒） |
+| 8 | 机械面 | PASS | `npx spec-wave task lint` → LINT: PASS · `npx spec-wave verify --target . --task …` → VERIFY: PASS（2026-11-04 · 图谱锚点检查 vocabulary_empty 跳过照登）· 零 `app/` diff 符合 10 帽授权 |
 
 ## §3 · HG-DECIDE-FALLBACK-DESIGN 三决策点裁决（00 代录 · 依据 #6623253310）
 
@@ -32,9 +32,9 @@
 2. **作用面**：`_run_owner_of` 单一 helper（`GET /pending` 与 `POST /decide` 同源受益）；**不动** `_open_event_sink`——sink=None 现状继续（resume 执行不落恢复段事件），sync 面无 replay 消费者，差异由文档声明承载。
 3. **文档声明口径**：`docs/guides/RUNBOOK_hitl_ops_v1_zh.md` 增补「sync invoke 面 HITL 审批链行为差异」小节（invoke 不落事件帧 → thread 兜底 → decide 可达 → resume 无 replay 追帧面 · 结果经线程历史/再次 invoke 可见）；`_run_owner_of` docstring 同步；不新增 freeze。
 
-## §4 · 结论
+## 结论 · 20-R1 审查 PASS（委托自签 · 零阻塞）
 
-**20-R1：APPROVED（委托自签）** · 语义面逐项核对通过（§2 八项全 PASS）· 三决策点已裁决（§3）· 建议 00 代录四闸 approved（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-DECIDE-FALLBACK-DESIGN）。
+**20-R1：APPROVED（委托自签）** · 语义面逐项核对通过（§2 八项全 PASS）· 三决策点已裁决（§3）· 00 代录四闸 approved（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-DECIDE-FALLBACK-DESIGN）。
 
 **待 lead 复审项（merge 前）**：§2 第 4 项机制源前提的码面抽查 · §3 决策点与维护者 B+C 签认语的一致性（「按单据自身 run_id 判定归属」落地解读为「单据行 thread_id → thread 属主」——run_id 本身无帧即无归属，解读留痕于此，lead 可驳回要求重裁）。
 
