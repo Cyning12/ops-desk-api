@@ -1,6 +1,6 @@
 # Task：decide 归属反查对无帧 run 的兜底（sync invoke 面 HITL 审批链断点修复）
 
-> **状态**：`draft`（2026-11-04 · 10 起草 + 20-R1 自签审查随档 · 四闸 approved（00 代录 · 依据 issue #315 维护者评论 #6623212135 B+C 签认 + #6623253310 全程委托自签）· **GO 20/30 待 lead 验收 merge 后生效**）
+> **状态**：`active`（2026-11-04 · 10 起草 + 20-R1 自签审查随档 · 四闸 approved（00 代录 · 依据 issue #315 维护者评论 #6623212135 B+C 签认 + #6623253310 全程委托自签）· **GO 20/30 · 出货后 lead 复审验收并决策 merge（#6623253310）**）
 > **类型**：fix / 契约兜底（HITL 归属反查末位兜底 + 文档行为差异声明）
 > **上游**：issue [#315](https://github.com/Cyning12/ops-desk-api/issues/315)（sync invoke 无 run 事件帧 → decide 404 · 预存在行为非 #313 引入）· 实测锚 workspace `invoke_20261104_10_c6_retest.md` §5（O1 观察）
 > **分支**：`fix/hitl-decide-owner-fallback`（30 用 · 10/00 本档走 `agent/decide-fallback-task-c2838ef4cc6f`）
@@ -35,10 +35,10 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 待 00 代录 |
-| HG-AUDIT-R1 | pending | **30** | 待 00 代录 · 20-R1 审查文随档（`docs/harness/reviews/task_fix_hitl_decide_owner_fallback_audit_R1_20261104.md`） |
-| HG-GRAPH-MODULES | pending | **30**（条件触发） | 待 00 代录 · G-L1 薄增量口径（hitl 模块一句备注 · 不新增一级模块） |
-| HG-DECIDE-FALLBACK-DESIGN | pending | **30** | 待 00 代录 · 三决策点：① 兜底机制源（thread 反查 vs 建单打戳）② 作用面（`_run_owner_of` helper vs 连带 `_open_event_sink`）③ sync 面行为差异声明位置与口径 |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | 2026-11-04 00 代录 · 依据 issue #315 评论 #6623212135（10 帽授权 + B+C 签认）+ #6623253310（全程委托自签）· 维护者签收草稿 |
+| HG-AUDIT-R1 | approved | **30** | 2026-11-04 00 代录 · 依据同上 · 20-R1 审查文随档 PASS（`docs/harness/reviews/task_fix_hitl_decide_owner_fallback_audit_R1_20261104.md` · §2 八项全 PASS · §3 三决策点已裁决） |
+| HG-GRAPH-MODULES | approved | **30**（条件触发） | 2026-11-04 00 代录 · 依据同上 · G-L1 薄增量口径确认（hitl 模块一句备注 · 不新增一级模块） |
+| HG-DECIDE-FALLBACK-DESIGN | approved | **30** | 2026-11-04 00 代录 · 依据同上 · 三决策点裁决（审查文 §3）：① 兜底机制源=**thread 末位反查**（弃建单打戳）② 作用面=`_run_owner_of` 单一 helper（不动 `_open_event_sink`）③ 声明=RUNBOOK 增补 sync invoke 面差异小节 + docstring 同步 · 不新增 freeze |
 
 ---
 
@@ -212,3 +212,4 @@ issue #315 把缺口从「疑似」打成「实证」：sync invoke 面写闸单
 | 日期 | 说明 |
 |------|------|
 | 2026-11-04 | 10 起草壳（维护者 issue #315 评论 #6623212135 令立项 · B+C 签认 + 红线入档 · HG-DECIDE-FALLBACK-DESIGN 三决策点 · R0–R3（R3 early_stop）· 四闸 pending · NO-GO 20/30）· lint PASS |
+| 2026-11-04 | 00 代录四闸 approved（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-DECIDE-FALLBACK-DESIGN · 依据 issue #315 评论 #6623212135 + #6623253310 全程委托自签 · 20-R1 审查文 §3 三决策点裁决随档）· draft→active · GO 20/30 · **出货后 lead 复审验收并决策 merge（#6623253310 · merge 与最终验收权仍在人）** |
