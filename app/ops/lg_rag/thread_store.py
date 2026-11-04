@@ -60,6 +60,25 @@ async def load_thread_turns(thread_id: str) -> list[dict]:
         return []
 
 
+async def thread_owner(thread_id: str) -> str | None:
+    """该 thread 的归属用户（``ops_lg_rag_threads.user_id`` · thread SoT）。
+
+    fix-hitl-decide-owner-fallback（B+C 签认）：无帧 run（sync invoke 面，事件帧
+    是 SSE 路径专属产物）的 HITL 归属**末位兜底**真源。invoke 面建单前
+    ``resolve_thread_for_user`` 已拦跨用户 thread，能走到 HITL 建单的单据其
+    thread 必属 run 发起者。thread 不存在 → ``None``（fail-closed，绝不猜）。
+    """
+    if not thread_id:
+        return None
+    async with AsyncSessionLocal() as db:
+        row = (
+            await db.execute(
+                select(OpsLgRagThread.user_id).where(OpsLgRagThread.id == thread_id).limit(1)
+            )
+        ).first()
+    return str(row[0]) if row else None
+
+
 async def persist_thread_turns(
     thread_id: str,
     user_id: str,

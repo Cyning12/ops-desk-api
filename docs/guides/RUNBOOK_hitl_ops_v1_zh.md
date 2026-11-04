@@ -134,6 +134,16 @@ curl -N -b jar -X POST http://127.0.0.1:8000/api/ops/lg-rag/replay \
 3. 重启后 `GET /api/ops/hitl/pending` **仍含该 request id**（DbHitlStore 跨重启）；
 4. decide(approved) → resume 200 携 replay.cursor → replay 追帧终帧 done{resumed, latency_ms, 无 model 键}。
 
+### §1.7 sync invoke 面 HITL 审批链（行为差异声明 · fix-hitl-decide-owner-fallback · issue #315）
+
+`POST /api/ops/lg-rag/invoke`（同步面）触发写闸时与 SSE 面**行为不同，属契约声明而非缺陷**：
+
+- **invoke 不落 run 事件帧**——事件帧是 SSE RunWorker 路径专属产物（维护者裁：永不补帧，sync 补帧会扩大事件面并牵连 #311 冻结面）。
+- **归属反查走末位兜底**：无帧 run 的 `run_owner` 返 None 时，按单据自身 `thread_id` 反查 `ops_lg_rag_threads.user_id`（`app/ops/hitl/router.py _run_owner_of` · invoke 面建单前已拦跨用户 thread，单据 thread 必属 run 发起者）。事件表仍是第一真源，有帧 run 绝不走兜底；thread 行缺失/反查失败维持 404（fail-closed 不变）。
+- **decide 可达**：sync 面写闸单据的属主可在 `GET /hitl/pending` 看到单据并 decide（404 断点已修，红测负样本「sync invoke 触发写闸 → decide 不再 404」钉死）。
+- **resume 执行但无 replay 追帧面**：`_open_event_sink` 不兜底（直引 `run_owner`），无帧 run resume 时 sink=None——执行继续（写真实执行），但恢复段事件不落盘，**没有 replay 追帧可看**；结果经线程历史 / 再次 invoke 可见。
+- 排障锚：单据 decide 仍 404 且日志「HITL 归属反查：run … 查不到归属用户」+「兜底反查失败」→ 查 `ops_lg_rag_threads` 是否有该 thread 行（invoke 中断场景 persist 失败等极端路径会缺）。
+
 ---
 
 ## §2 409 + Retry-After 重试纪律

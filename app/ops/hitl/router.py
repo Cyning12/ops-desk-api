@@ -156,6 +156,14 @@ async def _run_owner_of(row: dict[str, Any]) -> str | None:
     解析不到（没 run_id / run 没落过事件帧 / 反查本身失败）→ 返回 ``None``
     并打 **error 日志**；调用方按「排除 / 404」处理，**绝不猜一个 user_id**
     （猜错就是把别人的审批面开给当前用户），也不许因此 500。
+
+    fix-hitl-decide-owner-fallback（B+C 签认 · issue #315）：sync invoke 面
+    不落 run 事件帧（事件帧是 SSE 路径专属产物，永不补帧），无帧 run 的归属
+    走**末位兜底**——``run_owner`` 返 None 时按单据自身 ``thread_id`` 反查
+    ``lg_rag.thread_store.thread_owner``（invoke 面建单前已拦跨用户 thread，
+    单据 thread 必属 run 发起者）。兜底只兜 ``run_owner`` 返 None 一路：
+    事件表仍是第一真源，有帧 run 绝不走兜底；thread 行缺失 / 反查失败
+    维持 ``None``，fail-closed 铁律不变。
     """
     from app.ops.lg_rag.event_store import run_owner
 
@@ -174,6 +182,21 @@ async def _run_owner_of(row: dict[str, Any]) -> str | None:
             run_id,
             row.get("id"),
         )
+        # 末位兜底（sync invoke 面无帧 run）：按单据自身 thread_id 反查归属。
+        thread_id = str(row.get("thread_id") or "").strip()
+        if thread_id:
+            try:
+                from app.ops.lg_rag.thread_store import thread_owner
+
+                owner = await thread_owner(thread_id)
+            except Exception:
+                logger.exception(
+                    "HITL 归属兜底反查失败 thread=%s request=%s",
+                    thread_id,
+                    row.get("id"),
+                )
+                return None
+    if not owner:
         return None
     return str(owner)
 
