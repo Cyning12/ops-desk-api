@@ -1,6 +1,6 @@
 # Task：阶段 W 扩写能力（stage-w-write-expand · 受控写闸链接入第二条真实窄写能力 · Q1 选型留闸）
 
-> **状态**：`draft`（2026-11-05 · 00 拆 task 落稿 · **HG-STAGE-W-EXPAND-DESIGN approved**（2026-11-05 维护者签 S1）· 余三闸 pending（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES）· **NO-GO 30 直至 20-task-audit 审毕 + 三闸签齐**）
+> **状态**：`draft`（2026-11-05 · 00 拆 task 落稿 · **四闸 approved**：HG-STAGE-W-EXPAND-DESIGN（2026-11-05 维护者签 S1）· HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES（2026-11-05 lead 代录 · 依据 = issue #323 维护者预授权 comment `6652283580` + PR #326 R1 审查文 PASS 零内容阻塞）· **PR #326 合入后 30 可开工（以 master task 档四闸 approved 为准）**）
 > **类型**：feature / 受控写扩切片
 > **上游**：[`SPEC-stage-w-write-expand_v0.md`](../../spec/stage-w-write-expand/SPEC-stage-w-write-expand_v0.md)（v0.1 · HG-SPEC-SIGNOFF **approved** 2026-11-05 维护者人签 · B1 已修订）· issue #323（SPEC 审查与选型签收 · 本档为签收链第 3 棒）· [`task_api_controlled_write_hitl`](../done/task_api_controlled_write_hitl.md)（CLOSE · PR #303）+ 三接合缝 fix（PR #307 join-gap · PR #313/#314 tenant-fix · PR #319 decide-owner-fallback · issue #315 CLOSE）
 > **分支**：`task/stage-w-write-expand`（base：`master`；本档落稿于 `agent/stage-w-task-split-dde653139625`）
@@ -28,16 +28,16 @@
 | **invoke_retention_profile** | `default` |
 | **experience_capture** | `recommended` |
 | **kpi_aggregator** | `CLOSE` |
-| **orchestration** | 10 落稿 → 20-task-audit R1 书面审 → 维护者签 HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES + **HG-STAGE-W-EXPAND-DESIGN**（Q1 选型随档裁决）→ 30 → 40 → PR+CI 绿+merge → 图谱回写 → CLOSE |
+| **orchestration** | 10 落稿 → 20-task-audit R1 书面审（PR #326 · PASS）→ 维护者签 **HG-STAGE-W-EXPAND-DESIGN**（Q1 选型随档裁决）· 余三闸 lead 代录（预授权 issue #323 comment `6652283580`）→ 30 → 40 → PR+CI 绿+merge → 图谱回写 → CLOSE |
 | **freeze_id** | 无（SSE `lg-rag-sse-v1` 事件表零改 · web `hitl-browser-decide-v1` 消费语义稳定 · 租户契约 F1–F6 不破；倾向零 alembic——落笔目标若须新表 → Q1/Q3 裁定并在本档修订表回填） |
 
 ### 人工闸
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 壳未经 20-task-audit 书面审与维护者签收 |
-| HG-AUDIT-R1 | **pending** | **30** | 20-task-audit R1 审查文未落盘（预期路径 `docs/harness/reviews/task_stage_w_write_expand_audit_R1_<日期>.md`） |
-| HG-GRAPH-MODULES | **pending** | **30** | 口径：预估 G-L1 行备注薄增量、不新增一级模块；30 交付时按实增量回写回签确认（D4 承载） |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | 20-task-audit R1 书面审 PASS（零内容阻塞 · 审查文 [PR #326](../../harness/reviews/task_stage_w_write_expand_audit_R1_20261105.md)）；维护者预授权（issue #323 comment `6652283580`「无问题即代录三闸」）由 lead 复核后代录 2026-11-05 |
+| HG-AUDIT-R1 | **approved** | **30** | 20-task-audit R1 审查文已落盘（`docs/harness/reviews/task_stage_w_write_expand_audit_R1_20261105.md` · PR #326 · PASS 零内容阻塞）；随档签——维护者预授权（issue #323 comment `6652283580`）lead 复核后代录 2026-11-05 |
+| HG-GRAPH-MODULES | **approved** | **30** | 口径签：预估 G-L1 行备注薄增量、不新增一级模块（graph_change_layer=G-L1 · D4 承载）；维护者预授权（issue #323 comment `6652283580`）由 lead 复核后代录 2026-11-05 · 30 交付时仍按实增量回写回签确认 |
 | **HG-STAGE-W-EXPAND-DESIGN** | **approved** | **30** | **Q1 选型签收：S1 仓内落笔型写中签**（Q2 随签：S1 下 env 显式 opt-in 加载面；Q3 随签：若需新表 → 修订表回填 alembic 义务）；S2 留作下一波独立 SPEC；S3 本波不碰 · 维护者 2026-11-05 签（lead 代录，签认依据 = issue #323 维护者「按建议签」+ PR #325 的 lead 选型分析评论 #6650428109） |
 
 ---
@@ -218,3 +218,4 @@ SPEC 签收毕（HG-SPEC-SIGNOFF approved 2026-11-05 · B1 已修订）→ 00 �
 |------|------|
 | 2026-11-05 | 10 落稿：00 承 issue #323 签收链拆 task（承 SPEC v0.1 · HG-SPEC-SIGNOFF approved）· 四闸 pending（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-STAGE-W-EXPAND-DESIGN）· NO-GO 20/30 · Q1 选型留闸随档裁决 · R0–R5 承 SPEC §7 |
 | 2026-11-05 | **HG-STAGE-W-EXPAND-DESIGN approved**（Q1=S1 仓内落笔型写 · Q2/Q3 随签 · 维护者 2026-11-05 签 · lead 代录 commit `461e525` · 依据 = issue #323 维护者「按建议签」+ PR #325 评论 #6650428109）；余三闸仍 pending（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES）· 20-task-audit 书面审下一棒 · 审毕停等三闸人签 · 代录行 blocks_hats 列结构修复（签认内容未动） |
+| 2026-11-05 | **HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES approved（lead 代录 · 四闸齐）**——依据 = issue #323 维护者预授权 comment `6652283580`「R1 书面审出货后由 lead 审查，无问题即代录三闸，每处引用本评论 + 审查文，全程留痕；有红线冲突/内容阻塞/与 SPEC v0.1·Q1=S1 签认不符则停下不动闸报维护者」+ PR #326 20-task-audit R1 审查文（PASS 零内容阻塞）；lead 复核随 PR #326 review 留痕完成（七项全过 · 2026-11-05）：SPEC 正本 vs `fa83be6` 零 diff / Q4·A2+ 豁免口径两档 parity / 全仓唯一 write=mock 实证 / 判序 deny_high_risk:118 先于 deny_write:120 / 审查文命名命中闸表预期路径 / task lint 双证（CI check + 审查方复跑）/ master 闸态 verify BLOCKED 与设计停点一致· 无红线冲突 · 无内容阻塞 · 与 SPEC v0.1·Q1=S1 签认相符 · PR #326 合入后 30 可开工 |
