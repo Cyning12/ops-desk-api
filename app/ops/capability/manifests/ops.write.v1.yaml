@@ -1,0 +1,57 @@
+# 受控写便签 capability 清单（stage-w-write-expand · D1 · 2026-11-05）
+#
+# 用途：第二条真实窄写能力 `ops.write.run_note`——run 备注/审计便签落笔
+# `ops_capability_notes`（Q1=S1 仓内落笔型写 · HG-STAGE-W-EXPAND-DESIGN 中签），
+# 使阶段 W 受控写闸链从「闸链 + mock 演示」升级为「闸链 + 一条真实业务写竖切」。
+#
+# 纪律（钉死 · 承 SPEC v0.1 设计纪律与 testing.v1.yaml 三层显式打开先例）：
+# - **不进默认加载面**：仅经 OPS_CAPABILITY_EXTRA_MANIFESTS 显式加载
+#   （显式文件列表纪律 · 默认空=off 零 diff）；
+# - 可见性须再经 OPS_CAPABILITY_ALLOW_WRITE_TAGS=run_note 放行——独立写 tag，
+#   **不放行 testing tag 复用**（只豁免 deny_write 一层 · deny_high_risk 永不豁免）；
+# - tenant_scoped: true（与 testing.write.echo 的 false 形成对照 · loader V13 强制，
+#   mock 特例清单不扩容）；
+# - 幂等：顶层 idempotency_key 声明位（裁定四）+ 运行期消费——adapter 以
+#   request_id 为租户内幂等键，落笔表 (tenant_id, idempotency_key) 唯一约束
+#   兜底，重放不双写（FP-4）；
+# - 审批串链：执行体把 ctx.approval_id 落便签行（A4 审计串链 · 与 span
+#   approval_id 同源）；
+# - 字段族对齐 builtin.v1.yaml / testing.v1.yaml 范式（逐字段齐）。
+version: 1
+capabilities:
+  - id: ops.write.run_note
+    kind: local_fn
+    description: 写 run 备注/审计便签到本仓 ops_capability_notes（受控写 · 须经 HITL 人工审批）
+    when_to_use: 需要给某次 run 留一条可追溯备注/审计便签时使用（单租户内无害 · 仅落笔本仓 DB）
+    when_not_to_use: 任何跨租户写 / 外部系统写 / 不可逆写都不要用本能力（仅仓内 run 备注窄写）
+    tags: [ops, run_note, write]
+    risk_level: medium
+    side_effect: write
+    enabled: true
+    tenant_scoped: true
+    hitl:
+      required: true
+      snapshot_fields: [run_id, note]
+    idempotency_key: "{{request_id}}"
+    args_schema:
+      type: object
+      properties:
+        run_id:
+          type: string
+          description: 目标 run 标识（便签归因）
+        note:
+          type: string
+          description: 备注正文（审计便签内容）
+        request_id:
+          type: string
+          description: 幂等键源（租户内唯一 · 重放不双写）
+      required: [run_id, note, request_id]
+      additionalProperties: false
+    output_fields: [tool, written, note_id, run_id, tenant_id, approval_id, idempotency_key, duplicated, duplicate_of]
+    output_schema:
+      required: ["$.tool", "$.written"]
+    reversible: true
+    execution_type: instant
+    max_reversal_latency: 0
+    requires_stop_support: false
+    adapter: local_fn:app.ops.capability.defaults:ops_write_run_note

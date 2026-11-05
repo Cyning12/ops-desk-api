@@ -74,6 +74,11 @@ _PREFIX_TO_MODULE = {
 # 同一份正则同时接受历史扁平 id（如 ``reload_cap``），不强制点分。
 _CAPABILITY_ID_RE = re.compile(r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$")
 
+# V13 mock 特例清单（SPEC v0.1 Q4 · **不扩容**）：写能力 tenant_scoped 豁免的
+# 唯一出口；以 testing/mock tag 为谓词——只冒充 id 不带 mock tag 也不豁免。
+_MOCK_TENANT_SCOPED_EXCEPTIONS: frozenset[str] = frozenset({"testing.write.echo"})
+_MOCK_TAG_PREDICATE: frozenset[str] = frozenset({"testing", "mock"})
+
 # 密钥形字段：loader 拒绝进仓形状；亦不读 env 密钥。
 _SECRET_KEYS = frozenset(
     {
@@ -893,6 +898,21 @@ def _validate_invariants(spec: CapabilitySpec, *, loc: str) -> None:
             f"{loc} V12: side_effect={spec.side_effect} 禁止声明降级动作"
             f"（当前 action={fallback_mod.action_of(spec)}）——写失败必须明确可见"
         )
+
+    # V13（stage-w-write-expand · SPEC v0.1 Q4）：write 级能力 tenant_scoped 强制。
+    # mock 特例清单不扩容：仅 testing.write.echo（以 testing/mock tag 为谓词）。
+    # 租户封闭是阶段 W 钉死契约——写 intent / 审批 / 执行全链带 tenant_id。
+    # 口径：仅 side_effect=write（本波「先 write 级可逆 · 不碰 irreversible」钉死；
+    # irreversible 级租户强制留给未来波次 · V1/V2 对 irreversible 照旧生效）。
+    if spec.side_effect == "write" and not spec.tenant_scoped:
+        in_mock_exception = spec.capability_id in _MOCK_TENANT_SCOPED_EXCEPTIONS and bool(
+            _MOCK_TAG_PREDICATE.intersection(spec.tags)
+        )
+        if not in_mock_exception:
+            raise ManifestError(
+                f"{loc} V13: side_effect={spec.side_effect} 必须 tenant_scoped: true"
+                "（mock 特例清单不扩容：仅 testing.write.echo · 以 testing/mock tag 为谓词）"
+            )
 
 
 def _resolve_local_fn_adapter(ref: str, *, loc: str):

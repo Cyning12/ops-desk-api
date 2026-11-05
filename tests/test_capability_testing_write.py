@@ -135,11 +135,17 @@ def test_a8_v1_still_blocks_write_local_fn_without_any_key(tmp_path: Path):
 
 
 def test_a8_write_local_fn_with_top_level_key_loads(tmp_path: Path):
-    """② write+local_fn + 顶层 idempotency_key → 可加载（裁定四放宽的唯一新出口）。"""
+    """② write+local_fn + 顶层 idempotency_key → 可加载（裁定四放宽的唯一新出口）。
+
+    V13 补注（stage-w-write-expand · SPEC v0.1 Q4）：写能力 tenant_scoped 强制
+    （mock 特例清单不扩容）——本 probe 补 ``tenant_scoped: true`` 以过新断言；
+    断言对象（V1 放宽面）不变。
+    """
     cap = dict(
         _PROBE_BASE,
         id="probe.write_topkey",
         side_effect="write",
+        tenant_scoped=True,
         hitl={"required": True},
         idempotency_key="{{request_id}}",
     )
