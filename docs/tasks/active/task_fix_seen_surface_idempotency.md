@@ -1,10 +1,11 @@
 # Task：write ticket 拉起幂等守卫（`reset_worker_seen_surface` 后首轮巡检不重复拉起）
 
-> **状态**：`draft`（10 起草壳 · 四闸 pending · NO-GO 20/30）
+> **状态**：`in_progress`（10 起草壳 PR #345 已合 `ec87535` · **四闸 approved**（签认依据 = PR #345 review `5792245814` lead 签 + 窗口授权 2026-11-05 22:26 指令）· **30 已授权交付**（issue #335 comment `6669768156` 六条件 · 出货 PR 待审））
 > **类型**：fix / 缺陷修复（write ticket 拉起幂等缺口 · worker 重启后 seen 面重置无守卫）
 > **上游**：issue [#335](https://github.com/Cyning12/ops-desk-api/issues/335)（backlog 正文 + 维护者 comment `6668554143` 令立项 · 受理依据 = 窗口授权 2026-11-05 22:26 → 2026-11-06 07:00 · lead 代行签收与验收）
 > **分支**：10/00 走 `agent/idempotency-fix-task-4b3782da80c4`（本 PR · 部署绑定末段=工单名）· 30 实分支预登记 `fix/seen-surface-idempotency`（待闸签收后另行授权）
 > **10 注**：2026-11-06 · 承 issue #335 维护者令起草 fix task（**10 帽活** · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 30 改码待闸签收后另行授权
+> **30 注**：2026-11-06 · 维护者 comment `6669768156` 30 授权（六交付条件）· **设计闸决策点①裁决**（引用本评论）：探针实证承载面 = **nodes.py 拉起链双点**——`_join_subtasks` 巡检派发面（孪生步重复派发：重复拉起噪音 + 建单风险）+ `_persist_hitl` 建单面（精确 sid 去重对孪生 sid 不可见 ⇒ **重复建单实证**：同 run 同写意图库面 2 笔 + 写闸拦截行 2 条）——裁决 = **案 A ∪ 案 B 同链双点半卫**（10 档 R2 单点倾向修正 · 锚点留痕纪律）：①巡检层守卫 `_write_blocked_call_keys`——同写意图在途写单步被孪生时继承在途终态（`replay_of` 溯源 · 不派发不消费 · 留痕 `write_ticket_twin_inherited`）；②建单层守卫 `_write_intent_live_key`（status 位：库面 live 写单按 (capability_id, args_summary) 索引 · pending 全量 + approved 未过期）——命中 ⇒ `arelocate_linkage` 存量单连接域迁附当前步并带回（不新建 · 留痕 `hitl_write_intent_attached`）；与 `already`（seen_surface 位）合成 **status ∧ seen_surface 双条件**（决策点②签认语义落地）。改码面唯一 = `nodes.py` 拉起链 + `hitl/store.py` 增量方法（Protocol/InMemory/Db/Null · 无表结构/语义面变更）+ 新测 3 枚；守卫共用既有 `LG_RAG_WRITE_REPLAY_GUARD_ENABLED` 单开关（关 = master 基线零 diff）；**消费门（`_write_execution_approval`/`_match_fresh_approved`）/ resume 单路径 / SSE / worker freeze 一行不动**
 
 ---
 
@@ -35,10 +36,10 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 初稿人扫（10 起草壳 · 本 PR 出货待审） |
-| HG-AUDIT-R1 | pending | **30** | 20-R1 书面审落盘后人签 |
-| HG-GRAPH-MODULES | pending | **30** | `none` 口径待签认（无图谱面 · 若 30 实扫出面须回签） |
-| HG-WRITE-TICKET-IDEMPOTENCY-DESIGN | pending | **30** | **设计闸（维护者 comment `6668554143` 令设）**：决策点① = 修复落点（候选案见 R2 · 30 红测探针实证后裁决）；决策点② = ticket 幂等键语义——**status / seen_surface 双条件位**（库面真实状态位 ∧ worker seen 面位 · 缺一不可 · 裁定见 R2） |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | lead 签认 2026-11-05 · 依据 = PR #345 review `5792245814`（APPROVED）+ 窗口授权 2026-11-05 22:26 指令 + #335 comment `6668554143` |
+| HG-AUDIT-R1 | **approved** | **30** | lead 签认 2026-11-05 · 依据同上——lead PR #345 review `5792245814` 审查通过即 20-R1 书面审记录（审查文随 30 PR 出货落盘 `docs/harness/reviews/` · 承 lead review 明示） |
+| HG-GRAPH-MODULES | **approved** | **30** | lead 签认 2026-11-05 · 依据同上 · `none` 口径签认确认（无图谱面 · 承 no-proxy/delegation 先例；若 30 实扫出图谱面须回签） |
+| **HG-WRITE-TICKET-IDEMPOTENCY-DESIGN** | **approved** | **30** | **设计闸 · lead 签认 2026-11-05 · 依据同上**（维护者 comment `6668554143` 令设）· **双决策点照留**：决策点① = 修复落点——30 红测探针实证后裁决（候选案 A 巡检层守卫=倾向 / B 建单拉起层 / C 只压警告=禁 · 见 R2）；决策点② = ticket 幂等键语义 = **status / seen_surface 双条件位**（库面真实状态位 ∧ worker seen 面位 · 缺一不可 · 签认留档 · 见 R2） |
 
 ---
 
@@ -61,9 +62,9 @@ issue #335（backlog）：**`reset_worker_seen_surface` 后首次巡检重复拉
 
 ## 范围（竖切 · 四闸齐后才 30）
 
-- [ ] **D-fix-1 · 幂等守卫**（落点以 HG-WRITE-TICKET-IDEMPOTENCY-DESIGN 签认为准 · 候选案见 R2）：reset seen 面（worker 重启语义）后首轮巡检对**存量 write ticket 不重复拉起**——幂等判定含 **status / seen_surface 双条件位**（决策点②裁定后落定：库面真实状态位 ∧ worker seen 面位 · 两条件缺一不可）。
-- [ ] **D-fix-2 · 红测负样本 + 常规对拍**（先红后绿）：①负样本（维护者红线）= reset seen 面 → 首轮巡检 → 端到端断言存量 write ticket **拉起恰一次**（无第二次拉起 · overlap 警告台账零新增 · 承载面以 30 红测探针定位回填）②常规对拍 = 无重置的巡检轮次拉起行为与修复前零漂移（防修成「重置即拒拉起」的过紧语义）。
-- [ ] **D-fix-3 · 旧测适配**（条件项 · 如有）：grep 影响面实扫登记；断言不放宽。
+- [x] **D-fix-1 · 幂等守卫**（30 已交付 2026-11-06 · 裁决 = 案 A ∪ B 双点半卫 · 见 30 注）：①巡检层 `_write_blocked_call_keys` + 孪生继承（`write_ticket_twin_inherited` 留痕）②建单层 `_write_intent_live_key`（status 位）+ `arelocate_linkage` 迁附带回（`hitl_write_intent_attached` 留痕）· 双条件 = status ∧ seen_surface（决策点②落地）。
+- [x] **D-fix-2 · 红测负样本 + 常规对拍**（30 已交付 2026-11-06 · **先红后绿实证**）：负样本（维护者红线）= 真链挂起 → checkpoint 重建（seen 面重置 · 前置断言 `hitl_requests` 必空）→ 重规划孪生 → 首轮巡检（真 join/persist）→ **修复前红**：库面 2 笔同写意图票 + 写闸拦截行 2 条（`run-…:1`/`:2` 双拉起实证）→ **修复后绿**：库面恰一笔（存量 T1 迁附孪生步）· 拦截行零新增 · 孪生步不派发（`replay_of` 溯源）。常规对拍 2 枚：同 sid 重放 attach 既有语义零漂移 + 成功孪生 replay-guard 面零漂移。
+- [x] **D-fix-3 · 旧测适配**（30 实扫 2026-11-06：**零适配**）：写闸 / 消费门 / 保号 / resume / delegation / stage-w 全组 122 枚断言对象均不锚「孪生写步建单」形态——实扫零影响如实列出，无适配发生。
 
 ### 非范围
 
@@ -97,13 +98,13 @@ issue #335（backlog）：**`reset_worker_seen_surface` 后首次巡检重复拉
 
 ## 验收标准
 
-- [ ] 人工闸：HG-TASK-DRAFT · HG-AUDIT-R1 · HG-GRAPH-MODULES · **HG-WRITE-TICKET-IDEMPOTENCY-DESIGN** 均 approved 后方可勾选下列码项
-- [ ] 红测负样本（**维护者红线**）：reset seen 面（worker 重启语义）→ 首轮巡检 → 端到端断言存量 write ticket 不重复拉起（先红后绿可见 · 承载面以 30 红测探针定位回填）
-- [ ] 幂等键语义 = status / seen_surface 双条件位落地（决策点②裁定口径逐条对照 · 双条件缺一不可 · FP-6 两形态负样本全绿）
-- [ ] 常规对拍：无重置的巡检轮次拉起行为与修复前零漂移（防「重置即拒拉起」过紧语义）
-- [ ] 四红线零 diff 对拍：resume 单路径（A5 grep 断言）· SSE 事件表零 diff · 消费门 fail-closed 既有负样本组全绿 · 改码面收敛（红线对拍 `git diff` 面唯一）
-- [ ] 旧测 grep 影响面适配（如有）不放宽；巡检 / 建单 / 写闸 / 消费 / resume 测试族关联回归全绿
-- [ ] 工程面：`ruff check app tests` 触及路径零新增；`pytest tests` 零新增红（既有红基线如实登记口径沿用）；`./scripts/graph-compile.sh` EXIT=0；`npx spec-wave task lint` PASS
+- [x] 人工闸：HG-TASK-DRAFT · HG-AUDIT-R1 · HG-GRAPH-MODULES · **HG-WRITE-TICKET-IDEMPOTENCY-DESIGN** 均 approved（签认依据 = PR #345 review `5792245814` + issue #335 comment `6669768156` + 窗口授权）
+- [x] 红测负样本（**维护者红线**）：reset seen 面（checkpoint 重建 · seen 面重置前置断言）→ 首轮巡检 → 端到端断言存量 write ticket 拉起恰一次（**先红**：库面 2 笔 + 双拦截行实证 → **后绿**：恰一笔 + 零新增 · `tests/test_fix_seen_surface_idempotency.py`）
+- [x] 幂等键语义 = status / seen_surface 双条件位落地（决策点②签认口径逐条对照：status 位 = `intent_live` 库面索引（capability_write 类 · 带 write_intent · pending 全量 + approved 未过期 TTL 同口径）· seen_surface 位 = `already` 本轮面；双条件缺一不可注释显性化 · FP-6 两形态：不同 args ⇒ 不同 intent 键不合并（args_summary 决定性序列化）· 同 args 跨 sid ⇒ 合并（本修复语义））
+- [x] 常规对拍：无重置巡检轮次（同 sid 重放 attach / 成功孪生 guard-skip）与修复前零漂移（2 枚对拍绿）
+- [x] 四红线零 diff 对拍：resume 单路径（`router.py`/`resume.py` **零 diff**）· SSE 事件表零 diff（`event_store`/`sse_*` 零 diff）· 消费门 fail-closed 既有负样本组全绿（`test_write_approval_gate` / `test_hitl_approval_consumption` 全组）· 改码面收敛（`git diff` 面 = `nodes.py` + `hitl/store.py` 唯一）
+- [x] 旧测 grep 影响面适配（零适配如实登记）；巡检 / 建单 / 写闸 / 消费 / resume 测试族关联回归全绿（122 passed）
+- [x] 工程面：`ruff check app tests` **All checks passed（零）**；`pytest tests` 全量零新增红（如实登记）；`./scripts/graph-compile.sh` EXIT=0；`npx spec-wave task lint` PASS
 - [ ] 40 复跑（live 面 · 待 40）：worker 重启后首轮巡检 live 实测 · 存量 write ticket 单拉起实证
 
 ---
@@ -184,6 +185,19 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30；`spec-wave
 |------|--------|------|
 | `npx spec-wave task lint --file docs/tasks/active/task_fix_seen_surface_idempotency.md` | 0 | LINT: PASS（2026-11-06 · 10 起草自检） |
 
+> **hat 30（30 实现）** · 已交付：nodes.py 拉起链双点半卫 + hitl/store.py 增量 `arelocate_linkage`（+225/-1 · 注释显性化裁决依据）+ 新测 3 枚（负样本先红后绿 + 对拍 ×2）· 四闸 approved 承签认档 · 未触碰任何 human_gate。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `pytest tests/test_fix_seen_surface_idempotency.py`（负样本 · stash 修复后先红） | 1 | RED 实证：reset 后首轮巡检库面 2 笔同写意图票 + 写闸拦截行双拉起（孪生步 :2 重复拉起） |
+| `pytest tests/test_fix_seen_surface_idempotency.py`（修复后） | 0 | 3 passed（负样本恰一笔 + 对拍 ×2 零漂移 · 后绿） |
+| `pytest tests/test_fix_seen_surface_idempotency.py tests/test_write_approval_gate.py tests/test_hitl_approval_consumption.py tests/test_hitl_approved_replan_quality.py tests/test_hitl_resume.py tests/test_fix_delegation_resume_approval_id.py tests/test_fix_worker_state_send_run_id.py tests/test_stage_w_write_expand.py` | 0 | 122 passed 零适配 |
+| `pytest tests`（全量） | 0* | 2068 passed · 4 failed = master 既有基线同形（diff-whitelist ×2 / embedder env ×1 / dualproc env ×1 · stash 复验 baseline 同 4 枚 · **零新增红**） |
+| `ruff check app tests` | 0 | All checks passed（零） |
+| `./scripts/graph-compile.sh` | 0 | EXIT=0 |
+| `npx spec-wave task lint --file docs/tasks/active/task_fix_seen_surface_idempotency.md` | 0 | LINT: PASS（30 回填后） |
+| 红线对拍 `git diff origin/master --stat` | 0 | 改码面唯一 `nodes.py` + `hitl/store.py` · `hitl/router.py`/`resume.py`/`auto_resume.py`/`event_store`/`sse_*`/`capability/gateway.py` 零 diff · 消费门函数（`_approval_consumed`/`_write_execution_approval`/`_match_fresh_approved`）零 diff |
+
 ---
 
 ## 修订记录
@@ -191,3 +205,5 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30；`spec-wave
 | 日期 | 说明 |
 |------|-----|
 | 2026-11-06 | 10 落稿：承 issue #335 维护者 comment `6668554143` 令起草 fix task（10 帽活 · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 缺陷定性（reset_worker_seen_surface 后首轮巡检重复拉起存量 write ticket · 幂等缺口）承 issue 正文 · 设计闸 HG-WRITE-TICKET-IDEMPOTENCY-DESIGN 两决策点（①修复落点三案 A 倾向/B/C 禁 · ②ticket 幂等键语义 = status/seen_surface 双条件位）· 红测负样本（reset 后首轮巡检不重复拉起 · 端到端断言）入 test_strategy · 四红线（resume 单路径 / SSE 事件表零 diff / 消费门 fail-closed 永不放宽 / 改码面收敛）+ worker freeze 不动语义入 failure_paths · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 · 10 档实扫声明（字面符号零命中 · 承载面留 30 探针） |
+| 2026-11-06 | **四闸 approved 代录 + 30 授权入档**（签认依据 = PR #345 review `5792245814` lead 签 + issue #335 comment `6669768156` + 窗口授权 2026-11-05 22:26 指令）：设计闸决策点②签认 = ticket 幂等键语义 **status/seen_surface 双条件位**照留；决策点①（修复落点）留 30 红测探针实证后裁决并引用 comment `6669768156` · **30 授权六交付条件**（红测先红后绿留 invoke / 常规对拍零漂移 / 改码面唯一落点 / 四红线零 diff 对拍 / ruff+pytest+graph-compile 全绿 CI 4/4 / 20-R1 审查文随 30 PR 落盘）· 30 分支 `fix/seen-surface-idempotency` · PR #345 已 squash 合入 master `ec87535`（10 棒闭环） |
+| 2026-11-06 | **30 交付**：设计闸决策点①裁决 = **案 A ∪ 案 B 同链双点半卫**（巡检层孪生继承 + 建单层 status 位迁附 · 10 档 R2 单点倾向经探针修正 · 如实留痕）· 红测负样本先红（库面 2 笔 + 双拦截行）后绿（恰一笔 + 零新增）· 对拍 ×2 零漂移 · 全量套件零新增红 · 改码面 `nodes.py`+`hitl/store.py` 唯一 · 四红线零 diff · 20-R1 审查文随本 PR 落盘 · 30 invoke 落档 |

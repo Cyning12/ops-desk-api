@@ -1187,6 +1187,47 @@ def _write_success_call_keys(done: dict[str, dict], by_id: dict[str, dict]) -> d
     return keys
 
 
+def _write_blocked_call_keys(done: dict[str, dict], by_id: dict[str, dict]) -> dict[str, str]:
+    """done 内**在途写单步**（被 capability_write 闸拦下 · hitl_required）的
+    canonical → sid 索引（fix-seen-surface-idempotency · issue #335 巡检层
+    守卫数据面）。重启后重规划孪生步命中即继承在途终态（不重复派发——
+    重复派发 = 重复拉起噪音 + persist 面重复建单风险）。成功终态不入
+    （走 replay-guard 成功面）。
+    """
+    keys: dict[str, str] = {}
+    for tsid, term in done.items():
+        if str(term.get("blocked_by") or "") != _BLOCKED_BY_CAPABILITY_WRITE:
+            continue
+        if term.get("hitl_required") is not True:
+            continue
+        trow = by_id.get(tsid)
+        if not trow:
+            continue
+        key = _guard_write_key(trow)
+        if key is not None:
+            keys.setdefault(key, tsid)
+    return keys
+
+
+def _write_intent_live_key(*, capability_id: str, write_intent: Any) -> tuple[str, str] | None:
+    """写意图幂等键（fix-seen-surface-idempotency · status 位真源）。
+
+    = (capability_id, write_intent.args_summary)——args_summary 由写闸以
+    ``_cap_args_summary`` 确定性序列化随单落库（阶段 W 写意图结构钉死），
+    同写意图跨 sid 可比。缺 capability_id / write_intent 非 dict → None
+    （不入守卫面，维持原精确 sid 路径）。幂等键语义 = status 位（库面 live
+    单）∧ seen_surface 位（本轮已带回）双条件（HG-WRITE-TICKET-IDEMPOTENCY-
+    DESIGN ② 签认 · 缺一不可：只看 seen 位 = 本缺陷；只看 status 位 =
+    不同 args 的合法写被误并）。
+    """
+    cap = str(capability_id or "").strip()
+    if not cap:
+        return None
+    if not isinstance(write_intent, dict):
+        return None
+    return (cap, str(write_intent.get("args_summary") or ""))
+
+
 async def _join_subtasks(state: LgRagState) -> dict:
     """收口上一批：漏带回的 id 写错误终态；预算耗尽则补齐剩余 id，不再开新批。"""
     plan = _plan_rows(state)
@@ -1230,6 +1271,12 @@ async def _join_subtasks(state: LgRagState) -> dict:
         # 恢复 master 基线零 diff）。
         write_done_keys = (
             _write_success_call_keys(done, by_id) if _write_replay_guard_enabled() else {}
+        )
+        # fix-seen-surface-idempotency（巡检层守卫 · 决策点① 案 A）：在途写单步
+        # （blocked 终态在 checkpoint 面可见）的 canonical 索引——重启后重规划
+        # 孪生步命中即继承在途终态，不重复派发。
+        write_blocked_keys = (
+            _write_blocked_call_keys(done, by_id) if _write_replay_guard_enabled() else {}
         )
         batch_write_keys: dict[str, str] = {}
         for row in plan:
@@ -1296,6 +1343,31 @@ async def _join_subtasks(state: LgRagState) -> dict:
                     if write_key in batch_write_keys:
                         # 同批双胞胎：首发照派，次发本轮挂起——下一 join
                         # pass 见首发终态再走 guard-skip（同轮重入保证）。
+                        continue
+                    # fix-seen-surface-idempotency（巡检层守卫）：同写意图的
+                    # 在途写单步被重规划孪生时，孪生步**继承在途终态**
+                    # （replay_of 溯源 · 不派发不消费）——重复派发即重复拉起
+                    # 噪音（写闸 fail-closed 再拦 + persist 面重复建单风险）。
+                    orig_blocked = write_blocked_keys.get(write_key)
+                    if orig_blocked is not None and orig_blocked != sid:
+                        inherited = copy.deepcopy(done[orig_blocked])
+                        inherited["subtask_id"] = sid
+                        inherited["id"] = sid
+                        inherited["replay_of"] = orig_blocked
+                        extras.append(inherited)
+                        done[sid] = inherited
+                        logger.info(
+                            "write_ticket_twin_inherited %s",
+                            json.dumps(
+                                {
+                                    "subtask_id": sid,
+                                    "replay_of": orig_blocked,
+                                    "capability_id": str(row.get("tool") or ""),
+                                },
+                                ensure_ascii=False,
+                                sort_keys=True,
+                            ),
+                        )
                         continue
             # Host V1-A：委派签发审批（Q2：只读自动 · 其余 HITL_REQUIRED）。
             # off 模式整段短路（现状零 diff）；审批拦截复用既有 HITL 回路留痕。
@@ -2203,12 +2275,50 @@ async def _persist_hitl(
         if isinstance(r, dict)
     }
     run_id = _run_id_of(state)
+    store_pending_rows: list[dict] = []
     try:
-        for row in await store.alist(status="pending", limit=200):
+        store_pending_rows = await store.alist(status="pending", limit=200)
+        for row in store_pending_rows:
             if str(row.get("run_id") or "") == run_id:
                 already.setdefault(str(row.get("subtask_id") or ""), row)
     except Exception as exc:  # 拉不到就退回只认 state，不因此崩
         logger.warning("HITL 申请去重拉取失败，退回按 state 去重 err=%r", exc)
+    # fix-seen-surface-idempotency（issue #335 · 30 授权 comment `6669768156`）：
+    # reset seen 面（worker 重启 · hitl_requests 不进 checkpoint）后首轮巡检，
+    # 重规划孪生步（同写意图新 sid）绕过上面精确 sid 去重 ⇒ 重复建单（overlap
+    # 噪音源）。status 位：库面 live 写单（pending + 未过期 approved 的
+    # capability_write 类 · 带 write_intent）按写意图幂等键索引；命中 ⇒ 存量单
+    # 迁附当前步并带回（不新建）。与 already（seen_surface 位）合成
+    # status ∧ seen_surface 双条件（HG-WRITE-TICKET-IDEMPOTENCY-DESIGN ②）。
+    intent_live: dict[tuple[str, str], dict] = {}
+    if _write_replay_guard_enabled():
+        approved_rows: list[dict] = []
+        try:
+            approved_rows = await store.alist(status="approved", limit=200)
+        except Exception as exc:  # 退回仅 pending 面（approved 面读失败方向与
+            # _approved_fresh_for_subtask fail-open 一致：照建单可审，不丢单）
+            logger.warning("HITL 写意图守卫 approved 面读取失败，退回仅 pending 面 err=%r", exc)
+        ttl = _approval_consumption_ttl_seconds()
+        now_ts = time.time()
+        for row in [*store_pending_rows, *approved_rows]:
+            if str(row.get("run_id") or "") != run_id:
+                continue
+            if str(row.get("blocked_by") or "") != _BLOCKED_BY_CAPABILITY_WRITE:
+                continue
+            payload_row = row.get("payload")
+            if not isinstance(payload_row, dict):
+                continue
+            key = _write_intent_live_key(
+                capability_id=str(payload_row.get("capability_id") or ""),
+                write_intent=payload_row.get("write_intent"),
+            )
+            if key is None:
+                continue
+            if str(row.get("status") or "") == "approved":
+                decided_ts = _decided_at_ts(row.get("decided_at"))
+                if decided_ts is None or now_ts - decided_ts > ttl:
+                    continue  # 过期 approved ≠ live（消费门读时判过期同口径）
+            intent_live.setdefault(key, row)  # alist 按 created_at 升序：最老优先
     created = list(state.get("hitl_requests") or [])
     unpersisted = False
     for sid in obs["hitl_pending"]:
@@ -2250,6 +2360,45 @@ async def _persist_hitl(
         if await _approved_fresh_for_subtask(state, subtask_id=sid, capability_id=capability_id):
             logger.info("hitl_persist_guard_skip subtask=%s run=%s", sid, run_id)
             continue
+        # fix-seen-surface-idempotency：status 位命中（库面同写意图 live 单）
+        # ⇒ 存量单连接域迁附当前步（批准→解锁→消费链路与新建单逐点同义，
+        # 仅少一行重复单据）并带回，**不新建**。守卫面 = capability_write 类 ∧
+        # 带 write_intent（决策点② · 双条件位之 status 位）。
+        if intent_live and str(term.get("blocked_by") or "") == _BLOCKED_BY_CAPABILITY_WRITE:
+            intent_key = _write_intent_live_key(
+                capability_id=capability_id, write_intent=write_intent
+            )
+            existing = intent_live.get(intent_key) if intent_key is not None else None
+            if existing is not None and str(existing.get("subtask_id") or "") != sid:
+                relocated = await store.arelocate_linkage(
+                    str(existing.get("id") or ""),
+                    subtask_id=sid,
+                    unlock_subtask_id=unlock,
+                )
+                if relocated is None:
+                    # 迁附失败（终态竞迁等）⇒ 保守方向：本轮不新建（宁可下轮
+                    # 重建，不可重复建单）；留痕可观测。
+                    logger.warning(
+                        "hitl_write_intent_relocate_failed subtask=%s run=%s",
+                        sid,
+                        run_id,
+                    )
+                    continue
+                logger.info(
+                    "hitl_write_intent_attached %s",
+                    json.dumps(
+                        {
+                            "request_id": str(relocated.get("id") or ""),
+                            "subtask_id": sid,
+                            "previous_subtask_id": str(existing.get("subtask_id") or ""),
+                        },
+                        ensure_ascii=False,
+                        sort_keys=True,
+                    ),
+                )
+                if not any(str(r.get("id") or "") == relocated["id"] for r in created):
+                    created.append(relocated)
+                continue
         request = {
             "id": new_request_id(),
             "run_id": run_id,
