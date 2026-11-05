@@ -7,9 +7,13 @@
 | **分支** | `close/worker-state-send-run-id`（reset 自 origin/master `ba03800` = PR #332 squash 合入点 · 40 全程零仓内码改动） |
 | **核验对象** | PR #332 全量 diff（`git diff 5bec9d6..ba03800`）+ master 活链实测（**免 shim**） |
 | **依据** | issue #329 维护者 comment `6660516133`（40 复跑销项令 · 签收窗口至 2026-11-06 07:00 · 有红停下报不静默修） |
-| **结论** | **机制面 PASS（live 免 shim 消费闭环实证 ×2）· 八段真落笔红（上游 planner args · out-of-scope）→ 按令停下报（偏差登记①）** |
+| **结论** | **机制面 PASS（主结论）：live 免 shim 消费闭环实证 ×2 · 全量零新增红 · 红线零破**——偏差②（真落笔 · planner string-args）经维护者裁定（issue #329 comment `6661645452`）：**(a) 按机制面 PASS 关账 · planner args 另波跟踪（已立 issue #339 · 同源 stage-w 40 观察③）** |
 
 ---
+
+## 0. 维护者裁定回执（2026-11-05 · issue #329 comment `6661645452`）
+
+> 裁定：**(a) 按机制面 PASS 关账**，planner args 另波跟踪——已立项 [#339](https://github.com/Cyning12/ops-desk-api/issues/339)（同源 stage-w 观察③）。执行要求：①40 invoke 如实登记偏差②（planner string-args · 预存在非本链 · 已立 #339 跟踪），机制面 PASS 证据（live 免 shim 消费闭环 ×2）保持主结论；②按既定收口出关账 PR（active→done 归档 + close 档 + 50 invoke + 双 README）；③关账后 #329 关 issue（维护者执行 · bot 不 close issue）。
 
 ## 1. 闸态 verify（master `ba03800` 实跑）✅
 
@@ -40,32 +44,31 @@
 | ④ decide(approved) | ✅ | HTTP 200 · approved；**重复 decide → 409** live 实证 |
 | ⑤ resume 受理 | ✅ | `resume={status:accepted}` 异步单飞；**写窗 409**「Resume is writing new events」live 实证 |
 | ⑥ replan 保号 | ✅ | `hitl.resumed` 帧 + replan 保号 `:1`（`hitl.resumed{approved:['…:1']}` · observe→supervisor 前缀保留） |
-| ⑦ **消费命中（免 shim 修复核心 live 实证）** | ✅ | 两轮均：`capability_write_approval_consumed{approval_id=hitl_9849547e… / hitl_4144fce3…, blocked_by=capability_write_hitl_required}` → **执行放行**（无 fail-closed 再拦 · 无二次建单）——pre-fix 此处永久再拦（stage-w 40 偏差#1），修复后天然通过 |
-| ⑧ 收尾帧 | ⚠️ 偏差① | 消费放行后执行触达 adapter，但 `args_schema_invalid: 期望 type=['object']，实际=str`——**真落笔未达成**（两轮采样一致 · 见偏差登记①） |
+| ⑦ **消费命中（免 shim 修复核心 live 实证 · 主结论证据）** | ✅ | 两轮均：`capability_write_approval_consumed{approval_id=hitl_9849547e… / hitl_4144fce3…, blocked_by=capability_write_hitl_required}` → **执行放行**（无 fail-closed 再拦 · 无二次建单）——pre-fix 此处永久再拦（stage-w 40 偏差#1），修复后天然通过 |
+| ⑧ 收尾帧 | ⚠️ 偏差② | 消费放行后执行触达 adapter，但 `args_schema_invalid: 期望 type=['object']，实际=str`——**真落笔未达成**（两轮采样一致 · 见偏差②登记） |
 
-## 5. 偏差登记与缺陷实证
+## 5. 偏差登记
 
-**偏差 #1（红 · 停下报 · 不静默修）**：⑦消费命中后真落笔未达成——supervisor planner 产出 `input` 为 **JSON 字符串**（`'{"run_id":…}'`）而非 object，gateway `args_schema` 校验 fail-closed 拒执行（`args_schema_invalid`）。两轮采样（run `5bc63c8b…` 23:01 / `f193a5b9…` 23:04）一致。**归因：stage-w 40 invoke 观察③同源——supervisor system prompt 未文档化 `args` 字段（写工具结构化入参靠提示词即兴）**，属另波 prompt 资产面；**非本 task 改码面（本 task 闸链/提示词一行未动）· 非 #332 引入（#332 前后 planner 行为一致）**。单测/集成面真落笔由 A1 形态负样本全绿承接（载荷经 `_worker_state` 带 run_id → 消费命中 → 真落笔三照断言）。**按维护者令「有红停下报」：请裁定——(a) 机制面 PASS（live 免 shim 消费闭环 ×2 + 全量零新增红）即关账，planner args 另波；或 (b) 另波处理后复跑八段。**
+**偏差①（环境噪点 · 同源 stage-w 偏差#2）**：本机 siliconflow 间歇挂起/空响应（supervisor complete 调用 4-9 分钟 bounded retry 两轮空 raw）→ 前两轮（`449444ff…` / `9e70fc46…`）规划失败走主 .env 的 `LG_RAG_SUPERVISOR_PLAN_ON_FAIL=single_rag` 降级单 rag；第三轮起显式引导 + off 模式两轮成功规划。环境性，非仓码语义；全程如实留痕。
 
-**偏差 #2（环境噪点 · 同源 stage-w 偏差#2）**：本机 siliconflow 间歇挂起/空响应（supervisor complete 调用 4-9 分钟 bounded retry 两轮空 raw）→ 前两轮（`449444ff…` / `9e70fc46…`）规划失败走主 .env 的 `LG_RAG_SUPERVISOR_PLAN_ON_FAIL=single_rag` 降级单 rag；第三轮起显式引导 + off 模式两轮成功规划。环境性，非仓码语义；全程如实留痕。
+**偏差②（真落笔未达成 · 维护者裁定 (a) 关账 · 另波 #339 跟踪）**：⑦消费命中后真落笔未达成——supervisor planner 产出 `input` 为 **JSON 字符串**（`'{"run_id":…}'`）而非 object，gateway `args_schema` 校验 fail-closed 拒执行（`args_schema_invalid`）。两轮采样（run `5bc63c8b…` 23:01 / `f193a5b9…` 23:04）一致。**归因：stage-w 40 invoke 观察③同源——supervisor system prompt 未文档化 `args` 字段（写工具结构化入参靠提示词即兴）**；**预存在行为 · 非本闸链缺陷 · 非 #332 引入（#332 前后 planner 行为一致）**；属另波 prompt 资产面——**已立 issue #339 跟踪**。单测/集成面真落笔由 A1 形态负样本全绿承接（载荷经 `_worker_state` 带 run_id → 消费命中 → 真落笔三照断言）。处置：按维护者裁定 (a)，机制面 PASS 即关账，本偏差另波销项。
 
-**偏差 #3（测试等价面差异 · 如实登记）**：enforce 模式（主 .env 默认）下 pre-fix 亦带 run_id（:1666 分支），被修面为 off 模式 W0 写闸——40 专以 off 模式实测被修路径（与 stage-w 40 live 同口径）；enforce 路径消费门同结构（`_approval_consumed` 同源 `_run_id_of`）由单测 + 既有委派测试承接。
+**偏差③（测试等价面差异 · 如实登记）**：enforce 模式（主 .env 默认）下 pre-fix 亦带 run_id（:1666 分支），被修面为 off 模式 W0 写闸——40 专以 off 模式实测被修路径（与 stage-w 40 live 同口径）；enforce 路径消费门同结构（`_approval_consumed` 同源 `_run_id_of`）由单测 + 既有委派测试承接。
 
 ## 6. 终态工程面
 
 | 项 | 结果 |
 |---|---|
-| 40 全程仓内码改动 | **零**（仅本 invoke + task 档 40 自检回填拟入 PR） |
+| 40 全程仓内码改动 | **零**（仅本 invoke + task 档 40 自检回填入 PR） |
 | `ruff check app tests` | 零新增 |
 | `./scripts/graph-compile.sh` | EXIT=0（master 态） |
 | `npx spec-wave task lint` | LINT: PASS（task 档 40 回填后） |
-| 测试数据清理 | events 72 / hitl 4 / threads 2 已 DELETE · notes 0（真落笔未发生 · 与偏差①一致） |
+| 测试数据清理 | events 72 / hitl 4 / threads 2 已 DELETE · notes 0（真落笔未发生 · 与偏差②一致） |
 
-## 给维护者的裁定建议
+## 裁定与销项
 
-1. **机制面 PASS 成立**：live 免 shim 消费闭环 ×2 实证（#332 修复核心）· 全量零新增红 · 红线零破——stage-w 40 偏差登记①（本 task 由来）实质销项；
-2. **真落笔红（偏差#1）**：planner string-args 为另波 prompt 资产面（stage-w 观察③已登记）· 非本 task 缺陷——建议按 (a) 关账 + 另波跟踪；若要求八段全绿，需先处理 supervisor args 文档化（另立 task）后复跑；
-3. 环境噪点（偏差#2）与 enforce/off 口径（偏差#3）如实登记，不阻塞。
+- **维护者裁定**（issue #329 comment `6661645452`）：**(a) 按机制面 PASS 关账**——live 免 shim 消费闭环 ×2 实证（本 task 修复核心）· 全量零新增红 · 红线零破：stage-w 40 偏差登记①（本 task 由来）**实质销项**；偏差②（planner string-args）另波跟踪（issue #339）。
+- 偏差①（环境噪点）与偏差③（enforce/off 口径）如实登记，不阻塞。
 
 ## 环境注记
 

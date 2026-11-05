@@ -1,6 +1,6 @@
 # Task：`_worker_state` Send 载荷补 `run_id`（HITL resume 后写审批消费门 fail-closed 再拦修复）
 
-> **状态**：`active`（2026-11-05 · 10 起草落稿 → **四闸 approved**（lead 签认 · PR #331 review `5785422963` + issue #329 comment `6658823187`）→ **30 已交付**（issue #329 #6658823187 授权 · PR #332 MERGED `ba03800` · lead 验收六条件全过）→ **40 复跑：机制面 PASS（live 免 shim 消费闭环 ×2 实证）· 真落笔偏差红（planner string-args · 另波 · 非本 task 缺陷）→ 按维护者令停下报裁定中**（issue #329 #6660516133）· 关账待裁定）
+> **状态**：`done`（2026-11-05 关账 · 全棒链同日闭环：10 起草（PR #331）→ lead 签认四闸 approved + 30 授权（issue #329 `6658823187`）→ 30 实扫（PR #332 MERGED `ba03800` · 六条件全过）→ 40 复跑机制面 PASS（live 免 shim 消费闭环 ×2 实证 · 偏差② planner args 另波 #339）→ 维护者裁定 (a) 关账（issue #329 `6661645452`）→ 50 CLOSE · 档迁 `done/`）
 > **类型**：fix / 缺陷修复（Send 载荷丢键 · 消费门 fail-closed 静默失效）
 > **上游**：issue [#329](https://github.com/Cyning12/ops-desk-api/issues/329)（backlog 候选 + 维护者 comment `6658235851` 令按 Harness 流程立项）· 证据 = 40 invoke 偏差登记①（[`invoke_20261105_40_verify.md`](../../harness/invokes/by-task/stage-w-write-expand/invoke_20261105_40_verify.md) §5 · live 全链八段实测 shim 补位实证 · 已实锤）
 > **分支**：`fix/worker-state-send-run-id`（30 用 · 10/00 本档走 `agent/run-id-fix-task-cdc1b46e15dc`）
@@ -120,15 +120,15 @@
 
 ## 验收标准
 
-- [ ] 人工闸：HG-TASK-DRAFT · HG-AUDIT-R1 · HG-GRAPH-MODULES · **HG-WORKER-STATE-RUN-ID-DESIGN** 均 approved 后方可勾选下列码项
-- [ ] 红测负样本（**维护者红线**）：resume 后重下发不再被写审批消费门拦截——经真派发路径驱动（state 由 `_worker_state` 产出 · 非直造全 state），decide(approved) → 重下发 → `capability_write_approval_consumed` 台账 + **真落笔断言**（便签行落值 / 回执 / 幂等 done 三照 · approval_id 串链）
-- [ ] 键集回归钉：`_worker_state`（有 run_id state）产物工人可见键集含 `run_id` 且值正确；空 run_id state 产物**不含** `run_id` 键（防空串污染）
-- [ ] 正样本对拍：delegation on 路径 payload `run_id` 值修复前后一致（既有委派回归测试全绿）
-- [ ] 消费门 fail-closed 语义零变化：未命中 / 读失败 / 过期 / 类型不符 / 租户不符各负样本既有断言全绿（`test_write_approval_gate` 全组）
-- [ ] 红线对拍：SSE 事件表零 diff；web `hitl.ts` freeze 零 diff；resume 单路径 grep 断言绿；`registry.py` / `policy.py` 零 diff
-- [ ] 旧测 grep 影响面：`test_step_contract.py` worker_state 三测 + `test_capability_redlines.py` R14 段直调面适配（如有）不放宽；`test_stage_w_write_expand.py` 16 枚 + W 链关联回归全绿
-- [ ] 工程面：`ruff check app tests` 触及路径零新增；`pytest tests` 零新增红（本地产能既有红基线如实登记）；`./scripts/graph-compile.sh` EXIT=0；`npx spec-wave task lint` PASS
-- [ ] 40 复跑销项（条件触发）：live 全链八段**免 shim**复跑达成（原偏差登记①销项）
+- [x] 人工闸：HG-TASK-DRAFT · HG-AUDIT-R1 · HG-GRAPH-MODULES · **HG-WORKER-STATE-RUN-ID-DESIGN** 均 approved 后方可勾选下列码项（四闸 approved 2026-11-05 · lead 签认 PR #331 review `5785422963` + issue #329 `6658823187`）
+- [x] 红测负样本（**维护者红线**）：resume 后重下发不再被写审批消费门拦截——经真派发路径驱动（state 由 `_worker_state` 产出 · 非直造全 state），decide(approved) → 重下发 → `capability_write_approval_consumed` 台账 + **真落笔断言**（便签行落值 / 回执 / 消费台账 span 三照 · approval_id 串链）——30 交付（新测 6 枚先红 3 后绿）+ 40 live 免 shim ×2 实证
+- [x] 键集回归钉：`_worker_state`（有 run_id state）产物工人可见键集含 `run_id` 且值正确（键集精确钉死）；空 run_id state 产物**不含** `run_id` 键（防空串污染 · FP-7）
+- [x] 正样本对拍：delegation on 路径 payload `run_id` 值修复前后一致（`test_dispatch_payload_run_id_unchanged_with_delegation_on` + 委派回归全绿）
+- [x] 消费门 fail-closed 语义零变化：未命中 / 读失败 / 过期 / 类型不符 / 租户不符各负样本既有断言全绿（`test_write_approval_gate` 全组 + FP-9 新测仍拦）
+- [x] 红线对拍：SSE 事件表零 diff；web `hitl.ts` freeze 零 diff；resume 单路径 grep 断言绿；`registry.py` / `policy.py` 零 diff（30 自检 + 40 独立对拍双证 · delta 恰 3 码文件）
+- [x] 旧测 grep 影响面：`test_step_contract.py` worker_state 三测 + `test_capability_redlines.py` R14 段直调面零影响（183 passed 实跑）；`test_stage_w_write_expand.py` 16 枚 + W 链关联回归全绿；适配 1 枚（`test_off_mode_dispatch_zero_diff` · 适配不放宽 · 案 A 裁决依据留痕）
+- [x] 工程面：`ruff check app tests` 触及路径零新增；`pytest tests` 零新增红（全量 2063 passed · 4 failed = 既有本地产能红基线如实登记）；`./scripts/graph-compile.sh` EXIT=0；`npx spec-wave task lint` PASS
+- [x] 40 复跑销项（条件触发 · **维护者裁定 (a) 机制面 PASS 关账** · issue #329 `6661645452`）：live 免 shim 八段①-⑦达成 · **消费闭环 ×2 实证（stage-w 40 偏差登记①实质销项）**；⑧真落笔偏差②（planner string-args · 预存在非本链 · **另波 issue #339 跟踪** · 同源 stage-w 观察③）如实登记不阻塞
 
 ---
 
@@ -243,5 +243,6 @@ task 档落稿 · 四闸 pending · NO-GO 20/30；10 invoke 落盘 `docs/harness
 |------|------|
 | 2026-11-05 | 10 落稿：承 issue #329 维护者 comment `6658235851` 令起草 fix task（10 帽活 · 只产 task 档 + invoke + lint PASS + PR · 禁改业务码）· 缺陷机制/影响面/证据承 40 invoke 偏差登记① · HG-WORKER-STATE-RUN-ID-DESIGN 两决策点（修复落点三案 A 推荐/B/C 禁 · 回归影响面）· 维护者四红线入 failure_paths（SSE 零 diff / freeze 不动 / resume 单路径 / fail-closed 永不放宽）· 红测负样本（真派发路径 · 真落笔断言）入 test_strategy · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 |
 | 2026-11-05 | **四闸 approved + 30 授权**：lead 签认（PR #331 review `5785422963` 审查通过 · 设计闸裁决案 A + 回归影响面签收）· issue #329 comment `6658823187` 30 授权（分支 `fix/worker-state-send-run-id` · GATE_VERIFY 闸据=本档闸表）· 六交付条件：①红测先行可见红→绿（真派发路径 · 消费命中+真落笔三照）②旧测适配清单随 PR（适配不放宽）③改码面唯一（仅 `_worker_state` 补键+新测+旧测适配）④四红线零 diff 对拍 ⑤ruff+pytest 全量+graph-compile 绿 ⑥PR 说明逐条对照验收标准 · draft→active · GO 30 · 出货 PR 待 lead 终审 · 40 复跑照旧 |
+| 2026-11-05 | **维护者裁定 (a) 关账**（issue #329 comment `6661645452`）：按机制面 PASS 关账 · planner args 另波跟踪（已立 issue #339 · 同源 stage-w 观察③）；40 invoke 偏差②登记 + 裁定回执回填（消费闭环 ×2 保持主结论证据）；验收标准全勾选；50 CLOSE 收口（本档迁 `done/` + CLOSE 档 + 双 README + 50 invoke）；关账后 #329 关 issue（维护者执行 · bot 不 close issue） |
 | 2026-11-05 | **40 复跑（机制面 PASS · 真落笔偏差红 · 停下报）**：master `ba03800` 独立复跑（verify 四闸 approved / 红线对拍零命中 · delta 恰 3 码文件 / 新测 6 + 回归 183 + 全量 2063 零新增红）+ **live 免 shim 全链实测**（delegation OFF = 被修路径 · 八段①-⑦达成：decide 200+重复 409 / resume 受理+写窗 409 / replan 保号 / **消费命中 ×2（`capability_write_approval_consumed` → 执行放行 · pre-fix 永久再拦面）**；⑧真落笔红：planner string-args → `args_schema_invalid`（两轮一致 · stage-w 40 观察③同源 · 另波 prompt 资产 · 非本 task 缺陷））→ 按维护者令（issue #329 #6660516133）停下报裁定：机制面 PASS 关账 vs 另波处理后复跑 · 40 invoke `invoke_20261105_40_verify.md` 落档；测试数据已清理（events 72 / hitl 4 / threads 2 / notes 0） |
 | 2026-11-05 | **30 实扫落码（案 A · PR #332 MERGED `ba03800` · lead 验收六条件全过）**：`_worker_state` 非空才写 `run_id`（FP-7 空串不写入）——写审批消费门从工人可见 state 取到 run_id · resume 后重下发不再 fail-closed 再拦；红测先行 6 枚新测先红 3 后绿（负样本真派发路径真落笔三照 · 键集钉双形态 · delegation on 对拍 · FP-9 仍拦）；旧测适配 1 枚（`test_off_mode_dispatch_zero_diff` 契约收窄 · 适配不放宽 · 案 A 裁决依据）；红线对拍零命中（registry/policy/event_store/hitl/SSE/web freeze 零 diff · delta 恰 3 文件）；全量 2063 passed + 4 枚既有本地产能红（零新增）；30 invoke `invoke_20261105_30_implement.md` 落档；通过后按档 40 复跑 |
