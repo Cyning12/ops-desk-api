@@ -1,6 +1,6 @@
 # Task：`_worker_state` Send 载荷补 `run_id`（HITL resume 后写审批消费门 fail-closed 再拦修复）
 
-> **状态**：`active`（2026-11-05 · 10 起草落稿 → **四闸 approved**（lead 签认 · PR #331 review `5785422963` + issue #329 comment `6658823187`）→ **30 已授权开工**（issue #329 comment `6658823187` · 分支 `fix/worker-state-send-run-id` · 六交付条件入档）· 出货 PR 待 lead 终审 · 40 复跑照旧）
+> **状态**：`active`（2026-11-05 · 10 起草落稿 → **四闸 approved**（lead 签认 · PR #331 review `5785422963` + issue #329 comment `6658823187`）→ **30 已交付**（issue #329 #6658823187 授权 · PR #332 MERGED `ba03800` · lead 验收六条件全过）→ **40 复跑：机制面 PASS（live 免 shim 消费闭环 ×2 实证）· 真落笔偏差红（planner string-args · 另波 · 非本 task 缺陷）→ 按维护者令停下报裁定中**（issue #329 #6660516133）· 关账待裁定）
 > **类型**：fix / 缺陷修复（Send 载荷丢键 · 消费门 fail-closed 静默失效）
 > **上游**：issue [#329](https://github.com/Cyning12/ops-desk-api/issues/329)（backlog 候选 + 维护者 comment `6658235851` 令按 Harness 流程立项）· 证据 = 40 invoke 偏差登记①（[`invoke_20261105_40_verify.md`](../../harness/invokes/by-task/stage-w-write-expand/invoke_20261105_40_verify.md) §5 · live 全链八段实测 shim 补位实证 · 已实锤）
 > **分支**：`fix/worker-state-send-run-id`（30 用 · 10/00 本档走 `agent/run-id-fix-task-cdc1b46e15dc`）
@@ -203,6 +203,18 @@ task 档落稿 · 四闸 pending · NO-GO 20/30；10 invoke 落盘 `docs/harness
 
 ### 自检结论（执行者）
 
+> **hat 40（40 复跑销项）** · master `ba03800` 独立复跑不采信自报 + live 免 shim 全链实测（delegation OFF = 被修路径）：**机制面 PASS · 真落笔偏差红 → 停下报**。verify 四闸 approved / 红线对拍零命中（码面 delta 恰 3 文件全落交付面）/ 新测 6 + 关联回归 183 独立复跑全绿 / 全量 2063 passed 零新增红（4 failed = 既有基线）/ live：八段中①-⑦达成（**⑦消费命中免 shim ×2**：`capability_write_approval_consumed{hitl_9849547e…/hitl_4144fce3…}` → 执行放行 · pre-fix 此处永久再拦）· ⑧真落笔红：planner string-args → `args_schema_invalid`（两轮一致 · stage-w 40 观察③同源 · 另波 prompt 资产 · 非本 task 缺陷 · 非 #332 引入）→ 按维护者令（issue #329 #6660516133「有红停下报不静默修」）上报裁定：机制面 PASS 关账 vs 另波处理后复跑。详见 invoke：`docs/harness/invokes/by-task/fix-worker-state-send-run-id/invoke_20261105_40_verify.md`。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `npx spec-wave verify --target . --task docs/tasks/active/task_fix_worker_state_send_run_id.md`（master `ba03800`） | 0 | VERIFY: PASS · 四闸 approved |
+| `pytest tests/test_fix_worker_state_send_run_id.py` | 0 | 6 passed（独立复跑） |
+| 关联回归 10 文件 + redlines | 0 | 183 passed（wiring 适配 + R14 段 29 枚承接） |
+| `pytest tests`（全量 · 本地真 PG） | 0* | 2063 passed · 4 failed = 既有基线（diff-whitelist ×2 / env ×2）· 零新增红 |
+| 红线对拍 `git diff 5bec9d6..ba03800` | 0 | registry/policy/event_store/hitl/SSE/web freeze 零 diff · delta 恰 3 码文件 + 过程文档面 |
+| live 免 shim 全链（uvicorn :8012 + PG opsdesk_test + env 组 · delegation off） | — | ①catalog ②挂起(write_intent 钉死) ③pending ④decide 200+重复 409 ⑤resume 受理+写窗 409 ⑥replan 保号 ⑦**消费命中 ×2** ⑧真落笔偏差（args_schema_invalid · 偏差#1）——证据/偏差见 40 invoke |
+| `./scripts/graph-compile.sh` / `ruff check app tests` / `task lint` | 0 | 全绿（40 零仓内码改动） |
+
 > **hat 30（30 实扫落码）** · 红测先行（负样本 + 键集钉 6 枚新测先红 3 后绿 · 单测盲区补齐）→ 案 A 实现 → 全量对拍。红线零破（registry/policy/event_store/hitl 零 diff · 改码面唯一 `_worker_state` 增量）；旧测适配 1 枚（off 模式零 diff 契约收窄 · 适配不放宽 · 依据=案 A 裁决）。详见 invoke：`docs/harness/invokes/by-task/fix-worker-state-send-run-id/invoke_20261105_30_implement.md`。
 
 | 命令 | 退出码 | 摘要 |
@@ -231,4 +243,5 @@ task 档落稿 · 四闸 pending · NO-GO 20/30；10 invoke 落盘 `docs/harness
 |------|------|
 | 2026-11-05 | 10 落稿：承 issue #329 维护者 comment `6658235851` 令起草 fix task（10 帽活 · 只产 task 档 + invoke + lint PASS + PR · 禁改业务码）· 缺陷机制/影响面/证据承 40 invoke 偏差登记① · HG-WORKER-STATE-RUN-ID-DESIGN 两决策点（修复落点三案 A 推荐/B/C 禁 · 回归影响面）· 维护者四红线入 failure_paths（SSE 零 diff / freeze 不动 / resume 单路径 / fail-closed 永不放宽）· 红测负样本（真派发路径 · 真落笔断言）入 test_strategy · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 |
 | 2026-11-05 | **四闸 approved + 30 授权**：lead 签认（PR #331 review `5785422963` 审查通过 · 设计闸裁决案 A + 回归影响面签收）· issue #329 comment `6658823187` 30 授权（分支 `fix/worker-state-send-run-id` · GATE_VERIFY 闸据=本档闸表）· 六交付条件：①红测先行可见红→绿（真派发路径 · 消费命中+真落笔三照）②旧测适配清单随 PR（适配不放宽）③改码面唯一（仅 `_worker_state` 补键+新测+旧测适配）④四红线零 diff 对拍 ⑤ruff+pytest 全量+graph-compile 绿 ⑥PR 说明逐条对照验收标准 · draft→active · GO 30 · 出货 PR 待 lead 终审 · 40 复跑照旧 |
-| 2026-11-05 | **30 实扫落码（案 A · 出货 PR 待 lead 终审）**：`_worker_state` 非空才写 `run_id`（FP-7 空串不写入）——写审批消费门从工人可见 state 取到 run_id · resume 后重下发不再 fail-closed 再拦；红测先行 6 枚新测先红 3 后绿（负样本真派发路径真落笔三照 · 键集钉双形态 · delegation on 对拍 · FP-9 仍拦）；旧测适配 1 枚（`test_off_mode_dispatch_zero_diff` 契约收窄 · 适配不放宽 · 案 A 裁决依据）；红线对拍零命中（registry/policy/event_store/hitl/SSE/web freeze 零 diff · delta 恰 3 文件）；全量 2063 passed + 4 枚既有本地产能红（零新增）；30 invoke `invoke_20261105_30_implement.md` 落档；通过后按档 40 复跑 |
+| 2026-11-05 | **40 复跑（机制面 PASS · 真落笔偏差红 · 停下报）**：master `ba03800` 独立复跑（verify 四闸 approved / 红线对拍零命中 · delta 恰 3 码文件 / 新测 6 + 回归 183 + 全量 2063 零新增红）+ **live 免 shim 全链实测**（delegation OFF = 被修路径 · 八段①-⑦达成：decide 200+重复 409 / resume 受理+写窗 409 / replan 保号 / **消费命中 ×2（`capability_write_approval_consumed` → 执行放行 · pre-fix 永久再拦面）**；⑧真落笔红：planner string-args → `args_schema_invalid`（两轮一致 · stage-w 40 观察③同源 · 另波 prompt 资产 · 非本 task 缺陷））→ 按维护者令（issue #329 #6660516133）停下报裁定：机制面 PASS 关账 vs 另波处理后复跑 · 40 invoke `invoke_20261105_40_verify.md` 落档；测试数据已清理（events 72 / hitl 4 / threads 2 / notes 0） |
+| 2026-11-05 | **30 实扫落码（案 A · PR #332 MERGED `ba03800` · lead 验收六条件全过）**：`_worker_state` 非空才写 `run_id`（FP-7 空串不写入）——写审批消费门从工人可见 state 取到 run_id · resume 后重下发不再 fail-closed 再拦；红测先行 6 枚新测先红 3 后绿（负样本真派发路径真落笔三照 · 键集钉双形态 · delegation on 对拍 · FP-9 仍拦）；旧测适配 1 枚（`test_off_mode_dispatch_zero_diff` 契约收窄 · 适配不放宽 · 案 A 裁决依据）；红线对拍零命中（registry/policy/event_store/hitl/SSE/web freeze 零 diff · delta 恰 3 文件）；全量 2063 passed + 4 枚既有本地产能红（零新增）；30 invoke `invoke_20261105_30_implement.md` 落档；通过后按档 40 复跑 |
