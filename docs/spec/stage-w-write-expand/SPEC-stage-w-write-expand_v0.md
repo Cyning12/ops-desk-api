@@ -1,7 +1,7 @@
 # SPEC：阶段 W 扩写能力（stage-w-write-expand · 受控写闸链上接入第二条真实窄写能力）（v0）
 
 > **层级**：L1 波次 SPEC（阶段 W 的扩切片 · 承 api-controlled-write-hitl 竖切收口）
-> **状态**：`draft`（v0 初稿 · HG-SPEC-SIGNOFF=**pending** · 须 20-spec-audit 书面审 → 维护者人签后才可拆 task）
+> **状态**：`v0-signed`（20-spec-audit R1 审毕 · HG-SPEC-SIGNOFF=**approved**（2026-11-05 维护者人签 · B1 已修订）· 可拆 task）
 > **上游**：[`task_api_controlled_write_hitl`](../tasks/done/task_api_controlled_write_hitl.md)（CLOSE · PR #303 merge `09f97f4`）+ 三个接合缝 fix（PR #307 join-gap · PR #313/#314 tenant-fix · PR #319 decide-owner-fallback · issue #315 CLOSE）· [`docs/discussions/2026-09-17_interview_gaps_adoption_and_landing_v0.md`](../discussions/2026-09-17_interview_gaps_adoption_and_landing_v0.md) §8.1 阶段序 H→T→W→P
 > **立项令**：维护者 2026-11-05 在「下一 task 方向」决策中选「阶段 W 扩写能力」（active 为空时的排期裁定）
 > **下游**：20-spec-audit → HG-SPEC-SIGNOFF（人签 · 00 代录）→ 00 出 task（新设 `HG-STAGE-W-EXPAND-DESIGN` 选型闸 · 类比 HG-STAGE-W-DESIGN 先例）→ 20-task-audit → HG-AUDIT-R1 → 30 → 40 → PR+CI 绿+merge → 图谱回写 → CLOSE
@@ -25,7 +25,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | **pending** | 待 20-spec-audit 书面审后维护者人签（00 代录） |
+| **HG-SPEC-SIGNOFF** | **approved** | 维护者 2026-11-05 人签（lead 代行，依据 issue #323 的 20-spec-audit R1 审查 PR #324「fail·仅 B1」+ 本 commit Q4 豁免口径修订 diff 轻量确认；00 代录）；Q1 选型留 HG-STAGE-W-EXPAND-DESIGN task 闸 |
 
 ---
 
@@ -113,7 +113,7 @@
 
 ### Q4 · tenant_scoped 强制
 
-- 新写能力一律 `tenant_scoped: true`（testing.write.echo 的 false 是 mock 特例，不复制）；30 加加载期断言「写能力 tenant_scoped 必须为 true」。
+- 新写能力一律 `tenant_scoped: true`（testing.write.echo 的 false 是 mock 特例，不复制）；30 加加载期断言「除 mock 特例清单（`testing.write.echo`，以 `testing`/`mock` tag 为谓词）外，写能力 `tenant_scoped` 必须为 true；特例清单不扩容」。
 
 ---
 
@@ -180,3 +180,4 @@
 | 日期 | 版本 | 内容 |
 |---|---|---|
 | 2026-11-05 | v0 | 10-spec 初稿：R0–R5 全轮；Q1 选型三案留维护者（HG-STAGE-W-EXPAND-DESIGN 先例）；FP-1~FP-7；A1–A8；HG-SPEC-SIGNOFF=pending |
+| 2026-11-05 | v0.1 | B1 修订：§4 Q4 加载期断言补 mock 特例豁免口径（testing.write.echo 清单 + testing/mock tag 谓词 · 特例清单不扩容）；HG-SPEC-SIGNOFF 人签 approved（依据 PR #324 R1 审查 + 修订 diff 轻量确认 · 00 代录）|
