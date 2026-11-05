@@ -1,10 +1,11 @@
 # Task：`delegation` resume 对称清理 `approval_id`（与主路径 resume 清理口径对齐）
 
-> **状态**：`draft`（2026-11-05 · 10 起草落稿 · 四闸 pending · NO-GO 20/30）
+> **状态**：`implementing`（2026-11-06 · 四闸 approved · 30 已授权 · 六交付条件在案）
 > **类型**：fix / 缺陷修复（delegation resume 未对称清理 approval_id · 与主路径语义不齐）
-> **上游**：issue [#334](https://github.com/Cyning12/ops-desk-api/issues/334)（backlog 正文 + 维护者 comment `6662721599` 令按 Harness 流程立项 · 受理依据 = 窗口授权 2026-11-05 22:26 → 2026-11-06 07:00 · lead 代行签收与验收）
-> **分支**：`fix/delegation-resume-approval-id`（30 用 · 10/00 本档走 `agent/approval-id-fix-task-be209a5f60c8`）
-> **10 注**：2026-11-05 · 承 issue #334 维护者令起草 fix task（**10 帽活**）· 仅落 task 档 + lint PASS + PR · **禁止**改 `app/` / `tests/`——30 改码须待本档人工闸签收后另行授权
+> **上游**：issue [#334](https://github.com/Cyning12/ops-desk-api/issues/334)（backlog 正文 + 维护者 comment `6662721599` 令立项 · comment `6664735511` 30 授权 · 受理依据 = 窗口授权 2026-11-05 22:26 → 2026-11-06 07:00 · lead 代行签收与验收）
+> **分支**：`fix/delegation-resume-approval-id`（30 本档 · 10/00 走 `agent/approval-id-fix-task-be209a5f60c8` · PR #341 已合入 `c162d1d`）
+> **10 注**：2026-11-05 · 承 issue #334 维护者令起草 fix task（10 帽活）· 仅落 task 档 + lint PASS + PR · PR #341 已验收合并
+> **30 注**：2026-11-06 · 维护者 comment `6664735511` 30 授权（签认依据 = PR #341 review `5789202776` lead 签 · 窗口授权）· 六交付条件：①红测先行可见红→绿（负样本 = delegation resume 后 approval_id 已清 + 真落笔 + 消费闭环三照 · 端到端）②旧测适配不放宽随 PR ③改码面唯一收敛（nodes.py :2162+:2177 单点 · 承 review 裁决）④四红线零 diff 对拍 ⑤ruff + pytest + graph-compile 全绿 ⑥PR 说明逐条对照 · 出货即 30 invoke 落档待审
 
 ---
 
@@ -35,10 +36,10 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 维护者签认 task 草稿（issue #334 comment `6662721599` 令立项 · 本档） |
-| HG-AUDIT-R1 | **pending** | **30** | 20-task-audit R1 书面审 PASS（审查文 `docs/harness/reviews/task_fix_delegation_resume_approval_id_audit_R1_*.md`） |
-| HG-GRAPH-MODULES | **pending**（`n/a` 口径签认） | **30** | graph_change_layer=`none` 口径签认（无图谱面 · 承 no-proxy fix 先例）；若 30 实扫出图谱面须回签 |
-| **HG-DELEGATION-RESUME-APPROVAL-ID-DESIGN** | **pending** | **30** | **设计闸决策点（维护者 issue #334 指定）**：① **清理落点**——approval_id 对称清理动作落在 resume 链哪一环（候选见 R2：案 A `_apply_hitl_decision` 统一应用点对称清理（倾向）/ 案 B delegation 消费侧局部 / 案 C 单据面写回（禁倾向））② **resume 单路径兼容性**——清理不得引入第二条恢复实现 / HTTP 自调，必须落在既有单路径内（`_execute_decided_resume` → `resume_hitl_run` → `_apply_hitl_decision` 链） |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | 维护者签认（issue #334 comment `6662721599` 令立项 · 签认依据 = PR #341 review `5789202776` + 窗口授权 2026-11-05 22:26 指令 · lead 代行 2026-11-05） |
+| HG-AUDIT-R1 | **approved** | **30** | lead 签认 2026-11-05 · 依据同上——lead PR #341 review `5789202776` 审查通过即 20-R1 书面审记录（审查文 [`task_fix_delegation_resume_approval_id_audit_R1_20261106.md`](../harness/reviews/task_fix_delegation_resume_approval_id_audit_R1_20261106.md) 随 30 分支出货落盘） |
+| HG-GRAPH-MODULES | **approved** | **30** | lead 签认 2026-11-05 · 依据同上 · `none` 口径签认确认（无图谱面 · 承 no-proxy fix 先例）· 若 30 实扫出图谱面须回签 |
+| **HG-DELEGATION-RESUME-APPROVAL-ID-DESIGN** | **approved** | **30** | **设计闸裁决（PR #341 review `5789202776`）**：**案 A 路径**——对称清理单点落 `nodes.py :2162+:2177`，一次 cleanup 主/委/审三态收敛；改码面收敛红线内；兼容语义显性化零行为变化 · resume 单路径兼容性：清理动作必须落在既有单链内，禁第二实现/旁路 |
 
 ---
 
@@ -219,3 +220,4 @@ task 档落稿 · 四闸 pending · NO-GO 20/30；lint PASS 后出 PR 待审；3
 | 日期 | 说明 |
 |------|------|
 | 2026-11-05 | 10 落稿：承 issue #334 维护者 comment `6662721599` 令起草 fix task（10 帽活 · 只产 task 档 + lint PASS + PR · 禁改业务码）· 缺陷定性（delegation resume 未对称清理 approval_id）与四红线（resume 单路径 / SSE 事件表零 diff / 消费门 fail-closed 永不放宽 / 改码面收敛）承 issue 正文 · 设计闸 HG-DELEGATION-RESUME-APPROVAL-ID-DESIGN 两决策点（清理落点三案 A 倾向/B/C 禁 · resume 单路径兼容性）· 红测负样本（delegation resume 后 approval_id 已清 · 端到端断言）入 test_strategy · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 |
+| 2026-11-06 | **四闸 approved 代录 + 30 授权入档**（签认依据 = PR #341 review `5789202776` lead 签 + issue #334 comment `6664735511` + 窗口授权 2026-11-05 22:26 指令）：设计闸裁决 = **案 A 路径**（对称清理单点落 `nodes.py :2162+:2177` · 一次 cleanup 主/委/审三态收敛 · 兼容语义显性化零行为变化）· 30 六交付条件入档（红测负样本+三照端到端 / 旧测适配不放宽 / 改码面唯一收敛 / 四红线零 diff / ruff+pytest+graph-compile 全绿 / PR 逐条对照 + 30 invoke 落档）· PR #341 已合入 `c162d1d` · 30 开工（GATE_VERIFY 闸据 = 本档闸表） |
