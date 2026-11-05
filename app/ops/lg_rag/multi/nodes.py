@@ -470,7 +470,16 @@ async def _write_execution_approval(
     拦死 · 租户以 session 真源下推为准）。委派签发类
     （``delegation_issue_hitl_required``）单据**同入本守卫**（api-w-hitl-tenant-fix ·
     HG-W-TENANT-DESIGN ② 扩列：T-fix-2 打戳后守卫查非空成立；空/跨租户 delegation
-    行一律 fail-closed 不消费——守卫真空收口）。台账记动作不记内容（不落参数原值）。
+    行一律 fail-closed 不消费——守卫真空收口）。
+
+    **delegation 类命中 = 查命中不重复消费**（fix-delegation-resume-approval-id ·
+    维护者裁决 2026-11-06 · issue #334 comment `6665660681`）：delegation 类单据的
+    审批消费归签发门单点（``_approval_consumed`` · ``delegation_approval_consumed``
+    台账即该单据唯一消费记录）；本闸对 delegation 类命中仍走同一 fail-closed 匹配
+    + W2 租户守卫 + 返回行（approval_id 注入与三照串链不变），但**不再重复记
+    ``capability_write_approval_consumed`` 台账**——修复前 resume 后同一 approval_id
+    被签发门 + 写闸双消费，与主路径单消费语义不齐。capability_write 类消费形态
+    与主路径逐字节一致。台账记动作不记内容（不落参数原值）。
     """
     from app.ops.hitl import get_hitl_store
 
@@ -497,12 +506,17 @@ async def _write_execution_approval(
     if hit is None:
         return None
     row, remaining = hit
-    if str(row.get("blocked_by") or "") in _WRITE_CONSUMABLE_BLOCKED_BY:
+    blocked_by = str(row.get("blocked_by") or "")
+    if blocked_by in _WRITE_CONSUMABLE_BLOCKED_BY:
         # W2 · HG-W-TENANT-DESIGN ② 扩列：写闸类 + 委派类单据均须带租户且与
         # 当前租户一致（跨租户/空 tenant 一律 fail-closed 不消费）。
         row_tenant = str(row.get("tenant_id") or "")
         if not row_tenant or row_tenant != current_tenant_or_default():
             return None
+    if blocked_by == _BLOCKED_BY_DELEGATION_ISSUE:
+        # delegation 类：查命中即放行（消费单点在签发门 · 双消费合一 ·
+        # approval_id 审计串链经返回行照常注入 · 零行为变化）。
+        return row
     logger.info(
         "capability_write_approval_consumed %s",
         json.dumps(

@@ -1,6 +1,6 @@
 # Task：`delegation` resume 对称清理 `approval_id`（与主路径 resume 清理口径对齐）
 
-> **状态**：`implementing`（2026-11-06 · 四闸 approved · 30 已授权 · 六交付条件在案）
+> **状态**：`active`（2026-11-06 · 四闸 approved · 30 已授权并交付 · 待 lead 终审）
 > **类型**：fix / 缺陷修复（delegation resume 未对称清理 approval_id · 与主路径语义不齐）
 > **上游**：issue [#334](https://github.com/Cyning12/ops-desk-api/issues/334)（backlog 正文 + 维护者 comment `6662721599` 令立项 · comment `6664735511` 30 授权 · 受理依据 = 窗口授权 2026-11-05 22:26 → 2026-11-06 07:00 · lead 代行签收与验收）
 > **分支**：`fix/delegation-resume-approval-id`（30 本档 · 10/00 走 `agent/approval-id-fix-task-be209a5f60c8` · PR #341 已合入 `c162d1d`）
@@ -39,7 +39,7 @@
 | HG-TASK-DRAFT | **approved** | 20-R1, 30 | 维护者签认（issue #334 comment `6662721599` 令立项 · 签认依据 = PR #341 review `5789202776` + 窗口授权 2026-11-05 22:26 指令 · lead 代行 2026-11-05） |
 | HG-AUDIT-R1 | **approved** | **30** | lead 签认 2026-11-05 · 依据同上——lead PR #341 review `5789202776` 审查通过即 20-R1 书面审记录（审查文 [`task_fix_delegation_resume_approval_id_audit_R1_20261106.md`](../harness/reviews/task_fix_delegation_resume_approval_id_audit_R1_20261106.md) 随 30 分支出货落盘） |
 | HG-GRAPH-MODULES | **approved** | **30** | lead 签认 2026-11-05 · 依据同上 · `none` 口径签认确认（无图谱面 · 承 no-proxy fix 先例）· 若 30 实扫出图谱面须回签 |
-| **HG-DELEGATION-RESUME-APPROVAL-ID-DESIGN** | **approved** | **30** | **设计闸裁决（PR #341 review `5789202776`）**：**案 A 路径**——对称清理单点落 `nodes.py :2162+:2177`，一次 cleanup 主/委/审三态收敛；改码面收敛红线内；兼容语义显性化零行为变化 · resume 单路径兼容性：清理动作必须落在既有单链内，禁第二实现/旁路 |
+| **HG-DELEGATION-RESUME-APPROVAL-ID-DESIGN** | **approved** | **30** | **设计闸裁决（PR #341 review `5789202776`）**：~~对称清理单点落 `nodes.py :2162+:2177`~~ **【锚点修正 · 维护者裁定 2026-11-06 · issue #334 comment `6665660681`】**：签认锚点 `:2162+:2177`（`_approved_fresh_for_subtask`/`_persist_hitl` 建单守卫区）经 30 红测探针端到端实证为**干净面**（graph state / 工人 Send 载荷 / replan 保号行 / checkpoint 挂起+resume 后双路径全净），锚点作废；**真实缺陷 = delegation 路径同一 approval_id 双消费**（签发门 `_approval_consumed` :426 面 + 写闸 `_write_execution_approval` :498 面独立触达同一单据），主路径单消费；**修复面 = 消费层双消费合一**（维护者亲核 :420-504 成立）。裁决其余部分（案 A · 单点收敛 · 零行为变化 · resume 单路径兼容性）继续有效 |
 
 ---
 
@@ -52,9 +52,9 @@ issue #334（backlog）：**delegation 路径 resume 时未对称清理 approval
 - **主路径**（`capability_write_hitl_required` · delegation off）：tool 子任务写闸未命中 → 挂起 → decide(approved) → resume → `_apply_hitl_decision` 剪旧结果/解锁/轮数归零 → replan 重下发 → `_write_execution_approval` 消费命中 → `cap_ctx["approval_id"]` 注入 → 真落笔三照串链（issue #334 所称「主路径清理口径」）。
 - **delegation 路径**（`delegation_issue_hitl_required` · delegation on）：supervisor stamping 签发审批拦下 → 挂起 → decide(approved) → resume → 同走 `_apply_hitl_decision` → replan → `_delegation_issue_block_reason` 内 `_approval_consumed` 消费放行签发 → `route_next_subtask` 重签发令牌派发 → tool_exec 写闸再消费（`_WRITE_CONSUMABLE_BLOCKED_BY` 含 delegation 类）→ 执行。
 
-**缺陷**：resume 决策应用后，delegation 路径存在 approval_id 残留面未按主路径同口径清理（确切承载面 = 30 红测负样本先行定位——工人可见 Send 载荷 / graph state / 审计面之一或其组合；10 档不预断）。语义不齐的后果：resume 重放面携 stale approval_id，与「授权效力 = 读取时刻的活状态、resume 后按活状态重取」的既有契约相悖，构成审计串链与重放语义的漂移面。
+**缺陷（30 红测探针定位 · 2026-11-06 · 维护者裁定 `6665660681` 确认）**：~~delegation resume 后 approval_id 残留面未清~~——经端到端探针（真派发路径 + 真 resume + checkpoint 直读）实证：**graph state / 工人 Send 载荷 / replan 保号行 / 挂起与 resume 后 checkpoint 双路径全净**，「残留面」假设不成立。真实缺陷 = **delegation 路径 resume 后同一 approval_id 被双消费**：签发门 `_approval_consumed`（`delegation_approval_consumed{request_id}` 台账）与写闸 `_write_execution_approval`（`capability_write_approval_consumed{approval_id}` 台账）独立触达同一 approved 单据；主路径（capability_write 类）仅写闸单消费——**一单两审，与主路径单消费语义不齐**。
 
-本 task = 该缺陷的最小修复竖切：delegation resume 对称清理 approval_id（落点以设计闸签认为准）+ 红测负样本（端到端断言）+ 主/Delegation 对称性对拍，让两条拦截类路径的 resume 清理口径一致。
+本 task = 该缺陷的最小修复竖切：消费层双消费合一（delegation 类消费归签发门单点 · 写闸查命中不重复记台账 · 返回行 approval_id 三照串链不变）+ 红测负样本（端到端断言）+ 主/Delegation 对称性对拍。
 
 ---
 
@@ -89,9 +89,9 @@ issue #334（backlog）：**delegation 路径 resume 时未对称清理 approval
 
 ## 范围（竖切 · 四闸齐后才 30）
 
-- [ ] **D-fix-1 · delegation resume 对称清理 approval_id**：resume 决策应用后按主路径同口径清理 approval_id 残留面（**落点与写法子口径以设计闸决策点①签认为准**；倾向案 A：`_apply_hitl_decision` 统一应用点对称清理——两条拦截类路径同源经过、单点真源、天然不破 resume 单路径；确切残留承载面由 30 红测负样本先行定位后回填本节）（30 交付）
-- [ ] **D-fix-2 · 红测负样本 + 对称性对拍**：①负样本（维护者红线）= delegation on 路径签发审批拦下 → decide(approved) → **真 resume** → 重下发，端到端断言 resume 后 approval_id 已清（经真派发路径 · 非直造 state）②对称对拍 = 主路径（delegation off · capability_write 闸）resume 后同口径已清零漂移 + delegation 放行面承接（`delegation_approval_consumed` 台账 + 真落笔三照 approval_id 串链不变）（30 交付）
-- [ ] **D-fix-3 · 旧测适配（条件触发）**：若 30 实扫发现既有断言锚在 resume 后 approval_id 残留形态（grep 面：delegation 消费/ resume / write 闸测试族），适配而非放宽（30 交付 · 以实扫为准）
+- [x] **D-fix-1 · 消费层双消费合一**（30 已交付 2026-11-06 · 维护者裁定 `6665660681` 修正面）：`_write_execution_approval` 对 delegation 类命中 = **查命中不重复消费**——同一 fail-closed 匹配 + W2 租户守卫 + 返回行（approval_id 注入与三照串链不变），但不再重复记 `capability_write_approval_consumed` 台账；delegation 类单据消费归签发门 `_approval_consumed` 单点（`delegation_approval_consumed` 即唯一消费记录）。改码面唯一 = `nodes.py::_write_execution_approval`（+18/-3 · 注释显性化裁决依据）。**签认锚点 `:2162+:2177` 经红测探针实证为干净面，已作废**（锚点修正如实留痕见闸表行与 30 invoke · 第七条交付条件）（原案 A「`_apply_hitl_decision` 残留面清理」假设经探针证伪，不采）
+- [x] **D-fix-2 · 红测负样本 + 对称性对拍**（30 已交付 2026-11-06 · 先红后绿）：①负样本（维护者红线）= delegation on 全链（签发拦下 → pending → 图真挂起 → decide → **真 resume** → replan 保号 → 签发门放行 → 令牌 → tool_exec 真执行），端到端断言同一 approval_id 消费台账**恰一笔**（签发门 `delegation_approval_consumed{request_id}`）且写闸面无第二笔 + 真落笔 + 三照（台账 / gateway span approval_id / 执行回执）串链——**先红**（修复前双消费两笔并存）**后绿** ②对称对拍 = 主路径（delegation off · capability_write 闸）resume 后写闸单消费形态与修复前零漂移（`test_main_path_resume_single_consumption_zero_drift`）
+- [x] **D-fix-3 · 旧测适配**（30 实扫 2026-11-06：**零适配**）：delegation 消费 / write 闸 / replan quality / stage-w / fix-worker-state 全组 190 枚断言对象均不锚写闸 delegation 类台账（W2④ 仅断言放行+执行）——实扫零影响如实列出，无适配发生
 
 ### 非范围
 
@@ -213,6 +213,20 @@ task 档落稿 · 四闸 pending · NO-GO 20/30；lint PASS 后出 PR 待审；3
 |------|--------|------|
 | `npx spec-wave task lint --file docs/tasks/active/task_fix_delegation_resume_approval_id.md` | 0 | LINT: PASS（2026-11-05 · 10 起草自检） |
 
+> **hat 30（30 实现）** · 已交付：`nodes.py::_write_execution_approval` 双消费合一（+18/-3 · 改码面唯一）+ 新测 2 枚（负样本先红后绿 + 主路径零漂移对拍）· 旧测实扫零适配 · 未触碰任何 human_gate（四闸 approved 承签认档）。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `pytest tests/test_fix_delegation_resume_approval_id.py`（负样本 · 先红） | 1 | RED 实证：修复前同一 approval_id 双消费两笔并存（签发门 :411 + 写闸 :506） |
+| `pytest tests/test_fix_delegation_resume_approval_id.py`（修复后） | 0 | 2 passed（单消费 + 主路径对拍 · 后绿） |
+| `pytest tests/test_hitl_approval_consumption.py tests/test_write_approval_gate.py tests/test_hitl_approved_replan_quality.py tests/test_fix_worker_state_send_run_id.py tests/test_hitl_resume.py` | 0 | 101 passed 零适配 |
+| `pytest tests/test_stage_w_write_expand.py tests/test_capability_testing_write.py tests/test_lg_rag_delegation_wiring.py tests/test_capability_delegation.py` | 0 | 89 passed 零适配 |
+| `pytest tests`（全量） | 0 | 2065 passed · 4 failed = master `c162d1d` 既有红基线逐项同形（diff-whitelist ×2 / embedder env ×1 / dualproc env ×1 · worktree 对照实证）· **零新增红** |
+| `ruff check app tests` | 1 | 13 枚 master 既有基线（UP038/UP007）· 本波新文件 3 枚已修（I001/B007×2）· 触及路径零新增 |
+| `./scripts/graph-compile.sh` | 0 | EXIT=0 |
+| `npx spec-wave verify --target . --task docs/tasks/active/task_fix_delegation_resume_approval_id.md` | 0 | VERIFY: PASS（四闸 approved · 出货前闸态） |
+| 红线对拍 `git diff origin/master --stat` | 0 | app/ 面唯一 `nodes.py`（+18/-3）· `hitl/**` / `registry.py` / `policy.py` / SSE 事件表 / web freeze 零 diff · resume 单路径（`router.py`/`resume.py`）零 diff |
+
 ---
 
 ## 修订
@@ -220,4 +234,5 @@ task 档落稿 · 四闸 pending · NO-GO 20/30；lint PASS 后出 PR 待审；3
 | 日期 | 说明 |
 |------|------|
 | 2026-11-05 | 10 落稿：承 issue #334 维护者 comment `6662721599` 令起草 fix task（10 帽活 · 只产 task 档 + lint PASS + PR · 禁改业务码）· 缺陷定性（delegation resume 未对称清理 approval_id）与四红线（resume 单路径 / SSE 事件表零 diff / 消费门 fail-closed 永不放宽 / 改码面收敛）承 issue 正文 · 设计闸 HG-DELEGATION-RESUME-APPROVAL-ID-DESIGN 两决策点（清理落点三案 A 倾向/B/C 禁 · resume 单路径兼容性）· 红测负样本（delegation resume 后 approval_id 已清 · 端到端断言）入 test_strategy · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 |
+| 2026-11-06 | **30 交付**：双消费合一落码（`_write_execution_approval` delegation 类查命中不重复消费 · +18/-3 改码面唯一）+ 新测 2 枚先红后绿（负样本单消费+三照 · 主路径零漂移对拍）+ 全量 2065 passed 零新增红（4 枚既有红基线同形对照）+ 旧测实扫零适配 · **锚点修正如实留痕**（签认锚点 `:2162+:2177` 探针实证干净面作废 · 真实缺陷=双消费 · 维护者裁定 `6665660681` · 第七条交付条件履行） |
 | 2026-11-06 | **四闸 approved 代录 + 30 授权入档**（签认依据 = PR #341 review `5789202776` lead 签 + issue #334 comment `6664735511` + 窗口授权 2026-11-05 22:26 指令）：设计闸裁决 = **案 A 路径**（对称清理单点落 `nodes.py :2162+:2177` · 一次 cleanup 主/委/审三态收敛 · 兼容语义显性化零行为变化）· 30 六交付条件入档（红测负样本+三照端到端 / 旧测适配不放宽 / 改码面唯一收敛 / 四红线零 diff / ruff+pytest+graph-compile 全绿 / PR 逐条对照 + 30 invoke 落档）· PR #341 已合入 `c162d1d` · 30 开工（GATE_VERIFY 闸据 = 本档闸表） |
