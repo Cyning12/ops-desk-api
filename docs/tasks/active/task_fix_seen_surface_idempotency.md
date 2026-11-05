@@ -1,6 +1,6 @@
 # Task：write ticket 拉起幂等守卫（`reset_worker_seen_surface` 后首轮巡检不重复拉起）
 
-> **状态**：`draft`（10 起草壳 · 四闸 pending · NO-GO 20/30）
+> **状态**：`draft`（10 起草壳 · **四闸 approved**（签认依据 = PR #345 review `5792245814` lead 签 + 窗口授权 2026-11-05 22:26 指令）· 30 待另行授权）
 > **类型**：fix / 缺陷修复（write ticket 拉起幂等缺口 · worker 重启后 seen 面重置无守卫）
 > **上游**：issue [#335](https://github.com/Cyning12/ops-desk-api/issues/335)（backlog 正文 + 维护者 comment `6668554143` 令立项 · 受理依据 = 窗口授权 2026-11-05 22:26 → 2026-11-06 07:00 · lead 代行签收与验收）
 > **分支**：10/00 走 `agent/idempotency-fix-task-4b3782da80c4`（本 PR · 部署绑定末段=工单名）· 30 实分支预登记 `fix/seen-surface-idempotency`（待闸签收后另行授权）
@@ -35,10 +35,10 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 初稿人扫（10 起草壳 · 本 PR 出货待审） |
-| HG-AUDIT-R1 | pending | **30** | 20-R1 书面审落盘后人签 |
-| HG-GRAPH-MODULES | pending | **30** | `none` 口径待签认（无图谱面 · 若 30 实扫出面须回签） |
-| HG-WRITE-TICKET-IDEMPOTENCY-DESIGN | pending | **30** | **设计闸（维护者 comment `6668554143` 令设）**：决策点① = 修复落点（候选案见 R2 · 30 红测探针实证后裁决）；决策点② = ticket 幂等键语义——**status / seen_surface 双条件位**（库面真实状态位 ∧ worker seen 面位 · 缺一不可 · 裁定见 R2） |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | lead 签认 2026-11-05 · 依据 = PR #345 review `5792245814`（APPROVED）+ 窗口授权 2026-11-05 22:26 指令 + #335 comment `6668554143` |
+| HG-AUDIT-R1 | **approved** | **30** | lead 签认 2026-11-05 · 依据同上——lead PR #345 review `5792245814` 审查通过即 20-R1 书面审记录（审查文随 30 PR 出货落盘 `docs/harness/reviews/` · 承 lead review 明示） |
+| HG-GRAPH-MODULES | **approved** | **30** | lead 签认 2026-11-05 · 依据同上 · `none` 口径签认确认（无图谱面 · 承 no-proxy/delegation 先例；若 30 实扫出图谱面须回签） |
+| **HG-WRITE-TICKET-IDEMPOTENCY-DESIGN** | **approved** | **30** | **设计闸 · lead 签认 2026-11-05 · 依据同上**（维护者 comment `6668554143` 令设）· **双决策点照留**：决策点① = 修复落点——30 红测探针实证后裁决（候选案 A 巡检层守卫=倾向 / B 建单拉起层 / C 只压警告=禁 · 见 R2）；决策点② = ticket 幂等键语义 = **status / seen_surface 双条件位**（库面真实状态位 ∧ worker seen 面位 · 缺一不可 · 签认留档 · 见 R2） |
 
 ---
 
@@ -191,3 +191,4 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30；`spec-wave
 | 日期 | 说明 |
 |------|-----|
 | 2026-11-06 | 10 落稿：承 issue #335 维护者 comment `6668554143` 令起草 fix task（10 帽活 · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 缺陷定性（reset_worker_seen_surface 后首轮巡检重复拉起存量 write ticket · 幂等缺口）承 issue 正文 · 设计闸 HG-WRITE-TICKET-IDEMPOTENCY-DESIGN 两决策点（①修复落点三案 A 倾向/B/C 禁 · ②ticket 幂等键语义 = status/seen_surface 双条件位）· 红测负样本（reset 后首轮巡检不重复拉起 · 端到端断言）入 test_strategy · 四红线（resume 单路径 / SSE 事件表零 diff / 消费门 fail-closed 永不放宽 / 改码面收敛）+ worker freeze 不动语义入 failure_paths · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 · 10 档实扫声明（字面符号零命中 · 承载面留 30 探针） |
+| 2026-11-06 | **四闸 approved 代录 + 30 授权入档**（签认依据 = PR #345 review `5792245814` lead 签 + issue #335 comment `6669768156` + 窗口授权 2026-11-05 22:26 指令）：设计闸决策点②签认 = ticket 幂等键语义 **status/seen_surface 双条件位**照留；决策点①（修复落点）留 30 红测探针实证后裁决并引用 comment `6669768156` · **30 授权六交付条件**（红测先红后绿留 invoke / 常规对拍零漂移 / 改码面唯一落点 / 四红线零 diff 对拍 / ruff+pytest+graph-compile 全绿 CI 4/4 / 20-R1 审查文随 30 PR 落盘）· 30 分支 `fix/seen-surface-idempotency` · PR #345 已 squash 合入 master `ec87535`（10 棒闭环） |
