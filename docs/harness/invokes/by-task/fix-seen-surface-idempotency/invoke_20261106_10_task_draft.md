@@ -26,6 +26,7 @@
 | `npx spec-wave task lint --file docs/tasks/active/task_fix_seen_surface_idempotency.md` | 0 | LINT: PASS（2026-11-06 · 起草棒） |
 | `npx spec-wave task lint-wiki-delta --target .`（CI 同形预检） | 0 | LINT-WIKI-DELTA: PASS（scanned: 209 · missing: 0 · issues: 0） |
 | `npx spec-wave verify --target . --task docs/tasks/active/task_fix_seen_surface_idempotency.md` | 0 | VERIFY: BLOCKED（四闸 pending · HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-WRITE-TICKET-IDEMPOTENCY-DESIGN · 与 NO-GO 20/30 一致 · 设计停点预期语义） |
+| CI（PR #345 @ `da10930`） | — | 4/4 绿（check / import-linter / lint-wiki-delta / pytest 全 success） |
 
 ## §3 · 下一棒
 
