@@ -53,6 +53,14 @@ class HitlStore(Protocol):
 
     async def amark_expired(self, request_id: str) -> dict[str, Any] | None: ...
 
+    async def arelocate_linkage(
+        self,
+        request_id: str,
+        *,
+        subtask_id: str,
+        unlock_subtask_id: str,
+    ) -> dict[str, Any] | None: ...
+
 
 class InMemoryHitlStore:
     """进程内存储（联调 / 单实例）。重启即丢——**不能用于生产**。"""
@@ -137,6 +145,27 @@ class InMemoryHitlStore:
         row["status"] = STATUS_EXPIRED
         return dict(row)
 
+    async def arelocate_linkage(
+        self,
+        request_id: str,
+        *,
+        subtask_id: str,
+        unlock_subtask_id: str,
+    ) -> dict[str, Any] | None:
+        """存量 live 单的连接域迁附（fix-seen-surface-idempotency · issue #335）。
+
+        仅受理 pending/approved：rejected/expired 终态行一律 None（终态不可改）。
+        语义：写意图级幂等找回时存量单整体改挂当前步（批准 → 解锁 → 消费
+        链路与新建单逐点同义，仅少一行重复单据）。只动连接域
+        （subtask_id / unlock_subtask_id），不动 status / decision / payload。
+        """
+        row = self._items.get(request_id)
+        if row is None or row.get("status") not in (STATUS_PENDING, STATUS_APPROVED):
+            return None
+        row["subtask_id"] = str(subtask_id or "")
+        row["unlock_subtask_id"] = str(unlock_subtask_id or "")
+        return dict(row)
+
 
 class NullHitlStore:
     """未配置持久化：**不落库且显式标记**。
@@ -166,6 +195,15 @@ class NullHitlStore:
         return None
 
     async def amark_expired(self, request_id: str) -> dict[str, Any] | None:
+        return None
+
+    async def arelocate_linkage(
+        self,
+        request_id: str,
+        *,
+        subtask_id: str,
+        unlock_subtask_id: str,
+    ) -> dict[str, Any] | None:
         return None
 
 
@@ -211,6 +249,14 @@ class DbHitlStore:
     _MARK_EXPIRED = (
         "UPDATE ops_hitl_requests SET status = 'expired', updated_at = now() "
         "WHERE id = :id AND status = 'approved' RETURNING id"
+    )
+    # fix-seen-surface-idempotency（issue #335）：存量 live 单连接域迁附。
+    # WHERE status IN ('pending','approved') 守卫：终态（rejected/expired）
+    # 行不可改挂；并发下与 decide/mark_expired 的 WHERE 守卫天然互斥，至多一胜。
+    _RELOCATE_LINKAGE = (
+        "UPDATE ops_hitl_requests SET subtask_id = :subtask_id, "
+        "unlock_subtask_id = :unlock_subtask_id, updated_at = now() "
+        "WHERE id = :id AND status IN ('pending', 'approved') RETURNING id"
     )
     # T2（R2-N3 · 仓内首个 FOR UPDATE SKIP LOCKED 先例）：自动 resume 的行锁认领。
     # 条件=裁定四的 SQL 可判部分：status=approved ∧ decided_at 未过 TTL ∧
@@ -326,6 +372,35 @@ class DbHitlStore:
 
         async with self._session_factory() as session, session.begin():
             res = await session.execute(text(self._MARK_EXPIRED), {"id": request_id})
+            updated = res.first() is not None
+        if not updated:
+            return None
+        return await self.aget(request_id)
+
+    async def arelocate_linkage(
+        self,
+        request_id: str,
+        *,
+        subtask_id: str,
+        unlock_subtask_id: str,
+    ) -> dict[str, Any] | None:
+        """存量 live 单连接域迁附（fix-seen-surface-idempotency · issue #335）。
+
+        与 InMemory 版严格同义：``WHERE status IN ('pending','approved')`` 守卫，
+        终态行不可改挂；并发与 decide/mark_expired 竞争时至多一胜，败者 None
+        （调用方按保守方向处理：本轮不新建）。只动连接域，不动语义字段。
+        """
+        from sqlalchemy import text
+
+        async with self._session_factory() as session, session.begin():
+            res = await session.execute(
+                text(self._RELOCATE_LINKAGE),
+                {
+                    "id": request_id,
+                    "subtask_id": str(subtask_id or ""),
+                    "unlock_subtask_id": str(unlock_subtask_id or ""),
+                },
+            )
             updated = res.first() is not None
         if not updated:
             return None
