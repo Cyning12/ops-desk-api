@@ -1,10 +1,11 @@
 # Task：`delegation` resume 对称清理 `approval_id`（与主路径 resume 清理口径对齐）
 
-> **状态**：`active`（2026-11-06 · 四闸 approved · 30 已授权并交付 · 待 lead 终审）
+> **状态**：`done`（2026-11-06 · 全棒链闭环：10 起草 → 四闸签认 → 30 实现（PR #343 `afc8c17`）→ 40 复跑机制面 PASS → 50 CLOSE）
 > **类型**：fix / 缺陷修复（delegation resume 未对称清理 approval_id · 与主路径语义不齐）
 > **上游**：issue [#334](https://github.com/Cyning12/ops-desk-api/issues/334)（backlog 正文 + 维护者 comment `6662721599` 令立项 · comment `6664735511` 30 授权 · 受理依据 = 窗口授权 2026-11-05 22:26 → 2026-11-06 07:00 · lead 代行签收与验收）
 > **分支**：`fix/delegation-resume-approval-id`（30 本档 · 10/00 走 `agent/approval-id-fix-task-be209a5f60c8` · PR #341 已合入 `c162d1d`）
 > **10 注**：2026-11-05 · 承 issue #334 维护者令起草 fix task（10 帽活）· 仅落 task 档 + lint PASS + PR · PR #341 已验收合并
+> **40 注**：2026-11-06 · 维护者 comment `6666638933` 40 复跑销项令——独立复跑（新测 2 / 关联 190 / 全量 2065 零新增红）+ live delegation on 全链**单消费实证**（run `eedd75f3…`：签发门唯一台账 `delegation_approval_consumed{request_id=hitl_78f72333…}` · 写闸零 `capability_write_approval_consumed` · token issued/verified · 执行触达）；偏差①模型层空规划（Qwen3.6-27B 8/8 轮 · 切 V4-Pro 即成功）；偏差②真落笔 `args_schema_invalid`（planner string-args · **issue #339 同源 · 预存在非本链** · 维护者 item 3 预期口径：机制面 PASS + 偏差如实登记）；测试数据零残留。40 invoke `invoke_20261106_40_verify.md`
 > **30 注**：2026-11-06 · 维护者 comment `6664735511` 30 授权（签认依据 = PR #341 review `5789202776` lead 签 · 窗口授权）· 六交付条件：①红测先行可见红→绿（负样本 = delegation resume 后 approval_id 已清 + 真落笔 + 消费闭环三照 · 端到端）②旧测适配不放宽随 PR ③改码面唯一收敛（nodes.py :2162+:2177 单点 · 承 review 裁决）④四红线零 diff 对拍 ⑤ruff + pytest + graph-compile 全绿 ⑥PR 说明逐条对照 · 出货即 30 invoke 落档待审
 
 ---
@@ -125,15 +126,15 @@ issue #334（backlog）：**delegation 路径 resume 时未对称清理 approval
 
 ## 验收标准
 
-- [ ] 人工闸：HG-TASK-DRAFT · HG-AUDIT-R1 · HG-GRAPH-MODULES · **HG-DELEGATION-RESUME-APPROVAL-ID-DESIGN** 均 approved 后方可勾选下列码项
-- [ ] 红测负样本（**维护者红线**）：delegation resume 后 approval_id 已清——delegation on 签发审批拦下 → decide(approved) → 真 resume（`resume_hitl_run` · 经 `_execute_decided_resume` 同源单路径）→ 重下发，端到端断言已清（先红后绿可见 · 承载面以 30 定位回填）
-- [ ] 对称性对拍：主路径（delegation off · capability_write 闸）resume 后同口径已清、修复前后零漂移；两路径清理口径一致（无 delegation-only 特殊分支）
-- [ ] 放行面承接不回归：delegation 消费命中 `delegation_approval_consumed` 台账 + 真落笔三照 approval_id 串链（便签行/回执/span）与修复前一致
-- [ ] 消费门 fail-closed 语义零变化：未命中 / 读失败 / 过期 / 类型不符 / 租户不符 / `blocked_by` 类守卫各负样本既有断言全绿（`test_hitl_approval_consumption` / `test_write_approval_gate` 全组）
-- [ ] 红线对拍：SSE 事件表零 diff；web `hitl.ts` freeze 零 diff；resume 单路径 A5 grep 断言绿；闸链 / HITL 表 / 状态机 / auto-resume / 委派令牌 / 写闸判定序零 diff
-- [ ] 旧测 grep 影响面适配（如有）不放宽；delegation 消费 / resume / write 闸测试族关联回归全绿
-- [ ] 工程面：`ruff check app tests` 触及路径零新增；`pytest tests` 零新增红（本地产能既有红基线如实登记 · 环境纪律承先例显式空值中和）；`./scripts/graph-compile.sh` EXIT=0；`npx spec-wave task lint` PASS
-- [ ] 40 复跑（live 面 · 条件触发）：delegation on live 全链 resume 实测 · 清理口径对称达成
+- [x] 人工闸：HG-TASK-DRAFT · HG-AUDIT-R1 · HG-GRAPH-MODULES · **HG-DELEGATION-RESUME-APPROVAL-ID-DESIGN** 均 approved 后方可勾选下列码项
+- [x] 红测负样本（**维护者红线**）：delegation resume 后 approval_id 已清——delegation on 签发审批拦下 → decide(approved) → 真 resume（`resume_hitl_run` · 经 `_execute_decided_resume` 同源单路径）→ 重下发，端到端断言已清（先红后绿可见 · 承载面以 30 定位回填）
+- [x] 对称性对拍：主路径（delegation off · capability_write 闸）resume 后同口径已清、修复前后零漂移；两路径清理口径一致（无 delegation-only 特殊分支）
+- [x] 放行面承接不回归：delegation 消费命中 `delegation_approval_consumed` 台账 + 真落笔三照 approval_id 串链（便签行/回执/span）与修复前一致
+- [x] 消费门 fail-closed 语义零变化：未命中 / 读失败 / 过期 / 类型不符 / 租户不符 / `blocked_by` 类守卫各负样本既有断言全绿（`test_hitl_approval_consumption` / `test_write_approval_gate` 全组）
+- [x] 红线对拍：SSE 事件表零 diff；web `hitl.ts` freeze 零 diff；resume 单路径 A5 grep 断言绿；闸链 / HITL 表 / 状态机 / auto-resume / 委派令牌 / 写闸判定序零 diff
+- [x] 旧测 grep 影响面适配（如有）不放宽；delegation 消费 / resume / write 闸测试族关联回归全绿
+- [x] 工程面：`ruff check app tests` 触及路径零新增；`pytest tests` 零新增红（本地产能既有红基线如实登记 · 环境纪律承先例显式空值中和）；`./scripts/graph-compile.sh` EXIT=0；`npx spec-wave task lint` PASS
+- [x] 40 复跑（live 面 · 2026-11-06 达成）：delegation on live 全链 resume 实测 · **单消费达成**（签发门唯一台账 · 写闸零重复消费 · run `eedd75f3…`）——偏差②真落笔 #339 另波（item 3 口径）
 
 ---
 
@@ -225,6 +226,8 @@ task 档落稿 · 四闸 pending · NO-GO 20/30；lint PASS 后出 PR 待审；3
 | `ruff check app tests` | 1 | 13 枚 master 既有基线（UP038/UP007）· 本波新文件 3 枚已修（I001/B007×2）· 触及路径零新增 |
 | `./scripts/graph-compile.sh` | 0 | EXIT=0 |
 | `npx spec-wave verify --target . --task docs/tasks/active/task_fix_delegation_resume_approval_id.md` | 0 | VERIFY: PASS（四闸 approved · 出货前闸态） |
+| `pytest tests`（全量 · 40 独立复跑 @ `/tmp/verify40` `afc8c17`） | 0 | 2065 passed · 4 failed = 既有基线同形 · **零新增红** |
+| live delegation on 全链（run `eedd75f3…`） | — | 单消费实证：`delegation_approval_consumed{request_id=hitl_78f72333…}` 唯一台账 · 写闸同 id **0 笔** · token issued/verified · 执行触达（args_schema_invalid = 偏差② #339） |
 | 红线对拍 `git diff origin/master --stat` | 0 | app/ 面唯一 `nodes.py`（+18/-3）· `hitl/**` / `registry.py` / `policy.py` / SSE 事件表 / web freeze 零 diff · resume 单路径（`router.py`/`resume.py`）零 diff |
 
 ---
@@ -234,5 +237,6 @@ task 档落稿 · 四闸 pending · NO-GO 20/30；lint PASS 后出 PR 待审；3
 | 日期 | 说明 |
 |------|------|
 | 2026-11-05 | 10 落稿：承 issue #334 维护者 comment `6662721599` 令起草 fix task（10 帽活 · 只产 task 档 + lint PASS + PR · 禁改业务码）· 缺陷定性（delegation resume 未对称清理 approval_id）与四红线（resume 单路径 / SSE 事件表零 diff / 消费门 fail-closed 永不放宽 / 改码面收敛）承 issue 正文 · 设计闸 HG-DELEGATION-RESUME-APPROVAL-ID-DESIGN 两决策点（清理落点三案 A 倾向/B/C 禁 · resume 单路径兼容性）· 红测负样本（delegation resume 后 approval_id 已清 · 端到端断言）入 test_strategy · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 |
+| 2026-11-06 | **40 复跑销项（机制面 PASS）**：独立复跑全绿（新测 2 / 关联 190 / 全量 2065 零新增红 · 红线对拍零命中）+ live delegation on 全链**单消费实证**（签发门唯一台账 · 写闸零重复消费 · token issued/verified · 执行触达）· 偏差①模型层空规划（切 V4-Pro 即成功）②真落笔 args_schema_invalid（#339 同源 · item 3 口径登记）· 测试数据零残留 · 40 invoke 落档 |
 | 2026-11-06 | **30 交付**：双消费合一落码（`_write_execution_approval` delegation 类查命中不重复消费 · +18/-3 改码面唯一）+ 新测 2 枚先红后绿（负样本单消费+三照 · 主路径零漂移对拍）+ 全量 2065 passed 零新增红（4 枚既有红基线同形对照）+ 旧测实扫零适配 · **锚点修正如实留痕**（签认锚点 `:2162+:2177` 探针实证干净面作废 · 真实缺陷=双消费 · 维护者裁定 `6665660681` · 第七条交付条件履行） |
 | 2026-11-06 | **四闸 approved 代录 + 30 授权入档**（签认依据 = PR #341 review `5789202776` lead 签 + issue #334 comment `6664735511` + 窗口授权 2026-11-05 22:26 指令）：设计闸裁决 = **案 A 路径**（对称清理单点落 `nodes.py :2162+:2177` · 一次 cleanup 主/委/审三态收敛 · 兼容语义显性化零行为变化）· 30 六交付条件入档（红测负样本+三照端到端 / 旧测适配不放宽 / 改码面唯一收敛 / 四红线零 diff / ruff+pytest+graph-compile 全绿 / PR 逐条对照 + 30 invoke 落档）· PR #341 已合入 `c162d1d` · 30 开工（GATE_VERIFY 闸据 = 本档闸表） |
