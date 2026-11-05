@@ -1,6 +1,6 @@
 # Task：`_worker_state` Send 载荷补 `run_id`（HITL resume 后写审批消费门 fail-closed 再拦修复）
 
-> **状态**：`draft`（2026-11-05 · 10 起草落稿 · 四闸 pending · NO-GO 20/30）
+> **状态**：`active`（2026-11-05 · 10 起草落稿 → **四闸 approved**（lead 签认 · PR #331 review `5785422963` + issue #329 comment `6658823187`）→ **30 已授权开工**（issue #329 comment `6658823187` · 分支 `fix/worker-state-send-run-id` · 六交付条件入档）· 出货 PR 待 lead 终审 · 40 复跑照旧）
 > **类型**：fix / 缺陷修复（Send 载荷丢键 · 消费门 fail-closed 静默失效）
 > **上游**：issue [#329](https://github.com/Cyning12/ops-desk-api/issues/329)（backlog 候选 + 维护者 comment `6658235851` 令按 Harness 流程立项）· 证据 = 40 invoke 偏差登记①（[`invoke_20261105_40_verify.md`](../../harness/invokes/by-task/stage-w-write-expand/invoke_20261105_40_verify.md) §5 · live 全链八段实测 shim 补位实证 · 已实锤）
 > **分支**：`fix/worker-state-send-run-id`（30 用 · 10/00 本档走 `agent/run-id-fix-task-cdc1b46e15dc`）
@@ -35,10 +35,10 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 维护者签认 task 草稿（issue #329 令立项 · 本档） |
-| HG-AUDIT-R1 | **pending** | **30** | 20-task-audit R1 书面审 PASS（审查文 `docs/harness/reviews/task_fix_worker_state_send_run_id_audit_R1_*.md`） |
-| HG-GRAPH-MODULES | **pending**（`n/a` 口径签认） | **30** | graph_change_layer=`none` 口径签认（无图谱面 · 承 no-proxy fix 先例） |
-| **HG-WORKER-STATE-RUN-ID-DESIGN** | **pending** | **30** | **设计闸两决策点**：① 修复落点（`_worker_state` 补键 案A 推荐 · shim 已验证 / `route_next_subtask` 无条件补 案B / 消费门放宽 案C=禁）② 回归影响面签收（delegation on 路径已有 `run_id` 重复赋值兼容 · 旧测适配口径） |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | lead 签认 2026-11-05 · 依据 = PR #331 review `5785422963`（审查通过 · lead · fix task 起草）+ issue #329 comment `6658235851`（立项令） |
+| HG-AUDIT-R1 | **approved** | **30** | lead 签认 2026-11-05 · 依据同上——lead PR #331 review `5785422963` 审查通过即 20-R1 书面审记录（流程闸与内容闸一并签） |
+| HG-GRAPH-MODULES | **approved** | **30** | lead 签认 2026-11-05 · 依据同上 · `none` 口径签认确认（无图谱面 · 承 no-proxy fix 先例） |
+| **HG-WORKER-STATE-RUN-ID-DESIGN** | **approved** | **30** | **两决策点裁决**（lead 2026-11-05 签 · PR #331 review `5785422963` + issue #329 comment `6658823187`）：① 修复落点 = **案 A `_worker_state` 补键**（同源单点 · shim 已验证 · 案 B 覆盖面冗余弃 · 案 C 消费门放宽触碰红线禁）② 回归影响面 = **签收**（delegation on 重复赋值同值兼容 · 旧测键集等值断言适配不放宽 · grep 面 test_step_contract 三测 / R14 直调如实列出） |
 
 ---
 
@@ -85,9 +85,9 @@
 
 ## 范围（竖切 · 四闸齐后才 30）
 
-- [ ] **D-fix-1 · Send 载荷补 `run_id` 键**：`_worker_state` 产物含 `run_id`（落点与写法子口径以设计闸决策点①签认为准；推荐案 A：`_worker_state` 内补键 · 非空才写镜像 supervisor_started_at 先例 · delegation 分支 :1666 重复赋值行保留可留待后续清理）（30 交付）
-- [ ] **D-fix-2 · 红测负样本 + 键集回归钉**：①负样本 = 经真派发路径（`route_next_subtask`/`_worker_state` 产载荷 → `tool_exec_node`）resume 后重下发 → 消费门命中 → **真落笔断言**（便签行/回执/幂等 done · 对齐 stage-w A1 审计三照形态）②键集钉 = `_worker_state` 直调断言工人可见载荷含 `run_id`（有值 state）· 空 run_id 不写入（防空串键污染）（30 交付）
-- [ ] **D-fix-3 · 旧测适配（条件触发）**：若 30 实扫发现键集等值断言直调 `_worker_state`（`test_step_contract.py` 三测 / `test_capability_redlines.py` R14 段预估断言对象为 `assigned_subtask` 不受影响），适配而非放宽（30 交付 · 以实扫为准）
+- [x] **D-fix-1 · Send 载荷补 `run_id` 键**（30 已交付 2026-11-05 · 案 A 裁决落地）：`_worker_state` 非空才写 `run_id`（镜像 supervisor_started_at 可选键先例 · FP-7 空串不写入）；delegation 分支 :1666 重复赋值行保留（同值幂等 · 清理留待后续波次）
+- [x] **D-fix-2 · 红测负样本 + 键集回归钉**（30 已交付 2026-11-05 · 先红后绿）：①负样本 = 经真派发路径（`route_next_subtask` → `_worker_state` 产载荷 → `tool_exec_node`）预置 approved 单据后重下发 → 消费命中 → 真落笔三照（便签行/回执/消费台账 span · approval_id 串链）②键集钉 = `_worker_state` 直调断言含 `run_id`（有值）· 空 run_id 不写入——先红 3 枚（载荷无键 → 消费门再拦）后绿
+- [x] **D-fix-3 · 旧测适配**（30 已交付 2026-11-05 · 适配不放宽）：`test_lg_rag_delegation_wiring.py::test_off_mode_dispatch_zero_diff`——off 模式零 diff 契约收窄为「不注入委派 artifact」，载荷身份键 `run_id` 随案 A 裁决全派发路径下发（断言对象由「不含 run_id」改为「run_id == state.run_id」· 委派 artifact 不注入断言保留）；`test_step_contract` 三测 / redlines R14 段实扫零影响（断言对象为 `assigned_subtask` 子树 · 如实列出）
 
 ### 非范围
 
@@ -203,11 +203,25 @@ task 档落稿 · 四闸 pending · NO-GO 20/30；10 invoke 落盘 `docs/harness
 
 ### 自检结论（执行者）
 
-> **hat 10（10 起草）** · 已落稿：task 档 + 10 invoke · 未改 `app/` / `tests/` · 未签任何 human_gate（四闸 pending · NO-GO 20/30）。
+> **hat 30（30 实扫落码）** · 红测先行（负样本 + 键集钉 6 枚新测先红 3 后绿 · 单测盲区补齐）→ 案 A 实现 → 全量对拍。红线零破（registry/policy/event_store/hitl 零 diff · 改码面唯一 `_worker_state` 增量）；旧测适配 1 枚（off 模式零 diff 契约收窄 · 适配不放宽 · 依据=案 A 裁决）。详见 invoke：`docs/harness/invokes/by-task/fix-worker-state-send-run-id/invoke_20261105_30_implement.md`。
 
 | 命令 | 退出码 | 摘要 |
 |------|--------|------|
-| `npx spec-wave task lint --file docs/tasks/active/task_fix_worker_state_send_run_id.md` | 0 | LINT: PASS（2026-11-05 · 10 起草自检） |
+| `pytest tests/test_fix_worker_state_send_run_id.py`（新测 6 枚 · 修复前） | 1 | 3 failed 3 passed——红可见：载荷无 run_id → 消费门 fail-closed 再拦（40 偏差#1 单测形态实证） |
+| `pytest tests/test_fix_worker_state_send_run_id.py`（修复后） | 0 | 6 passed（负样本真落笔三照 + 键集钉双形态 + delegation on 对拍 + FP-9 仍拦） |
+| 关联回归 10 文件（step_contract / write_gate / stage_w_write_expand / lg_rag_multi / parallel_join / react_observe / delegation_wiring / supervisor_budget / testing_write + 新文件） | 0 | 154 passed（含旧测适配 1 枚） |
+| `pytest tests/eval/test_capability_redlines.py`（R14 直调面） | 0 | 29 passed（零影响实证） |
+| `pytest tests`（全量 · 本地真 PG opsdesk_test） | 0* | 2063 passed · 4 failed——均为 master 既有本地产能红（diff-whitelist 锚点漂移 ×2 / env 依赖 ×2 · CI skip 面 · 承 stage-w 40 登记基线）· **零新增红** |
+| `ruff check app tests` | 0 | 零新增 |
+| `./scripts/graph-compile.sh` | 0 | EXIT=0（graph=none 口径 · 无图谱面改动） |
+| 红线对拍 `git diff`（registry/policy/event_store/hitl/web freeze） | 0 | 零 diff · delta 恰 3 文件全落交付面（nodes.py `_worker_state` +8 / 新测文件 +347 / wiring 适配 ±9） |
+| `npx spec-wave verify --target . --task docs/tasks/active/task_fix_worker_state_send_run_id.md`（30 开工前 GATE_VERIFY） | 0 | VERIFY: PASS · 四闸 approved · 20-R1 审查文 + 10/20 invoke 齐 |
+
+> **hat 10（10 起草）** · 已落稿：task 档 + 10 invoke · 未改 `app/` / `tests/` · 四闸 pending 起 → 本 PR 第二棒签认 approved（lead · PR #331 review `5785422963`）。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `npx spec-wave task lint --file docs/tasks/active/task_fix_worker_state_send_run_id.md` | 0 | LINT: PASS（2026-11-05 · 10 起草自检 + 签认后代录复跑同 PASS） |
 
 ---
 
@@ -216,3 +230,5 @@ task 档落稿 · 四闸 pending · NO-GO 20/30；10 invoke 落盘 `docs/harness
 | 日期 | 说明 |
 |------|------|
 | 2026-11-05 | 10 落稿：承 issue #329 维护者 comment `6658235851` 令起草 fix task（10 帽活 · 只产 task 档 + invoke + lint PASS + PR · 禁改业务码）· 缺陷机制/影响面/证据承 40 invoke 偏差登记① · HG-WORKER-STATE-RUN-ID-DESIGN 两决策点（修复落点三案 A 推荐/B/C 禁 · 回归影响面）· 维护者四红线入 failure_paths（SSE 零 diff / freeze 不动 / resume 单路径 / fail-closed 永不放宽）· 红测负样本（真派发路径 · 真落笔断言）入 test_strategy · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 |
+| 2026-11-05 | **四闸 approved + 30 授权**：lead 签认（PR #331 review `5785422963` 审查通过 · 设计闸裁决案 A + 回归影响面签收）· issue #329 comment `6658823187` 30 授权（分支 `fix/worker-state-send-run-id` · GATE_VERIFY 闸据=本档闸表）· 六交付条件：①红测先行可见红→绿（真派发路径 · 消费命中+真落笔三照）②旧测适配清单随 PR（适配不放宽）③改码面唯一（仅 `_worker_state` 补键+新测+旧测适配）④四红线零 diff 对拍 ⑤ruff+pytest 全量+graph-compile 绿 ⑥PR 说明逐条对照验收标准 · draft→active · GO 30 · 出货 PR 待 lead 终审 · 40 复跑照旧 |
+| 2026-11-05 | **30 实扫落码（案 A · 出货 PR 待 lead 终审）**：`_worker_state` 非空才写 `run_id`（FP-7 空串不写入）——写审批消费门从工人可见 state 取到 run_id · resume 后重下发不再 fail-closed 再拦；红测先行 6 枚新测先红 3 后绿（负样本真派发路径真落笔三照 · 键集钉双形态 · delegation on 对拍 · FP-9 仍拦）；旧测适配 1 枚（`test_off_mode_dispatch_zero_diff` 契约收窄 · 适配不放宽 · 案 A 裁决依据）；红线对拍零命中（registry/policy/event_store/hitl/SSE/web freeze 零 diff · delta 恰 3 文件）；全量 2063 passed + 4 枚既有本地产能红（零新增）；30 invoke `invoke_20261105_30_implement.md` 落档；通过后按档 40 复跑 |
