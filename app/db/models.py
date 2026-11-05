@@ -441,6 +441,41 @@ class OpsCapabilityIdempotency(Base):
     updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
 
 
+class OpsCapabilityNote(Base):
+    """受控写便签（stage-w-write-expand · Q1=S1 仓内落笔型写）。
+
+    第二条真实窄写能力 ``ops.write.run_note`` 的落笔目标面：run 备注/审计便签。
+    全部经既有受控写闸链落笔（HITL 审批 → resume 单路径 → 执行），行上带
+    ``tenant_id`` / ``approval_id`` / ``idempotency_key``——审计串链可查询，
+    且 ``(tenant_id, idempotency_key)`` 唯一约束是「重放不双写」的 DB 级兜底
+    （幂等 store 进程丢失/跨实例漂移时仍然成立）。
+    """
+
+    __tablename__ = "ops_capability_notes"
+    __table_args__ = (
+        # 幂等键作用域 = 租户内唯一：同键重放 DB 级不双写（FP-4 兜底防线）
+        UniqueConstraint(
+            "tenant_id", "idempotency_key", name="uq_ops_capability_notes_tenant_key"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    capability_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    #: 与 Principal 同源；代码从 ctx 构造，禁止取模型产出（F1=C 纪律）
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    #: 便签归因 run
+    run_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    subtask_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    #: 审计串链：消费的那张 HITL 审批单 id（span approval_id 同源）
+    approval_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    note: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    idempotency_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+
+
 class OpsHitlRequest(Base):
     """人工审批申请（HITL）——**授权记录**，不是日志。
 

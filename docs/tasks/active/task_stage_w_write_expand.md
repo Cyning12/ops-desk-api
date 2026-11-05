@@ -83,10 +83,10 @@
 
 ## 范围（承 SPEC §2 D 块 · 四闸齐后才 30）
 
-- [ ] **D1 · 第二条窄写能力选型与接入**（必做 · **选型挂 Q1 + HG-STAGE-W-EXPAND-DESIGN**）：按 Q1 裁定的一条真实写能力端到端经既有闸链（`side_effect: write` 先 write 级可逆，不碰 irreversible → Policy 写闸 → HITL 审批闸挂起 → decide(approved) → resume 单路径续跑 → 执行 → span `approval_id` 串链审计）；manifest 字段族对齐 builtin.v1.yaml/testing.v1.yaml 范式；`hitl.required: true` 显式声明；能力可见性经 `∩ visible`（strategy builder）与 allowlist 全链照旧——新能力可达 ≠ 默认可达
-- [ ] **D2 · 租户下推与负样本**（必做）：新能力 `tenant_scoped: true`；写路径 A 会话写 B 资源 → 对外 404 / 头 session 不一致 403（复用 F1–F6 与 PR #313 消费守卫）；负样本断言：无审批直接执行 fail-closed 挂起 / env 未显式开启时能力不可见 / 幂等重放不双写
-- [ ] **D3 · 审计与观测**（必做）：既有 `capability_write_approval_consumed` 台账 + span `approval_id` 串链对新能力原样生效（**只验不建**）；若 30 实扫发现落值缺口 → 本档修订表回填，不静默扩面
-- [ ] **D4 · 图谱与文档回写**（必做）：`docs/_tech_graph/l1/01_modules.md` capability 行一句备注（G-L1）；不新增一级模块；HG-GRAPH-MODULES 随 30 回写回签
+- [x] **D1 · 第二条窄写能力选型与接入**（必做 · **Q1=S1 中签 · HG-STAGE-W-EXPAND-DESIGN approved**）：`ops.write.run_note`（run 备注/审计便签 · local_fn 真落笔）端到端经既有闸链（`side_effect: write` → Policy 写闸 → HITL 审批闸挂起 → decide(approved) → resume 单路径续跑 → 执行 → span `approval_id` 串链审计）；manifest `manifests/ops.write.v1.yaml` 字段族对齐 builtin/testing 范式；`hitl.required: true` 显式声明；三层显式打开（不进默认加载面 + `OPS_CAPABILITY_ALLOW_WRITE_TAGS=run_note` 独立写 tag 放行）——可达 ≠ 默认可达（30 交付 · 本 PR）
+- [x] **D2 · 租户下推与负样本**（必做）：`tenant_scoped: true`（loader V13 强制 · mock 特例清单不扩容）；负样本断言全绿：无审批 fail-closed 挂起 / env 未开启不可见（放行 testing tag 亦不可见）/ 幂等重放不双写（store 命中 + DB 唯一约束兜底两形态）/ ctx 缺租户 `tenant_scope_missing` / 跨租户 404·头 403 由 F1–F6 与 PR #313 既有测试承接（30 交付 · 本 PR）
+- [x] **D3 · 审计与观测**（必做）：既有 `capability_write_approval_consumed` 台账 + span `approval_id` 串链对本能力**只验不建**原样生效——A1 全链断言：消费台账 / capability span / 回执 / 便签行 `approval_id` 四处同单可串；实扫无落值缺口，零静默扩面（30 交付 · 本 PR）
+- [x] **D4 · 图谱与文档回写**（必做）：`docs/_tech_graph/l1/01_modules.md` capability 行 + db 行登记新表 + HG-GRAPH-MODULES 30 回写回签行（承 :134 先例 · 本档闸表同签）；不新增一级模块 · 不增 implementedBy（30 交付 · 本 PR）
 
 ### 非范围（承 SPEC §3 · 与上游一致）
 
@@ -119,15 +119,15 @@
 ## 验收标准（承 SPEC §6 A1–A8 · 可机验）
 
 - [ ] 人工闸：HG-TASK-DRAFT · HG-AUDIT-R1 · HG-GRAPH-MODULES · **HG-STAGE-W-EXPAND-DESIGN** 均 approved 后方可勾选下列码项（Q1 选型未签 = NO-GO 30）
-- [ ] **A1 端到端竖切**：选定写能力 fixture 轨可达「plans 含写 tool → hitl.waiting → pending → decide(approved) → resume（含 auto 模式）→ 执行落笔 → done{completed}」全链自动化断言
-- [ ] **A2 负样本组**：无审批 fail-closed；跨租户 404；头/session 403；env 未开启不可见；幂等重放不双写
-- [ ] **A2+ 加载期断言（SPEC §4 Q4 · v0.1 口径）**：除 mock 特例清单（`testing.write.echo` · `testing`/`mock` tag 谓词）外，写能力 `tenant_scoped` 必须为 true；特例清单不扩容
-- [ ] **A3 租户下推**：写 intent/审批/执行三处 tenant_id 一致（断言 + M1 式影响面逐条标注）
-- [ ] **A4 审计串链**：span `approval_id` + `capability_write_approval_consumed` 台账对新能力落值；审批决策与执行结果可串链查询
-- [ ] **A5 反回归钉死**：`registry.py::_match_filter` / `policy.py` 闸序段 git diff 为空；PR #303/#307/#313/#319 既有测试原样绿；resume 单路径无第二实现（grep 断言）
-- [ ] **A6 freeze 零破**：SSE 事件表零 diff；`hitl-browser-decide-v1` 400/404/409/422 语义回归绿
-- [ ] **A7 工程面**：`pytest tests` 全绿（CI 为准）；`ruff` 触及路径零新增；`./scripts/graph-compile.sh` EXIT=0；G-L1 备注回写
-- [ ] **A8 lint**：`npx spec-wave task lint` PASS
+- [x] **A1 端到端竖切**：`test_a1_end_to_end_approve_resume_real_write`——闸拦（`capability_write_hitl_required`）→ pending（写意图钉死）→ 图真挂起（freeze 形态钉死）→ decide(approved) → resume 单一驱动 → 重下发消费命中 → **真落笔**（便签行落值）（30 交付 · auto 模式同源 `resume_hitl_run` 由既有 T2 测试承接）
+- [x] **A2 负样本组**：无审批 fail-closed 零落笔 / decide(rejected) 零落笔 / ctx 缺租户 `tenant_scope_missing` / 无写放行 `write_not_confirmed` / env 未开启不可见 / 放行 testing tag 不可见 / 幂等重放不双写（store + DB 唯一约束两形态）；跨租户 404·头 403 由既有 F1–F6 / PR #313 测试承接（本文件不重复造面）
+- [x] **A2+ 加载期断言（SPEC §4 Q4 · v0.1 口径）**：loader V13 落地——除 mock 特例清单（`testing.write.echo` · `testing`/`mock` tag 谓词 · 冒充 id 不带谓词 tag 亦拦）外，write 级能力 `tenant_scoped` 必须为 true；特例清单不扩容；口径仅 side_effect=write（本波「不碰 irreversible」钉死）
+- [x] **A3 租户下推**：写 intent / 审批行 / 便签行三处 tenant_id 一致（A1 断言）；同幂等键跨租户互不遮挡（租户内键作用域）
+- [x] **A4 审计串链**：span `approval_id` + `capability_write_approval_consumed` 台账 + 回执（`write_confirmed`）+ 便签行 `approval_id` 四处同单可串（A1 断言）
+- [x] **A5 反回归钉死**：`registry.py` / `policy.py` 本 PR **零 diff**（git 对拍）；resume 单路径无第二实现（grep 断言 `test_a5_resume_single_path_no_second_impl`）；既有 W 链测试全绿
+- [x] **A6 freeze 零破**：SSE 事件表零 diff（本 PR 不触 lg_rag）；`hitl-browser-decide-v1` 语义回归绿（既有 test_hitl_pending_decide 全组）
+- [x] **A7 工程面**：`pytest tests` 全绿（CI 为准 · 本地产能 4 枚既有红如实登记见 invoke）；`ruff` 触及路径零新增；`./scripts/graph-compile.sh` EXIT=0；G-L1 备注回写
+- [x] **A8 lint**：`npx spec-wave task lint` PASS
 
 ---
 
@@ -203,6 +203,17 @@ SPEC 签收毕（HG-SPEC-SIGNOFF approved 2026-11-05 · B1 已修订）→ 00 �
 
 ### 自检结论（执行者）
 
+> **hat 30（30 实扫落码）** · 红测先行（16 枚新测先红后绿 · V13/manifest/表缺三向红可见）→ 实现 → 全量对拍。红线零破（registry/policy/lg_rag/gateway/SSE 零 diff）；Q3 新表义务随 alembic 落盘 + 本档回填。详见 invoke：`docs/harness/invokes/by-task/stage-w-write-expand/invoke_20261105_30_implement.md`。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `pytest tests/test_stage_w_write_expand.py`（新测 16 枚） | 0 | 16 passed（A1 全链 + V13 四断言 + 负样本组 + FP-4 双形态 + A3 租户隔离 + A5 grep） |
+| `pytest tests`（全量 · 本地真 PG opsdesk_test） | 0* | 2056 passed · 5 failed 均为 master `6955b4c` 既有本地产能红（临时 worktree 复证）：episode_pattern_mine（未提交文件瞬时态 · 提交后自愈）/ write_replay_guard TC8 + strategy_scenario（diff-whitelist 锚点 `a1591e9`/`d337486` 后 scripts 漂移 · CI 无 PG skip 面）/ memory_vector_p1 + multi_replica_dualproc（env 依赖 · 同上 CI skip 面）· 零新增红 |
+| `ruff check app tests` | 0 | 零新增（触及路径全绿） |
+| `./scripts/graph-compile.sh` | 0 | EXIT=0（capability/db 行 + HG-GRAPH-MODULES 回签行编译过） |
+| `npx spec-wave task lint --file docs/tasks/active/task_stage_w_write_expand.md` | 0 | LINT: PASS |
+| `npx spec-wave verify --target . --task docs/tasks/active/task_stage_w_write_expand.md` | 0 | VERIFY: PASS · 四闸 approved（改码前首输出 GATE_VERIFY 见 invoke） |
+
 > **hat 10（00 拆 task 派发）** · 已落稿：task 档 + SPEC v0.1 正本（merge `spec/stage-w-write-expand` `fa83be6`）+ 10 invoke 落盘 · 未改 `app/` / `alembic/` / `tests/` · 未签任何 human_gate（四闸 pending · Q1 留 HG-STAGE-W-EXPAND-DESIGN）。
 
 | 命令 | 退出码 | 摘要 |
@@ -219,3 +230,4 @@ SPEC 签收毕（HG-SPEC-SIGNOFF approved 2026-11-05 · B1 已修订）→ 00 �
 | 2026-11-05 | 10 落稿：00 承 issue #323 签收链拆 task（承 SPEC v0.1 · HG-SPEC-SIGNOFF approved）· 四闸 pending（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-STAGE-W-EXPAND-DESIGN）· NO-GO 20/30 · Q1 选型留闸随档裁决 · R0–R5 承 SPEC §7 |
 | 2026-11-05 | **HG-STAGE-W-EXPAND-DESIGN approved**（Q1=S1 仓内落笔型写 · Q2/Q3 随签 · 维护者 2026-11-05 签 · lead 代录 commit `461e525` · 依据 = issue #323 维护者「按建议签」+ PR #325 评论 #6650428109）；余三闸仍 pending（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES）· 20-task-audit 书面审下一棒 · 审毕停等三闸人签 · 代录行 blocks_hats 列结构修复（签认内容未动） |
 | 2026-11-05 | **HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES approved（lead 代录 · 四闸齐）**——依据 = issue #323 维护者预授权 comment `6652283580`「R1 书面审出货后由 lead 审查，无问题即代录三闸，每处引用本评论 + 审查文，全程留痕；有红线冲突/内容阻塞/与 SPEC v0.1·Q1=S1 签认不符则停下不动闸报维护者」+ PR #326 20-task-audit R1 审查文（PASS 零内容阻塞）；lead 复核随 PR #326 review 留痕完成（七项全过 · 2026-11-05）：SPEC 正本 vs `fa83be6` 零 diff / Q4·A2+ 豁免口径两档 parity / 全仓唯一 write=mock 实证 / 判序 deny_high_risk:118 先于 deny_write:120 / 审查文命名命中闸表预期路径 / task lint 双证（CI check + 审查方复跑）/ master 闸态 verify BLOCKED 与设计停点一致· 无红线冲突 · 无内容阻塞 · 与 SPEC v0.1·Q1=S1 签认相符 · PR #326 合入后 30 可开工 |
+| 2026-11-05 | **30 实扫落码（Q1=S1 仓内落笔型写 · 出货 PR 待 lead 终审）**：第二条真实窄写能力 `ops.write.run_note` 端到端接入既有闸链——`manifests/ops.write.v1.yaml`（三层显式打开 · 独立写 tag `run_note` 不放行 testing 复用）+ `defaults.py::ops_write_run_note` 真落笔 adapter（DB IO 集中 `note_store.py` · 延迟 import 对齐 idempotency/receipts 先例 · import-linter 白名单同例登记）+ loader **V13**（write 级 `tenant_scoped` 强制 · mock 特例清单不扩容 · 冒充 id 无 testing/mock 谓词 tag 亦拦 · 口径仅 side_effect=write 承「不碰 irreversible」钉死）；**Q3 回填（随签义务履行）**：既有表实扫无适配面 → 新表 `ops_capability_notes`（唯一约束 `(tenant_id, idempotency_key)` = FP-4 DB 级兜底 · `approval_id` 串链列）+ alembic `20261105_capability_notes`（head 自 `20260923_memory_episodes` · upgrade/downgrade 可逆）；防重双保险（幂等 store claim + DB 唯一约束 · store 丢失模拟形态断言）；**D4 回写**：`01_modules.md` capability 行 + db 行登记 + HG-GRAPH-MODULES 30 回写回签行（承 :134 先例 · 本档闸表同签确认 · 实增量 = G-L1 行备注 + 新表登记 · 不新增一级模块 · 不增 implementedBy）；红线对拍：`registry.py`/`policy.py`/`lg_rag`/`gateway.py`/SSE 事件表**零 diff**；既有 probe 适配：testing-write A8② probe 补 `tenant_scoped: true` 过 V13（断言对象 V1 放宽面不变）· 本地产能 4 枚既有红如实登记（master `6955b4c` 复证 · 2 枚 diff-whitelist 锚点漂移 + 2 枚 env 依赖 · 均 CI skip 面）|

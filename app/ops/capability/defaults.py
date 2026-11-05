@@ -90,6 +90,134 @@ def testing_write_echo(payload: Any) -> dict:
     }
 
 
+async def _insert_note(params: dict[str, Any]) -> tuple[str | None, str | None]:
+    """延迟 import 落笔面（defaults 罐头面顶层不依赖 note_store）。"""
+    from app.ops.capability.note_store import insert_note
+
+    return await insert_note(params)
+
+
+async def ops_write_run_note(payload: Any, *, ctx: dict | None = None) -> dict:
+    """受控写落笔：run 备注/审计便签写入 ``ops_capability_notes``（阶段 W 扩写 · Q1=S1）。
+
+    第二条真实窄写能力 ``ops.write.run_note`` 的执行体——与
+    ``testing_write_echo`` 语义 mock 相对照：**真实仓内 DB 落笔**。全部 IO 走
+    本函数内**延迟 import**（DB IO 集中在 ``note_store.py`` · 对齐
+    ``idempotency.py`` / ``receipts.py`` 先例：能力内核顶层零 DB 依赖）。
+
+    防重双保险（FP-4 重放不双写）：
+    ① 幂等 store claim（``(tenant_id, request_id)`` 租户内键）——duplicate 直返；
+    ② 落笔表 ``(tenant_id, idempotency_key)`` 唯一约束——store 进程丢失 /
+       跨实例漂移时 DB 级仍不双写（ON CONFLICT DO NOTHING 如实返回已有行）。
+
+    租户封闭：tenant **只取 ctx**（与 ``Principal`` 同源纪律 · 禁取模型产出）；
+    ctx 缺租户谓词时 Policy 层已拒（``tenant_scope_missing``），此处再 fail-closed
+    一道（直接调用面不绕闸）。
+    """
+    import asyncio
+
+    args = payload if isinstance(payload, dict) else {}
+    run_id = str(args.get("run_id") or "").strip()
+    note = str(args.get("note") or "").strip()
+    request_id = str(args.get("request_id") or "").strip()
+    if not run_id or not note or not request_id:
+        raise ValueError("run_id / note / request_id 必填（落笔参数缺失不落笔）")
+    tenant_id = str((ctx or {}).get("tenant_id") or "").strip()
+    if not tenant_id:
+        raise PermissionError(
+            "tenant_scope_missing：写落笔必须携带租户谓词（ctx.tenant_id · 与 Principal 同源）"
+        )
+
+    from app.ops.capability.idempotency import get_idempotency_store
+
+    store = get_idempotency_store()
+    aclaim = getattr(store, "aclaim", None)
+    if callable(aclaim):
+        claim = await aclaim(
+            request_id, capability_id="ops.write.run_note", tenant_id=tenant_id
+        )
+    else:
+        claim = await asyncio.to_thread(
+            store.claim,
+            request_id,
+            capability_id="ops.write.run_note",
+            tenant_id=tenant_id,
+        )
+    if claim.duplicate:
+        # 命中幂等键：不执行。回一个与首次形状一致的载荷，便于调用方对账。
+        return {
+            "tool": "ops_write_run_note",
+            "written": False,
+            "duplicated": True,
+            "duplicate_of": claim.receipt_id,
+            "idempotency_key": request_id,
+            "run_id": run_id,
+            "tenant_id": tenant_id,
+        }
+    if not claim.acquired:
+        raise RuntimeError(
+            f"idempotency_in_flight: 同一幂等键正在执行中 key={request_id} tenant={tenant_id}"
+        )
+
+    async def _arelease() -> None:
+        arelease = getattr(store, "arelease", None)
+        if callable(arelease):
+            await arelease(request_id, tenant_id=tenant_id)
+        else:
+            await asyncio.to_thread(store.release, request_id, tenant_id=tenant_id)
+
+    approval_id = str((ctx or {}).get("approval_id") or "")
+    created_by = str((ctx or {}).get("user_id") or "")
+    params = {
+        "id": str(__import__("uuid").uuid4()),
+        "capability_id": "ops.write.run_note",
+        "tenant_id": tenant_id,
+        "run_id": run_id,
+        "subtask_id": str((ctx or {}).get("subtask_id") or ""),
+        "approval_id": approval_id,
+        "note": note,
+        "created_by": created_by,
+        "key": request_id,
+    }
+    try:
+        # 唯一约束兜底：同 (tenant, key) 重放不双写，如实取回已有行
+        note_id, duplicate_of = await _insert_note(params)
+    except Exception:
+        # 落笔失败 = 无副作用（单语句原子）→ 释放租约，可安全重试
+        await _arelease()
+        raise
+
+    if duplicate_of is not None:
+        await _arelease()  # 本次 claim 未产生副作用 → 释放（避免把键卡进租约）
+        return {
+            "tool": "ops_write_run_note",
+            "written": False,
+            "duplicated": True,
+            "duplicate_of": duplicate_of,
+            "idempotency_key": request_id,
+            "run_id": run_id,
+            "tenant_id": tenant_id,
+        }
+
+    # 落笔成功：键标完成（回执 id 由 gateway 落完回执后补上 · complete 支持二次调用）
+    acomplete = getattr(store, "acomplete", None)
+    if callable(acomplete):
+        await acomplete(request_id, tenant_id=tenant_id)
+    else:
+        await asyncio.to_thread(store.complete, request_id, tenant_id=tenant_id)
+    return {
+        "tool": "ops_write_run_note",
+        "written": True,
+        "duplicated": False,
+        "note_id": str(note_id),
+        "run_id": run_id,
+        "tenant_id": tenant_id,
+        "approval_id": approval_id,
+        "idempotency_key": request_id,
+        "receipt": {"note_id": str(note_id), "run_id": run_id, "tenant_id": tenant_id},
+    }
+
+
 _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
     (
         CapabilitySpec(

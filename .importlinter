@@ -40,6 +40,8 @@ ignore_imports =
     app.ops.capability.lookups -> app.db.session
     # 副作用回执落库
     app.ops.capability.receipts -> app.db.session
+    # 受控写便签落笔（stage-w-write-expand · Q1=S1 · 同 idempotency/receipts 先例）
+    app.ops.capability.note_store -> app.db.session
 
 [importlinter:contract:llm-outbound]
 name = llm 仅允许 → db（禁 lg_rag/strategy/capability/…）
