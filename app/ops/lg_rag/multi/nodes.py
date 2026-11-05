@@ -1374,6 +1374,14 @@ def _worker_state(state: LgRagState, subtask: dict) -> dict:
         "subtasks": list(state.get("subtasks") or []),
         "supervisor_step_count": int(state.get("supervisor_step_count") or 0),
     }
+    # Send 载荷即工人所见的全部 state：run_id 必须随载荷下发——写审批消费门
+    # ``_write_execution_approval`` 经 ``_run_id_of(state)`` 取值，缺键空串
+    # fail-closed ⇒ HITL resume 后重下发永远再拦（fix-worker-state-send-run-id ·
+    # 案 A · HG-WORKER-STATE-RUN-ID-DESIGN）。非空才写（镜像下两行可选键先例）：
+    # 空 run_id 不写入，防空串键污染工人视野（FP-7）。
+    run_id = _run_id_of(state)
+    if run_id:
+        payload["run_id"] = run_id
     if state.get("supervisor_started_at") is not None:
         payload["supervisor_started_at"] = state["supervisor_started_at"]
     if state.get("supervisor_budget_exhausted") is True:

@@ -135,10 +135,15 @@ def test_off_mode_dispatch_zero_diff(monkeypatch):
     monkeypatch.setenv(dl.ENV_MODE, "off")
     monkeypatch.setenv(dl.ENV_SECRET, SECRET)
     _register_caps()
-    sends = route_next_subtask(_state(READ_CAP))
+    state = _state(READ_CAP)
+    sends = route_next_subtask(state)
     payload = sends[0].arg
     assert "delegation_token" not in payload
-    assert "run_id" not in payload  # off 模式不碰载荷（现状零 diff）
+    # run_id 随载荷下发与委派档无关（fix-worker-state-send-run-id · 案 A ·
+    # HG-WORKER-STATE-RUN-ID-DESIGN 裁决）：写审批消费门须从工人可见 state 取到
+    # run_id，resume 后重下发才不 fail-closed 再拦。off 模式零 diff 契约收窄为
+    # 「不注入委派 artifact」，载荷身份键 run_id 不在该契约面内。
+    assert payload["run_id"] == state["run_id"]
 
 
 def test_off_mode_invalid_value_falls_back(monkeypatch):
