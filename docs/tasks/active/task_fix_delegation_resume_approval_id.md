@@ -14,7 +14,7 @@
 | 字段 | 值 |
 |------|-----|
 | **task_slug** | `fix-delegation-resume-approval-id` |
-| **git_branch** | `fix/delegation-resume-approval-id` |
+| **git_branch** | `fix/approval-id-fix-task-be209a5f60c8`（30 实分支 · 承签认档预登记 `fix/delegation-resume-approval-id`——部署绑定要求末段=工单名，改名留痕） |
 | **implement_repo** | `ops-desk-api` |
 | **test_strategy** | `required` |
 | **test_strategy_note** | 红测先行：负样本（维护者红线）=「delegation resume 后 approval_id 已清」——delegation on 路径 tool 子任务签发审批拦下（`delegation_issue_hitl_required`）→ decide(approved) → **真 resume**（`resume_hitl_run` · 经 `_execute_decided_resume` 同源单路径）→ replan 重下发，**端到端断言** resume 后 approval_id 残留面已清（承载面 = 30 红测先行定位：工人可见 Send 载荷 / graph state / 审计面，**禁直造全 state 直调**——经真派发路径 `route_next_subtask`/`_worker_state` 产载荷）；正样本对拍：主路径（delegation off · `capability_write_hitl_required` 闸）resume 后同口径已清、零漂移（对称性对拍 · 防修成 delegation-only 特殊分支）；放行面承接：delegation 消费命中 `delegation_approval_consumed` 台账 + 真落笔 approval_id 串链三照（便签行/回执/span）不变；既有消费门 fail-closed 负样本组（`test_write_approval_gate` / `test_hitl_approval_consumption`）全绿不放宽；A5 grep 断言（resume 单路径）承接；不连真外网 · live 面留 40 |

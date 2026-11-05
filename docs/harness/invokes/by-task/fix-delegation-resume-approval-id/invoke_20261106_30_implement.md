@@ -6,7 +6,7 @@
 | task_slug | `fix-delegation-resume-approval-id` |
 | task_paths | `docs/tasks/active/task_fix_delegation_resume_approval_id.md` |
 | related_review_or_none | `docs/harness/reviews/task_fix_delegation_resume_approval_id_audit_R1_20261106.md`（20-R1 · lead 人审转录） |
-| git_branch | `fix/delegation-resume-approval-id`（reset 自 origin/master `c162d1d` = PR #341 squash 合入点） |
+| git_branch | `fix/approval-id-fix-task-be209a5f60c8`（reset 自 origin/master `c162d1d` = PR #341 squash 合入点 · 承预登记名 `fix/delegation-resume-approval-id` · 部署绑定要求改名） |
 | created_utc_or_local | 2026-11-06 |
 | notes | 30 授权 = issue #334 comment `6664735511`（六交付条件）+ comment `6665660681`（**锚点修正裁定 + 第七条交付条件**）；GATE_VERIFY 闸据 = task 档闸表（VERIFY: PASS 后开工） |
 
