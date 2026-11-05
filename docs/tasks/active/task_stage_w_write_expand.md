@@ -38,7 +38,7 @@
 | HG-TASK-DRAFT | **pending** | 20-R1, 30 | 壳未经 20-task-audit 书面审与维护者签收 |
 | HG-AUDIT-R1 | **pending** | **30** | 20-task-audit R1 审查文未落盘（预期路径 `docs/harness/reviews/task_stage_w_write_expand_audit_R1_<日期>.md`） |
 | HG-GRAPH-MODULES | **pending** | **30** | 口径：预估 G-L1 行备注薄增量、不新增一级模块；30 交付时按实增量回写回签确认（D4 承载） |
-| **HG-STAGE-W-EXPAND-DESIGN** | **approved** | **Q1 选型签收：S1 仓内落笔型写中签**（Q2 随签：S1 下 env 显式 opt-in 加载面；Q3 随签：若需新表 → 修订表回填 alembic 义务）；S2 留作下一波独立 SPEC；S3 本波不碰 · 维护者 2026-11-05 签（lead 代录，签认依据 = issue #323 维护者「按建议签」+ PR #325 的 lead 选型分析评论 #6650428109） |
+| **HG-STAGE-W-EXPAND-DESIGN** | **approved** | **30** | **Q1 选型签收：S1 仓内落笔型写中签**（Q2 随签：S1 下 env 显式 opt-in 加载面；Q3 随签：若需新表 → 修订表回填 alembic 义务）；S2 留作下一波独立 SPEC；S3 本波不碰 · 维护者 2026-11-05 签（lead 代录，签认依据 = issue #323 维护者「按建议签」+ PR #325 的 lead 选型分析评论 #6650428109） |
 
 ---
 
@@ -217,3 +217,4 @@ SPEC 签收毕（HG-SPEC-SIGNOFF approved 2026-11-05 · B1 已修订）→ 00 �
 | 日期 | 说明 |
 |------|------|
 | 2026-11-05 | 10 落稿：00 承 issue #323 签收链拆 task（承 SPEC v0.1 · HG-SPEC-SIGNOFF approved）· 四闸 pending（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-STAGE-W-EXPAND-DESIGN）· NO-GO 20/30 · Q1 选型留闸随档裁决 · R0–R5 承 SPEC §7 |
+| 2026-11-05 | **HG-STAGE-W-EXPAND-DESIGN approved**（Q1=S1 仓内落笔型写 · Q2/Q3 随签 · 维护者 2026-11-05 签 · lead 代录 commit `461e525` · 依据 = issue #323 维护者「按建议签」+ PR #325 评论 #6650428109）；余三闸仍 pending（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES）· 20-task-audit 书面审下一棒 · 审毕停等三闸人签 · 代录行 blocks_hats 列结构修复（签认内容未动） |
