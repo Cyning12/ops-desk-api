@@ -1,10 +1,11 @@
 # Task：write ticket 拉起幂等守卫（`reset_worker_seen_surface` 后首轮巡检不重复拉起）
 
-> **状态**：`in_progress`（10 起草壳 PR #345 已合 `ec87535` · **四闸 approved**（签认依据 = PR #345 review `5792245814` lead 签 + 窗口授权 2026-11-05 22:26 指令）· **30 已授权交付**（issue #335 comment `6669768156` 六条件 · 出货 PR 待审））
+> **状态**：`done`（2026-11-06 · 全棒链同日闭环：10 起草（PR #345 `ec87535`）→ 四闸签认 + 30 授权（#6669768156）→ 30 实现（PR #346 `6daccb1` · 六条件全过）→ 40 复跑机制面 PASS → 50 CLOSE）
 > **类型**：fix / 缺陷修复（write ticket 拉起幂等缺口 · worker 重启后 seen 面重置无守卫）
 > **上游**：issue [#335](https://github.com/Cyning12/ops-desk-api/issues/335)（backlog 正文 + 维护者 comment `6668554143` 令立项 · 受理依据 = 窗口授权 2026-11-05 22:26 → 2026-11-06 07:00 · lead 代行签收与验收）
 > **分支**：10/00 走 `agent/idempotency-fix-task-4b3782da80c4`（本 PR · 部署绑定末段=工单名）· 30 实分支预登记 `fix/seen-surface-idempotency`（待闸签收后另行授权）
 > **10 注**：2026-11-06 · 承 issue #335 维护者令起草 fix task（**10 帽活** · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 30 改码待闸签收后另行授权
+> **40 注**：2026-11-06 · 维护者 comment `6670686601` 40 复跑销项令——**机制面 PASS**：干净 worktree `/tmp/verify40-seen` @ `6daccb1` 独立复跑（不采信 30 自报）：新测 3 枚 passed · 关联回归 7 文件 119 passed 零适配 · 全量 passed 零新增红（4 failed = 既有基线同形：diff-whitelist ×2 / embedder env ×1 / dualproc env ×1）· 红线对拍零命中 · verify PASS。偏差登记：① 40 令未含 live 要求 → live 面未跑（机制面对拍 + 全量双证销项 · 若后续补 live 撞 #339 planner-args 按同口径登记）② worktree 无 .env 环境下全量套件墙钟显著拉长（网络型用例走真实超时路径 · 环境性非语义）。issue #335 关 issue 由维护者执行。
 > **30 注**：2026-11-06 · 维护者 comment `6669768156` 30 授权（六交付条件）· **设计闸决策点①裁决**（引用本评论）：探针实证承载面 = **nodes.py 拉起链双点**——`_join_subtasks` 巡检派发面（孪生步重复派发：重复拉起噪音 + 建单风险）+ `_persist_hitl` 建单面（精确 sid 去重对孪生 sid 不可见 ⇒ **重复建单实证**：同 run 同写意图库面 2 笔 + 写闸拦截行 2 条）——裁决 = **案 A ∪ 案 B 同链双点半卫**（10 档 R2 单点倾向修正 · 锚点留痕纪律）：①巡检层守卫 `_write_blocked_call_keys`——同写意图在途写单步被孪生时继承在途终态（`replay_of` 溯源 · 不派发不消费 · 留痕 `write_ticket_twin_inherited`）；②建单层守卫 `_write_intent_live_key`（status 位：库面 live 写单按 (capability_id, args_summary) 索引 · pending 全量 + approved 未过期）——命中 ⇒ `arelocate_linkage` 存量单连接域迁附当前步并带回（不新建 · 留痕 `hitl_write_intent_attached`）；与 `already`（seen_surface 位）合成 **status ∧ seen_surface 双条件**（决策点②签认语义落地）。改码面唯一 = `nodes.py` 拉起链 + `hitl/store.py` 增量方法（Protocol/InMemory/Db/Null · 无表结构/语义面变更）+ 新测 3 枚；守卫共用既有 `LG_RAG_WRITE_REPLAY_GUARD_ENABLED` 单开关（关 = master 基线零 diff）；**消费门（`_write_execution_approval`/`_match_fresh_approved`）/ resume 单路径 / SSE / worker freeze 一行不动**
 
 ---
@@ -105,7 +106,7 @@ issue #335（backlog）：**`reset_worker_seen_surface` 后首次巡检重复拉
 - [x] 四红线零 diff 对拍：resume 单路径（`router.py`/`resume.py` **零 diff**）· SSE 事件表零 diff（`event_store`/`sse_*` 零 diff）· 消费门 fail-closed 既有负样本组全绿（`test_write_approval_gate` / `test_hitl_approval_consumption` 全组）· 改码面收敛（`git diff` 面 = `nodes.py` + `hitl/store.py` 唯一）
 - [x] 旧测 grep 影响面适配（零适配如实登记）；巡检 / 建单 / 写闸 / 消费 / resume 测试族关联回归全绿（122 passed）
 - [x] 工程面：`ruff check app tests` **All checks passed（零）**；`pytest tests` 全量零新增红（如实登记）；`./scripts/graph-compile.sh` EXIT=0；`npx spec-wave task lint` PASS
-- [ ] 40 复跑（live 面 · 待 40）：worker 重启后首轮巡检 live 实测 · 存量 write ticket 单拉起实证
+- [x] 40 复跑（2026-11-06 达成 · 机制面 PASS）：干净 worktree `/tmp/verify40-seen` @ `6daccb1` 独立复跑——新测 3 枚 passed · 关联回归 119 passed 零适配 · 全量 2068 passed 零新增红（4 failed = 既有基线同形）· 红线对拍零命中 · verify PASS（live 面本次 40 令未含 · 偏差登记见 40 注）
 
 ---
 
@@ -195,6 +196,15 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30；`spec-wave
 | `pytest tests`（全量） | 0* | 2068 passed · 4 failed = master 既有基线同形（diff-whitelist ×2 / embedder env ×1 / dualproc env ×1 · stash 复验 baseline 同 4 枚 · **零新增红**） |
 | `ruff check app tests` | 0 | All checks passed（零） |
 | `./scripts/graph-compile.sh` | 0 | EXIT=0 |
+
+> **hat 40（40 复跑）** · 独立复跑不采信 30 自报：worktree `/tmp/verify40-seen` @ `6daccb1`（zero 仓内码改动）。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `pytest tests/test_fix_seen_surface_idempotency.py`（worktree @ `6daccb1`） | 0 | 3 passed（负样本 + 对拍 ×2 · 独立复跑） |
+| `pytest`（关联回归 7 文件 · worktree） | 0 | 119 passed 零适配 |
+| `pytest tests`（全量 · worktree） | 0* | 2068 passed · 4 failed = 既有基线同形（diff-whitelist ×2 / embedder env ×1 / dualproc env ×1 · 与 merge 前分支及 master 基线逐枚同形）· **零新增红** |
+| `npx spec-wave verify --target . --task docs/tasks/done/task_fix_seen_surface_idempotency.md` | 0 | VERIFY: PASS（四闸 approved · 归档后路径） |
 | `npx spec-wave task lint --file docs/tasks/active/task_fix_seen_surface_idempotency.md` | 0 | LINT: PASS（30 回填后） |
 | 红线对拍 `git diff origin/master --stat` | 0 | 改码面唯一 `nodes.py` + `hitl/store.py` · `hitl/router.py`/`resume.py`/`auto_resume.py`/`event_store`/`sse_*`/`capability/gateway.py` 零 diff · 消费门函数（`_approval_consumed`/`_write_execution_approval`/`_match_fresh_approved`）零 diff |
 
@@ -207,3 +217,4 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30；`spec-wave
 | 2026-11-06 | 10 落稿：承 issue #335 维护者 comment `6668554143` 令起草 fix task（10 帽活 · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 缺陷定性（reset_worker_seen_surface 后首轮巡检重复拉起存量 write ticket · 幂等缺口）承 issue 正文 · 设计闸 HG-WRITE-TICKET-IDEMPOTENCY-DESIGN 两决策点（①修复落点三案 A 倾向/B/C 禁 · ②ticket 幂等键语义 = status/seen_surface 双条件位）· 红测负样本（reset 后首轮巡检不重复拉起 · 端到端断言）入 test_strategy · 四红线（resume 单路径 / SSE 事件表零 diff / 消费门 fail-closed 永不放宽 / 改码面收敛）+ worker freeze 不动语义入 failure_paths · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 · 10 档实扫声明（字面符号零命中 · 承载面留 30 探针） |
 | 2026-11-06 | **四闸 approved 代录 + 30 授权入档**（签认依据 = PR #345 review `5792245814` lead 签 + issue #335 comment `6669768156` + 窗口授权 2026-11-05 22:26 指令）：设计闸决策点②签认 = ticket 幂等键语义 **status/seen_surface 双条件位**照留；决策点①（修复落点）留 30 红测探针实证后裁决并引用 comment `6669768156` · **30 授权六交付条件**（红测先红后绿留 invoke / 常规对拍零漂移 / 改码面唯一落点 / 四红线零 diff 对拍 / ruff+pytest+graph-compile 全绿 CI 4/4 / 20-R1 审查文随 30 PR 落盘）· 30 分支 `fix/seen-surface-idempotency` · PR #345 已 squash 合入 master `ec87535`（10 棒闭环） |
 | 2026-11-06 | **30 交付**：设计闸决策点①裁决 = **案 A ∪ 案 B 同链双点半卫**（巡检层孪生继承 + 建单层 status 位迁附 · 10 档 R2 单点倾向经探针修正 · 如实留痕）· 红测负样本先红（库面 2 笔 + 双拦截行）后绿（恰一笔 + 零新增）· 对拍 ×2 零漂移 · 全量套件零新增红 · 改码面 `nodes.py`+`hitl/store.py` 唯一 · 四红线零 diff · 20-R1 审查文随本 PR 落盘 · 30 invoke 落档 |
+| 2026-11-06 | **40 复跑销项（机制面 PASS）**：独立复跑全绿（新测 3 / 关联 119 / 全量 2068 零新增红 · worktree `/tmp/verify40-seen` @ `6daccb1` · 红线对拍零命中 · verify PASS）· 偏差①live 面本次 40 令未含未跑（机制面双证销项）②worktree 无 .env 全量墙钟拉长（环境性非语义）如实登记 · 归档 done/ · CLOSE 档 + 双 README + 40/50 invoke 落档 |
