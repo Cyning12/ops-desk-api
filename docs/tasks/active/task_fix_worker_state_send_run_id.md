@@ -1,6 +1,6 @@
 # Task：`_worker_state` Send 载荷补 `run_id`（HITL resume 后写审批消费门 fail-closed 再拦修复）
 
-> **状态**：`draft`（2026-11-05 · 10 起草落稿 · 四闸 pending · NO-GO 20/30）
+> **状态**：`active`（2026-11-05 · 10 起草落稿 → **四闸 approved**（lead 签认 · PR #331 review `5785422963` + issue #329 comment `6658823187`）→ **30 已授权开工**（issue #329 comment `6658823187` · 分支 `fix/worker-state-send-run-id` · 六交付条件入档）· 出货 PR 待 lead 终审 · 40 复跑照旧）
 > **类型**：fix / 缺陷修复（Send 载荷丢键 · 消费门 fail-closed 静默失效）
 > **上游**：issue [#329](https://github.com/Cyning12/ops-desk-api/issues/329)（backlog 候选 + 维护者 comment `6658235851` 令按 Harness 流程立项）· 证据 = 40 invoke 偏差登记①（[`invoke_20261105_40_verify.md`](../../harness/invokes/by-task/stage-w-write-expand/invoke_20261105_40_verify.md) §5 · live 全链八段实测 shim 补位实证 · 已实锤）
 > **分支**：`fix/worker-state-send-run-id`（30 用 · 10/00 本档走 `agent/run-id-fix-task-cdc1b46e15dc`）
@@ -35,10 +35,10 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 维护者签认 task 草稿（issue #329 令立项 · 本档） |
-| HG-AUDIT-R1 | **pending** | **30** | 20-task-audit R1 书面审 PASS（审查文 `docs/harness/reviews/task_fix_worker_state_send_run_id_audit_R1_*.md`） |
-| HG-GRAPH-MODULES | **pending**（`n/a` 口径签认） | **30** | graph_change_layer=`none` 口径签认（无图谱面 · 承 no-proxy fix 先例） |
-| **HG-WORKER-STATE-RUN-ID-DESIGN** | **pending** | **30** | **设计闸两决策点**：① 修复落点（`_worker_state` 补键 案A 推荐 · shim 已验证 / `route_next_subtask` 无条件补 案B / 消费门放宽 案C=禁）② 回归影响面签收（delegation on 路径已有 `run_id` 重复赋值兼容 · 旧测适配口径） |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | lead 签认 2026-11-05 · 依据 = PR #331 review `5785422963`（审查通过 · lead · fix task 起草）+ issue #329 comment `6658235851`（立项令） |
+| HG-AUDIT-R1 | **approved** | **30** | lead 签认 2026-11-05 · 依据同上——lead PR #331 review `5785422963` 审查通过即 20-R1 书面审记录（流程闸与内容闸一并签） |
+| HG-GRAPH-MODULES | **approved** | **30** | lead 签认 2026-11-05 · 依据同上 · `none` 口径签认确认（无图谱面 · 承 no-proxy fix 先例） |
+| **HG-WORKER-STATE-RUN-ID-DESIGN** | **approved** | **30** | **两决策点裁决**（lead 2026-11-05 签 · PR #331 review `5785422963` + issue #329 comment `6658823187`）：① 修复落点 = **案 A `_worker_state` 补键**（同源单点 · shim 已验证 · 案 B 覆盖面冗余弃 · 案 C 消费门放宽触碰红线禁）② 回归影响面 = **签收**（delegation on 重复赋值同值兼容 · 旧测键集等值断言适配不放宽 · grep 面 test_step_contract 三测 / R14 直调如实列出） |
 
 ---
 
@@ -216,3 +216,4 @@ task 档落稿 · 四闸 pending · NO-GO 20/30；10 invoke 落盘 `docs/harness
 | 日期 | 说明 |
 |------|------|
 | 2026-11-05 | 10 落稿：承 issue #329 维护者 comment `6658235851` 令起草 fix task（10 帽活 · 只产 task 档 + invoke + lint PASS + PR · 禁改业务码）· 缺陷机制/影响面/证据承 40 invoke 偏差登记① · HG-WORKER-STATE-RUN-ID-DESIGN 两决策点（修复落点三案 A 推荐/B/C 禁 · 回归影响面）· 维护者四红线入 failure_paths（SSE 零 diff / freeze 不动 / resume 单路径 / fail-closed 永不放宽）· 红测负样本（真派发路径 · 真落笔断言）入 test_strategy · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 |
+| 2026-11-05 | **四闸 approved + 30 授权**：lead 签认（PR #331 review `5785422963` 审查通过 · 设计闸裁决案 A + 回归影响面签收）· issue #329 comment `6658823187` 30 授权（分支 `fix/worker-state-send-run-id` · GATE_VERIFY 闸据=本档闸表）· 六交付条件：①红测先行可见红→绿（真派发路径 · 消费命中+真落笔三照）②旧测适配清单随 PR（适配不放宽）③改码面唯一（仅 `_worker_state` 补键+新测+旧测适配）④四红线零 diff 对拍 ⑤ruff+pytest 全量+graph-compile 绿 ⑥PR 说明逐条对照验收标准 · draft→active · GO 30 · 出货 PR 待 lead 终审 · 40 复跑照旧 |
