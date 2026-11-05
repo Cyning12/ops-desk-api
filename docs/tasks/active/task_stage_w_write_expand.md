@@ -1,6 +1,6 @@
 # Task：阶段 W 扩写能力（stage-w-write-expand · 受控写闸链接入第二条真实窄写能力 · Q1 选型留闸）
 
-> **状态**：`draft`（2026-11-05 · 00 拆 task 落稿 · **四闸全 pending**（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES / HG-STAGE-W-EXPAND-DESIGN）· NO-GO 20/30）
+> **状态**：`draft`（2026-11-05 · 00 拆 task 落稿 · **HG-STAGE-W-EXPAND-DESIGN approved**（2026-11-05 维护者签 S1）· 余三闸 pending（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES）· **NO-GO 30 直至 20-task-audit 审毕 + 三闸签齐**）
 > **类型**：feature / 受控写扩切片
 > **上游**：[`SPEC-stage-w-write-expand_v0.md`](../../spec/stage-w-write-expand/SPEC-stage-w-write-expand_v0.md)（v0.1 · HG-SPEC-SIGNOFF **approved** 2026-11-05 维护者人签 · B1 已修订）· issue #323（SPEC 审查与选型签收 · 本档为签收链第 3 棒）· [`task_api_controlled_write_hitl`](../done/task_api_controlled_write_hitl.md)（CLOSE · PR #303）+ 三接合缝 fix（PR #307 join-gap · PR #313/#314 tenant-fix · PR #319 decide-owner-fallback · issue #315 CLOSE）
 > **分支**：`task/stage-w-write-expand`（base：`master`；本档落稿于 `agent/stage-w-task-split-dde653139625`）
@@ -38,7 +38,7 @@
 | HG-TASK-DRAFT | **pending** | 20-R1, 30 | 壳未经 20-task-audit 书面审与维护者签收 |
 | HG-AUDIT-R1 | **pending** | **30** | 20-task-audit R1 审查文未落盘（预期路径 `docs/harness/reviews/task_stage_w_write_expand_audit_R1_<日期>.md`） |
 | HG-GRAPH-MODULES | **pending** | **30** | 口径：预估 G-L1 行备注薄增量、不新增一级模块；30 交付时按实增量回写回签确认（D4 承载） |
-| **HG-STAGE-W-EXPAND-DESIGN** | **pending** | **30** | **Q1 选型签收**：S1 仓内落笔型写 / S2 issue 备注写 / S3 sync 触发写（10-spec 建议序：S1 先行，S2 另立独立 SPEC）；Q2 加载面形态（建议 S1 env 显式 opt-in）与 Q3 幂等键/落笔目标形态随签；依据 = issue #323 维护者 2026-11-05 令「Q1 留 task 闸随档裁决 · 类比 HG-STAGE-W-DESIGN 先例」 |
+| **HG-STAGE-W-EXPAND-DESIGN** | **approved** | **Q1 选型签收：S1 仓内落笔型写中签**（Q2 随签：S1 下 env 显式 opt-in 加载面；Q3 随签：若需新表 → 修订表回填 alembic 义务）；S2 留作下一波独立 SPEC；S3 本波不碰 · 维护者 2026-11-05 签（lead 代录，签认依据 = issue #323 维护者「按建议签」+ PR #325 的 lead 选型分析评论 #6650428109） |
 
 ---
 
