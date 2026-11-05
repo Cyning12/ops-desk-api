@@ -203,6 +203,17 @@ SPEC 签收毕（HG-SPEC-SIGNOFF approved 2026-11-05 · B1 已修订）→ 00 �
 
 ### 自检结论（执行者）
 
+> **hat 40（40 复跑销项）** · master `51030a4` 独立复跑不采信自报 + live 全链实测：**PASS 带偏差登记**。verify 四闸 approved / 红线对拍零命中（delta 恰 11 文件全落交付面）/ 16 枚新测 + 8 关联文件独立复跑全绿 / live 八段达成（挂起→pending→decide 409 守卫→resume 受理→写窗 409→replan 保号→**消费命中真落笔**（便签行+回执+幂等 done 四照串链）→done{status:resumed} 契约帧）——末段经测试等价 shim 补位；live 实证 master 既有潜在缺陷 `_worker_state` Send 载荷丢 `run_id`（消费门 fail-closed 静默失效 · PR #303 时期潜伏 · 非本 task 回归 · 修复形态已 shim 验证 · **另立 fix task 建议已提维护者**）。详见 invoke：`docs/harness/invokes/by-task/stage-w-write-expand/invoke_20261105_40_verify.md`。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `npx spec-wave verify --target . --task docs/tasks/active/task_stage_w_write_expand.md`（master `51030a4`） | 0 | VERIFY: PASS · 四闸 approved |
+| `pytest tests/test_stage_w_write_expand.py` | 0 | 16 passed（独立复跑） |
+| 关联回归 8 文件（testing_write/write_gate/manifest/reversibility/idempotency/persistence_db/splittability/strategy_env） | 0 | 全绿（V13 probe 适配 / irreversible 零影响 / import-linter / 判序钉死） |
+| `git diff 6955b4c..51030a4` 红线 grep（registry/policy/lg_rag/gateway/hitl/SSE） | 0 | 零命中 · delta 恰 11 文件全落 30 交付面 |
+| live 全链（uvicorn + PG opsdesk_test + env 组） | — | 八段达成（⑦⑧ 段 shim 补位 · 证据/偏差登记见 40 invoke） |
+| `./scripts/graph-compile.sh` / `ruff check app tests` / `task lint` | 0 | 全绿（40 零仓内码改动） |
+
 > **hat 30（30 实扫落码）** · 红测先行（16 枚新测先红后绿 · V13/manifest/表缺三向红可见）→ 实现 → 全量对拍。红线零破（registry/policy/lg_rag/gateway/SSE 零 diff）；Q3 新表义务随 alembic 落盘 + 本档回填。详见 invoke：`docs/harness/invokes/by-task/stage-w-write-expand/invoke_20261105_30_implement.md`。
 
 | 命令 | 退出码 | 摘要 |
@@ -231,3 +242,4 @@ SPEC 签收毕（HG-SPEC-SIGNOFF approved 2026-11-05 · B1 已修订）→ 00 �
 | 2026-11-05 | **HG-STAGE-W-EXPAND-DESIGN approved**（Q1=S1 仓内落笔型写 · Q2/Q3 随签 · 维护者 2026-11-05 签 · lead 代录 commit `461e525` · 依据 = issue #323 维护者「按建议签」+ PR #325 评论 #6650428109）；余三闸仍 pending（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES）· 20-task-audit 书面审下一棒 · 审毕停等三闸人签 · 代录行 blocks_hats 列结构修复（签认内容未动） |
 | 2026-11-05 | **HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES approved（lead 代录 · 四闸齐）**——依据 = issue #323 维护者预授权 comment `6652283580`「R1 书面审出货后由 lead 审查，无问题即代录三闸，每处引用本评论 + 审查文，全程留痕；有红线冲突/内容阻塞/与 SPEC v0.1·Q1=S1 签认不符则停下不动闸报维护者」+ PR #326 20-task-audit R1 审查文（PASS 零内容阻塞）；lead 复核随 PR #326 review 留痕完成（七项全过 · 2026-11-05）：SPEC 正本 vs `fa83be6` 零 diff / Q4·A2+ 豁免口径两档 parity / 全仓唯一 write=mock 实证 / 判序 deny_high_risk:118 先于 deny_write:120 / 审查文命名命中闸表预期路径 / task lint 双证（CI check + 审查方复跑）/ master 闸态 verify BLOCKED 与设计停点一致· 无红线冲突 · 无内容阻塞 · 与 SPEC v0.1·Q1=S1 签认相符 · PR #326 合入后 30 可开工 |
 | 2026-11-05 | **30 实扫落码（Q1=S1 仓内落笔型写 · 出货 PR 待 lead 终审）**：第二条真实窄写能力 `ops.write.run_note` 端到端接入既有闸链——`manifests/ops.write.v1.yaml`（三层显式打开 · 独立写 tag `run_note` 不放行 testing 复用）+ `defaults.py::ops_write_run_note` 真落笔 adapter（DB IO 集中 `note_store.py` · 延迟 import 对齐 idempotency/receipts 先例 · import-linter 白名单同例登记）+ loader **V13**（write 级 `tenant_scoped` 强制 · mock 特例清单不扩容 · 冒充 id 无 testing/mock 谓词 tag 亦拦 · 口径仅 side_effect=write 承「不碰 irreversible」钉死）；**Q3 回填（随签义务履行）**：既有表实扫无适配面 → 新表 `ops_capability_notes`（唯一约束 `(tenant_id, idempotency_key)` = FP-4 DB 级兜底 · `approval_id` 串链列）+ alembic `20261105_capability_notes`（head 自 `20260923_memory_episodes` · upgrade/downgrade 可逆）；防重双保险（幂等 store claim + DB 唯一约束 · store 丢失模拟形态断言）；**D4 回写**：`01_modules.md` capability 行 + db 行登记 + HG-GRAPH-MODULES 30 回写回签行（承 :134 先例 · 本档闸表同签确认 · 实增量 = G-L1 行备注 + 新表登记 · 不新增一级模块 · 不增 implementedBy）；红线对拍：`registry.py`/`policy.py`/`lg_rag`/`gateway.py`/SSE 事件表**零 diff**；既有 probe 适配：testing-write A8② probe 补 `tenant_scoped: true` 过 V13（断言对象 V1 放宽面不变）· 本地产能 4 枚既有红如实登记（master `6955b4c` 复证 · 2 枚 diff-whitelist 锚点漂移 + 2 枚 env 依赖 · 均 CI skip 面）|
+| 2026-11-05 | **40 复跑销项（PASS 带偏差登记 · PR #327 已合入 master `51030a4` · 出货 PR 待 lead 终审）**：master 独立复跑（verify 四闸 approved / 红线对拍零命中 · delta 恰 11 文件全落交付面 / 16 枚新测 + 8 关联文件亲跑全绿）+ **live 全链八段实录**（catalog 可见 → 挂起(write_intent 钉死) → pending 可见 → decide 200+重复 409 → resume 受理+写窗 409 → replan 保号 args 保留 → **消费命中真落笔**（便签行/回执/幂等 done 四照 approval_id 串链）→ done{status:resumed} 契约帧）——段⑦⑧经测试等价 shim 补位；**live 实证既有潜在缺陷** `_worker_state` Send 载荷丢 `run_id`（写审批消费门 fail-closed 静默失效 · PR #303 时期潜伏 · 非本 task 回归 · 修复形态已 shim 验证 · **另立 fix task 建议提维护者**）；40 invoke 落档 `invoke_20261105_40_verify.md`；通过后按维护者令 CLOSE |
