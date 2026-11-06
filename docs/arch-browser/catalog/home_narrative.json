@@ -28,7 +28,7 @@
     "cards": [
       {
         "title": "场景 · DSH Superagent 研究原型",
-        "desc": "独立 TypeScript 原型：以确定性存储（SQLite 单写者）与效果队列约束 LLM 编排，对外只承诺真实状态。波次 0 记录 GC（结算收据按龄回收 + 设置/Prompt 版本快照修剪）已交付；后续波次：Trust 边界、部署隔离、文章方向项。",
+        "desc": "独立 TypeScript 原型：以确定性存储（SQLite 单写者）与效果队列约束 LLM 编排，对外只承诺真实状态。波次 0 记录 GC（结算收据按龄回收 + 设置/Prompt 版本快照修剪）、波次 1 Trust 边界（策略门 text-blind 判例 + docs/009）已交付；后续波次：部署隔离、文章方向项。",
         "status": "live"
       },
       {
