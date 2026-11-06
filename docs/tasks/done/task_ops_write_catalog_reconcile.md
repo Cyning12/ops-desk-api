@@ -1,6 +1,6 @@
 # Task：ops.write 覆盖与能力目录实际行为对账（能力声明 ↔ manifest 一致性 + 端到端实跑常驻覆盖）
 
-> **状态**：`draft`（2026-11-06 · 10 落稿 · **四闸 approved**（lead 签认 · PR #354 review `5797443083`）· NO-GO 30 待 issue 评论授权）
+> **状态**：`done`（2026-11-06 · 全棒链同日闭环：10 落稿 → lead 签四闸 → 30 实现（lead 验收合并 `039f802`）→ 40 复跑机制面 PASS → 50 CLOSE 归档）
 > **类型**：fix / 测试面（ops.write.* 能力目录对账覆盖缺口 · **纯测试面** · 红线=不改实现）
 > **上游**：issue [#336](https://github.com/Cyning12/ops-desk-api/issues/336)（backlog 正文 + 维护者 comment [`6678466745`](https://github.com/Cyning12/ops-desk-api/issues/336#issuecomment-6678466745) 令起草 · 补发受理 comment [`6679927635`](https://github.com/Cyning12/ops-desk-api/issues/336#issuecomment-6679927635) · 受理依据 = 维护者 2026-11-06 13:40 授权（lead 代行签收与验收））
 > **分支**：10/00 走 `agent/catalog-reconcile-task-e848e9dbbf56`（本 PR · 部署绑定要求末段=工单名）· 30 实分支预登记 `fix/ops-write-catalog-reconcile`（待闸签收后另行授权）
@@ -28,7 +28,7 @@
 | **invoke_retention_profile** | `default` |
 | **experience_capture** | `recommended` |
 | **kpi_aggregator** | `CLOSE` |
-| **orchestration** | 10 落稿（本 PR · task 档 + 10 invoke）→ lead 签四闸（PR #354 review `5797443083` · 2026-11-06）→ **30 改码待 issue 评论授权**（`fix/ops-write-catalog-reconcile` · GATE_VERIFY 闸据=本档闸表 · 授权令未至前 NO-GO 30）→ 40 → CLOSE |
+| **orchestration** | 10 落稿（PR #354 `fd0fbbe` · task 档 + 10 invoke）→ lead 签四闸（PR #354 review `5797443083` · 20-R1 审查文）→ 30 实现（PR #355 `039f802` · 两族对账测试 19 枚 · 六条件全过）→ **40 复跑机制面 PASS**（worktree @ `039f802` 独立复跑：19 + 114 + 全量 2102 passed 零新增红 · 漂移反向实证 10/10 · verify 闸据恢复 PASS）→ 50 CLOSE（active→done 归档 + CLOSE 档 + 双 README · 关账 PR 待 lead 验收） |
 
 ### 人工闸
 
@@ -238,3 +238,4 @@ task 档落稿（含 A1 锚点语义专节）· 10 invoke 落盘 · 四闸 pendi
 |------|------|
 | 2026-11-06 | 10 落稿：承 issue #336 维护者 comment `6678466745` 令起草 fix task（10 帽活 · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 补发令 `6679927635` 四要求全落：设计闸 HG-OPS-WRITE-COVERAGE-DESIGN 决策点 = 覆盖形态三案（一致性机检/端到端实跑/两者 × intent 准入 vs spec 目录双口径）/ 红测负样本端到端入 test_strategy / 三红线入 failure_paths（A1 锚点语义本档专节钉死 · fail-closed 不放宽 FP-2 · SSE 零 diff FP-3 · 改码面收敛 FP-4）+ A1 专属闸 FP-6~FP-9 · R0–R5 全轮 · R0 实扫校正「三能力」= 仓内唯一 ops.write.* 能力 run_note · 四闸 pending · NO-GO 20/30 · 30 待闸签收后另行授权 |
 | 2026-11-06 | 四闸签认回填（lead 代录 · PR #354 review `5797443083` · 设计闸裁决 = **案③两者**）+ 30 实现（授权令 = issue #336 comment `6680378035` · 六条件全过）：两族对账测试 `tests/test_ops_write_catalog_reconcile.py` 19 枚（族①机检 13 + 族②端到端 6）· 漂移矩阵 10/10 被拦红证据 + args 负样本 3/3 fail-closed 实证 · 全量 2102 passed 零新增红（master 基线同 4 红 worktree 独立复证）· **对账实扫发现漂移 2 枚**（偏差① receipt 行为有·声明无 / 偏差② duplicate_of 声明有·行为无 · 测试内精确钉死 · 声明面对齐建议另案）· app/ 零 diff · ruff / graph-compile / task lint 双 PASS · 30 invoke 落档 |
+| 2026-11-06 | 40 复跑 + 50 CLOSE（40 令 = issue #336 comment `6681442245`「30 已验收合并（039f802）· 全绿则关账」· 依据 13:40 多选授权）：**40 机制面 PASS**——独立复跑不采信 30 自报（worktree `/tmp/verify40-recon` @ `039f802`：新测 19 / 关联 114 / 全量 2102 passed 零新增红 · master 基线同 4 红复证 · 漂移反向实证 10/10 · ruff / graph-compile / verify 四闸 approved 全绿）· **20-R1 审查文 + 20 invoke 补档**（30 期遗漏 · verify 闸据恢复 · 非自签 · source = PR #354 review `5797443083`）· 50 CLOSE：active→done 归档 + CLOSE 档 `docs/tasks/close/close_ops_write_catalog_reconcile_20261106.md` + 双 README + 40/50 invoke · 关账 PR 待 lead 验收 |
