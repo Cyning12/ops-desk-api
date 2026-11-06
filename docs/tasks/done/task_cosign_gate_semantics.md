@@ -1,11 +1,12 @@
 # Task：human-gate 同签语义裁决（同一维护者对同一工单的签认在跟进消息送达时的认定规则）
 
-> **状态**：`active`（2026-11-06 · 10 落稿 → **四闸签认**（lead · 00 代录 · 依据 = PR #351 review `5795679444` + 受理评论链）→ 20-R1 审查文随本 PR 落盘 · **30 待闸签收后另行授权**）
+> **状态**：`done`（2026-11-06 · 全棒链同日闭环：10 起草（PR #351 squash `82bf056`）→ 四闸签认 + 设计闸裁决（案①幂等为主干 · 落点=gate 记录层）→ 30 交付（PR #352 squash `3cc3e71` · 六条件全过）→ 40 复跑机制面 PASS → 50 CLOSE）
 > **类型**：fix / 流程设计（human-gate 同签认定规则缺位 · 设计裁决 + 落文 + 机断回归）
 > **上游**：issue [#333](https://github.com/Cyning12/ops-desk-api/issues/333)（backlog 正文 + 维护者 comment [`6676316476`](https://github.com/Cyning12/ops-desk-api/issues/333#issuecomment-6676316476) 令起草 · 受理依据 = 维护者 2026-11-06 08:48 授权（lead 代行签收与验收））
-> **分支**：10/00 走 `agent/cosign-semantics-task-022a61b26cba`（本 PR · 部署绑定要求末段=工单名）· 30 实分支预登记 `fix/cosign-gate-semantics`（待闸签收后另行授权）
+> **分支**：10/00 走 `agent/cosign-semantics-task-022a61b26cba`（PR #351 squash `82bf056` · 部署绑定要求末段=工单名）· 30 走 `fix/cosign-gate-semantics`（PR #352 squash `3cc3e71` · comment `6676780590` 授权）· 关账走 `close/cosign-gate-semantics`
 > **10 注**：2026-11-06 · 承 issue #333 维护者 comment `6676316476` 令起草设计 task（**10 帽活** · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 设计闸决策点 = 同签语义的裁决口径（幂等/覆盖/拒重复 三案对比 + 审计链影响面 · 维护者令第 1 条）
 > **30 注**：2026-11-06 · 维护者 comment `6676780590` 30 授权（签认依据 = PR #351 review `5795679444` lead 签 + 授权链）· **六交付条件**：①机断判据为主（条文 grep 锚 + 结构断言）· 涉码面红测先行（负样本 = 同锚重复送达不误读为新签 · 真实送达→认定→记录路径）；②旧测适配不放宽随 PR；③改码面收敛（裁决落文为主 · 实扫溢出口径回闸）；④红线零 diff 对拍（SSE 事件表 / freeze / 闸表契约四列机读不破坏——GATE_VERIFY 仍是唯一闸据）；⑤ruff + pytest + graph-compile 全绿；⑥PR 逐条对照验收 · 20-R1 审查文随 30 PR 落盘
+> **40 注**：2026-11-06 · 维护者 comment `6678465675` 40 复跑销项令——**机制面 PASS**：干净 worktree `/tmp/verify40-cosign` @ `3cc3e71` 独立复跑（不采信 30 自报）：新测 8 枚 passed · 关联 prompt-packs 55 passed 零适配 · 全量 2083 passed · 4 failed = **既有红基线同形**（diff-whitelist ×2 / embedder env ×1 / dualproc env ×1 · base `f78a721` 同 4 枚逐字复证实锤零新增红）· ruff All checks passed · graph-compile EXIT=0 · task lint / lint-wiki-delta / verify 四闸 approved 全 PASS · spec 锚 grep 15 关键词全命中 · 红线对拍 8 文件全落承载面（app//alembic/SSE 面零 diff）。偏差登记：①**GitHub Actions 自 04:20Z 零投递**（账户分钟额度疑似耗尽 · 维护者告知在查）→ 机检证据以本地 CI 同款（ruff/pytest/graph-compile/lint/verify）为准，本档与 40 invoke 已注明；②worktree 无 `.env` 环境（承先例环境性登记）。issue #333 关 issue 由维护者执行。
 
 ---
 
@@ -29,7 +30,7 @@
 | **invoke_retention_profile** | `default` |
 | **experience_capture** | `recommended` |
 | **kpi_aggregator** | `CLOSE` |
-| **orchestration** | 10 落稿（PR #351 · task 档 + 10 invoke）→ **四闸签认**（2026-11-06 · lead · 00 代录 · 依据 = PR #351 review `5795679444` + issue #333 comment `6676316476`/`6676780590` + 2026-11-06 08:48 授权 + 用户 12:17『验收333』指示）→ **20-R1 审查文随 30 PR 落盘**（`docs/harness/reviews/task_cosign_gate_semantics_audit_R1_20261106.md` · lead 人审原文转录 · source = PR #351 review `5795679444` · 承 seen-surface 先例）→ **30（comment `6676780590` 授权 · 六条件）**（`fix/cosign-gate-semantics` · GATE_VERIFY 闸据=本档闸表）→ 40 → CLOSE |
+| **orchestration** | 10 落稿（PR #351 `82bf056` · task 档 + 10 invoke）→ **四闸签认**（2026-11-06 · lead · 00 代录 · 依据 = PR #351 review `5795679444` + issue #333 comment `6676316476`/`6676780590` + 2026-11-06 08:48 授权 + 用户 12:17『验收333』指示）→ **20-R1 审查文随 30 PR 落盘**（`docs/harness/reviews/task_cosign_gate_semantics_audit_R1_20261106.md` · lead 人审原文转录 · source = PR #351 review `5795679444` · 承 seen-surface 先例）→ **30（comment `6676780590` 授权 · 六条件）**（PR #352 `3cc3e71` · GATE_VERIFY 闸据=本档闸表）→ **40 复跑机制面 PASS**（comment `6678465675` 令 · worktree `/tmp/verify40-cosign` @ `3cc3e71` 独立复跑）→ **50 CLOSE**（本档 + CLOSE 档 + 双 README + 40/50 invoke） |
 | **freeze_id** | `lg-rag-sse-v1`（**零 diff 红线**：SSE 事件表/帧形态）· 既有 Harness 过程 freeze 文件本体**不动** |
 
 ### 人工闸
@@ -225,3 +226,4 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30 · lint PASS
 | 2026-11-06 | 10 落稿：承 issue #333 维护者 comment `6676316476` 令起草设计 task（10 帽活 · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 设计闸 HG-COSIGN-SEMANTICS-DESIGN 决策点 = 同签语义裁决口径（幂等/覆盖/拒重复 三案对比 + 审计链影响面 · 落点子题随口径一并裁决）· 三红线入 failure_paths（SSE 事件表零 diff FP-2 / freeze 不动 FP-3 / 改码面收敛 FP-4）+ 决策点属闸 FP-5 · 机断验收判据 + 红测先行条件触发入 test_strategy · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 · 30 待闸签收后另行授权 |
 | 2026-11-06 | **四闸 approved 代录 + 30 授权入档**（签认依据 = PR #351 review `5795679444` lead 签 APPROVED + issue #333 comment `6676780590` + 授权链 2026-11-06 08:48 维护者授权 + 12:17『验收333』指示）：设计闸裁决 = **案①幂等为主干**（幂等锚五元组 · 同锚重送达同效力不重复记录 · replay 附注）+ 覆盖不设默认（append-only · 同锚+显式替换意图追加新行 · 旧行保留引注）+ 拒重复不设（补发合法通路）+ **落点 = gate 记录层**（消费门内=仓外运行时面随 residual_risk 登记）· R2 裁决回填 · 30 六交付条件入档（机断判据为主 / 旧测适配不放宽 / 改码面收敛 / 红线零 diff 对拍 / ruff+pytest+graph-compile 全绿 / PR 逐条对照 · 20-R1 审查文随 30 PR 落盘）· 状态 draft→active |
 | 2026-11-06 | **30 交付**：裁决落文 = `FRAGMENT_00_gate_cosign_semantics_v1_zh.md` + `00-orchestrator.md` 引用行（不改默认表语义）· 机断 8 断言先红（`d2d9eaf` · 7 failed）后绿（`c25336c` · 8 passed）· 旧测实扫零适配（prompt-packs 55 passed）· 全量 2083 passed 零新增红（4 枚既有基线同形）· ruff All checks passed · graph-compile EXIT=0 · task lint / lint-wiki-delta / verify 四闸 approved PASS · 红线对拍 7 文件全落承载面（app//alembic/SSE 面零 diff）· 20-R1 审查文 + 20 invoke 随本 PR 落盘 · 30 invoke 落档 |
+| 2026-11-06 | **40 复跑销项（机制面 PASS）+ 50 CLOSE**：独立复跑（worktree `/tmp/verify40-cosign` @ `3cc3e71` 不采信 30 自报）——新测 8 / 关联 55 / 全量 2083 passed · 4 failed = 基线 `f78a721` 同 4 枚逐字复证零新增红 · ruff/graph-compile/lint/wiki-delta/verify 全绿 · spec 锚 grep 15/15 命中 · 红线对拍零命中 · 偏差①GitHub Actions 04:20Z 零投递（机检以本地 CI 同款为准）②worktree 无 .env（环境性）· 状态 active→done · 档迁 done/ · CLOSE 档 + 双 README + 40/50 invoke 随关账 PR |
