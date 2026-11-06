@@ -140,14 +140,22 @@
   function scenariosPlaceholderHtml() {
     const sc = (DATA.home_narrative && DATA.home_narrative.scenarios_placeholder) || {};
     const cards = (sc.cards || [])
-      .map(
-        (c) => `
+      .map((c) => {
+        if (c.status === "live") {
+          return `
+        <div class="card">
+          <div class="title">${escapeHtml(c.title || "场景")}</div>
+          <div class="desc">${escapeHtml(c.desc || "")}</div>
+          <span class="badge wave">已落地 · 按波次更新</span>
+        </div>`;
+        }
+        return `
         <div class="card placeholder-card" aria-disabled="true">
           <div class="title">${escapeHtml(c.title || "场景占位")}</div>
           <div class="desc">${escapeHtml(c.desc || "")}</div>
           <span class="badge na">设想 · 未填充</span>
-        </div>`
-      )
+        </div>`;
+      })
       .join("");
     return `
       <section class="panel scenarios-placeholder">
