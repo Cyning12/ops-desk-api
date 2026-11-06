@@ -5,6 +5,7 @@
 > **上游**：issue [#337](https://github.com/Cyning12/ops-desk-api/issues/337)（backlog 正文 + 维护者 comment [`6682233401`](https://github.com/Cyning12/ops-desk-api/issues/337#issuecomment-6682233401) 令起草 · 受理依据 = 维护者 2026-11-06 13:40 多选授权（lead 代行签收与验收））
 > **分支**：10/00 走 `agent/diff-whitelist-task-5e3e38c2abdd`（本 PR · 部署绑定要求末段=工单名）· 30 实分支预登记 `fix/diff-whitelist-anchor-drift`（待闸签收后另行授权）
 > **10 注**：2026-11-06 · 承 issue #337 维护者 comment `6682233401` 令起草 fix task（**10 帽活** · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码/禁改测试码）· 设计闸决策点 = **诊断裁决**（锚点真漂移→修锚点 / whitelist 过期→刷新基线 · 二选一必须有证据——先跑两条用例拿当前实际行号与输出再裁）· 10 档已跑两条用例取证（实测证据见「现状锚点」节 · 裁决属闸不归 10）
+> **20 注**：2026-11-06 · 20-R1 书面审 PASS 零内容阻塞（审查文 `docs/harness/reviews/task_diff_whitelist_anchor_drift_audit_R1_20261106.md` · invoke `invoke_20261106_20_audit.md`）· HG-TASK-DRAFT / HG-GRAPH-MODULES 签认代录入闸表（依据 = issue #337 comment `6683541162` + PR #357 review `5799316636`）· 三子形态对拍回填 R2：**①重钉 `_BASE` 与 `_WAVE_TIP` 回归牙窗口不相容（拍否）· ②改固定波次窗语义=正解（wave2 闭窗实测态① pass · wave1 闭窗实测 F1 暗礁：2 件波内未登记面（`920c8e5` CLOSE 落盘）须随修复逐路径登记）· ③调 `_allowed` 面拍否（banned/O2 空心化）** · 签认预告 = whitelist 过期→刷新基线 · 子形态=改固定波次窗语义（comment `6683541162`）· HG-AUDIT-R1 / HG-DIFF-WHITELIST-DIAGNOSIS 待 lead 随 20-R1 PR 正式签
 
 ---
 
@@ -28,16 +29,16 @@
 | **invoke_retention_profile** | `default` |
 | **experience_capture** | `recommended` |
 | **kpi_aggregator** | `CLOSE` |
-| **orchestration** | 10 落稿（本 PR · task 档 + 10 invoke）→ lead 签四闸（含 HG-DIFF-WHITELIST-DIAGNOSIS 诊断裁决）→ 30 实现（fix 分支 · 两枚闸修复 + 红转绿证据）→ 40 独立复跑 → CLOSE |
+| **orchestration** | 10 落稿（PR #357 `0358c3b` · task 档 + 10 invoke）→ 20-R1 书面审（审查文 + 20 invoke · HG-TASK-DRAFT / HG-GRAPH-MODULES 随档签认代录）→ lead 随 20-R1 PR 签 HG-AUDIT-R1 + HG-DIFF-WHITELIST-DIAGNOSIS（裁决 = whitelist 过期→刷新基线 · 子形态 = 改固定波次窗语义 · 预告 comment `6683541162`）→ 30 实现（`fix/diff-whitelist-anchor-drift` · F1 两件登记 + 固定窗语义 + 红转绿双证据）→ 40 独立复跑 → CLOSE |
 
 ### 人工闸
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 初稿未经 20-task-audit 审查与维护者签收 |
-| HG-AUDIT-R1 | pending | 30 | 20-task-audit R1 审查文未落盘 |
-| HG-GRAPH-MODULES | pending | 30 | `none` 口径待签（纯测试基建面 · 承 ops-write-catalog-reconcile 先例；30 实扫出图谱面须回签） |
-| HG-DIFF-WHITELIST-DIAGNOSIS | pending | 30 | **设计闸 · 诊断裁决**：锚点真漂移→修锚点 / whitelist 过期→刷新基线（二选一 · 必须有证据——先跑两条用例拿当前实际行号与输出再裁 · 10 档实测证据已备见「现状锚点」节 · 最终裁决随签认落闸表行） |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | lead 签认 2026-11-06 · 依据 = issue #337 comment `6683541162`「HG-TASK-DRAFT 已签（PR #357 · squash 合并 `0358c3b` · CI 4/4 + 本地 task lint 对拍双证 · 六条件全过）」+ PR #357 review `5799316636`（APPROVED · 20-R1 代录入表） |
+| HG-AUDIT-R1 | pending | 30 | 20-R1 审查文已落盘（`docs/harness/reviews/task_diff_whitelist_anchor_drift_audit_R1_20261106.md` · 结论 PASS 零内容阻塞）· 维护者令「20-R1 出货时 lead 随档正式签 HG-AUDIT-R1」——待签 |
+| HG-GRAPH-MODULES | **approved** | 30 | lead 签认 2026-11-06 · 依据 = issue #337 comment `6683541162`「HG-GRAPH-MODULES 以 `none` 口径随档签认（纯测试基建面；30 实扫出图谱面须回签再动）」（20-R1 代录入表 · `none` 口径与 `graph_change_layer=none` 互洽） |
+| **HG-DIFF-WHITELIST-DIAGNOSIS** | pending | **30** | **设计闸 · 诊断裁决**：锚点真漂移→修锚点 / whitelist 过期→刷新基线（二选一 · 证据先行 · 10 档实测证据见「现状锚点」节）· **签认预告**（lead · issue #337 comment `6683541162`）：**whitelist 过期 → 刷新基线 · 子形态 = 改固定波次窗语义**（committed 面由 `_BASE..HEAD` 收窄为 `_BASE.._WAVE_TIP` 闭窗 + 工作区/暂存 vs HEAD 未提交面 + untracked · banned 前置只作用该面 · 四态/O2/回归牙原样保留 · 禁删闸禁豁免）· 20-R1 三子形态对拍支持预告形态（①重钉 `_BASE` 与 `_WAVE_TIP` 回归牙窗口不相容拍否 / ③调 `_allowed` 面拍否）· 正式签认随 20-R1 PR review · 30 只执行签认分支（FP-5） |
 
 ---
 
@@ -127,6 +128,7 @@ issue #337（backlog · 来源 #323 40 invoke 增强/收尾清单）：**本地�
 
 - [ ] HG-DIFF-WHITELIST-DIAGNOSIS 签认诊断裁决（二值分支 + 证据链 + 裁决依据）落闸表行，30 按签认分支交付
 - [ ] **红转绿命令级复验**：修复前 `pytest tests/test_lg_rag_write_replay_guard.py::test_tc8_diff_whitelist tests/test_strategy_scenario.py::test_diff_whitelist_scenario_stage_rewire` → 2 failed（输出全文留痕）→ 修复后同命令 → 2 passed；两证据入 30 invoke
+- [ ] **固定窗语义落地实证（20-R1 对拍口径 · 签认形态②时启用）**：干净树（master 合入点）下两闸 committed 面按 `_BASE.._WAVE_TIP` 闭窗求值——用例②（wave2 闭窗 13 文件）零 violations 态① pass · 用例①（wave1 闭窗 15 文件）经 **F1 两件逐路径登记**（`920c8e5` 限定语在册）后零 violations 态① pass；浅克隆退化带审计输出跳过 committed 面（N2 规格）实证
 - [ ] 证据链完整：两条用例当前实际行号与输出 + banned/violations 逐路径 `git log _BASE..HEAD` 溯源 commit 清单（A1 语义一）
 - [ ] 闸语义对拍：四态语义 / banned 前置（O2）/ 回归牙在修复后原样生效（或经签认等价改写 · 20-R1 复核）；禁删闸/禁豁免 banned（FP-2）
 - [ ] 红线对拍零命中：`git diff origin/master...HEAD --name-only | grep -v '^docs/'` ⊆ 两枚测试文件（+测试面外零 diff）；`app/` `scripts/`（他人合入面）`alembic/` SSE/freeze 面零 diff（FP-3/FP-4/FP-7）
@@ -188,6 +190,23 @@ issue #337 由维护者立项（backlog · 来源 #323 40 invoke 收尾清单留
 - **刷新基线**：判定 = whitelist 过期（锚可解析 ∧ banned/violations 全部可溯源至钉锚后的合法波次合入）。修复形态子选项（签认时须指明）：①重钉 `_BASE` 至新 master 窗（如当前 master tip）使干净树 diff 为空 → 态① pass；②改波次窗语义使闸只评 `_BASE.._WAVE_TIP` 固定窗（闸使命完成后评固定窗而非 HEAD 漂移窗）；③按证据链扩充/调整 `_allowed` 面（逐路径留痕 · 20-R1 复核）。各子选项的再漂移风险与维护成本不同，是维护者裁决面。
 - 10 档证据形态指向刷新基线一支，但按维护者令「二选一必须有证据——先跑两条用例拿当前实际行号与输出再裁」，最终裁决与形态指明属闸（FP-5）。
 
+**20-R1 对拍回填（2026-11-06 · 审查文 §3 · 随 20-R1 PR 落盘）**——三子形态对拍结论（签认预告形态 = ② · 30 按签认执行）：
+
+| 子形态 | 对拍结论 | 关键证据 |
+|--------|----------|----------|
+| ① 重钉 `_BASE` | **拍否 · 与 `_WAVE_TIP` 回归牙窗口不相容** | 保 `_WAVE_TIP` 不动 → 新 `_BASE` 为 tip 后代 → `git log _BASE.._WAVE_TIP` 窗倒置恒空 → 回归牙**静默失效**（注释仍称「回归牙保留」= 记录层语义说谎）；同步重置 `_WAVE_TIP=None` → 闸诚实重装为常驻新波次守卫 → 下一波触碰 scripts//alembic/ **结构性复红**（今日缺陷原样复发 + 锚点维护成本永续） |
+| ② 改固定波次窗语义 | **正解（与 lead 预告一致）** · 落地必修 F1 | committed 面收窄 `_BASE.._WAVE_TIP` 闭窗 + 工作区/暂存 vs HEAD + untracked · banned 前置只作用该面 · 20-R1 实测：wave2 闭窗（`a1591e9..63bad3d`）13 文件全在白名单 → **态① pass**；wave1 闭窗（`d337486..c17e63b`）15 文件 banned 面空但 **violations 2 件 → 回归牙 fail**——**F1 暗礁：波内 2 件未登记面须随修复逐路径登记**（见下） |
+| ③ 调 `_allowed` 面 | **拍否** | drift 的 banned 文件（scripts//alembic/）要绿只能移出 banned 或加豁免 = O2「禁区不被 skip 掩盖」之牙 retro 拔掉；窗仍增长 → 白名单无界增长 + 恒绿失效（恰是 FP-2/R4 防的形态） |
+
+**F1 必修项（30 落地条件 · 属 whitelist 测试基建改动 · FP-2 安全）**：wave1 闭窗内 2 件从未登记白名单的文件，均出自 CLOSE commit `920c8e5` [00]（「docs(delegation-naming-boundary): CLOSE 归档 + 裁定链 invoke」）——
+
+1. `backups/local_qdrant_orphan_cleanup_20261018T005320Z/ops_knowledge-7885642805251913-2026-10-18-00-53-20.snapshot`（82MB 二进制 · CLOSE 归档快照面）；
+2. `docs/harness/reviews/task_query_coref_rewrite_review40_20261019.md`（**前波次** query-coref 审查文随 CLOSE commit 入库面——限定语须写明前波次归属 · 20-R1 N1）。
+
+修法：两件按 00 裁定式**逐路径登记入 `_TREE_ALLOWED_FILES` + 限定语**（落签 commit `920c8e5` 为据）——不拆闸、不豁免 banned、不动实现。增长窗时代两件被「banned 前置先 fail」遮蔽从未显形，固定窗下由回归牙正常咬出（牙面与评面重合 · 语义自洽）。
+
+**N2 浅克隆退化规格（30 落码义务 · 20-R1 回填）**：浅克隆（fetch-depth=1）下 `_BASE`/`_WAVE_TIP` 对象缺失 → committed 面无从求值 → **带审计输出跳过 committed 面**（绝不退化为 vs HEAD 增长窗——否则浅克隆复现今日结构性红）；工作区/暂存 vs HEAD + untracked + banned 兜底面照常求值。
+
 ### R3 · 边界/失败路径
 
 FP-1~FP-9 逐条锚既有语义：四闸拒开工 / 禁拆闸强转绿（四态·O2·回归牙）/ SSE·freeze 零 diff / 不碰实现 / 裁决属闸 / 证据先于裁决 / 不修史 / 改码面收敛 / 闸表契约。核心新增 = FP-2（禁拆闸）与 FP-6（证据先于裁决）与 FP-7（不修史）三条闸语义专属闸。
@@ -221,3 +240,4 @@ task 档落稿（含 A1 锚点语义专节 · 四闸 pending · NO-GO 20/30）·
 | 日期 | 说明 |
 |------|------|
 | 2026-11-06 | 10 落稿：承 issue #337 维护者 comment `6682233401` 令起草 fix task（10 帽活 · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 四要求全落：设计闸 HG-DIFF-WHITELIST-DIAGNOSIS 决策点 = 诊断裁决二值（锚点真漂移→修锚点 / whitelist 过期→刷新基线 · 证据先行——10 档已实跑两条用例取实证：用例① :450 banned 22 件 / 用例② :554 banned 2 件 + 溯源 `6c9d0e6`/`51030a4` 均钉锚后合法波次 · 裁决属闸不归 10）/ 红测先行入 test_strategy（负样本 = 修复后两条本地基线红转绿 · pytest 命令级可复验）/ 红线入 failure_paths（不碰实现 FP-4 · SSE/freeze 零 diff FP-3 · 禁拆闸强转绿 FP-2 · 裁决属闸 FP-5 · 证据先于裁决 FP-6 · 不修史 FP-7）· A1 锚点语义专节钉死 · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 · 30 待闸签收后另行授权 |
+| 2026-11-06 | 20-R1 书面审 + 签认代录 + 对拍回填（承 issue #337 维护者 comment `6683541162` 令）：审查文 `docs/harness/reviews/task_diff_whitelist_anchor_drift_audit_R1_20261106.md` 落盘 · 结论 **PASS 零内容阻塞** · HG-TASK-DRAFT / HG-GRAPH-MODULES 签认代录入闸表（依据 = comment `6683541162` + PR #357 review `5799316636` · 非自签 · 签认幂等锚首次记录）· R2 回填三子形态对拍（①重钉 `_BASE` 与 `_WAVE_TIP` 回归牙窗口不相容拍否 · ②改固定波次窗语义正解〔wave2 闭窗实测态① pass · wave1 闭窗实测 **F1 暗礁**：2 件波内未登记面——`backups/…snapshot` + `task_query_coref_rewrite_review40_20261019.md` 均出自 CLOSE commit `920c8e5`——须随修复逐路径登记〕· ③调 `_allowed` 面拍否）+ N2 浅克隆退化规格 · 验收增固定窗态① pass 条 · HG-AUDIT-R1 / HG-DIFF-WHITELIST-DIAGNOSIS 维持 pending 待 lead 随本 PR 正式签（签认预告 = whitelist 过期→刷新基线 · 子形态=改固定波次窗语义） |
