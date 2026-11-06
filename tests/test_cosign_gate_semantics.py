@@ -27,7 +27,7 @@ def test_fragment_exists_with_frontmatter() -> None:
 
 def test_idempotent_anchor_five_tuple() -> None:
     text = FRAGMENT.read_text(encoding="utf-8")
-    anchor_section = text.split("幂等锚")[1][:300]
+    anchor_section = text.split("## 幂等锚")[1][:400]
     for field in ("维护者", "工单", "闸集", "签认依据", "授权窗口"):
         assert field in anchor_section, f"幂等锚缺字段：{field}"
 
@@ -63,7 +63,7 @@ def test_landing_point_is_gate_record_layer() -> None:
 
 
 def test_orchestrator_reaches_fragment() -> None:
-    assert f"FRAGMENT_00_gate_cosign_semantics_v1_zh.md" in ORCHESTRATOR.read_text(
+    assert "FRAGMENT_00_gate_cosign_semantics_v1_zh.md" in ORCHESTRATOR.read_text(
         encoding="utf-8"
     ), "00-orchestrator 未引用同签语义 FRAGMENT（认定规则不可达运行时）"
 
