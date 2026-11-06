@@ -203,6 +203,19 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30 · lint PASS
 | `npx --yes spec-wave@3.5.0 task lint --file docs/tasks/active/task_cosign_gate_semantics.md` | 0 | LINT: PASS（2026-11-06 · 10 起草自检） |
 | `npx --yes spec-wave@3.5.0 task lint-wiki-delta --target .` | 0 | LINT-WIKI-DELTA: PASS（scope all · scanned 211 · missing 0 · issues 0 · 本档 wiki_delta 预填） |
 
+> **hat 30（30 实现）** · 已交付：裁决落文 = `docs/harness/prompts/FRAGMENT_00_gate_cosign_semantics_v1_zh.md`（案①幂等为主干 · 幂等锚五元组 · 同锚重送达同效力不重复记录 + replay 附注 / 覆盖不设默认 append-only / 拒重复不设 / 落点=gate 记录层）+ `00-orchestrator.md` 引用行（不改默认表语义）+ 机断 8 断言先红后绿 + 旧测实扫零适配 · 未触碰任何 human_gate（四闸 approved 承签认档）。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `pytest tests/test_cosign_gate_semantics.py`（先红 · commit `d2d9eaf`） | 1 | RED 实证：7 failed 1 passed——裁决落文缺失（同锚重送达认定规则在 gate 记录层无可 grep 真源）· 闸表四列契约锚 baseline 恒绿 |
+| `pytest tests/test_cosign_gate_semantics.py`（后绿 · commit `c25336c`） | 0 | 8 passed（裁决条文 / 幂等锚五元组 / 同锚重送达 / 覆盖 append-only / 拒重复不设 / 落点 / orchestrator 可达 / 闸表契约） |
+| `pytest tests/test_cosign_gate_semantics.py tests/test_prompt_packs.py` | 0 | 63 passed（prompt-packs 55 零适配——仅锚 delegate_only/reanchor 两档，新 FRAGMENT 不扰动） |
+| `pytest tests`（全量） | 0 | 2083 passed · 4 failed = 既有红基线同形（diff-whitelist ×2 / embedder env ×1 / dualproc env ×1 · 承先例登记）· **零新增红** |
+| `ruff check app tests` | 0 | All checks passed!（F541 一枚即修即 amend） |
+| `./scripts/graph-compile.sh` | 0 | EXIT=0 |
+| `npx spec-wave task lint` / `lint-wiki-delta` / `verify --target . --task <本档>` | 0 | 全 PASS——VERIFY 四闸 approved ✅ 可 30（R1 审查文 + 20 invoke 落盘后复检） |
+| 红线对拍 `git diff origin/master --stat` | 0 | 7 文件全落签认承载面（docs/harness prompts+reviews+invokes · docs/tasks · tests 新档）· `app/` / `alembic/` 零 diff · SSE 事件面（subtask_message/progress_stream/answer_stream/chat router/event_store）零命中 |
+
 ---
 
 ## 修订记录
@@ -211,3 +224,4 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30 · lint PASS
 |------|------|
 | 2026-11-06 | 10 落稿：承 issue #333 维护者 comment `6676316476` 令起草设计 task（10 帽活 · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 设计闸 HG-COSIGN-SEMANTICS-DESIGN 决策点 = 同签语义裁决口径（幂等/覆盖/拒重复 三案对比 + 审计链影响面 · 落点子题随口径一并裁决）· 三红线入 failure_paths（SSE 事件表零 diff FP-2 / freeze 不动 FP-3 / 改码面收敛 FP-4）+ 决策点属闸 FP-5 · 机断验收判据 + 红测先行条件触发入 test_strategy · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 · 30 待闸签收后另行授权 |
 | 2026-11-06 | **四闸 approved 代录 + 30 授权入档**（签认依据 = PR #351 review `5795679444` lead 签 APPROVED + issue #333 comment `6676780590` + 授权链 2026-11-06 08:48 维护者授权 + 12:17『验收333』指示）：设计闸裁决 = **案①幂等为主干**（幂等锚五元组 · 同锚重送达同效力不重复记录 · replay 附注）+ 覆盖不设默认（append-only · 同锚+显式替换意图追加新行 · 旧行保留引注）+ 拒重复不设（补发合法通路）+ **落点 = gate 记录层**（消费门内=仓外运行时面随 residual_risk 登记）· R2 裁决回填 · 30 六交付条件入档（机断判据为主 / 旧测适配不放宽 / 改码面收敛 / 红线零 diff 对拍 / ruff+pytest+graph-compile 全绿 / PR 逐条对照 · 20-R1 审查文随 30 PR 落盘）· 状态 draft→active |
+| 2026-11-06 | **30 交付**：裁决落文 = `FRAGMENT_00_gate_cosign_semantics_v1_zh.md` + `00-orchestrator.md` 引用行（不改默认表语义）· 机断 8 断言先红（`d2d9eaf` · 7 failed）后绿（`c25336c` · 8 passed）· 旧测实扫零适配（prompt-packs 55 passed）· 全量 2083 passed 零新增红（4 枚既有基线同形）· ruff All checks passed · graph-compile EXIT=0 · task lint / lint-wiki-delta / verify 四闸 approved PASS · 红线对拍 7 文件全落承载面（app//alembic/SSE 面零 diff）· 20-R1 审查文 + 20 invoke 随本 PR 落盘 · 30 invoke 落档 |
