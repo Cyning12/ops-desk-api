@@ -183,8 +183,9 @@ def test_product_templates_unchanged():
 def test_product_render_unchanged():
     tmpl = get_template("lg_rag.supervisor.system")
     # v1 → v2：body 增加了 produces / consumes 声明说明。
+    # v2 → v3：body 文档化 args 结构化对象（fix-planner-args-schema · issue #339）。
     # version 必须跟着内容走，否则版本号本身就成了假信号。
-    assert tmpl.version == "v2"
+    assert tmpl.version == "v3"
     text = render("lg_rag.supervisor.system", {"catalog_block": "(无)"})
     assert "Capability 目录" in text
     text_with_slot = render(

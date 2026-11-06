@@ -1,10 +1,11 @@
 # Task：supervisor planner string-args 触发 `args_schema_invalid`（八段真落笔阻断 · prompt 资产面）
 
-> **状态**：`draft`（10 落稿 · 四闸 pending · NO-GO 20/30）
+> **状态**：`active`（10 落稿 · 四闸 approved 2026-11-06 · 30 已授权 · GO 30）
 > **类型**：fix / 缺陷修复（prompt 资产面 · planner 产出 string-args 致 gateway args_schema fail-closed 拒执行 · 预存在非回归）
 > **上游**：issue [#339](https://github.com/Cyning12/ops-desk-api/issues/339)（backlog 正文 + 维护者 comment `6673790438` 令起草 · 受理依据 = 维护者 2026-11-06 08:48 授权（lead 全程代行签收与验收））
 > **分支**：10/00 走 `agent/planner-args-fix-task-0796db4a2434`（本 PR · 部署绑定末段=工单名）· 30 实分支预登记 `fix/planner-args-schema`（待闸签收后另行授权）
 > **10 注**：2026-11-06 · 承 issue #339 维护者 comment `6673790438` 令起草 fix task（**10 帽活** · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 30 改码待闸签收后另行授权
+> **30 注**：2026-11-06 · 维护者 comment `6674979717` 30 授权（六条件：①红测先行经真规划→派发→执行路径 · 负样本=planner 输出 args 通过 schema 校验端到端 · 红→绿可见；②旧测适配不放宽随 PR；③改码面收敛——预期=prompt 资产 md + 目录块 ± 解析小改 · 实扫若出图谱面回闸；④红线零 diff 对拍——SSE 事件表/freeze 文件零改动 · gateway fail-closed 永不放宽；⑤ruff+pytest+graph-compile 全绿；⑥PR 逐条对照验收 · 20-R1 审查文随 30 PR 落盘）· **设计闸裁决 = 案②修复资产为主**（两份 supervisor prompt 资产文档化 `args` 结构化对象 + `_format_capability_catalog` 目录块注入各能力 `args_schema`——根因环①③一并消除；案①拒收语义由 gateway fail-closed 既有承载不重复建设；**转案③条件 = 30 实扫显示修复面溢出「prompt 资产+目录块」承载力 → 停下报 · 不越权扩面**）
 > **诊断声明（10 档只读实扫 · 承维护者令「先诊断 prompt 资产根因再定修复面」）**：根因承载面已锚至 **prompt 资产层**（详见背景节机制链 · file:line 全锚）——两份 supervisor 资产 v2 均未文档化 `args` 结构化字段；**处置形态（拒收并约束输入 / 修复资产 / 转独立设计任务）留设计闸 HG-PLANNER-ARGS-DESIGN 裁决**，10 档不越权定修复面。
 
 ---
@@ -36,10 +37,10 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 初稿未经 20-task-audit 审查与维护者签收 |
-| HG-AUDIT-R1 | **pending** | **30** | 20-task-audit R1 审查文未落盘 |
-| HG-GRAPH-MODULES | **pending** | **30** | `none` 口径待签（无图谱面 · 承 seen-surface 先例；若 30 实扫出图谱面须回签） |
-| **HG-PLANNER-ARGS-DESIGN** | **pending** | **30** | **设计闸（issue #339 维护者令设）· 处置形态裁决三案**：①拒收并约束输入（解析/契约层识别 string-args → 拒收并反哺 planner 重规划 · 复用 supervisor_replan_error_feedback 既有反哺面）/ ②修复资产（supervisor 两份 prompt 资产文档化 `args` 结构化对象 ± 目录块注入 args_schema · 改码面最小）/ ③转独立设计任务（诊断显示修复面溢出 prompt 资产 ± 解析层小改承载力时 · 本 task 转诊断销项另立设计）；**影响面签认**：全部写能力（stage-w `ops.write.run_note` 等）的 40 真落笔验证都等本修复 |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | lead 签认 2026-11-06 · 依据 = PR #348 review [`5794838471`](https://github.com/Cyning12/ops-desk-api/pull/348#pullrequestreview-5794838471)（APPROVED · 四闸签认原文）+ issue #339 comment [`6674979717`](https://github.com/Cyning12/ops-desk-api/issues/339#issuecomment-6674979717)（30 授权 · 授权链=2026-11-06 08:48 维护者授权 · lead 全程代行签收与验收） |
+| HG-AUDIT-R1 | **approved** | **30** | lead 签认 2026-11-06 · 依据同上——lead PR #348 review `5794838471` 审查通过即 20-R1 书面审记录（审查文随 30 PR 出货落盘 `docs/harness/reviews/task_fix_planner_args_schema_audit_R1_20261106.md`） |
+| HG-GRAPH-MODULES | **approved** | **30** | lead 签认 2026-11-06 · 依据同上 · `none` 口径签认确认（无图谱面 · 承 seen-surface 先例；若 30 实扫出图谱面须回签） |
+| **HG-PLANNER-ARGS-DESIGN** | **approved** | **30** | **设计闸 · lead 签认 2026-11-06 · 依据同上**（issue #339 维护者令设）· **处置形态裁决 = 案②修复资产为主**（两份 supervisor prompt 资产文档化 `args` 结构化对象 + 目录块注入 args_schema · 根因环①③一并消除 · 改码面最小）；案①拒收语义由 gateway fail-closed 既有承载不重复建设；**案③转立条件** = 30 实扫显示修复面溢出「prompt 资产+目录块」承载力 → 停下报转独立设计任务（不越权扩面）· 影响面签认 = 全部写能力（stage-w `ops.write.run_note` 等）的 40 真落笔验证都等本修复 |
 
 ---
 
@@ -63,9 +64,9 @@ issue #339（backlog）：**live 八段真落笔中 supervisor planner 产出 st
 
 ## 范围（竖切 · 四闸齐后才 30）
 
-- [ ] **D-fix-1 · 处置形态落地**（30 · 形态以 HG-PLANNER-ARGS-DESIGN 签认为准 · 候选三案见闸表）：①拒收并约束输入案——解析/契约层识别 tool 步 string-args → 拒收并按统一口径处理（拒/修/转 · 反哺面复用 supervisor_replan_error_feedback 既有机制）；②修复资产案——两份 supervisor prompt 资产文档化 `args` 结构化对象（type=tool 必填语义 ± 目录块注入 args_schema 评估）；③转独立设计任务案——诊断显示修复面溢出时，本 task 转诊断销项、修复另立设计 task（签认时须明示承接编号）。
-- [ ] **D-fix-2 · 红测负样本 + 常规对拍**（30 · 先红后绿留 invoke）：负样本（维护者红线）= 经真规划→派发→执行路径驱动 planner string-args 形态，端到端断言修复前 `args_schema_invalid` 拦截实证（先红）→ 修复后 args 通过 schema 校验、真落笔执行断言达成（后绿）；常规对拍 = 既有合法路径（对象 args 直驱 / 仅 input 的 legacy 兼容形态）与修复前零漂移。
-- [ ] **D-fix-3 · 旧测适配**（30 实扫如实登记）：`tests/test_capability_gateway.py` / `test_capability_harness_cli.py`（args_schema 负样本组）/ supervisor 规划面测试族影响面逐枚列出 · 零适配或适配清单如实留痕。
+- [x] **D-fix-1 · 处置形态落地**（30 已交付 2026-11-06 · 裁决 = 案②修复资产为主 · 见 30 注）：两份 supervisor prompt 资产 v2→v3 文档化 `args` 结构化对象（type=tool 必填语义 · 按目录块 args_schema 填键名/类型 · 禁 string-args）+ `_format_capability_catalog` 目录块注入各能力 `args_schema`（根因环①③一并消除）；解析层 / 执行面 / gateway 零改动（案①拒收语义由 gateway fail-closed 既有承载 · 实扫确认修复面未溢出「prompt 资产+目录块」承载力 → 案③转立条件未触发）。
+- [x] **D-fix-2 · 红测负样本 + 常规对拍**（30 已交付 2026-11-06 · **先红后绿实证**）：负样本经真规划→派发→执行路径驱动（supervisor_node 真解析 → `_join_subtasks` → `tool_exec_node` → gateway → `ops_capability_notes`；planner mock 按提示词遵循语义反应）——**先红**（commit `bfb911e`：`args_schema_invalid: 期望 type=['object']，实际=str` 与 issue #339 live 形态逐字一致）→ **后绿**（args 通过 schema 校验 · 真落笔断言达成 · 便签行四串链 + 回执 write_confirmed · `tests/test_fix_planner_args_schema.py`）；常规对拍 3 枚恒绿（fail-closed 承接 string-args 强灌永拦 · legacy 只读 input 串形态零漂移 · 旧测伪造 spec 行渲染逐字节零 diff）。
+- [x] **D-fix-3 · 旧测适配**（30 实扫 2026-11-06：**唯三适配 = 资产版本常量 v2→v3 登记** · `test_prompt_assets.py` / `test_prompt_assembly.py` / `test_prompt_packs.py` · 收紧式适配非放宽）：`test_capability_gateway` / `test_capability_harness_cli`（args_schema 负样本组）/ supervisor 规划面 / catalog 渲染 / replan prompt 零 diff 组全绿零适配；全量 2078 枚 = 2075 绿 + **既有红基线 4 枚如实登记**（`test_tc8_diff_whitelist` / `test_embedder_failure_degrades_with_marker` / `test_hitl_cross_instance_resume` / `test_diff_whitelist_scenario_stage_rewire` · 基线 commit `6533d44` 同 4 枚失败实证 · 与本修复无关 · 承 R4 既有红基线登记口径）。
 
 ### 非范围
 
@@ -99,14 +100,14 @@ issue #339（backlog）：**live 八段真落笔中 supervisor planner 产出 st
 
 ## 验收标准
 
-- [ ] 人工闸：HG-TASK-DRAFT · HG-AUDIT-R1 · HG-GRAPH-MODULES · **HG-PLANNER-ARGS-DESIGN** 均 approved（处置形态签认留档 · 影响面 = 全部写能力 40 验证等待已确认）
-- [ ] 红测负样本（**维护者红线**）：planner 输出 args 通过 schema 校验（端到端 · 经真规划→派发→执行路径驱动）——先红（string-args → `args_schema_invalid` 实证）后绿（schema 校验通过 · 真落笔执行断言达成）
-- [ ] 处置形态按签认落地（拒收约束 / 修资产 / 转设计三案之一 · FP-8 未越权自裁）
-- [ ] 四红线零 diff 对拍：SSE 事件表（`event_store`/`sse_*` 零 diff）· HITL 消费语义 freeze 面零 diff · resume 单路径（`router.py`/`resume.py` 零 diff）· 改码面收敛（`git diff` 面 = 签认承载面唯一）
-- [ ] Gateway args_schema fail-closed 既有负样本组全绿不放宽（`test_capability_gateway` / `test_capability_harness_cli`）
-- [ ] 旧测适配如实登记（D-fix-3 清单）；supervisor 规划面 / tool_exec / 消费门测试族关联回归全绿
-- [ ] 工程面：`ruff check app tests` 零；`pytest tests` 全量零新增红（如实登记）；`./scripts/graph-compile.sh` EXIT=0；`npx spec-wave task lint` PASS
-- [ ] 40 复跑：全部写能力端到端真落笔验证解锁（issue #339 两轮一致形态不再复现 · 偏差登记口径承 #329/#334 先例）
+- [x] 人工闸：HG-TASK-DRAFT · HG-AUDIT-R1 · HG-GRAPH-MODULES · **HG-PLANNER-ARGS-DESIGN** 均 approved（2026-11-06 · 依据 = PR #348 review `5794838471` + issue #339 comment `6674979717` · 授权链 = 2026-11-06 08:48 维护者授权 · lead 代行签收与验收 · 20-R1 审查文随 30 PR 落盘 `docs/harness/reviews/task_fix_planner_args_schema_audit_R1_20261106.md`）
+- [x] 红测负样本（**维护者红线**）：planner 输出 args 通过 schema 校验（端到端 · 经真规划→派发→执行路径驱动）——先红（commit `bfb911e`：string-args → `args_schema_invalid: 期望 type=['object']，实际=str` · 与 issue #339 live 两轮一致形态逐字一致）后绿（schema 校验通过 · 真落笔执行断言达成 · 便签行 tenant/approval/subtask/幂等键四串链 + 回执 write_confirmed）
+- [x] 处置形态按签认落地（**案②修复资产为主** · FP-8 未越权自裁 · 案③转立条件未触发）
+- [x] 四红线零 diff 对拍：SSE 事件表（`event_store`/`sse_*` 零 diff）· HITL 消费语义 freeze 面零 diff · resume 单路径（`router.py`/`resume.py` 零 diff）· 改码面收敛（`git diff` 六文件全在签认承载面内 · gateway/`schema_validate` 零 diff）
+- [x] Gateway args_schema fail-closed 既有负样本组全绿不放宽（`test_capability_gateway` / `test_capability_harness_cli` · 另 fail-closed 承接组实证：string-args 强灌修复后仍 `args_schema_invalid` 拦截 + 零落笔）
+- [x] 旧测适配如实登记（D-fix-3 唯三版本常量适配 · 收紧式非放宽）；supervisor 规划面 / tool_exec / 消费门测试族关联回归全绿（受影响 9 文件 165 枚 + 全量 2075 枚绿）
+- [x] 工程面：`ruff check app tests` 零（All checks passed!）；`pytest tests` 全量 2075 绿 + 既有红基线 4 枚如实登记（基线 `6533d44` 同 4 枚失败实证 · 零新增红）；`./scripts/graph-compile.sh` EXIT=0；`npx spec-wave task lint` PASS（零 warn）
+- [ ] 40 复跑：全部写能力端到端真落笔验证解锁（issue #339 两轮一致形态不再复现 · 偏差登记口径承 #329/#334 先例）——留 40 棒
 
 ---
 
@@ -185,6 +186,16 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30；`spec-wave
 | `npx --yes spec-wave@3.5.0 task lint --file docs/tasks/active/task_fix_planner_args_schema.md` | 0 | LINT: PASS（2026-11-06 · 10 起草自检） |
 | `npx --yes spec-wave@3.5.0 task lint-wiki-delta --target .` | 0 | LINT: PASS（scope all · 本档 wiki_delta 预填） |
 
+> **hat 30（30 实现）** · 已交付：案②修复资产落地（prompt 资产 v2→v3 ×2 + 目录块 args_schema 注入 · 解析/gateway/SSE 面零改动）· 红测先红（`bfb911e` · `args_schema_invalid: 期望 type=['object']，实际=str` 与 issue #339 live 形态逐字一致）后绿（负样本 7/7 · 真落笔四串链达成）· 四红线零 diff 对拍（`git diff` 六文件全在签认承载面内）· 旧测唯三版本常量适配（收紧式非放宽）· 全量 2075 绿 + 既有红基线 4 枚如实登记（基线 `6533d44` 同 4 枚实证 · 零新增红）· 六条件逐条对照见 30 invoke §3 · 分支 `agent/planner-args-impl-29337f38be55`。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `ruff check app tests` | 0 | All checks passed!（2026-11-06 · 30 自检） |
+| `pytest tests`（全量 · 本地真 PG opsdesk_test） | 1 | 2075 passed · **既有红基线 4 枚**（`test_tc8_diff_whitelist` / `test_embedder_failure_degrades_with_marker` / `test_hitl_cross_instance_resume` / `test_diff_whitelist_scenario_stage_rewire` · 基线 commit `6533d44` 同 4 枚失败实证 · 与本修复无关 · 零新增红如实登记） |
+| `./scripts/graph-compile.sh` | 0 | mermaid normalize ok · done（图谱面 none 实扫确认） |
+| `npx --yes spec-wave@3.5.0 task lint --file docs/tasks/active/task_fix_planner_args_schema.md` | 0 | LINT: PASS（四闸 approved 代录 + 30 交付回填后复检 · 零 warn） |
+| `npx --yes spec-wave@3.5.0 verify --target . --task docs/tasks/active/task_fix_planner_args_schema.md` | 0 | VERIFY: PASS（四闸 approved · 20 invoke 随 30 棒补齐后复检） |
+
 ---
 
 ## 修订记录
@@ -192,3 +203,4 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30；`spec-wave
 | 日期 | 说明 |
 |------|-----|
 | 2026-11-06 | 10 落稿：承 issue #339 维护者 comment `6673790438` 令起草 fix task（10 帽活 · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· **10 档只读诊断五环机制链**（prompt 资产未文档化 args = 根因环 · file:line 全锚）· 设计闸 HG-PLANNER-ARGS-DESIGN 处置形态裁决三案（拒收并约束输入 / 修复资产 / 转独立设计任务 · 影响面 = 全部写能力 40 验证等待）· 红测负样本（planner 输出 args 通过 schema 校验 · 端到端）入 test_strategy · 四红线（SSE 事件表零 diff / HITL 消费语义 freeze / resume 单路径 / 改码面收敛）+ gateway fail-closed 永不放宽入 failure_paths · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 |
+| 2026-11-06 | 30 交付：**四闸签认代录**（依据 = PR #348 review `5794838471` + issue #339 comment `6674979717` · 授权链 2026-11-06 08:48 维护者授权 · lead 代行签收 · 非自签）+ 20-R1 审查文落盘 + 20 invoke；**案②修复资产落地**（两份 supervisor prompt 资产 v2→v3 文档化 args + `_format_capability_catalog` 目录块注入 args_schema · 根因环①③一并消除 · 解析/gateway/SSE/resume/HITL 零改动）· 红测先红（`bfb911e` · string-args → `args_schema_invalid` 与 live 形态逐字一致）后绿（负样本 7/7 端到端 · 真落笔四串链）· 旧测唯三版本常量适配 · 全量 2075 绿 + 既有红基线 4 枚如实登记 · 30 invoke 落盘 · 出货 PR 待 lead 终审 · 40 留棒 |
