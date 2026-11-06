@@ -1,10 +1,11 @@
 # Task：supervisor planner string-args 触发 `args_schema_invalid`（八段真落笔阻断 · prompt 资产面）
 
-> **状态**：`draft`（10 落稿 · 四闸 pending · NO-GO 20/30）
+> **状态**：`active`（10 落稿 · 四闸 approved 2026-11-06 · 30 已授权 · GO 30）
 > **类型**：fix / 缺陷修复（prompt 资产面 · planner 产出 string-args 致 gateway args_schema fail-closed 拒执行 · 预存在非回归）
 > **上游**：issue [#339](https://github.com/Cyning12/ops-desk-api/issues/339)（backlog 正文 + 维护者 comment `6673790438` 令起草 · 受理依据 = 维护者 2026-11-06 08:48 授权（lead 全程代行签收与验收））
 > **分支**：10/00 走 `agent/planner-args-fix-task-0796db4a2434`（本 PR · 部署绑定末段=工单名）· 30 实分支预登记 `fix/planner-args-schema`（待闸签收后另行授权）
 > **10 注**：2026-11-06 · 承 issue #339 维护者 comment `6673790438` 令起草 fix task（**10 帽活** · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 30 改码待闸签收后另行授权
+> **30 注**：2026-11-06 · 维护者 comment `6674979717` 30 授权（六条件：①红测先行经真规划→派发→执行路径 · 负样本=planner 输出 args 通过 schema 校验端到端 · 红→绿可见；②旧测适配不放宽随 PR；③改码面收敛——预期=prompt 资产 md + 目录块 ± 解析小改 · 实扫若出图谱面回闸；④红线零 diff 对拍——SSE 事件表/freeze 文件零改动 · gateway fail-closed 永不放宽；⑤ruff+pytest+graph-compile 全绿；⑥PR 逐条对照验收 · 20-R1 审查文随 30 PR 落盘）· **设计闸裁决 = 案②修复资产为主**（两份 supervisor prompt 资产文档化 `args` 结构化对象 + `_format_capability_catalog` 目录块注入各能力 `args_schema`——根因环①③一并消除；案①拒收语义由 gateway fail-closed 既有承载不重复建设；**转案③条件 = 30 实扫显示修复面溢出「prompt 资产+目录块」承载力 → 停下报 · 不越权扩面**）
 > **诊断声明（10 档只读实扫 · 承维护者令「先诊断 prompt 资产根因再定修复面」）**：根因承载面已锚至 **prompt 资产层**（详见背景节机制链 · file:line 全锚）——两份 supervisor 资产 v2 均未文档化 `args` 结构化字段；**处置形态（拒收并约束输入 / 修复资产 / 转独立设计任务）留设计闸 HG-PLANNER-ARGS-DESIGN 裁决**，10 档不越权定修复面。
 
 ---
@@ -36,10 +37,10 @@
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | **pending** | 20-R1, 30 | 初稿未经 20-task-audit 审查与维护者签收 |
-| HG-AUDIT-R1 | **pending** | **30** | 20-task-audit R1 审查文未落盘 |
-| HG-GRAPH-MODULES | **pending** | **30** | `none` 口径待签（无图谱面 · 承 seen-surface 先例；若 30 实扫出图谱面须回签） |
-| **HG-PLANNER-ARGS-DESIGN** | **pending** | **30** | **设计闸（issue #339 维护者令设）· 处置形态裁决三案**：①拒收并约束输入（解析/契约层识别 string-args → 拒收并反哺 planner 重规划 · 复用 supervisor_replan_error_feedback 既有反哺面）/ ②修复资产（supervisor 两份 prompt 资产文档化 `args` 结构化对象 ± 目录块注入 args_schema · 改码面最小）/ ③转独立设计任务（诊断显示修复面溢出 prompt 资产 ± 解析层小改承载力时 · 本 task 转诊断销项另立设计）；**影响面签认**：全部写能力（stage-w `ops.write.run_note` 等）的 40 真落笔验证都等本修复 |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | lead 签认 2026-11-06 · 依据 = PR #348 review [`5794838471`](https://github.com/Cyning12/ops-desk-api/pull/348#pullrequestreview-5794838471)（APPROVED · 四闸签认原文）+ issue #339 comment [`6674979717`](https://github.com/Cyning12/ops-desk-api/issues/339#issuecomment-6674979717)（30 授权 · 授权链=2026-11-06 08:48 维护者授权 · lead 全程代行签收与验收） |
+| HG-AUDIT-R1 | **approved** | **30** | lead 签认 2026-11-06 · 依据同上——lead PR #348 review `5794838471` 审查通过即 20-R1 书面审记录（审查文随 30 PR 出货落盘 `docs/harness/reviews/task_fix_planner_args_schema_audit_R1_20261106.md`） |
+| HG-GRAPH-MODULES | **approved** | **30** | lead 签认 2026-11-06 · 依据同上 · `none` 口径签认确认（无图谱面 · 承 seen-surface 先例；若 30 实扫出图谱面须回签） |
+| **HG-PLANNER-ARGS-DESIGN** | **approved** | **30** | **设计闸 · lead 签认 2026-11-06 · 依据同上**（issue #339 维护者令设）· **处置形态裁决 = 案②修复资产为主**（两份 supervisor prompt 资产文档化 `args` 结构化对象 + 目录块注入 args_schema · 根因环①③一并消除 · 改码面最小）；案①拒收语义由 gateway fail-closed 既有承载不重复建设；**案③转立条件** = 30 实扫显示修复面溢出「prompt 资产+目录块」承载力 → 停下报转独立设计任务（不越权扩面）· 影响面签认 = 全部写能力（stage-w `ops.write.run_note` 等）的 40 真落笔验证都等本修复 |
 
 ---
 
