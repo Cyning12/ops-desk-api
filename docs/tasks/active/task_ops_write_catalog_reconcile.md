@@ -215,6 +215,21 @@ task 档落稿（含 A1 锚点语义专节）· 10 invoke 落盘 · 四闸 pendi
 | `npx --yes spec-wave@3.5.0 task lint --file docs/tasks/active/task_ops_write_catalog_reconcile.md` | 0 | LINT: PASS（2026-11-06 · 10 起草自检） |
 | `npx --yes spec-wave@3.5.0 task lint-wiki-delta --target .` | 0 | LINT-WIKI-DELTA: PASS（scope all · 本档 wiki_delta 预填） |
 
+> **hat 30（30 实现 · 案③两者）** · 30 授权 = issue #336 comment `6680378035`（六交付条件）· 交付 = 两族对账测试（`tests/test_ops_write_catalog_reconcile.py` 19 枚）+ 闸表签认回填 · `app/` 零 diff。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `.venv/bin/pytest tests/test_ops_write_catalog_reconcile.py -q` | 0 | **19 passed**（族①机检 13 + 族②端到端 6：漂移矩阵 10 例 + args 负样本 3 例为参数化） |
+| 红证据：漂移矩阵脚本（invoke 留痕） | — | 10/10 漂移被拦（loader V1/V2/V8/adapter 4 枚 + 对账断言红 6 枚）· args 负样本 3/3 fail-closed（args_schema_invalid · 零落笔） |
+| `.venv/bin/pytest tests/test_stage_w_write_expand.py tests/test_capability_manifest.py tests/test_capability_testing_write.py tests/test_write_approval_gate.py tests/test_capability_idempotency.py tests/test_capability_reversibility.py tests/test_fix_planner_args_schema.py tests/test_fix_worker_state_send_run_id.py -q` | 0 | **114 passed**（旧测影响面 grep 实扫 4 族引用 run_note · 零适配零放宽） |
+| `.venv/bin/ruff check app tests` | 0 | All checks passed!（I001 自修 1 枚） |
+| `./scripts/graph-compile.sh` | 0 | done（EXIT=0） |
+| `git diff origin/master...HEAD --name-only \| grep -v '^docs/'` | 空 | **app/ 零 diff**（红线对拍 · 纯测试面达成） |
+
+**对账实扫发现（偏差登记 · A1 双向漂移实证）**：成功路径 adapter 出键 `receipt`（抓取载荷）未在 `output_fields` 声明（行为有·声明无）；`duplicate_of` 为**重放路径条件出键**，成功路径永不出（声明有·行为无）。两偏差已在测试内精确钉死并登记，声明面对齐（manifest output_fields 增补/路径条件标注）建议另案裁决——本 task 改码面禁动实现与基准（FP-4/FP-9）。
+
+**环境注记**：本机 venv 补装 `pytest-asyncio`（pyproject 已声明 · requirements.txt 无 pytest 系 · CI skip 绿面不受影响）；真 PG `opsdesk_test` 本地可达，DB 用例真跑非 skip。
+
 ---
 
 ## 修订记录
@@ -222,3 +237,4 @@ task 档落稿（含 A1 锚点语义专节）· 10 invoke 落盘 · 四闸 pendi
 | 日期 | 说明 |
 |------|------|
 | 2026-11-06 | 10 落稿：承 issue #336 维护者 comment `6678466745` 令起草 fix task（10 帽活 · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 补发令 `6679927635` 四要求全落：设计闸 HG-OPS-WRITE-COVERAGE-DESIGN 决策点 = 覆盖形态三案（一致性机检/端到端实跑/两者 × intent 准入 vs spec 目录双口径）/ 红测负样本端到端入 test_strategy / 三红线入 failure_paths（A1 锚点语义本档专节钉死 · fail-closed 不放宽 FP-2 · SSE 零 diff FP-3 · 改码面收敛 FP-4）+ A1 专属闸 FP-6~FP-9 · R0–R5 全轮 · R0 实扫校正「三能力」= 仓内唯一 ops.write.* 能力 run_note · 四闸 pending · NO-GO 20/30 · 30 待闸签收后另行授权 |
+| 2026-11-06 | 四闸签认回填（lead 代录 · PR #354 review `5797443083` · 设计闸裁决 = **案③两者**）+ 30 实现（授权令 = issue #336 comment `6680378035` · 六条件全过）：两族对账测试 `tests/test_ops_write_catalog_reconcile.py` 19 枚（族①机检 13 + 族②端到端 6）· 漂移矩阵 10/10 被拦红证据 + args 负样本 3/3 fail-closed 实证 · 全量 2102 passed 零新增红（master 基线同 4 红 worktree 独立复证）· **对账实扫发现漂移 2 枚**（偏差① receipt 行为有·声明无 / 偏差② duplicate_of 声明有·行为无 · 测试内精确钉死 · 声明面对齐建议另案）· app/ 零 diff · ruff / graph-compile / task lint 双 PASS · 30 invoke 落档 |
