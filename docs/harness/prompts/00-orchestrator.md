@@ -57,7 +57,7 @@
 
 ## 禁止什么
 
-- 不替人改 `human_gate` 为 `approved`；不代签审查（除非用户 **明示**授权代签过程文档）。  
+- 不替人改 `human_gate` 为 `approved`；不代签审查（除非用户 **明示**授权代签过程文档）。签认在跟进消息重复送达时的认定（同签语义 · 幂等锚五元组 · 覆盖 append-only 例外）见 [`FRAGMENT_00_gate_cosign_semantics_v1_zh.md`](./FRAGMENT_00_gate_cosign_semantics_v1_zh.md)（HG-COSIGN-SEMANTICS-DESIGN 裁决落文 · issue #333）。
 - 不把子代理工具日志贴回主会话（只收结构化短报告）。  
 - 不静默扩 task scope。  
 - **默认禁止**：在已有 SPEC/task 初版后，00 亲自做内容实现；禁止把「统筹落地」自行解释成「我把 30 做完」。
@@ -90,3 +90,4 @@
 | 2026-08-26 | v1.7.1：Starter 入包 · 默认行为表（自工作区 Extended 收敛） |
 | 2026-08-27 | K4：默认行为表增 bulk-split 后 lint-wiki-delta 早检行（命令串与 CI sample 逐字一致） |
 | 2026-08-31 | 长对话须 re-anchor：链到 FRAGMENT_hat_reanchor / FRAGMENT_00_delegate_only（不改默认表语义） |
+| 2026-11-06 | 同签语义裁决落文引用（FRAGMENT_00_gate_cosign_semantics_v1_zh.md · 案①幂等为主干 · issue #333 · 仅增引用行，不改默认表语义） |

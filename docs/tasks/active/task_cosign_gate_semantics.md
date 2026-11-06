@@ -1,10 +1,11 @@
 # Task：human-gate 同签语义裁决（同一维护者对同一工单的签认在跟进消息送达时的认定规则）
 
-> **状态**：`draft`（2026-11-06 · 10 落稿 · 四闸 pending · NO-GO 20/30）
+> **状态**：`active`（2026-11-06 · 10 落稿 → **四闸签认**（lead · 00 代录 · 依据 = PR #351 review `5795679444` + 受理评论链）→ 20-R1 审查文随本 PR 落盘 · **30 待闸签收后另行授权**）
 > **类型**：fix / 流程设计（human-gate 同签认定规则缺位 · 设计裁决 + 落文 + 机断回归）
 > **上游**：issue [#333](https://github.com/Cyning12/ops-desk-api/issues/333)（backlog 正文 + 维护者 comment [`6676316476`](https://github.com/Cyning12/ops-desk-api/issues/333#issuecomment-6676316476) 令起草 · 受理依据 = 维护者 2026-11-06 08:48 授权（lead 代行签收与验收））
 > **分支**：10/00 走 `agent/cosign-semantics-task-022a61b26cba`（本 PR · 部署绑定要求末段=工单名）· 30 实分支预登记 `fix/cosign-gate-semantics`（待闸签收后另行授权）
-> **10 注**：2026-11-06 · 承 issue #333 维护者 comment `6676316476` 令起草设计 task（**10 帽活** · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 设计闸决策点 = 同签语义的裁决口径（幂等/覆盖/拒重复 三案对比 + 审计链影响面 · 维护者令第 1 条）· 30 改码待闸签收后另行授权
+> **10 注**：2026-11-06 · 承 issue #333 维护者 comment `6676316476` 令起草设计 task（**10 帽活** · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 设计闸决策点 = 同签语义的裁决口径（幂等/覆盖/拒重复 三案对比 + 审计链影响面 · 维护者令第 1 条）
+> **30 注**：2026-11-06 · 维护者 comment `6676780590` 30 授权（签认依据 = PR #351 review `5795679444` lead 签 + 授权链）· **六交付条件**：①机断判据为主（条文 grep 锚 + 结构断言）· 涉码面红测先行（负样本 = 同锚重复送达不误读为新签 · 真实送达→认定→记录路径）；②旧测适配不放宽随 PR；③改码面收敛（裁决落文为主 · 实扫溢出口径回闸）；④红线零 diff 对拍（SSE 事件表 / freeze / 闸表契约四列机读不破坏——GATE_VERIFY 仍是唯一闸据）；⑤ruff + pytest + graph-compile 全绿；⑥PR 逐条对照验收 · 20-R1 审查文随 30 PR 落盘
 
 ---
 
@@ -28,17 +29,17 @@
 | **invoke_retention_profile** | `default` |
 | **experience_capture** | `recommended` |
 | **kpi_aggregator** | `CLOSE` |
-| **orchestration** | 10 落稿（本 PR · task 档 + 10 invoke）→ 20-R1 书面审（审查文落盘 `docs/harness/reviews/`）→ 维护者签 **HG-COSIGN-SEMANTICS-DESIGN**（同签语义裁决口径 · 设计闸）+ 三常闸（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES）→ PR 出货待审 → **30 改码须待闸签收后另行授权**（`fix/cosign-gate-semantics` · GATE_VERIFY 闸据=本档闸表）→ 40 → CLOSE |
+| **orchestration** | 10 落稿（PR #351 · task 档 + 10 invoke）→ **四闸签认**（2026-11-06 · lead · 00 代录 · 依据 = PR #351 review `5795679444` + issue #333 comment `6676316476`/`6676780590` + 2026-11-06 08:48 授权 + 用户 12:17『验收333』指示）→ **20-R1 审查文随 30 PR 落盘**（`docs/harness/reviews/task_cosign_gate_semantics_audit_R1_20261106.md` · lead 人审原文转录 · source = PR #351 review `5795679444` · 承 seen-surface 先例）→ **30（comment `6676780590` 授权 · 六条件）**（`fix/cosign-gate-semantics` · GATE_VERIFY 闸据=本档闸表）→ 40 → CLOSE |
 | **freeze_id** | `lg-rag-sse-v1`（**零 diff 红线**：SSE 事件表/帧形态）· 既有 Harness 过程 freeze 文件本体**不动** |
 
 ### 人工闸
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 初稿未经 20-task-audit 审查与维护者签收 |
-| HG-AUDIT-R1 | pending | 30 | 20-task-audit R1 审查文未落盘 |
-| HG-GRAPH-MODULES | pending | 30 | `none` 口径待签（无图谱面 · 承 planner-args/seen-surface 先例；30 实扫出图谱面须回签） |
-| **HG-COSIGN-SEMANTICS-DESIGN** | pending | **30** | **设计闸**（issue #333 维护者令设）· 决策点 = **同签语义裁决口径**：幂等 / 覆盖 / 拒重复 三案对比 + 审计链影响面（含落点子题——#333 正文的「同签落点：消费门内 vs gate 记录层」随口径一并裁决）· 30 只执行签认口径，不自裁（FP-5） |
+| HG-TASK-DRAFT | **approved** | 20-R1, 30 | 2026-11-06 lead 签认 · 00 代录 · 依据 = PR #351 review [`5795679444`](https://github.com/Cyning12/ops-desk-api/pull/351#pullrequestreview-5795679444)（APPROVED）+ issue #333 comment [`6676780590`](https://github.com/Cyning12/ops-desk-api/issues/333#issuecomment-6676780590）· 授权链 = 2026-11-06 08:48 维护者授权 + 12:17『验收333』指示 |
+| HG-AUDIT-R1 | **approved** | **30** | 同上 · lead PR #351 review 审查通过即 20-R1 书面审记录（审查文随 30 PR 落盘 `docs/harness/reviews/task_cosign_gate_semantics_audit_R1_20261106.md` · 承 seen-surface 先例） |
+| HG-GRAPH-MODULES | **approved** | **30** | 同上 · `none` 口径签认确认（无图谱面 · 承先例；30 实扫出图谱面须回签） |
+| **HG-COSIGN-SEMANTICS-DESIGN** | **approved** | **30** | **设计闸 · lead 签认 2026-11-06 · 依据同上**（issue #333 维护者令设）· **裁决 = 案①幂等为主干**：幂等锚 =（维护者, 工单, 闸集, 签认依据 comment id, 授权窗口）· 同锚重送达 = 同效力不重复记录（可记 replay 附注）；**覆盖不设默认**——审计链 append-only 是判例体系根基，仅「同锚 + 维护者显式声明替换意图」允许追加新行（旧行保留引注）；**拒重复不设**——补发/重送达是合法通路（F1/S3b 判例），拒即死点；**落点 = gate 记录层**（Harness 过程资产 · 机断可 grep），消费门内属仓外运行时面随 residual_risk 登记 |
 
 ---
 
@@ -177,6 +178,8 @@ issue #333 由维护者立项（backlog）：human-gate co-sign branch（0c88ac3
 
 落点子题（#333 正文「同签落点：消费门内 vs gate 记录层」）：记录层判重 = 单点真源、消费面（GATE_VERIFY/verify）零改、审计留痕集中；消费门判重 = 判定分散、各消费点易漂移（FP-11）。落点随口径一并签认。
 
+**【裁决回填 · 2026-11-06 · lead 签认 · 依据 = PR #351 review `5795679444` + issue #333 comment `6676780590`】= 案①幂等为主干**：幂等锚 =（维护者, 工单, 闸集, 签认依据 comment id, 授权窗口）；同锚重送达 = 同效力不重复记录（可记 replay 附注）。**覆盖不设默认**：审计链 append-only 是判例体系根基，仅「同锚 + 维护者显式声明替换意图」允许追加新行（旧行保留引注）。**拒重复不设**：补发/重送达是合法通路（F1/S3b 判例），拒即死点。**落点 = gate 记录层**（Harness 过程资产 · 机断可 grep），消费门内属仓外运行时面随 residual_risk 登记。
+
 ### R3 · 边界/失败路径
 
 FP-1~FP-11 逐条锚既有语义：四闸拒开工 / SSE 零 diff / freeze 不动 / 改码面收敛 / 决策点属闸 / 三案滑点（幂等滑覆盖·覆盖断链·拒重复死点）/ 闸表契约 / 验收不可机断 / 落文与处置面漂移。
@@ -200,6 +203,19 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30 · lint PASS
 | `npx --yes spec-wave@3.5.0 task lint --file docs/tasks/active/task_cosign_gate_semantics.md` | 0 | LINT: PASS（2026-11-06 · 10 起草自检） |
 | `npx --yes spec-wave@3.5.0 task lint-wiki-delta --target .` | 0 | LINT-WIKI-DELTA: PASS（scope all · scanned 211 · missing 0 · issues 0 · 本档 wiki_delta 预填） |
 
+> **hat 30（30 实现）** · 已交付：裁决落文 = `docs/harness/prompts/FRAGMENT_00_gate_cosign_semantics_v1_zh.md`（案①幂等为主干 · 幂等锚五元组 · 同锚重送达同效力不重复记录 + replay 附注 / 覆盖不设默认 append-only / 拒重复不设 / 落点=gate 记录层）+ `00-orchestrator.md` 引用行（不改默认表语义）+ 机断 8 断言先红后绿 + 旧测实扫零适配 · 未触碰任何 human_gate（四闸 approved 承签认档）。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `pytest tests/test_cosign_gate_semantics.py`（先红 · commit `d2d9eaf`） | 1 | RED 实证：7 failed 1 passed——裁决落文缺失（同锚重送达认定规则在 gate 记录层无可 grep 真源）· 闸表四列契约锚 baseline 恒绿 |
+| `pytest tests/test_cosign_gate_semantics.py`（后绿 · commit `c25336c`） | 0 | 8 passed（裁决条文 / 幂等锚五元组 / 同锚重送达 / 覆盖 append-only / 拒重复不设 / 落点 / orchestrator 可达 / 闸表契约） |
+| `pytest tests/test_cosign_gate_semantics.py tests/test_prompt_packs.py` | 0 | 63 passed（prompt-packs 55 零适配——仅锚 delegate_only/reanchor 两档，新 FRAGMENT 不扰动） |
+| `pytest tests`（全量） | 0 | 2083 passed · 4 failed = 既有红基线同形（diff-whitelist ×2 / embedder env ×1 / dualproc env ×1 · 承先例登记）· **零新增红** |
+| `ruff check app tests` | 0 | All checks passed!（F541 一枚即修即 amend） |
+| `./scripts/graph-compile.sh` | 0 | EXIT=0 |
+| `npx spec-wave task lint` / `lint-wiki-delta` / `verify --target . --task <本档>` | 0 | 全 PASS——VERIFY 四闸 approved ✅ 可 30（R1 审查文 + 20 invoke 落盘后复检） |
+| 红线对拍 `git diff origin/master --stat` | 0 | 7 文件全落签认承载面（docs/harness prompts+reviews+invokes · docs/tasks · tests 新档）· `app/` / `alembic/` 零 diff · SSE 事件面（subtask_message/progress_stream/answer_stream/chat router/event_store）零命中 |
+
 ---
 
 ## 修订记录
@@ -207,3 +223,5 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30 · lint PASS
 | 日期 | 说明 |
 |------|------|
 | 2026-11-06 | 10 落稿：承 issue #333 维护者 comment `6676316476` 令起草设计 task（10 帽活 · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 设计闸 HG-COSIGN-SEMANTICS-DESIGN 决策点 = 同签语义裁决口径（幂等/覆盖/拒重复 三案对比 + 审计链影响面 · 落点子题随口径一并裁决）· 三红线入 failure_paths（SSE 事件表零 diff FP-2 / freeze 不动 FP-3 / 改码面收敛 FP-4）+ 决策点属闸 FP-5 · 机断验收判据 + 红测先行条件触发入 test_strategy · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 · 30 待闸签收后另行授权 |
+| 2026-11-06 | **四闸 approved 代录 + 30 授权入档**（签认依据 = PR #351 review `5795679444` lead 签 APPROVED + issue #333 comment `6676780590` + 授权链 2026-11-06 08:48 维护者授权 + 12:17『验收333』指示）：设计闸裁决 = **案①幂等为主干**（幂等锚五元组 · 同锚重送达同效力不重复记录 · replay 附注）+ 覆盖不设默认（append-only · 同锚+显式替换意图追加新行 · 旧行保留引注）+ 拒重复不设（补发合法通路）+ **落点 = gate 记录层**（消费门内=仓外运行时面随 residual_risk 登记）· R2 裁决回填 · 30 六交付条件入档（机断判据为主 / 旧测适配不放宽 / 改码面收敛 / 红线零 diff 对拍 / ruff+pytest+graph-compile 全绿 / PR 逐条对照 · 20-R1 审查文随 30 PR 落盘）· 状态 draft→active |
+| 2026-11-06 | **30 交付**：裁决落文 = `FRAGMENT_00_gate_cosign_semantics_v1_zh.md` + `00-orchestrator.md` 引用行（不改默认表语义）· 机断 8 断言先红（`d2d9eaf` · 7 failed）后绿（`c25336c` · 8 passed）· 旧测实扫零适配（prompt-packs 55 passed）· 全量 2083 passed 零新增红（4 枚既有基线同形）· ruff All checks passed · graph-compile EXIT=0 · task lint / lint-wiki-delta / verify 四闸 approved PASS · 红线对拍 7 文件全落承载面（app//alembic/SSE 面零 diff）· 20-R1 审查文 + 20 invoke 随本 PR 落盘 · 30 invoke 落档 |
