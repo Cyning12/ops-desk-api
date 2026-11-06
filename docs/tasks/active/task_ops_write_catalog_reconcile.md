@@ -1,10 +1,10 @@
 # Task：ops.write 覆盖与能力目录实际行为对账（能力声明 ↔ manifest 一致性 + 端到端实跑常驻覆盖）
 
-> **状态**：`draft`（2026-11-06 · 10 落稿 · 四闸 pending · NO-GO 20/30）
+> **状态**：`draft`（2026-11-06 · 10 落稿 · **四闸 approved**（lead 签认 · PR #354 review `5797443083`）· NO-GO 30 待 issue 评论授权）
 > **类型**：fix / 测试面（ops.write.* 能力目录对账覆盖缺口 · **纯测试面** · 红线=不改实现）
 > **上游**：issue [#336](https://github.com/Cyning12/ops-desk-api/issues/336)（backlog 正文 + 维护者 comment [`6678466745`](https://github.com/Cyning12/ops-desk-api/issues/336#issuecomment-6678466745) 令起草 · 补发受理 comment [`6679927635`](https://github.com/Cyning12/ops-desk-api/issues/336#issuecomment-6679927635) · 受理依据 = 维护者 2026-11-06 13:40 授权（lead 代行签收与验收））
 > **分支**：10/00 走 `agent/catalog-reconcile-task-e848e9dbbf56`（本 PR · 部署绑定要求末段=工单名）· 30 实分支预登记 `fix/ops-write-catalog-reconcile`（待闸签收后另行授权）
-> **10 注**：2026-11-06 · 承 issue #336 维护者 comment `6678466745` 令起草 fix task（**10 帽活** · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 设计闸决策点 = **覆盖形态**（一致性机检 vs 端到端实跑 vs 两者）× **双口径**（intent 准入实际行为 vs spec 目录声明 · 维护者补发令 `6679927635`）· 30 改码待闸签收后另行授权
+> **10 注**：2026-11-06 · 承 issue #336 维护者 comment `6678466745` 令起草 fix task（**10 帽活** · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 设计闸决策点 = **覆盖形态**（一致性机检 vs 端到端实跑 vs 两者）× **双口径**（intent 准入实际行为 vs spec 目录声明 · 维护者补发令 `6679927635`）· **四闸已签**（2026-11-06 · lead 签认 · 签认依据 = issue #336 comment `6678466745` + `6679927635` + 2026-11-06 13:40 授权 · **设计闸裁决 = 案③两者**：案①机检打底（CI 常驻·双向漂移秒红）+ 案②端到端补强（真闸链驱动·补行为层实证）× A1 双口径——缺口在双向×双口四格，单一形态必留空格）· **30 授权随 issue 评论下发**（另令 · 未至前 NO-GO 30）
 
 ---
 
@@ -28,16 +28,16 @@
 | **invoke_retention_profile** | `default` |
 | **experience_capture** | `recommended` |
 | **kpi_aggregator** | `CLOSE` |
-| **orchestration** | 10 落稿（本 PR · task 档 + 10 invoke）→ 20-R1 书面审（审查文落盘 `docs/harness/reviews/`）→ 维护者签 **HG-OPS-WRITE-COVERAGE-DESIGN**（覆盖形态裁决 · 设计闸）+ 三常闸（HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES）→ PR 出货待审 → **30 改码须待闸签收后另行授权**（`fix/ops-write-catalog-reconcile` · GATE_VERIFY 闸据=本档闸表）→ 40 → CLOSE |
+| **orchestration** | 10 落稿（本 PR · task 档 + 10 invoke）→ lead 签四闸（PR #354 review `5797443083` · 2026-11-06）→ **30 改码待 issue 评论授权**（`fix/ops-write-catalog-reconcile` · GATE_VERIFY 闸据=本档闸表 · 授权令未至前 NO-GO 30）→ 40 → CLOSE |
 
 ### 人工闸
 
 | human_gate_id | status | blocks_hats | 说明 |
 |---------------|--------|-------------|------|
-| HG-TASK-DRAFT | pending | 20-R1, 30 | 初稿未经 20-task-audit 审查与维护者签收 |
-| HG-AUDIT-R1 | pending | 30 | 20-task-audit R1 审查文未落盘 |
-| HG-GRAPH-MODULES | pending | 30 | `none` 口径待签（纯测试面 · 无图谱面 · 承 cosign-gate-semantics/planner-args 先例；30 实扫出图谱面须回签） |
-| **HG-OPS-WRITE-COVERAGE-DESIGN** | pending | **30** | **设计闸**（issue #336 维护者令设 · comment `6678466745` 第 1 条 + `6679927635`）· 决策点 = **覆盖形态**：**案①一致性机检**（spec 目录声明 ↔ `ops.write.v1.yaml` ↔ catalog 注册规格逐字段对账 · 不跑闸链）/ **案②端到端实跑**（负样本+正样本经真实 intent→审批→resume→执行链驱动）/ **案③两者**（机检打底 + 端到端补强）——× **双口径裁决**：intent 准入实际行为 × spec 目录声明（A1 锚点语义见下文专节）· 30 只执行签认形态，不自裁（FP-5） |
+| HG-TASK-DRAFT | approved | 20-R1, 30 | lead 签认 2026-11-06（PR #354 review `5797443083` · 签认依据 = issue #336 comment `6678466745` + `6679927635` + 2026-11-06 13:40 授权）：题面/背景/现状锚点表/A1 锚点语义专节/钉死契约七条齐备，红线照录 |
+| HG-AUDIT-R1 | approved | 30 | lead 签认 2026-11-06（同上 review）：实扫诚实（建设期测试≠对账面的区分清晰） |
+| HG-GRAPH-MODULES | approved | 30 | lead 签认 2026-11-06（同上 review）：`none` 口径（纯测试面） |
+| **HG-OPS-WRITE-COVERAGE-DESIGN** | approved | **30** | **设计闸 · lead 签认 2026-11-06**（同上 review）· **裁决 = 案③两者**：案①一致性机检打底（CI 常驻 · 双向漂移秒红）+ 案②端到端实跑补强（真闸链驱动 · 补「声明有·行为无」的行为层实证）× A1 双口径；理由 = 缺口恰在双向×双口四个格子，单一形态必留两个空格；案③两族并落成本可控（对账对象首枚仅 `ops.write.run_note`）· 30 只执行签认形态（案③ · 两族红测皆先红后绿），不自裁（FP-5） |
 
 ---
 
