@@ -534,17 +534,37 @@ def _resolve_base(root: Path) -> str:
     pytest.skip("TC8 基线锚点不可解析（" + "；".join(tried) + "）")
 
 
+def _changed_faces(root: Path, base: str) -> tuple[set[str], set[str]]:
+    """求值面（HG-DIFF-WHITELIST-DIAGNOSIS 签认形态② · 2026-11-06 · 固定波次窗语义）。
+
+    与 `tests/test_lg_rag_write_replay_guard.py::_changed_faces` 同构照抄：
+    committed 面 = `_BASE.._WAVE_TIP` 闭窗（不随 master 增长 · whitelist 过期
+    型锚点漂移的结构性修复）；未提交面 = 工作区/暂存 vs HEAD；外加 untracked。
+    N2 规格：`_WAVE_TIP` 未钉/不可解析（浅克隆）→ 带审计输出跳过 committed
+    面，绝不退化为 vs HEAD 增长窗。
+    """
+    changed: set[str] = set()
+    if _WAVE_TIP is None:
+        print("[TC8] committed 面跳过：_WAVE_TIP 未钉（N2 规格：不退化为 vs HEAD 增长窗）")
+    else:
+        ok, _ = _git_ok(root, "rev-parse", "--verify", f"{_WAVE_TIP}^{{commit}}")
+        if ok:
+            changed.update(_git(root, "diff", "--name-only", base, _WAVE_TIP))
+        else:
+            print(
+                f"[TC8] committed 面跳过：_WAVE_TIP {_WAVE_TIP} 不可解析"
+                "（浅克隆? · N2 规格：不退化为 vs HEAD 增长窗）"
+            )
+    changed.update(_git(root, "diff", "--name-only", "HEAD"))  # 工作区 vs HEAD
+    changed.update(_git(root, "diff", "--name-only", "--cached", "HEAD"))  # 暂存区 vs HEAD
+    untracked = set(_git(root, "ls-files", "--others", "--exclude-standard"))
+    return changed, untracked
+
+
 def test_diff_whitelist_scenario_stage_rewire() -> None:
     root = _ROOT
     base = _resolve_base(root)
-    changed: set[str] = set()
-    for args in (
-        ("diff", "--name-only", base),  # 工作区 vs base（未暂存）
-        ("diff", "--name-only", "--cached", base),  # 暂存区 vs base
-        ("diff", "--name-only", base, "HEAD"),  # 已提交 delta
-    ):
-        changed.update(_git(root, *args))
-    untracked = set(_git(root, "ls-files", "--others", "--exclude-standard"))
+    changed, untracked = _changed_faces(root, base)
 
     # 00 裁定 O2（2026-10-20）：禁区断言先于第四态 skip 判定——
     # 越界全 foreign 但含 scripts//alembic/ 时必须 fail 而非 skip。
