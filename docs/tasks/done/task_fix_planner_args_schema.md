@@ -1,6 +1,7 @@
 # Task：supervisor planner string-args 触发 `args_schema_invalid`（八段真落笔阻断 · prompt 资产面）
 
-> **状态**：`active`（10 落稿 · 四闸 approved 2026-11-06 · 30 已授权 · GO 30）
+> **状态**：`done`（2026-11-06 · 全棒链同日闭环：10 起草（PR #348 `6533d44` · 四闸签认）→ 30 实现案②修复资产（PR #349 `36ef90d` · 六条件全过）→ **40 复跑销项：机制面 PASS + live 八段真落笔达成（不再撞 `args_schema_invalid` · issue #339 偏差链销项）** → 50 CLOSE）
+> **40 注**：2026-11-06 · 维护者 comment `6675685940` 40 复跑销项令——**机制面 PASS + live 真落笔达成（主结论）**：独立复跑不采信 30 自报（worktree `/tmp/verify40-planner` @ `36ef90d` · 事后已拆）：新测 7 枚 passed · 关联回归 20 文件 416 passed 零适配 · 全量 2075 passed 零新增红（4 failed = 既有基线同形：diff-whitelist ×2 / embedder env ×1 / dualproc env ×1）· verify 四闸 approved PASS · 红线对拍零命中（delta 11 文件全落签认承载面 · gateway/schema_validate/event_store/resume/hitl 零 diff）；**live 免 shim 全链实测**（uvicorn :8014 @ `36ef90d` + PG `opsdesk_test` · delegation off · 数据前缀 `pl40`）：八段①-⑤⑦⑧达成——catalog 可见 → 写闸挂起（`hitl.waiting` + `write_intent` args_summary 结构化对象形态）→ pending → decide 200+重复 409 → resume 受理+写窗 409 → **⑦消费命中唯一台账** → **⑧真落笔达成：`ops_capability_notes` 落行（note/approval_id/subtask_id/幂等键四串链 · 消费后 5ms）——不再撞 `args_schema_invalid`（pre-fix 永久拦截面 · issue #329/#334 偏差②同源两轮一致形态销项）** → 收口 `done{status:resumed}` + `HITL 恢复完成`；**偏差①**：resume 后 supervisor replan 返回空 `{"subtasks": []}`（V4-Pro · 同 #334 偏差①模型层噪点形态）→ 既有 fail-closed 灾备降级单 rag 收终态——环境/模型层，非本修复面语义，如实登记不阻塞（真落笔已在前序达成）；测试数据零残留（notes 1 / events 19 / hitl 1 / invite 1 / sessions 1 / checkpoints 107 行 / user 1 全清实证）。issue #339 关 issue 由维护者执行。
 > **类型**：fix / 缺陷修复（prompt 资产面 · planner 产出 string-args 致 gateway args_schema fail-closed 拒执行 · 预存在非回归）
 > **上游**：issue [#339](https://github.com/Cyning12/ops-desk-api/issues/339)（backlog 正文 + 维护者 comment `6673790438` 令起草 · 受理依据 = 维护者 2026-11-06 08:48 授权（lead 全程代行签收与验收））
 > **分支**：10/00 走 `agent/planner-args-fix-task-0796db4a2434`（本 PR · 部署绑定末段=工单名）· 30 实分支预登记 `fix/planner-args-schema`（待闸签收后另行授权）
@@ -107,7 +108,7 @@ issue #339（backlog）：**live 八段真落笔中 supervisor planner 产出 st
 - [x] Gateway args_schema fail-closed 既有负样本组全绿不放宽（`test_capability_gateway` / `test_capability_harness_cli` · 另 fail-closed 承接组实证：string-args 强灌修复后仍 `args_schema_invalid` 拦截 + 零落笔）
 - [x] 旧测适配如实登记（D-fix-3 唯三版本常量适配 · 收紧式非放宽）；supervisor 规划面 / tool_exec / 消费门测试族关联回归全绿（受影响 9 文件 165 枚 + 全量 2075 枚绿）
 - [x] 工程面：`ruff check app tests` 零（All checks passed!）；`pytest tests` 全量 2075 绿 + 既有红基线 4 枚如实登记（基线 `6533d44` 同 4 枚失败实证 · 零新增红）；`./scripts/graph-compile.sh` EXIT=0；`npx spec-wave task lint` PASS（零 warn）
-- [ ] 40 复跑：全部写能力端到端真落笔验证解锁（issue #339 两轮一致形态不再复现 · 偏差登记口径承 #329/#334 先例）——留 40 棒
+- [x] 40 复跑（2026-11-06 达成 · **机制面 PASS + live 真落笔达成**）：全部写能力端到端真落笔验证解锁——live 免 shim 全链 `ops_capability_notes` 真落笔达成（**不再撞 `args_schema_invalid`** · issue #339 两轮一致拦截形态销项）+ 独立复跑全绿（新测 7 / 关联回归 416 / 全量 2075 零新增红 · worktree `/tmp/verify40-planner` @ `36ef90d`）· 偏差①（replan 空规划 · V4-Pro 模型层噪点 · 既有 fail-closed 降级收终态）如实登记
 
 ---
 
@@ -196,6 +197,17 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30；`spec-wave
 | `npx --yes spec-wave@3.5.0 task lint --file docs/tasks/active/task_fix_planner_args_schema.md` | 0 | LINT: PASS（四闸 approved 代录 + 30 交付回填后复检 · 零 warn） |
 | `npx --yes spec-wave@3.5.0 verify --target . --task docs/tasks/active/task_fix_planner_args_schema.md` | 0 | VERIFY: PASS（四闸 approved · 20 invoke 随 30 棒补齐后复检） |
 
+> **hat 40（40 复跑销项）** · 独立复跑不采信 30 自报：worktree `/tmp/verify40-planner` @ `36ef90d`（zero 仓内码改动 · 事后已拆）+ live 免 shim 全链实测（uvicorn :8014 + PG `opsdesk_test` · delegation off · 数据前缀 `pl40` · 事后零残留清理）。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `pytest tests/test_fix_planner_args_schema.py`（worktree @ `36ef90d`） | 0 | 7 passed（负样本红→绿端到端 + 恒绿对拍组 · 独立复跑） |
+| `pytest`（关联回归 20 文件 · worktree） | 0 | 416 passed · 1 skipped 零适配 |
+| `pytest tests`（全量 · worktree） | 1 | 2075 passed · 4 failed = 既有基线同形（diff-whitelist ×2 / embedder env ×1 / dualproc env ×1 · 与 #349 前各基线逐枚同形）· **零新增红** |
+| `npx --yes spec-wave@3.5.0 verify --target . --task docs/tasks/active/task_fix_planner_args_schema.md`（worktree） | 0 | VERIFY: PASS（四闸 approved） |
+| 红线对拍 `git diff --name-only 6533d44..36ef90d` | 0 | delta 11 文件全落签认承载面（prompt md ×2 + 目录块单函数 + 新测 + 唯三版本常量适配 + 档/invoke/审查文）· gateway/schema_validate/event_store/resume/hitl 零 diff |
+| live 八段（uvicorn :8014 · run `7ecfe9d9…`） | — | ①catalog 6 枚含 run_note ✅ ②写闸挂起+write_intent 结构化 ✅ ③pending ✅ ④decide 200+重复 409 ✅ ⑤resume 受理+写窗 409 ✅ ⑥replan 空规划降级（偏差①登记）⑦消费命中唯一台账 ✅ **⑧真落笔落行（不再撞 args_schema_invalid）✅** 收口 done{resumed} ✅ |
+
 ---
 
 ## 修订记录
@@ -204,3 +216,4 @@ task 档落稿 · 10 invoke 落盘 · 四闸 pending · NO-GO 20/30；`spec-wave
 |------|-----|
 | 2026-11-06 | 10 落稿：承 issue #339 维护者 comment `6673790438` 令起草 fix task（10 帽活 · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· **10 档只读诊断五环机制链**（prompt 资产未文档化 args = 根因环 · file:line 全锚）· 设计闸 HG-PLANNER-ARGS-DESIGN 处置形态裁决三案（拒收并约束输入 / 修复资产 / 转独立设计任务 · 影响面 = 全部写能力 40 验证等待）· 红测负样本（planner 输出 args 通过 schema 校验 · 端到端）入 test_strategy · 四红线（SSE 事件表零 diff / HITL 消费语义 freeze / resume 单路径 / 改码面收敛）+ gateway fail-closed 永不放宽入 failure_paths · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 |
 | 2026-11-06 | 30 交付：**四闸签认代录**（依据 = PR #348 review `5794838471` + issue #339 comment `6674979717` · 授权链 2026-11-06 08:48 维护者授权 · lead 代行签收 · 非自签）+ 20-R1 审查文落盘 + 20 invoke；**案②修复资产落地**（两份 supervisor prompt 资产 v2→v3 文档化 args + `_format_capability_catalog` 目录块注入 args_schema · 根因环①③一并消除 · 解析/gateway/SSE/resume/HITL 零改动）· 红测先红（`bfb911e` · string-args → `args_schema_invalid` 与 live 形态逐字一致）后绿（负样本 7/7 端到端 · 真落笔四串链）· 旧测唯三版本常量适配 · 全量 2075 绿 + 既有红基线 4 枚如实登记 · 30 invoke 落盘 · 出货 PR 待 lead 终审 · 40 留棒 |
+| 2026-11-06 | **40 复跑销项（机制面 PASS + live 真落笔达成 · 主结论）**：独立复跑（新测 7 / 关联回归 416 / 全量 2075 零新增红 · worktree `/tmp/verify40-planner` @ `36ef90d` · verify 四闸 PASS · 红线对拍零命中）+ **live 免 shim 全链八段实测**（run `7ecfe9d9…`：写闸挂起 → pending → decide 200+409 → resume+写窗 409 → 消费命中唯一台账 → **真落笔落行不再撞 `args_schema_invalid`** → done{resumed} 收口）· 偏差①replan 空规划（V4-Pro 模型层噪点 · 既有 fail-closed 降级收终态）如实登记 · 测试数据零残留 · **issue #329/#334/#335 偏差②（×3 复现登记）实质销项** · 40 invoke 落档 · 归档 done/ · CLOSE 档 + 双 README + 50 invoke 随关账 PR 出货 |
