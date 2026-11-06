@@ -18,9 +18,11 @@ from app.ops.prompts.templates import TEMPLATES
 
 EXPECTED_IDS = {
     "lg_rag.intent.system": "v1",
-    "lg_rag.supervisor.system": "v2",
-    # approved-replan-quality：v1→v2 加 $preserved_block 槽（保号行注入）
-    "lg_rag.supervisor.suffix.system": "v2",
+    # fix-planner-args-schema：v2→v3 文档化 args 结构化对象（type=tool 必填语义）
+    "lg_rag.supervisor.system": "v3",
+    # approved-replan-quality：v1→v2 加 $preserved_block 槽（保号行注入）；
+    # fix-planner-args-schema：v2→v3 同步文档化 args 结构化对象
+    "lg_rag.supervisor.suffix.system": "v3",
     "lg_rag.router.system": "v1",
     "lg_rag.direct.system": "v1",
     "lg_rag.rewrite.system": "v1",

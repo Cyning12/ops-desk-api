@@ -314,7 +314,7 @@ async def test_planner_args_schema_red_to_green_end_to_end(run_note_env):
         f"负样本未转绿：planner args 未通过 schema 校验（error={result.get('error')!r}）"
     )
     assert result["output"]["written"] is True
-    assert result["output"]["tool"] == _NEW_CAP
+    assert result["output"]["tool"] == "ops_write_run_note"  # adapter 回执 tool 键（承 stage-w A1）
 
     # 真落笔断言：便签行落值（tenant / approval / subtask / 幂等键四串链）
     notes = await _fetch_notes(req_id)

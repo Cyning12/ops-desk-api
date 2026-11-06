@@ -102,10 +102,13 @@ _SUPERVISOR_CAP_FILTER = baseline_filter(node_role="supervisor")
 
 
 def _format_capability_catalog(specs: list[CapabilitySpec]) -> str:
-    """赋能目录摘要（id · description · risk · output_fields）供 supervisor system 注入。
+    """赋能目录摘要（id · description · risk · output_fields · args_schema）供 supervisor system 注入。
 
     ``output_fields`` 非空时追加产出字段名清单——planner 声明 produces/consumes
     从「猜」变「从清单选」（task lg-rag-capability-output-schema）；
+    ``args_schema`` 非空时追加 JSON Schema 摘要——planner 按 schema 产结构化
+    ``args`` 对象（task fix-planner-args-schema · 根因环③信息缺口消除：模型
+    不再靠提示词即兴猜字段名/类型 · string-args 即兴形态失锚）；
     未声明（空）能力的行与此前**逐字节一致**（验收 1 零 diff 口径）。
     """
     if not specs:
@@ -115,8 +118,13 @@ def _format_capability_catalog(specs: list[CapabilitySpec]) -> str:
         # getattr 宽容：旧测以 SimpleNamespace 伪造 spec（无 output_fields 属性）——
         # 缺属性视同未声明，行渲染保持零 diff
         declared = getattr(s, "output_fields", None) or ()
-        extra = f"；output_fields=[{', '.join(declared)}]" if declared else ""
-        lines.append(f"- {s.capability_id}：{s.description}（risk={s.risk_level}{extra}）")
+        schema = getattr(s, "args_schema", None)
+        parts = [f"risk={s.risk_level}"]
+        if declared:
+            parts.append(f"output_fields=[{', '.join(declared)}]")
+        if schema:
+            parts.append(f"args_schema={json.dumps(schema, ensure_ascii=False)}")
+        lines.append(f"- {s.capability_id}：{s.description}（{'；'.join(parts)}）")
     return "\n".join(lines)
 
 
