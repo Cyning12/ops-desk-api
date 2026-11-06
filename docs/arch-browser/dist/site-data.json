@@ -1,6 +1,6 @@
 {
   "schema_version": "arch_browser_site_data_v1",
-  "generated_at": "2026-11-06T15:48:09Z",
+  "generated_at": "2026-11-06T15:55:30Z",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_2746c8600a8addc6_V1",
   "graph_generated_at": "sha256-2746c8600a8addc6",
   "sources": {
@@ -146,7 +146,7 @@
       "cards": [
         {
           "title": "场景 · DSH Superagent 研究原型",
-          "desc": "独立 TypeScript 原型：以确定性存储（SQLite 单写者）与效果队列约束 LLM 编排，对外只承诺真实状态。波次 0 记录 GC（结算收据按龄回收 + 设置/Prompt 版本快照修剪）、波次 1 Trust 边界（策略门 text-blind 判例 + docs/009）已交付；后续波次：部署隔离、文章方向项。",
+          "desc": "独立 TypeScript 原型：以确定性存储（SQLite 单写者）与效果队列约束 LLM 编排，对外只承诺真实状态。波次 0 记录 GC（结算收据按龄回收 + 版本快照修剪）、波次 1 Trust 边界（策略门 text-blind 判例）、波次 2 部署隔离（checkout 本地钉版 DSH 优先于全局二进制）已交付；后续波次：文章方向项。",
           "status": "live"
         },
         {
