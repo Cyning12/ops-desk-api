@@ -324,6 +324,16 @@ _TREE_ALLOWED_FILES = frozenset(
         # 00 裁定（2026-10-20 · 40=approve 非阻塞观察 O2 · 裁定甲先例）：审查文
         # 入库并纳入白名单，避免态③ foreign skip 削弱严格 pass 语义。
         "docs/harness/reviews/task_delegation_naming_boundary_review40_20261020.md",
+        # 00 裁定式登记（30 修复 · 2026-11-06 · HG-DIFF-WHITELIST-DIAGNOSIS 签认
+        # 形态② · 20-R1 F1）：CLOSE commit `920c8e5` [00]「CLOSE 归档 + 裁定链
+        # invoke」同批落盘的两件波内文件——增长窗时代被 banned 前置遮蔽，
+        # 固定窗下由回归牙正常咬出后补登记。限定语：仅 CLOSE 落盘面，禁承载
+        # 其他改动。
+        "backups/local_qdrant_orphan_cleanup_20261018T005320Z/ops_knowledge-7885642805251913-2026-10-18-00-53-20.snapshot",
+        # 00 裁定式登记（同上 · 20-R1 N1 注明前波次归属）：前波次 query-coref
+        # 审查文随 CLOSE commit `920c8e5` 入库面。限定语：仅审查文入库面，禁
+        # 承载其他改动。
+        "docs/harness/reviews/task_query_coref_rewrite_review40_20261019.md",
     }
 )
 _TREE_ALLOWED_PREFIXES = ("docs/harness/invokes/by-task/delegation-naming-boundary/",)
@@ -414,6 +424,41 @@ def _changed_and_untracked(root: Path, *diff_args: str) -> tuple[set[str], set[s
     return changed, untracked
 
 
+def _changed_faces(root: Path, base: str) -> tuple[set[str], set[str]]:
+    """求值面（HG-DIFF-WHITELIST-DIAGNOSIS 签认形态② · 2026-11-06 · 固定波次窗语义）。
+
+    - committed 面 = `_BASE.._WAVE_TIP` **闭窗**（波次真实合并跨 · 不随 master
+      合入增长——whitelist 过期型锚点漂移的结构性修复）；
+    - 未提交面 = 工作区/暂存 vs HEAD（在途保护：本波次与未来波次开发期触碰
+      禁改面仍即时 fail）；
+    - 外加 untracked（`_changed_and_untracked` 并集内）。
+
+    N2 规格：`_WAVE_TIP` 未钉或不可解析（浅克隆）→ **带审计输出跳过
+    committed 面**，绝不退化为 vs HEAD 增长窗（否则浅克隆环境复现锚点漂移
+    结构性常态红）；此时并集退化为未提交面 + untracked，banned 前置（O2）
+    照常作用。
+    """
+    faces: list[tuple[str, ...]] = []
+    if _WAVE_TIP is None:
+        print("[TC8] committed 面跳过：_WAVE_TIP 未钉（N2 规格：不退化为 vs HEAD 增长窗）")
+    else:
+        ok, _ = _git_ok(root, "rev-parse", "--verify", f"{_WAVE_TIP}^{{commit}}")
+        if ok:
+            faces.append(("diff", "--name-only", base, _WAVE_TIP))
+        else:
+            print(
+                f"[TC8] committed 面跳过：_WAVE_TIP {_WAVE_TIP} 不可解析"
+                "（浅克隆? · N2 规格：不退化为 vs HEAD 增长窗）"
+            )
+    faces.extend(
+        (
+            ("diff", "--name-only", "HEAD"),  # 工作区 vs HEAD（未提交面）
+            ("diff", "--name-only", "--cached", "HEAD"),  # 暂存区 vs HEAD
+        )
+    )
+    return _changed_and_untracked(root, *faces)
+
+
 def test_tc8_diff_whitelist() -> None:
     """TC8：本波次改动面 ⊆ 声明白名单；禁改面（scripts/ alembic/ 其余 app/）零触达。
 
@@ -437,12 +482,7 @@ def test_tc8_diff_whitelist() -> None:
         assert not banned, f"态④兜底：禁改面（scripts/ alembic/ 及其余 app/）出现改动: {banned}"
         pytest.skip("TC8 基线锚点不可解析（" + "；".join(tried) + "）")
 
-    changed, untracked = _changed_and_untracked(
-        root,
-        ("diff", "--name-only", base),  # 工作区 vs base（未暂存）
-        ("diff", "--name-only", "--cached", base),  # 暂存区 vs base
-        ("diff", "--name-only", base, "HEAD"),  # 已提交 delta
-    )
+    changed, untracked = _changed_faces(root, base)
 
     # banned 断言先于第四态 skip 判定（00 裁定 O2）：越界全 foreign 但含
     # scripts//alembic/（或其余 app/）时必须 fail 而非 skip。

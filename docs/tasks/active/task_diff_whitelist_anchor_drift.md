@@ -6,6 +6,7 @@
 > **分支**：10/00 走 `agent/diff-whitelist-task-5e3e38c2abdd`（本 PR · 部署绑定要求末段=工单名）· 30 实分支预登记 `fix/diff-whitelist-anchor-drift`（待闸签收后另行授权）
 > **10 注**：2026-11-06 · 承 issue #337 维护者 comment `6682233401` 令起草 fix task（**10 帽活** · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码/禁改测试码）· 设计闸决策点 = **诊断裁决**（锚点真漂移→修锚点 / whitelist 过期→刷新基线 · 二选一必须有证据——先跑两条用例拿当前实际行号与输出再裁）· 10 档已跑两条用例取证（实测证据见「现状锚点」节 · 裁决属闸不归 10）
 > **20 注**：2026-11-06 · 20-R1 书面审 PASS 零内容阻塞（审查文 `docs/harness/reviews/task_diff_whitelist_anchor_drift_audit_R1_20261106.md` · invoke `invoke_20261106_20_audit.md`）· HG-TASK-DRAFT / HG-GRAPH-MODULES 签认代录入闸表（依据 = issue #337 comment `6683541162` + PR #357 review `5799316636`）· 三子形态对拍回填 R2：**①重钉 `_BASE` 与 `_WAVE_TIP` 回归牙窗口不相容（拍否）· ②改固定波次窗语义=正解（wave2 闭窗实测态① pass · wave1 闭窗实测 F1 暗礁：2 件波内未登记面（`920c8e5` CLOSE 落盘）须随修复逐路径登记）· ③调 `_allowed` 面拍否（banned/O2 空心化）** · 签认预告 = whitelist 过期→刷新基线 · 子形态=改固定波次窗语义（comment `6683541162`）· HG-AUDIT-R1 / HG-DIFF-WHITELIST-DIAGNOSIS = lead 随 20-R1 PR（#358 · review `5799605736` · merge `172a780`）正式签（见人工闸表签认行）
+> **30 注**：2026-11-06 · 30 授权 = issue #337 comment `6684073257`（GO · 四闸全 approved）· 开工前 GATE_VERIFY 实跑发现签录 `0870fb4` 漏翻 HG-DIFF-WHITELIST-DIAGNOSIS status 单元格 → 依 GO 评论补翻（修复记录入闸表行 · commit `7748dfe`）→ **VERIFY: PASS** 后开工 · 落地 = 签认形态②三件套：F1 两件 00 裁定式登记（`920c8e5` 限定语）+ 两闸 committed 面收窄 `_BASE.._WAVE_TIP` 闭窗（`_changed_faces` 助手 · 未提交面 vs HEAD + untracked 保留）+ N2 浅克隆退化规格（tip 不可解析 → 审计输出跳过 committed 面 · 绝不退化为 vs HEAD 增长窗）· 闸语义对拍三实证：回归牙（摘除 F1 登记 → fail 保牙）/ banned 在途（scripts/ untracked 探针 → fail）/ N2（bogus tip → 审计输出 + pass · 脏树+不可解析 tip 保守保牙 fail-closed 如实登记）· 红转绿双证据 + 全量零新增红 + 红线对拍零命中（见 30 自检结论）
 
 ---
 
@@ -38,7 +39,7 @@
 | HG-TASK-DRAFT | **approved** | 20-R1, 30 | lead 签认 2026-11-06 · 依据 = issue #337 comment `6683541162`「HG-TASK-DRAFT 已签（PR #357 · squash 合并 `0358c3b` · CI 4/4 + 本地 task lint 对拍双证 · 六条件全过）」+ PR #357 review `5799316636`（APPROVED · 20-R1 代录入表） |
 | HG-AUDIT-R1 | **approved** | 30 | lead 签认 2026-11-06 · 依据 = PR #358 review `5799605736`（APPROVED · 六条件+亲验证据：CI 4/4 · task lint 对拍 PASS · F1 溯源 `920c8e5` 亲验 · wave1/wave2 闭窗文件数亲验一致 · wave2 十三文件白名单逐条命中）+ squash merge `172a780` |
 | HG-GRAPH-MODULES | **approved** | 30 | lead 签认 2026-11-06 · 依据 = issue #337 comment `6683541162`「HG-GRAPH-MODULES 以 `none` 口径随档签认（纯测试基建面；30 实扫出图谱面须回签再动）」（20-R1 代录入表 · `none` 口径与 `graph_change_layer=none` 互洽） |
-| **HG-DIFF-WHITELIST-DIAGNOSIS** | pending | **30** | **设计闸 · 诊断裁决**：锚点真漂移→修锚点 / whitelist 过期→刷新基线（二选一 · 证据先行 · 10 档实测证据见「现状锚点」节）· **签认预告**（lead · issue #337 comment `6683541162`）：**whitelist 过期 → 刷新基线 · 子形态 = 改固定波次窗语义**（committed 面由 `_BASE..HEAD` 收窄为 `_BASE.._WAVE_TIP` 闭窗 + 工作区/暂存 vs HEAD 未提交面 + untracked · banned 前置只作用该面 · 四态/O2/回归牙原样保留 · 禁删闸禁豁免）· 20-R1 三子形态对拍支持预告形态（①重钉 `_BASE` 与 `_WAVE_TIP` 回归牙窗口不相容拍否 / ③调 `_allowed` 面拍否）· **正式签认（lead · 2026-11-06 · PR #358 review `5799605736` + merge `172a780`）**：**裁决 = whitelist 过期 → 刷新基线 · 子形态 = 改固定波次窗语义**（committed 面 `_BASE.._WAVE_TIP` 闭窗 + 工作区/暂存 vs HEAD + untracked · banned 前置只作用该面 · 四态/O2/回归牙原样 · 禁删闸禁豁免）· 裁决证据链 = 四锚 rev-parse 全命中（lead 亲验）+ banned/violations 溯源 `6c9d0e6`/`51030a4` 均钉锚后合法波次（lead 亲验）+ 20-R1 三子形态对拍（①不相容拍否/②正解+wave2 闭窗态① pass 实测/③拍否）· 落地必修 = F1 两件逐路径登记（`920c8e5` 限定语）+ N2 浅克隆退化规格 · 30 只执行签认分支（FP-5） |
+| **HG-DIFF-WHITELIST-DIAGNOSIS** | **approved** | **30** | **设计闸 · 诊断裁决**：锚点真漂移→修锚点 / whitelist 过期→刷新基线（二选一 · 证据先行 · 10 档实测证据见「现状锚点」节）· **status 单元格修复（30 开工前 GATE_VERIFY 发现 · 非自签）**：签录 commit `0870fb4` 已录正式签认全文但漏翻 status → 依 issue #337 GO 评论 `6684073257`「闸签回执：四闸全 approved——HG-DIFF-WHITELIST-DIAGNOSIS 随 20-R1 PR #358 正式签（review `5799605736` · merge `172a780` · 签录 `0870fb4`）」补翻 · 签认本体 = 本行「正式签认」全文 · **签认预告**（lead · issue #337 comment `6683541162`）：**whitelist 过期 → 刷新基线 · 子形态 = 改固定波次窗语义**（committed 面由 `_BASE..HEAD` 收窄为 `_BASE.._WAVE_TIP` 闭窗 + 工作区/暂存 vs HEAD 未提交面 + untracked · banned 前置只作用该面 · 四态/O2/回归牙原样保留 · 禁删闸禁豁免）· 20-R1 三子形态对拍支持预告形态（①重钉 `_BASE` 与 `_WAVE_TIP` 回归牙窗口不相容拍否 / ③调 `_allowed` 面拍否）· **正式签认（lead · 2026-11-06 · PR #358 review `5799605736` + merge `172a780`）**：**裁决 = whitelist 过期 → 刷新基线 · 子形态 = 改固定波次窗语义**（committed 面 `_BASE.._WAVE_TIP` 闭窗 + 工作区/暂存 vs HEAD + untracked · banned 前置只作用该面 · 四态/O2/回归牙原样 · 禁删闸禁豁免）· 裁决证据链 = 四锚 rev-parse 全命中（lead 亲验）+ banned/violations 溯源 `6c9d0e6`/`51030a4` 均钉锚后合法波次（lead 亲验）+ 20-R1 三子形态对拍（①不相容拍否/②正解+wave2 闭窗态① pass 实测/③拍否）· 落地必修 = F1 两件逐路径登记（`920c8e5` 限定语）+ N2 浅克隆退化规格 · 30 只执行签认分支（FP-5） |
 
 ---
 
@@ -91,9 +92,9 @@ issue #337（backlog · 来源 #323 40 invoke 增强/收尾清单）：**本地�
 
 ## 范围（竖切 · 四闸齐后才 30）
 
-- [ ] **D-fix-1 · 诊断裁决执行**（30 执行 · 以 HG-DIFF-WHITELIST-DIAGNOSIS 签认为准）：按 A1 语义先取证——实跑两条用例留存当前实际行号与输出全文，banned/violations 逐路径 `git log` 溯源；然后按签认分支执行——①**修锚点**（锚点真漂移：更正 `_BASE`/`_WAVE_TIP` 为正确可解析锚 · 复跑验证两闸回正确态）或②**刷新基线**（whitelist 过期：按签认形态重置基线窗/白名单 · 使闸在 master 干净树回到态①/态③正确语义 · 越界文件证据链逐路径留痕）。
-- [ ] **D-fix-2 · 红转绿证据**：修复前 2 failed / 修复后 2 passed 双证据入 30 invoke（pytest 命令级可复验 · 题面负样本口径）；全量 `pytest tests` 复核零新增红（既有 env 依赖红 2 枚如实登记 · 承各波次先例）。
-- [ ] **D-fix-3 · 红线对拍**：`git diff origin/master...HEAD --name-only | grep -v '^docs/'` 对拍——`app/` `alembic/`（除测试面外）`scripts/` SSE 面零 diff；改动面 ⊆ {两枚测试文件 · task 档 · invoke 档}。
+- [x] **D-fix-1 · 诊断裁决执行**（30 执行 · 以 HG-DIFF-WHITELIST-DIAGNOSIS 签认为准）：按 A1 语义先取证——实跑两条用例留存当前实际行号与输出全文，banned/violations 逐路径 `git log` 溯源；然后按签认分支执行——①**修锚点**（锚点真漂移：更正 `_BASE`/`_WAVE_TIP` 为正确可解析锚 · 复跑验证两闸回正确态）或②**刷新基线**（whitelist 过期：按签认形态重置基线窗/白名单 · 使闸在 master 干净树回到态①/态③正确语义 · 越界文件证据链逐路径留痕）。
+- [x] **D-fix-2 · 红转绿证据**：修复前 2 failed / 修复后 2 passed 双证据入 30 invoke（pytest 命令级可复验 · 题面负样本口径）；全量 `pytest tests` 复核零新增红（既有 env 依赖红 2 枚如实登记 · 承各波次先例）。
+- [x] **D-fix-3 · 红线对拍**：`git diff origin/master...HEAD --name-only | grep -v '^docs/'` 对拍——`app/` `alembic/`（除测试面外）`scripts/` SSE 面零 diff；改动面 ⊆ {两枚测试文件 · task 档 · invoke 档}。
 
 ### 非范围
 
@@ -126,14 +127,14 @@ issue #337（backlog · 来源 #323 40 invoke 增强/收尾清单）：**本地�
 
 ## 验收标准
 
-- [ ] HG-DIFF-WHITELIST-DIAGNOSIS 签认诊断裁决（二值分支 + 证据链 + 裁决依据）落闸表行，30 按签认分支交付
-- [ ] **红转绿命令级复验**：修复前 `pytest tests/test_lg_rag_write_replay_guard.py::test_tc8_diff_whitelist tests/test_strategy_scenario.py::test_diff_whitelist_scenario_stage_rewire` → 2 failed（输出全文留痕）→ 修复后同命令 → 2 passed；两证据入 30 invoke
-- [ ] **固定窗语义落地实证（20-R1 对拍口径 · 签认形态②时启用）**：干净树（master 合入点）下两闸 committed 面按 `_BASE.._WAVE_TIP` 闭窗求值——用例②（wave2 闭窗 13 文件）零 violations 态① pass · 用例①（wave1 闭窗 15 文件）经 **F1 两件逐路径登记**（`920c8e5` 限定语在册）后零 violations 态① pass；浅克隆退化带审计输出跳过 committed 面（N2 规格）实证
-- [ ] 证据链完整：两条用例当前实际行号与输出 + banned/violations 逐路径 `git log _BASE..HEAD` 溯源 commit 清单（A1 语义一）
-- [ ] 闸语义对拍：四态语义 / banned 前置（O2）/ 回归牙在修复后原样生效（或经签认等价改写 · 20-R1 复核）；禁删闸/禁豁免 banned（FP-2）
-- [ ] 红线对拍零命中：`git diff origin/master...HEAD --name-only | grep -v '^docs/'` ⊆ 两枚测试文件（+测试面外零 diff）；`app/` `scripts/`（他人合入面）`alembic/` SSE/freeze 面零 diff（FP-3/FP-4/FP-7）
-- [ ] 全量 `pytest tests` 零新增红：既有 env 依赖红 2 枚（`test_embedder_failure_degrades_with_marker` / `test_hitl_cross_instance_resume`）如实登记（承各波次先例口径）
-- [ ] `ruff check app tests` 触及路径零新增；`npx --yes spec-wave@3.5.0 task lint --file <本档>` PASS；`npx --yes spec-wave@3.5.0 task lint-wiki-delta --target .` PASS（`--scope all` 口径）
+- [x] HG-DIFF-WHITELIST-DIAGNOSIS 签认诊断裁决（二值分支 + 证据链 + 裁决依据）落闸表行，30 按签认分支交付
+- [x] **红转绿命令级复验**：修复前 `pytest tests/test_lg_rag_write_replay_guard.py::test_tc8_diff_whitelist tests/test_strategy_scenario.py::test_diff_whitelist_scenario_stage_rewire` → 2 failed（输出全文留痕）→ 修复后同命令 → 2 passed；两证据入 30 invoke
+- [x] **固定窗语义落地实证（20-R1 对拍口径 · 签认形态②时启用）**：干净树（master 合入点）下两闸 committed 面按 `_BASE.._WAVE_TIP` 闭窗求值——用例②（wave2 闭窗 13 文件）零 violations 态① pass · 用例①（wave1 闭窗 15 文件）经 **F1 两件逐路径登记**（`920c8e5` 限定语在册）后零 violations 态① pass；浅克隆退化带审计输出跳过 committed 面（N2 规格）实证
+- [x] 证据链完整：两条用例当前实际行号与输出 + banned/violations 逐路径 `git log _BASE..HEAD` 溯源 commit 清单（A1 语义一）
+- [x] 闸语义对拍：四态语义 / banned 前置（O2）/ 回归牙在修复后原样生效（或经签认等价改写 · 20-R1 复核）；禁删闸/禁豁免 banned（FP-2）
+- [x] 红线对拍零命中：`git diff origin/master...HEAD --name-only | grep -v '^docs/'` ⊆ 两枚测试文件（+测试面外零 diff）；`app/` `scripts/`（他人合入面）`alembic/` SSE/freeze 面零 diff（FP-3/FP-4/FP-7）
+- [x] 全量 `pytest tests` 零新增红：既有 env 依赖红 2 枚（`test_embedder_failure_degrades_with_marker` / `test_hitl_cross_instance_resume`）如实登记（承各波次先例口径）
+- [x] `ruff check app tests` 触及路径零新增；`npx --yes spec-wave@3.5.0 task lint --file <本档>` PASS；`npx --yes spec-wave@3.5.0 task lint-wiki-delta --target .` PASS（`--scope all` 口径）
 - [ ] 40 复跑（留 40）：独立复跑不采信 30 自报（worktree @ 30 出货 commit）——两枚用例 2 passed + 全量零新增红 + 红线对拍零命中 + 证据链独立复核
 
 ---
@@ -233,6 +234,21 @@ task 档落稿（含 A1 锚点语义专节 · 四闸 pending · NO-GO 20/30）·
 
 **环境注记**：本机 venv 补装 `pytest` / `pytest-asyncio` / `respx`（承 ops-write-catalog-reconcile 先例 · pyproject 已声明 · requirements.txt 无 pytest 系）；两枚闸用例为纯 git 子进程面，不依赖 PG。
 
+> **hat 30（30 实现 · 签认形态②）** · 30 授权 = issue #337 comment `6684073257`（GO）· 交付 = F1 两件 00 裁定式登记 + 两闸 `_changed_faces` 固定波次窗语义 + N2 浅克隆退化规格 · 改动面 ⊆ 两枚测试文件（+ task 档验收回填 · invoke 档）。
+
+| 命令 | 退出码 | 摘要 |
+|------|--------|------|
+| `.venv/bin/python -m pytest <两枚用例>`（红证据 · `7748dfe` 干净树） | 1（2 failed · 预期红） | 修复前基线：用例① banned 22 件 :450 / 用例② banned 2 件 :554（输出全文入 30 invoke） |
+| `.venv/bin/python -m pytest <两枚用例>`（绿证据 · 修复后同命令） | 0 | **2 passed**（提交后干净树复跑 · 态① pass ×2 · 输出入 30 invoke） |
+| 闸语义对拍三实证（invoke 留痕） | — | 回归牙：摘除 F1 登记 → `fail 保牙` / banned 在途：`scripts/` untracked 探针 → `fail` / N2：bogus `_WAVE_TIP` → 审计输出跳过 committed 面 + `pass`（脏树+不可解析 tip 保守 fail-closed 如实登记） |
+| `.venv/bin/python -m pytest tests -q` | 0 | **2103 passed · 2 failed = 既有 env 依赖红**（embedder / dualproc · 基线同形）· **diff-whitelist ×2 转绿 · 零新增红** |
+| `.venv/bin/ruff check tests/test_lg_rag_write_replay_guard.py tests/test_strategy_scenario.py` | 0 | All checks passed!（零新增） |
+| `./scripts/graph-compile.sh` | 0 | done（EXIT=0 · 无图谱面改动） |
+| `git diff origin/master...HEAD --name-only \| grep -v '^docs/'` | 两枚测试文件 | 红线对拍零命中（`app/` `scripts/` `alembic/` SSE/freeze 零 diff） |
+| `npx --yes spec-wave@3.5.0 task lint --file <本档>` | 0 | LINT: PASS（零 warn） |
+| `npx --yes spec-wave@3.5.0 task lint-wiki-delta --target .` | 0 | LINT-WIKI-DELTA: PASS（213/0） |
+| `npx --yes spec-wave@3.5.0 verify --target . --task <本档>` | 0 | VERIFY: PASS（四闸 approved · 30 开工首输出 + 收尾双跑） |
+
 ---
 
 ## 修订记录
@@ -240,5 +256,6 @@ task 档落稿（含 A1 锚点语义专节 · 四闸 pending · NO-GO 20/30）·
 | 日期 | 说明 |
 |------|------|
 | 2026-11-06 | 10 落稿：承 issue #337 维护者 comment `6682233401` 令起草 fix task（10 帽活 · 只产 task 档 + 10 invoke + lint PASS + PR · 禁改业务码）· 四要求全落：设计闸 HG-DIFF-WHITELIST-DIAGNOSIS 决策点 = 诊断裁决二值（锚点真漂移→修锚点 / whitelist 过期→刷新基线 · 证据先行——10 档已实跑两条用例取实证：用例① :450 banned 22 件 / 用例② :554 banned 2 件 + 溯源 `6c9d0e6`/`51030a4` 均钉锚后合法波次 · 裁决属闸不归 10）/ 红测先行入 test_strategy（负样本 = 修复后两条本地基线红转绿 · pytest 命令级可复验）/ 红线入 failure_paths（不碰实现 FP-4 · SSE/freeze 零 diff FP-3 · 禁拆闸强转绿 FP-2 · 裁决属闸 FP-5 · 证据先于裁决 FP-6 · 不修史 FP-7）· A1 锚点语义专节钉死 · R0–R5 全轮 · 四闸 pending · NO-GO 20/30 · 30 待闸签收后另行授权 |
+| 2026-11-06 | 30 实现（GO = issue #337 comment `6684073257`）：签认形态②三件套落地——①F1 两件 00 裁定式登记入 `_TREE_ALLOWED_FILES`（`backups/…snapshot` + `task_query_coref_rewrite_review40_20261019.md` · 限定语引据 CLOSE commit `920c8e5`）· ②两闸 committed 面收窄 `_BASE.._WAVE_TIP` 闭窗（新增 `_changed_faces` 助手 · 未提交面 = 工作区/暂存 vs HEAD + untracked · banned 前置作用并集面不变）· ③N2 浅克隆退化规格（`_WAVE_TIP` 不可解析 → 审计输出跳过 committed 面 · 绝不退化为 vs HEAD 增长窗）· 闸语义对拍三实证全过（回归牙 / banned 在途 / N2）· 红转绿：2 failed → 2 passed 命令级双证据 · 全量 2103 passed 零新增红（diff-whitelist ×2 转绿 · 余 2 枚 env 红基线同形）· 红线对拍零命中（改动面 ⊆ 两枚测试文件）· GATE_VERIFY 前置：签录 `0870fb4` 漏翻 HG-DIFF-WHITELIST-DIAGNOSIS status 单元格 → 依 GO 评论补翻（commit `7748dfe` · 修复记录入闸表行）→ VERIFY: PASS 开工 |
 | 2026-11-06 | 20-R1 书面审 + 签认代录 + 对拍回填（承 issue #337 维护者 comment `6683541162` 令）：审查文 `docs/harness/reviews/task_diff_whitelist_anchor_drift_audit_R1_20261106.md` 落盘 · 结论 **PASS 零内容阻塞** · HG-TASK-DRAFT / HG-GRAPH-MODULES 签认代录入闸表（依据 = comment `6683541162` + PR #357 review `5799316636` · 非自签 · 签认幂等锚首次记录）· R2 回填三子形态对拍（①重钉 `_BASE` 与 `_WAVE_TIP` 回归牙窗口不相容拍否 · ②改固定波次窗语义正解〔wave2 闭窗实测态① pass · wave1 闭窗实测 **F1 暗礁**：2 件波内未登记面——`backups/…snapshot` + `task_query_coref_rewrite_review40_20261019.md` 均出自 CLOSE commit `920c8e5`——须随修复逐路径登记〕· ③调 `_allowed` 面拍否）+ N2 浅克隆退化规格 · 验收增固定窗态① pass 条 · HG-AUDIT-R1 / HG-DIFF-WHITELIST-DIAGNOSIS 维持 pending 待 lead 随本 PR 正式签（签认预告 = whitelist 过期→刷新基线 · 子形态=改固定波次窗语义） |
 | 2026-11-06 | lead 随 20-R1 PR 正式签 HG-AUDIT-R1 + HG-DIFF-WHITELIST-DIAGNOSIS approved（PR #358 review `5799605736` APPROVED · squash merge `172a780` · 依据 = 19:04 大授权窗口 + 13:40 授权）· 裁决 = whitelist 过期→刷新基线 · 子形态 = 改固定波次窗语义（F1 两件登记 + N2 浅克隆规格为落地必修）· 状态 draft→active · GO 30 |
