@@ -133,7 +133,14 @@ def _aggregator_node(state: _DpState) -> dict[str, Any]:
         )
     else:
         answer = f"[dualproc] answer: {query[:80]}"
-    return {"messages": [AIMessage(content=answer)]}
+    unlocked = [str(i) for i in (decision.get("approved") or [])]
+    return {
+        "messages": [AIMessage(content=answer)],
+        # resume._summarize 的可见键（对齐真 supervisor 的 hitl_unlocked_ids 语义）：
+        # _DpState 原有五键与 summarizer 提取表零重叠，resume 成功后 state 摘要恒为空，
+        # D4 用例误红「图没真推进」。解锁列表即恢复真实推进的证据。
+        "hitl_unlocked_ids": unlocked,
+    }
 
 
 def _build_graph(*, checkpointer: Any | None = None) -> Any:
