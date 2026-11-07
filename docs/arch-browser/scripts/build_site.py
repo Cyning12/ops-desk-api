@@ -28,6 +28,33 @@ ARCH_OVERVIEW_MD = (
     ROOT / "docs" / "discussions" / "2026-09-24_agent-host_current_architecture_v1_zh.md"
 )
 
+EXTENSION_STRATEGY_MD = (
+    ROOT / "docs" / "discussions" / "2026-09-24_agent-host_extension_strategy_v1_zh.md"
+)
+
+# W1 源文档白名单（SPEC 主档 Q2 默认裁定）：只拷这些路径进 dist/docs/，
+# 其余一律拒绝（禁 .env / secrets / harness invoke 私货）。
+def _doc_whitelist() -> list[Path]:
+    paths = [ARCH_OVERVIEW_MD, EXTENSION_STRATEGY_MD]
+    paths.extend(sorted(MODULES_DIR.glob("*.md")))
+    paths.extend(sorted((ROOT / "docs" / "_tech_graph" / "l1").glob("*.md")))
+    return [p for p in paths if p.is_file() and p.suffix == ".md"]
+
+
+def _copy_whitelisted_docs() -> list[dict[str, str]]:
+    """W1: 白名单源 MD → dist/docs/<repo 相对路径>；返回 docs_index（repo 路径 → dist 路径）。
+
+    白名单外路径绝不拷入；调用方只消费本函数返回的索引，查看器也只按索引取文。
+    """
+    index: list[dict[str, str]] = []
+    for src in _doc_whitelist():
+        rel = src.relative_to(ROOT / "docs")
+        dest = DIST / "docs" / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
+        index.append({"path": f"docs/{rel}", "dist": f"docs/{rel}"})
+    return index
+
 # 工程图谱节点 → 浏览器 hash（与 web/app.js 钻取约定一致）
 _ENG_L0_NODE_CLICKS: dict[str, str] = {
     "lg_rag_flow": "#/eng/flow/10_flow_lg_rag",
@@ -579,6 +606,7 @@ def build() -> Path:
         "eng_modules": eng_modules,
         "graphs": graphs_detail,
         "l2_indexes": _load_indexes(),
+        "docs_index": _copy_whitelisted_docs(),
         "discipline": {
             "concept_truth": "docs/discussions/*",
             "engineering_truth": "docs/_tech_graph/shared/graph.json",
@@ -603,6 +631,7 @@ def build() -> Path:
     print(f"  host_modules={len(host_modules)} graphs={len(graphs_detail)}")
     print(f"  concept_mermaid_chars={len(concept_mermaid)}")
     print(f"  eng_l0_mermaid_chars={len(eng_l0_mermaid)}")
+    print(f"  docs_index={len(site['docs_index'])} whitelisted md copied")
     return out_json
 
 

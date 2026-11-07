@@ -69,6 +69,12 @@
     return DATA.host_modules.find((m) => Number(m.id) === Number(id));
   }
 
+  // W1：白名单内源文档 → 站内 #/doc 查看器；白名单外保持仓相对外链
+  function docHref(path) {
+    const hit = (DATA.docs_index || []).find((d) => d.path === path);
+    return hit ? `#/doc?path=${encodeURIComponent(path)}` : `../../../${path}`;
+  }
+
   function graphById(id) {
     return DATA.graphs.find((g) => g.id === id);
   }
@@ -672,8 +678,11 @@
       .join(" · ");
     const srcLinks = (m.sources || [])
       .map((s) => {
-        // GitHub-ish relative from repo; for local serve from dist, link as repo-relative note
-        return `<a href="../../../${s}" target="_blank" rel="noopener">${s}</a>`;
+        const hit = (DATA.docs_index || []).find((d) => d.path === s);
+        const href = docHref(s);
+        return hit
+          ? `<a href="${href}">${s}</a> <span class="muted">(站内查看)</span>`
+          : `<a href="${href}" target="_blank" rel="noopener">${s}</a>`;
       })
       .join("");
 
@@ -955,6 +964,64 @@
     );
   }
 
+  // W1 源文档查看器：只渲染 build 白名单拷入 dist/docs/ 的 MD；mermaid 代码块就地渲染。
+  async function renderDoc(root, params) {
+    const path = params.path || "";
+    const docs = DATA.docs_index || [];
+    const back = '<p><a href="#/doc">← 源文档索引</a></p>';
+    if (!path) {
+      const list = docs
+        .map((d) => '<li><a href="#/doc?path=' + encodeURIComponent(d.path) + '">' + escapeHtml(d.path) + "</a></li>")
+        .join("");
+      root.innerHTML = shell(
+        "eng",
+        '<section class="panel" style="grid-column:1/-1">' + back +
+        '<h1>源文档（W1 白名单）</h1><p class="muted">全文复制自白名单路径进 dist；真值仍在仓内源文件，本页只读。</p>' +
+        '<ul class="doclist">' + list + "</ul></section>"
+      );
+      return;
+    }
+    const hit = docs.find((d) => d.path === path);
+    if (!hit) {
+      root.innerHTML = shell(
+        "eng",
+        '<section class="panel" style="grid-column:1/-1">' + back +
+        '<h1>拒绝</h1><p class="error">该路径不在 W1 白名单内，不进入 dist、不提供查看。</p>' +
+        '<p class="mono">' + escapeHtml(path) + "</p></section>"
+      );
+      return;
+    }
+    root.innerHTML = shell(
+      "eng",
+      '<section class="panel" style="grid-column:1/-1">' + back +
+      '<h1 class="mono" style="font-size:0.95rem">' + escapeHtml(path) + '</h1><p class="muted">加载中…</p></section>'
+    );
+    try {
+      const res = await fetch("./" + hit.dist);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const text = await res.text();
+      const body = window.marked ? marked.parse(text) : "<pre>" + escapeHtml(text) + "</pre>";
+      root.innerHTML = shell(
+        "eng",
+        '<section class="panel" style="grid-column:1/-1">' + back +
+        '<h1 class="mono" style="font-size:0.95rem">' + escapeHtml(path) + '</h1><div class="md">' + body + "</div></section>"
+      );
+      root.querySelectorAll("code.language-mermaid").forEach((code) => {
+        const div = document.createElement("div");
+        div.className = "mermaid";
+        div.textContent = code.textContent;
+        code.closest("pre").replaceWith(div);
+      });
+      await mountMermaid(root);
+    } catch (err) {
+      root.innerHTML = shell(
+        "eng",
+        '<section class="panel" style="grid-column:1/-1">' + back +
+        '<h1 class="mono" style="font-size:0.95rem">' + escapeHtml(path) + '</h1><p class="error">加载失败：' + escapeHtml(String(err.message || err)) + "</p></section>"
+      );
+    }
+  }
+
   function render() {
     const root = $("#app");
     if (!DATA) {
@@ -974,6 +1041,10 @@
       html = renderEngModule(decodeURIComponent(parts[2]));
     else if (parts[0] === "eng" && parts[1] === "modules") html = renderEngModules();
     else if (parts[0] === "eng" && parts[1] === "l2") html = renderL2(params);
+    else if (parts[0] === "doc") {
+      void renderDoc(root, params);
+      return;
+    }
     else html = renderHome();
 
     root.innerHTML = html;

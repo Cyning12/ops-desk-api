@@ -63,3 +63,7 @@ cd docs/arch-browser/dist && python3 -m http.server 8765
 ## 非目标
 
 不替代 `graph-compile`；不做在线编辑；不在 HTML 内手改架构结论。
+
+## SpecWave 提示
+
+HG-SPEC-SIGNOFF=signed（2026-11-07，维护者授权 lead 代行）。W1 已交付：白名单源 MD（45 篇）随 build 复制进 `dist/docs/`，`#/doc?path=` 查看器（marked + mermaid 就地渲染），详页源链命中白名单走站内链接。W2–W4 待逐波人签后拆 task。

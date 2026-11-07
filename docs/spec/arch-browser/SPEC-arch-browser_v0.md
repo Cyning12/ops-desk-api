@@ -1,7 +1,7 @@
 # SPEC：架构浏览器（Arch Browser · Agent Host 概念图可点击静态站）（v0）
 
 > **层级**：L1 文档/观测衍生轨（**非**业务 API 功能波 · 服务简历交付与仓内架构导览）  
-> **状态**：`draft`（初版实现随本 PR 落盘 · **HG-SPEC-SIGNOFF=pending** · 升级波次待人签后再拆 30 task）  
+> **状态**：`draft`（初版实现已合基线 · **HG-SPEC-SIGNOFF=signed 2026-11-07**（维护者 m01699 口头授权 lead 代行，W1 30 task 随之解锁）· W2–W4 波次待人签后再拆）  
 > **立项令（原话留痕）**：维护者 2026-10-14「初版通过，补充并新增对应的系列spec文档 … 然后PR到主分支，后续交由api agent根据specwave流程来升级优化」  
 > **上游**：`docs/discussions/2026-09-24_agent-host_current_architecture_v1_zh.md` · `docs/discussions/agent-host-current-architecture/modules/M01–M34` · `docs/_tech_graph/` · Host v1 出口对照  
 > **下游**：人签 → 按 [`01_execution_waves.md`](./01_execution_waves.md) 拆 task（W1+）  
@@ -25,7 +25,7 @@
 
 | human_gate_id | status | 说明 |
 |---|---|---|
-| **HG-SPEC-SIGNOFF** | **pending** | 初版实现可合入作基线；升级波次（W1+）须人签后再出 00 task / 30 改码 |
+| **HG-SPEC-SIGNOFF** | **signed 2026-11-07** | 维护者 m01699 授权 lead 代行（口头=人签，本行+修订记录留痕）；W1 已解锁并交付；W2+ 升级波次仍须逐波人签 |
 
 ---
 
@@ -86,7 +86,7 @@ Agent Host 大纲（五层 · M01–M34）与工程 `_tech_graph` 长期以 MD/Y
 | ID | 问题 | 建议默认 | 状态 |
 |---|---|---|---|
 | Q1 | 生产是否未登录可读？ | 是（仅 `/docs/arch-browser/`）· W2 实施前须人确认 | **待裁定** |
-| Q2 | 源 MD 查看器内嵌全文还是摘要？ | W1 默认：白名单路径全文进 dist + `#/doc` 查看器 | **待裁定** |
+| Q2 | 源 MD 查看器内嵌全文还是摘要？ | W1 默认：白名单路径全文进 dist + `#/doc` 查看器 | **按建议默认实施（W1，2026-11-07）** |
 | Q3 | 场景卡证据形态？ | W3：链接到仓内 reports/discussions 路径；不做视频托管 | **待裁定** |
 | Q4 | Mermaid 依赖 CDN？ | W0 用 jsDelivr；W4 可 vendor 进 dist 作离线 | **待裁定** |
 
@@ -122,3 +122,4 @@ Agent Host 大纲（五层 · M01–M34）与工程 `_tech_graph` 长期以 MD/Y
 |------|------|
 | 2026-10-14 | v0 draft 落盘：对齐初版实现 + W1–W4 升级轨道；HG-SPEC-SIGNOFF=pending |
 | 2026-10-16 | §1 纪律 3 修订（task demo_agent_host_surface）：三方演示裁定——演示面统一 Agent Host 口径，废止原「传输壳可仍叫 lg-rag（首页文案须保持）」；隐藏只发生在演示视图（catalog 文案 / build 展示层过滤 / app.js 视图过滤），docs/_tech_graph、crosswalk.yaml、路由、freeze、包名、表名等真值不改不删 |
+| 2026-11-07 | HG-SPEC-SIGNOFF=pending→signed（维护者 m01699 口头授权 lead 代行，W1 30 task 解锁）；Q2 待裁定→按建议默认实施；W1 已交付（白名单 45 篇进 dist + #/doc 查看器） |

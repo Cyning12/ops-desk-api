@@ -1,6 +1,6 @@
 {
   "schema_version": "arch_browser_site_data_v1",
-  "generated_at": "2026-11-07T03:53:50Z",
+  "generated_at": "2026-11-07T06:31:20Z",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_2746c8600a8addc6_V1",
   "graph_generated_at": "sha256-2746c8600a8addc6",
   "sources": {
@@ -6498,6 +6498,188 @@
       }
     }
   },
+  "docs_index": [
+    {
+      "path": "docs/discussions/2026-09-24_agent-host_current_architecture_v1_zh.md",
+      "dist": "docs/discussions/2026-09-24_agent-host_current_architecture_v1_zh.md"
+    },
+    {
+      "path": "docs/discussions/2026-09-24_agent-host_extension_strategy_v1_zh.md",
+      "dist": "docs/discussions/2026-09-24_agent-host_extension_strategy_v1_zh.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M01_capability-registry.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M01_capability-registry.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M02_load-time-enforce.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M02_load-time-enforce.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M03_visibility-trim.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M03_visibility-trim.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M04_prompt-mgmt.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M04_prompt-mgmt.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M05_so-gateway.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M05_so-gateway.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M06_delegation-gateway.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M06_delegation-gateway.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M07_exec-gateway.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M07_exec-gateway.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M08_policy-gate.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M08_policy-gate.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M09_memory-layered.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M09_memory-layered.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M10_eval-verify.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M10_eval-verify.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M11_observability.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M11_observability.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M12_cost-control.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M12_cost-control.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M13_sandbox.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M13_sandbox.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M14_hitl-security.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M14_hitl-security.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M15_intent.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M15_intent.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M16_safety-guard.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M16_safety-guard.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M17_orchestrator.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M17_orchestrator.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M18_specialist.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M18_specialist.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M19_result-feedback-llm.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M19_result-feedback-llm.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M20_model-registry.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M20_model-registry.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M21_model-routing.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M21_model-routing.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M22_degrade-resilience.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M22_degrade-resilience.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M23_infer-cache.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M23_infer-cache.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M24_token-budget.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M24_token-budget.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M25_model-eval-ab.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M25_model-eval-ab.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M26_model-safety.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M26_model-safety.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M27_domain-vehicle.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M27_domain-vehicle.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M28_domain-cabin.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M28_domain-cabin.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M29_domain-nav.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M29_domain-nav.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M30_capability-providers.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M30_capability-providers.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M31_result-persist.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M31_result-persist.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M32_success-to-memory.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M32_success-to-memory.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M33_failure-patterns.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M33_failure-patterns.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M34_pattern-to-rules.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M34_pattern-to-rules.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/01_modules.md",
+      "dist": "docs/_tech_graph/l1/01_modules.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_auth.md",
+      "dist": "docs/_tech_graph/l1/10_flow_auth.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_capability.md",
+      "dist": "docs/_tech_graph/l1/10_flow_capability.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_chat.md",
+      "dist": "docs/_tech_graph/l1/10_flow_chat.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_lc_evidence.md",
+      "dist": "docs/_tech_graph/l1/10_flow_lc_evidence.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_lg_rag.md",
+      "dist": "docs/_tech_graph/l1/10_flow_lg_rag.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_rag.md",
+      "dist": "docs/_tech_graph/l1/10_flow_rag.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_structured_output.md",
+      "dist": "docs/_tech_graph/l1/10_flow_structured_output.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/11_flow_sync_to_chat.md",
+      "dist": "docs/_tech_graph/l1/11_flow_sync_to_chat.md"
+    }
+  ],
   "discipline": {
     "concept_truth": "docs/discussions/*",
     "engineering_truth": "docs/_tech_graph/shared/graph.json",
