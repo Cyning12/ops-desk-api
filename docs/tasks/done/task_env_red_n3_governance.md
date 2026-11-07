@@ -1,6 +1,6 @@
 # Task：env 红基线治理 + 波次审计闸自注册（N3）+ fail-closed 立档（api#337 CLOSE 遗留三挂账）
 
-> **状态**：`active`（2026-11-07 · lead 直接执行 · 维护者当面授权「B 全做」）
+> **状态**：`done`（2026-11-07 · 治理单棒 · lead 直接执行 · 维护者当面授权「B 全做」· PR #362 squash `b461e8c` · 合并即关账）
 > **类型**：fix / 测试基建 + 审计基建（docs+tests 面 · 零 src 改动）
 > **上游**：api#337 CLOSE invoke `invoke_20261106_50_close.md` §遗留挂账 1–3（非本链责任·如实移交 → 维护者 2026-11-07 09:15 指令「B 全做」销项）
 > **分支**：`agent/env-red-n3-governance`（单棒治理 · 末段=工单名）
@@ -50,11 +50,11 @@
 
 ## 验收标准
 
-- [ ] 两枚 env 红修复后命令级 `2 passed`（修复前 `2 failed` 证据见 invoke）；
-- [ ] N3 闸三变异探针全咬（banned 在途 / active 真跑 / 缩白名单）；
-- [ ] 全量测试回基线形态：原 2 枚 env 红消失 · 零新增红；
-- [ ] ruff + task lint + wiki-delta 三质量门零新增；
-- [ ] ADR-001 立档在册。
+- [x] 两枚 env 红修复后命令级 `2 passed`（修复前 `2 failed` 证据见 invoke）；
+- [x] N3 闸三变异探针全咬（banned 在途 / active 真跑 / 缩白名单）；
+- [x] 全量测试回基线形态：原 2 枚 env 红消失 · 零新增红；
+- [x] ruff + task lint + wiki-delta 三质量门零新增；
+- [x] ADR-001 立档在册。
 
 ### 自检结论（执行者）
 
@@ -82,4 +82,5 @@
 | 日期 | 棒 | 内容 |
 |------|----|------|
 | 2026-11-07 | 30 | 治理单棒全量落地（两红修复 + N3 三件套 + ADR-001 + 档/invoke） |
+| 2026-11-07 | CLOSE | PR #362 squash `b461e8c` 合并 · CI 4/4 绿 · 全量 2106 passed 4 skipped 0 failed · open PR 清零 · 挂账三项全销 |
 
