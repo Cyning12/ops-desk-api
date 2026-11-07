@@ -517,16 +517,41 @@ def test_hitl_cross_instance_resume(dualproc) -> None:
     )
     assert code == 200, f"B resume HTTP {code}: {resumed}"
     outcome = resumed.get("resume") or {}
-    # 「图真的续跑」三重断言（只断 200 = 用例不合格 · task 钉死）
-    assert outcome.get("state"), "resume 后 state 为空（图没真推进）"
-    answer = str(outcome.get("answer") or "")
-    assert answer, "resume 后 answer 为空（批了但什么都没发生形态）"
+    # 「图真的续跑」证据双契约（只断 200 = 用例不合格 · task 钉死）：
+    # - 同步形态（联调直注 checkpointer）：state/answer 内联直断（老契约）；
+    # - hitl-resume-async（W-fix · 2026-11-02 起端点默认）：请求内只 preflight、
+    #   秒回 accepted，恢复段事件异步落盘——内联 state 恒空是异步契约而非没推进，
+    #   「真续跑」证据改由下面 replay 帧承担（resumed 帧 + seq 接续 + answer 终帧）。
+    if outcome.get("state"):
+        assert str(outcome.get("answer") or ""), "resume 后 answer 为空（批了但什么都没发生形态）"
+    else:
+        assert outcome.get("status") == "accepted", f"resume 受理形态异常: {resumed}"
     replay_meta = resumed.get("replay") or {}
     assert replay_meta.get("persisted") is True
 
+    # 异步 resume：恢复段事件由后台任务落盘，replay 前必须等到 hitl.resumed 出现
+    # （否则与后台执行体赛跑；同步形态首查即中，循环一次过）。
+    deadline = time.time() + 60.0
+    frames_full: list[dict] = []
+    while time.time() < deadline:
+        code, frames_full = _replay(dualproc.a.port, run_id, dualproc.alice.token)
+        if code == 409:
+            # 恢复段在写窗：409 + Retry-After 是服务端设计契约（router D1），
+            # 客户端退避重试——不在此判失败。
+            time.sleep(0.5)
+            continue
+        assert code == 200
+        # 等恢复段**跑完**（done 终帧落盘），不是只等 resumed 出现——
+        # 后台执行体异步推进，只等 resumed 会与 aggregator/answer 帧赛跑。
+        if any(f["event_type"] == "hitl.resumed" for f in frames_full) and (
+            frames_full[-1]["event_type"] == "done"
+        ):
+            break
+        time.sleep(0.5)
+    else:
+        pytest.fail("等 60s 恢复段未完（无 hitl.resumed+done 帧）——后台 resume 没跑起来")
+
     # 恢复段事件续写同 run_id 且 seq 接 last_seq（A 侧 replay 全程可见）
-    code, frames_full = _replay(dualproc.a.port, run_id, dualproc.alice.token)
-    assert code == 200
     seqs = [f["seq"] for f in frames_full]
     assert seqs == list(range(1, len(seqs) + 1)), f"全程 seq 不连续: {seqs}"
     types = [f["event_type"] for f in frames_full]

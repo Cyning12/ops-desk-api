@@ -1,0 +1,46 @@
+# 波次审计闸自注册簿（N3 · 2026-11-07 立 · task env-red-n3-governance）
+#
+# 真值面：未来波次要在守卫面（banned_prefixes · 其余 app/）工作，
+# **只登记数据、不写闸代码**——tests/test_wave_gate_registry.py 对本簿
+# 全部 entry 自动生效。程序全文见同目录 README.md。
+#
+# entry 字段：
+#   task_slug            波次工单名（docs/tasks/ 档名对齐）
+#   status               active（在窗·全量审计）| closed（闭窗档案·在途守卫仍咬）
+#   base                 钉锚（波次切出点 · 短 SHA 可）
+#   wave_tip             闭窗 tip（合并 commit · 未钉则 committed 面跳过·N2 规格）
+#   allowed_app_files    committed 面允许的 app/ 内文件（相对仓根）
+#   allowed_tree_files   committed 面允许的仓内其他文件
+#   allowed_tree_prefixes committed 面允许的前缀（invoke 目录等）
+#   banned_prefixes      禁改面前缀（在途触碰即 fail · O2 语义）
+#   note                 限定语/签认引用（谁签的·禁承载什么）
+waves:
+  - task_slug: diff-whitelist-anchor-drift
+    status: closed
+    base: "d337486"
+    wave_tip: "c17e63b"
+    note: >-
+      00 签认（HG-DIFF-WHITELIST-DIAGNOSIS）· 2026-11-06 全链闭环（PR #357-#361）。
+      闭窗档案形态：committed 面审计由本簿承继，在途守卫与本簿同步生效。
+      限定语照 00 裁定：allowed 集合 ⊆ 原 TC8 声明白名单（F1 两件已随 30 登记）。
+    allowed_app_files:
+      - app/ops/capability/delegation.py
+      - app/ops/lg_rag/multi/nodes.py
+    allowed_tree_files:
+      - tests/test_capability_delegation.py
+      - tests/test_capability_testing_write.py
+      - tests/test_lg_rag_write_replay_guard.py
+      - tests/test_hitl_approved_replan_quality.py
+      - tests/test_strategy_scenario.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/guides/GUIDE_env_inventory_v1.md
+      - docs/tasks/active/task_delegation_naming_boundary.md
+      - docs/tasks/done/task_delegation_naming_boundary.md
+      - docs/harness/reviews/task_delegation_naming_boundary_review40_20261020.md
+      - backups/local_qdrant_orphan_cleanup_20261018T005320Z/ops_knowledge-7885642805251913-2026-10-18-00-53-20.snapshot
+      - docs/harness/reviews/task_query_coref_rewrite_review40_20261019.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/delegation-naming-boundary/
+    banned_prefixes:
+      - scripts/
+      - alembic/

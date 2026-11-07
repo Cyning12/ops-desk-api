@@ -174,6 +174,9 @@ async def test_null_embedding_rows_stay_on_deterministic_path(
 
 async def test_embedder_failure_degrades_with_marker(monkeypatch: pytest.MonkeyPatch, caplog):
     monkeypatch.setenv("MEMORY_FACTS_VECTOR_RECALL_ENABLED", "true")
+    # 播种走 FakeEmbedder（同 ⑦ 变异检验的装配口径）：本用例测的是「召回时 embedder 抛错」，
+    # 不依赖 SILICONFLOW_API_KEY 真实环境——缺 key 的干净环境此前在此裸奔 RuntimeError。
+    monkeypatch.setattr("app.ops.rag.embedder.get_query_embedder", lambda: FakeEmbedder())
     user = "u-degrade"
     await write_fact(_candidate(user_id=user))
     expected = await recall_active(_TENANT, user, limit=8)
