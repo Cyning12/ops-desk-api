@@ -24,8 +24,13 @@
   ],
   "scenarios_placeholder": {
     "title": "使用场景（占位 · 设想）",
-    "summary": "后续计划按模块展示「真实请求怎么走」：入口 → 控制面闸 → 执行面 → 能力调用 → 反馈回写，并附可核对的运行证据。当前仅为占位，内容未填充。",
+    "summary": "后续计划按模块展示「真实请求怎么走」：入口 → 控制面闸 → 执行面 → 能力调用 → 反馈回写，并附可核对的运行证据。DSH Superagent 研究原型线五个波次已全部交付，其余仍为设想。",
     "cards": [
+      {
+        "title": "场景 · DSH Superagent 研究原型",
+        "desc": "独立 TypeScript 原型：以确定性存储（SQLite 单写者）与效果队列约束 LLM 编排，对外只承诺真实状态。五个升级波次全部交付：0 记录 GC、1 Trust 边界、2 部署隔离、3 文章方向项对齐总账（docs/010 三判定立账）、4 Thread GC（读位标在 KV 不在 thread.meta，留存=计算裁决：静默+无活引用+过龄三条件，KV 游标不触碰故旧消息不重入）。",
+        "status": "live"
+      },
       {
         "title": "场景 · 流式问答主线",
         "desc": "设想：从 SSE 入口走到 supervisor / specialist，并标出 HITL、Policy、用量记账落点。"

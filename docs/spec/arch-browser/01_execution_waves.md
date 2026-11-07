@@ -23,9 +23,10 @@
 | **目标** | 详页「源文档」可打开；支持 Mermaid 渲染（浏览器内） |
 | **建议做法** | `build_site.py` 按白名单复制 `sources[]` / `source_md_rel` → `dist/docs/...`；新增 `#/doc?path=` 查看器（marked + mermaid）；链改为站内真路径 |
 | **白名单（草案）** | `docs/discussions/agent-host-current-architecture/modules/*.md` · 总览/扩展策略两篇 · crosswalk 引用的 `_tech_graph/l1/*.md`（**禁** `.env` / secrets / harness invoke 私货） |
-| **开放裁定** | 主 SPEC Q2 |
+| **开放裁定** | 主 SPEC Q2 → 已裁定按建议默认实施（2026-11-07） |
 | **建议分支** | `task/arch-browser-w1-doc-viewer` |
 | **test_strategy** | build 后断言白名单文件存在于 dist；查看器对含 mermaid 的样例 MD 冒烟 |
+| **状态** | **已实现 2026-11-07**：白名单=34 modules MD + 总览/扩展策略 2 篇 + `_tech_graph/l1` 9 篇=45 篇（仅 `.md`，graph yaml 不拷）；`build_site.py` `_doc_whitelist()`/`_copy_whitelisted_docs()` 产 `docs_index`；查看器 `#/doc`（marked@12 + mermaid 就地渲染，白名单外显式拒绝页）；详页源链命中白名单改站内链接；HG-SPEC-SIGNOFF 同日签（维护者授权 lead 代行） |
 
 ---
 
@@ -81,3 +82,4 @@ W0 (done) → W1 (doc viewer)
 | 日期 | 说明 |
 |------|------|
 | 2026-10-14 | 初稿：W0 基线 + W1–W4 升级认领面 |
+| 2026-11-07 | HG-SPEC-SIGNOFF=signed（维护者 m01699 授权 lead 代行）；Q2 裁定=按建议默认实施；W1 状态改已实现 |

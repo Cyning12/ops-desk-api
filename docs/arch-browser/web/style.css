@@ -362,3 +362,16 @@ code, .mono { font-family: var(--mono); font-size: 0.9em; }
 }
 .chip-backup > summary:hover { color: var(--text); }
 .chip-backup[open] > summary { margin-bottom: 0.65rem; color: var(--accent2); }
+
+/* W1 源文档查看器 */
+.doclist { line-height: 1.9; font-size: 0.92rem; }
+.md { font-size: 0.95rem; line-height: 1.75; }
+.md h1, .md h2, .md h3 { margin: 1.1em 0 0.5em; }
+.md h1 { font-size: 1.3rem; }
+.md h2 { font-size: 1.1rem; }
+.md p { margin: 0.6em 0; }
+.md pre { background: #1a1d23; border: 1px solid var(--border); border-radius: 8px; padding: 0.8em; overflow-x: auto; }
+.md code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; }
+.md pre code { background: none; padding: 0; }
+.md blockquote { border-left: 3px solid #4cc38a; margin: 0.8em 0; padding: 0.2em 0 0.2em 1em; color: var(--muted); }
+.md ul, .md ol { margin: 0.5em 0 0.5em 1.4em; }

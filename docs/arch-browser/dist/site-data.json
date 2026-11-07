@@ -1,6 +1,6 @@
 {
   "schema_version": "arch_browser_site_data_v1",
-  "generated_at": "2026-10-30T09:17:51Z",
+  "generated_at": "2026-11-07T06:31:20Z",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_2746c8600a8addc6_V1",
   "graph_generated_at": "sha256-2746c8600a8addc6",
   "sources": {
@@ -142,8 +142,13 @@
     ],
     "scenarios_placeholder": {
       "title": "使用场景（占位 · 设想）",
-      "summary": "后续计划按模块展示「真实请求怎么走」：入口 → 控制面闸 → 执行面 → 能力调用 → 反馈回写，并附可核对的运行证据。当前仅为占位，内容未填充。",
+      "summary": "后续计划按模块展示「真实请求怎么走」：入口 → 控制面闸 → 执行面 → 能力调用 → 反馈回写，并附可核对的运行证据。DSH Superagent 研究原型线五个波次已全部交付，其余仍为设想。",
       "cards": [
+        {
+          "title": "场景 · DSH Superagent 研究原型",
+          "desc": "独立 TypeScript 原型：以确定性存储（SQLite 单写者）与效果队列约束 LLM 编排，对外只承诺真实状态。五个升级波次全部交付：0 记录 GC、1 Trust 边界、2 部署隔离、3 文章方向项对齐总账（docs/010 三判定立账）、4 Thread GC（读位标在 KV 不在 thread.meta，留存=计算裁决：静默+无活引用+过龄三条件，KV 游标不触碰故旧消息不重入）。",
+          "status": "live"
+        },
         {
           "title": "场景 · 流式问答主线",
           "desc": "设想：从 SSE 入口走到 supervisor / specialist，并标出 HITL、Policy、用量记账落点。"
@@ -1871,7 +1876,7 @@
       "name": "数据视图",
       "paths_glob": "app/ops/overview.py`, `app/ops/issues.py`, `app/ops/pulls.py`, `app/ops/graph.py",
       "deps": "→ `db`",
-      "note": "Issue/PR/Overview 指标/Graph 快照只读查询（供 Chat / iOS 只读消费）"
+      "note": "Issue/PR/Overview 指标/Graph 快照只读查询（供 Chat / iOS 只读消费）；**api-w-join-gap-fix W-fix-2（2026-11-02 · 租户谓词）**：`list_issues`/`list_pulls`/`get_overview` 接租户谓词——`tenant_id == request.state.ops_tenant_id`（deps 注入 · state 缺失回落 `ops-desk-pilot` · 统一经 `tenant_context.tenant_from_request_state`）· F4 口径跨租户列表空集/派生指标归零 · `tenant_id=''` 历史行从严视同租户外（2026-11-02 实扫两表 0 行）· `OpsSyncRun`/`OpsScanSnapshot` 无 tenant_id 列保持全局 repo 级不加谓词；不新增一级模块 · 零新路由/表/SSE 事件"
     },
     {
       "module_id": "admin",
@@ -1885,7 +1890,7 @@
       "name": "HITL 人工审批",
       "paths_glob": "app/ops/hitl/**",
       "deps": "→ `db`, `lg_rag`",
-      "note": "审批申请落库 `ops_hitl_requests`（`store.py`/`persistence.py`）；**双鉴权口径**：HMAC 签名面（`signature.py` · OA 拉待办 `GET /hitl/requests` + `POST /hitl/callback` 回调）与管理员面（`AdminSyncAuth` · 查询 / `POST /hitl/requests/{id}/resume` / 创建）；`resume.py` 拿 `thread_id` 找 checkpoint 喂 `Command(resume=...)` 驱动挂起的 lg_rag run 真恢复（无此步「批了」和「没批」界面一样）；恢复事件接同一 `run_id` 落盘 + replay cursor；**hitl-browser-decide（2026-09-30 · SPEC B2 · 裁定 D1/E1）**：新增**cookie maintainer 面**（`MaintainerUser` · 纯 cookie + role==maintainer · 未登录 401 / 非 maintainer 403）——`GET /hitl/pending`（仅 `run_owner==当前用户` 的 pending · 归属经 `run_id`→`lg_rag.event_store.run_owner` 反查 · 解析不到排除+error 日志不 500）+ `POST /hitl/requests/{id}/decide`（复用 `store.adecide` pending 守卫 · 与 callback 同语义 · 重复 409 / 未知·他人 404 / 非法 422 · **不自动 resume** 两步钉死 · 审计只记动作锚点）；OA 签名面与 `resume`（AdminSyncAuth）零改动 · 零新表/迁移/SSE 事件 · 不新增一级模块；**hitl-approval-consumption T1（2026-10-10）**：审批单 `payload`（jsonb）增记 `capability_id`（零迁移 · 旧单据缺键 fail-closed 不被消费）；消费端经 `store.alist` 活读 approved 单（读时 TTL · 不写回状态 · decide 落库一行不动）；**hitl-approval-consumption-auto-resume T2（2026-10-10 · D5 可配置自动恢复）**：decide 载荷增可选键 `resume_mode`（str 缺省 inherit · 端点手工白名单未知值 **400** · decision 非法仍 422 既有形态）+ 全局 env `OPS_HITL_AUTO_RESUME`（manual 默认零 diff · 非法回退）；auto 形态 decide(approved) 成功分支派发进程内 asyncio 后台任务走与手动 resume **同源恢复段**（`_execute_decided_resume` 抽取复用 · 禁 HTTP 自调 · 触发器不载状态）；`DbHitlStore` 新增 `aclaim_approved_for_resume`（**FOR UPDATE SKIP LOCKED 仓内首个先例** · 既有四方法 diff 空 · 零新列零迁移）；main.py lifespan 挂补偿扫描（启动时+周期 `OPS_HITL_AUTO_RESUME_SCAN_INTERVAL_SECONDS` 默认 60 域[5,3600] · shutdown cancel · **manual 零创建**）；台账 `hitl_auto_resume_triggered/claimed/compensated`（记动作不记内容）；**hitl-auto-resume-claim-race（2026-10-10 · 方向 A）**：auto 认领后·执行前只读就绪校验 `_interrupt_metadata_visible`（命中 stranded 判定快照＝有 pending tasks·interrupts 全空 → defer 等下轮 · 认领不写状态无需回滚 · 执行仍 `_execute_decided_resume` 同源 · 手动 409 对外语义零 diff）；台账 +`hitl_auto_resume_deferred`；**hitl-resume-replay-contract（2026-10-13 · F-OBS-1）**：`resume.py` `ResumeEventSink.close()` 终帧 done 增 `latency_ms`（`int((perf_counter()-_started)*1000)` · 与 lg-rag/chat SSE done 同口径 · `_started` 复用零新状态 · 修 web 徽标「耗时 0ms」）；`model` 键**不补**（FP-1 钉案：lg-rag 面无 per-run model 真源 · 禁伪造）；零新表/迁移/SSE 事件 · 不新增一级模块 · 零新跨模块边 · 不增 implementedBy；**hitl-resume-async（2026-10-14 · task_hitl_resume_async · B 方案）**：`POST /hitl/requests/{id}/resume` 异步化——请求内只做 preflight（`_preflight_decided_resume` · `resume_hitl_run(preflight_only=True)` 只查快照不驱动 · ResumeError 映射表逐字不变 fail-fast）→ `asyncio.create_task` 派发 `_execute_decided_resume` 后台执行（事件落盘/turn 补落/replay 追帧链零 diff）· 响应秒回 `resume={status:accepted,thread_id,approved,rejected,decided_by}`（状态码 200 · 顶层键 {ok,request,resume,replay,ts} 不删不改 · D2）· replay 键为受理时刻 best-effort cursor（`_best_effort_replay_cursor` · 异常降级空串）；进程内 `_RESUME_IN_FLIGHT` 单飞——在飞重复 resume=409「执行中」（占位防 TOCTOU · 异常/完成 finally pop）；崩溃兜底=重调 resume 幂等重投递（preflight not_interrupted 防重跑）+ auto 模式既有 `scan_approved_not_resumed_once` 周期兜底（不新造扫描器 · F3 裁定）；decide 语义/auto_resume 同源纪律零 diff；零新表/迁移/SSE 事件 · 不新增一级模块 · 零新跨模块边 · 不增 implementedBy"
+      "note": "审批申请落库 `ops_hitl_requests`（`store.py`/`persistence.py`）；**双鉴权口径**：HMAC 签名面（`signature.py` · OA 拉待办 `GET /hitl/requests` + `POST /hitl/callback` 回调）与管理员面（`AdminSyncAuth` · 查询 / `POST /hitl/requests/{id}/resume` / 创建）；`resume.py` 拿 `thread_id` 找 checkpoint 喂 `Command(resume=...)` 驱动挂起的 lg_rag run 真恢复（无此步「批了」和「没批」界面一样）；恢复事件接同一 `run_id` 落盘 + replay cursor；**hitl-browser-decide（2026-09-30 · SPEC B2 · 裁定 D1/E1）**：新增**cookie maintainer 面**（`MaintainerUser` · 纯 cookie + role==maintainer · 未登录 401 / 非 maintainer 403）——`GET /hitl/pending`（仅 `run_owner==当前用户` 的 pending · 归属经 `run_id`→`lg_rag.event_store.run_owner` 反查 · 解析不到排除+error 日志不 500）+ `POST /hitl/requests/{id}/decide`（复用 `store.adecide` pending 守卫 · 与 callback 同语义 · 重复 409 / 未知·他人 404 / 非法 422 · **不自动 resume** 两步钉死 · 审计只记动作锚点）；OA 签名面与 `resume`（AdminSyncAuth）零改动 · 零新表/迁移/SSE 事件 · 不新增一级模块；**hitl-approval-consumption T1（2026-10-10）**：审批单 `payload`（jsonb）增记 `capability_id`（零迁移 · 旧单据缺键 fail-closed 不被消费）；消费端经 `store.alist` 活读 approved 单（读时 TTL · 不写回状态 · decide 落库一行不动）；**hitl-approval-consumption-auto-resume T2（2026-10-10 · D5 可配置自动恢复）**：decide 载荷增可选键 `resume_mode`（str 缺省 inherit · 端点手工白名单未知值 **400** · decision 非法仍 422 既有形态）+ 全局 env `OPS_HITL_AUTO_RESUME`（manual 默认零 diff · 非法回退）；auto 形态 decide(approved) 成功分支派发进程内 asyncio 后台任务走与手动 resume **同源恢复段**（`_execute_decided_resume` 抽取复用 · 禁 HTTP 自调 · 触发器不载状态）；`DbHitlStore` 新增 `aclaim_approved_for_resume`（**FOR UPDATE SKIP LOCKED 仓内首个先例** · 既有四方法 diff 空 · 零新列零迁移）；main.py lifespan 挂补偿扫描（启动时+周期 `OPS_HITL_AUTO_RESUME_SCAN_INTERVAL_SECONDS` 默认 60 域[5,3600] · shutdown cancel · **manual 零创建**）；台账 `hitl_auto_resume_triggered/claimed/compensated`（记动作不记内容）；**hitl-auto-resume-claim-race（2026-10-10 · 方向 A）**：auto 认领后·执行前只读就绪校验 `_interrupt_metadata_visible`（命中 stranded 判定快照＝有 pending tasks·interrupts 全空 → defer 等下轮 · 认领不写状态无需回滚 · 执行仍 `_execute_decided_resume` 同源 · 手动 409 对外语义零 diff）；台账 +`hitl_auto_resume_deferred`；**hitl-resume-replay-contract（2026-10-13 · F-OBS-1）**：`resume.py` `ResumeEventSink.close()` 终帧 done 增 `latency_ms`（`int((perf_counter()-_started)*1000)` · 与 lg-rag/chat SSE done 同口径 · `_started` 复用零新状态 · 修 web 徽标「耗时 0ms」）；`model` 键**不补**（FP-1 钉案：lg-rag 面无 per-run model 真源 · 禁伪造）；零新表/迁移/SSE 事件 · 不新增一级模块 · 零新跨模块边 · 不增 implementedBy；**hitl-resume-async（2026-10-14 · task_hitl_resume_async · B 方案）**：`POST /hitl/requests/{id}/resume` 异步化——请求内只做 preflight（`_preflight_decided_resume` · `resume_hitl_run(preflight_only=True)` 只查快照不驱动 · ResumeError 映射表逐字不变 fail-fast）→ `asyncio.create_task` 派发 `_execute_decided_resume` 后台执行（事件落盘/turn 补落/replay 追帧链零 diff）· 响应秒回 `resume={status:accepted,thread_id,approved,rejected,decided_by}`（状态码 200 · 顶层键 {ok,request,resume,replay,ts} 不删不改 · D2）· replay 键为受理时刻 best-effort cursor（`_best_effort_replay_cursor` · 异常降级空串）；进程内 `_RESUME_IN_FLIGHT` 单飞——在飞重复 resume=409「执行中」（占位防 TOCTOU · 异常/完成 finally pop）；崩溃兜底=重调 resume 幂等重投递（preflight not_interrupted 防重跑）+ auto 模式既有 `scan_approved_not_resumed_once` 周期兜底（不新造扫描器 · F3 裁定）；decide 语义/auto_resume 同源纪律零 diff；零新表/迁移/SSE 事件 · 不新增一级模块 · 零新跨模块边 · 不增 implementedBy；**api-controlled-write-hitl（2026-10-30 · 阶段 W）**：decide/resume 消费语义零 diff（400/404/409/422 口径不动）· 恢复执行体单路径钉死（`_execute_decided_resume` 唯一定义于 `router.py` · auto_resume 同源惰性 import 复用 · 源码钉死测试守护）· capability_write 类审批行全链带 `tenant_id`（复用既有列 · 零迁移零扩表）；不新增一级模块 · 零新跨模块边 · 不增 implementedBy · 零新表/迁移/SSE 事件；**api-w-join-gap-fix W-fix-1（2026-11-02 · TTL 闸）**：手动 `POST /hitl/requests/{id}/resume` 增批准执行权 TTL 闸——与自动扫描 `aclaim_approved_for_resume`/T1 消费门 `_match_fresh_approved` 同一判据（惰性 import 复用 `lg_rag/multi/nodes` 真源 · 单一旋钮 `OPS_HITL_APPROVAL_CONSUMPTION_TTL_SECONDS` 禁第二处）· 超龄 approved → 单据置 `expired` 终态（`STATUS_EXPIRED` 死码激活 · `store.amark_expired` approved→expired 单向迁移 InMemory/Db 双实现同义）+ 409 `approval_expired`（中文含「过期」）· rejected resume 豁免（驳回收工不受执行权闸）· decide 不拒超龄 pending（决策③）；freeze `hitl-browser-decide-v1` 增补 TTL 条落 `docs/tasks/done/task_hitl_browser_decide.md`；不新增一级模块 · 零新跨模块边 · 不增 implementedBy · 零新表/迁移/SSE 事件；**api-w-hitl-tenant-fix（2026-11-03 · N-R2-1）**：resume 执行体（`_execute_decided_resume` 手动/自动同源唯一实现）驱动图前按单据 `tenant_id` 快照 `set_current_tenant` 还原（reset 成对 · 消费日志/回执 tenant 取真值 · N-R2-1 回落 A 根治）· `_resume_row_tenant` 唯一真源 fail-closed 空 tenant 拒 resume（`tenant_missing`）· 手动入口 session 租户 ≠ 单据 tenant → 403（Bearer 无 session → 纯快照不拦）；不新增一级模块 · 零新跨模块边 · 不增 implementedBy · 零新表/迁移/SSE 事件；**fix-hitl-decide-owner-fallback（2026-11-04 · issue #315 · B+C 签认）**：`_run_owner_of` 归属反查增无帧 run 末位兜底——`run_owner` 返 None（sync invoke 面，事件帧 SSE 专属产物永不补帧）时按单据 `thread_id` 反查 `lg_rag.thread_store.thread_owner`（新只读 · 事件表仍第一真源 · 有帧绝不走兜底 · thread 缺失/失败 fail-closed 维持 404）；`_open_event_sink` 不兜底（sink=None 现状 + RUNBOOK §1.7 行为差异声明）；decide/pending 同源受益（红测负样本「sync invoke 写闸 → decide 不再 404」钉死）；不新增一级模块 · 零新跨模块边（hitl→lg_rag 既有边复用）· 不增 implementedBy · 零新表/迁移/SSE 事件"
     },
     {
       "module_id": "llm",
@@ -1899,7 +1904,7 @@
       "name": "数据库与 ORM",
       "paths_glob": "app/db/**`, `alembic/**",
       "deps": "—（被依赖）",
-      "note": "SQLAlchemy models、session、migrations；**2026-09-21**：`ops_hitl_requests` 表（HITL 申请 · 2 索引 · migration head `20260920_hitl_requests`）；langgraph checkpoint 表（`checkpoints`/`checkpoint_writes`，同库不同表）；**2026-09-21**：`ops_llm_usage` 表（LLM usage 账本 · llm-layer-hardening · run_id text 无 FK 双口径 · 索引 `(run_id)`/`(surface,created_at)` · migration head `20260921_llm_usage`）；**2026-09-22**：`ops_session_summaries` 表（会话真摘要缓存 · session-summary-fallback · 唯一约束 `(thread_id, chunk_hash)` · key 含内容哈希+prompt_version+model · FK CASCADE `ops_lg_rag_threads` · migration head `20260922_session_summaries` · off 态不读不写 drop 安全）；**2026-09-24**：`ops_memory_episodes` 表（情景记忆 · host-v1-episodic-memory-feedback · run 级 · 索引 `(tenant_id,outcome,status)`/`(context_fingerprint)`/`(run_id)` · migration head `20260923_memory_episodes` · off 态不读不写 drop 安全 · upgrade/downgrade 可逆）"
+      "note": "SQLAlchemy models、session、migrations；**2026-09-21**：`ops_hitl_requests` 表（HITL 申请 · 2 索引 · migration head `20260920_hitl_requests`）；langgraph checkpoint 表（`checkpoints`/`checkpoint_writes`，同库不同表）；**2026-09-21**：`ops_llm_usage` 表（LLM usage 账本 · llm-layer-hardening · run_id text 无 FK 双口径 · 索引 `(run_id)`/`(surface,created_at)` · migration head `20260921_llm_usage`）；**2026-09-22**：`ops_session_summaries` 表（会话真摘要缓存 · session-summary-fallback · 唯一约束 `(thread_id, chunk_hash)` · key 含内容哈希+prompt_version+model · FK CASCADE `ops_lg_rag_threads` · migration head `20260922_session_summaries` · off 态不读不写 drop 安全）；**2026-09-24**：`ops_memory_episodes` 表（情景记忆 · host-v1-episodic-memory-feedback · run 级 · 索引 `(tenant_id,outcome,status)`/`(context_fingerprint)`/`(run_id)` · migration head `20260923_memory_episodes` · off 态不读不写 drop 安全 · upgrade/downgrade 可逆）；**2026-11-05**：`ops_capability_notes` 表（受控写便签 · stage-w-write-expand Q1=S1 落笔目标面 · 唯一约束 `(tenant_id, idempotency_key)` = FP-4 重放不双写 DB 级兜底 · `approval_id` 串链列 · 索引 `(run_id)`/`(approval_id)` · migration head `20261105_capability_notes` · upgrade/downgrade 可逆）"
     }
   ],
   "graphs": [
@@ -6493,6 +6498,188 @@
       }
     }
   },
+  "docs_index": [
+    {
+      "path": "docs/discussions/2026-09-24_agent-host_current_architecture_v1_zh.md",
+      "dist": "docs/discussions/2026-09-24_agent-host_current_architecture_v1_zh.md"
+    },
+    {
+      "path": "docs/discussions/2026-09-24_agent-host_extension_strategy_v1_zh.md",
+      "dist": "docs/discussions/2026-09-24_agent-host_extension_strategy_v1_zh.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M01_capability-registry.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M01_capability-registry.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M02_load-time-enforce.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M02_load-time-enforce.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M03_visibility-trim.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M03_visibility-trim.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M04_prompt-mgmt.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M04_prompt-mgmt.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M05_so-gateway.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M05_so-gateway.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M06_delegation-gateway.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M06_delegation-gateway.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M07_exec-gateway.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M07_exec-gateway.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M08_policy-gate.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M08_policy-gate.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M09_memory-layered.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M09_memory-layered.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M10_eval-verify.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M10_eval-verify.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M11_observability.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M11_observability.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M12_cost-control.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M12_cost-control.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M13_sandbox.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M13_sandbox.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M14_hitl-security.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M14_hitl-security.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M15_intent.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M15_intent.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M16_safety-guard.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M16_safety-guard.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M17_orchestrator.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M17_orchestrator.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M18_specialist.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M18_specialist.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M19_result-feedback-llm.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M19_result-feedback-llm.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M20_model-registry.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M20_model-registry.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M21_model-routing.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M21_model-routing.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M22_degrade-resilience.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M22_degrade-resilience.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M23_infer-cache.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M23_infer-cache.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M24_token-budget.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M24_token-budget.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M25_model-eval-ab.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M25_model-eval-ab.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M26_model-safety.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M26_model-safety.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M27_domain-vehicle.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M27_domain-vehicle.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M28_domain-cabin.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M28_domain-cabin.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M29_domain-nav.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M29_domain-nav.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M30_capability-providers.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M30_capability-providers.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M31_result-persist.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M31_result-persist.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M32_success-to-memory.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M32_success-to-memory.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M33_failure-patterns.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M33_failure-patterns.md"
+    },
+    {
+      "path": "docs/discussions/agent-host-current-architecture/modules/M34_pattern-to-rules.md",
+      "dist": "docs/discussions/agent-host-current-architecture/modules/M34_pattern-to-rules.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/01_modules.md",
+      "dist": "docs/_tech_graph/l1/01_modules.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_auth.md",
+      "dist": "docs/_tech_graph/l1/10_flow_auth.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_capability.md",
+      "dist": "docs/_tech_graph/l1/10_flow_capability.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_chat.md",
+      "dist": "docs/_tech_graph/l1/10_flow_chat.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_lc_evidence.md",
+      "dist": "docs/_tech_graph/l1/10_flow_lc_evidence.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_lg_rag.md",
+      "dist": "docs/_tech_graph/l1/10_flow_lg_rag.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_rag.md",
+      "dist": "docs/_tech_graph/l1/10_flow_rag.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/10_flow_structured_output.md",
+      "dist": "docs/_tech_graph/l1/10_flow_structured_output.md"
+    },
+    {
+      "path": "docs/_tech_graph/l1/11_flow_sync_to_chat.md",
+      "dist": "docs/_tech_graph/l1/11_flow_sync_to_chat.md"
+    }
+  ],
   "discipline": {
     "concept_truth": "docs/discussions/*",
     "engineering_truth": "docs/_tech_graph/shared/graph.json",
