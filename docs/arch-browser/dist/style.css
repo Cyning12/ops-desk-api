@@ -422,3 +422,64 @@ code, .mono { font-family: var(--mono); font-size: 0.9em; }
 .evidence-item a:hover { text-decoration: underline; }
 .evidence-item code.mono { font-size: 0.78rem; color: var(--muted); }
 
+/* —— W4：给招聘官的 60 秒读法 —— */
+.resume-60s { margin-top: 1rem; }
+.resume-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: grid;
+  gap: 0.6rem;
+  counter-reset: resume-step;
+}
+.resume-point {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--panel2);
+  counter-increment: resume-step;
+}
+.resume-headline { font-weight: 600; color: var(--accent2); font-size: 0.95rem; }
+.resume-detail { color: var(--muted); font-size: 0.88rem; line-height: 1.55; }
+
+/* —— W4（可选）：prefers-reduced-motion —— */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card:hover { transform: none; }
+}
+
+/* —— W4（可选）：打印样式（暗色主题翻转为浅色，藏交互件） —— */
+@media print {
+  :root {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --panel2: #f2f4f7;
+    --text: #1a1d23;
+    --muted: #4a5568;
+    --accent: #1a5fa8;
+    --accent2: #1a6b45;
+    --border: #c9d2dd;
+  }
+  html, body { background: #ffffff; color: #1a1d23; }
+  .topbar { position: static; background: #ffffff; border-bottom: 1px solid #c9d2dd; }
+  .layout { min-width: 0; padding: 0.5rem; }
+  .card, .chip { cursor: default; }
+  .mermaid-toolbar,
+  .chip-backup,
+  .home-actions { display: none !important; }
+  .mermaid-viewport { max-height: none; overflow: visible; }
+  .panel, .card, .principle, .resume-point { break-inside: avoid; }
+  a { color: #1a5fa8; text-decoration: underline; }
+}
+

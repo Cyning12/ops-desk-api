@@ -116,13 +116,13 @@ arch-browser W1-W3 已交付（doc viewer + nginx 入口 + scenarios），当前
 
 | 项 | 状态 | 备注 |
 |----|------|------|
-| vendor 逻辑 | ⏳ | |
-| index.html 本地引用 | ⏳ | |
-| 60 秒读法 | ⏳ | |
-| prefers-reduced-motion | ⏳ | |
-| 打印样式 | ⏳ | |
-| build_site.py 通过 | ⏳ | |
-| 断网验证 | ⏳ | |
+| vendor 逻辑 | ✅ | node_modules → vendor/ 缓存 → CDN（urllib + curl 回退）→ dist/vendor/ |
+| index.html 本地引用 | ✅ | ./vendor/mermaid.min.js · ./vendor/marked.min.js（无 CDN 残留） |
+| 60 秒读法 | ✅ | home_narrative.resume_60s（4 段时间锚点）+ app.js resume60Html + CSS |
+| prefers-reduced-motion | ✅ | style.css：全局动画/过渡降级 |
+| 打印样式 | ✅ | style.css @media print：暗色翻浅色、藏工具栏/chip 备用 |
+| build_site.py 通过 | ✅ | exit 0；vendor=[mermaid.min.js, marked.min.js] |
+| 断网验证 | ✅ | 断网（假代理）rebuild 走 vendor/ 缓存成功；本地 http 冒烟 7 资源全 200 |
 
 ---
 
@@ -138,7 +138,12 @@ arch-browser W1-W3 已交付（doc viewer + nginx 入口 + scenarios），当前
 
 ### 自检结论（执行者）
 
-（30/40 回填）
+- build_site.py exit 0（含 vendor 下载进 dist/vendor/ 并缓存至 docs/arch-browser/vendor/）。
+- dist/index.html 引用 ./vendor/*.js，全仓 dist 无 cdn.jsdelivr/unpkg/cdnjs 残留。
+- dist/site-data.json 含 home_narrative.resume_60s（title=给招聘官的 60 秒读法，4 points）。
+- 断网 rebuild（https_proxy 指向黑洞）成功走缓存；本地 http.server 冒烟 7 个资源全 200。
+- spec-wave task lint PASS（仅 W4 思考轮豁免 warn）。
+- 未动 docs/_tech_graph/ 与 docs/discussions/ 真值；app.js 仅新增 resume60Html + 降级文案一词。
 
 ---
 

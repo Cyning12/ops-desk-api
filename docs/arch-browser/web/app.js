@@ -144,6 +144,28 @@
     `;
   }
 
+  // W4：给招聘官的 60 秒读法（home_narrative.resume_60s）
+  function resume60Html() {
+    const r = (DATA.home_narrative && DATA.home_narrative.resume_60s) || {};
+    const points = (r.points || [])
+      .map(
+        (p) =>
+          `<li class="resume-point">
+            <span class="resume-headline">${escapeHtml(p.headline || "")}</span>
+            <span class="resume-detail">${escapeHtml(p.detail || "")}</span>
+          </li>`
+      )
+      .join("");
+    if (!points) return "";
+    return (
+      '<section class="panel resume-60s">' +
+      '<h2 class="section-title">' + escapeHtml(r.title || "给招聘官的 60 秒读法") + "</h2>" +
+      '<p class="muted">' + escapeHtml(r.summary || "") + "</p>" +
+      '<ol class="resume-timeline">' + points + "</ol>" +
+      "</section>"
+    );
+  }
+
   function scenariosTeaserHtml() {
     const sc = (DATA.home_narrative && DATA.home_narrative.scenarios_teaser) || {};
     const cards = (sc.cards || [])
@@ -323,6 +345,7 @@
           · <a href="#/eng/l0">工程图谱 →</a>
         </p>
       </section>
+      ${resume60Html()}
       <section class="panel">
         <h2 class="section-title">概念总图 · 五层 + M01–M34</h2>
         <p class="muted">真值 discussions §1.2 · 可点击 · 颜色对齐落地状态</p>
@@ -612,7 +635,7 @@
         if (box.getAttribute("data-mermaid-ready") === "1") return;
         box.insertAdjacentHTML(
           "beforeend",
-          `<p class="error">mermaid CDN 未加载，备用列表仍可用</p>`
+          `<p class="error">mermaid 未加载（vendor 缺失），备用列表仍可用</p>`
         );
       });
       return;

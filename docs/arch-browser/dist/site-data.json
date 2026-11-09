@@ -1,6 +1,6 @@
 {
   "schema_version": "arch_browser_site_data_v1",
-  "generated_at": "2026-11-09T05:45:38Z",
+  "generated_at": "2026-11-09T08:00:59Z",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_2746c8600a8addc6_V1",
   "graph_generated_at": "sha256-2746c8600a8addc6",
   "sources": {
@@ -141,6 +141,28 @@
         "body": "已落地 = 主路径可用；部分 = 核心已接、仍有缺口；暂未排期 = 大纲有、当前产品域未排（如垂域车控等）。颜色与图例一致。"
       }
     ],
+    "resume_60s": {
+      "title": "给招聘官的 60 秒读法",
+      "summary": "60 秒快速读本页：产品是什么、做到了什么、证据在哪里。每段时间锚点对应页面上的一个可点区块。",
+      "points": [
+        {
+          "headline": "0–15 秒 · 这是什么",
+          "detail": "Ops Desk 的 Agent Host：单进程 FastAPI 内同驻控制面（纯代码闸链）与执行面（supervisor 编排 LLM 与工人），主线入口是 SSE 流式对话，状态落在 PostgreSQL。"
+        },
+        {
+          "headline": "15–35 秒 · 核心设计",
+          "detail": "五层蓝图：控制面只跑确定性代码、不调模型；执行面做编排；LLM 工厂管模型注册/路由/预算；能力提供方接本域工具；反馈闭环把运行结果写回记忆与规则建议。见下方概念总图，节点可点。"
+        },
+        {
+          "headline": "35–50 秒 · 落地状态",
+          "detail": "首页状态色图即真实进度：已落地 / 部分 / 暂未排期。任一模块可点进详页看一句话职责、包路径与残余缺口——不看 PPT，看仓内真值。"
+        },
+        {
+          "headline": "50–60 秒 · 怎么核对",
+          "detail": "每条结论都有证据链：架构讨论稿（概念真值）+ tech_graph 编译产物（工程真值）+ 使用场景故事（RAG 金标评测 / 委派写调用 / SSE 主线 / 失败聚类），页内直达源文档。"
+        }
+      ]
+    },
     "scenarios_teaser": {
       "title": "使用场景",
       "summary": "真实请求路径故事 + 仓内可核对证据链。",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""聚合 Host 大纲 + tech_graph → dist/site-data.json，并复制 web 静态壳。
+"""聚合 Host 大纲 + tech_graph → dist/site-data.json，并复制 web 静态壳 + vendor（mermaid/marked）。
 
 用法（仓根）:
   python3 docs/arch-browser/scripts/build_site.py
@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import subprocess
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -20,6 +22,20 @@ CATALOG = ARCH / "catalog"
 SCENARIOS_YAML = CATALOG / "scenarios.yaml"
 WEB = ARCH / "web"
 DIST = ARCH / "dist"
+
+# W4 vendor：mermaid / marked 本地化（弱网/无 CDN 环境仍可用）。
+# 解析顺序：仓内 node_modules → 本目录 vendor/ 缓存 → CDN 下载（并写回缓存）。
+VENDOR_DIR = ARCH / "vendor"
+VENDOR_SPECS = {
+    "mermaid.min.js": {
+        "cdn": "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js",
+        "node_modules": "node_modules/mermaid/dist/mermaid.min.js",
+    },
+    "marked.min.js": {
+        "cdn": "https://cdn.jsdelivr.net/npm/marked@12/marked.min.js",
+        "node_modules": "node_modules/marked/marked.min.js",
+    },
+}
 GRAPH_JSON = ROOT / "docs" / "_tech_graph" / "shared" / "graph.json"
 MODULES_MD = ROOT / "docs" / "_tech_graph" / "l1" / "01_modules.md"
 MAIN_L0_MD = ROOT / "docs" / "_tech_graph" / "l0" / "00_main.md"
@@ -40,6 +56,65 @@ def _doc_whitelist() -> list[Path]:
     paths.extend(sorted(MODULES_DIR.glob("*.md")))
     paths.extend(sorted((ROOT / "docs" / "_tech_graph" / "l1").glob("*.md")))
     return [p for p in paths if p.is_file() and p.suffix == ".md"]
+
+
+def _download_vendor(name: str, url: str) -> bytes:
+    """从 CDN 下载单个 vendor 文件。
+
+    优先 urllib；失败时回退 curl（部分代理环境 urllib SSL 握手不通，curl 走系统代理链）。
+    """
+    req = urllib.request.Request(url, headers={"User-Agent": "arch-browser-build/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return resp.read()
+    except Exception:
+        if not shutil.which("curl"):
+            raise
+        proc = subprocess.run(
+            ["curl", "-fsSL", "--max-time", "60", "-o", "-", url],
+            check=True,
+            capture_output=True,
+        )
+        return proc.stdout
+
+
+def _ensure_vendor() -> list[str]:
+    """W4: 确保 dist/vendor/ 含 mermaid.min.js / marked.min.js。
+
+    解析顺序：仓内 node_modules → docs/arch-browser/vendor/ 缓存 → CDN 下载。
+    下载成功后写回缓存，后续离线 build 可直接复用。
+    全部来源失败 → 抛错并提示手动下载（failure_paths：vendor 下载失败）。
+    """
+    dest_dir = DIST / "vendor"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    copied: list[str] = []
+    for name, spec in VENDOR_SPECS.items():
+        dest = dest_dir / name
+        sources = [
+            ("node_modules", ROOT / spec["node_modules"]),
+            ("local cache", VENDOR_DIR / name),
+        ]
+        data: bytes | None = None
+        for src_name, src in sources:
+            if src.is_file():
+                data = src.read_bytes()
+                break
+        if data is None:
+            try:
+                data = _download_vendor(name, spec["cdn"])
+            except Exception as exc:  # noqa: BLE001
+                raise SystemExit(
+                    f"error: vendor 下载失败 {name} ({exc})\n"
+                    f"  请手动下载：{spec["cdn"]}\n"
+                    f"  放到 {VENDOR_DIR}/ 后重跑 build（或装进 node_modules）"
+                ) from exc
+            VENDOR_DIR.mkdir(parents=True, exist_ok=True)
+            (VENDOR_DIR / name).write_bytes(data)
+        if not data.strip():
+            raise SystemExit(f"error: vendor 文件为空 {name}，请重新下载后重跑 build")
+        dest.write_bytes(data)
+        copied.append(name)
+    return copied
 
 
 def _copy_whitelisted_docs() -> list[dict[str, str]]:
@@ -669,7 +744,11 @@ def build() -> Path:
         if src.is_file():
             shutil.copy2(src, DIST / name)
 
+    # W4: vendor 本地化（mermaid / marked 进 dist/vendor/）
+    vendor_files = _ensure_vendor()
+
     print(f"OK wrote {out_json.relative_to(ROOT)}")
+    print(f"  vendor={vendor_files} -> {DIST.relative_to(ROOT)}/vendor/")
     print(f"  freeze_id={site['freeze_id']}")
     print(f"  host_modules={len(host_modules)} graphs={len(graphs_detail)}")
     print(f"  concept_mermaid_chars={len(concept_mermaid)}")
