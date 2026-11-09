@@ -421,3 +421,4 @@ code, .mono { font-family: var(--mono); font-size: 0.9em; }
 .evidence-item a { color: var(--accent2); font-weight: 500; word-break: break-all; }
 .evidence-item a:hover { text-decoration: underline; }
 .evidence-item code.mono { font-size: 0.78rem; color: var(--muted); }
+
