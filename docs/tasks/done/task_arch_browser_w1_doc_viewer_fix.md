@@ -1,6 +1,6 @@
 # Task：修复 arch-browser W1 源文档查看器 Mermaid/表格渲染（3.3 项 14）
 
-> **状态**：in_progress  
+> **状态**：completed  
 > **类型**：缺陷修复  
 > **关联图谱**：无  
 > **落盘**：`docs/tasks/active/task_arch_browser_w1_doc_viewer_fix.md`；验收后 `git mv` → `docs/tasks/done/`
