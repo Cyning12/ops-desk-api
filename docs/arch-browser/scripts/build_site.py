@@ -17,6 +17,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 ARCH = ROOT / "docs" / "arch-browser"
 CATALOG = ARCH / "catalog"
+SCENARIOS_YAML = CATALOG / "scenarios.yaml"
 WEB = ARCH / "web"
 DIST = ARCH / "dist"
 GRAPH_JSON = ROOT / "docs" / "_tech_graph" / "shared" / "graph.json"
@@ -474,6 +475,46 @@ def _load_indexes() -> dict:
     return out
 
 
+def _load_scenarios() -> dict:
+    """加载 catalog/scenarios.yaml；缺失或格式错误时返回空结构（build 继续）。"""
+    if not SCENARIOS_YAML.is_file():
+        return {"scenarios": []}
+    try:
+        data = yaml.safe_load(SCENARIOS_YAML.read_text(encoding="utf-8")) or {}
+    except Exception as exc:  # noqa: BLE001
+        print(f"warn: failed to load {SCENARIOS_YAML}: {exc}")
+        return {"scenarios": []}
+    # 轻校验：只保留预期字段，避免站点 crash
+    cleaned: list[dict] = []
+    for sc in data.get("scenarios") or []:
+        if not isinstance(sc, dict) or not sc.get("id"):
+            continue
+        steps = []
+        for step in sc.get("steps") or []:
+            if isinstance(step, dict):
+                steps.append({
+                    "actor": step.get("actor", ""),
+                    "action": step.get("action", ""),
+                    "detail": step.get("detail", ""),
+                })
+        evidence = []
+        for ev in sc.get("evidence") or []:
+            if isinstance(ev, dict) and ev.get("path"):
+                evidence.append({
+                    "label": ev.get("label", ev.get("path", "")),
+                    "path": ev.get("path", ""),
+                })
+        cleaned.append({
+            "id": sc.get("id"),
+            "status": sc.get("status", "draft"),
+            "title": sc.get("title", ""),
+            "summary": sc.get("summary", ""),
+            "steps": steps,
+            "evidence": evidence,
+        })
+    return {"scenarios": cleaned}
+
+
 def build() -> Path:
     outline = json.loads((CATALOG / "host_outline.json").read_text(encoding="utf-8"))
     crosswalk = yaml.safe_load((CATALOG / "crosswalk.yaml").read_text(encoding="utf-8"))
@@ -587,6 +628,7 @@ def build() -> Path:
         "sources": {
             "host_outline": "docs/arch-browser/catalog/host_outline.json",
             "crosswalk": "docs/arch-browser/catalog/crosswalk.yaml",
+            "scenarios": "docs/arch-browser/catalog/scenarios.yaml",
             "home_narrative": "docs/arch-browser/catalog/home_narrative.json",
             "graph_json": "docs/_tech_graph/shared/graph.json",
             "modules_md": "docs/_tech_graph/l1/01_modules.md",
@@ -606,6 +648,7 @@ def build() -> Path:
         "eng_modules": eng_modules,
         "graphs": graphs_detail,
         "l2_indexes": _load_indexes(),
+        "scenarios": _load_scenarios().get("scenarios", []),
         "docs_index": _copy_whitelisted_docs(),
         "discipline": {
             "concept_truth": "docs/discussions/*",
