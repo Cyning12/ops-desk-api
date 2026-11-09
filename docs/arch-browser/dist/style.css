@@ -375,6 +375,30 @@ code, .mono { font-family: var(--mono); font-size: 0.9em; }
 .md pre code { background: none; padding: 0; }
 .md blockquote { border-left: 3px solid #4cc38a; margin: 0.8em 0; padding: 0.2em 0 0.2em 1em; color: var(--muted); }
 .md ul, .md ol { margin: 0.5em 0 0.5em 1.4em; }
+.md table {
+  border-collapse: collapse;
+  margin: 0.8em 0;
+  width: auto;
+  min-width: 50%;
+  max-width: 100%;
+  border: 1px solid var(--border);
+}
+.md th, .md td {
+  border: 1px solid var(--border);
+  padding: 0.45em 0.7em;
+  text-align: left;
+  vertical-align: top;
+}
+.md th {
+  background: var(--panel2);
+  font-weight: 600;
+}
+.md tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+
+/* 文档内联 Mermaid：比全组件更紧凑 */
+.doc-inline-mermaid { margin: 0.75rem 0; min-height: 6rem; }
+.doc-inline-mermaid .mermaid-viewport { min-height: 6rem; min-width: auto; }
+
 /* W3 使用场景 */
 .scenarios-teaser { margin-top: 1.25rem; }
 .scenario-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }

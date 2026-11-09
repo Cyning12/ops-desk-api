@@ -632,7 +632,7 @@
         bindMermaidNodeNav(box);
         continue;
       }
-      const nodes = box.querySelectorAll("pre.mermaid");
+      const nodes = box.querySelectorAll(".mermaid-stage .mermaid");
       if (!nodes.length) continue;
       try {
         await window.mermaid.run({ nodes: [...nodes] });
@@ -1054,10 +1054,14 @@
     }
     const hit = docs.find((d) => d.path === path);
     if (!hit) {
+      const isReferenced = (DATA.host_modules || []).some((m) => (m.sources || []).includes(path));
+      const reason = isReferenced
+        ? "该路径被源链引用，但未进入 W1 dist 白名单，不提供查看。"
+        : "该路径不在 W1 白名单内，不进入 dist、不提供查看。";
       root.innerHTML = shell(
         "eng",
         '<section class="panel" style="grid-column:1/-1">' + back +
-        '<h1>拒绝</h1><p class="error">该路径不在 W1 白名单内，不进入 dist、不提供查看。</p>' +
+        '<h1>拒绝</h1><p class="error">' + reason + "</p>" +
         '<p class="mono">' + escapeHtml(path) + "</p></section>"
       );
       return;
@@ -1071,6 +1075,12 @@
       const res = await fetch("./" + hit.dist);
       if (!res.ok) throw new Error("HTTP " + res.status);
       const text = await res.text();
+      if (window.marked && !window.marked._docGfmSet) {
+        try {
+          marked.use({ gfm: true });
+          window.marked._docGfmSet = true;
+        } catch (_) {}
+      }
       const body = window.marked ? marked.parse(text) : "<pre>" + escapeHtml(text) + "</pre>";
       root.innerHTML = shell(
         "eng",
@@ -1078,10 +1088,16 @@
         '<h1 class="mono" style="font-size:0.95rem">' + escapeHtml(path) + '</h1><div class="md">' + body + "</div></section>"
       );
       root.querySelectorAll("code.language-mermaid").forEach((code) => {
-        const div = document.createElement("div");
-        div.className = "mermaid";
-        div.textContent = code.textContent;
-        code.closest("pre").replaceWith(div);
+        const src = code.textContent;
+        const pre = code.closest("pre");
+        const wrapper = document.createElement("div");
+        wrapper.className = "mermaid-viewer clickable-mermaid doc-inline-mermaid";
+        wrapper.setAttribute("data-mermaid-ready", "0");
+        wrapper.setAttribute("data-zoom", "1");
+        wrapper.innerHTML =
+          '<div class="mermaid-viewport" tabindex="0" title="空白处拖拽平移 · 滚轮缩放">' +
+          '<div class="mermaid-stage"><div class="mermaid">' + escapeHtml(src) + "</div></div></div>";
+        pre.replaceWith(wrapper);
       });
       await mountMermaid(root);
     } catch (err) {
