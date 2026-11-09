@@ -36,6 +36,7 @@
     const items = [
       ["#/", "首页", "/"],
       ["#/host", "Host 概念", "host"],
+      ["#/scenarios", "使用场景", "scenarios"],
       ["#/eng/l0", "工程图谱", "eng"],
       ["#/wave", "规划波次", "wave"],
     ];
@@ -143,33 +144,103 @@
     `;
   }
 
-  function scenariosPlaceholderHtml() {
-    const sc = (DATA.home_narrative && DATA.home_narrative.scenarios_placeholder) || {};
+  function scenariosTeaserHtml() {
+    const sc = (DATA.home_narrative && DATA.home_narrative.scenarios_teaser) || {};
     const cards = (sc.cards || [])
       .map((c) => {
-        if (c.status === "live") {
-          return `
-        <div class="card">
-          <div class="title">${escapeHtml(c.title || "场景")}</div>
-          <div class="desc">${escapeHtml(c.desc || "")}</div>
-          <span class="badge wave">已落地 · 按波次更新</span>
-        </div>`;
-        }
-        return `
-        <div class="card placeholder-card" aria-disabled="true">
-          <div class="title">${escapeHtml(c.title || "场景占位")}</div>
-          <div class="desc">${escapeHtml(c.desc || "")}</div>
-          <span class="badge na">设想 · 未填充</span>
-        </div>`;
+        const badge = c.status === "live"
+          ? '<span class="badge ok">已落地</span>'
+          : '<span class="badge na">未就绪</span>';
+        return '<div class="card" data-nav="' + escapeHtml(c.href || "#/scenarios") + '">' +
+          '<div class="title">' + escapeHtml(c.title || "场景") + '</div>' +
+          '<div class="desc">' + escapeHtml(c.desc || "") + '</div>' +
+          badge +
+          '</div>';
       })
       .join("");
-    return `
-      <section class="panel scenarios-placeholder">
-        <h2>${escapeHtml(sc.title || "使用场景（占位）")}</h2>
-        <p class="muted">${escapeHtml(sc.summary || "")}</p>
-        <div class="card-grid">${cards}</div>
-      </section>
-    `;
+    const more = sc.href
+      ? '<p style="margin-top:0.75rem"><a href="' + escapeHtml(sc.href) + '">查看全部场景 →</a></p>'
+      : "";
+    return '<section class="panel scenarios-teaser">' +
+      '<h2>' + escapeHtml(sc.title || "使用场景") + '</h2>' +
+      '<p class="muted">' + escapeHtml(sc.summary || "") + '</p>' +
+      '<div class="card-grid">' + cards + '</div>' +
+      more +
+      '</section>';
+  }
+
+  function scenarioStatusBadge(status) {
+    if (status === "live") return '<span class="badge ok">已落地</span>';
+    if (status === "partial") return '<span class="badge partial">部分</span>';
+    if (status === "draft") return '<span class="badge na">草稿</span>';
+    return '<span class="badge na">未就绪</span>';
+  }
+
+  function renderScenarios() {
+    const scenarios = DATA.scenarios || [];
+    if (!scenarios.length) {
+      return shell(
+        "scenarios",
+        '<section class="panel" style="grid-column:1/-1"><h1>使用场景</h1><p class="empty">暂无场景数据。请确认 build_site.py 已生成 site-data.json。</p></section>'
+      );
+    }
+    const list = scenarios
+      .map((s) => '<div class="card scenario-card" data-nav="#/scenarios/' + escapeHtml(s.id) + '">' +
+        '<div class="title">' + escapeHtml(s.title) + '</div>' +
+        '<div class="desc">' + escapeHtml(s.summary || "") + '</div>' +
+        '<div class="scenario-meta">' + scenarioStatusBadge(s.status) + '</div>' +
+        '</div>')
+      .join("");
+    return shell(
+      "scenarios",
+      '<section class="panel" style="grid-column:1/-1">' +
+      '<h1>使用场景</h1>' +
+      '<p class="muted">真实请求路径故事与可核对的仓内证据链。</p>' +
+      '<div class="card-grid scenario-grid">' + list + '</div>' +
+      '</section>'
+    );
+  }
+
+  function renderScenarioDetail(id) {
+    const s = (DATA.scenarios || []).find((x) => x.id === id);
+    if (!s) {
+      return shell(
+        "scenarios",
+        '<section class="panel" style="grid-column:1/-1"><h1>场景未找到</h1><p class="error">无 id 为 <code>' +
+          escapeHtml(id) +
+          '</code> 的场景。</p><p><a href="#/scenarios">← 返回场景列表</a></p></section>'
+      );
+    }
+    const steps = (s.steps || [])
+      .map((step, idx) => '<li class="scenario-step">' +
+        '<span class="step-num">' + (idx + 1) + '</span>' +
+        '<div class="step-body">' +
+        '<div class="step-actor">' + escapeHtml(step.actor || "") + '</div>' +
+        '<div class="step-action">' + escapeHtml(step.action || "") + '</div>' +
+        (step.detail ? '<div class="step-detail">' + escapeHtml(step.detail) + '</div>' : "") +
+        '</div>' +
+        '</li>')
+      .join("");
+    const evidence = (s.evidence || [])
+      .map((ev) => {
+        const href = docHref(ev.path);
+        return '<li class="evidence-item"><a href="' + href + '" target="_blank" rel="noopener">' +
+          escapeHtml(ev.label || ev.path) + '</a><code class="mono">' + escapeHtml(ev.path) + '</code></li>';
+      })
+      .join("");
+    return shell(
+      "scenarios",
+      '<section class="panel" style="grid-column:1/-1">' +
+      '<p class="muted"><a href="#/scenarios">← 全部场景</a></p>' +
+      '<h1>' + escapeHtml(s.title) + '</h1>' +
+      '<p>' + escapeHtml(s.summary || "") + '</p>' +
+      '<div class="scenario-meta" style="margin-bottom:1rem">' + scenarioStatusBadge(s.status) + '</div>' +
+      '<h2 class="section-title">请求路径</h2>' +
+      '<ol class="scenario-steps">' + (steps || '<li class="empty">暂无步骤</li>') + '</ol>' +
+      '<h2 class="section-title">证据链</h2>' +
+      '<ul class="evidence-list">' + (evidence || '<li class="empty">暂无证据</li>') + '</ul>' +
+      '</section>'
+    );
   }
 
   /** 从 mermaid 源解析 click 指令 → { nodeId: href } */
@@ -262,7 +333,7 @@
           ${chipBackupHtml()}
         </details>
       </section>
-      ${scenariosPlaceholderHtml()}
+      ${scenariosTeaserHtml()}
       <section class="panel">
         <h2 class="section-title">工程 tech_graph</h2>
         <p class="muted">工程图谱 → G-L1 flow → G-L2 indexes · 真值 graph.json</p>
@@ -1057,6 +1128,8 @@
       html = renderEngModule(decodeURIComponent(parts[2]));
     else if (parts[0] === "eng" && parts[1] === "modules") html = renderEngModules();
     else if (parts[0] === "eng" && parts[1] === "l2") html = renderL2(params);
+    else if (parts[0] === "scenarios" && parts[1]) html = renderScenarioDetail(decodeURIComponent(parts[1]));
+    else if (parts[0] === "scenarios") html = renderScenarios();
     else if (parts[0] === "doc") {
       void renderDoc(root, params);
       return;

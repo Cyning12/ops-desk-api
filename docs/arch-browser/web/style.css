@@ -398,3 +398,27 @@ code, .mono { font-family: var(--mono); font-size: 0.9em; }
 /* 文档内联 Mermaid：比全组件更紧凑 */
 .doc-inline-mermaid { margin: 0.75rem 0; min-height: 6rem; }
 .doc-inline-mermaid .mermaid-viewport { min-height: 6rem; min-width: auto; }
+
+/* W3 使用场景 */
+.scenarios-teaser { margin-top: 1.25rem; }
+.scenario-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.scenario-card { cursor: pointer; }
+.scenario-card:hover { border-color: var(--accent2); }
+.scenario-meta { margin-top: 0.6rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.badge.partial { color: #f0c36d; border-color: #f0c36d; background: rgba(240, 195, 109, 0.08); }
+
+.scenario-steps { list-style: none; padding: 0; margin: 1rem 0; }
+.scenario-step { display: flex; gap: 0.75rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border); }
+.scenario-step:last-child { border-bottom: none; }
+.step-num { flex: 0 0 1.6rem; height: 1.6rem; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--accent2); color: #0b0d12; font-weight: 700; font-size: 0.8rem; }
+.step-body { flex: 1; }
+.step-actor { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+.step-action { font-size: 0.98rem; }
+.step-detail { font-size: 0.88rem; color: var(--muted); margin-top: 0.35rem; }
+
+.evidence-list { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: 0.6rem; }
+.evidence-item { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.65rem 0.8rem; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,0.02); }
+.evidence-item a { color: var(--accent2); font-weight: 500; word-break: break-all; }
+.evidence-item a:hover { text-decoration: underline; }
+.evidence-item code.mono { font-size: 0.78rem; color: var(--muted); }
+

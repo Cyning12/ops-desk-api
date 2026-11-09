@@ -22,26 +22,34 @@
       "body": "已落地 = 主路径可用；部分 = 核心已接、仍有缺口；暂未排期 = 大纲有、当前产品域未排（如垂域车控等）。颜色与图例一致。"
     }
   ],
-  "scenarios_placeholder": {
-    "title": "使用场景（占位 · 设想）",
-    "summary": "后续计划按模块展示「真实请求怎么走」：入口 → 控制面闸 → 执行面 → 能力调用 → 反馈回写，并附可核对的运行证据。DSH Superagent 研究原型线五个波次已全部交付，其余仍为设想。",
+  "scenarios_teaser": {
+    "title": "使用场景",
+    "summary": "真实请求路径故事 + 仓内可核对证据链。",
+    "href": "#/scenarios",
     "cards": [
       {
-        "title": "场景 · DSH Superagent 研究原型",
-        "desc": "独立 TypeScript 原型：以确定性存储（SQLite 单写者）与效果队列约束 LLM 编排，对外只承诺真实状态。五个升级波次全部交付：0 记录 GC、1 Trust 边界、2 部署隔离、3 文章方向项对齐总账（docs/010 三判定立账）、4 Thread GC（读位标在 KV 不在 thread.meta，留存=计算裁决：静默+无活引用+过龄三条件，KV 游标不触碰故旧消息不重入）。",
-        "status": "live"
+        "title": "场景 · RAG 知识库金标评测",
+        "desc": "用户提问 → RAG 检索 → grader 评级 → 带引用答案或拒答。",
+        "status": "live",
+        "href": "#/scenarios/rag-golden-eval"
       },
       {
-        "title": "场景 · 流式问答主线",
-        "desc": "设想：从 SSE 入口走到 supervisor / specialist，并标出 HITL、Policy、用量记账落点。"
+        "title": "场景 · 委派令牌写调用",
+        "desc": "写类能力经 HITL、DelegationToken、执行网关六道门后落地。",
+        "status": "live",
+        "href": "#/scenarios/delegation-write"
       },
       {
-        "title": "场景 · 能力调用闸链",
-        "desc": "设想：一次 tool invoke 如何经过可见集、委派令牌、执行网关与 Policy。"
+        "title": "场景 · SSE 流式问答主线",
+        "desc": "从 SSE 入口到 supervisor / specialist，再到结果回写与推送。",
+        "status": "live",
+        "href": "#/scenarios/sse-streaming-mainline"
       },
       {
-        "title": "场景 · 反馈写入记忆",
-        "desc": "设想：run 结束后事实/偏好/失败模式如何回写，以及人工确认规则的边界。"
+        "title": "场景 · 失败模式离线聚类",
+        "desc": "failure/partial episode 离线聚类为模式库，并生成人工确认规则建议。",
+        "status": "live",
+        "href": "#/scenarios/failure-pattern-mining"
       }
     ]
   }
