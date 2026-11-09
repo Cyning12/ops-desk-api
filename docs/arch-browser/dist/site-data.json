@@ -1,11 +1,12 @@
 {
   "schema_version": "arch_browser_site_data_v1",
-  "generated_at": "2026-11-09T02:16:14Z",
+  "generated_at": "2026-11-09T02:29:24Z",
   "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_2746c8600a8addc6_V1",
   "graph_generated_at": "sha256-2746c8600a8addc6",
   "sources": {
     "host_outline": "docs/arch-browser/catalog/host_outline.json",
     "crosswalk": "docs/arch-browser/catalog/crosswalk.yaml",
+    "scenarios": "docs/arch-browser/catalog/scenarios.yaml",
     "home_narrative": "docs/arch-browser/catalog/home_narrative.json",
     "graph_json": "docs/_tech_graph/shared/graph.json",
     "modules_md": "docs/_tech_graph/l1/01_modules.md",
@@ -140,26 +141,34 @@
         "body": "已落地 = 主路径可用；部分 = 核心已接、仍有缺口；暂未排期 = 大纲有、当前产品域未排（如垂域车控等）。颜色与图例一致。"
       }
     ],
-    "scenarios_placeholder": {
-      "title": "使用场景（占位 · 设想）",
-      "summary": "后续计划按模块展示「真实请求怎么走」：入口 → 控制面闸 → 执行面 → 能力调用 → 反馈回写，并附可核对的运行证据。DSH Superagent 研究原型线五个波次已全部交付，其余仍为设想。",
+    "scenarios_teaser": {
+      "title": "使用场景",
+      "summary": "真实请求路径故事 + 仓内可核对证据链。",
+      "href": "#/scenarios",
       "cards": [
         {
-          "title": "场景 · DSH Superagent 研究原型",
-          "desc": "独立 TypeScript 原型：以确定性存储（SQLite 单写者）与效果队列约束 LLM 编排，对外只承诺真实状态。五个升级波次全部交付：0 记录 GC、1 Trust 边界、2 部署隔离、3 文章方向项对齐总账（docs/010 三判定立账）、4 Thread GC（读位标在 KV 不在 thread.meta，留存=计算裁决：静默+无活引用+过龄三条件，KV 游标不触碰故旧消息不重入）。",
-          "status": "live"
+          "title": "场景 · RAG 知识库金标评测",
+          "desc": "用户提问 → RAG 检索 → grader 评级 → 带引用答案或拒答。",
+          "status": "live",
+          "href": "#/scenarios/rag-golden-eval"
         },
         {
-          "title": "场景 · 流式问答主线",
-          "desc": "设想：从 SSE 入口走到 supervisor / specialist，并标出 HITL、Policy、用量记账落点。"
+          "title": "场景 · 委派令牌写调用",
+          "desc": "写类能力经 HITL、DelegationToken、执行网关六道门后落地。",
+          "status": "live",
+          "href": "#/scenarios/delegation-write"
         },
         {
-          "title": "场景 · 能力调用闸链",
-          "desc": "设想：一次 tool invoke 如何经过可见集、委派令牌、执行网关与 Policy。"
+          "title": "场景 · SSE 流式问答主线",
+          "desc": "从 SSE 入口到 supervisor / specialist，再到结果回写与推送。",
+          "status": "live",
+          "href": "#/scenarios/sse-streaming-mainline"
         },
         {
-          "title": "场景 · 反馈写入记忆",
-          "desc": "设想：run 结束后事实/偏好/失败模式如何回写，以及人工确认规则的边界。"
+          "title": "场景 · 失败模式离线聚类",
+          "desc": "failure/partial episode 离线聚类为模式库，并生成人工确认规则建议。",
+          "status": "live",
+          "href": "#/scenarios/failure-pattern-mining"
         }
       ]
     }
@@ -6498,6 +6507,187 @@
       }
     }
   },
+  "scenarios": [
+    {
+      "id": "rag-golden-eval",
+      "status": "live",
+      "title": "场景 · RAG 知识库金标评测",
+      "summary": "一次真实用户提问如何经过 Specialist 的 RAG 工人检索、grader 评级，最终给出带引用的答案或按契约拒答。",
+      "steps": [
+        {
+          "actor": "用户",
+          "action": "在 SSE 对话入口输入问题",
+          "detail": "例如「Kimi Code 自动压缩被取消并报错 This operation was aborted 是什么原因？」"
+        },
+        {
+          "actor": "Orchestrator",
+          "action": "规划子任务并 Send 到 RAG Specialist",
+          "detail": "supervisor 将问题拆为检索子任务，触发 rag_subtask 工人。"
+        },
+        {
+          "actor": "Specialist / RAG",
+          "action": "检索 ops_knowledge_chunks 并生成引用候选",
+          "detail": "本地 Qdrant 8648 chunks + bge-m3 嵌入 + bge-reranker-v2-m3 精排，产出 top5 引用。"
+        },
+        {
+          "actor": "Grader",
+          "action": "按契约评级 recall@5 / min_relevance / citation_in_hits",
+          "detail": "Qwen/Qwen3.6-27B 作为 grader，逐条判定是否命中金标。"
+        },
+        {
+          "actor": "执行网关",
+          "action": "返回 answer / answer_partial / refuse",
+          "detail": "命中则给出带引用卡的答案；语料外问题按契约 §4c 拒答。"
+        }
+      ],
+      "evidence": [
+        {
+          "label": "R-4 结案报告（recall@5 73.08%、拒答正确率 90.91%）",
+          "path": "reports/r4_final_live_20261019T032150Z.md"
+        },
+        {
+          "label": "演示证据表（4 条跨象限真跑记录）",
+          "path": "reports/demo_evidence_20261019T033800Z.md"
+        },
+        {
+          "label": "M18 · Specialist 模块说明",
+          "path": "docs/discussions/agent-host-current-architecture/modules/M18_specialist.md"
+        }
+      ]
+    },
+    {
+      "id": "delegation-write",
+      "status": "live",
+      "title": "场景 · 委派令牌写调用",
+      "summary": "一次 testing.write.echo 能力调用如何经过委派令牌签发、HITL 审批、执行网关六道门，最终安全落地。",
+      "steps": [
+        {
+          "actor": "用户",
+          "action": "请求执行写类能力",
+          "detail": "触发 testing.write.echo（side_effect=write）。"
+        },
+        {
+          "actor": "Orchestrator / subtask_join",
+          "action": "判断需签发 DelegationToken",
+          "detail": "非只读且非 sandbox/cli，进入 HITL pending；人批后 Host 签发 HMAC 令牌。"
+        },
+        {
+          "actor": "委派网关",
+          "action": "令牌绑定能力集、主体、参数约束与一次性 nonce",
+          "detail": "能力集、tenant/user/run/subtask、参数 enum/max_len/pattern、TTL 600 秒。"
+        },
+        {
+          "actor": "执行网关",
+          "action": "六道门验签后执行",
+          "detail": "delegation → lookup → enabled → Policy → circuit → budget/kill → args_schema → adapter。"
+        },
+        {
+          "actor": "审计",
+          "action": "记录动作与令牌 id，不记参数原文",
+          "detail": "运行结果回写 run_events，支持 cursor replay。"
+        }
+      ],
+      "evidence": [
+        {
+          "label": "testing.write.echo 调用实录",
+          "path": "docs/discussions/2026-10-19_testing-write-echo-and-delegation_v1_zh.md"
+        },
+        {
+          "label": "M06 · 委派网关",
+          "path": "docs/discussions/agent-host-current-architecture/modules/M06_delegation-gateway.md"
+        },
+        {
+          "label": "M07 · 执行网关 · 六道门",
+          "path": "docs/discussions/agent-host-current-architecture/modules/M07_exec-gateway.md"
+        }
+      ]
+    },
+    {
+      "id": "sse-streaming-mainline",
+      "status": "live",
+      "title": "场景 · SSE 流式问答主线",
+      "summary": "用户提问后，请求如何经过控制面会话校验，进入 Agent Host 执行面，最终通过 SSE 流式返回。",
+      "steps": [
+        {
+          "actor": "用户 / 前端",
+          "action": "POST /ops/chat 建立 SSE 流",
+          "detail": "请求携带 session，经 app/ops/auth.py 校验后进入 lg_rag 路由。"
+        },
+        {
+          "actor": "控制面",
+          "action": "会话与预算闸链",
+          "detail": "权限、预算、模型路由等确定性代码闸在 LLM 调用前完成。"
+        },
+        {
+          "actor": "Orchestrator",
+          "action": "supervisor 规划 + critic + ReAct≤2",
+          "detail": "规划失败即失败；通过 critic 后进入 subtask_join。"
+        },
+        {
+          "actor": "Specialist",
+          "action": "并发执行 RAG / info_extract / tool_exec",
+          "detail": "工人结果归并，tool_exec 经 capability gateway 调用本域能力。"
+        },
+        {
+          "actor": "结果回写",
+          "action": "run_events 落盘 + SSE 推送",
+          "detail": "事件写入 PostgreSQL，sse_subscribe 持续推送增量至客户端。"
+        }
+      ],
+      "evidence": [
+        {
+          "label": "M17 · Orchestrator 模块",
+          "path": "docs/discussions/agent-host-current-architecture/modules/M17_orchestrator.md"
+        },
+        {
+          "label": "M31 · 结果回写",
+          "path": "docs/discussions/agent-host-current-architecture/modules/M31_result-persist.md"
+        },
+        {
+          "label": "执行波次规划（W1 已交付）",
+          "path": "docs/spec/arch-browser/01_execution_waves.md"
+        }
+      ]
+    },
+    {
+      "id": "failure-pattern-mining",
+      "status": "live",
+      "title": "场景 · 失败模式离线聚类",
+      "summary": "failure / partial 的 episode 如何被离线聚类成失败模式库，并生成建议规则供人工确认。",
+      "steps": [
+        {
+          "actor": "运行期",
+          "action": "失败 episode 写入 ops_memory_episodes",
+          "detail": "outcome ∈ {failure, partial}，包含 failure_class 与 context_fingerprint。"
+        },
+        {
+          "actor": "离线批处理",
+          "action": "scripts/episode_pattern_mine.py 全量扫描",
+          "detail": "按 (failure_class × context_fingerprint) 分组计数，阈值 ≥3 成模式。"
+        },
+        {
+          "actor": "模式库",
+          "action": "生成 reports/episode_patterns/<date>.yaml",
+          "detail": "报告仅含 run_id/指纹/分类/计数/suggested_rule，不含计划正文或租户数据。"
+        },
+        {
+          "actor": "人工确认闸",
+          "action": "建议规则供人审后生效",
+          "detail": "脚本零路径写 redlines/manifest；确认前规则不自动生效。"
+        }
+      ],
+      "evidence": [
+        {
+          "label": "episode_pattern_mine.py 源码",
+          "path": "scripts/episode_pattern_mine.py"
+        },
+        {
+          "label": "M33 · 失败案例→失败模式库",
+          "path": "docs/discussions/agent-host-current-architecture/modules/M33_failure-patterns.md"
+        }
+      ]
+    }
+  ],
   "docs_index": [
     {
       "path": "docs/discussions/2026-09-24_agent-host_current_architecture_v1_zh.md",
