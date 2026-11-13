@@ -7,7 +7,7 @@ source: 11_flow_sync_to_chat.graph.yaml
 
 # Sync 数据到 Chat 上下文流程
 
-GHA sender 组装 SyncPayload，经 admin sync 导入 repo/issue/PR/graph，再被只读接口和 Chat 上下文加载消费
+GHA sender 组装 SyncPayload，经 admin sync 导入 repo/issue/PR/graph，再被只读接口和 Chat 上下文加载消费。（**退役注记 · P0' T2a · 2026-11-13**：chat 计算栈已删除，本图仅作历史拓扑存档；数据只读接口与 lg-rag 主线不受影响。）
 
 ## Mermaid
 

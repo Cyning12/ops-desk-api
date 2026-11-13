@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from unittest.mock import MagicMock
 
 import httpx
 import pytest
@@ -147,108 +146,6 @@ def test_rerank_chunks_load_failure_falls_back():
 
     out = rerank_chunks("q", cands, top_n=5, score_fn=boom)
     assert [c.id for c in out] == [1, 2, 3, 4, 5]
-
-
-@pytest.mark.asyncio
-async def test_retrieve_node_disabled_does_not_call_rerank(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.delenv("RAG_RERANK_ENABLED", raising=False)
-    from app.ops.chat import rag_nodes
-
-    fake_chunks = [_chunk(i) for i in range(1, 6)]
-    monkeypatch.setattr(
-        rag_nodes,
-        "_get_embedder",
-        lambda: MagicMock(embed=MagicMock(return_value=[[0.1] * 8])),
-    )
-
-    class _CM:
-        async def __aenter__(self):
-            return MagicMock()
-
-        async def __aexit__(self, *args):
-            return None
-
-    monkeypatch.setattr(rag_nodes, "AsyncSessionLocal", lambda: _CM())
-    hybrid = MagicMock()
-
-    async def _hybrid(*args, **kwargs):
-        hybrid(*args, **kwargs)
-        return fake_chunks
-
-    monkeypatch.setattr(rag_nodes, "hybrid_recall", _hybrid)
-    monkeypatch.setattr(rag_nodes, "update_current_span_metadata", lambda *_a, **_k: None)
-
-    called = {"n": 0}
-
-    def _should_not(*_a, **_k):
-        called["n"] += 1
-        raise AssertionError("rerank_chunks must not be called when disabled")
-
-    monkeypatch.setattr(rag_nodes, "rerank_chunks", _should_not)
-
-    http_calls = {"n": 0}
-
-    def _no_http(*_a, **_k):
-        http_calls["n"] += 1
-        raise AssertionError("must not POST /rerank when RAG_RERANK_ENABLED=false")
-
-    ce_calls = {"n": 0}
-
-    def _no_ce(*_a, **_k):
-        ce_calls["n"] += 1
-        raise AssertionError("must not load CrossEncoder when RAG_RERANK_ENABLED=false")
-
-    monkeypatch.setattr(reranker_mod.httpx, "post", _no_http)
-    monkeypatch.setattr(reranker_mod, "_load_cross_encoder", _no_ce)
-
-    result = await rag_nodes.retrieve_node({"query": "hello"})
-    assert called["n"] == 0
-    assert http_calls["n"] == 0
-    assert ce_calls["n"] == 0
-    assert [c.id for c in result["retrieved"]] == [1, 2, 3, 4, 5]
-    assert hybrid.call_args.kwargs.get("k_each") == 10
-    assert hybrid.call_args.kwargs.get("top_n") == 5
-
-
-@pytest.mark.asyncio
-async def test_retrieve_node_enabled_reranks(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setenv("RAG_RERANK_ENABLED", "true")
-    from app.ops.chat import rag_nodes
-
-    coarse = [_chunk(i) for i in range(1, 8)]
-    monkeypatch.setattr(
-        rag_nodes,
-        "_get_embedder",
-        lambda: MagicMock(embed=MagicMock(return_value=[[0.1] * 8])),
-    )
-
-    class _CM:
-        async def __aenter__(self):
-            return MagicMock()
-
-        async def __aexit__(self, *args):
-            return None
-
-    monkeypatch.setattr(rag_nodes, "AsyncSessionLocal", lambda: _CM())
-
-    async def _hybrid(*_a, **kwargs):
-        assert kwargs.get("k_each") == 20
-        assert kwargs.get("top_n") == 20
-        return coarse
-
-    monkeypatch.setattr(rag_nodes, "hybrid_recall", _hybrid)
-    monkeypatch.setattr(rag_nodes, "update_current_span_metadata", lambda *_a, **_k: None)
-
-    def fake_rerank(query, cands, top_n=5, **_k):
-        assert query == "hello"
-        assert len(cands) == 7
-        return list(reversed(list(cands)))[:top_n]
-
-    monkeypatch.setattr(rag_nodes, "rerank_chunks", fake_rerank)
-
-    result = await rag_nodes.retrieve_node({"query": "hello"})
-    assert [c.id for c in result["retrieved"]] == [7, 6, 5, 4, 3]
-    assert result["events"][0]["payload"]["rerank_enabled"] is True
 
 
 def _forbid_cross_encoder(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:

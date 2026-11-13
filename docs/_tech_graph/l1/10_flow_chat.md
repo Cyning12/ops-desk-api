@@ -7,7 +7,7 @@ source: 10_flow_chat.graph.yaml
 
 # Chat 流式对话流程（legacy · 非主线 · 非默认读）
 
-用户通过 SSE 与后端对话的完整流程：HTTP 入口、LangGraph StateGraph 执行（含 RAG 检索链）、LLM 调用、事件归档。deprecated（T6 · 2026-08-31）：POST /api/ops/chat/stream 已 410 下线（迁移 POST /api/ops/lg-rag/stream）；节点/边保留作历史拓扑，WS /chat/ws 与 GET /chat/models、GET /chat/sessions/latest 仍在服务。
+用户通过 SSE 与后端对话的完整流程：HTTP 入口、LangGraph StateGraph 执行（含 RAG 检索链）、LLM 调用、事件归档。deprecated（T6 · 2026-08-31）：POST /api/ops/chat/stream 已 410 下线（迁移 POST /api/ops/lg-rag/stream）；节点/边保留作历史拓扑，GET /chat/models、GET /chat/sessions/latest 仍在服务（WS /chat/ws 已于 P0' T1 下线）。**P0' T2a（2026-11-13）**：chat 计算栈代码七件（graph/service/nodes/rag_nodes/state/streaming/sse）已删除，本图仅作历史拓扑存档（graph.yaml 不动 · coverage R4 warn-only）。
 
 ## Mermaid
 
