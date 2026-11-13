@@ -44,3 +44,29 @@ waves:
     banned_prefixes:
       - scripts/
       - alembic/
+  - task_slug: p0prime-t1-ws-shutdown
+    status: active
+    base: "e1dee703"
+    wave_tip: null
+    note: >-
+      HG-AUDIT-R1 签认（用户 2026-11-13「签收，开始」· issue Cyning12/ops-desk-workspace#23
+      R4 裁定 P5：ws.py 直接下线不带闸）。波次面 = WS 传输面下线：摘路由 + 删演示 WS
+      与开关 + 图谱/scripts docstring 同步 + 墓碑测试。禁承载：旧 chat graph/service
+      清除（T2）、alembic 迁移（T3 起）、任何功能增量。
+    allowed_app_files:
+      - app/config.py
+      - app/ops/router.py
+      - app/ops/chat/ws.py
+    allowed_tree_files:
+      - scripts/graph_coverage_check.py
+      - tests/test_chat_ws.py
+      - tests/test_chat_ws_removed.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/reviews/task_p0prime_t1_ws_shutdown_audit_R1_20261113.md
+      - docs/tasks/active/task_p0prime_t1_ws_shutdown.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p0prime-t1-ws-shutdown/
+    banned_prefixes:
+      - scripts/
+      - alembic/

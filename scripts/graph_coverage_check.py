@@ -58,7 +58,6 @@ def _node_candidates(var: str, module: str) -> set[str]:
 
     约定（现行 00_main 节点命名）：
       auth_router→auth · admin_sync_router→admin_sync · chat_router→chat_router
-      chat_ws_router→chat_router（WS 与 SSE 同域并入 chat_router 节点）
     """
     cands = {var}
     if var.endswith("_router"):
