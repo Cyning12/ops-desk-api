@@ -71,9 +71,9 @@ waves:
       - scripts/
       - alembic/
   - task_slug: p0prime-t2-chat-legacy-cleanup
-    status: active
+    status: closed
     base: "77a1102"
-    wave_tip: null
+    wave_tip: "a4266f5"
     note: >-
       HG-AUDIT-R1 签认（用户 2026-11-13「签收，开始」· issue Cyning12/ops-desk-workspace#23
       R4 裁定 A3②）。波次面 = P0' T2a 旧 chat 计算栈纯清除：删 graph/service/nodes/
