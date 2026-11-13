@@ -1,9 +1,9 @@
 # Task：P0' T1 安全收口——下线未鉴权 demo WebSocket 端点
 
-> **状态**：in_progress  
+> **状态**：closed（2026-11-13 · PR [#367](https://github.com/Cyning12/ops-desk-api/pull/367) merge `c557095` · 全量 1900 passed 零红 · registry entry 已转 closed 钉 wave_tip）  
 > **类型**：安全收口/遗留清除  
 > **关联图谱**：`docs/_tech_graph/l1/01_modules.md`（chat 行备注追加 ws 下线）  
-> **落盘**：`docs/tasks/active/task_p0prime_t1_ws_shutdown.md`；验收后 `git mv` → `docs/tasks/done/`  
+> **落盘**：`docs/tasks/done/task_p0prime_t1_ws_shutdown.md`（CLOSE 已迁档）  
 > **来源**：ops-desk-workspace `docs/01-scope/03-general-agent/06-kickoff-readiness.md` 任务卡 T1（issue #23 Round 4 裁定 A3① / P5）
 
 ---
