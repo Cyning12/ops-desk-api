@@ -88,7 +88,8 @@ require_free_port "$AGENT_PORT" "代理侧 API" || exit 1
 require_free_port "$OA_PORT" "mock-oa" || exit 1
 
 # HITL_RESUME_PG=1 ⇒ 开 PG checkpointer，验**真进程里的 PG 恢复路径**
-# （默认关：内存 saver 下恢复必然失败，那条断言验的是"不许假装成功"）
+# （非 PG 档显式导出空值：P0' T3 后 unset 等于默认开，空值才压住成内存 saver；
+#  内存 saver 下恢复必然失败，那条断言验的是"不许假装成功"）
 CKPT_ENV="${LG_RAG_HTTP_CHECKPOINTER:-}"
 if [ "${HITL_RESUME_PG:-0}" = "1" ]; then
   CKPT_ENV=postgres

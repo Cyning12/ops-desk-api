@@ -48,7 +48,7 @@ HITL 触发依赖能力面 + 委派闸 + 持久化六键齐配（缺一则挂起
 | `OPS_HITL_PERSISTENCE=db` | 审批申请落库（§3） | **null = 不落库 · 不可上生产** |
 | `OPS_CAPABILITY_ALLOW_WRITE=1` | 写能力总开关 | 关 |
 
-另需：`LG_RAG_DELEGATION_TOKEN_SECRET`（enforce 模式验签密钥 · 禁入库 · 走 .env）· `LG_RAG_HTTP_CHECKPOINTER=postgres`（**重启后 resume 的前置**——checkpoint 落 PG 才能跨进程恢复；不设则 resume 显式失败 `app/ops/hitl/resume.py:317`）· LLM key（`SILICONFLOW_API_KEY` 等，compose 白名单透传见 `docker-compose.yml:51-73`）。
+另需：`LG_RAG_DELEGATION_TOKEN_SECRET`（enforce 模式验签密钥 · 禁入库 · 走 .env）· `LG_RAG_HTTP_CHECKPOINTER=postgres`（**重启后 resume 的前置**——checkpoint 落 PG 才能跨进程恢复；P0' T3 起默认开，不设即 postgres；显式空值回退内存 saver 则 resume 显式失败 `app/ops/hitl/resume.py:317`）· LLM key（`SILICONFLOW_API_KEY` 等，compose 白名单透传见 `docker-compose.yml:51-73`）。
 
 **坑位预警**：env 只在**启动瞬间**生效——export 与起栈必须同一 shell；改 env 须重启容器/进程（§4 坑位 4）。
 

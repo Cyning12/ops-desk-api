@@ -99,9 +99,10 @@ def _quiet_envs(monkeypatch: pytest.MonkeyPatch) -> None:
         "MEMORY_FACTS_VECTOR_RECALL_ENABLED",
         "MEMORY_EPISODES_ENABLED",
         "SESSION_SUMMARY_ENABLED",
-        "LG_RAG_HTTP_CHECKPOINTER",
     ):
         monkeypatch.delenv(name, raising=False)
+    # P0' T3：checkpointer unset 现在等于默认开 postgres，必须显式置空值关闭
+    monkeypatch.setenv("LG_RAG_HTTP_CHECKPOINTER", "")
 
 
 class _FakeProvider(BaseProvider):

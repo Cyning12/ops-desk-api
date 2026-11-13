@@ -24,8 +24,9 @@ HITL：``observe_node`` 里 ``interrupt()`` 挂起时，astream 会吐一个
 ``{"__interrupt__": [...]}`` 块。这里必须**翻译成一帧 hitl.waiting + 一帧
 done(status=waiting_approval)** 再收流——否则前端看到的就是"流莫名其妙断了"，
 而真实情况是"在等人批"。PG checkpointer 由 RunWorker 按
-``LG_RAG_HTTP_CHECKPOINTER=postgres`` 打开，且**整个 worker 生命周期持有**：
-图挂起后进程内什么都不剩，下次请求能恢复全靠 checkpoint 已落盘。
+use_postgres_checkpointer()（P0' T3 起默认开，env 显式关闭可回退）打开，
+且**整个 worker 生命周期持有**：图挂起后进程内什么都不剩，
+下次请求能恢复全靠 checkpoint 已落盘。
 """
 
 from __future__ import annotations

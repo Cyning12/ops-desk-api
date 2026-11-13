@@ -319,6 +319,18 @@ def _reset_llm_circuit():
     llm_circuit.reset()
 
 
+@pytest.fixture(autouse=True)
+def _pg_checkpointer_explicit_off_in_tests(monkeypatch: pytest.MonkeyPatch):
+    """P0' T3：``LG_RAG_HTTP_CHECKPOINTER`` 默认已翻开（unset = postgres）。
+
+    测试面统一显式压回 off（空值），否则干净环境（无 PG）下所有走
+    lg-rag HTTP/SSE 的用例都会真去连 PG 建 saver。要验 PG 路径或
+    「默认开」语义的用例在测试体内自行 setenv/delenv 覆盖
+    （monkeypatch 后写覆盖先写，fixture 先执行 ⇒ 覆盖生效）。
+    """
+    monkeypatch.setenv("LG_RAG_HTTP_CHECKPOINTER", "")
+
+
 @pytest.fixture
 async def clean_sync_data():
     """Remove all synced repos and cascading children before a test.

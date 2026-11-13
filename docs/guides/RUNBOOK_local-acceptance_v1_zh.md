@@ -92,7 +92,7 @@ cd /Users/cyning/Desktop/Ops-desk/ops-desk-api
 | `OPS_CAPABILITY_EXTRA_MANIFESTS` | 指向 `oa.readonly.v1.yaml` | **默认只加载 builtin 的 5 个 local_fn**；不显式列出，OA 三个能力不进注册表 |
 | `OPS_CAP_CRED_OA_GATEWAY_TOKEN` | `local-dev-token` | 清单只写**凭证名**，值在这里；缺 ⇒ 该能力恒 `permission_denied` |
 | `OA_BASE` | `http://127.0.0.1:18080` | 清单里写的是 `base_url: OA_BASE`；缺 ⇒ `upstream_error: 未配置 base_url 环境变量: OA_BASE` |
-| `LG_RAG_HTTP_CHECKPOINTER` | `postgres` | 空 ⇒ 内存 saver ⇒ 跨请求恢复**不可能成立**（恢复端点会 503） |
+| `LG_RAG_HTTP_CHECKPOINTER` | `postgres` | **P0' T3 起默认开**（不设即 postgres）；显式空/off ⇒ 内存 saver ⇒ 跨请求恢复**不可能成立**（恢复端点 503 fail-closed） |
 | `OPS_CHAT_TRACER` | `langfuse` | **手工起服务会真往外发 trace**；跑验收脚本时脚本会把它置空（见下） |
 
 > **两个必须知道的机制**（都实测确认过）：
