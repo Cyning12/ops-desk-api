@@ -27,7 +27,7 @@
 | `OPS_GRAPH_JSON_PATH` | infra | `—（代码/动态）` |  |
 | `OPS_SCAN_INDEX_PATH` | infra | `—（代码/动态）` |  |
 | `OPS_SYNC_REPO` | infra | `—（代码/动态）` |  |
-| `LG_RAG_HTTP_CHECKPOINTER` | lg_rag | `—（代码/动态）` |  |
+| `LG_RAG_HTTP_CHECKPOINTER` | lg_rag | `postgres（P0' T3 默认翻开）` | unset=postgres · 显式空值/off=内存 saver 回退口 |
 | `LG_RAG_MAX_RETRIES` | lg_rag | `—（代码/动态）` |  |
 | `LG_RAG_REACT_SATISFACTION` | lg_rag | `—（代码/动态）` |  |
 | `LG_RAG_ROUTER_MODEL` | lg_rag | `—（代码/动态）` |  |

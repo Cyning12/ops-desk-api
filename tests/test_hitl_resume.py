@@ -275,7 +275,8 @@ async def test_resume_without_pg_checkpointer_fails_closed(monkeypatch):
     内存 saver 是每请求新建的，跨请求恢复必然找不到挂起点。
     这里返回成功的话，人看到"恢复成功"却什么都没发生 —— 比报错难查得多。
     """
-    monkeypatch.delenv("LG_RAG_HTTP_CHECKPOINTER", raising=False)
+    # P0' T3 后必须显式置空值（unset 现在等于默认开 postgres）
+    monkeypatch.setenv("LG_RAG_HTTP_CHECKPOINTER", "")
     with pytest.raises(ResumeError) as exc:
         await resume_hitl_run(thread_id="t-nopg", approved=[_T1])
     assert exc.value.code == "checkpointer_not_configured"

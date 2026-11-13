@@ -23,7 +23,8 @@ def _no_pg_checkpointer_by_default(monkeypatch):
     PG 没起就挂、跑得慢，而且"没传 checkpointer"这类**对照断言**会被环境悄悄翻掉。
     要验 PG 路径的用例自己 ``monkeypatch.setenv`` 覆盖（它在本 fixture 之后执行）。
     """
-    monkeypatch.delenv("LG_RAG_HTTP_CHECKPOINTER", raising=False)
+    # P0' T3：delenv 已不够 —— unset 现在等于「默认开」，必须显式置空值
+    monkeypatch.setenv("LG_RAG_HTTP_CHECKPOINTER", "")
 
 
 async def _fake_supervisor_stream(

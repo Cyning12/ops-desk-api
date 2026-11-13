@@ -8,9 +8,9 @@ freeze：
 {ok,data} 外壳、cookie 鉴权、异常 500 外壳、flush_traces 体例对齐
 lc_evidence_chain/router.py 先例。
 
-Checkpointer：默认不传（入口默认 InMemorySaver，进程内同 thread_id 续写）；
-env LG_RAG_HTTP_CHECKPOINTER=postgres 时走 apostgres_saver(setup=True)
-（每请求构建，幂等建表；生产默认不开）。
+Checkpointer：P0' T3 起**默认开**——env LG_RAG_HTTP_CHECKPOINTER 未设即
+postgres，走 apostgres_saver(setup=True)（每请求构建，幂等建表）；
+显式空值/其他值回退 InMemorySaver（进程内同 thread_id 续写）。
 **stream 与 invoke 读同一把闸**（checkpointer.use_postgres_checkpointer）：
 supervisor 图会在 observe 里被 interrupt() 挂起等人审批，那一刻进程内什么都不
 推进了，"这次 run 停在哪个 checkpoint"必须已落盘，否则下一个请求（人点批准）

@@ -36,8 +36,9 @@ def _no_pg_checkpointer_by_default(monkeypatch):
 
     ``LG_RAG_HTTP_CHECKPOINTER=postgres`` 会让 supervisor 模式的 SSE 真去开
     PG saver（连库 + 建表）⇒ 测试依赖外部环境、变慢，对照断言还会被翻掉。
+    P0' T3 后必须显式置空值（delenv 会吃到「unset=默认开」）。
     """
-    monkeypatch.delenv("LG_RAG_HTTP_CHECKPOINTER", raising=False)
+    monkeypatch.setenv("LG_RAG_HTTP_CHECKPOINTER", "")
 
 
 _STREAM = "/api/ops/lg-rag/stream"

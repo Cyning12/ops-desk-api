@@ -35,8 +35,9 @@ def _no_pg_checkpointer_by_default(monkeypatch):
 
     要验 PG 路径的用例自己 ``monkeypatch.setenv`` 覆盖 —— 它在本 fixture
     之后执行，所以能生效。
+    P0' T3 后必须显式置空值（delenv 会吃到「unset=默认开」）。
     """
-    monkeypatch.delenv("LG_RAG_HTTP_CHECKPOINTER", raising=False)
+    monkeypatch.setenv("LG_RAG_HTTP_CHECKPOINTER", "")
 
 
 _INTERRUPT_PAYLOAD = {
@@ -259,10 +260,12 @@ async def test_sse_holds_pg_saver_for_the_whole_stream(monkeypatch):
     assert seen.get("checkpointer") is sentinel
 
 
-async def test_sse_does_not_open_pg_saver_by_default(monkeypatch):
-    """反向对照：默认不开 —— 每请求建 saver 有成本，且内存 saver 已够
-    支撑"同进程续写"。"""
-    monkeypatch.delenv("LG_RAG_HTTP_CHECKPOINTER", raising=False)
+async def test_sse_does_not_open_pg_saver_when_explicitly_off(monkeypatch):
+    """反向对照：显式关（空值回退口）⇒ 不开 PG saver。
+
+    P0' T3 起默认开（unset=postgres），此用例验的是**回退口有效**：
+    空值明确落回内存 saver。"""
+    monkeypatch.setenv("LG_RAG_HTTP_CHECKPOINTER", "")
     opened = {"n": 0}
 
     @asynccontextmanager

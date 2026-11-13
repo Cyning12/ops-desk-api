@@ -30,12 +30,21 @@ CHECKPOINTER_ENV = "LG_RAG_HTTP_CHECKPOINTER"
 def use_postgres_checkpointer() -> bool:
     """是否启用 PG checkpointer。
 
-    为什么默认关：每请求建 saver 有成本，而 InMemorySaver 已经够支撑
-    "同进程同 thread_id 续写"。**默认关不等于可以忘记** ——
-    跨请求恢复（HITL 批准后续跑）在内存 saver 下**根本不可能**，
-    所以恢复入口会把"没开这个开关"当成显式失败报出来，而不是假装恢复成功。
+    P0' T3（2026-11-13 · R4 裁定 P2）起**默认翻开**：未设此 env ⇒ 开（postgres）。
+    显式回退口：`postgres` 以外任意值（含空串）= 关。这是个开关，
+    不是多后端选择器——别加第二种持久化后端的值。纯 env 翻转，无 DDL；
+    存量 run 无 checkpoint 属预期，跨请求恢复（HITL 批准后续跑）在
+    内存 saver 下**根本不可能**，所以恢复入口会把"没开这个开关"当成
+    显式失败报出来，而不是假装恢复成功（fail-closed 保留，见 hitl/resume.py）。
+
+    以前默认关的理由：每请求建 saver 有成本，而 InMemorySaver 够支撑
+    "同进程同 thread_id 续写"。翻开理由：HITL 跨请求恢复必须可用，
+    未开闸的「能批准不能执行」是假安全感。
     """
-    return os.getenv(CHECKPOINTER_ENV, "").strip().lower() == "postgres"
+    raw = os.getenv(CHECKPOINTER_ENV)
+    if raw is None:
+        return True
+    return raw.strip().lower() == "postgres"
 
 
 def _psycopg_dsn() -> str:

@@ -28,7 +28,9 @@ ADMIN = "Bearer admintok"
 OA_BEARER = "Bearer local-dev-token"
 
 # 开了 PG checkpointer 时，恢复走的是真 PG 路径（由 .sh 的 HITL_RESUME_PG=1 打开）
-_PG_CHECKPOINTER = os.environ.get("LG_RAG_HTTP_CHECKPOINTER", "").strip().lower() == "postgres"
+# P0' T3 起服务端默认开（unset=postgres）；.sh 非 PG 档会显式导出空值压住
+_raw_ckpt = os.environ.get("LG_RAG_HTTP_CHECKPOINTER")
+_PG_CHECKPOINTER = _raw_ckpt is None or _raw_ckpt.strip().lower() == "postgres"
 
 # 出口代理会把打 127.0.0.1 的请求送到代理去（返回看不懂的 502）
 OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))

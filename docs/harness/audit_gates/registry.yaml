@@ -115,3 +115,41 @@ waves:
     banned_prefixes:
       - scripts/
       - alembic/
+  - task_slug: p0prime-t3-checkpointer-default-on
+    status: active
+    base: "ee1941f"
+    wave_tip: ""
+    note: >-
+      HG-AUDIT-R1 签认（用户 2026-11-13「签收，开始」· issue Cyning12/ops-desk-workspace#23
+      R4 裁定 P2 · 卡 T3）。波次面 = LG_RAG_HTTP_CHECKPOINTER 默认翻开（unset=postgres ·
+      显式空值/其他值=内存 saver 回退口）：checkpointer.py 翻转 + router/sse_stream
+      docstring 同步；测试面 conftest autouse 统一压回 off + 5 站点 delenv→setenv 手术 +
+      sse_hitl 反向对照语义反转改写 + 新真值表单测；scripts/acceptance 两件脚本对齐新
+      真值表（.sh 恒 export 空值语义不变）；.env.example 与三份 guides 注记。
+      禁承载：alembic/、任何新表/迁移、生产灰度动作（灰度三步 2/3 属运营侧另行执行）。
+    allowed_app_files:
+      - app/ops/lg_rag/checkpointer.py
+      - app/ops/lg_rag/router.py
+      - app/ops/lg_rag/sse_stream.py
+    allowed_tree_files:
+      - tests/conftest.py
+      - tests/test_lg_rag_checkpointer.py
+      - tests/test_lg_rag_sse_stream.py
+      - tests/test_lg_rag_sse_token_stream.py
+      - tests/test_lg_rag_sse_hitl.py
+      - tests/test_hitl_resume.py
+      - tests/test_lg_rag_query_rewrite.py
+      - scripts/acceptance/hitl_approval_loop.py
+      - scripts/acceptance/hitl_approval_loop.sh
+      - .env.example
+      - docs/guides/GUIDE_env_inventory_v1.md
+      - docs/guides/RUNBOOK_local-acceptance_v1_zh.md
+      - docs/guides/RUNBOOK_hitl_ops_v1_zh.md
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/reviews/task_p0prime_t3_checkpointer_default_on_audit_R1_20261113.md
+      - docs/tasks/active/task_p0prime_t3_checkpointer_default_on.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p0prime-t3-checkpointer-default-on/
+    banned_prefixes:
+      - alembic/
