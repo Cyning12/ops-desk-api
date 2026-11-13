@@ -35,7 +35,6 @@ if str(ROOT) not in sys.path:
 
 from app.db.session import AsyncSessionLocal  # noqa: E402
 from app.llm.factory import get_llm_provider  # noqa: E402
-from app.ops.chat.rag_nodes import GRADER_MODEL, GRADER_PROVIDER  # noqa: E402
 from app.ops.rag.embedder import Embedder, get_query_embedder  # noqa: E402
 from app.ops.rag.grader import decide, grade_chunks, grader_prompt_version  # noqa: E402
 from app.ops.rag.reranker import (  # noqa: E402
@@ -47,6 +46,10 @@ from app.ops.rag.reranker import (  # noqa: E402
     rerank_score_ratio,
 )
 from app.ops.rag.retrieve import RetrievedChunk, hybrid_recall_detail  # noqa: E402
+
+# P0' T2a：app/ops/chat/rag_nodes 已删除，GRADER 默认值内联承接（语义逐字保持）
+GRADER_PROVIDER = os.getenv("RAG_GRADER_PROVIDER", "siliconflow")
+GRADER_MODEL = os.getenv("RAG_GRADER_MODEL", "Qwen/Qwen3.6-27B")
 
 DEFAULT_QUERIES = Path(__file__).resolve().parent / "queries_v1.yaml"
 DEFAULT_DENYLIST = Path(__file__).resolve().parent / "hygiene_denylist.yaml"

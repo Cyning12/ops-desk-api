@@ -159,35 +159,6 @@ def test_get_query_embedder_local_uses_stub(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.asyncio
-async def test_rag_nodes_wiring_uses_factory(monkeypatch: pytest.MonkeyPatch):
-    from app.ops.chat import rag_nodes
-
-    fake = MagicMock()
-    fake.embed = MagicMock(return_value=[[0.1] * 8])
-    monkeypatch.setattr(rag_nodes, "_get_embedder", lambda: fake)
-
-    class _CM:
-        async def __aenter__(self):
-            return MagicMock()
-
-        async def __aexit__(self, *args):
-            return None
-
-    monkeypatch.setattr(rag_nodes, "AsyncSessionLocal", lambda: _CM())
-
-    async def _hybrid(*_a, **_k):
-        return []
-
-    monkeypatch.setattr(rag_nodes, "hybrid_recall", _hybrid)
-    monkeypatch.setattr(rag_nodes, "update_current_span_metadata", lambda *_a, **_k: None)
-    monkeypatch.setattr(rag_nodes, "rerank_enabled", lambda: False)
-
-    result = await rag_nodes.retrieve_node({"query": "hello"})
-    fake.embed.assert_called_once_with(["hello"])
-    assert result["retrieved"] == []
-
-
-@pytest.mark.asyncio
 async def test_lc_retrieve_wiring_uses_factory(monkeypatch: pytest.MonkeyPatch):
     from app.ops.lc_evidence_chain import retrieve as retrieve_mod
 

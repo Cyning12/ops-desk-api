@@ -70,3 +70,48 @@ waves:
     banned_prefixes:
       - scripts/
       - alembic/
+  - task_slug: p0prime-t2-chat-legacy-cleanup
+    status: active
+    base: "77a1102"
+    wave_tip: null
+    note: >-
+      HG-AUDIT-R1 签认（用户 2026-11-13「签收，开始」· issue Cyning12/ops-desk-workspace#23
+      R4 裁定 A3②）。波次面 = P0' T2a 旧 chat 计算栈纯清除：删 graph/service/nodes/
+      rag_nodes/state/streaming/sse 七件 + 死测试 3 整件 + 手术 5 件（1 改写承接 lg-rag
+      answer_stream）+ 死冒烟脚本 2 + docstring/图谱注记同步。范围裁定拆 T2a/T2b：
+      drop 三表与端点 410 化归 T2b（web 活依赖 /chat/sessions/latest 前置）。禁承载：
+      chat/router.py、chat/schema.py、app/db/models.py、alembic/、任何功能增量。
+    allowed_app_files:
+      - app/ops/chat/graph.py
+      - app/ops/chat/service.py
+      - app/ops/chat/nodes.py
+      - app/ops/chat/rag_nodes.py
+      - app/ops/chat/state.py
+      - app/ops/chat/streaming.py
+      - app/ops/chat/sse.py
+      - app/ops/chat/__init__.py
+      - app/ops/lg_rag/__init__.py
+      - app/llm/usage.py
+    allowed_tree_files:
+      - tests/test_chat_nodes.py
+      - tests/test_chat_service.py
+      - tests/test_rag_nodes.py
+      - tests/test_llm_retry.py
+      - tests/test_llm_routing.py
+      - tests/test_llm_usage.py
+      - tests/test_rag_embedder.py
+      - tests/test_rag_reranker.py
+      - scripts/rag_smoke.py
+      - scripts/trace_smoke.py
+      - evals/golden/run_eval.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/_tech_graph/l1/10_flow_chat.md
+      - docs/_tech_graph/l1/11_flow_sync_to_chat.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/reviews/task_p0prime_t2_chat_legacy_cleanup_audit_R1_20261113.md
+      - docs/tasks/active/task_p0prime_t2_chat_legacy_cleanup.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p0prime-t2-chat-legacy-cleanup/
+    banned_prefixes:
+      - scripts/
+      - alembic/

@@ -1,4 +1,4 @@
-"""LangGraph 旁路：Evidence Chain 封装为单 Agent（默认不挂 chat/graph）。
+"""LangGraph 主线：Evidence Chain 封装为单 Agent（旧 chat/graph 已于 P0' T2a 清除）。
 
 Phase 1 basic（START→rag→END）、Phase 2 router（三路分流）与
 Phase 4 supervisor（多智能体协作）三图并存；basic 保留作回归对照与回滚。

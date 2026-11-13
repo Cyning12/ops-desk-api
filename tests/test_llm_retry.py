@@ -154,46 +154,48 @@ class TestRetryableBackoff:
 
 class TestStreamRetryDiscipline:
     async def test_no_retry_after_first_content_chunk(self, monkeypatch, retry_delays):
-        """已吐首 content chunk 后出错：零重试，已吐正文不重复不拼接。"""
-        from app.llm.providers.base import BaseProviderImpl
-        from app.ops.chat.nodes import answer_node
-        from app.ops.chat.state import ChatState
+        """已吐首 content chunk 后出错：零重试，已吐 delta 保留，降级整段 complete。
 
-        calls = 0
+        P0' T2a：旧 chat answer_node 已删除，「流式中途失败零重试」纪律由
+        lg-rag complete_answer_streaming（app/ops/lg_rag/answer_stream.py）承接。
+        """
+        from app.llm.providers.base import BaseProviderImpl
+        from app.ops.lg_rag import answer_stream
+
+        stream_calls = 0
+        complete_calls = 0
+        deltas: list[str] = []
 
         class _StreamThenFail(BaseProviderImpl):
             async def complete_stream(self, messages, model=None):
-                nonlocal calls
-                calls += 1
+                nonlocal stream_calls
+                stream_calls += 1
                 yield LlmChunk(content="Hello")
                 raise LlmProviderError("mid-stream boom", retryable=True)
 
-        monkeypatch.setattr("app.ops.chat.nodes.get_llm_provider", lambda: _StreamThenFail())
-        monkeypatch.setattr("app.ops.chat.nodes.settings.ops_llm_model", "test-model")
+            async def complete(self, messages, model=None):
+                nonlocal complete_calls
+                complete_calls += 1
+                return "Hello world"
 
-        state = ChatState(
-            query="hi",
-            session_id=None,
-            run_id="run-stream-1",
-            model=None,
-            issue_context=[],
-            pr_context=[],
-            graph_context=None,
-            intent="",
-            answer="",
-            history_turns=[],
-            events=[],
-        )
-        result = await answer_node(state)
+        async def _sink(node, text):
+            deltas.append(text)
 
-        assert calls == 1  # 零重试（已吐首 chunk）
+        handle = answer_stream.set_answer_token_sink(_sink)
+        try:
+            result = await answer_stream.complete_answer_streaming(
+                _StreamThenFail(),
+                [LlmMessage(role="user", content="hi")],
+                node="aggregator",
+            )
+        finally:
+            answer_stream.reset_answer_token_sink(handle)
+
+        assert stream_calls == 1  # 零重试（已吐首 chunk）
         assert retry_delays == []
-        assert result["answer"] == "Hello"  # 已吐正文不重复
-        answer_events = [e for e in result["events"] if e["event_type"] == "answer"]
-        assert len(answer_events) == 1
-        err = result["events"][-1]
-        assert err["event_type"] == "error"
-        assert err["payload"]["retryable"] is True
+        assert deltas == ["Hello"]  # 已吐 delta 保留不重复
+        assert complete_calls == 1  # 降级整段 complete
+        assert result == "Hello world"
 
     async def test_retry_only_before_first_chunk(self, monkeypatch, retry_delays):
         """首 chunk 前的失败可重试：第二次尝试成功后正文只出自成功流。"""

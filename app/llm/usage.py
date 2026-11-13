@@ -2,7 +2,7 @@
 
 纪律（task 钉死契约）：
 - run 上下文（run_id / surface / task_type）经 **ContextVar** 由入口点注入
-  （chat streaming / lg_rag router / memory 抽取 / chat 节点声明 task_type）；
+  （lg_rag router / memory 抽取 / 各终答与结构化节点声明 task_type；
   provider 层在见到 usage 末帧的同一钩点消费——**不改 complete/complete_stream 签名**。
 - **tracing 关也落表**（不依赖 Langfuse）；无 usage 末帧 → 无行，**不写 0 假账**
   （provider 包装层只在真见到 usage chunk 时才调本模块）。
