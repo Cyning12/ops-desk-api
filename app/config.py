@@ -46,9 +46,6 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
-    # Chat WebSocket transport (unauthenticated demo; must be false in production)
-    ops_chat_ws_enabled: bool = True
-
     # Capability · 真 MCP client（U3；默认关，禁止 CI 外网）
     ops_capability_mcp_enabled: bool = False
     ops_capability_mcp_endpoint: str | None = None
