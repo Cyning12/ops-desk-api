@@ -45,9 +45,9 @@ waves:
       - scripts/
       - alembic/
   - task_slug: p0prime-t1-ws-shutdown
-    status: active
+    status: closed
     base: "e1dee703"
-    wave_tip: null
+    wave_tip: "c557095"
     note: >-
       HG-AUDIT-R1 签认（用户 2026-11-13「签收，开始」· issue Cyning12/ops-desk-workspace#23
       R4 裁定 P5：ws.py 直接下线不带闸）。波次面 = WS 传输面下线：摘路由 + 删演示 WS
