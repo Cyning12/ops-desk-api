@@ -1,6 +1,6 @@
 # Task：P0' T2a 旧 chat 计算栈清除——图/服务/节点/状态/流式 + 死测试 + 死冒烟脚本
 
-> **状态**：in_progress  
+> **状态**：closed（2026-11-13 · PR [#369](https://github.com/Cyning12/ops-desk-api/pull/369) merge `a4266f55` · 干净 worktree 全量 1869 passed 零红 · registry entry 已转 closed 钉 wave_tip）  
 > **类型**：遗留清除  
 > **关联图谱**：`docs/_tech_graph/l1/01_modules.md`（chat 行备注追加 T2a 清除记录 + 概念表 ChatState/SseEvent 行标注）  
 > **落盘**：`docs/tasks/active/task_p0prime_t2_chat_legacy_cleanup.md`；验收后 `git mv` → `docs/tasks/done/`  
@@ -176,7 +176,10 @@
 
 | 项 | 状态 | 备注 |
 |----|------|------|
-| （待回填） | | |
+| 计算栈七件删除 | done | graph/service/nodes/rag_nodes/state/streaming/sse；__init__.py 墓碑注记 |
+| 测试手术 | done | 3 整件删 + 5 件手术；stream 纪律改写承接 lg-rag complete_answer_streaming（1869 全绿） |
+| evals 遗漏补救 | done | 30 自查发现 evals/golden/run_eval.py 仍 import chat/rag_nodes（GRADER 常量）→ 内联承接 + I001 修正；范围/registry 同步扩 1 文件 |
+| 图谱/registry | done | 01_modules 备注+签收行 · 10/11 flow 退役注记 · N3 entry closed 钉 wave_tip |
 
 ---
 
@@ -193,7 +196,7 @@
 
 ### 自检结论（执行者）
 
-（回填）
+（30/40 · 2026-11-13）范围 24 文件（+evals/run_eval.py 补救）· 验收 8 条全过：grep 零 ChatState/旧模块引用（app/tests/scripts/evals 全域）· test_chat_router.py 全绿（三端点零漂移）· 干净 worktree 全量 1869 passed / 205 skipped / 0 failed · ruff 全绿 · graph-compile 通过 · spec-wave lint PASS · PR #369 CI 全绿合并。主仓 .env 致 test_chat_history_api 单件红（localhost:5432 拒连）经 baseline 对照证实为环境残留非 diff 引入。
 
 ---
 
@@ -205,7 +208,9 @@
 
 ### 经验总结
 
-（关账必填）
+1. **残留 grep 必须全仓全域**：首版只扫 app/tests/scripts，漏 evals/golden/run_eval.py（collection ImportError）——教训：删模块后 grep 范围 = 全仓（仅 docs 排除）。
+2. 常量内联承接优于新建模块家：GRADER_MODEL/GRADER_PROVIDER 仅两常量被 eval 消费，内联逐字保持语义，零新面。
+3. 承 T1 工作流：提交先行 + 干净 worktree（无 .env/无在途面）全量 pytest 是 N3 闸与本地污染的最稳解。
 
 ---
 
