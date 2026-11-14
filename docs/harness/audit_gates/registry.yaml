@@ -265,3 +265,25 @@ waves:
     allowed_tree_prefixes:
       - docs/harness/invokes/by-task/p0prime-t2b-chat-cleanup/
     banned_prefixes: []
+  - task_slug: fix-ta2-hitl-ttl-db-store
+    status: active
+    base: "510516c"
+    note: >-
+      ta2 修复（维护者 m00177「签收，开始」· P0' 偏差登记衍生）：纯测试口径修复——
+      ta2 stale 半拨回 SQL now() 走 server TZ（Asia/Shanghai）与 decided_at
+      naive-UTC 列约定不符（实证 SHOW TimeZone），改 now() AT TIME ZONE 'UTC'。
+      另附同文件测试卫生：三处 Db store 用例 finally 补 reset_hitl_store()
+      （进程全局态泄漏致 -k hitl 联合跑 ta4 红 · 实证复位后稳定 231 passed）。
+      app 零改动。禁承载：HITL 契约/语义、闸参数、列类型改造。
+    allowed_app_files: []
+    allowed_tree_files:
+      - tests/test_hitl_approval_consumption.py
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/reviews/task_fix_ta2_hitl_ttl_db_store_audit_R1_20261114.md
+      - docs/tasks/active/task_fix_ta2_hitl_ttl_db_store.md
+      - docs/tasks/draft_task_fix_ta2_hitl_ttl_db_store.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/fix-ta2-hitl-ttl-db-store/
+    banned_prefixes:
+      - app/
+      - alembic/
