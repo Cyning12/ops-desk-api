@@ -185,9 +185,9 @@ waves:
       - docs/harness/invokes/by-task/p0prime-t4-run-entity/
     banned_prefixes: []
   - task_slug: p0prime-t5-goals-ddl
-    status: active
+    status: closed
     base: "fee74fa"
-    wave_tip: ""
+    wave_tip: "df3177b"
     note: >-
       P0' T5 goal 落表仅 DDL（维护者 m00177「签收，开始」· issue #23 R4 裁定 A2 ·
       图零改动落图为外状态）：新建 ops_goals（goal_id UUID PK 默认 uuid4 ·
