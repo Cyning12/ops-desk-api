@@ -3,13 +3,13 @@
 > 上游 SPEC：`docs/spec/session-summary-fallback/SPEC-session-summary-fallback_v1.md`（signed · 2026-09-22）
 > 设计纪律：**结构由纯函数 `compress_window` 定（零改动），本模块只做占位条内容替换**；
 > **回退铁律是上线前提**——回退 = 关开关（零代码零迁移 · env 重读即时生效 · 进程内无状态）；
-> 原文 SoT（`ops_lg_rag_turns` / `ops_runs`）零写入，摘要与原文**物理分表**。
+> 原文 SoT（`ops_lg_rag_turns`；旧 `ops_runs` 已于 P0' T2b drop）零写入，摘要与原文**物理分表**。
 
 ## 模块职责
 
 | 文件 | 职责 |
 |------|------|
-| `history.py` | `load_session_turns`：chat 轨历史面（`ops_runs` 最近 20 条）；**实扫 app 内无生产调用方**，原文保留现状零改动 |
+| ~~`history.py`~~ | **已删除（P0' T2b · 2026-11-14）**：`load_session_turns` chat 轨历史面随 `ops_runs` 表 drop 一并清除（实扫零生产调用方） |
 | `sse_replay.py` | SSE replay 纯函数（replay_events / cursor / payload 契约） |
 | `summary.py` | **会话真摘要（L1 懒生成 + C1 独立表缓存）**：`summarize_placeholders(compressed, *, thread_id, ...)` 把 `compress_window` 产物中的占位条（`[历史摘要 · N 轮 · roles=...]`）逐条替换为真摘要条；逐占位 chunk 查缓存 → miss 才调 LLM（summary 档）→ 生成成功才写缓存 |
 

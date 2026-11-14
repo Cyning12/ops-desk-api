@@ -82,10 +82,10 @@ def test_rag_filter_cross_tenant_negative():
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
-async def test_sessions_latest_ok_after_switch_to_tenant_b(
+async def test_sessions_latest_gone_after_switch_to_tenant_b(
     client: AsyncClient, seeded_maintainer
 ) -> None:
-    """登录 → 切 B → GET sessions/latest（带 X-Ops-Tenant-Id:B）须 200 且有 session id。"""
+    """登录 → 切 B → GET sessions/latest（带 X-Ops-Tenant-Id:B）须 410（P0' T2b 墓碑）。"""
     login = await client.post(
         "/api/ops/auth/login",
         json={
@@ -106,7 +106,5 @@ async def test_sessions_latest_ok_after_switch_to_tenant_b(
         "/api/ops/chat/sessions/latest",
         headers={TENANT_HEADER: TENANT_B},
     )
-    assert latest.status_code == 200
-    body = latest.json()
-    assert body.get("id")
-    assert body["user_id"] == str(seeded_maintainer["user"].id)
+    assert latest.status_code == 410
+    assert latest.json()["detail"]["error"] == "chat_sessions_deprecated"

@@ -85,11 +85,40 @@ class TestChatStream:
 
 
 class TestListModels:
-    async def test_list_models(self, client):
+    """GET /api/ops/chat/models 已 410 下线（P0' T2b · 2026-11-14）。"""
+
+    async def test_list_models_gone(self, client, override_auth):
+        """410 Gone + detail{error, migrate_to 指向 lg-rag} + Deprecation 头。"""
         response = await client.get("/api/ops/chat/models")
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["provider"] == "siliconflow"
-        assert data["default_model"] == "deepseek-ai/DeepSeek-V4-Flash"
-        assert any(m["id"] == "deepseek-ai/DeepSeek-V4-Flash" for m in data["models"])
+        assert response.status_code == 410
+        detail = response.json()["detail"]
+        assert detail["error"] == "chat_models_deprecated"
+        assert "lg-rag" in detail["migrate_to"]
+        assert response.headers.get("Deprecation") == "true"
+
+    async def test_list_models_requires_auth(self, client):
+        """鉴权前置：未登录仍 401（先于 410）。"""
+        response = await client.get("/api/ops/chat/models")
+
+        assert response.status_code == 401
+
+
+class TestLatestChatSession:
+    """GET /api/ops/chat/sessions/latest 已 410 下线（P0' T2b · 2026-11-14）。"""
+
+    async def test_sessions_latest_gone(self, client, override_auth):
+        """410 Gone + detail{error, migrate_to=/api/ops/chat/threads} + Deprecation 头。"""
+        response = await client.get("/api/ops/chat/sessions/latest")
+
+        assert response.status_code == 410
+        detail = response.json()["detail"]
+        assert detail["error"] == "chat_sessions_deprecated"
+        assert detail["migrate_to"] == "/api/ops/chat/threads"
+        assert response.headers.get("Deprecation") == "true"
+
+    async def test_sessions_latest_requires_auth(self, client):
+        """鉴权前置：未登录仍 401（先于 410）。"""
+        response = await client.get("/api/ops/chat/sessions/latest")
+
+        assert response.status_code == 401

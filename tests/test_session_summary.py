@@ -583,10 +583,14 @@ class TestSessionSummaryCacheDB:
         assert "cache write failed" in caplog.text
 
     async def test_original_tables_untouched(self, monkeypatch: pytest.MonkeyPatch, thread_id: str):
-        """原文 SoT 零污染：摘要通路前后 ops_lg_rag_turns / ops_runs 行数不变。"""
+        """原文 SoT 零污染：摘要通路前后 ops_lg_rag_turns 行数不变。
+
+        P0' T2b 起旧 ops_runs 表已 drop（迁移 20261114_drop_legacy_chat_tables），
+        断言面收敛为 lg-rag 现役 SoT。
+        """
         from sqlalchemy import func, select
 
-        from app.db.models import OpsLgRagTurn, OpsRun
+        from app.db.models import OpsLgRagTurn
         from app.db.session import AsyncSessionLocal
 
         async def _counts():
@@ -594,8 +598,7 @@ class TestSessionSummaryCacheDB:
                 turns = (
                     await db.execute(select(func.count()).select_from(OpsLgRagTurn))
                 ).scalar_one()
-                runs = (await db.execute(select(func.count()).select_from(OpsRun))).scalar_one()
-            return turns, runs
+            return turns
 
         before = await _counts()
         provider = _FakeProvider()

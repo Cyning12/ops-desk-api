@@ -160,7 +160,7 @@ from httpx import ASGITransport, AsyncClient  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
 from app.db.base import Base  # noqa: E402
-from app.db.models import OpsInviteToken, OpsRepo, OpsSession, OpsSessionChat, OpsUser  # noqa: E402
+from app.db.models import OpsInviteToken, OpsRepo, OpsSession, OpsUser  # noqa: E402
 from app.db.session import AsyncSessionLocal, engine  # noqa: E402
 from app.main import app as fastapi_app  # noqa: E402
 from app.ops.deps import get_current_user  # noqa: E402
@@ -380,9 +380,6 @@ async def seeded_maintainer():
             await cleanup_db.execute(delete(OpsSession).where(OpsSession.user_id == user.id))
             await cleanup_db.execute(
                 delete(OpsInviteToken).where(OpsInviteToken.token == hash_token(plaintext_invite))
-            )
-            await cleanup_db.execute(
-                delete(OpsSessionChat).where(OpsSessionChat.user_id == user.id)
             )
             await cleanup_db.execute(delete(OpsUser).where(OpsUser.id == user.id))
             await cleanup_db.commit()

@@ -231,3 +231,36 @@ waves:
       - docs/harness/invokes/by-task/p0prime-t6-audit-view/
     banned_prefixes: []
 
+  - task_slug: p0prime-t2b-chat-cleanup
+    status: active
+    base: "510516c"
+    note: >-
+      P0' T2b chat 概念收尾（维护者 m00177「签收，开始」· T2a 偏差登记衍生 ·
+      W1 web 前置已解除）：/chat/models 与 /chat/sessions/latest 410 墓碑化
+      （镜像 /chat/stream auth 在前 + migrate_to），删 schema.py 与三模型
+      OpsSessionChat/OpsRun/OpsRunEvent，alembic drop ops_run_events/ops_runs/
+      ops_sessions_chat（downgrade 重建）。prod 导出为运营动作仅文档化。
+      禁承载：lg-rag 侧改动、freeze 帧/schema、新端点、prod 导出执行。
+    allowed_app_files:
+      - app/db/models.py
+      - app/ops/chat/router.py
+      - app/ops/chat/schema.py
+      - app/ops/chat/__init__.py
+      - app/ops/session/history.py
+      - app/ops/session/__init__.py
+      - app/ops/session/README.md
+    allowed_tree_files:
+      - alembic/versions/20261114_drop_legacy_chat_tables.py
+      - tests/conftest.py
+      - tests/test_session_summary.py
+      - tests/test_tenant_context.py
+      - tests/test_chat_router.py
+      - tests/test_auth.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/reviews/task_p0prime_t2b_chat_cleanup_audit_R1_20261114.md
+      - docs/tasks/active/task_p0prime_t2b_chat_cleanup.md
+      - docs/tasks/draft_task_p0prime_t2b_chat_concept_cleanup.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p0prime-t2b-chat-cleanup/
+    banned_prefixes: []
