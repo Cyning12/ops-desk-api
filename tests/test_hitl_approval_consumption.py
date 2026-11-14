@@ -258,6 +258,7 @@ async def test_ta2_ttl_db_store_real_read_path_iso_str(cap_env, monkeypatch):
         assert await _delegation_issue_block_reason(state, row) is None
     finally:
         await _cleanup()
+        reset_hitl_store()  # db_store 是进程全局态，用毕复位（ta4 单独跑绿/全文件跑红实证）
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
@@ -292,7 +293,8 @@ async def test_ta2_ttl_db_store_expired_not_consumed(cap_env, monkeypatch):
             await db.execute(
                 text(
                     "UPDATE ops_hitl_requests "
-                    "SET decided_at = now() - interval '2 hours' WHERE id = :id"
+                    "SET decided_at = (now() AT TIME ZONE 'UTC') - interval '2 hours' "
+                    "WHERE id = :id"  # naive-UTC 列约定：禁裸 now()（走 server TZ）
                 ),
                 {"id": rid},
             )
@@ -304,6 +306,7 @@ async def test_ta2_ttl_db_store_expired_not_consumed(cap_env, monkeypatch):
         assert reason is not None and "非只读" in reason
     finally:
         await _cleanup()
+        reset_hitl_store()  # db_store 是进程全局态，用毕复位（ta4 单独跑绿/全文件跑红实证）
 
 
 async def test_ta2_store_read_failure_fail_closed(cap_env, monkeypatch, caplog):
@@ -1089,3 +1092,4 @@ async def test_tb6_fresh_approved_db_store_skips_creation(cap_env):
         assert not [r for r in pendings if str(r.get("run_id")) == run_id]
     finally:
         await _cleanup()
+        reset_hitl_store()  # db_store 是进程全局态，用毕复位（ta4 单独跑绿/全文件跑红实证）
