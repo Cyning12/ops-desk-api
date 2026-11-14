@@ -1,9 +1,9 @@
 # Task：P0' T3 PG checkpointer 默认翻开——LG_RAG_HTTP_CHECKPOINTER unset=postgres
 
-> **状态**：in_progress（2026-11-13 起）  
+> **状态**：closed（2026-11-14 · PR [#371](https://github.com/Cyning12/ops-desk-api/pull/371) merge `1456f3b9` · 干净 worktree 全量 1878 passed 零红 · registry entry 已转 closed 钉 wave_tip）  
 > **类型**：运行时语义翻转（纯 env 默认值 · 零 DDL · 零新表/迁移）  
 > **关联图谱**：`docs/_tech_graph/l1/01_modules.md`（lg_rag 行 PG checkpointer 段备注 + 签收行）  
-> **落盘**：`docs/tasks/active/task_p0prime_t3_checkpointer_default_on.md`；验收后 `git mv` → `docs/tasks/done/`  
+> **落盘**：`docs/tasks/done/task_p0prime_t3_checkpointer_default_on.md`（已迁档）  
 > **来源**：ops-desk-workspace `docs/01-scope/03-general-agent/06-kickoff-readiness.md` 任务卡 T3（issue #23 Round 4 裁定 P2 · 关键链 T1→T3→T4）
 
 ---
@@ -167,7 +167,23 @@
 
 ## 实现备忘（子 Agent 回填）
 
-（30 实施回填）
+| 项 | 状态 | 备注 |
+|----|------|------|
+| checkpointer 翻转 | done | unset→True · postgres 形态→True · 空值/off 系→False；docstring 记录翻开理由与回退口 |
+| 测试面卫生 | done | conftest autouse fixture 统一 setenv 空值；5 站点 delenv→setenv；sse_hitl 反向对照改写为「回退口有效」 |
+| 新真值表单测 | done | tests/test_lg_rag_checkpointer.py 9 用例 |
+| 脚本/docs/图谱/registry | done | hitl_approval_loop 两件表达式注释对齐 · .env.example 默认开 · GUIDE/RUNBOOK×2 · 01_modules 备注+签收行 · N3 entry |
+| 干净环境验证 | done | worktree 无 .env：1878 passed / 205 skipped / 0 failed（较 T2 基线 +9 = 新用例） |
+
+### 自检结论（执行者）
+
+（30/40 · 2026-11-13/14）验收 8 条：真值表钉死 ✓ · 干净环境全量零红 ✓ · hitl freeze 回归全绿（.env 污染对照实证非 diff 引入）✓ · ruff ✓ · graph-compile ✓ · spec-wave lint PASS ✓ · PR #371 CI 全绿合并 ✓ · N-R2-1 记偏差（本机/docker 无 PG，复测待首个 PG 环境，登记 issue #23）。
+
+### 经验总结
+
+1. **默认值翻转的爆炸半径在测试面**：unset 语义反转后，所有 delenv 卫生手法全部失效（delenv 吃到新默认=开）——conftest autouse 显式置空值是全仓兜底，逐站点 delenv→setenv 手术不可省。
+2. **PR body 里的反引号会被 bash 命令替换吞掉**——gh pr create/edit 的 body 用 --body-file 落盘法。
+3. 承 T1/T2：提交先行 + 干净 worktree 全量 pytest 继续是 N3 闸与本地 .env 污染的最稳解；.env 残留键（OPS_HITL_PERSISTENCE=db 等）致本地 hitl 9 件红，经 env 覆盖重跑（45 passed）+ 干净 worktree 双重对照证实非 T3 diff 引入。
 
 ---
 
