@@ -159,3 +159,9 @@ status 映射纯函数零 DB；DB 用例本地真 PG 实证（brew postgresql@18
 | 日期 | 修订 |
 |------|------|
 | 2026-11-14 | 初版落盘（30 勘察后：设计裁定 6 条钉死） |
+
+## 实现备忘（30 回填 · 2026-11-14）
+
+- 偏差 1：`.importlinter` 不在原 allowed 面 —— lg-rag-outbound 契约 forbidden 含 `app.db`，新模块 `run_store.py` 须补 ignore 白名单两条（承 `event_store`/`thread_store` 先例，逐条带理由）；registry allowed_tree_files 同步补 `.importlinter`。
+- 偏差 2：本地 brew postgresql@18 已起 + `opsdesk_test` 库就绪 → DB 标记用例本地真跑（此前全 skip）；迁移 up/down/up 于 scratch 库 `opsdesk_t4mig` 真 PG 实证（vector/uuid-ossp 扩展需超级用户预建）。
+- 教训：`now_utc` 真值在 `app.db.models:27`（非 app.core.time）；import-linter forbidden 契约对函数内 lazy import 同样生效，先例是 ignore 白名单而非绕开。

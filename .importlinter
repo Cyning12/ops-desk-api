@@ -231,6 +231,9 @@ ignore_imports =
     app.ops.lg_rag.router -> app.db.models
     app.ops.lg_rag.thread_store -> app.db.models
     app.ops.lg_rag.thread_store -> app.db.session
+    # run 一等实体读写（P0' T4 · 承 event_store/thread_store 先例）
+    app.ops.lg_rag.run_store -> app.db.models
+    app.ops.lg_rag.run_store -> app.db.session
     # 记忆抽取点火（图谱 memory 消费方 · 出边未列）；④b 收窄（2026-10-20 ·
     # task_memory_injection_consumer）后 continuity 装配面不再 import memory，
     # 原 continuity -> memory.{service,episode_gate,episode_service} 三条 ignore
