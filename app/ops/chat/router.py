@@ -1,21 +1,19 @@
-"""Chat SSE endpoint."""
+"""Chat 端点墓碑（P0' T2a/T2b）。
+
+计算栈已于 T2a 清除；/chat/stream 于 lg-rag T6（2026-08-31）410；
+/chat/models 与 /chat/sessions/latest 于 T2b（2026-11-14）410。
+"""
 
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
-from app.db.models import OpsSessionChat, OpsUser
-from app.db.session import get_db
-from app.llm.model_catalog import get_default_model, get_models_for_provider
-from app.ops.chat.schema import ChatModelsResponse, ChatSessionOut
+from app.db.models import OpsUser
 from app.ops.deps import get_current_user
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
-# T6 (2026-08-31): chat SSE 传输下线。chat 代码/图/表保留，仅本端点 410。
+# lg-rag T6 (2026-08-31): chat SSE 传输下线，410 墓碑。
 _CHAT_STREAM_GONE_DETAIL = {
     "error": "chat_stream_deprecated",
     "migrate_to": "/api/ops/lg-rag/stream",
@@ -26,6 +24,30 @@ _CHAT_STREAM_GONE_DETAIL = {
 }
 
 _CHAT_STREAM_GONE_HEADERS = {
+    "Deprecation": "true",
+    "Link": '</api/ops/lg-rag/stream>; rel="successor-version"',
+}
+
+# P0' T2b (2026-11-14): chat 兼容端点下线，410 墓碑。
+_CHAT_MODELS_GONE_DETAIL = {
+    "error": "chat_models_deprecated",
+    "migrate_to": "/api/ops/lg-rag/models",
+    "message": (
+        "GET /api/ops/chat/models 已于 2026-11-14 下线（P0' T2b）。"
+        "模型目录请走 GET /api/ops/lg-rag/models。"
+    ),
+}
+
+_CHAT_SESSIONS_GONE_DETAIL = {
+    "error": "chat_sessions_deprecated",
+    "migrate_to": "/api/ops/chat/threads",
+    "message": (
+        "GET /api/ops/chat/sessions/latest 已于 2026-11-14 下线（P0' T2b）。"
+        "会话列表请走 GET /api/ops/chat/threads（lg-rag history · SoT=thread_id）。"
+    ),
+}
+
+_CHAT_GONE_HEADERS = {
     "Deprecation": "true",
     "Link": '</api/ops/lg-rag/stream>; rel="successor-version"',
 }
@@ -47,45 +69,31 @@ async def chat_stream(
     )
 
 
-@router.get("/models", response_model=ChatModelsResponse)
-async def list_models() -> ChatModelsResponse:
-    """Return available chat models."""
-    provider = settings.ops_llm_provider
-    return ChatModelsResponse(
-        provider=provider,
-        default_model=get_default_model(provider),
-        models=get_models_for_provider(provider),
+@router.get("/models")
+async def list_models(
+    user: OpsUser = Depends(get_current_user),
+) -> None:
+    """Deprecated chat models endpoint (T2b): always 410 Gone.
+
+    Auth stays in front of the 410 so anonymous probes still get 401.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail=_CHAT_MODELS_GONE_DETAIL,
+        headers=_CHAT_GONE_HEADERS,
     )
 
 
-@router.get("/sessions/latest", response_model=ChatSessionOut)
+@router.get("/sessions/latest")
 async def get_latest_chat_session(
     user: OpsUser = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> ChatSessionOut:
-    """Return the current user's most recent chat session, creating one if needed.
+) -> None:
+    """Deprecated latest-session endpoint (T2b): always 410 Gone.
 
-    This endpoint is optimized for iOS v1, which only supports a single Chat
-    screen and should always land on the latest session.
+    Auth stays in front of the 410 so anonymous probes still get 401.
     """
-    result = await db.execute(
-        select(OpsSessionChat)
-        .where(OpsSessionChat.user_id == user.id)
-        .order_by(OpsSessionChat.updated_at.desc())
-        .limit(1)
-    )
-    chat_session = result.scalar_one_or_none()
-
-    if chat_session is None:
-        chat_session = OpsSessionChat(user_id=user.id, title="New Chat")
-        db.add(chat_session)
-        await db.commit()
-        await db.refresh(chat_session)
-
-    return ChatSessionOut(
-        id=str(chat_session.id),
-        user_id=str(chat_session.user_id),
-        title=chat_session.title,
-        created_at=chat_session.created_at,
-        updated_at=chat_session.updated_at,
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail=_CHAT_SESSIONS_GONE_DETAIL,
+        headers=_CHAT_GONE_HEADERS,
     )

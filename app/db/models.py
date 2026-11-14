@@ -43,7 +43,6 @@ class OpsUser(Base):
     updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
 
     sessions: Mapped[list["OpsSession"]] = relationship(back_populates="user")
-    chat_sessions: Mapped[list["OpsSessionChat"]] = relationship(back_populates="user")
 
 
 class OpsInviteToken(Base):
@@ -221,71 +220,6 @@ class OpsGraphSnapshot(Base):
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     module_matrix: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
-
-
-class OpsSessionChat(Base):
-    """Chat session (distinct from auth session)."""
-
-    __tablename__ = "ops_sessions_chat"
-
-    id: Mapped[str] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
-    )
-    user_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("ops_users.id", ondelete="CASCADE"), nullable=False
-    )
-    title: Mapped[str | None] = mapped_column(String, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=now_utc)
-    updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
-
-    user: Mapped["OpsUser"] = relationship(back_populates="chat_sessions")
-    runs: Mapped[list["OpsRun"]] = relationship(back_populates="chat_session")
-
-
-class OpsRun(Base):
-    """Single chat run."""
-
-    __tablename__ = "ops_runs"
-
-    id: Mapped[str] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
-    )
-    session_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("ops_sessions_chat.id", ondelete="CASCADE"), nullable=False
-    )
-    query: Mapped[str] = mapped_column(Text, nullable=False)
-    intent: Mapped[str | None] = mapped_column(String, nullable=True)
-    status: Mapped[str] = mapped_column(String, nullable=False, default="running")
-    model: Mapped[str | None] = mapped_column(String, nullable=True)
-    latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    answer: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=now_utc)
-    updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
-
-    chat_session: Mapped["OpsSessionChat"] = relationship(back_populates="runs")
-    events: Mapped[list["OpsRunEvent"]] = relationship(back_populates="run")
-
-
-class OpsRunEvent(Base):
-    """Archived SSE event stream."""
-
-    __tablename__ = "ops_run_events"
-    __table_args__ = (UniqueConstraint("run_id", "seq", name="uq_ops_run_events_run_seq"),)
-
-    id: Mapped[str] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
-    )
-    run_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("ops_runs.id", ondelete="CASCADE"), nullable=False
-    )
-    seq: Mapped[int] = mapped_column(Integer, nullable=False)
-    ts_ms: Mapped[int] = mapped_column(Integer, nullable=False)
-    agent_role: Mapped[str] = mapped_column(String, nullable=False)
-    event_type: Mapped[str] = mapped_column(String, nullable=False)
-    payload: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
-    created_at: Mapped[datetime] = mapped_column(default=now_utc)
-
-    run: Mapped["OpsRun"] = relationship(back_populates="events")
 
 
 class OpsLgRagThread(Base):

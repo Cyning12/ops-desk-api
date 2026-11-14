@@ -154,10 +154,10 @@ async def test_admin_sync_maintainer_allowed(client: AsyncClient, override_auth_
 
 
 @pytest.mark.skipif(not DB_AVAILABLE, reason="PostgreSQL not available")
-async def test_latest_chat_session_creates_when_empty(
+async def test_latest_chat_session_gone(
     client: AsyncClient, seeded_maintainer
 ) -> None:
-    """GET /chat/sessions/latest creates a session when none exist."""
+    """P0' T2b：GET /chat/sessions/latest 410 墓碑（登录后仍 410，detail 指向 threads）。"""
     login_response = await client.post(
         "/api/ops/auth/login",
         json={
@@ -168,12 +168,13 @@ async def test_latest_chat_session_creates_when_empty(
     assert login_response.status_code == 200
 
     response = await client.get("/api/ops/chat/sessions/latest")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["user_id"] == str(seeded_maintainer["user"].id)
-    assert data["title"] == "New Chat"
+    assert response.status_code == 410
+    detail = response.json()["detail"]
+    assert detail["error"] == "chat_sessions_deprecated"
+    assert detail["migrate_to"] == "/api/ops/chat/threads"
+    assert response.headers.get("Deprecation") == "true"
 
-    # Second call returns the same session.
-    response2 = await client.get("/api/ops/chat/sessions/latest")
-    assert response2.status_code == 200
-    assert response2.json()["id"] == data["id"]
+    # 未登录探针依旧 401（auth 在墓碑前）：清 cookie 后复测。
+    client.cookies.clear()
+    resp2 = await client.get("/api/ops/chat/sessions/latest")
+    assert resp2.status_code == 401
