@@ -207,3 +207,27 @@ waves:
     allowed_tree_prefixes:
       - docs/harness/invokes/by-task/p0prime-t5-goals-ddl/
     banned_prefixes: []
+  - task_slug: p0prime-t6-audit-view
+    status: active
+    base: "9c1d2c0"
+    wave_tip: ""
+    note: >-
+      P0' T6 审计统一视图（维护者 m00177「签收，开始」· issue #23 R4 裁定 P3 ·
+      任务卡 T6）：单张 DB view v_audit_unified union 三源
+      （ops_capability_receipts/ops_llm_usage/ops_hitl_requests），公共列
+      ts/tenant_id/user_id/run_id/domain/action/outcome + source_id；缺列域补值
+      （receipts run_id→NULL · llm_usage tenant/user→'' · hitl user←decision_by）。
+      不做端点/聚合页/物化；CREATE OR REPLACE 幂等，down=DROP VIEW。
+      禁承载：源表 ALTER、端点、聚合页、物化视图、freeze 帧。
+    allowed_app_files: []
+    allowed_tree_files:
+      - alembic/versions/20261114_v_audit_unified.py
+      - tests/test_v_audit_unified.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/reviews/task_p0prime_t6_audit_view_audit_R1_20261114.md
+      - docs/tasks/active/task_p0prime_t6_audit_view.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p0prime-t6-audit-view/
+    banned_prefixes: []
+
