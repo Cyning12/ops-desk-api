@@ -116,9 +116,9 @@ waves:
       - scripts/
       - alembic/
   - task_slug: p0prime-t3-checkpointer-default-on
-    status: active
+    status: closed
     base: "ee1941f"
-    wave_tip: ""
+    wave_tip: "1456f3b"
     note: >-
       HG-AUDIT-R1 签认（用户 2026-11-13「签收，开始」· issue Cyning12/ops-desk-workspace#23
       R4 裁定 P2 · 卡 T3）。波次面 = LG_RAG_HTTP_CHECKPOINTER 默认翻开（unset=postgres ·
