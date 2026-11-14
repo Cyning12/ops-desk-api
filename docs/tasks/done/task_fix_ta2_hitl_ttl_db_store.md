@@ -52,16 +52,32 @@ title: task · fix · ta2 HITL TTL db-store 过期不消费
 
 ## 验收标准
 
-- [ ] ta2 用例本地真 PG 转绿
-- [ ] test_hitl_approval_consumption.py 全文件 + hitl 套件回归全绿
-- [ ] ruff / import-linter / graph check 不受影响（纯测试改动）
-- [ ] 干净 worktree 全量 0 failed（ta2 转绿后应全绿）
+- [x] ta2 用例本地真 PG 转绿
+- [x] test_hitl_approval_consumption.py 全文件 + hitl 套件回归全绿
+- [x] ruff / import-linter / graph check 不受影响（纯测试改动）
+- [x] 干净 worktree 全量 0 failed（2091 passed / 2 skipped / 0 failed）
 
 ## 必读列表
 
 - `app/ops/lg_rag/multi/nodes.py:349-369`（`_decided_at_ts` naive→UTC 解释）
 - `app/db/models.py:495`（decided_at naive 列）
 - `tests/test_hitl_approval_consumption.py:291-306`（拨回 SQL 现场）
+
+## 实现备忘（维护者可见）
+
+- tests/test_hitl_approval_consumption.py：ta2 stale 半拨回 SQL 改 `(now() AT TIME ZONE 'UTC') - interval '2 hours'` + 行内注释钉 naive-UTC 列约定；三处 Db store 用例（ta2 两半/TB6⑦）finally 补 `reset_hitl_store()`。
+- app 零改动（纯测试口径修复）。
+
+## 自检结论（勾）
+
+- spec-wave lint PASS（wiki_delta n/a · 四验收勾齐）；registry gate 过；目标测试+套件回归+干净 worktree 全量证据齐。
+
+## 经验教训
+
+- **PG server TimeZone 陷阱**：timestamptz 表达式 `now()` 强存 naive 列按 server TZ 去时区——与 naive-UTC 列约定不符的 SQL 口径必须用 `now() AT TIME ZONE 'UTC'`（同 T6 v_audit_unified 教训，现已在测试侧登记）。
+- **set_hitl_store 是进程全局态**：Db store 用例 finally 必须复位，否则 `-k hitl` 跨文件联合跑顺序污染。
+- **.env 残留可使测试假红**：主仓 .env `OPS_CAPABILITY_ALLOW_WRITE=1` 开 Policy 写闸致 ta4 红——本地协议沿用 T3 四键 blank；干净 worktree 无 .env 是终审口径。
+- **PR CONFLICTING 时 CI 不触发且 gh pr checks 报 "no checks reported"**：排查先看 `gh pr view --json mergeable` + `gh run list --branch`。
 
 ## 思考轮控制
 

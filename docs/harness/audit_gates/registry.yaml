@@ -266,7 +266,8 @@ waves:
       - docs/harness/invokes/by-task/p0prime-t2b-chat-cleanup/
     banned_prefixes: []
   - task_slug: fix-ta2-hitl-ttl-db-store
-    status: active
+    status: closed
+    wave_tip: "a3776d9"
     base: "510516c"
     note: >-
       ta2 修复（维护者 m00177「签收，开始」· P0' 偏差登记衍生）：纯测试口径修复——
