@@ -126,11 +126,21 @@ models.py `OpsGoal` → alembic `20261114_ops_goals` → `tests/test_ops_goals_d
 
 ### 自检结论
 
-（40 验证回填）
+范围=仅 DDL 零功能（A2 钉死）：模型+迁移+约束测试+图谱登记，零读写代码、零路由、零 SSE 变更；不触碰 freeze/图/运行时；迁移 down 幂等独立可回退。验收 4 条全过（见 invoke_50_close 验证台账）。
 
-## 实现备忘
+## 实现备忘（30 回填 · 2026-11-14）
 
-（30 回填）
+- models.py：`OpsGoal` 插于 `OpsSessionSummary` 前；goal_id client-side default `lambda: str(uuid4())`（承 turns/capability_notes 先例，server 侧无 default）。
+- 迁移 `20261114_ops_goals`：goal_id `uuid PRIMARY KEY`（无 server default，承 `20261105_capability_notes:29` 先例——非 gen_random_uuid）；索引 `(tenant_id,status)`/`(thread_id)`。
+- 测试 3 件真 PG 全绿；迁移 scratch 库 up/down/up 实证（`DATABASE_URL` env 覆盖）。
+- 01_modules.md：db 行登记 ops_goals + **修复 T4 遗留文本错位**（capability_notes 收尾被挤到 runs 条目后）。
+- 全量（干净 worktree ddfd1074）：2088 passed / 2 skipped / 1 failed（唯一红=既有 ta2，baseline 同源已登记）。
+
+### 经验总结
+
+1. **alembic env.py 读 `settings.database_url`（pydantic env 映射）——覆盖须用 `DATABASE_URL`，`ALEMBIC_DATABASE_URL` 无效**。误用会把迁移打到 .env 指向的 dev 库（本次实证首跑即踩：dev 库 opsdesk 被 upgrade/downgrade/upgrade 到 head——终态正确但方法错误，scratch 实证须 `DATABASE_URL=...` 前缀）。
+2. **ORM 显式 None 赋有 client-side default 的列 → default 生效而非 NULL**（DID NOT RAISE IntegrityError）——DB 级 NOT NULL 约束验证须裸 SQL 触达。
+3. 迁移 server default（timestamptz now()）与 create_all 表（timestamp naive）存在无害分歧——测试库走 create_all，真值以迁移为准。
 
 ## 测试策略
 
