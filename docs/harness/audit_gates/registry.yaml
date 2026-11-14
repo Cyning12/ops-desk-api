@@ -184,3 +184,26 @@ waves:
     allowed_tree_prefixes:
       - docs/harness/invokes/by-task/p0prime-t4-run-entity/
     banned_prefixes: []
+  - task_slug: p0prime-t5-goals-ddl
+    status: active
+    base: "fee74fa"
+    wave_tip: ""
+    note: >-
+      P0' T5 goal 落表仅 DDL（维护者 m00177「签收，开始」· issue #23 R4 裁定 A2 ·
+      图零改动落图为外状态）：新建 ops_goals（goal_id UUID PK 默认 uuid4 ·
+      tenant_id NOT NULL DEFAULT '' · thread_id 不加 FK · objective Text ·
+      status 默认 active · created_at/updated_at）；仅落表零功能——注入/流转/消费
+      属 P1 另卡；off 态 drop 安全。
+      禁承载：goal 注入/状态流转/任何读写代码、FK 关系、freeze 帧、supervisor 图。
+    allowed_app_files:
+      - app/db/models.py
+    allowed_tree_files:
+      - alembic/versions/20261114_ops_goals.py
+      - tests/test_ops_goals_ddl.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/reviews/task_p0prime_t5_goals_ddl_audit_R1_20261114.md
+      - docs/tasks/active/task_p0prime_t5_goals_ddl.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p0prime-t5-goals-ddl/
+    banned_prefixes: []

@@ -366,6 +366,29 @@ class OpsLgRagRun(Base):
     finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
 
+class OpsGoal(Base):
+    """Goal 落表（P0' T5 · issue #23 裁定 A2：图零改动，落图为外状态）。
+
+    **仅 DDL 零功能**——注入 query 前缀 / status 规则流转（不让 LLM 自判）属 P1
+    另卡。status 词表（本卡仅 docstring 登记，P1 可迁移修订）：
+    active（默认）/ paused / done / abandoned。tenant_id 必填（freeze F1-F6），
+    承 notes/runs 先例默认 `''`；thread_id 不加 FK（承 run_events 顺序容错先例，
+    P1 接线时可再迁移）。
+    """
+
+    __tablename__ = "ops_goals"
+
+    goal_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    thread_id: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    objective: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+    updated_at: Mapped[datetime] = mapped_column(default=now_utc, onupdate=now_utc)
+
+
 class OpsSessionSummary(Base):
     """会话历史真摘要缓存（session-summary-fallback D2 · C1 独立表）。
 
