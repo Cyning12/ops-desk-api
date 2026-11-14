@@ -119,6 +119,19 @@ def start_run_worker(
         if tenant_id is not None:
             tenant_token = set_current_tenant(tenant_id)
         llm_token = set_run_context(run_id=run_id, surface="lg_rag")
+        # P0' T4：run 一等实体建行（best-effort；单飞复用已建 → 幂等跳过；
+        # 失败不阻断 run —— 状态缺失由 orphan 两段式扫描兜住）
+        try:
+            from app.ops.lg_rag.run_store import create_run
+
+            await create_run(
+                run_id=run_id,
+                thread_id=thread_id,
+                user_id=user_id,
+                tenant_id=tenant_id,
+            )
+        except Exception:
+            logger.exception("lg-rag run entity create failed run_id=%s", run_id)
         try:
             from app.ops.lg_rag.sse_stream import _iter_lg_rag_sse_core
 
@@ -189,15 +202,20 @@ async def scan_orphan_runs_for_compensation(
 ) -> int:
     """扫描 orphan run（无终帧且无活跃 worker）并补 ``done{status:disconnected}``。
 
+    P0' T4 两段式：① 事件表有帧但 runs 无行 → 有界补行；② `ops_lg_rag_runs`
+    主扫（status='running' + created_at 预筛 + per-run 末帧精确 stale）。
     使 ``run_stream_closed`` 真 → replay 不再永久 409。**不**依赖 ASGI disconnect。
     真在飞（``is_run_worker_active``）跳过。返回本轮补偿条数。
     """
     import time
 
     from app.ops.lg_rag.event_store import (
-        list_open_runs,
         persist_run_event,
         run_stream_closed,
+    )
+    from app.ops.lg_rag.run_store import (
+        backfill_missing_run_rows,
+        list_stale_running_runs,
     )
 
     stale = (
@@ -205,7 +223,10 @@ async def scan_orphan_runs_for_compensation(
         if stale_after_seconds is None
         else max(0.0, float(stale_after_seconds))
     )
-    opens = await list_open_runs(stale_after_seconds=stale, limit=limit)
+    backfilled = await backfill_missing_run_rows(limit=limit)
+    if backfilled:
+        logger.info("lg-rag orphan backfill run rows n=%s", backfilled)
+    opens = await list_stale_running_runs(stale_after_seconds=int(stale), limit=limit)
     compensated = 0
     for row in opens:
         run_id = row["run_id"]
