@@ -88,6 +88,13 @@ async def persist_run_event(
             )
         )
         await db.commit()
+    # P0' T4：run 实体状态流转（best-effort，独立 try 绝不反噬事件插入）
+    try:
+        from app.ops.lg_rag.run_store import apply_run_event_status
+
+        await apply_run_event_status(run_id=run_id, event_type=event_type, payload=payload)
+    except Exception:
+        logger.exception("lg-rag run status update failed run_id=%s", run_id)
 
 
 async def run_owner(run_id: str) -> str | None:

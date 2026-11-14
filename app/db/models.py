@@ -343,6 +343,29 @@ class OpsLgRagRunEvent(Base):
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
 
 
+class OpsLgRagRun(Base):
+    """lg-rag run 一等实体（P0' T4 · issue #23 裁定 A1）。
+
+    run_id 与事件表同型（uuid4().hex · String(64)）零迁移；`run_events.run_id`
+    **刻意不加 FK**——orphan 补偿「先扫事件后补 run 行」的顺序容错要求事件可先于
+    run 行存在。status 词表镜像 done payload 逐字落列（running / waiting_approval /
+    done / resumed / disconnected / error）；tenant_id 必填（tenant freeze F1-F6），
+    补行等不可知场景落 `''`（承 ops_capability_notes 先例）。
+    """
+
+    __tablename__ = "ops_lg_rag_runs"
+
+    run_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ops_users.id", ondelete="CASCADE"), nullable=False
+    )
+    thread_id: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="running")
+    created_at: Mapped[datetime] = mapped_column(default=now_utc)
+    finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+
 class OpsSessionSummary(Base):
     """会话历史真摘要缓存（session-summary-fallback D2 · C1 独立表）。
 
