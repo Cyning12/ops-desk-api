@@ -232,7 +232,8 @@ waves:
     banned_prefixes: []
 
   - task_slug: p0prime-t2b-chat-cleanup
-    status: active
+    status: closed
+    wave_tip: "bcf5f12"
     base: "510516c"
     note: >-
       P0' T2b chat 概念收尾（维护者 m00177「签收，开始」· T2a 偏差登记衍生 ·

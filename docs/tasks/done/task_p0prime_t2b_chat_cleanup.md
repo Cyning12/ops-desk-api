@@ -51,11 +51,11 @@ T2a 已清 chat 计算栈七件并将 `/chat/stream` 410 化，但两个兼容�
 
 ## 验收标准
 
-- [ ] `/chat/models` 与 `/chat/sessions/latest` 未登录 401、登录 410（detail 含 migrate_to 指向 lg-rag），与 `/chat/stream` 墓碑行为一致
-- [ ] 迁移 up/down scratch 实证；三表 drop 后 `OpsSessionChat`/`OpsRun`/`OpsRunEvent` 在 app 零引用
-- [ ] 改编测试全绿（410 断言 + auth 在前语义）；干净 worktree 全量绿（允许既有 ta2 红）
-- [ ] graph check OK · spec-wave task lint PASS · ruff app tests 绿
-- [ ] lg-rag-sse-v1 freeze 零 diff；tenant freeze 零触碰
+- [x] `/chat/models` 与 `/chat/sessions/latest` 未登录 401、登录 410（detail 含 migrate_to 指向 lg-rag），与 `/chat/stream` 墓碑行为一致
+- [x] 迁移 up/down scratch 实证；三表 drop 后 `OpsSessionChat`/`OpsRun`/`OpsRunEvent` 在 app 零引用
+- [x] 改编测试全绿（410 断言 + auth 在前语义）；干净 worktree 全量绿（允许既有 ta2 红）
+- [x] graph check OK · spec-wave task lint PASS · ruff app tests 绿
+- [x] lg-rag-sse-v1 freeze 零 diff；tenant freeze 零触碰
 
 ## 必读列表
 
@@ -72,7 +72,12 @@ T2a 已清 chat 计算栈七件并将 `/chat/stream` 410 化，但两个兼容�
 
 ## 实现备忘
 
-<!-- CLOSE 前回填 -->
+- web W1（PR #103 · a7c8b42）摘除 session 硬门后，本波把 /chat/models 与 /chat/sessions/latest 410 墓碑化（auth 在前 · Deprecation/Link 头 · migrate_to 指 lg-rag 等价端点）。
+- 删除 app/ops/chat/schema.py、OpsSessionChat/OpsRun/OpsRunEvent 三模型类与 OpsUser.chat_sessions 关系；追加发现并删除 app/ops/session/history.py（唯一 import OpsRun 的生产文件 · 实扫零调用方）。
+- alembic 20261114_drop_legacy_chat_tables：drop 顺序 events→runs→sessions_chat；downgrade 逐字重建（含 server_default 与 idx_ops_run_events_run_seq/run_type 两表引，初稿漏补教训）。
+- 测试改编五件（conftest/session_summary SoT 断言/tenant_context/chat_router/auth），410 断言统一带 detail 三键。
+- 验证：目标 56 passed（真 PG）；迁移 up/down/up scratch 库实证；干净 worktree 全量 2093 passed/2 skipped/1 failed（唯一红=既有 ta2，另卡 fix-ta2-hitl-ttl-db-store 修复）。
+- CI 首波 lint-wiki-delta 红（task 档缺 wiki_delta 字段）→ 补字段 amend 强推 7b08796f 后四件全绿。
 
 ## 测试策略
 
