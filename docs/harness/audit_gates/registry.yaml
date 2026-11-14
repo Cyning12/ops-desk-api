@@ -154,9 +154,9 @@ waves:
     banned_prefixes:
       - alembic/
   - task_slug: p0prime-t4-run-entity
-    status: active
+    status: closed
     base: "cc62240"
-    wave_tip: ""
+    wave_tip: "8287cfa1"
     note: >-
       P0' T4 run 实体化（维护者 m00177「签收，开始」· issue #23 R4 裁定 A1 ·
       关键链 T1→T3→T4 末环）：新建 ops_lg_rag_runs（run_id String(64) PK ·
