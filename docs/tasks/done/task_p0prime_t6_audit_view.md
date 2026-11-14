@@ -134,11 +134,29 @@ R4 裁定 P3：P0' 合格线 = **一张 DB view `v_audit_unified`**——union r
 
 ### 自检结论
 
-（40 验证回填）
+40 验证台账（2026-11-14 实证 · 全部本地真 PG）：
+
+| # | 验证项 | 结果 |
+|---|--------|------|
+| 1 | 目标测试 `tests/test_v_audit_unified.py` 2 件（跨域链 run_id+时间窗一条 SQL · tenant 过滤+llm '' 从严） | ✅ 2 passed |
+| 2 | scratch 库迁移 upgrade/downgrade/upgrade（opsdesk_t6_scratch · DATABASE_URL 覆盖 · \dv 实证 view 建/销/复建） | ✅ |
+| 3 | `npx spec-wave task lint` | ✅ PASS（W3 已回填消除） |
+| 4 | `ruff check app tests`（I001/F401/SIM115 三处修正） | ✅ All checks passed |
+| 5 | 干净 worktree 全量（/tmp/opsdesk-api-t6 · detached · 无 .env · 四键 unset） | ✅ 2090 passed / 2 skipped / 1 failed |
+| 6 | 唯一红 = `test_ta2_ttl_db_store_expired_not_consumed` 既有问题（baseline 同红 · T4 已登记另立 task · 非本 diff 引入） | ✅ 确认 |
+| 7 | CI 四件（pytest/lint-wiki-delta/import-linter/wave-gate）PR #377 | ✅ 全 pass |
+| 8 | 全局红线：不破 lg-rag-sse-v1 freeze · 零源表变更 · 独立可回退（down=DROP VIEW） | ✅ |
+
+偏差登记：
+- registry.yaml 首版 YAML 粘连（T6 entry 与 T5 `banned_prefixes: []` 同行）→ 全量暴露 test_wave_gate_registry 红 → amend 修复强推；教训：registry 追加后必跑 `pytest tests/test_wave_gate_registry.py` 再提交。
+- 时间窗 footgun：三源 created_at 为 UTC naive，now() 为 timestamptz 本地时区，直比 +08 偏移 → 测试锚定 `now() AT TIME ZONE 'UTC'`（消费侧同口径注记已落测试注释与 PR）。
+- source_id=源表 PK id（非 receipt_id）——回查对账须传 PK，测试首版误传 receipt_id 致 capability_receipt 缺席。
 
 ## 实现备忘
 
-（30 回填）
+- `alembic/versions/20261114_v_audit_unified.py`（down_revision=`20261114_ops_goals`）：单条 `CREATE OR REPLACE VIEW v_audit_unified` 三段 UNION ALL；列映射 ts←created_at、run_id receipts→NULL、tenant_id llm→''（从严）、user_id hitl←COALESCE(decision_by,'')/llm→''、action←capability_id/blocked_by/COALESCE(task_type,surface)、outcome←CASE ok 'ok'/'error'/status 原值/'recorded'、source_id=源表 PK 回查；down=DROP VIEW IF EXISTS。
+- `tests/test_v_audit_unified.py`：`_ensure_view()` 从迁移文件提取同款 SQL 幂等建 view（测试库走 create_all 不含 view）；2 件用例（跨域链验收 + tenant 过滤/缺列补值）。
+- 经验：① registry.yaml 追加后必须先过 test_wave_gate_registry；② naive-UTC 存储 vs timestamptz 比较的消费侧口径需在文档/注释显式锚定；③ view 对账列用源表 PK 不用业务 id。
 
 ## 测试策略（Harness）
 

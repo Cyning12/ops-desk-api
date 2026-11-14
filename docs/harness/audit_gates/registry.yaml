@@ -208,9 +208,9 @@ waves:
       - docs/harness/invokes/by-task/p0prime-t5-goals-ddl/
     banned_prefixes: []
   - task_slug: p0prime-t6-audit-view
-    status: active
+    status: closed
     base: "9c1d2c0"
-    wave_tip: ""
+    wave_tip: "51b39fe"
     note: >-
       P0' T6 审计统一视图（维护者 m00177「签收，开始」· issue #23 R4 裁定 P3 ·
       任务卡 T6）：单张 DB view v_audit_unified union 三源
