@@ -308,22 +308,29 @@ class OpsLgRagRun(Base):
 
 
 class OpsGoal(Base):
-    """Goal 落表（P0' T5 · issue #23 裁定 A2：图零改动，落图为外状态）。
+    """Goal 落表（P0' T5 建表 · P1-T4 接线：/lg-rag/stream 闸内懒创建）。
 
-    **仅 DDL 零功能**——注入 query 前缀 / status 规则流转（不让 LLM 自判）属 P1
-    另卡。status 词表（本卡仅 docstring 登记，P1 可迁移修订）：
-    active（默认）/ paused / done / abandoned。tenant_id 必填（freeze F1-F6），
-    承 notes/runs 先例默认 `''`；thread_id 不加 FK（承 run_events 顺序容错先例，
-    P1 接线时可再迁移）。
+    status 词表 active（默认）/ paused / done / abandoned，流转仅人工 PATCH
+    （O-1 · goals REST 面），无 LLM 自判。tenant_id 必填（freeze F1-F6），
+    承 notes/runs 先例默认 `''`；thread_id 不加 FK（承 run_events 顺序容错先例）。
+    uq_ops_goals_active_thread 部分唯一索引（P1-T4）执行 1 thread : 1 非终态
+    goal（O-3）；并发懒创建撞索引由 store IntegrityError 重读消化。
     """
 
     __tablename__ = "ops_goals"
 
-    # __table_args__ 对齐既有 DB 索引（迁移 20261114_ops_goals.py:37-43），
-    # 消 autogenerate 漂移（P1-T1 补声明 · 零新迁移）。
+    # __table_args__ 对齐既有 DB 索引（迁移 20261114_ops_goals.py:37-43 ·
+    # P1-T4 20261115_uq_goals_active_thread），消 autogenerate 漂移。
     __table_args__ = (
         Index("idx_ops_goals_tenant_status", "tenant_id", "status"),
         Index("idx_ops_goals_thread", "thread_id"),
+        Index(
+            "uq_ops_goals_active_thread",
+            "tenant_id",
+            "thread_id",
+            unique=True,
+            postgresql_where=text("status IN ('active','paused')"),
+        ),
     )
 
     goal_id: Mapped[str] = mapped_column(

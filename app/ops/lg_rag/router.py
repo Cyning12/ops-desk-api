@@ -20,6 +20,7 @@ supervisor 图会在 observe 里被 interrupt() 挂起等人审批，那一刻�
 from __future__ import annotations
 
 import asyncio
+import importlib
 import json
 import logging
 import os
@@ -35,6 +36,7 @@ from pydantic import BaseModel, Field
 from app.db.models import OpsUser
 from app.llm.usage import reset_run_context, set_run_context
 from app.ops.deps import CurrentUser
+from app.ops.goals import inject as goal_inject
 from app.ops.lg_rag import (
     ainvoke_basic_agent,
     ainvoke_router_agent,
@@ -464,6 +466,15 @@ async def stream_lg_rag(
 
     thread_id = (body.thread_id or uuid.uuid4().hex)[:THREAD_ID_MAX_LENGTH]
     history_turns = await _prepare_thread(thread_id, str(user.id))
+    if goal_inject.goal_inject_enabled():
+        # P1-T4 入口接线（07 §5 T4）：闸内懒创建/复用非终态 goal。importlib
+        # 运行期解析守 lg-rag-outbound 契约（承 continuity 先例）；objective
+        # 取 body.query 原始用户输入（非 continue 拼接稿）。store 内部吞错
+        # 返 None，绝不阻断请求。
+        goal_store = importlib.import_module("app.ops.goals.store")
+        await goal_store.resolve_goal_for_thread(
+            tenant_id=tenant_id, thread_id=thread_id, query=body.query
+        )
     run_id = uuid.uuid4().hex
     query = body.query
     # B2 薄：可选 continue_from_run_id → 把旧 run partial 拼进 query 草稿（新 run_id）
