@@ -365,7 +365,8 @@ waves:
       - alembic/
       - app/ops/lg_rag/
   - task_slug: p1-t3-goal-inject
-    status: open
+    status: closed
+    wave_tip: "3bd7ae50"
     base: "44a5b32"
     note: >-
       P1-T3 goal 注入装配（issue #391 维护者派单 · 设计真源 workspace 07
