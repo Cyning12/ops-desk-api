@@ -309,7 +309,8 @@ waves:
       - app/
       - alembic/
   - task_slug: p1-t1-goal-store
-    status: active
+    status: closed
+    wave_tip: "3d6eaec"
     base: "0dfc697"
     note: >-
       P1-T1 goal_store 模块（issue #385 维护者派单 · 设计真源 workspace 07
