@@ -8,6 +8,7 @@ from app.ops.admin.sync import router as admin_sync_router
 from app.ops.auth import router as auth_router
 from app.ops.capability_mine import router as capability_mine_router
 from app.ops.chat.router import router as chat_router
+from app.ops.goals.router import router as goals_router
 from app.ops.graph import router as graph_router
 from app.ops.hitl.router import router as hitl_router
 from app.ops.issues import router as issues_router
@@ -29,6 +30,7 @@ router.include_router(admin_capability_router)
 router.include_router(capability_mine_router)
 router.include_router(admin_memory_router)
 router.include_router(chat_router)
+router.include_router(goals_router)
 router.include_router(lc_evidence_router)
 router.include_router(lg_rag_router)
 router.include_router(chat_history_router)
