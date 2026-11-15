@@ -431,8 +431,9 @@ waves:
       - tests/
       - scripts/
   - task_slug: p2a-t1-panel-list-tools
-    status: active
+    status: closed
     base: "e0a6734"
+    wave_tip: "f8a9054"
     note: >-
       P2a-T1 面板列表双工具+闸基（HG-TASK-DRAFT 2026-11-16 · issue
       Cyning12/ops-desk-workspace#23 m03064 夜间授权 · 设计真源 workspace
@@ -482,6 +483,7 @@ waves:
       - docs/_tech_graph/l1/01_modules.md
       - docs/harness/audit_gates/registry.yaml
       - docs/tasks/active/task_p2a_t1_panel_list_tools.md
+      - docs/tasks/done/task_p2a_t1_panel_list_tools.md
     allowed_tree_prefixes:
       - docs/harness/invokes/by-task/p2a-t1-panel-list-tools/
     banned_prefixes:
