@@ -4,7 +4,7 @@ title: task · feat · P1-T2 REST goal 面
 
 # task · feat · P1-T2 REST goal 面
 
-> **状态**：`in_progress`
+> **状态**：`closed`（2026-11-15 关账 · wave_tip 19e3f9ba）
 > **来源**：issue Cyning12/ops-desk-api#390（维护者派单 · 设计真源 07-p1-goal-design.md commit d19fdaa）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · feat · P1-T2 REST goal 面
 | **task_slug** | p1-t2-goal-rest |
 | base | 44a5b32 |
 | 关联 issue | Cyning12/ops-desk-api#390 · Cyning12/ops-desk-workspace#23 |
-| 关联 PR | 待建 |
+| 关联 PR | #392（CI 四绿 · squash 19e3f9ba） |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack |
 
@@ -51,10 +51,10 @@ P1-T1（PR #387）已交付 goal_store 读写模块（分层纪律：读 best-ef
 
 ## 验收标准
 
-- [ ] `pytest tests/test_goals_rest.py` 真 PG 全绿（覆盖 401/422/404/409/200 五类）
-- [ ] 词表外 status 返回 422；跨租户 goal_id 返回 404；未登录 401；非法流转 409
-- [ ] ruff app tests 绿；graph-compile 绿
-- [ ] 01_modules.md goals 行登记 + 签收行
+- [x] `pytest tests/test_goals_rest.py` 真 PG 全绿（覆盖 401/422/404/409/200 五类）
+- [x] 词表外 status 返回 422；跨租户 goal_id 返回 404；未登录 401；非法流转 409
+- [x] ruff app tests 绿；graph-compile 绿
+- [x] 01_modules.md goals 行登记 + 签收行
 
 ### 自检结论
 
