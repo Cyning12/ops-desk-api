@@ -4,7 +4,7 @@ title: P1-T5a Goal tech_graph REST 契约 + 放量 runbook
 
 # Task：P1-T5a Goal tech_graph REST 契约 + 放量 runbook
 
-> **状态**：`in_progress`（2026-11-15 开工）
+> **状态**：`closed`（2026-11-15 关账 · wave_tip 9c9d01a5）
 
 ## Harness 元信息
 
@@ -13,7 +13,7 @@ title: P1-T5a Goal tech_graph REST 契约 + 放量 runbook
 | **task_slug** | p1-t5a-goal-docs |
 | 波次 | P1-T5a（P1 收官波 · api 仓部分） |
 | 上游 issue | #399（维护者派单）· #23 母 issue · 设计真源 07-p1-goal-design.md |
-| 关联 PR | 待建 |
+| 关联 PR | #400（CI 四绿 · squash 9c9d01a5） |
 | **wiki_delta** | docs/_tech_graph/l1/01_modules.md 签收行 + docs/guides/RUNBOOK_goal_rollout_v1_zh.md |
 
 ## 人工闸
@@ -41,10 +41,10 @@ P1 Goal 主线 T1→T4 全闭环（#385/#390/#391/#396）。T5 收官波 api 仓
 
 ## 验收标准
 
-- [ ] l1/10_flow_goals.{graph.yaml,md} 落盘 · shared/graph.json 同步 · graph-compile 全绿
-- [ ] RUNBOOK_goal_rollout_v1_zh.md 含三步放量+回退命令+观测点+07 §6 十条对照
-- [ ] 01_modules T2 签收行补链接 + 本波签收行
-- [ ] task lint PASS · CI lint-wiki-delta/tech-graph 绿
+- [x] l1/10_flow_goals.{graph.yaml,md} 落盘 · shared/graph.json 同步 · graph-compile 全绿
+- [x] RUNBOOK_goal_rollout_v1_zh.md 含三步放量+回退命令+观测点+07 §6 十条对照
+- [x] 01_modules T2 签收行补链接 + 本波签收行
+- [x] task lint PASS · CI lint-wiki-delta/tech-graph 绿
 
 ## 必读列表
 
@@ -65,7 +65,7 @@ P1 Goal 主线 T1→T4 全闭环（#385/#390/#391/#396）。T5 收官波 api 仓
 
 ### 自检结论
 
-（实施时回填）
+GO：验收 4 条全过。10_flow_goals.{graph.yaml,md}+shared/graph.json 同步 · runbook 三步放量+回退+十条对照 · 01_modules T2 行补链接+本波签收行 · graph-compile 全绿 · CI 四绿。零代码改动波零偏差。
 
 ## 实现备忘
 

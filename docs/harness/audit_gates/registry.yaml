@@ -412,7 +412,8 @@ waves:
       - docs/harness/reviews/task_p1_t4_goal_entry_audit_R1_20261115.md
 
   - task_slug: p1-t5a-goal-docs
-    status: open
+    status: closed
+    wave_tip: "9c9d01a5"
     base: "8af513d"
     allowed_tree_files:
       - docs/_tech_graph/l1/10_flow_goals.graph.yaml
