@@ -341,7 +341,8 @@ waves:
       - app/ops/lg_rag/
       - app/ops/chat/
   - task_slug: p1-t2-goal-rest
-    status: open
+    status: closed
+    wave_tip: "19e3f9ba"
     base: "44a5b32"
     note: >-
       P1-T2 REST goal 面（issue #390 维护者派单 · 设计真源 workspace 07
