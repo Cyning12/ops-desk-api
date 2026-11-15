@@ -1,4 +1,4 @@
-"""默认 local_fn 能力：两枚 mock + utc_now_iso + 本库 issue/PR lookup。
+"""默认 local_fn 能力：两枚 mock + utc_now_iso + 本库 issue/PR lookup + 面板聚合双工具。
 
 进程内注册表默认条目（非注册中心）。``args_schema`` 仅参数形态；
 业务不变量不进 schema。lookup 标 ``tenant_scoped=True``。
@@ -13,7 +13,9 @@ from app.ops.capability.adapters.local_fn import LocalFnAdapter
 from app.ops.capability.gateway import get_registry, register
 from app.ops.capability.lookups import (
     get_issue_by_number,
+    get_overview,
     get_pr_by_number,
+    graph_snapshot,
     query_issues,
     query_pull_requests,
 )
@@ -72,6 +74,53 @@ _SCHEMA_QUERY_PRS: dict[str, Any] = {
 
 _OUTPUT_SCHEMA_PANEL_LIST: dict[str, Any] = {
     "required": ["$.items", "$.total", "$.page", "$.page_size"],
+}
+
+# P2a-T2：面板聚合双工具（get_overview / graph_snapshot · 与 builtin.v1.yaml
+# 逐字段对齐）。nullable 为逐键空数据声明（契约消费方只读 required，
+# nullable 属自由声明键 · result_contract.py:86-93）。
+_SCHEMA_GET_OVERVIEW: dict[str, Any] = {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": False,
+}
+
+_SCHEMA_GRAPH_SNAPSHOT: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "view": {"type": "string", "enum": ["summary", "modules", "full"]},
+        "module": {"type": "string"},
+    },
+    "additionalProperties": False,
+}
+
+_OUTPUT_SCHEMA_GET_OVERVIEW: dict[str, Any] = {
+    "required": [
+        "$.cycle_time",
+        "$.review_time",
+        "$.issue_throughput",
+        "$.as_of",
+        "$.sync_status",
+        "$.trend",
+    ],
+    "nullable": [
+        "$.cycle_time.median_days",
+        "$.review_time.median_days",
+        "$.sync_run",
+        "$.scan_snapshot",
+    ],
+}
+
+_OUTPUT_SCHEMA_GRAPH_SNAPSHOT: dict[str, Any] = {
+    "required": ["$.view", "$.scope", "$.truncated"],
+    "nullable": [
+        "$.repo_id",
+        "$.created_at",
+        "$.summary",
+        "$.module_matrix",
+        "$.payload",
+        "$.warning",
+    ],
 }
 
 
@@ -353,6 +402,57 @@ _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
             output_schema=dict(_OUTPUT_SCHEMA_PANEL_LIST),
         ),
         LocalFnAdapter(query_pull_requests),
+    ),
+    (
+        CapabilitySpec(
+            capability_id="get_overview",
+            kind="local_fn",
+            description="只读：本租户交付总览聚合（口径对齐面板 overview 端点 · 无参数）。返回 cycle_time/review_time（90 天窗 PR 周期与首评审中位数天数+sample_size，无样本 median_days 为 null）、issue_throughput（30 天关闭数+period_days）、as_of（必带）、sync_status（无同步记录为 idle）、sync_run（最近同步 id/started_at/finished_at/status/records_issue/records_pr，无记录为 null）、scan_snapshot（最近扫描 parsed_summary+created_at，无记录为 null；parsed_summary 序列化超 2000 字符截断为 {keys,truncated:true}）、trend（30 天逐日 closed_issues/merged_prs 零填）。sync_run/scan_snapshot 为全局仓库级状态（无租户列），issue/PR 派生指标按租户过滤。",
+            when_to_use="需要交付效率、同步状态、扫描摘要或 30 天趋势的总览数字，或回答「最近整体怎么样」时",
+            args_schema=dict(_SCHEMA_GET_OVERVIEW),
+            tags=("panel", "overview", "readonly"),
+            risk_level="low",
+            side_effect="read",
+            tenant_scoped=True,
+            output_fields=(
+                "cycle_time",
+                "review_time",
+                "issue_throughput",
+                "as_of",
+                "sync_status",
+                "sync_run",
+                "scan_snapshot",
+                "trend",
+            ),
+            output_schema=dict(_OUTPUT_SCHEMA_GET_OVERVIEW),
+        ),
+        LocalFnAdapter(get_overview),
+    ),
+    (
+        CapabilitySpec(
+            capability_id="graph_snapshot",
+            kind="local_fn",
+            description="只读：全局仓库图谱快照三视图（scope 恒为 global_repo · 无租户谓词 · ctx 不要求）。view=summary（默认 · 仅 summary{node_count,edge_count,module_count} · 上限 4000 字符）/modules（附 module_matrix · 上限 8000）/full（附 payload 与 module_matrix · 上限 12000）；module 可选按节点 module 键过滤子图（过滤优先于截断 · 结构不含过滤键时返回 warning=module_filter_no_match 与未过滤摘要，不静默空集）。超限按 nodes→edges 顺序截断并置 truncated=true 且附原始 totals；无快照时 repo_id/created_at/summary 等为 null、truncated=false。",
+            when_to_use="需要仓库模块结构、依赖图或模块×问题矩阵的全局视图时",
+            args_schema=dict(_SCHEMA_GRAPH_SNAPSHOT),
+            tags=("panel", "graph", "readonly"),
+            risk_level="low",
+            side_effect="read",
+            tenant_scoped=False,
+            output_fields=(
+                "view",
+                "scope",
+                "repo_id",
+                "created_at",
+                "summary",
+                "module_matrix",
+                "payload",
+                "truncated",
+                "warning",
+            ),
+            output_schema=dict(_OUTPUT_SCHEMA_GRAPH_SNAPSHOT),
+        ),
+        LocalFnAdapter(graph_snapshot),
     ),
 ]
 

@@ -490,3 +490,64 @@ waves:
       - alembic/
       - scripts/
       - app/ops/lg_rag/
+  - task_slug: p2a-t2-panel-aggregate-tools
+    status: active
+    base: "8af02c4a"
+    note: >-
+      P2a-T2 面板聚合双工具（HG-TASK-DRAFT 2026-11-16 · issue
+      Cyning12/ops-desk-workspace#23 m03064 夜间授权 · 设计真源 workspace
+      08-p2a-tools-design.md 终稿 §7 T2 行）：lookups.py 加
+      get_overview/graph_snapshot 两 adapter——get_overview 无参数
+      （properties:{} + additionalProperties:false）· 返回逐键对齐
+      overview.py:169-180 口径（trend 30 天全量零填 · as_of 必带 ·
+      sync_run/scan_snapshot 全局段 docstring 钉 W-fix-2 F13 口径）·
+      scan_snapshot.parsed_summary 序列化 >2000 截断为
+      {keys,truncated:true} · 空数据 null 逐键声明进 output_schema ·
+      禁「实时」；graph_snapshot 统一外壳
+      {view,scope:"global_repo",repo_id,created_at,summary,
+      module_matrix?|截断,payload?|截断,truncated} · 上限
+      4000/8000/12000 · nodes→edges 顺序截断 + truncated:true + totals ·
+      过滤优先于截断 · fail-visible warning:"module_filter_no_match"（不
+      静默空集）· 截断独立纯函数 · view 词表 adapter 显式校验（R1
+      schema_validate 不校验 enum 既有事实）· tenant_scoped:false 照 T1
+      惯例处理 ctx。builtin.v1.yaml +2（全字段含 output_schema ·
+      tags=panel+域+readonly · args_schema 无 per-prop description 守
+      catalog ≤6000 红线）+ defaults.py 回退面逐字段对齐 +
+      strategy/config.py supervisor allowlist +2。测试双层范式（InMemory
+      恒跑 + 真 PG _DB_MARK 双租户 seed）· 六处存量锚 7→9 推进 ·
+      catalog ≤6000 断言更新。偏差登记：when_to_use loader 必填非空
+      （manifest.py:523-526）→ 填简短引导（承 T1 先例 · when_not_to_use
+      不填）；同性质 count 锚六处随 +2 既定后果推进 7→9（断言语义不动）；
+      V10 output_schema 白名单（manifest.py:324）原仅
+      required/min_items/empty_is_suspicious → 扩 nullable（同款非空 $
+      路径列表校验 · 保防拼错意图）以承载 §1.4/§1.5 空数据 null 逐键
+      声明，allowed_app_files 随扩 manifest.py。
+      禁承载：面板端点改动 · adapter 白名单扩容（manifest.py:64-66 不扩）
+      · alembic/ · 图（app/ops/lg_rag/）改动 · 新 DDL/索引/依赖 · SSE
+      新帧 · mock 退役 · budget/circuit 默认值 · T1 已落 span tenant_id
+      与 mock 收窄不重复。
+    allowed_app_files:
+      - app/ops/capability/lookups.py
+      - app/ops/capability/defaults.py
+      - app/ops/capability/manifest.py
+      - app/ops/capability/manifests/builtin.v1.yaml
+      - app/ops/strategy/config.py
+    allowed_tree_files:
+      - tests/test_capability_manifest.py
+      - tests/test_capability_panel_tools.py
+      - tests/test_capability_panel_aggregate_tools.py
+      - tests/test_strategy_env_extra_candidates.py
+      - tests/test_capability_testing_write.py
+      - tests/test_stage_w_write_expand.py
+      - tests/test_ops_write_catalog_reconcile.py
+      - docs/harness/reviews/task_p2a_t2_panel_aggregate_tools_audit_R1_20261116.md
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p2a_t2_panel_aggregate_tools.md
+      - docs/tasks/done/task_p2a_t2_panel_aggregate_tools.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p2a-t2-panel-aggregate-tools/
+    banned_prefixes:
+      - alembic/
+      - scripts/
+      - app/ops/lg_rag/

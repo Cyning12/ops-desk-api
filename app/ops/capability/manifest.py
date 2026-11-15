@@ -305,6 +305,19 @@ def _validate_output_schema(block: dict[str, Any], *, loc: str) -> None:
             if not str(expr).lstrip().startswith("$"):
                 raise ManifestError(f"{loc} V10: required 路径必须以 $ 开头（当前 {expr!r}）")
 
+    nullable = block.get("nullable")
+    if nullable is not None:
+        # nullable 是**声明面**（哪些键在无数据时合法为 null），不参与
+        # 运行时比对（result_contract 只消费 required）；但同样要防拼错
+        # 静默失效——路径写错的 null 声明等于没有声明。
+        if not isinstance(nullable, list) or not nullable:
+            raise ManifestError(f"{loc} V10: nullable 必须是**非空**列表（空列表等于没声明）")
+        if not all(isinstance(x, str) and x.strip() for x in nullable):
+            raise ManifestError(f"{loc} V10: nullable 必须是非空字符串列表")
+        for expr in nullable:
+            if not str(expr).lstrip().startswith("$"):
+                raise ManifestError(f"{loc} V10: nullable 路径必须以 $ 开头（当前 {expr!r}）")
+
     min_items = block.get("min_items")
     if min_items is not None:
         if not isinstance(min_items, dict):
@@ -321,7 +334,7 @@ def _validate_output_schema(block: dict[str, Any], *, loc: str) -> None:
             if n < 0:
                 raise ManifestError(f"{loc} V10: min_items[{expr!r}] 不得为负")
 
-    unknown = set(block) - {"required", "min_items", "empty_is_suspicious"}
+    unknown = set(block) - {"required", "min_items", "empty_is_suspicious", "nullable"}
     if unknown:
         raise ManifestError(
             f"{loc} V10: output_schema 未知字段 {sorted(unknown)}（拼错的字段会让契约静默失效）"

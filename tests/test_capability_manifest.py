@@ -37,6 +37,8 @@ _BUILTIN_IDS = (
     "get_pr_by_number",
     "query_issues",
     "query_pull_requests",
+    "get_overview",
+    "graph_snapshot",
 )
 
 # H4 必填字段的最小声明（fixture 复用；契约本身见 manifest._entry_from_raw）
@@ -85,7 +87,7 @@ def test_builtin_yaml_aligns_with_default_specs():
     assert now.ok is True
     assert now.output["tool"] == utc_now_iso("")["tool"]
     assert result.version == 1
-    assert result.capability_manifest_count == 7
+    assert result.capability_manifest_count == 9
 
 
 def test_builtin_panel_list_tools_full_fields():
@@ -550,6 +552,8 @@ capabilities:
         ("      required: ['data.ticketId']", "路径不以 $ 开头 —— 取不到，契约静默失效"),
         ("      min_items: {'$.data.items': 'one'}", "min_items 不是整数"),
         ("      requiredx: ['$.data.x']", "拼错字段名"),
+        ("      nullable: []", "nullable 为空列表 —— 等于没声明（P2a-T2）"),
+        ("      nullable: ['data.x']", "nullable 路径不以 $ 开头 —— 声明静默失效"),
     ],
 )
 def test_output_schema_bad_shape_rejected(tmp_path: Path, block: str, why: str):
@@ -564,7 +568,8 @@ def test_output_schema_valid_shape_loads(tmp_path: Path):
     """合法契约必须能加载进 spec（对照——上面四条不是"一律拒绝"）。"""
     block = """      required: ["$.data.ticketId"]
       min_items: {"$.data.items": 1}
-      empty_is_suspicious: true"""
+      empty_is_suspicious: true
+      nullable: ["$.data.assignee"]"""
     path = _write_output_schema_manifest(tmp_path, block)
     result = load_capability_manifest(path)
     assert "probe_contract" in set(result.registered_ids)
@@ -573,6 +578,7 @@ def test_output_schema_valid_shape_loads(tmp_path: Path):
         "required": ["$.data.ticketId"],
         "min_items": {"$.data.items": 1},
         "empty_is_suspicious": True,
+        "nullable": ["$.data.assignee"],
     }
     unregister_probe = getattr(spec, "capability_id", None)
     assert unregister_probe == "probe_contract"
