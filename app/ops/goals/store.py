@@ -166,6 +166,33 @@ async def list_goals(*, thread_id: str, tenant_id: str) -> list[dict[str, Any]]:
         return []
 
 
+async def find_active_goal(*, tenant_id: str, thread_id: str) -> dict[str, Any] | None:
+    """按 thread 查 status=active 的 goal（注入装配只读路径 · **不创建**）。
+
+    仅 active 注入（07 §2.3：paused 目标不应引导新 run）。best-effort：
+    任何 DB 故障 → 日志带 thread_id + 返回 None，绝不反噬装配链路。
+    """
+    if not tenant_id or not thread_id:
+        return None
+    try:
+        async with AsyncSessionLocal() as db:
+            stmt = (
+                select(OpsGoal)
+                .where(
+                    OpsGoal.tenant_id == tenant_id,
+                    OpsGoal.thread_id == thread_id,
+                    OpsGoal.status == "active",
+                )
+                .order_by(OpsGoal.created_at.desc())
+                .limit(1)
+            )
+            row = (await db.execute(stmt)).scalars().first()
+            return _to_dict(row) if row is not None else None
+    except Exception:
+        logger.exception("goal find_active failed thread_id=%s tenant_id=%s", thread_id, tenant_id)
+        return None
+
+
 async def patch_goal_status(
     *, goal_id: str, tenant_id: str, new_status: str
 ) -> dict[str, Any]:

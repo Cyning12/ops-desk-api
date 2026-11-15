@@ -26,6 +26,7 @@ episode、recall API）与本文件渲染 helper（`render_memory_facts_block` /
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -34,6 +35,7 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
+from app.ops.goals import inject as goal_inject
 from app.ops.lg_rag.query_rewrite import maybe_rewrite_query
 from app.ops.prompts.slots import (
     SlotIsolationError,
@@ -475,6 +477,8 @@ async def _assemble_graph_messages_with_memory_impl(
 def _attribute_isolation_slots(messages: list[BaseMessage]) -> list[BaseMessage]:
     """消息级槽位归因（纯函数 · 仅 on 态触达）：角色序与正文零改动。
 
+    - goal 注入块（`[当前目标]` 节首的 SystemMessage）→ `goal_objective`
+      （P1-T3 · 置 memory 分支前，07 §2.3②）；
     - 末条 HumanMessage（本轮问题）→ `user_query`；
     - memory 注入块（`[已知事实]`/`[用户偏好]` 节首的 SystemMessage）→ `memory_fact`
       （语义不变 · 声明补全）；
@@ -484,7 +488,9 @@ def _attribute_isolation_slots(messages: list[BaseMessage]) -> list[BaseMessage]
     last = len(messages) - 1
     for i, msg in enumerate(messages):
         content = str(msg.content)
-        if isinstance(msg, SystemMessage) and (
+        if isinstance(msg, SystemMessage) and content.startswith(goal_inject.GOAL_HEADER):
+            slot_id = "goal_objective"
+        elif isinstance(msg, SystemMessage) and (
             content.startswith(MEMORY_FACTS_HEADER)
             or content.startswith(MEMORY_PREFERENCES_HEADER)
             or content.startswith(MEMORY_EPISODES_HEADER)
@@ -496,6 +502,39 @@ def _attribute_isolation_slots(messages: list[BaseMessage]) -> list[BaseMessage]
             slot_id = "history_turn"
         attributed.append(declare_slots(msg, [slot_id]))
     return attributed
+
+
+async def _inject_goal_system_message(
+    messages: list[BaseMessage], *, tenant_id: str, thread_id: str
+) -> list[BaseMessage]:
+    """goal 头插（P1-T3 · 07 §2）：active goal → 单条 SystemMessage 置顶。
+
+    goals.store 经 importlib 运行期解析（守 lg-rag-outbound 契约 · 承本文件
+    session-summary 先例）；wait_for ≤ GOAL_FETCH_TIMEOUT_S：超时降级
+    （span goal_inject_degraded=timeout）、异常降级（=error），均不阻塞
+    主链路；成功 span goal_injected=1 + goal_id。objective 空串（防御）不注入。
+    """
+    try:
+        import importlib
+
+        store = importlib.import_module("app.ops.goals.store")
+        goal = await asyncio.wait_for(
+            store.find_active_goal(tenant_id=tenant_id, thread_id=thread_id),
+            timeout=goal_inject.GOAL_FETCH_TIMEOUT_S,
+        )
+    except TimeoutError:
+        update_current_span_metadata({"goal_inject_degraded": "timeout"})
+        logger.warning("goal inject degraded: fetch timeout thread_id=%s", thread_id)
+        return messages
+    except Exception:
+        update_current_span_metadata({"goal_inject_degraded": "error"})
+        logger.exception("goal inject degraded thread_id=%s", thread_id)
+        return messages
+    if not goal or not goal.get("objective"):
+        return messages
+    goal_msg = SystemMessage(content=f"{goal_inject.GOAL_HEADER}\n{goal['objective']}")
+    update_current_span_metadata({"goal_injected": 1, "goal_id": goal["goal_id"]})
+    return [goal_msg, *messages]
 
 
 async def assemble_graph_messages_with_memory(
@@ -538,6 +577,13 @@ async def assemble_graph_messages_with_memory(
         max_full_turns=max_full_turns,
         group_size=group_size,
     )
+    # goal 注入（P1-T3 · 07 §2）：闸 off 零触达（goal_store 调用计数=0 ·
+    # 输出逐字节一致）；on 态头插单条 SystemMessage，isolation 归因在下游
+    # _attribute_isolation_slots 第四分支 goal_objective。
+    if goal_inject.goal_inject_enabled() and tenant_id and thread_id:
+        messages = await _inject_goal_system_message(
+            messages, tenant_id=tenant_id, thread_id=thread_id
+        )
     if not security_input_isolation_enabled():
         return messages
     try:
