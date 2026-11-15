@@ -4,7 +4,7 @@ title: P2a-T4 冒烟验证与验收落盘
 
 # task_p2a_t4_verification_smoke
 
-> **状态**：`active`（2026-11-16 落卡）
+> **状态**：`done`（2026-11-16 落卡 · 2026-11-16 验收关账 · feat PR #406 wave_tip 90729acb）
 
 - 关联：issue Cyning12/ops-desk-workspace#23（m03064 夜间授权窗口）· 设计真源 08-p2a-tools-design.md（§3 / §6 / §7 T4 行 / §8）
 
@@ -66,7 +66,12 @@ P2a（面板工具化）第四波·关账波。T1 落列表双工具、T2 落聚
 
 ### 自检结论
 
-（40 验收时回填）
+- [x] 结构断言新文件绿：allowlist 九枚钉死 · 九枚逐枚可选中 · 四样例预期对照钉死（预期集 ∩ mock_* = ∅）· catalog 九枚可见（16/16）
+- [x] capability 电池十一件全绿：166 passed 0 failed（五键 blank）
+- [x] 全量套件对拍：分支 2165 passed/17 failed = base 16 红（.env 污染既有红 · 因果经 blank 三键抽查复绿证实）+ wave_gate 脏树期 1 红（提交后复绿实证）· CI 无 .env 为终裁
+- [x] 四样例冒烟一次跑完 · (a)-(f) 逐项判定落盘 · 三级裁定 **成立（4/4）** · 不触发 08 §3 FC 重估
+- [x] ruff check app tests 绿 · CI 四绿（pytest 2m20s/check/import-linter/lint-wiki-delta · PR #406）· 零 app/ 改动 · 零新依赖/DDL/SSE 帧/图谱改动
+- [x] 验收记录落 workspace docs/01-scope/03-general-agent/10-p2a-verification.md（含偏差八项清单）
 
 ## 必读
 
@@ -141,3 +146,4 @@ actual_last_round: R5
 
 - 2026-11-16 · 落卡（夜间授权窗口 · issue #23 m03064 + 08 §7 T4 行）
 - 2026-11-16 · 30 实施：结构断言 16 例 + 四样例冒烟一次跑完 4/4 过（裁定成立）· 实现备忘与偏差八项回填
+- 2026-11-16 · 40 验收：自检六项全勾 · CI 四绿 · feat PR #406 squash merge → master 90729acb · 验收记录落 workspace 10-p2a-verification.md · 移 done 关账
