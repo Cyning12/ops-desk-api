@@ -128,6 +128,7 @@ audience: agent-30
 | HG-GRAPH-MODULES | approved | 维护者（P0' T5 · 会话签收 m00177「签收，开始」 · 30 回写本文） | 2026-11-14 | **p0prime-t5-goals-ddl 回写**：`db` 行登记新表 `ops_goals`（A2 仅 DDL 零功能 · tenant_id 必填 · status 词表仅 docstring 登记 · thread_id 无 FK）+ 修复 T4 遗留 db 行文本错位；**不新增一级模块** · 零新跨模块边 · 不增 implementedBy · 零新路由/SSE 事件类型 · 零读写代码 |
 | HG-GRAPH-MODULES | approved | 维护者（P0' T6 · 会话签收 m00177「签收，开始」 · 30 回写本文） | 2026-11-14 | **p0prime-t6-audit-view 回写**：`db` 行登记 `v_audit_unified` 审计统一视图（裁定 P3：单张 view 合格线 · 三源 UNION ALL · 缺列域补值 · 零源表变更）；**不新增一级模块** · 零新跨模块边 · 不增 implementedBy · 零新路由/表/SSE 事件类型（纯 DB view 非表） |
 | HG-GRAPH-MODULES | approved | 维护者（P0' T2b · 会话签收 m00177「签收，开始」 · 30 回写本文） | 2026-11-14 | **p0prime-t2b-chat-cleanup 回写**：`chat` 行备注（models/sessions.latest 410 化 · schema.py 删除 · 仅余三墓碑）· `db` 行备注（三表 drop 迁移）· 概念表 `LatestChatSession` 行标注 410；**不新增一级模块** · 零新跨模块边 |
+| HG-GRAPH-MODULES | approved | 维护者（P1-T2 · 会话签收 m00177「签收，开始」 · 30 回写本文） | 2026-11-15 | **p1-t2-goal-rest 回写**：goal REST 面 `GET /api/ops/goals?thread_id` + `PATCH /api/ops/goals/{goal_id}`（issue #390 · 07 §4/§5 · O-1 人工复活通道 · 词表外 422 pydantic 前置 · 跨租户/不存在 404 防探测 · 非法流转 409 · 未登录 401）；**不新增一级模块**（goals 包承 T5/#385 既有 · 非一级模块）· 零新跨模块边 · 不增 implementedBy · 零新表/迁移/SSE 事件类型（新路由两个已登记） |
 ## 关联
 
 - 顶层图（G-L0）：[`../l0/00_main.md`](../l0/00_main.md) · 源 [`../l0/00_main.graph.yaml`](../l0/00_main.graph.yaml)

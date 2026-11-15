@@ -340,3 +340,26 @@ waves:
       - alembic/
       - app/ops/lg_rag/
       - app/ops/chat/
+  - task_slug: p1-t2-goal-rest
+    status: open
+    base: "44a5b32"
+    note: >-
+      P1-T2 REST goal 面（issue #390 维护者派单 · 设计真源 workspace 07
+      §4/§5）：GET /ops/goals?thread_id + PATCH /ops/goals/{goal_id}
+      （词表外 422 pydantic 前置 · 跨租户 404 · 非法流转 409 · 未登录 401）。
+      禁承载：入口接线、uq_ops_goals_active_thread 迁移、注入装配、SSE 面。
+    allowed_app_files:
+      - app/ops/goals/__init__.py
+      - app/ops/goals/router.py
+      - app/ops/router.py
+    allowed_tree_files:
+      - tests/test_goals_rest.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/reviews/task_p1_t2_goal_rest_audit_R1_20261115.md
+      - docs/tasks/active/task_p1_t2_goal_rest.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p1-t2-goal-rest/
+    banned_prefixes:
+      - alembic/
+      - app/ops/lg_rag/
