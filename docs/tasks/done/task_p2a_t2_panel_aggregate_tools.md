@@ -4,7 +4,7 @@ title: P2a-T2 面板聚合工具 get_overview / graph_snapshot
 
 # task_p2a_t2_panel_aggregate_tools
 
-> **状态**：active（落卡）
+> **状态**：`closed`（2026-11-16 落卡 · 2026-11-16 关账 · PR #404 squash merge 94f5ba87）
 
 - 关联：issue Cyning12/ops-desk-workspace#23（m03064 夜间授权窗口）· 设计真源 08-p2a-tools-design.md（§1.4 / §1.5 / §1.6 / §2 / §5 / §7 T2 行 / §8）
 
@@ -57,20 +57,20 @@ P2a（面板工具化）第二波。T1 已落面板列表双工具 query_issues/
 
 ## 验收标准
 
-- [ ] get_overview 返回形状逐键对齐 overview.py:169-180（InMemory + 真 PG 双层绿）
-- [ ] get_overview 空数据 null 逐键声明进 output_schema · as_of 必带 · description 无「实时」
-- [ ] graph_snapshot 三视图外壳/上限/截断语义全绿（含 totals 与 nodes→edges 顺序）
-- [ ] warning:"module_filter_no_match" 实证用例绿
-- [ ] tenant_scope_missing 负样本绿（get_overview）· graph 无 ctx 放行绿
-- [ ] manifest count 7→9 全字段钉死 · 六处存量锚推进全绿
-- [ ] catalog ≤6000 断言更新绿
-- [ ] 真 PG _DB_MARK 双层：双租户 seed 全局口径同值/截断标志/空数据 null 绿
-- [ ] ruff check app tests 绿 · CI 四绿
-- [ ] 零新 DDL/索引/依赖/路由/SSE 事件
+- [x] get_overview 返回形状逐键对齐 overview.py:169-180（InMemory + 真 PG 双层绿）
+- [x] get_overview 空数据 null 逐键声明进 output_schema · as_of 必带 · description 无「实时」
+- [x] graph_snapshot 三视图外壳/上限/截断语义全绿（含 totals 与 nodes→edges 顺序）
+- [x] warning:"module_filter_no_match" 实证用例绿
+- [x] tenant_scope_missing 负样本绿（get_overview）· graph 无 ctx 放行绿
+- [x] manifest count 7→9 全字段钉死 · 六处存量锚推进全绿
+- [x] catalog ≤6000 断言更新绿
+- [x] 真 PG _DB_MARK 双层：双租户 seed 全局口径同值/截断标志/空数据 null 绿
+- [x] ruff check app tests 绿 · CI 四绿
+- [x] 零新 DDL/索引/依赖/路由/SSE 事件
 
 ### 自检结论
 
-（40 验收波回填）
+十条全过：capability 电池 150 passed 0 failed（五 env 键 blank · PG 用例 24 例零 skip）；全量套件 2148 passed · 余红 16 枚与 base 8af02c4a worktree 同子集逐名恒等（外部环境/.env 污染既有红 · CI 无 .env 为终裁 · PR #404 四绿实证）；脏树期 test_wave_gate_registry/test_tc8_diff_whitelist/test_episode_pattern_mine 红为在途面守卫语义提交后复绿；ruff · graph-compile · spec-wave lint/verify 全 PASS。偏差五项见实现备忘（when_to_use 承 T1 · V10 白名单 +nullable · 头注释纠 stale · 六锚推进 · EXTRA_MANIFESTS 污染面新发现）。
 
 ## 必读
 
@@ -132,3 +132,4 @@ actual_last_round: R5
 ## 修订记录
 
 - 2026-11-16 · 落卡（夜间授权窗口 · issue #23 m03064 + 08 §7 T2 行）
+- 2026-11-16 · 30 实施 + 40 验收全绿（feat PR #404 squash merge 94f5ba87 · CI 四绿）· CLOSE 关账（registry status=closed 钉 wave_tip=94f5ba87 · 迁 done · 01_modules 回写）
