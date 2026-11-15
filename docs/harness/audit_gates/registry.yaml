@@ -452,7 +452,10 @@ waves:
       · 仅测试夹具虚构值）→ string 放行 + description 列已知值。
       偏差登记：when_to_use loader 必填非空（manifest.py:523-526）与 R2
       「不填」冲突 → 新条目填与 description 一致简短引导（when_not_to_use
-      不填 · loader 允许缺省）。禁承载：面板端点改动（adapter 按同谓词
+      不填 · loader 允许缺省）。偏差二：supervisor allowlist +2 属设计
+      §7 明项，tests/test_strategy_env_extra_candidates.py TC1① 对拍锚
+      （master 静态五枚逐字节）随之推进为七枚（最小改动 · 仅字面对拍
+      列表与 stripped 序 · 语义断言不动）。禁承载：面板端点改动（adapter 按同谓词
       集重写 ORM 不复用端点）· adapter 白名单扩容 · alembic/ · 图
       （app/ops/lg_rag/）改动 · when_not_to_use 填充（R2 空调杆）·
       mock 工具退役（仅收窄）· 新 DDL/索引/依赖。
@@ -465,6 +468,7 @@ waves:
     allowed_tree_files:
       - tests/test_capability_manifest.py
       - tests/test_capability_panel_tools.py
+      - tests/test_strategy_env_extra_candidates.py
       - docs/_tech_graph/l1/01_modules.md
       - docs/harness/audit_gates/registry.yaml
       - docs/tasks/active/task_p2a_t1_panel_list_tools.md

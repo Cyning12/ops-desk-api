@@ -90,7 +90,13 @@ P2a 把面板视图数据查询封装为只读 capability 进默认面（08 §0�
 
 ## 实现备忘
 
-（实施中回填：ci_status 词表结论 · 偏差登记）
+- ci_status 词表结论：**不可钉**——仓内无生产写入方（app/ops/admin/sender/mapper.py:93 恒 None · 面板 app/ops/pulls.py:58-59 自由串等值过滤 · 仅测试夹具虚构 "success"/"pending"）→ 按 §1.3 走 string 放行 + description 列已知值（GitHub check 惯例 success/failure/pending；现 sync 波恒 null，过滤当前命中空集）。
+- 偏差登记：
+  1. when_to_use loader 必填非空（manifest.py:523-526）与 R2「不填」冲突 → 新条目填与 description 一致简短引导；when_not_to_use 不填（loader 允许缺省）。
+  2. manifest 对齐测试断言 set(_BUILTIN_IDS)==hard_ids → defaults.py _DEFAULT_SPECS 同步 +2（回退路径契约不漂移）。
+  3. supervisor allowlist +2（设计 §7 明项）推进 tests/test_strategy_env_extra_candidates.py TC1① 对拍锚（master 静态五枚逐字节 → 七枚 · stripped 序同步 · 语义断言不动）。
+  4. 主仓 .env 含 LG_RAG_DELEGATION_TOKEN_MODE=enforce → 委派默认 off 用例须 monkeypatch.delenv(dl.ENV_MODE)（首战翻车已修）。
+- 既有基线实证：直接 import app.ops.strategy.config 触发循环 import（strategy.builder ↔ lg_rag.multi.nodes）为 master 基线既有（git stash 实证），与本单无关。
 
 ## 测试策略
 
@@ -99,3 +105,4 @@ P2a 把面板视图数据查询封装为只读 capability 进默认面（08 §0�
 ## 修订记录
 
 - 2026-11-16：落卡过闸（HG-TASK-DRAFT approved · issue #23 m03064 夜间授权 + 08 设计终稿）。
+- 2026-11-16：实施+测试波回填实现备忘（ci_status 结论 · 偏差四条 · registry 偏差二同步）。
