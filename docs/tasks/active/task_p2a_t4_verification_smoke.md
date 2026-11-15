@@ -114,7 +114,21 @@ actual_last_round: R5
 
 ## 实现备忘
 
-（30 实施时回填）
+- 结构断言：tests/test_capability_supervisor_smoke_assertions.py 新建 16 例（EXPECTED_NINE 九枚钉死 · DESIGN_SAMPLES 四样例对照 · 预期集 ∩ mock_* = ∅ · 九枚逐枚 plan kept · catalog 可见性）；mock LLM 范式承 tests/test_lg_rag_supervisor_capability_catalog.py（SimpleNamespace(complete=async fn) + patch get_llm_provider/_record_span_metadata/trace_span）。
+- 冒烟：dev 库 seed（tenant ops-desk-pilot · issues 4/PRs 3/sync_run/scan_snapshot/graph_snapshot 各一）→ POST /api/ops/lg-rag/stream mode=supervisor 四样例 http200 一次跑完 → plan 选择 4/4 命中预期（get_overview/query_pull_requests/graph_snapshot/query_issues）· 数字与面板 REST 四端点同题对照逐键一致 · 零 mock_* 误选 · 零 plan fallback（PLAN_ON_FAIL blank fail-closed 下全成功）。
+- 判定：§6 (a)-(f) 四样例全过（(a) 走设计明示替代路径：SSE 帧序列 + DB ops_lg_rag_run_events 持久化 plan）→ 三级裁定 **成立（4/4）** · 不触发 08 §3 FC 重估。
+- 全量证据：/tmp/opsdesk-rfc/p2a-t4-exec.md（seed 真值/帧证据/判定表/Langfuse 核查/偏差清单）。
+
+## 偏差登记
+
+1. 端点现实 /api/ops/lg-rag/stream mode=supervisor（设计写 /api/ops/chat/stream 已 410 下线 · router.py:56 迁移指针）。
+2. Langfuse 真云 (a) 终证不可达（API 认证通但项目最新 observation 停留 2026-10-27/29 · 本日冒烟窗口 0 条 · uvicorn 有 WARNING No active span）→ 以 SSE 帧+DB 持久化 run events 替代（设计 §6 (a) 明示允许）。
+3. 无浏览器/GUI：(b) 以面板 REST 四端点同题 JSON 对照替代 UI 截图（设计明示允许）。
+4. ci_status 词面：设计样例 failing vs 仓内 failure（GitHub 惯例 · manifest description 在案）→ seed 用 failure · S2 LLM 自发命中。
+5. S3 实发 view=full+module=reports 双参（设计预期单参形态）· schema 放行结果正确 · 观察项。
+6. 冒烟服务 blank 三键（PLAN_ON_FAIL/DELEGATION_TOKEN_MODE/STRATEGY_EXTRA_CANDIDATES）· 承 T1 偏差六先例。
+7. seed 人工构造（非 GitHub 真同步）· 设计本意。
+8. wave_gate_registry 脏树期红（p1-t5a-goal-docs closed entry banned tests/ 在途守卫）· 承 T2 先例 · 提交后复绿。
 
 ## 测试策略
 
@@ -126,3 +140,4 @@ actual_last_round: R5
 ## 修订记录
 
 - 2026-11-16 · 落卡（夜间授权窗口 · issue #23 m03064 + 08 §7 T4 行）
+- 2026-11-16 · 30 实施：结构断言 16 例 + 四样例冒烟一次跑完 4/4 过（裁定成立）· 实现备忘与偏差八项回填
