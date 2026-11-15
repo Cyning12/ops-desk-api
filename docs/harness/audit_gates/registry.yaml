@@ -308,3 +308,28 @@ waves:
     banned_prefixes:
       - app/
       - alembic/
+  - task_slug: p1-t1-goal-store
+    status: active
+    base: "0dfc697"
+    note: >-
+      P1-T1 goal_store 模块（issue #385 维护者派单 · 设计真源 workspace 07
+      §1/§5/§6）：app/ops/goals/store.py 读写模块（状态机规则式 · 懒创建
+      单行化截 200 · 竞态重读 · 分层纪律）+ ORM __table_args__ 对齐既有
+      DB 索引消 autogenerate 漂移（零新迁移）。禁承载：router/continuity/
+      图内接线、REST 面、SSE 面、新迁移（uq_ops_goals_active_thread 属 T4）。
+    allowed_app_files:
+      - app/ops/goals/__init__.py
+      - app/ops/goals/store.py
+      - app/ops/goals/README.md
+      - app/db/models.py
+    allowed_tree_files:
+      - tests/test_goal_store.py
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/reviews/task_p1_t1_goal_store_audit_R1_20261115.md
+      - docs/tasks/active/task_p1_t1_goal_store.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p1-t1-goal-store/
+    banned_prefixes:
+      - alembic/
+      - app/ops/lg_rag/
+      - app/ops/chat/
