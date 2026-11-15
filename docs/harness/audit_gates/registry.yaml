@@ -552,3 +552,35 @@ waves:
       - alembic/
       - scripts/
       - app/ops/lg_rag/
+  - task_slug: p2a-t4-verification-smoke
+    status: active
+    base: "96ccf902"
+    note: >-
+      P2a-T4 冒烟验证与验收落盘（HG-TASK-DRAFT 2026-11-16 · issue
+      Cyning12/ops-desk-workspace#23 m03064 夜间授权 · 设计真源 workspace
+      08-p2a-tools-design.md 终稿 §6/§7 T4 行）：零 app/ 改动 · 纯测试
+      + 文档波。新增 tests/test_capability_supervisor_smoke_assertions.py
+      CI 结构断言（supervisor allowlist 九枚钉死 · 九枚逐枚 plan-JSON
+      可选中 · 四设计样例 query→预期 capability 对照且预期集 ∩ mock_*
+      = ∅ · catalog 九枚可见）；四样例真 LLM 冒烟（dev 库 seed ·
+      /api/ops/lg-rag/stream mode=supervisor · SSE 帧 + 面板 REST 对照
+      + Langfuse span 证据链）· (a)-(f) 判定 + 三级裁定 · 验收记录落
+      workspace 10-p2a-verification.md。
+      禁承载：app/ 任何改动（含 lg_rag/ · lookups.py · manifest ·
+      strategy/config.py）· alembic/ · SSE 新帧 · 新依赖 · 新 DDL/索引 ·
+      图谱改动 · description 修订与 mock description 收窄（失败处置
+      触发时另波）。
+    allowed_app_files: []
+    allowed_tree_files:
+      - tests/test_capability_supervisor_smoke_assertions.py
+      - docs/harness/reviews/task_p2a_t4_verification_smoke_audit_R1_20261116.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p2a_t4_verification_smoke.md
+      - docs/tasks/done/task_p2a_t4_verification_smoke.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p2a-t4-verification-smoke/
+    banned_prefixes:
+      - alembic/
+      - scripts/
+      - app/
+
