@@ -34,18 +34,27 @@ from app.ops.prompts.slots import (
 # ---------------- D1 · 注册表白名单 ----------------
 
 
-def test_registry_covers_six_slots():
+def test_registry_covers_seven_slots():
+    # P1-T3 增 goal_objective（07 §2.3② · untrusted/message/当前目标 + 专用 guide）
     assert set(SLOT_REGISTRY) == {
         "user_query",
         "history_turn",
         "rag_evidence",
         "tool_result",
         "memory_fact",
+        "goal_objective",
         "system_instruction",
     }
-    # trusted 声明：仅指令资产可信，其余五面皆不可信
+    # trusted 声明：仅指令资产可信，其余六面皆不可信
     assert SLOT_REGISTRY["system_instruction"].trusted is True
-    for sid in ("user_query", "history_turn", "rag_evidence", "tool_result", "memory_fact"):
+    for sid in (
+        "user_query",
+        "history_turn",
+        "rag_evidence",
+        "tool_result",
+        "memory_fact",
+        "goal_objective",
+    ):
         assert SLOT_REGISTRY[sid].trusted is False
 
 
