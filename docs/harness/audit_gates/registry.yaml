@@ -289,17 +289,23 @@ waves:
       - app/
       - alembic/
   - task_slug: ci-pytest-pg-service
-    status: active
+    status: closed
+    wave_tip: "d002e4f"
     base: "0dfc697"
     note: >-
       CI pytest 接入 postgres service（issue #384 维护者派单 · 本窗口直执行）：
       消除 DB 用例 skip 假绿（ta2 曾被掩盖实证）。范围=pytest.yml service+env
-      与 conftest.py 注释级同步。禁承载：app/ 业务码、tests 用例逻辑、
-      其他 workflow、迁移文件、弱化任何断言。
+      与 conftest.py 注释级同步。禁承载：app/ 业务码、其他 workflow、迁移文件、
+      弱化任何断言。CLOSE 登记扩面两件：① tests/test_lg_rag_sse_run_worker.py
+      TC-B4 竞态修复（CI 真跑暴露潜伏 race：bus 发布先于事件行对其它会话可见，
+      归属校验抢跑抛 NotFound；加有界等待循环，零断言弱化）；② pytest.yml
+      template1 预建扩展步骤（conftest CREATE DATABASE 继承，首轮 2095 errors
+      「type vector does not exist」实证）。
     allowed_app_files: []
     allowed_tree_files:
       - .github/workflows/pytest.yml
       - tests/conftest.py
+      - tests/test_lg_rag_sse_run_worker.py
       - docs/harness/audit_gates/registry.yaml
       - docs/harness/reviews/task_ci_pytest_pg_service_audit_R1_20261115.md
       - docs/tasks/active/task_ci_pytest_pg_service.md
