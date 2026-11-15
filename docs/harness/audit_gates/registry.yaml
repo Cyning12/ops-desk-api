@@ -553,7 +553,8 @@ waves:
       - scripts/
       - app/ops/lg_rag/
   - task_slug: p2a-t4-verification-smoke
-    status: active
+    status: closed
+    wave_tip: "90729acb"
     base: "96ccf902"
     note: >-
       P2a-T4 冒烟验证与验收落盘（HG-TASK-DRAFT 2026-11-16 · issue
