@@ -430,3 +430,47 @@ waves:
       - alembic/
       - tests/
       - scripts/
+  - task_slug: p2a-t1-panel-list-tools
+    status: active
+    base: "e0a6734"
+    note: >-
+      P2a-T1 面板列表双工具+闸基（HG-TASK-DRAFT 2026-11-16 · issue
+      Cyning12/ops-desk-workspace#23 m03064 夜间授权 · 设计真源 workspace
+      08-p2a-tools-design.md 终稿 §7 T1 行）：lookups.py 加
+      query_issues/query_pull_requests 两 adapter（复用 _tenant_from_ctx ·
+      adapter 显式校验 page≥1/1≤page_size≤20/state 词表违规抛 LookupError
+      （R1 schema_validate 不校验 enum/min/max）· 裁剪整形抽纯函数 ·
+      返回剔 uuid id）+ builtin.v1.yaml +2 条（全字段含 output_schema ·
+      tags=panel+域+readonly · additionalProperties:false · args_schema
+      禁 per-prop description 守 catalog ≤6000 红线 · 禁「实时」字样）+
+      defaults.py _DEFAULT_SPECS 同步 +2（回退路径契约不漂移 · 对齐测试
+      断言前提）+ strategy/config.py supervisor allowlist +2 + gateway.py
+      _write_span_metadata payload 补 tenant_id 一行（R3 · graph 全局放行
+      签收条件 · 元数据补全不动图）+ mock 两枚 description 收窄标 demo
+      （R7 · YAML/defaults 同步）+ 01_modules capability 行备注与签收行。
+      ci_status 词表仓内勘察结论=不可钉（无生产写入方 · mapper 恒 None
+      · 仅测试夹具虚构值）→ string 放行 + description 列已知值。
+      偏差登记：when_to_use loader 必填非空（manifest.py:523-526）与 R2
+      「不填」冲突 → 新条目填与 description 一致简短引导（when_not_to_use
+      不填 · loader 允许缺省）。禁承载：面板端点改动（adapter 按同谓词
+      集重写 ORM 不复用端点）· adapter 白名单扩容 · alembic/ · 图
+      （app/ops/lg_rag/）改动 · when_not_to_use 填充（R2 空调杆）·
+      mock 工具退役（仅收窄）· 新 DDL/索引/依赖。
+    allowed_app_files:
+      - app/ops/capability/lookups.py
+      - app/ops/capability/defaults.py
+      - app/ops/capability/gateway.py
+      - app/ops/capability/manifests/builtin.v1.yaml
+      - app/ops/strategy/config.py
+    allowed_tree_files:
+      - tests/test_capability_manifest.py
+      - tests/test_capability_panel_tools.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p2a_t1_panel_list_tools.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p2a-t1-panel-list-tools/
+    banned_prefixes:
+      - alembic/
+      - scripts/
+      - app/ops/lg_rag/
