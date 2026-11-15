@@ -4,7 +4,7 @@ title: task · ci · pytest 接入 postgres service 消除 skip 假绿
 
 # task · ci · pytest 接入 postgres service 消除 skip 假绿
 
-> **状态**：`active`（2026-11-15 过闸开工）
+> **状态**：`closed`（2026-11-15 关账 · wave_tip d002e4f）
 > **来源**：issue Cyning12/ops-desk-api#384（维护者派单 · 本窗口直执行）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · ci · pytest 接入 postgres service 消除 skip 假绿
 | **task_slug** | ci-pytest-pg-service |
 | base | 0dfc697 |
 | 关联 issue | Cyning12/ops-desk-api#384 |
-| 关联 PR | 待回填 |
+| 关联 PR | #386（CI 四绿 · squash d002e4f0） |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack |
 
@@ -57,7 +57,11 @@ title: task · ci · pytest 接入 postgres service 消除 skip 假绿
 
 ### 自检结论
 
-- （过闸时为空 · 关账回填）
+- 验收 1 ✓：CI pytest 真跑 PG——PR #386 末跑 2m10s 绿（1 failed 2091 passed 4 skipped → 修后全绿；DB 用例零 skip，此前 skip-mode 全量跳过）。
+- 验收 2 ✓：本地协议不回归——干净 worktree（无 .env · 合并尖 3d6eaecd）全量 2100 passed / 2 skipped / 0 failed。
+- 验收 3 ✓：时长膨胀 +34s（skip 态 1m36s → 真跑 2m10s），远低于 +2min 上限。
+- 验收 4 ✓：ruff / import-linter / graph check 四件全绿。
+- skip 名冊偏差：CI 4 skipped 比本地多 2 件（环境型差异 · 非 PG 缺失类）；CI 日志因 blob 网络未能下载复核，本地 -rs 已核 PG 缺失类归零。
 
 ## 思考轮控制
 
@@ -74,3 +78,11 @@ title: task · ci · pytest 接入 postgres service 消除 skip 假绿
 ## 修订记录
 
 - 2026-11-15：落卡过闸。
+- 2026-11-15：三轮 CI 收敛（2095 errors 扩展缺失 → TC-B4 竞态 1 红 → 全绿）→ PR #386 合并 d002e4f0 → 关账。扩面两件已 registry 登记（TC-B4 测试修复 + template1 扩展步骤）。
+
+## 实现备忘（关账回填）
+
+- service=pgvector/pgvector:pg16（POSTGRES_USER=ops 即镜像 superuser）；健康检查 pg_isready。
+- env 双写 DATABASE_URL 与 OPS_TEST_DATABASE_URL（conftest.py:80 协议真源；_assert_test_database 硬断言 _test 结尾）。
+- 扩展预建位置=template1 而非目标库：conftest 运行时 CREATE DATABASE 走默认模板，新库自动继承（vector/uuid-ossp 均 per-database 对象）。
+- TC-B4 竞态根因：load_events_after 归属闸（event_store.py:381 assert_run_owned→run_owner 反查事件表 :100-117）先于在飞闸；bus.publish 先于事件行对其它会话可见 → CI 调度下抛 LgRagRunNotFoundError。修法=测试侧有界等待（40×50ms）至 run_owner 可见。
