@@ -4,7 +4,7 @@ title: task · feat · P1-T4 goal 入口接线 + uq 索引
 
 # task · feat · P1-T4 goal 入口接线 + uq 索引
 
-> **状态**：`in_progress`
+> **状态**：`closed`（2026-11-15 关账 · wave_tip 9f309ba3）
 > **来源**：issue Cyning12/ops-desk-api#396（维护者派单 · 设计真源 07-p1-goal-design.md commit d19fdaa）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · feat · P1-T4 goal 入口接线 + uq 索引
 | **task_slug** | p1-t4-goal-entry |
 | base | 0d62718 |
 | 关联 issue | Cyning12/ops-desk-api#396 · Cyning12/ops-desk-workspace#23 |
-| 关联 PR | 待建 |
+| 关联 PR | #397（CI 四绿 · squash 9f309ba3） |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack；闸默认 off 行为面零变化 |
 
@@ -53,16 +53,16 @@ T1 goal_store / T2 REST / T3 注入装配已闭环，但懒创建无入口接线
 
 ## 验收标准
 
-- [ ] 闸 off POST /stream → ops_goals 零行且 store 零触达
-- [ ] 闸 on → 懒创建一行（objective=query 单行化截 200）；同 thread 3 轮对话复用同一行
-- [ ] 并发 10 路 resolve → 仅一非终态行（uq 索引生效）
-- [ ] turns 表无目标横幅残留（注入只在装配层消息，不落 turns）
-- [ ] 迁移 upgrade/downgrade scratch 库可逆实证
-- [ ] .importlinter 零改动（contract 测试绿）；01_modules.md 登记 + 签收行
+- [x] 闸 off POST /stream → ops_goals 零行且 store 零触达
+- [x] 闸 on → 懒创建一行（objective=query 单行化截 200）；同 thread 3 轮对话复用同一行
+- [x] 并发 10 路 resolve → 仅一非终态行（uq 索引生效）
+- [x] turns 表无目标横幅残留（注入只在装配层消息，不落 turns）
+- [x] 迁移 upgrade/downgrade scratch 库可逆实证
+- [x] .importlinter 零改动（contract 测试绿）；01_modules.md 登记 + 签收行
 
 ### 自检结论
 
-（实施时回填）
+GO：验收 6 条全过。闸 off 零行+store 零调用 · 闸 on 懒创建+3 轮复用单行 · 并发 10 路 uq 索引实证单行 · turns 无横幅残留 · 迁移 scratch up/down/up 可逆 · .importlinter 零改动。偏差四件见 invoke_30（revision id ≤32 · create_all 不补索引 · FK seed 先例 · 套件名勘误）。
 
 ## 必读列表
 
