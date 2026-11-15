@@ -1,7 +1,7 @@
 {
   "schema_version": "graph_v2",
-  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_2746c8600a8addc6_V1",
-  "generated_at": "sha256-2746c8600a8addc6",
+  "freeze_id": "OPS_DESK_API_TECH_GRAPH_FREEZE_d8987aec487f27b2_V1",
+  "generated_at": "sha256-d8987aec487f27b2",
   "graphs": [
     {
       "id": "00_main",
@@ -25,6 +25,12 @@
       "id": "10_flow_chat",
       "title": "Chat 流式对话流程（legacy · 非主线 · 非默认读）",
       "source_yaml_path": "l1/10_flow_chat.graph.yaml",
+      "layer": "G-L1"
+    },
+    {
+      "id": "10_flow_goals",
+      "title": "Goal REST 面与懒创建接线（P1 · 07-p1-goal-design）",
+      "source_yaml_path": "l1/10_flow_goals.graph.yaml",
       "layer": "G-L1"
     },
     {
@@ -388,6 +394,41 @@
       "graph_id": "10_flow_chat",
       "id": "admin_sync",
       "label": "POST /api/ops/admin/sync"
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "id": "client",
+      "label": "web goal chip / iOS goal 状态条（P1-T5b/T5c）"
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "id": "goals_list",
+      "label": "GET /api/ops/goals?thread_id="
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "id": "goals_patch",
+      "label": "PATCH /api/ops/goals/{goal_id}（status ∈ active|paused|done|abandoned）"
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "id": "lg_stream",
+      "label": "POST /api/ops/lg-rag/stream（freeze lg-rag-sse-v1）"
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "id": "goal_store",
+      "label": "goals.store（resolve/find/patch · 状态机）"
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "id": "goal_inject",
+      "label": "goals.inject（GOAL_INJECT_ENABLED 默认 off）"
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "id": "db",
+      "label": "PostgreSQL ops_goals + uq_ops_goals_active_thread"
     },
     {
       "graph_id": "10_flow_lc_evidence",
@@ -2052,6 +2093,86 @@
       "mark": "->",
       "type": "depends_on",
       "label": "加载",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "from": "client",
+      "to": "goals_list",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "GET ?thread_id=（cookie auth + tenant 头）",
+      "anchors": [
+        {
+          "path": "app/ops/goals/router.py",
+          "line": 1
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "from": "client",
+      "to": "goals_patch",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "PATCH {status}（422/404/409/401）",
+      "anchors": [
+        {
+          "path": "app/ops/goals/router.py",
+          "line": 1
+        }
+      ],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "from": "goals_list",
+      "to": "goal_store",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "list_goals（tenant+thread 过滤）",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "from": "goals_patch",
+      "to": "goal_store",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "patch_goal_status（迁移矩阵 · 终态 409）",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "from": "lg_stream",
+      "to": "goal_inject",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "闸内判定（off 零触达）",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "from": "goal_inject",
+      "to": "goal_store",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "resolve_goal_for_thread（懒创建 · IntegrityError 重读 · importlib 运行期解析）",
+      "anchors": [],
+      "sync": true
+    },
+    {
+      "graph_id": "10_flow_goals",
+      "from": "goal_store",
+      "to": "db",
+      "mark": "->",
+      "type": "depends_on",
+      "label": "ops_goals（uq (tenant_id,thread_id) WHERE status IN active,paused）",
       "anchors": [],
       "sync": true
     },
