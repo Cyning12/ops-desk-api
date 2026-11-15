@@ -35,6 +35,8 @@ _BUILTIN_IDS = (
     "utc_now_iso",
     "get_issue_by_number",
     "get_pr_by_number",
+    "query_issues",
+    "query_pull_requests",
 )
 
 # H4 必填字段的最小声明（fixture 复用；契约本身见 manifest._entry_from_raw）
@@ -83,7 +85,75 @@ def test_builtin_yaml_aligns_with_default_specs():
     assert now.ok is True
     assert now.output["tool"] == utc_now_iso("")["tool"]
     assert result.version == 1
-    assert result.capability_manifest_count == 5
+    assert result.capability_manifest_count == 7
+
+
+def test_builtin_panel_list_tools_full_fields():
+    """P2a-T1：query_issues / query_pull_requests 全字段钉死。
+
+    含 output_schema 契约、tags=panel+域+readonly、additionalProperties:false、
+    args_schema 禁 per-prop description（catalog ≤6000 红线前提）、禁「实时」字样。
+    """
+    get_registry().clear()
+    load_capability_manifest(BUILTIN_MANIFEST_PATH)
+    by_id = {s.capability_id: s for s in list_capabilities()}
+
+    issues = by_id["query_issues"]
+    assert issues.kind == "local_fn"
+    assert issues.tags == ("panel", "issues", "readonly")
+    assert issues.risk_level == "low"
+    assert issues.side_effect == "read"
+    assert issues.enabled is True
+    assert issues.tenant_scoped is True
+    assert issues.when_to_use  # loader 必填非空（R2 偏差：填简短引导）
+    assert issues.when_not_to_use == ""
+    assert "实时" not in issues.description
+    assert issues.output_fields == ("items", "total", "page", "page_size")
+    assert issues.output_schema == {
+        "required": ["$.items", "$.total", "$.page", "$.page_size"]
+    }
+    assert issues.args_schema == {
+        "type": "object",
+        "properties": {
+            "state": {"type": "string", "enum": ["open", "closed"]},
+            "label": {"type": "string"},
+            "scan_status": {"type": "string"},
+            "module": {"type": "string"},
+            "page": {"type": "integer"},
+            "page_size": {"type": "integer"},
+        },
+        "additionalProperties": False,
+    }
+
+    prs = by_id["query_pull_requests"]
+    assert prs.kind == "local_fn"
+    assert prs.tags == ("panel", "pull_requests", "readonly")
+    assert prs.risk_level == "low"
+    assert prs.side_effect == "read"
+    assert prs.enabled is True
+    assert prs.tenant_scoped is True
+    assert prs.when_to_use
+    assert prs.when_not_to_use == ""
+    assert "实时" not in prs.description
+    assert prs.output_fields == ("items", "total", "page", "page_size")
+    assert prs.output_schema == {
+        "required": ["$.items", "$.total", "$.page", "$.page_size"]
+    }
+    assert prs.args_schema == {
+        "type": "object",
+        "properties": {
+            "state": {"type": "string", "enum": ["open", "closed", "merged"]},
+            "ci_status": {"type": "string"},
+            "page": {"type": "integer"},
+            "page_size": {"type": "integer"},
+        },
+        "additionalProperties": False,
+    }
+
+    # catalog 体积红线前提：新条目 args_schema 禁 per-prop description
+    for spec in (issues, prs):
+        for prop in spec.args_schema["properties"].values():
+            assert "description" not in prop
 
 
 def test_load_yaml_and_json_register_declared_ids(tmp_path: Path):
