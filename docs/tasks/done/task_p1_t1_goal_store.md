@@ -4,7 +4,7 @@ title: task · feat · P1-T1 goal_store 模块
 
 # task · feat · P1-T1 goal_store 模块
 
-> **状态**：`active`（2026-11-15 过闸开工）
+> **状态**：`closed`（2026-11-15 关账 · wave_tip 3d6eaec）
 > **来源**：issue Cyning12/ops-desk-api#385（维护者派单 · 设计真源 07-p1-goal-design.md commit d19fdaa）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · feat · P1-T1 goal_store 模块
 | **task_slug** | p1-t1-goal-store |
 | base | 0dfc697 |
 | 关联 issue | Cyning12/ops-desk-api#385 · Cyning12/ops-desk-workspace#23 |
-| 关联 PR | 待回填 |
+| 关联 PR | #387（CI 四绿 · squash 3d6eaecd） |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack |
 
@@ -53,7 +53,12 @@ router/continuity/图内任何接线；REST 面；SSE 面；新 alembic 迁移�
 
 ### 自检结论
 
-- （过闸时为空 · 关账回填）
+- 验收 1 ✓：状态机全矩阵（TERMINAL={done,abandoned} · NONTERMINAL={active,paused} · _ALLOWED_TRANSITIONS 矩阵 · 终态 ∅ 不可逆 · 非法流转抛 GoalStateTransitionError）。
+- 验收 2 ✓：tenant 隔离（跨租户 get/patch 返回 None/抛 NotFound，测试覆盖）。
+- 验收 3 ✓：懒创建幂等+IntegrityError 竞态重读（resolve_goal_for_thread）。
+- 验收 4 ✓：DB 故障 resolve 返回 None 不炸（日志带 thread_id）。
+- 验收 5 ✓：patch 路径显式抛 GoalNotFoundError(404)/GoalStateTransitionError(409) 不吞。
+- 验收 6 ✓：tests/test_goal_store.py 6 件真 PG 绿；CI 真跑（#386 合入后 rebase 重跑 2m10s 四绿）。lint PASS。
 
 ## 必读列表
 
@@ -75,3 +80,10 @@ router/continuity/图内任何接线；REST 面；SSE 面；新 alembic 迁移�
 ## 修订记录
 
 - 2026-11-15：落卡过闸。
+- 2026-11-15：PR #387 合并 3d6eaecd → 关账。事故一件：worktree .venv 符号链接被 git add -A 提交（.gitignore .venv/ 尾斜杠只挡目录）→ fix commit 摘除；registry.yaml rebase 同区冲突一件（保留双 entry 解）。
+
+## 实现备忘（关账回填）
+
+- app/ops/goals/{__init__,store,README}.py 新模块；sanitize_objective 控制符→空格折叠截 200（对齐 07 §6 platform 修正四）。
+- models.py 补 OpsGoal/OpsLgRagRun __table_args__（Index 名逐字对齐既有迁移，消 autogenerate 漂移；零新迁移）。
+- 词表与流转矩阵在 store.py 模块级常量，docstring 引 07 §1。
