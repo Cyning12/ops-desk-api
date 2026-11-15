@@ -63,6 +63,15 @@ jobs:
           uv pip install "pytest>=8.2,<9" "pytest-asyncio>=0.23,<1" "ruff==0.15.21"
           # ruff 钉版与 uv.lock 同源（0.15.21 · 维护者签注 m01101 明裁 · FP-7 禁 ">=0.5,<1" 漂移写法）
 
+      # conftest 运行时 CREATE DATABASE 走 template1 默认模板——扩展预建在 template1，
+      # 新建测试库自动继承（vector/uuid-ossp 均为 per-database 对象）。
+      - name: Prepare PG extensions (template1)
+        run: |
+          sudo apt-get install -y postgresql-client >/dev/null
+          PGPASSWORD=ops_password psql -h localhost -U ops -d template1 -v ON_ERROR_STOP=1 \
+            -c 'CREATE EXTENSION IF NOT EXISTS vector;' \
+            -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+
       - name: Run pytest
         run: .venv/bin/pytest tests -q --tb=short
         # 有 slow/intent marker 时示例：
