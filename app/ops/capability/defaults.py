@@ -11,7 +11,12 @@ from typing import Any
 
 from app.ops.capability.adapters.local_fn import LocalFnAdapter
 from app.ops.capability.gateway import get_registry, register
-from app.ops.capability.lookups import get_issue_by_number, get_pr_by_number
+from app.ops.capability.lookups import (
+    get_issue_by_number,
+    get_pr_by_number,
+    query_issues,
+    query_pull_requests,
+)
 from app.ops.capability.types import CapabilitySpec
 
 # 最小 schema：兼容 legacy 字符串 payload + 结构化 object
@@ -36,6 +41,37 @@ _SCHEMA_UTC: dict[str, Any] = {
     "type": ["string", "object", "null"],
     "properties": {},
     "additionalProperties": True,
+}
+
+# P2a-T1：面板列表查询（与 builtin.v1.yaml 逐字段对齐 · 禁 per-prop
+# description 守 catalog 体积红线；enum/边界声明在案，执行期由 adapter
+# 显式把关——schema_validate 不校验 enum/min/max（R1））
+_SCHEMA_QUERY_ISSUES: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "state": {"type": "string", "enum": ["open", "closed"]},
+        "label": {"type": "string"},
+        "scan_status": {"type": "string"},
+        "module": {"type": "string"},
+        "page": {"type": "integer"},
+        "page_size": {"type": "integer"},
+    },
+    "additionalProperties": False,
+}
+
+_SCHEMA_QUERY_PRS: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "state": {"type": "string", "enum": ["open", "closed", "merged"]},
+        "ci_status": {"type": "string"},
+        "page": {"type": "integer"},
+        "page_size": {"type": "integer"},
+    },
+    "additionalProperties": False,
+}
+
+_OUTPUT_SCHEMA_PANEL_LIST: dict[str, Any] = {
+    "required": ["$.items", "$.total", "$.page", "$.page_size"],
 }
 
 
@@ -223,7 +259,7 @@ _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
         CapabilitySpec(
             capability_id="mock_get_issue_status",
             kind="local_fn",
-            description="Mock：查询 issue 状态（罐头数据）",
+            description="Mock demo：查询 issue 状态（罐头演示数据 · 非真实仓库 · 真实列表用 query_issues）",
             args_schema=dict(_SCHEMA_STRING_OR_OBJECT),
             tags=("mock", "issue"),
             risk_level="low",
@@ -236,7 +272,7 @@ _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
         CapabilitySpec(
             capability_id="mock_get_deploy_info",
             kind="local_fn",
-            description="Mock：查询部署信息（罐头数据）",
+            description="Mock demo：查询部署信息（罐头演示数据 · 非真实部署平台 · 仅演示用）",
             args_schema=dict(_SCHEMA_STRING_OR_OBJECT),
             tags=("mock", "deploy"),
             risk_level="low",
@@ -285,6 +321,38 @@ _DEFAULT_SPECS: list[tuple[CapabilitySpec, LocalFnAdapter]] = [
             output_fields=("number", "title", "state", "html_url", "updated_at", "ci_status", "draft", "body"),
         ),
         LocalFnAdapter(get_pr_by_number),
+    ),
+    (
+        CapabilitySpec(
+            capability_id="query_issues",
+            kind="local_fn",
+            description="只读：分页列出本租户 issue 台账（updated_at 倒序）。过滤：state（open|closed）/label（单标签精确）/scan_status/module（=module_tag）；page 从 1 起，page_size 默认 10 上限 20。返回 items[number,title,state,labels,module_tag,updated_at]+total+page+page_size（不含 body 与内部 id）；单条详情用 get_issue_by_number。",
+            when_to_use="需要按状态/标签/模块/扫描状态列出 issue 列表或统计数量时",
+            args_schema=dict(_SCHEMA_QUERY_ISSUES),
+            tags=("panel", "issues", "readonly"),
+            risk_level="low",
+            side_effect="read",
+            tenant_scoped=True,
+            output_fields=("items", "total", "page", "page_size"),
+            output_schema=dict(_OUTPUT_SCHEMA_PANEL_LIST),
+        ),
+        LocalFnAdapter(query_issues),
+    ),
+    (
+        CapabilitySpec(
+            capability_id="query_pull_requests",
+            kind="local_fn",
+            description="只读：分页列出本租户 PR 台账（updated_at 倒序）。过滤：state（open|closed|merged）/ci_status（已知值按 GitHub check 惯例 success|failure|pending；当前 sync 波恒 null，过滤可能命中空集）；page 从 1 起，page_size 默认 10 上限 20。返回 items[number,title,state,draft,ci_status,updated_at]+total+page+page_size（不含 body 与内部 id）；单条详情用 get_pr_by_number。",
+            when_to_use="需要按状态或 CI 结果列出 PR 列表或统计数量时",
+            args_schema=dict(_SCHEMA_QUERY_PRS),
+            tags=("panel", "pull_requests", "readonly"),
+            risk_level="low",
+            side_effect="read",
+            tenant_scoped=True,
+            output_fields=("items", "total", "page", "page_size"),
+            output_schema=dict(_OUTPUT_SCHEMA_PANEL_LIST),
+        ),
+        LocalFnAdapter(query_pull_requests),
     ),
 ]
 

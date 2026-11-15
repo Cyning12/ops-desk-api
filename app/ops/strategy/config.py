@@ -29,6 +29,8 @@ CAPABILITY_ALLOWLIST_BY_KEY: dict[str, list[str]] = {
         "mock_get_deploy_info",
         "get_issue_by_number",
         "get_pr_by_number",
+        "query_issues",
+        "query_pull_requests",
     ],
     "default": list(MINIMAL_READONLY_CAPABILITY_IDS),
 }

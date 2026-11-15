@@ -257,7 +257,7 @@ def test_fp3_off_zero_diff_default_surface(monkeypatch):
     assert extra_manifest_paths() == ()
     snap = get_registry().snapshot()
     assert _NEW_CAP not in snap["capability_ids"]
-    assert snap["count"] == 5
+    assert snap["count"] == 7  # builtin 七枚（P2a-T1 +query_issues/query_pull_requests）
 
 
 def test_visibility_needs_run_note_allow_tag(monkeypatch):

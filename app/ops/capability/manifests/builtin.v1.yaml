@@ -12,7 +12,7 @@ version: 1
 capabilities:
   - id: mock_get_issue_status
     kind: local_fn
-    description: Mock：查询 issue 状态（罐头数据）
+    description: Mock demo：查询 issue 状态（罐头演示数据 · 非真实仓库 · 真实列表用 query_issues）
     when_to_use: 需要查看某个 issue 的当前状态、指派人与更新时间（罐头演示数据）
     when_not_to_use: 需要真实仓库数据时用 get_issue_by_number
     tags: [mock, issue]
@@ -32,7 +32,7 @@ capabilities:
     adapter: local_fn:app.ops.capability.defaults:mock_get_issue_status
   - id: mock_get_deploy_info
     kind: local_fn
-    description: Mock：查询部署信息（罐头数据）
+    description: Mock demo：查询部署信息（罐头演示数据 · 非真实部署平台 · 仅演示用）
     when_to_use: 需要查看某环境的部署版本、部署时间与健康状态（罐头演示数据）
     when_not_to_use: 需要真实部署平台的实时状态时不要用本能力
     tags: [mock, deploy]
@@ -116,3 +116,55 @@ capabilities:
     max_reversal_latency: 0
     requires_stop_support: false
     adapter: local_fn:app.ops.capability.lookups:get_pr_by_number
+  - id: query_issues
+    kind: local_fn
+    description: 只读：分页列出本租户 issue 台账（updated_at 倒序）。过滤：state（open|closed）/label（单标签精确）/scan_status/module（=module_tag）；page 从 1 起，page_size 默认 10 上限 20。返回 items[number,title,state,labels,module_tag,updated_at]+total+page+page_size（不含 body 与内部 id）；单条详情用 get_issue_by_number。
+    when_to_use: 需要按状态/标签/模块/扫描状态列出 issue 列表或统计数量时
+    tags: [panel, issues, readonly]
+    risk_level: low
+    side_effect: read
+    enabled: true
+    tenant_scoped: true
+    args_schema:
+      type: object
+      properties:
+        state: {type: string, enum: [open, closed]}
+        label: {type: string}
+        scan_status: {type: string}
+        module: {type: string}
+        page: {type: integer}
+        page_size: {type: integer}
+      additionalProperties: false
+    output_schema:
+      required: ["$.items", "$.total", "$.page", "$.page_size"]
+    output_fields: [items, total, page, page_size]
+    reversible: true
+    execution_type: instant
+    max_reversal_latency: 0
+    requires_stop_support: false
+    adapter: local_fn:app.ops.capability.lookups:query_issues
+  - id: query_pull_requests
+    kind: local_fn
+    description: 只读：分页列出本租户 PR 台账（updated_at 倒序）。过滤：state（open|closed|merged）/ci_status（已知值按 GitHub check 惯例 success|failure|pending；当前 sync 波恒 null，过滤可能命中空集）；page 从 1 起，page_size 默认 10 上限 20。返回 items[number,title,state,draft,ci_status,updated_at]+total+page+page_size（不含 body 与内部 id）；单条详情用 get_pr_by_number。
+    when_to_use: 需要按状态或 CI 结果列出 PR 列表或统计数量时
+    tags: [panel, pull_requests, readonly]
+    risk_level: low
+    side_effect: read
+    enabled: true
+    tenant_scoped: true
+    args_schema:
+      type: object
+      properties:
+        state: {type: string, enum: [open, closed, merged]}
+        ci_status: {type: string}
+        page: {type: integer}
+        page_size: {type: integer}
+      additionalProperties: false
+    output_schema:
+      required: ["$.items", "$.total", "$.page", "$.page_size"]
+    output_fields: [items, total, page, page_size]
+    reversible: true
+    execution_type: instant
+    max_reversal_latency: 0
+    requires_stop_support: false
+    adapter: local_fn:app.ops.capability.lookups:query_pull_requests

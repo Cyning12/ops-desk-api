@@ -1316,6 +1316,10 @@ def _write_span_metadata(
         "args_summary": _args_summary(args),
         # 写路径 HITL 预留（本波可空）
         "approval_id": (ctx or {}).get("approval_id") if ctx else None,
+        # P2a-T1（R3）：租户归属进 span 元数据——graph 全局放行签收条件
+        # （元数据补全 · 不动图）；ctx 缺失时如实 None（tenant_scoped 能力
+        # 在 Policy 层已拒，不会走到这）。
+        "tenant_id": (ctx or {}).get("tenant_id"),
     }
     if risk_level is not None:
         payload["risk_level"] = risk_level
