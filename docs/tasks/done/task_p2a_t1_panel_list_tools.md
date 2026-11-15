@@ -4,7 +4,7 @@ title: task · feat · P2a-T1 面板列表双工具 + 闸基
 
 # task · feat · P2a-T1 面板列表双工具 + 闸基
 
-> **状态**：`active`（2026-11-16 落卡）
+> **状态**：`closed`（2026-11-16 落卡 · 2026-11-16 关账 · PR #402 squash merge f8a9054）
 > **来源**：issue Cyning12/ops-desk-workspace#23（m03064 夜间授权 · 设计真源 workspace 08-p2a-tools-design.md 终稿 §7 T1 行）
 
 ## Harness 元信息
@@ -61,18 +61,18 @@ P2a 把面板视图数据查询封装为只读 capability 进默认面（08 §0�
 
 ## 验收标准
 
-- [ ] query_issues / query_pull_requests 注册进默认面（count 5→7）· 全字段钉死断言绿
-- [ ] adapter 拒绝口径：page_size=0/21 · state 词表外 → LookupError → ok=False（断言 adapter 拒绝非 schema 拒绝 · R1）
-- [ ] additionalProperties:false 多余键 → args_schema_invalid；tenant_scope_missing 负样本×2
-- [ ] 真 PG 双租户 seed：A 租户查不到 B 租户行（空集）· 分页 total/page 正确
-- [ ] catalog 总长断言 ≤6000 字符绿
-- [ ] span payload tenant_id 实证用例绿
-- [ ] 委派层默认 off 用例绿
-- [ ] ruff 绿 · 全量 pytest 绿（含真 PG 层 CI 真跑）· graph-compile 绿
+- [x] query_issues / query_pull_requests 注册进默认面（count 5→7）· 全字段钉死断言绿
+- [x] adapter 拒绝口径：page_size=0/21 · state 词表外 → LookupError → ok=False（断言 adapter 拒绝非 schema 拒绝 · R1）
+- [x] additionalProperties:false 多余键 → args_schema_invalid；tenant_scope_missing 负样本×2
+- [x] 真 PG 双租户 seed：A 租户查不到 B 租户行（空集）· 分页 total/page 正确
+- [x] catalog 总长断言 ≤6000 字符绿
+- [x] span payload tenant_id 实证用例绿
+- [x] 委派层默认 off 用例绿
+- [x] ruff 绿 · 全量 pytest 绿（含真 PG 层 CI 真跑）· graph-compile 绿
 
 ### 自检结论
 
-（验收后勾验回填 · 40 波台账）
+八勾全验：目标套件 38 passed 0 skipped（真 PG 层 4 用例真跑 · DB_AVAILABLE=true）；CI 四件全绿（pytest 2m30s · check · import-linter · lint-wiki-delta · run 43741245064 等）；全量对拍 branch vs master+同 .env 失败集恒等（余红皆 .env 环境性 · 台账见 invoke_20261116_40_acceptance.md）。偏差五条（when_to_use 让位 loader · _DEFAULT_SPECS 同步 · 五枚基线锚推进 ×3 处 · HG-AUDIT-R1 补登+审查文 · 本地余红环境性）已如实登记 registry/本档/invoke_40。
 
 ## 必读列表
 
