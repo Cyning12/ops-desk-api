@@ -394,7 +394,8 @@ waves:
       - alembic/
       - app/ops/lg_rag/multi/
   - task_slug: p1-t4-goal-entry
-    status: open
+    status: closed
+    wave_tip: "9f309ba3"
     base: "0d62718"
     banned_prefixes: []
     allowed_app_files:
