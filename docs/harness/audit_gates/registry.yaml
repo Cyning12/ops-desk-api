@@ -458,7 +458,10 @@ waves:
       列表与 stripped 序 · 语义断言不动）。偏差三：同性质「builtin 五枚
       基线」count 锚另两处（test_capability_testing_write.py:329 ·
       test_stage_w_write_expand.py:260 默认加载面零 diff 断言）同步推进
-      5→7（+2 枚 builtin 的既定后果 · 断言语义不动）。禁承载：面板端点改动（adapter 按同谓词
+      5→7（+2 枚 builtin 的既定后果 · 断言语义不动）。偏差四：CI（无 .env）
+      实证另两枚同性质锚——test_capability_testing_write.py 局部 _BUILTIN_IDS
+      集合（:77）与 test_ops_write_catalog_reconcile.py:297 count==5 → 同步
+      推进七枚（本地被 .env 环境污染遮蔽 · CI 真红暴露 · 断言语义不动）。禁承载：面板端点改动（adapter 按同谓词
       集重写 ORM 不复用端点）· adapter 白名单扩容 · alembic/ · 图
       （app/ops/lg_rag/）改动 · when_not_to_use 填充（R2 空调杆）·
       mock 工具退役（仅收窄）· 新 DDL/索引/依赖。
@@ -474,6 +477,7 @@ waves:
       - tests/test_strategy_env_extra_candidates.py
       - tests/test_capability_testing_write.py
       - tests/test_stage_w_write_expand.py
+      - tests/test_ops_write_catalog_reconcile.py
       - docs/harness/reviews/task_p2a_t1_panel_list_tools_audit_R1_20261116.md
       - docs/_tech_graph/l1/01_modules.md
       - docs/harness/audit_gates/registry.yaml

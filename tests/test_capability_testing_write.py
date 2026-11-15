@@ -80,6 +80,9 @@ _BUILTIN_IDS = {
     "utc_now_iso",
     "get_issue_by_number",
     "get_pr_by_number",
+    # P2a-T1（issue #23）：面板列表双工具入 builtin 默认面（五枚→七枚）
+    "query_issues",
+    "query_pull_requests",
 }
 _OA_IDS = {"oa.doc.search", "oa.org.whois", "oa.todo.mine"}
 
@@ -327,7 +330,7 @@ def test_a2_off_zero_diff(monkeypatch):
     snap = get_registry().snapshot()
     assert _TESTING_CAP not in snap["capability_ids"]
     assert snap["count"] == 7  # builtin 七枚（P2a-T1 +query_issues/query_pull_requests）· catalog count 不变口径承五枚锚
-    # 可见集：默认 builtin 5 枚；加载 oa 清单后恰 8 枚（验收基线口径）· 均不含本条目
+    # 可见集：默认 builtin 7 枚（P2a-T1 五枚→七枚）；加载 oa 清单后恰 10 枚（验收基线口径）· 均不含本条目
     ids = {s.capability_id for s in list_capabilities(filter=baseline_filter(node_role="t"))}
     assert ids == _BUILTIN_IDS
     load_capability_manifest(_OA_MANIFEST)
