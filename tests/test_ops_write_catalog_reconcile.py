@@ -289,12 +289,12 @@ def test_machine_raw_yaml_round_trips_through_loader():
 def test_machine_three_layer_opening_gates():
     """三层显式打开判据对账（加载面/放行面）：
     ① 默认加载面排除（off 零 diff · 不进 DEFAULT_MANIFEST_FILES · 三 env 不设
-    → 注册表不含 · builtin 七枚基线（P2a-T1 五枚→七枚））；② 放行谓词 = 独立写 tag run_note。"""
+    → 注册表不含 · builtin 九枚基线（P2a-T2 七枚→九枚））；② 放行谓词 = 独立写 tag run_note。"""
     assert _NEW_MANIFEST not in DEFAULT_MANIFEST_FILES
     assert extra_manifest_paths() == ()
     snap = get_registry().snapshot()
     assert _NEW_CAP not in snap["capability_ids"]
-    assert snap["count"] == 7  # builtin 七枚（P2a-T1 +query_issues/query_pull_requests）
+    assert snap["count"] == 9  # builtin 九枚（P2a-T2 +get_overview/graph_snapshot）
     # 放行谓词：spec.tags 含 run_note 且不含 testing/mock（复用 mock 谓词即破格）
     spec, _adapter = _load_ops_write()
     assert "run_note" in spec.tags

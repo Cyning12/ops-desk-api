@@ -29,6 +29,7 @@ _ENV = strategy_config.EXTRA_CANDIDATE_CAPABILITY_IDS_ENV
 
 # master 基线字面量（TC1① 对拍锚 · CAPABILITY_ALLOWLIST_BY_KEY 静态成员）
 # P2a-T1：supervisor 放行面 +2（query_issues / query_pull_requests · 08 设计终稿 §7）
+# P2a-T2：supervisor 放行面再 +2（get_overview / graph_snapshot · 08 设计终稿 §7）
 _SUPERVISOR_IDS = [
     "utc_now_iso",
     "mock_get_issue_status",
@@ -37,6 +38,8 @@ _SUPERVISOR_IDS = [
     "get_pr_by_number",
     "query_issues",
     "query_pull_requests",
+    "get_overview",
+    "graph_snapshot",
 ]
 _DEFAULT_IDS = ["utc_now_iso"]
 
@@ -75,7 +78,7 @@ def _spec(cid: str, **over) -> CapabilitySpec:
 
 
 def test_tc1_unset_env_supervisor_byte_identical():
-    """不设 env → supervisor 解析结果与静态七枚逐字节一致（内容+顺序 · P2a-T1 后）。"""
+    """不设 env → supervisor 解析结果与静态九枚逐字节一致（内容+顺序 · P2a-T2 后）。"""
     assert strategy_config.get_candidate_capability_ids(mode="supervisor") == _SUPERVISOR_IDS
     assert strategy_config.get_candidate_capability_ids(agent_type="supervisor") == _SUPERVISOR_IDS
 
@@ -132,6 +135,8 @@ def test_tc1_env_intersection_visible_semantics_unchanged(monkeypatch: pytest.Mo
         "get_pr_by_number",
         "query_issues",
         "query_pull_requests",
+        "get_overview",
+        "graph_snapshot",
         "testing.write.echo",
     ]
 

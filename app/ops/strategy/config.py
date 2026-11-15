@@ -31,6 +31,8 @@ CAPABILITY_ALLOWLIST_BY_KEY: dict[str, list[str]] = {
         "get_pr_by_number",
         "query_issues",
         "query_pull_requests",
+        "get_overview",
+        "graph_snapshot",
     ],
     "default": list(MINIMAL_READONLY_CAPABILITY_IDS),
 }

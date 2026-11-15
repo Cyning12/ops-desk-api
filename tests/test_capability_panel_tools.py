@@ -201,7 +201,7 @@ def test_capability_catalog_total_length_within_budget():
     get_registry().clear()
     ensure_default_capabilities()
     specs = list_capabilities()
-    assert len(specs) == 7
+    assert len(specs) == 9
     catalog = _format_capability_catalog(specs)
     assert len(catalog) <= 6000
 
