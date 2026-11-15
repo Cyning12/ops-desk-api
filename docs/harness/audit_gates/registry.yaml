@@ -491,8 +491,9 @@ waves:
       - scripts/
       - app/ops/lg_rag/
   - task_slug: p2a-t2-panel-aggregate-tools
-    status: active
+    status: closed
     base: "8af02c4a"
+    wave_tip: "94f5ba87"
     note: >-
       P2a-T2 面板聚合双工具（HG-TASK-DRAFT 2026-11-16 · issue
       Cyning12/ops-desk-workspace#23 m03064 夜间授权 · 设计真源 workspace
