@@ -410,3 +410,22 @@ waves:
       - docs/harness/audit_gates/registry.yaml
       - docs/harness/invokes/by-task/p1-t4-goal-entry/
       - docs/harness/reviews/task_p1_t4_goal_entry_audit_R1_20261115.md
+
+  - task_slug: p1-t5a-goal-docs
+    status: open
+    base: "8af513d"
+    allowed_tree_files:
+      - docs/_tech_graph/l1/10_flow_goals.graph.yaml
+      - docs/_tech_graph/l1/10_flow_goals.md
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/_tech_graph/shared/graph.json
+      - docs/guides/RUNBOOK_goal_rollout_v1_zh.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p1_t5a_goal_docs.md
+      - docs/harness/invokes/by-task/p1-t5a-goal-docs/
+    allowed_app_files: []
+    banned_prefixes:
+      - app/
+      - alembic/
+      - tests/
+      - scripts/
