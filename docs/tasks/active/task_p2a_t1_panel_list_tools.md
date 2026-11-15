@@ -18,11 +18,13 @@ title: task · feat · P2a-T1 面板列表双工具 + 闸基
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack；本波为 capability 数据面（manifest/allowlist）+ 元数据补全 |
 
-## 人工闸（维护者授权）
+### 人工闸
 
-| human_gate_id | status | 签核人 | 日期 | 说明 |
-|---|---|---|---|---|
-| HG-TASK-DRAFT | approved | 维护者（issue #23 m03064 夜间授权 + 08 设计终稿） | 2026-11-16 | P2a-T1 落卡：设计终稿 §7 T1 行为唯一范围真源；禁 freeze 帧/schema 触碰 · 禁图改动 · 禁新 DDL/依赖 |
+| human_gate_id | status | blocks_hats | 说明 |
+|---------------|--------|-------------|------|
+| HG-TASK-DRAFT | approved | 30 | approved 2026-11-16 · 授权 issue #23 m03064（夜间授权）+ 08 设计终稿 §7 T1 行为唯一范围真源；禁 freeze 帧/schema 触碰 · 禁图改动 · 禁新 DDL/依赖 |
+| HG-AUDIT-R1 | approved | 30 | approved 2026-11-16 · 同上授权（08 设计终稿即审计真源：R1-R7 整合修订已评审 · §5 测试终裁 · §8 非范围 · 授权范围零新增） |
+| HG-GRAPH-MODULES | approved | 30 | approved 2026-11-16 · 同上授权（按实判 · 无新一级模块/路由/表/SSE 事件类型）· capability 行备注义务随 30 交付回填（已落 · 人签记录表 splice 2026-11-16 行） |
 
 ## 背景
 
@@ -83,10 +85,39 @@ P2a 把面板视图数据查询封装为只读 capability 进默认面（08 §0�
 
 ## 思考轮控制
 
-- R0（勘察）：ci_status 词表**不可钉**（仓内无生产写入方——admin/sender/mapper.py:93 恒 None · 仅测试夹具虚构值）→ 按 §1.3 走 string 放行 + description 列已知值；loader 硬约束 when_to_use 必填非空（manifest.py:523-526）与 R2「不填」冲突 → 偏差裁定：新条目填与 description 一致的简短引导，when_not_to_use 不填；manifest 对齐测试要求 `_DEFAULT_SPECS` 同步 +2（否则 set(_BUILTIN_IDS)==hard_ids 破）。
-- R1（审查）：设计终稿已经 platform/product 双向评审 7 项 blocking 裁定关闭（08 §0 R1-R7），本档照终稿执行。
-- R2–R4：实施中按证补充（见 invokes 30/40 台账）。
-- R5（组织人终裁）：维护者。
+| 轮 | 结论 | early_stop | reason（early_stop） | residual_risks |
+|---|---|---|---|---|
+| R0 | 勘察：ci_status 词表**不可钉**（仓内无生产写入方——admin/sender/mapper.py:93 恒 None · 仅测试夹具虚构值）→ 按 §1.3 走 string 放行 + description 列已知值；loader 硬约束 when_to_use 必填非空（manifest.py:523-526）与 R2「不填」冲突 → 偏差裁定：新条目填与 description 一致的简短引导，when_not_to_use 不填；manifest 对齐测试要求 _DEFAULT_SPECS 同步 +2（否则 set(_BUILTIN_IDS)==hard_ids 破） | false | — | 无 |
+| R1 | 审查：docs/harness/reviews/task_p2a_t1_panel_list_tools_audit_R1_20261116.md（GO）；设计终稿已经 platform/product 双向评审 7 项 blocking 裁定关闭（08 §0 R1-R7） | false | — | 无 |
+| R2 | 方案：adapter 按面板同谓词重写 ORM 不复用端点（08 §2）；裁剪抽纯函数；校验前置 adapter（R1） | false | — | 无 |
+| R3 | 反例/边界：闸矩阵（page/page_size/state 词表 · additionalProperties · tenant_scope_missing · 委派默认 off）+ catalog ≤6000 红线 + 跨租户空集 → §5 终裁全覆盖 | false | — | 存量测试「五枚基线」锚需推进（已实证三处 · 见实现备忘偏差） |
+| R4 | 收敛：验收八勾全可机断（pytest 双层 + lint + graph-compile + 对拍恒等） | false | — | 无 |
+| R5 | 收口：范围 8 项 · 非范围 · 失败路径 · 三闸 approved（不代签 · 授权 issue #23 m03064+08 终稿） | true | 设计终稿即审计真源 · 锚点全实证 · 验收全机断 · 再轮无新增信息 | 无 |
+
+**actual_last_round**：R5（early_stop）
+### R0 · 勘察定论
+
+ci_status 词表**不可钉**（仓内无生产写入方——admin/sender/mapper.py:93 恒 None · 仅测试夹具虚构值）→ 按 §1.3 走 string 放行 + description 列已知值；loader 硬约束 when_to_use 必填非空（manifest.py:523-526）与 R2「不填」冲突 → 偏差裁定：新条目填与 description 一致的简短引导，when_not_to_use 不填；manifest 对齐测试要求 _DEFAULT_SPECS 同步 +2（否则 set(_BUILTIN_IDS)==hard_ids 破）；manifest 真实路径在 app/ops/capability/manifests/ 下（非仓根）。
+
+### R1 · 审查
+
+设计终稿已经 platform/product 双向评审 7 项 blocking 裁定关闭（08 §0 R1-R7），本档照终稿执行；本档 R1=对照终稿核对范围/非范围/验收/failure_paths 一致性，结论一致。
+
+### R2 · 方案生成
+
+adapter 按面板同谓词重写 ORM 不复用端点（08 §2）；裁剪/整形抽独立纯函数；分页与 state 词表校验前置 adapter 层（R1：schema_validate 不校验 enum/min/max）；两 manifest 面（YAML 优先 + _DEFAULT_SPECS 回退）逐字段一致。
+
+### R3 · 反例与边界
+
+闸矩阵：page_size=0/21、page=0/-1、state 词表外 → LookupError → gateway ok=False；additionalProperties:false 多余键 → args_schema_invalid；tenant_scope_missing 负样本×2；委派层默认 off；catalog ≤6000 字符红线（args_schema 禁 per-prop description 为前提）；真 PG 双租户 seed 验跨租户空集与分页 total/page。存量「builtin 五枚基线」锚三处需推进（test_capability_manifest · test_strategy_env_extra_candidates · test_capability_testing_write/test_stage_w_write_expand count==5）——实施期已实证并登记偏差二/三。
+
+### R4 · 收敛
+
+验收八勾全可机断：pytest 双层范式（InMemory CI 恒跑 + 真 PG _DB_MARK）+ spec-wave lint/verify + graph-compile + ruff + 全量对拍（branch vs master+同 .env 失败集恒等）。无人工判断残留。
+
+### R5 · 收口
+
+范围 8 项与非范围/失败路径互斥闭合；三闸 approved（授权 issue #23 m03064 夜间授权 + 08 设计终稿 · 不代签）；early_stop——设计终稿即审计真源、锚点全实证、验收全机断，再轮无新增信息。
 
 ## 实现备忘
 
@@ -107,3 +138,4 @@ P2a 把面板视图数据查询封装为只读 capability 进默认面（08 §0�
 - 2026-11-16：落卡过闸（HG-TASK-DRAFT approved · issue #23 m03064 夜间授权 + 08 设计终稿）。
 - 2026-11-16：实施+测试波回填实现备忘（ci_status 结论 · 偏差四条 · registry 偏差二同步）。
 - 2026-11-16：全量对拍（branch vs master+同 .env worktree）失败集恒等，余红皆 .env 环境污染（承 api-controlled-write-hitl 先例）；「builtin 五枚基线」count 锚另两处推进 5→7（test_capability_testing_write.py:329 · test_stage_w_write_expand.py:260 · registry 偏差三登记）。
+- 2026-11-16：闸表补登 HG-AUDIT-R1 approved（同依据：issue #23 m03064 夜间授权 + 08 设计终稿 · spec-wave verify 机判要求 · 授权范围零新增）。

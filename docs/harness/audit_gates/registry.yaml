@@ -474,6 +474,7 @@ waves:
       - tests/test_strategy_env_extra_candidates.py
       - tests/test_capability_testing_write.py
       - tests/test_stage_w_write_expand.py
+      - docs/harness/reviews/task_p2a_t1_panel_list_tools_audit_R1_20261116.md
       - docs/_tech_graph/l1/01_modules.md
       - docs/harness/audit_gates/registry.yaml
       - docs/tasks/active/task_p2a_t1_panel_list_tools.md
