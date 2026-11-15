@@ -4,7 +4,7 @@ title: task · feat · P1-T3 goal 注入装配
 
 # task · feat · P1-T3 goal 注入装配
 
-> **状态**：`in_progress`
+> **状态**：`closed`（2026-11-15 关账 · wave_tip 3bd7ae50）
 > **来源**：issue Cyning12/ops-desk-api#391（维护者派单 · 设计真源 07-p1-goal-design.md commit d19fdaa）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · feat · P1-T3 goal 注入装配
 | **task_slug** | p1-t3-goal-inject |
 | base | 44a5b32 |
 | 关联 issue | Cyning12/ops-desk-api#391 · Cyning12/ops-desk-workspace#23 |
-| 关联 PR | 待建 |
+| 关联 PR | #393（CI 四绿 · squash 3bd7ae50） |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack；闸默认 off 行为面零变化 |
 
@@ -50,13 +50,13 @@ title: task · feat · P1-T3 goal 注入装配
 
 ## 验收标准
 
-- [ ] off 态消息序列逐字节一致（既有装配测试零改动通过）且 goal_store 调用计数=0
-- [ ] on 态仅多一条头部 SystemMessage，其余消息与顺序不变
-- [ ] isolation on/off 双态 assert_slots_declared 通过；on 态 goal 消息归因 goal_objective
-- [ ] 伪造节首转义：_escape_untrusted 将 [当前目标]/[相似经验] 转全角
-- [ ] DB 故障/超时（≤300ms）降级不注入，span goal_inject_degraded 分立 timeout|error
-- [ ] .importlinter 零改动（contract 测试绿）
-- [ ] 01_modules.md lg_rag/goals 行登记 + 签收行
+- [x] off 态消息序列逐字节一致（既有装配测试零改动通过）且 goal_store 调用计数=0
+- [x] on 态仅多一条头部 SystemMessage，其余消息与顺序不变
+- [x] isolation on/off 双态 assert_slots_declared 通过；on 态 goal 消息归因 goal_objective
+- [x] 伪造节首转义：_escape_untrusted 将 [当前目标]/[相似经验] 转全角
+- [x] DB 故障/超时（≤300ms）降级不注入，span goal_inject_degraded 分立 timeout|error
+- [x] .importlinter 零改动（contract 测试绿）
+- [x] 01_modules.md lg_rag/goals 行登记 + 签收行
 
 ### 自检结论
 
