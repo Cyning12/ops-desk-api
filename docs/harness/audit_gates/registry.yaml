@@ -393,3 +393,19 @@ waves:
     banned_prefixes:
       - alembic/
       - app/ops/lg_rag/multi/
+  - task_slug: p1-t4-goal-entry
+    status: open
+    base: "0d62718"
+    banned_prefixes: []
+    allowed_app_files:
+      - app/ops/lg_rag/router.py
+      - app/db/models.py
+    allowed_tree_files:
+      - alembic/versions/20261115_uq_goals_active_thread.py
+      - tests/test_goal_entry_wiring.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/tasks/active/task_p1_t4_goal_entry.md
+      - docs/tasks/done/task_p1_t4_goal_entry.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/invokes/by-task/p1-t4-goal-entry/
+      - docs/harness/reviews/task_p1_t4_goal_entry_audit_R1_20261115.md
