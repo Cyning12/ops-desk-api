@@ -9,11 +9,10 @@ created on demand and its schema is managed via ``Base.metadata.create_all``.
 否则 conftest 在 import 期直接抛错。需要换库（CI / 多实例）请设
 ``OPS_TEST_DATABASE_URL``——**不要复用业务的 ``DATABASE_URL``**，.env 里那个指向开发库。
 
-⚠️ 已知缺口（test-baseline-reds F4 · 只注记不修，另 task 议）：CI pytest workflow
-（.github/workflows/pytest.yml）的 DATABASE_URL 指向 localhost:5432 但 job **无 postgres
-service** → 本文件 ``_setup_test_database`` 连不上 → DB_AVAILABLE=False → 全部 DB 用例
-skip。即「CI 绿」对 DB 用例是 **skip 绿**（假绿），不构成真跑证据；真跑基线以本地真 PG
-（opsdesk_test）为准。修 CI（加 postgres service）不在本 task 范围。
+✅ 缺口已消（ci-pytest-pg-service · issue #384）：CI pytest workflow
+（.github/workflows/pytest.yml）已挂 pgvector/pgvector:pg16 service，``_setup_test_database``
+连得上 → DB 用例在 CI 真跑。本注释口径与本地真 PG（opsdesk_test）协议并存；
+若 service 被移除，DB 用例会回到 skip——「CI 绿」届时不再构成真跑证据。
 """
 
 from __future__ import annotations

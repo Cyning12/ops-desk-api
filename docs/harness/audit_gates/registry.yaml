@@ -288,3 +288,23 @@ waves:
     banned_prefixes:
       - app/
       - alembic/
+  - task_slug: ci-pytest-pg-service
+    status: active
+    base: "0dfc697"
+    note: >-
+      CI pytest 接入 postgres service（issue #384 维护者派单 · 本窗口直执行）：
+      消除 DB 用例 skip 假绿（ta2 曾被掩盖实证）。范围=pytest.yml service+env
+      与 conftest.py 注释级同步。禁承载：app/ 业务码、tests 用例逻辑、
+      其他 workflow、迁移文件、弱化任何断言。
+    allowed_app_files: []
+    allowed_tree_files:
+      - .github/workflows/pytest.yml
+      - tests/conftest.py
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/reviews/task_ci_pytest_pg_service_audit_R1_20261115.md
+      - docs/tasks/active/task_ci_pytest_pg_service.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/ci-pytest-pg-service/
+    banned_prefixes:
+      - app/
+      - alembic/

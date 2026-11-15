@@ -270,6 +270,12 @@ async def test_tc_b4_in_flight_refuse_zero_diff(seeded_maintainer) -> None:
                 if "node.progress" in raw:
                     break
             await asyncio.sleep(0.05)
+            # bus 发布可能先于 DB 提交对其它会话可见（CI 调度竞态实证 · issue #384）：
+            # 先等首帧落库（run_owner 反查事件表），否则归属校验抢跑抛 NotFound 而非 InFlight。
+            for _ in range(40):
+                if await event_store.run_owner(run_id) is not None:
+                    break
+                await asyncio.sleep(0.05)
             with pytest.raises(event_store.LgRagRunInFlightError):
                 await event_store.load_events_after(run_id, user_id, 0, refuse_in_flight=True)
         finally:
