@@ -289,6 +289,13 @@ class OpsLgRagRun(Base):
 
     __tablename__ = "ops_lg_rag_runs"
 
+    # __table_args__ 对齐既有 DB 索引（迁移 20261114_lg_rag_runs.py:37-44 原生 SQL 建），
+    # 消 autogenerate 漂移（P1-T1 补声明 · 零新迁移）。
+    __table_args__ = (
+        Index("idx_ops_lg_rag_runs_status_created", "status", "created_at"),
+        Index("idx_ops_lg_rag_runs_thread", "thread_id"),
+    )
+
     run_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
     user_id: Mapped[str] = mapped_column(
@@ -311,6 +318,13 @@ class OpsGoal(Base):
     """
 
     __tablename__ = "ops_goals"
+
+    # __table_args__ 对齐既有 DB 索引（迁移 20261114_ops_goals.py:37-43），
+    # 消 autogenerate 漂移（P1-T1 补声明 · 零新迁移）。
+    __table_args__ = (
+        Index("idx_ops_goals_tenant_status", "tenant_id", "status"),
+        Index("idx_ops_goals_thread", "thread_id"),
+    )
 
     goal_id: Mapped[str] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
