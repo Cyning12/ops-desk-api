@@ -106,3 +106,4 @@ P2a 把面板视图数据查询封装为只读 capability 进默认面（08 §0�
 
 - 2026-11-16：落卡过闸（HG-TASK-DRAFT approved · issue #23 m03064 夜间授权 + 08 设计终稿）。
 - 2026-11-16：实施+测试波回填实现备忘（ci_status 结论 · 偏差四条 · registry 偏差二同步）。
+- 2026-11-16：全量对拍（branch vs master+同 .env worktree）失败集恒等，余红皆 .env 环境污染（承 api-controlled-write-hitl 先例）；「builtin 五枚基线」count 锚另两处推进 5→7（test_capability_testing_write.py:329 · test_stage_w_write_expand.py:260 · registry 偏差三登记）。

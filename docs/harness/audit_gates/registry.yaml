@@ -455,7 +455,10 @@ waves:
       不填 · loader 允许缺省）。偏差二：supervisor allowlist +2 属设计
       §7 明项，tests/test_strategy_env_extra_candidates.py TC1① 对拍锚
       （master 静态五枚逐字节）随之推进为七枚（最小改动 · 仅字面对拍
-      列表与 stripped 序 · 语义断言不动）。禁承载：面板端点改动（adapter 按同谓词
+      列表与 stripped 序 · 语义断言不动）。偏差三：同性质「builtin 五枚
+      基线」count 锚另两处（test_capability_testing_write.py:329 ·
+      test_stage_w_write_expand.py:260 默认加载面零 diff 断言）同步推进
+      5→7（+2 枚 builtin 的既定后果 · 断言语义不动）。禁承载：面板端点改动（adapter 按同谓词
       集重写 ORM 不复用端点）· adapter 白名单扩容 · alembic/ · 图
       （app/ops/lg_rag/）改动 · when_not_to_use 填充（R2 空调杆）·
       mock 工具退役（仅收窄）· 新 DDL/索引/依赖。
@@ -469,6 +472,8 @@ waves:
       - tests/test_capability_manifest.py
       - tests/test_capability_panel_tools.py
       - tests/test_strategy_env_extra_candidates.py
+      - tests/test_capability_testing_write.py
+      - tests/test_stage_w_write_expand.py
       - docs/_tech_graph/l1/01_modules.md
       - docs/harness/audit_gates/registry.yaml
       - docs/tasks/active/task_p2a_t1_panel_list_tools.md

@@ -326,7 +326,7 @@ def test_a2_off_zero_diff(monkeypatch):
     assert extra_manifest_paths() == ()
     snap = get_registry().snapshot()
     assert _TESTING_CAP not in snap["capability_ids"]
-    assert snap["count"] == 5  # builtin 五枚 · catalog count 不变
+    assert snap["count"] == 7  # builtin 七枚（P2a-T1 +query_issues/query_pull_requests）· catalog count 不变口径承五枚锚
     # 可见集：默认 builtin 5 枚；加载 oa 清单后恰 8 枚（验收基线口径）· 均不含本条目
     ids = {s.capability_id for s in list_capabilities(filter=baseline_filter(node_role="t"))}
     assert ids == _BUILTIN_IDS
