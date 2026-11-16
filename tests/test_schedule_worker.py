@@ -10,6 +10,9 @@
 - 预算归因（R4）：start_run_worker 显式收 creator user_id/tenant_id ·
   ops_lg_rag_runs.user_id == creator（归因链锚定 · ops_llm_usage 无 user_id 列）。
 - 闸 off 默认零行为：TestClient 零 diff（lifespan 不建 task）。
+- fix-434（issue #434 第一项 · 15 §1.2「fire 时不存在则 worker 自建」）：
+  fire 同事务 thread upsert——无 turns schedule 点火后 ops_lg_rag_threads
+  补最小行 · 既有行二火不动 · 端到端 runs 卡片端点 200 含 run_id（不再 404）。
 """
 
 from __future__ import annotations
@@ -603,3 +606,71 @@ class TestFivePieceSet:
         await worker.stop_schedule_worker()
         assert calls["n"] >= 2  # 失败后下周期重试
         assert task.done()
+
+
+# ---------- fix-434 · fire 同事务 thread upsert（issue #434 第一项 · 15 §1.2） ----------
+
+
+@_DB_REQUIRED
+class TestThreadUpsert:
+    async def test_missing_thread_row_created_on_fire(self, worker_spy):
+        """无 turns 的 schedule fire → ops_lg_rag_threads 补最小行（id/user_id=creator）。"""
+        user = await _mk_user()
+        sch = await _mk_schedule(user)
+        stats = await worker.run_schedule_tick(now=_NOW)
+        assert stats["fired"] == 1
+        async with AsyncSessionLocal() as db:
+            thread = await db.get(OpsLgRagThread, sch.thread_id)
+        assert thread is not None
+        assert str(thread.user_id) == str(user.id)
+
+    async def test_existing_thread_row_untouched_on_refire(self, worker_spy):
+        """既有行（属 creator）二火后 created_at/user_id 不变（upsert 已存在不动）。"""
+        user = await _mk_user()
+        thread_id = f"th-{uuid.uuid4().hex[:8]}"
+        async with AsyncSessionLocal() as db:
+            db.add(OpsLgRagThread(id=thread_id, user_id=user.id))
+            await db.commit()
+        await _mk_schedule(user, thread_id=thread_id, max_fires=2)
+        async with AsyncSessionLocal() as db:
+            before = await db.get(OpsLgRagThread, thread_id)
+            assert before is not None
+            created_at_before = before.created_at
+        stats1 = await worker.run_schedule_tick(now=_NOW)
+        assert stats1["fired"] == 1
+        stats2 = await worker.run_schedule_tick(now=_NOW + timedelta(seconds=600))
+        assert stats2["fired"] == 1
+        async with AsyncSessionLocal() as db:
+            after = await db.get(OpsLgRagThread, thread_id)
+        assert after.created_at == created_at_before
+        assert str(after.user_id) == str(user.id)
+
+    async def test_runs_card_endpoint_200_after_fire(
+        self, client, override_auth_maintainer, worker_spy
+    ):
+        """端到端可见性（承 test_lg_rag_runs_readonly_api.py 先例形态）：
+        fire 后 creator 会话 GET runs 卡片端点 → 200 且含该 run_id（不再 404）。"""
+        maintainer_id = "00000000-0000-0000-0000-000000000001"
+        async with AsyncSessionLocal() as db:
+            user = await db.get(OpsUser, maintainer_id)
+            if user is None:
+                user = OpsUser(
+                    id=maintainer_id,
+                    username=f"fix434-{uuid.uuid4().hex[:8]}",
+                    role="maintainer",
+                )
+                db.add(user)
+                await db.commit()
+                await db.refresh(user)
+        sch = await _mk_schedule(user)
+        stats = await worker.run_schedule_tick(now=_NOW)
+        assert stats["fired"] == 1
+        fires = await _fires_of(sch.schedule_id)
+        run_id = fires[0].run_id
+        assert run_id is not None
+        resp = await client.get(f"/api/ops/lg-rag/threads/{sch.thread_id}/runs")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["ok"] is True
+        ids = [r["run_id"] for r in body["data"]["runs"]]
+        assert run_id in ids
