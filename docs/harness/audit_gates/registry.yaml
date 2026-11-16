@@ -1038,7 +1038,7 @@ waves:
   - task_slug: p3-t6-idempotency-db-default
     status: active
     base: "87fd1ddf"
-    wave_tip: "87fd1ddf"
+    wave_tip: "90c57574"
     note: >-
       P3-T6 幂等转正 DB——多副本前置唯一转正项（HG-TASK-DRAFT /
       HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-16 · issue
