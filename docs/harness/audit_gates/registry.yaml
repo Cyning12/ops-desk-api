@@ -833,3 +833,36 @@ waves:
       - tests/
       - alembic/
       - scripts/
+  - task_slug: p3-t4-runs-readonly-api
+    status: active
+    base: "f1d0dd28"
+    note: >-
+      P3-T4 runs 只读端点——threads/{id}/runs 列表 + runs/{id}/events
+      白名单帧流（HG-TASK-DRAFT 2026-11-16 · issue Cyning12/ops-desk-workspace#23
+      m03064/m03283 夜间授权 · 契约真源 workspace 15-p3-contracts.md v1 终稿
+      §3 两端点 + §0 冻结词表 8 值 + §4.1 fires 表 + §4.4 归因真源 ·
+      操作真源 lead 委派书 m00002）：run_store.py 增 list_thread_runs_page/
+      fetch_run_start_queries/fetch_schedule_attributions（raw SQL 契约钉名
+      ops_schedule_fires JOIN ops_schedules · UndefinedTable 容错降级 null
+      R-P3-T4-1）+ event_store.py 增 list_run_events_page（白名单 8 值 SQL
+      层过滤 · 500 帧截断）+ 新 runs_router.py（404 矩阵 · keyset ≤50 ·
+      query_summary 截 80 · 四字段事件对象）+ app/ops/router.py 注册 +
+      tests/test_lg_rag_runs_readonly_api.py 真 PG（双用户 404 · 白名单断言 ·
+      分页/截断 · 空 run · 归因临时建表）。
+    allowed_app_files:
+      - app/ops/lg_rag/run_store.py
+      - app/ops/lg_rag/event_store.py
+      - app/ops/lg_rag/runs_router.py
+      - app/ops/router.py
+    allowed_tree_files:
+      - tests/test_lg_rag_runs_readonly_api.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p3_t4_runs_readonly_api.md
+      - docs/tasks/done/task_p3_t4_runs_readonly_api.md
+      - docs/harness/reviews/task_p3_t4_runs_readonly_api_audit_R1_20261116.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p3-t4-runs-readonly-api/
+    banned_prefixes:
+      - alembic/
+      - scripts/
