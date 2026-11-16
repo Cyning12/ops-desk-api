@@ -22,6 +22,10 @@ from typing import Any
 ANSWER_MAX_CHARS = 32_000
 # 列表标题上限（字符）；query 即标题真源，超长截断
 TITLE_MAX_CHARS = 80
+# fix-planframe-truncation：落库全文（_PERSIST_PAYLOAD_MAX）后读时截断口径
+# （承 SSE 帧面旧上限），保 history 响应尺寸契约
+SUBTASK_RESULT_MAX_CHARS = 800
+ANSWER_PREVIEW_MAX_CHARS = 200
 # H1 列表 / H2 历史分页默认与上限（history_router Query 校验同源真值）
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 100
@@ -202,6 +206,28 @@ def aggregate_answer(
     return answer, False
 
 
+def _truncate_str(text: str, max_len: int) -> str:
+    if len(text) <= max_len:
+        return text
+    return text[: max_len - 1] + "…"
+
+
+def _read_safe_summary(value: Any, max_len: int) -> Any:
+    """落库全文后的读时截断：str 直截；结构值 dumps 超限则降级截断字符串。
+
+    承 SSE 帧面旧口径（_summarize_payload：≤上限保留结构 · 超上限截断字符串），
+    修 history.py:217「帧内已是截断过的安全大小」假设在落库全文后破口的
+    响应尺寸契约（fix-planframe-truncation）。
+    """
+    if isinstance(value, str):
+        return _truncate_str(value, max_len)
+    try:
+        s = json.dumps(value, ensure_ascii=False, default=str)
+    except (TypeError, ValueError):
+        return _truncate_str(repr(value), max_len)
+    return value if len(s) <= max_len else _truncate_str(s, max_len)
+
+
 def summarize_subtasks(run: dict[str, Any]) -> list[dict[str, Any]]:
     """``subtask.progress`` 帧摘要列表（seq 升序）：seq/role/status + 透传摘要键。"""
     out: list[dict[str, Any]] = []
@@ -214,10 +240,19 @@ def summarize_subtasks(run: dict[str, Any]) -> list[dict[str, Any]]:
             "agent_role": str(ev.get("agent_role") or ""),
             "status": str(payload.get("status") or ""),
         }
-        # 摘要键透传（帧内已是 _summarize_payload 截断过的安全大小）
+        # 摘要键透传 + 读时截断（fix-planframe-truncation：落库全文后
+        # 由本函数保响应尺寸 · 承 SSE 帧面旧口径）
         for key in ("subtask_result", "answer_preview", "message", "step"):
             if key in payload:
                 item[key] = payload[key]
+        if "subtask_result" in item:
+            item["subtask_result"] = _read_safe_summary(
+                item["subtask_result"], SUBTASK_RESULT_MAX_CHARS
+            )
+        if isinstance(item.get("answer_preview"), str):
+            item["answer_preview"] = _truncate_str(
+                item["answer_preview"], ANSWER_PREVIEW_MAX_CHARS
+            )
         out.append(item)
     return out
 
