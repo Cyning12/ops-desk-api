@@ -14,7 +14,7 @@ title: task · chore · P2b-T5b 真社区 MCP server 冒烟 + 文档回写（纯
 | **task_slug** | p2b-t5b-mcp-smoke-wrapup |
 | base | bfbb855c |
 | 关联 issue | Cyning12/ops-desk-workspace#23 |
-| 关联 PR | #416（feat 波 MERGED · wave_tip 6613dbcc）· 本 CLOSE 波 PR 待回填 |
+| 关联 PR | #416（feat 波 MERGED · wave_tip 6613dbcc）· #417（CLOSE 关账波） |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack；本波为纯文档冒烟+回写 |
 | graph_change_layer | G-L1（01_modules.md HG-GRAPH-MODULES 签收行 · 模块行零改动） |
