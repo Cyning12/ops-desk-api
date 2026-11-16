@@ -993,8 +993,9 @@ waves:
       - docs/harness/invokes/by-task/p3-t3-schedule-worker/
     banned_prefixes: []
   - task_slug: p3-t2b-create-schedule-capability
-    status: active
+    status: closed
     base: "17337d35"
+    wave_tip: "57e0c727"
     note: >-
       P3-T2b create_schedule 写类 capability（HG-TASK-DRAFT /
       HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-16 · issue

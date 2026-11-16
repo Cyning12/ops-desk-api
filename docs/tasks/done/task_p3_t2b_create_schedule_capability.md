@@ -96,12 +96,16 @@ P3（Schedule/TaskCard 面）第 2b 单。T2 已交付 schedule 数据面 + REST
 
 ### 自检结论
 
-30/40 交付回填（2026-11-16）：14 用例真 PG 全绿；全量净树 2382 passed, 1 skipped
+PASS（2026-11-16 close）。PR Cyning12/ops-desk-api#425 CI 四 job 全绿（check /
+import-linter / lint-wiki-delta / pytest 2m37s · exact head e99842a0）· squash merge
+57e0c727。14 用例真 PG 全绿；rebase 3683b8df 上面全量净树 2405 passed, 1 skipped
 EXIT=0（脏树期 9 红=6 钉演进已修+3 净树门提交后自解，承 p3-t4 台账口径）；ruff 绿；
-spec-wave task lint PASS（W3 本回填后消除）· verify PASS（三人工闸 approved）。
+spec-wave task lint PASS（W3 回填后消除）· verify PASS（三人工闸 approved）。
 偏差 D1（adapter 冒号串）/D2（output_schema JSONPath required 三键）/D3（request_id
 可选+回退键）+ 限制 L1-L3 已登记实现备忘；钉演进两件（smoke/env_candidates 9→10）
-承 P2a-T1/T2 先例已入 registry allowed_tree_files。CI 四绿终裁见 invoke_40。
+承 P2a-T1/T2 先例已入 registry allowed_tree_files。过程：PR #425 事件派发异常
+（opened/reopened/两 push 未派发 · 同期他波正常 → #425 特异性偶发）两轮 rebase
+解冲突（p3-t5/p3-t3 先后合入 · 追加型双侧全保留）后派发恢复。
 
 ## 必读列表
 
