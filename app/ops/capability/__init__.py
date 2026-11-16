@@ -2,14 +2,12 @@
 
 SPEC：``docs/spec/agent-infra/capability/SPEC-capability-gateway_v0.md``
 表面：``register`` / ``unregister`` / ``list_capabilities`` / ``schemas_for_llm`` /
-``invoke`` / ``ainvoke`` / ``provide``（P3 skill 上下文注入）
+``invoke`` / ``ainvoke`` / ``provide``
 **默认导出零 LG 运行时依赖**；ToolNode 桥见 ``app.ops.capability.extras.langchain``。
-P2 探针：``MockMcpAdapter`` / ``MockSandboxAdapter`` / ``MockCliAdapter``；
+P2 探针：``MockSandboxAdapter`` / ``MockCliAdapter``（P2b-T4 起 mcp mock 探针退役）；
 默认**不**进 ``ensure_default_capabilities``；启用见 ``probes.register_p2_probes``。
 MCP 面：P2b 配置化重建（``mcp_config`` 纯解析 loader；连接注册见后续波次，
 ``OPS_CAPABILITY_MCP_ENABLED`` 为总闸，默认关；CI 不外网）。
-P3 skill：``SkillStubAdapter`` + ``register_skill_stub``；**非**完整引擎；
-边界见 ``docs/guides/GUIDE_capability-gateway-p3-skill-boundary_v0.md``。
 Mode A / filter 契约：``docs/guides/GUIDE_capability-portable-core-mode-a_v0.md``。
 
 H4：``kind=http``（``GenericHttpAdapter``）+ 稳定错误码词表（``errors``）+
@@ -26,9 +24,7 @@ from app.ops.capability.adapters import (
     HttpTransport,
     LocalFnAdapter,
     MockCliAdapter,
-    MockMcpAdapter,
     MockSandboxAdapter,
-    SkillStubAdapter,
     StaticCredentialVault,
     UrllibHttpTransport,
 )
@@ -87,7 +83,6 @@ from app.ops.capability.receipts import (
     reset_receipt_sink,
     set_receipt_sink,
 )
-from app.ops.capability.skill_stub import register_skill_stub
 from app.ops.capability.types import (
     CapabilityFilter,
     CapabilityResult,
@@ -134,14 +129,12 @@ __all__ = [
     "InMemoryReceiptSink",
     "LocalFnAdapter",
     "MockCliAdapter",
-    "MockMcpAdapter",
     "MockSandboxAdapter",
     "NullIdempotencyStore",
     "NullReceiptSink",
     "Principal",
     "Receipt",
     "ReceiptSink",
-    "SkillStubAdapter",
     "StaticCredentialVault",
     "UrllibHttpTransport",
     "ainvoke",
@@ -165,7 +158,6 @@ __all__ = [
     "provide",
     "register",
     "register_p2_probes",
-    "register_skill_stub",
     "reset_idempotency_store",
     "reset_receipt_sink",
     "schemas_for_llm",

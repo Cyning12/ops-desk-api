@@ -26,6 +26,17 @@ class SubtaskItem(BaseModel):
     consumes: dict[str, Any] | None = None
 
 
+class SubtaskItemSkillRef(SubtaskItem):
+    """P2b-T4（11 §6.4 · R9b）：on 态专用子任务模型，增可选 `skill_ref`。
+
+    **闸条件化**：`OPS_SKILL_LOADER_ENABLED`=off 时节点侧仍用
+    `SubtaskItem`（extra="ignore" 丢弃 skill_ref 键）——off 态 JSON
+    schema 不含本字段（本类不实例化），逐字节不变（R9b 钉死）。
+    """
+
+    skill_ref: str | None = None
+
+
 class SubtasksPlan(BaseModel):
     """supervisor LLM 结构化出口。
 

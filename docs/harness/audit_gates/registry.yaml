@@ -632,3 +632,66 @@ waves:
       - scripts/
       - app/ops/lg_rag/
 
+  - task_slug: p2b-t4-skill-loader
+    status: active
+    base: "bf1c23f2"
+    note: >-
+      P2b-T4 skill 加载器（HG-TASK-DRAFT 2026-11-16 · issue
+      Cyning12/ops-desk-workspace#23 m03064 夜间授权 · 设计真源 workspace
+      11-p2b-mcp-skill-design.md 终稿 §8 T4 行 + §6 全量）：skill_registry
+      重写为真加载器（loader.py yaml.safe_load frontmatter · name/description
+      必填 · kebab-case · 仅目录包 skills/<name>/SKILL.md · 伪造标记拒载
+      优于转义 · 全文 ≤20000 字符拒载 R9a · 坏文件 warn 跳过 · 启动加载
+      无热更新 · 旧 API 不保留兼容）+ slots.py SLOT_REGISTRY 增
+      skill_content trusted section 槽（八槽）+ nodes.py catalog_block
+      追加「## 可用技能（摘要）」节（不动模板资产 · 合并预算
+      capability ≤6000+skill ≤4000 ≤10000 CI 断言锚）+ plan-JSON
+      skill_ref 闸条件化装配（R9b：SubtaskItemSkillRef 子类 · off 态
+      schema 逐字节不变 · _worker_state 注入 wrap_slot 全文 · 未知
+      skill_ref fail-open span warn 键 skill_ref_unknown）+ env 三件套
+      （OPS_SKILL_LOADER_ENABLED 默认 false 非法回退 false off 态 loader
+      零调用+supervisor system 逐字节一致 · OPS_SKILL_LOADER_ROOT 默认
+      ../ops-desk-workspace/skills · OPS_SKILL_CATALOG_MAX_CHARS 默认
+      4000 · 承 goals/inject.py 体例）+ 删三 stub（skill_stub.py ·
+      adapters/skill.py SkillStubAdapter · adapters/mcp.py
+      MockMcpAdapter · capability 面不留 kind="skill" · probes.py 删
+      mcp 探针项 · test_capability_gateway.py mcp 用例最小改写 cli
+      等价+p3 skill 三例整删）+ compose api 挂 skills 只读卷 +
+      workspace skills/ 首枚 dogfood skill panel-data-guide + README
+      作者指南（PR 评审纪律钉 platform S6）+ 01_modules lg_rag 行
+      skill_registry「H5 stub·dormant」备注写实移除为真加载器+签收行。
+      禁承载：capability/manifest.py · adapters/mcp_client.py ·
+      config.py MCP 键（并行 T1 地盘）· 真 LLM 对照会话（T5a）·
+      .importlinter 改动（lg-rag-outbound :207 已含 skill_registry
+      零新边核实）· 模板资产改动（否 $skills_block）· skill 热更新
+      /rank/多根（§6.1 裁剪单）· alembic/ · scripts/。
+    allowed_app_files:
+      - app/ops/skill_registry/__init__.py
+      - app/ops/skill_registry/loader.py
+      - app/ops/skill_registry/registry.py
+      - app/ops/prompts/slots.py
+      - app/ops/lg_rag/multi/nodes.py
+      - app/ops/lg_rag/schemas/subtasks.py
+      - app/ops/capability/__init__.py
+      - app/ops/capability/skill_stub.py
+      - app/ops/capability/probes.py
+      - app/ops/capability/adapters/__init__.py
+      - app/ops/capability/adapters/skill.py
+      - app/ops/capability/adapters/mcp.py
+    allowed_tree_files:
+      - docker-compose.yml
+      - tests/test_skill_registry.py
+      - tests/test_skill_loader_inject.py
+      - tests/test_prompt_slots.py
+      - tests/test_capability_gateway.py
+      - docs/harness/reviews/task_p2b_t4_skill_loader_audit_R1_20261116.md
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p2b_t4_skill_loader.md
+      - docs/tasks/done/task_p2b_t4_skill_loader.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p2b-t4-skill-loader/
+    banned_prefixes:
+      - alembic/
+      - scripts/
+      - app/ops/capability/manifests/
