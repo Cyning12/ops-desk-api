@@ -123,36 +123,58 @@ class McpSessionManager:
         task = asyncio.current_task()
         if task is not None:
             self._inflight[key] = task
-        transport: McpTransport | None = None
         try:
-            transport = self._factory(config)
-            session = await McpSession.connect(config, transport)
-            if self._closed:
-                # 迟关闭：aclose 后才建完的连接立即 close，不入池
-                await session.aclose()
-                return
-            self._sessions[key] = session
-            logger.info(
-                "mcp server=%s 已建连（protocol=%s · tools=%d）",
-                key,
-                session.negotiated_version,
-                len(session.tools),
-            )
-        except asyncio.CancelledError:
-            # 取消感知：清理半成品 transport 后重抛
-            if transport is not None:
+            # §4-B：连接失败重试 1 次（共 2 试；每次重建 transport；取消不重试）
+            for attempt in range(2):
+                transport: McpTransport | None = None
                 try:
-                    await transport.aclose()
-                except Exception:  # noqa: BLE001
-                    logger.warning("mcp server=%s 取消清理失败", key, exc_info=True)
-            raise
-        except Exception as exc:  # noqa: BLE001 - §4-B 单 server 失败隔离
-            logger.warning("mcp server=%s 建连失败，跳过（MCP 面其余不受影响）: %s", key, exc)
+                    transport = self._factory(config)
+                    session = await McpSession.connect(config, transport)
+                except asyncio.CancelledError:
+                    # 取消感知：清理半成品 transport 后重抛
+                    if transport is not None:
+                        try:
+                            await transport.aclose()
+                        except Exception:  # noqa: BLE001
+                            logger.warning(
+                                "mcp server=%s 取消清理失败", key, exc_info=True
+                            )
+                    raise
+                except Exception as exc:  # noqa: BLE001 - §4-B 单 server 失败隔离
+                    if transport is not None:
+                        try:
+                            await transport.aclose()
+                        except Exception:  # noqa: BLE001
+                            logger.warning(
+                                "mcp server=%s 失败清理失败", key, exc_info=True
+                            )
+                    if attempt == 0:
+                        logger.info("mcp server=%s 建连失败，重试 1 次: %s", key, exc)
+                        continue
+                    logger.warning(
+                        "mcp server=%s 建连失败（重试已尽），跳过（MCP 面其余不受影响）: %s",
+                        key,
+                        exc,
+                    )
+                    return
+                if self._closed:
+                    # 迟关闭：aclose 后才建完的连接立即 close，不入池
+                    await session.aclose()
+                    return
+                self._sessions[key] = session
+                logger.info(
+                    "mcp server=%s 已建连（protocol=%s · tools=%d · attempt=%d）",
+                    key,
+                    session.negotiated_version,
+                    len(session.tools),
+                    attempt + 1,
+                )
+                return
         finally:
             self._inflight.pop(key, None)
 
     def _run_unregister_hook(self, key: str) -> None:
-        """R5c 接口面：T3 落地后由 lifespan 注入真实摘除逻辑；hook 失败仅 warn。"""
+        """R5c：lifespan 注入 translator.unregister_server_safely（P2b-T3）；hook 失败仅 warn。"""
         if self._unregister_hook is None:
             return
         try:

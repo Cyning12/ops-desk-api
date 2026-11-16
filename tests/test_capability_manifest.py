@@ -259,8 +259,8 @@ capabilities:
     enabled: true
     args_schema: {type: object, properties: {}}
     adapter: local_fn:app.ops.capability.defaults:utc_now_iso
-  - id: mcp_probe
-    kind: mcp
+  - id: bogus_probe
+    kind: bogus
     description: not allowed
     when_to_use: 单测 fixture
     enabled: true
