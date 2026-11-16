@@ -585,8 +585,9 @@ waves:
       - scripts/
       - app/
   - task_slug: p2b-t1-mcp-legacy-config
-    status: active
+    status: closed
     base: "bf1c23f2"
+    wave_tip: "64791fc5"
     note: >-
       P2b-T1 旧 MCP 遗产清除 + mcp_servers.yaml 配置面（HG-TASK-DRAFT /
       HG-AUDIT-R1 / HG-GRAPH-MODULES 2026-11-16 · issue
