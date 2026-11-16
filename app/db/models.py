@@ -772,3 +772,9 @@ class OpsScheduleFire(Base):
     run_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="claimed")
     fired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    #: 抢占时刻（T3 worker INSERT 时写入）——启动补链 R10 的「超时」判据：
+    #: claimed AND run_id IS NULL AND created_at ≤ now - CLAIM_STALE_SECONDS
+    #: 才算孤儿（用 planned_fire_at 会把补跑抢占误判为超时 · 14 §1.5）
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now_utc_aware
+    )

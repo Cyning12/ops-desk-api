@@ -76,6 +76,7 @@ _sanitize_no_proxy_env()
 from app.config import settings  # noqa: E402
 from app.ops.hitl import auto_resume  # noqa: E402
 from app.ops.router import router as ops_router  # noqa: E402
+from app.ops.schedule import worker as schedule_worker  # noqa: E402
 from app.ops.tracing import log_tracing_startup  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,11 @@ async def lifespan(app: FastAPI):
     scan_started = auto_resume.auto_resume_mode() == auto_resume.MODE_AUTO
     if scan_started:
         auto_resume.start_compensation_scanner()
+    # P3-T3 · Schedule worker 挂点：总闸 OPS_SCHEDULE_ENABLED 默认 off **零创建**
+    # （承 auto_resume 先例 · off 态 TestClient 零 diff · R8）；shutdown 须 cancel。
+    sched_started = schedule_worker.schedule_worker_enabled() == schedule_worker.MODE_ON
+    if sched_started:
+        schedule_worker.start_schedule_worker()
     # P2b-T2 · MCP 会话面：总闸 off（默认）**零创建**（承 auto_resume 先例 ·
     # 既有测试面零 diff）；on 且配置缺失/解析失败 → warn + MCP 面降级为空
     # （11 终稿 §10 · lifespan 不炸）；on 正常 → 建 manager 挂 app.state。
@@ -106,6 +112,8 @@ async def lifespan(app: FastAPI):
             from app.ops.capability.mcp import adapter as mcp_adapter
 
             mcp_adapter.clear_session_manager()
+        if sched_started:
+            await schedule_worker.stop_schedule_worker()
         if scan_started:
             await auto_resume.stop_compensation_scanner()
 

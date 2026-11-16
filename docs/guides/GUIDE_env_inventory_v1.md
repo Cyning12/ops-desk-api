@@ -5,7 +5,7 @@
 > **优先级**：env > 策略包 > 代码默认；缺省不设策略包 = 现状逐字节
 > **非法回退**：各模块 `_env_int`/strip —— 空/非法回默认（不炸请求）
 
-## 清单（84 键 · 按归属面）
+## 清单（86 键 · 按归属面）
 
 | 名称 | 归属面 | .env.example 默认 | 备注 |
 |------|--------|-------------------|------|
@@ -92,12 +92,14 @@
 | `RAG_SPARSE_FP16` | rag | `—（代码/动态）` |  |
 | `RAG_SPARSE_MODEL` | rag | `—（代码/动态）` |  |
 | `RAG_VECTOR_BACKEND` | rag | `qdrant` |  |
+| `OPS_SCHEDULE_ENABLED` | schedule | `—（代码/动态）` | P3-T3（2026-11-16 · issue #23 · 15 契约 §7.1）· worker 总闸 · 默认 off · 非法值回退 off + warning（承 OPS_HITL_AUTO_RESUME 先例）· 只闸 worker 不闸 REST |
+| `OPS_SCHEDULE_TICK_SECONDS` | schedule | `—（代码/动态）` | P3-T3 · worker tick 间隔秒 · 默认 30 · 非法/越界 [1,3600] 回退 30（承 OPS_HITL_SCAN_INTERVAL_SECONDS 先例） |
 | `SECURITY_INPUT_ISOLATION_ENABLED` | security | `—（代码/动态）` |  |
 
 ## 扫描基线留痕
 
 - 日期：2026-09-24
-- 计数：union **84**
+- 计数：union **86**
 - 策略包：`app/llm/packs/llm_tiers.v0.yaml`（schema_version=`0`）
 
 ## 修订
@@ -106,3 +108,4 @@
 |------|------|
 | 2026-09-24 | V1-E D4 初版盘点落盘 |
 | 2026-10-20 | delegation-naming-boundary：lg_rag 段新增 `LG_RAG_WRITE_REPLAY_GUARD_ENABLED`（84 键） |
+| 2026-11-16 | P3-T3（p3-t3-schedule-worker · issue #23）：schedule 段新增 `OPS_SCHEDULE_ENABLED` / `OPS_SCHEDULE_TICK_SECONDS`（86 键） |
