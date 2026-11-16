@@ -35,7 +35,7 @@
 | `LG_RAG_VISIBILITY_SCENARIO_MODE` | lg_rag | `—（代码/动态）` | V1-A~C · **已废弃 deprecated（2026-10-20 · scenario 阶段摘除 · 生产零消费 · scenario.py 本体 dormant 保留）** |
 | `LG_RAG_WRITE_REPLAY_GUARD_ENABLED` | lg_rag | `—（代码/动态）` | delegation-naming-boundary（2026-10-20）· write 孪生重放护栏独立开关（真门控仅 nodes.py 两处 · 与 delegation 解耦）· 布尔默认 true=开 · 非法值回退开（fail-closed 反向 + warning · 解析承 SESSION_SUMMARY_ENABLED 先例方向相反）· FP-2：delegation off 下护栏由从不生效变默认生效 |
 | `SESSION_COOKIE_SECURE` | lg_rag | `false` |  |
-| `SESSION_SUMMARY_ENABLED` | lg_rag | `—（代码/动态）` |  |
+| `SESSION_SUMMARY_ENABLED` | lg_rag | `—（代码/动态）` | 会话折叠摘要总闸（P3-T7 放量 2026-11-16 · 默认关 · off 逐字节一致 · 回退=关 env 秒级生效零迁移 · runbook=docs/guides/RUNBOOK_session_summary_rollout_v1_zh.md · 观测=span 三键+ops_llm_usage task_type=summary） |
 | `BAILIAN_API_KEY` | llm | `sk-xxxxxxxx` |  |
 | `BAILIAN_BASE_URL` | llm | `https://dashscope.aliyuncs.com/compatible-mode/v1` |  |
 | `BAILIAN_MODEL` | llm | `qwen-plus` |  |
@@ -52,7 +52,7 @@
 | `OPS_LLM_TIER_EXTRACT_MODEL` | llm | `—（代码/动态）` | 动态档覆盖 |
 | `OPS_LLM_TIER_GRADER_MODEL` | llm | `—（代码/动态）` | 动态档覆盖 |
 | `OPS_LLM_TIER_STRUCTURED_MODEL` | llm | `—（代码/动态）` | 动态档覆盖 |
-| `OPS_LLM_TIER_SUMMARY_MODEL` | llm | `—（代码/动态）` | 动态档覆盖 |
+| `OPS_LLM_TIER_SUMMARY_MODEL` | llm | `—（代码/动态）` | 动态档覆盖（摘要档 · 仅 SESSION_SUMMARY_ENABLED=1 时消费 · 切换触发 chunk_hash 重算=缓存重建预期行为） |
 | `RAG_GRADER_MODEL` | llm | `Qwen/Qwen3.6-27B` |  |
 | `SILICONFLOW_API_KEY` | llm | `sk-xxxxxxxx` |  |
 | `SILICONFLOW_BASE_URL` | llm | `https://api.siliconflow.cn/v1` |  |
@@ -109,3 +109,4 @@
 | 2026-09-24 | V1-E D4 初版盘点落盘 |
 | 2026-10-20 | delegation-naming-boundary：lg_rag 段新增 `LG_RAG_WRITE_REPLAY_GUARD_ENABLED`（84 键） |
 | 2026-11-16 | P3-T3（p3-t3-schedule-worker · issue #23）：schedule 段新增 `OPS_SCHEDULE_ENABLED` / `OPS_SCHEDULE_TICK_SECONDS`（86 键） |
+| 2026-11-16 | P3-T7（p3-t7-session-summaries-rollout · issue #23）：`SESSION_SUMMARY_ENABLED` / `OPS_LLM_TIER_SUMMARY_MODEL` 备注回填（86 键不变 · 放量 runbook 落盘） |
