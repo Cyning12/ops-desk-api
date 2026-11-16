@@ -519,3 +519,67 @@ async def fetch_events_for_threads(
             }
         )
     return grouped
+
+# ---------------------------------------------------------------------------
+# P3-T4 · runs 只读端点事件面（契约 15-p3-contracts.md §3.2）
+# ---------------------------------------------------------------------------
+
+# §0 冻结词表 8 值——白名单为前置防泄层（§3.3 核实：现落库词表恰=freeze
+# 词表；未来内部帧类型落库时 SQL 层零改动拦截，payload 不进应用内存）。
+RUN_EVENTS_ALLOWED_TYPES: tuple[str, ...] = (
+    "run.start",
+    "answer",
+    "subtask.progress",
+    "node.progress",
+    "hitl.waiting",
+    "done",
+    "error",
+    "hitl.resumed",
+)
+
+
+async def list_run_events_page(
+    run_id: str,
+    user_id: str,
+    *,
+    after_seq: int = 0,
+    limit: int = 500,
+) -> dict[str, Any]:
+    """单 run 白名单事件一页（§3.2：event_type IN 8 值 **SQL 层**过滤）。
+
+    SQL 层落点裁定：500 帧截断须按白名单后帧计数——响应层过滤会页内欠载，
+    且内部帧存在性可经截断形状侧漏。归属前置 ``assert_run_owned``（跨用户/
+    未知 → LgRagRunNotFoundError → 404）。按 seq 升序取 ``limit + 1`` 判定
+    截断：超出 → truncated=True + next_after_seq=末帧 seq（客户端续拉）。
+    事件对象仅四字段：``{seq, event_type, payload, created_at}``。
+    """
+    await assert_run_owned(run_id, user_id)
+    stmt = (
+        select(OpsLgRagRunEvent)
+        .where(
+            OpsLgRagRunEvent.run_id == run_id,
+            OpsLgRagRunEvent.user_id == user_id,
+            OpsLgRagRunEvent.seq > after_seq,
+            OpsLgRagRunEvent.event_type.in_(RUN_EVENTS_ALLOWED_TYPES),
+        )
+        .order_by(OpsLgRagRunEvent.seq.asc())
+        .limit(limit + 1)
+    )
+    async with AsyncSessionLocal() as db:
+        rows = (await db.execute(stmt)).scalars().all()
+    truncated = len(rows) > limit
+    page = rows[:limit]
+    return {
+        "events": [
+            {
+                "seq": int(row.seq),
+                "event_type": row.event_type,
+                "payload": row.payload or {},
+                "created_at": row.created_at,
+            }
+            for row in page
+        ],
+        "truncated": truncated,
+        "next_after_seq": int(page[-1].seq) if (truncated and page) else None,
+    }
+

@@ -15,6 +15,7 @@ from app.ops.issues import router as issues_router
 from app.ops.lc_evidence_chain.router import router as lc_evidence_router
 from app.ops.lg_rag.history_router import router as chat_history_router
 from app.ops.lg_rag.router import router as lg_rag_router
+from app.ops.lg_rag.runs_router import router as lg_rag_runs_router
 from app.ops.overview import router as overview_router
 from app.ops.pulls import router as pulls_router
 
@@ -34,4 +35,5 @@ router.include_router(goals_router)
 router.include_router(lc_evidence_router)
 router.include_router(lg_rag_router)
 router.include_router(chat_history_router)
+router.include_router(lg_rag_runs_router)
 router.include_router(hitl_router)
