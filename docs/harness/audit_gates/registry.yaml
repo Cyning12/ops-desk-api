@@ -1036,9 +1036,9 @@ waves:
       - docs/harness/invokes/by-task/p3-t2b-create-schedule-capability/
     banned_prefixes: []
   - task_slug: p3-t6-idempotency-db-default
-    status: active
+    status: closed
     base: "87fd1ddf"
-    wave_tip: "90c57574"
+    wave_tip: "d2785471"
     note: >-
       P3-T6 幂等转正 DB——多副本前置唯一转正项（HG-TASK-DRAFT /
       HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-16 · issue

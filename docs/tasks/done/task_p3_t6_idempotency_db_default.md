@@ -63,21 +63,21 @@ P3（Schedule/TaskCard 面）第 6 单 · 多副本前置唯一转正项。设�
 
 ## 验收标准
 
-- [ ] persistence.py:39 未设/空串 → `"db"`（configure 返回 + DbIdempotencyStore/DbReceiptSink 装配）有锚 → tests/test_capability_persistence_db.py::test_configure_persistence_defaults_to_db
-- [ ] docstring 改写含「装配是部署动作，不是代码默认值」「刻意不做自动探测」「默认 db 是配置面默认值变更，非运行时自适应」（R9①）→ app/ops/capability/persistence.py:1-16
-- [ ] env 四分回归矩阵（显式 db / 显式 memory / 显式 null / 未设）全绿（R9②）→ test_configure_persistence_env_matrix
-- [ ] fail-closed 回归：Db store 连接故障 → ainvoke ok=False 且下游传输零调用（R9③）→ test_default_db_store_failure_fails_closed
-- [ ] 显式 null 回退回归：显式 null → mode "null" + Null 装配 + WARNING（R9③）→ test_configure_persistence_explicit_null_fallback
-- [ ] 默认面防重双调实证：未设 env → 第二调 `meta.duplicated` · 传输仅一次 · 回执单行 → test_default_surface_double_invoke_dedup
-- [ ] 既有 DbIdempotencyStore 测试复跑全绿（真 PG opsdesk_test）→ pytest tests/test_capability_persistence_db.py
-- [ ] test_log_init_window 钉死格式同步：显式 null 窗口 WARNING 新文案 + 未设窗口 INFO db 新增组全绿 → pytest tests/test_log_init_window.py
-- [ ] .env.example + GUIDE_env_inventory + RUNBOOK 注记同步（承 T3 先例）
-- [ ] 01_modules.md capability 行登记 + HG-GRAPH-MODULES 签收行回写
-- [ ] `npx --yes spec-wave@3.5.0 task lint --file` PASS · spec-wave verify 三闸 PASS · `ruff check app tests` 绿
+- [x] persistence.py:39 未设/空串 → `"db"`（configure 返回 + DbIdempotencyStore/DbReceiptSink 装配）有锚 → tests/test_capability_persistence_db.py::test_configure_persistence_defaults_to_db
+- [x] docstring 改写含「装配是部署动作，不是代码默认值」「刻意不做自动探测」「默认 db 是配置面默认值变更，非运行时自适应」（R9①）→ app/ops/capability/persistence.py:1-16
+- [x] env 四分回归矩阵（显式 db / 显式 memory / 显式 null / 未设）全绿（R9②）→ test_configure_persistence_env_matrix
+- [x] fail-closed 回归：Db store 连接故障 → ainvoke ok=False 且下游传输零调用（R9③）→ test_default_db_store_failure_fails_closed
+- [x] 显式 null 回退回归：显式 null → mode "null" + Null 装配 + WARNING（R9③）→ test_configure_persistence_explicit_null_fallback
+- [x] 默认面防重双调实证：未设 env → 第二调 `meta.duplicated` · 传输仅一次 · 回执单行 → test_default_surface_double_invoke_dedup
+- [x] 既有 DbIdempotencyStore 测试复跑全绿（真 PG opsdesk_test）→ pytest tests/test_capability_persistence_db.py
+- [x] test_log_init_window 钉死格式同步：显式 null 窗口 WARNING 新文案 + 未设窗口 INFO db 新增组全绿 → pytest tests/test_log_init_window.py
+- [x] .env.example + GUIDE_env_inventory + RUNBOOK 注记同步（承 T3 先例）
+- [x] 01_modules.md capability 行登记 + HG-GRAPH-MODULES 签收行回写
+- [x] `npx --yes spec-wave@3.5.0 task lint --file` PASS · spec-wave verify 三闸 PASS · `ruff check app tests` 绿
 
 ### 自检结论
 
-（draft 期占位 · 30 交付后回填）
+PASS（2026-11-16 · 30 交付）。翻转点 app/ops/capability/persistence.py:39（未设/空串 null→db · DbIdempotencyStore + DbReceiptSink 现役转正）+ docstring 改写 + 词表补 null + 显式 null 回退口径同步；调用方 __init__/admin docstring 同步。目标测试 42 用例真 PG 全绿（persistence_db 22 · log_init_window 8 · observability 12 零改实证）；env 四分矩阵 + fail-closed 回归（假 session_factory → ok=False + 传输零调用）+ 显式 null 回退 + 默认面防重双调实证全落。ruff / lint-imports / wave-gate 双闸（committed 面 base..wave_tip ⊆ allowed）全绿；feat PR #428 CI 四 job（check/import-linter/lint-wiki-delta/pytest）全绿，squash merge d2785471。图谱 01_modules.md 登记 + HG-GRAPH-MODULES 签收回写完成。唯一残余：本机全量 pytest 22 红为环境性（多 agent 共机端口/行竞争 · 隔离复跑全绿 · base 同路径复现），CI 终裁绿。偏差 D1（契约 15 §7.3/§7.5 口径矛盾）登记待跨仓和解。
 
 ## 必读列表
 
@@ -147,3 +147,4 @@ pytest tests（CI 终裁 · 真 PG opsdesk_test · 委派层 monkeypatch.delenv�
 | 日期 | 修订 |
 |------|------|
 | 2026-11-16 | 落卡（夜间自动执行波 · 授权 issue #23 m03064/m03283/m03498/m03551） |
+| 2026-11-16 | 30 交付 + 40 验收：feat PR #428 CI 四绿 squash merge d2785471 · 波 CLOSE（任务转 done · registry closed） |
