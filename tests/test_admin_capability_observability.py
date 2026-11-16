@@ -177,7 +177,7 @@ async def test_catalog_reports_the_filter_in_effect(client, as_admin):
     assert body["filter"]["baseline"] is True
     assert body["filter"]["deny_write"] is True
     assert body["filter"]["deny_high_risk"] is True
-    assert body["filter"]["allow_tags_any"] == ["oa"]
+    assert body["filter"]["allow_tags_any"] == ["mcp", "oa"]
 
     raw = (await client.get(f"{BASE}/catalog", params={"baseline": "false"})).json()
     assert raw["filter"]["kinds"] is None

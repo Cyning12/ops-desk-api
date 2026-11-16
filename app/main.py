@@ -101,6 +101,11 @@ async def lifespan(app: FastAPI):
     finally:
         if mcp_manager is not None:
             await mcp_manager.aclose()
+            # P2b-T3：aclose（逆序 close + unregister_hook 摘除条目）后摘除
+            # 适配器 session 槽位——此后 mcp 条目调用一律 mcp_session_unavailable。
+            from app.ops.capability.mcp import adapter as mcp_adapter
+
+            mcp_adapter.clear_session_manager()
         if scan_started:
             await auto_resume.stop_compensation_scanner()
 
@@ -128,11 +133,20 @@ async def _start_mcp_sessions(app: FastAPI):
     except McpServersConfigError as exc:
         logger.warning("mcp_servers.yaml 加载失败，MCP 面降级为空: %s", exc)
         return None
-    # R5c/T3 挂点：unregister_hook 本单为 None；T3 落地后注入
-    # 「遍历 capability registry 摘除 mcp.{server_key}.* 条目」实现（§5.1 R5）。
-    manager = McpSessionManager(mcp_configs, unregister_hook=None)
+    # P2b-T3 · R5c 挂点落地：unregister_hook 注入翻译器摘除逻辑
+    # （摘除 mcp__{server_key}__* 条目，按 manifest._FILE_IDS['mcp://<key>'] 追踪）。
+    from app.ops.capability.mcp import adapter as mcp_adapter
+    from app.ops.capability.mcp import translator as mcp_translator
+
+    manager = McpSessionManager(
+        mcp_configs, unregister_hook=mcp_translator.unregister_server_safely
+    )
     app.state.mcp_sessions = manager
     await manager.start()
+    # P2b-T3 翻译器编排（裁定 D：启动期内存注册不落盘）：
+    # 适配器 session 解析槽位注入 + 已连接 server 逐批翻译注册。
+    mcp_adapter.set_session_manager(manager)
+    mcp_translator.register_connected(manager, {c.key: c for c in mcp_configs})
     return manager
 
 

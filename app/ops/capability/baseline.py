@@ -24,12 +24,15 @@ import os
 
 from app.ops.capability.types import CapabilityFilter
 
-#: 模型可见的**基础 kind**（进程内能力）。新 kind 不进这里，走域放行。
+#: 模型可见的**基础 kind**（进程内能力）。其余新 kind 走域放行。
 DEFAULT_KINDS: frozenset[str] = frozenset({"local_fn"})
 
 #: 域放行标签：命中任一 tag 的能力豁免 `DEFAULT_KINDS` 裁剪。
 #: 逐批放开的单一入口——加域只改这一行。
-DOMAIN_ALLOW_TAGS: frozenset[str] = frozenset({"oa"})
+#: mcp（P2b-T3）：MCP 翻译条目全部携带 tags=("mcp", <server>)，豁免 kinds 裁剪
+#: 进模型视野；deny_high_risk/deny_write 判序照常生效（irreversible/high 翻译
+#: 产物天然被裁；总闸 off 时本集合零 diff——根本没有 mcp 条目注册）。
+DOMAIN_ALLOW_TAGS: frozenset[str] = frozenset({"oa", "mcp"})
 
 #: 写能力放行标签（env 门控 · testing-write-capability）：命中任一 tag 的
 #: 能力**只豁免 `deny_write` 一层**；默认空 = `None` = 判序零 diff。

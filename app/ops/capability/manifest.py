@@ -60,7 +60,9 @@ DEFAULT_MANIFEST_FILES: tuple[Path, ...] = (BUILTIN_MANIFEST_PATH,)
 _ENV_EXTRA_MANIFESTS = "OPS_CAPABILITY_EXTRA_MANIFESTS"
 
 # kind → 适配器形态。kind 是**适配器类型**，不是业务域（业务域放 tags）。
-ALLOWED_KINDS: frozenset[str] = frozenset({"local_fn", "http"})
+# mcp（P2b-T3）：翻译器产出的 MCP server 工具条目，经 _build_adapter mcp 分支挂
+# McpAdapter（invoke→McpSession.call_tool）；V1-V13 同源校验全部生效。
+ALLOWED_KINDS: frozenset[str] = frozenset({"local_fn", "http", "mcp"})
 ADAPTER_PREFIX_DEFAULTS = "local_fn:app.ops.capability.defaults:"
 ADAPTER_PREFIX_LOOKUPS = "local_fn:app.ops.capability.lookups:"
 ADAPTER_PREFIXES = (ADAPTER_PREFIX_DEFAULTS, ADAPTER_PREFIX_LOOKUPS)
@@ -239,7 +241,7 @@ def reload_capability_manifest(
 
 
 def _commit(
-    target: Path,
+    target: Path | str,  # str 形：P2b-T3 翻译器伪 source ``mcp://<server_key>``
     version: int | str | None,
     pending: list[_PendingEntry],
     *,
@@ -673,9 +675,22 @@ def _entry_from_raw(raw: dict[str, Any], *, loc: str) -> _PendingEntry:
 
 
 def _build_adapter(spec: CapabilitySpec, *, raw: dict[str, Any], loc: str) -> Any:
-    """按 kind 分派。local_fn 引用白名单函数；http 用声明构造（不需要 adapter 字段）。"""
+    """按 kind 分派。local_fn 引用白名单函数；http 用声明构造（不需要 adapter 字段）；
+    mcp 读 raw 的 mcp 块（server_key/tool_name）构造 McpAdapter（P2b-T3）。"""
     if spec.kind == "http":
         return GenericHttpAdapter(spec)
+    if spec.kind == "mcp":
+        mcp_block = raw.get("mcp")
+        if not isinstance(mcp_block, dict):
+            raise ManifestError(f"{loc} kind=mcp 缺 mcp 块（server_key/tool_name 必填）")
+        server_key = str(mcp_block.get("server_key") or "").strip()
+        tool_name = str(mcp_block.get("tool_name") or "").strip()
+        if not server_key or not tool_name:
+            raise ManifestError(f"{loc} kind=mcp 的 mcp 块缺 server_key/tool_name")
+        # 延迟 import 防环：mcp.adapter → errors（不反向依赖 manifest）
+        from app.ops.capability.mcp.adapter import McpAdapter
+
+        return McpAdapter(spec, server_key=server_key, tool_name=tool_name)
     ref = str(raw.get("adapter") or "").strip()
     return LocalFnAdapter(_resolve_local_fn_adapter(ref, loc=loc))
 
