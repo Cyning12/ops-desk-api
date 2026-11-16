@@ -1079,3 +1079,44 @@ waves:
     banned_prefixes:
       - alembic/
       - scripts/
+  - task_slug: p3-t7-session-summaries-rollout
+    status: active
+    base: "87fd1ddf"
+    wave_tip: ""
+    note: >-
+      P3-T7 ops_session_summaries 折叠摘要放量对拍（HG-TASK-DRAFT /
+      HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-16 · issue
+      Cyning12/ops-desk-workspace#23 m03064/m03283/m03498/m03551 夜间授权 ·
+      设计真源 workspace 14-p3-schedule-taskcard-design.md 终稿
+      R1-R23 §5/§10 + 契约真源 15-p3-contracts.md）。本波承载：
+      放量 runbook docs/guides/RUNBOOK_session_summary_rollout_v1_zh.md
+      （承 RUNBOOK_goal_rollout 三步体例：off→pilot→全开 · 回退=关
+      env 即时生效零迁移 · 观测指标=span 三键+ops_llm_usage 账+
+      缓存行增速+降级率）+ .env.example 注记
+      SESSION_SUMMARY_ENABLED/OPS_LLM_TIER_SUMMARY_MODEL +
+      GUIDE_env_inventory 备注回填（86 键不变）+ 图谱 01_modules.md
+      chat 行 P3-T7 放量备注+签收行 + 验收对拍（本地真 PG dev 库
+      合成 32 轮标记 thread · on/off/原文基线三态 · chars 主判据
+      ≥50% · 缓存命中实证 · 3 条抽检 · :387 降级回归 · 数据表进
+      invoke_40）。零代码改动（allowed_app_files=[] 机判守 ·
+      折叠算法/continuity.py/summary.py 零触 · 缺陷只登记）。
+      禁承载：app/ 全部 · alembic/ · scripts/ · skill_registry/ ·
+      MEMORY_FACTS 三开关放量 · Langfuse 密钥更换（R-P3-6 ·
+      录制替代路径 · 偏差 D1）· SSE/契约面。偏差 D1-D3 见 task
+      档实现备忘（D1 Langfuse 403 录制替代 · D2 chars 主判据 ·
+      D3 base 说明）。
+    allowed_app_files: []
+    allowed_tree_files:
+      - docs/guides/RUNBOOK_session_summary_rollout_v1_zh.md
+      - .env.example
+      - docs/guides/GUIDE_env_inventory_v1.md
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p3_t7_session_summaries_rollout.md
+      - docs/tasks/done/task_p3_t7_session_summaries_rollout.md
+      - docs/harness/reviews/task_p3_t7_session_summaries_rollout_audit_R1_20261116.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p3-t7-session-summaries-rollout/
+    banned_prefixes:
+      - alembic/
+      - scripts/
