@@ -18,6 +18,7 @@ from app.ops.lg_rag.router import router as lg_rag_router
 from app.ops.lg_rag.runs_router import router as lg_rag_runs_router
 from app.ops.overview import router as overview_router
 from app.ops.pulls import router as pulls_router
+from app.ops.schedule.router import router as schedule_router
 
 router = APIRouter(prefix="/api/ops")
 
@@ -37,3 +38,4 @@ router.include_router(lg_rag_router)
 router.include_router(chat_history_router)
 router.include_router(lg_rag_runs_router)
 router.include_router(hitl_router)
+router.include_router(schedule_router)
