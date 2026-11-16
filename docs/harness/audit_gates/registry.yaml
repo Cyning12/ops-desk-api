@@ -1035,3 +1035,47 @@ waves:
     allowed_tree_prefixes:
       - docs/harness/invokes/by-task/p3-t2b-create-schedule-capability/
     banned_prefixes: []
+  - task_slug: p3-t6-idempotency-db-default
+    status: active
+    base: "87fd1ddf"
+    wave_tip: "87fd1ddf"
+    note: >-
+      P3-T6 幂等转正 DB——多副本前置唯一转正项（HG-TASK-DRAFT /
+      HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-16 · issue
+      Cyning12/ops-desk-workspace#23 m03064/m03283/m03498/m03551
+      夜间授权 · 设计真源 workspace 14-p3-schedule-taskcard-design.md
+      终稿 R1-R23 §6.4 R9 四条件 · 契约真源 15-p3-contracts.md
+      §7.3/§7.5 口径矛盾登记偏差 D1）。本波承载：
+      capability/persistence.py 默认值翻转（未设/空串 null→db ·
+      DbIdempotencyStore 跨实例防重 + DbReceiptSink 回执落库现役
+      转正 · 显式 null 回退口保留 · 非法值 ERROR 词表补 null ·
+      docstring 改写「装配是部署动作/刻意不做自动探测/配置面默认
+      值变更非运行时自适应」）+ 调用方口径同步（capability/__init__
+      注释 · admin/capability docstring）+ 测试（env 四分矩阵 ·
+      fail-closed 回归 · 显式 null 回退 · 默认面防重双调实证 ·
+      log_init_window 钉死格式同步）+ 文档三面（.env.example ·
+      GUIDE_env_inventory · RUNBOOK_local-acceptance）+ 图谱
+      01_modules.md 登记 + 风险登记 R-P3-10（热路径 DB 写 +
+      可用性耦合反转 · fail-closed 承接）。禁承载：熔断/预算/nonce ·
+      device_tokens · hitl 面默认值 · 契约 15 文档 · scripts/ ·
+      alembic/ · lg_rag/ 本体 · 新表/迁移/路由/SSE 事件类型。
+    allowed_app_files:
+      - app/ops/capability/persistence.py
+      - app/ops/capability/__init__.py
+      - app/ops/admin/capability.py
+    allowed_tree_files:
+      - tests/test_capability_persistence_db.py
+      - tests/test_log_init_window.py
+      - .env.example
+      - docs/guides/GUIDE_env_inventory_v1.md
+      - docs/guides/RUNBOOK_local-acceptance_v1_zh.md
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p3_t6_idempotency_db_default.md
+      - docs/tasks/done/task_p3_t6_idempotency_db_default.md
+      - docs/harness/reviews/task_p3_t6_idempotency_db_default_audit_R1_20261116.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p3-t6-idempotency-db-default/
+    banned_prefixes:
+      - alembic/
+      - scripts/

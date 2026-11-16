@@ -99,7 +99,7 @@ from app.ops.capability.visibility import (
 ensure_default_capabilities()
 # H4：仅当 OPS_CAPABILITY_EXTRA_MANIFESTS 显式列出清单文件才加载（默认空）
 load_extra_manifests_from_env()
-# W6：仅当 OPS_CAPABILITY_PERSISTENCE=db|memory 才启用防重与回执落库（默认不启用）
+# W6/P3-T6：OPS_CAPABILITY_PERSISTENCE 未设默认 db（跨实例防重 + 回执落库）· 显式 null 回退旧默认（不防重 + 告警）
 configure_persistence_from_env()
 
 __all__ = [

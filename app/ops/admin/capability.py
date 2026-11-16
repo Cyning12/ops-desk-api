@@ -9,13 +9,14 @@
 
 | 端点 | 回答 |
 |---|---|
-| `GET /runtime` | **持久化配了吗**（没配 = 没有防重，且不报错）、能力总数、清单版本 |
+| `GET /runtime` | **持久化配了吗**（显式 null = 没有防重，且不报错；未设默认 db · P3-T6）、能力总数、清单版本 |
 | `GET /catalog` | 模型/某人能看到哪些能力；**被裁掉的是谁、为什么** |
 | `GET /receipts` | 写操作的回执（含 `captured` / `write_confirmed`） |
 | `GET /idempotency` | 防重行；`stuck_only=true` 列出**卡住的 in_flight** |
 
-> `/runtime` 是这里面最重要的一条：`OPS_CAPABILITY_PERSISTENCE` 没配时**一切照常运行、
-> 只是悄悄不防重**——这种人必须能一眼看出来的事，不该靠翻环境变量。
+> `/runtime` 是这里面最重要的一条：`OPS_CAPABILITY_PERSISTENCE` 显式 null（或非法值
+> 兜底）时**一切照常运行、只是悄悄不防重**——这种人必须能一眼看出来的事，不该靠翻环境变量。
+> （P3-T6 起未设默认 db，"没配 = 静默不防重"的静默失效面已消除。）
 """
 
 from __future__ import annotations

@@ -6,7 +6,9 @@ WARNING+ 走 logging.lastResort 裸格式（无 asctime/name/level）、INFO 整
 
 探针纪律（承 repo-logging-init CLOSE 偏差 4）：PYTHONPATH=仓根 + 显式 env，不赌时机。
 env 口径：OPS_CAPABILITY_PERSISTENCE="" 显式空串 ≡ 未设（persistence.py:39
-or MODE_NULL 同一路径），且 load_dotenv 不覆盖既有 env —— 防仓根 .env 渗入致假绿/假红。
+or MODE_DB 同一路径 · P3-T6 起未设默认 db），且 load_dotenv 不覆盖既有 env
+—— 防仓根 .env 渗入致假绿/假红。WARNING 组探针改用显式 "null"（P3-T6 后
+未设/空串不再走 null 分支）。
 """
 
 from __future__ import annotations
@@ -70,32 +72,43 @@ def _assert_no_bare_line(stderr: str, msg_substr: str) -> None:
 
 
 def test_tc1_window_warning_uses_pinned_format() -> None:
-    """TC1：默认 env（显式清 OPS_CAPABILITY_PERSISTENCE）窗口 WARNING 以钉死格式落 stderr。
+    """TC1：显式 null（OPS_CAPABILITY_PERSISTENCE=null）窗口 WARNING 以钉死格式落 stderr。
 
     修复前：lastResort 裸格式（红）；修复后：<asctime> app.ops.capability.persistence WARNING …（绿）。
+    P3-T6：探针由显式空串（≡未设）改显式 "null"——未设已默认 db，WARNING 只剩显式 null
+    / 非法值兜底两条来路。
     """
-    proc = _run_bare_import({"OPS_CAPABILITY_PERSISTENCE": ""})
-    assert _formatted_line_re("WARNING", PERSISTENCE_LOGGER, "能力层持久化未配置").search(
+    proc = _run_bare_import({"OPS_CAPABILITY_PERSISTENCE": "null"})
+    assert _formatted_line_re("WARNING", PERSISTENCE_LOGGER, "能力层持久化：null（").search(
         proc.stderr
     ), f"缺钉死格式 WARNING 行：\n{proc.stderr}"
-    _assert_no_bare_line(proc.stderr, "能力层持久化未配置")
+    _assert_no_bare_line(proc.stderr, "能力层持久化：null（")
 
 
 def test_tc1_window_invalid_persistence_error_formatted() -> None:
     """TC1 补组（R1 N-1 回填 · 发射点四处计全）：非法 OPS_CAPABILITY_PERSISTENCE 值时
     persistence.py:60-64 ERROR 与 :65-68 WARNING 两行同窗发射，均须钉死格式。"""
     proc = _run_bare_import({"OPS_CAPABILITY_PERSISTENCE": "bogus"})
-    assert _formatted_line_re("ERROR", PERSISTENCE_LOGGER, "无法识别（仅 db / memory）").search(
+    assert _formatted_line_re("ERROR", PERSISTENCE_LOGGER, "无法识别（仅 db / memory / null）").search(
         proc.stderr
     ), f"缺钉死格式 ERROR 行：\n{proc.stderr}"
-    assert _formatted_line_re("WARNING", PERSISTENCE_LOGGER, "能力层持久化未配置").search(
+    assert _formatted_line_re("WARNING", PERSISTENCE_LOGGER, "能力层持久化：null（").search(
         proc.stderr
     ), f"缺钉死格式 WARNING 行：\n{proc.stderr}"
-    _assert_no_bare_line(proc.stderr, "无法识别（仅 db / memory）")
-    _assert_no_bare_line(proc.stderr, "能力层持久化未配置")
+    _assert_no_bare_line(proc.stderr, "无法识别（仅 db / memory / null）")
+    _assert_no_bare_line(proc.stderr, "能力层持久化：null（")
 
 
 # ---------------------------------------------------------------- TC2 窗口 INFO 可见性
+
+
+def test_tc2_window_info_visible_default_unset() -> None:
+    """TC2 默认组（P3-T6 新增）：未设（空串≡未设）→ 新默认 db 的 INFO 行钉死格式可见。"""
+    proc = _run_bare_import({"OPS_CAPABILITY_PERSISTENCE": ""})
+    assert _formatted_line_re(
+        "INFO", PERSISTENCE_LOGGER, "能力层持久化：db（跨实例防重 + 回执落库）"
+    ).search(proc.stderr), f"缺钉死格式默认 db INFO 行：\n{proc.stderr}"
+    _assert_no_bare_line(proc.stderr, "能力层持久化：db（跨实例防重 + 回执落库）")
 
 
 def test_tc2_window_info_visible_db_mode() -> None:
@@ -124,12 +137,12 @@ def test_tc2_window_warning_formatted_memory_mode() -> None:
 def test_tc3_invalid_log_level_falls_back_info_with_alert() -> None:
     """TC3 非法值组：OPS_LOG_LEVEL=BOGUS → INFO fail-closed + 格式化 ERROR 告警行存续
     （app/main.py:31-35 口径逐字不动），且窗口 WARNING 亦钉死格式。"""
-    proc = _run_bare_import({"OPS_LOG_LEVEL": "BOGUS", "OPS_CAPABILITY_PERSISTENCE": ""})
+    proc = _run_bare_import({"OPS_LOG_LEVEL": "BOGUS", "OPS_CAPABILITY_PERSISTENCE": "null"})
     assert "ROOT_LEVEL=INFO" in proc.stdout, proc.stdout
     assert _formatted_line_re("ERROR", "app.main", "OPS_LOG_LEVEL='BOGUS' 无法识别").search(
         proc.stderr
     ), f"格式化 ERROR 告警行未存续：\n{proc.stderr}"
-    assert _formatted_line_re("WARNING", PERSISTENCE_LOGGER, "能力层持久化未配置").search(
+    assert _formatted_line_re("WARNING", PERSISTENCE_LOGGER, "能力层持久化：null（").search(
         proc.stderr
     ), f"窗口 WARNING 非钉死格式：\n{proc.stderr}"
 

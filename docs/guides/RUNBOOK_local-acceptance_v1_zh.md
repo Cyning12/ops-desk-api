@@ -88,7 +88,7 @@ cd /Users/cyning/Desktop/Ops-desk/ops-desk-api
 | `OPS_HITL_PERSISTENCE` | `db` | 默认 `null` = **不落库**，且"人在等一个不存在的审批" |
 | `OPS_HITL_CALLBACK_SECRET` | `s3cr3t` | 空 ⇒ 回调端点**拒绝一切请求**（不设密钥=不开放） |
 | `OPS_ADMIN_SYNC_TOKEN` | `admintok` | `/hitl/*` 管理端点的 Bearer 路径被禁用（401） |
-| `OPS_CAPABILITY_PERSISTENCE` | `db` | 默认 `null` = 不落防重与回执 |
+| `OPS_CAPABILITY_PERSISTENCE` | `db` | P3-T6 起未设默认 `db`（跨实例防重与回执落库）；显式 `null` 回退旧默认 = 不落防重与回执 |
 | `OPS_CAPABILITY_EXTRA_MANIFESTS` | 指向 `oa.readonly.v1.yaml` | **默认只加载 builtin 的 5 个 local_fn**；不显式列出，OA 三个能力不进注册表 |
 | `OPS_CAP_CRED_OA_GATEWAY_TOKEN` | `local-dev-token` | 清单只写**凭证名**，值在这里；缺 ⇒ 该能力恒 `permission_denied` |
 | `OA_BASE` | `http://127.0.0.1:18080` | 清单里写的是 `base_url: OA_BASE`；缺 ⇒ `upstream_error: 未配置 base_url 环境变量: OA_BASE` |
