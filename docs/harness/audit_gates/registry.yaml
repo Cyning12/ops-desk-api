@@ -914,8 +914,9 @@ waves:
       - docs/harness/invokes/by-task/p3-t2-schedule-ddl-rest/
     banned_prefixes: []
   - task_slug: p3-t5-admin-memory-api
-    status: active
+    status: closed
     base: "17337d35"
+    wave_tip: "0ab54c7b"
     note: >-
       P3-T5 admin memory 浏览/撤销端点（治理线）——facts 分页浏览 +
       facts/{key} revoke 幂等 + episodes 只读（HG-TASK-DRAFT / HG-AUDIT-R1 /

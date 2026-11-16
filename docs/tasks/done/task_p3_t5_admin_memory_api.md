@@ -70,20 +70,20 @@ P3（Schedule/TaskCard 面）第 5 单（治理线）。admin memory 面现仅 `
 
 ## 验收标准
 
-- [ ] facts 分页浏览：跨页不重不漏 + 默认 status=active + status/kind 过滤 有锚 → tests/test_admin_memory_api.py::test_facts_pagination_keyset / test_facts_default_status_active / test_facts_filter_status_kind
-- [ ] facts 参数校验：limit=201/0 · 词表外 status/kind · 坏 cursor · 缺 tenant_id → 422 有锚 → test_facts_limit_422 / test_facts_vocab_422 / test_facts_bad_cursor_422 / test_facts_missing_tenant_422
-- [ ] 投影无 embedding：facts 响应对象键集合断言 有锚 → test_facts_projection_excludes_embedding
-- [ ] revoke 幂等：首撤 200 affected=N · 重放 200 affected=0 · 无匹配 200 affected=0 有锚 → test_revoke_first_affected_n / test_revoke_replay_affected_0 / test_revoke_no_match_affected_0
-- [ ] revoke 缺 user_id tenant 范围生效（同 tenant 异 user 同 key 全撤）有锚 → test_revoke_tenant_wide_without_user
-- [ ] 审计留痕：caplog 断言 logger.info 记 key/tenant/affected 且不记 value 有锚 → test_revoke_audit_log
-- [ ] 鉴权矩阵：三端点无凭据 401 · viewer 403 · 未授权 revoke 零写 有锚 → test_facts_unauthorized_401 / test_revoke_unauthorized_401_zero_write / test_episodes_unauthorized_401 / test_facts_viewer_403 / test_revoke_viewer_403_zero_write / test_episodes_viewer_403
-- [ ] episodes 只读：GET 200 过滤锚 + 写动词 405/404 锚 → test_episodes_list_and_filters / test_episodes_write_verbs_rejected
-- [ ] `pytest tests/test_admin_memory_api.py` 真 PG 全绿；`ruff check app tests` 绿；lint-imports 零新 forbidden 出边（admin→memory.service/deps 既有白名单 · admin→db 允许）
-- [ ] 01_modules.md admin 行备注 + HG-GRAPH-MODULES 签收行已回写
+- [x] facts 分页浏览：跨页不重不漏 + 默认 status=active + status/kind 过滤 有锚 → tests/test_admin_memory_api.py::test_facts_pagination_keyset / test_facts_default_status_active / test_facts_filter_status_kind
+- [x] facts 参数校验：limit=201/0 · 词表外 status/kind · 坏 cursor · 缺 tenant_id → 422 有锚 → test_facts_limit_422 / test_facts_vocab_422 / test_facts_bad_cursor_422 / test_facts_missing_tenant_422
+- [x] 投影无 embedding：facts 响应对象键集合断言 有锚 → test_facts_projection_excludes_embedding
+- [x] revoke 幂等：首撤 200 affected=N · 重放 200 affected=0 · 无匹配 200 affected=0 有锚 → test_revoke_first_affected_n / test_revoke_replay_affected_0 / test_revoke_no_match_affected_0
+- [x] revoke 缺 user_id tenant 范围生效（同 tenant 异 user 同 key 全撤）有锚 → test_revoke_tenant_wide_without_user
+- [x] 审计留痕：caplog 断言 logger.info 记 key/tenant/affected 且不记 value 有锚 → test_revoke_audit_log
+- [x] 鉴权矩阵：三端点无凭据 401 · viewer 403 · 未授权 revoke 零写 有锚 → test_facts_unauthorized_401 / test_revoke_unauthorized_401_zero_write / test_episodes_unauthorized_401 / test_facts_viewer_403 / test_revoke_viewer_403_zero_write / test_episodes_viewer_403
+- [x] episodes 只读：GET 200 过滤锚 + 写动词 405/404 锚 → test_episodes_list_and_filters / test_episodes_write_verbs_rejected
+- [x] `pytest tests/test_admin_memory_api.py` 真 PG 全绿；`ruff check app tests` 绿；lint-imports 零新 forbidden 出边（admin→memory.service/deps 既有白名单 · admin→db 允许）
+- [x] 01_modules.md admin 行备注 + HG-GRAPH-MODULES 签收行已回写
 
 ### 自检结论
 
-（30 交付后回填）
+PASS（2026-11-16 close）：PR Cyning12/ops-desk-api#422 CI 四 job 全绿（check/import-linter/lint-wiki-delta/pytest）· squash merge 0ab54c7b；目标 23 用例 + purge 回归 9 用例真 PG opsdesk_test 全绿；ruff check app tests 绿；lint-imports 12 kept 0 broken（零新出边）；验收 10 条逐条过（台账见 invoke_20261116_40_acceptance.md）。
 
 ## 必读列表
 
