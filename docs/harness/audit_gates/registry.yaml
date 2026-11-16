@@ -1148,7 +1148,7 @@ waves:
       - alembic/
       - scripts/
   - task_slug: fix-434-worker-thread-upsert
-    status: active
+    status: closed
     base: "396f7fed"
     note: >-
       fix-434 worker-fired run 面板可见性（issue Cyning12/ops-desk-api#434
