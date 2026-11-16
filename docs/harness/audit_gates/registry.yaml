@@ -913,3 +913,37 @@ waves:
     allowed_tree_prefixes:
       - docs/harness/invokes/by-task/p3-t2-schedule-ddl-rest/
     banned_prefixes: []
+  - task_slug: p3-t5-admin-memory-api
+    status: active
+    base: "17337d35"
+    note: >-
+      P3-T5 admin memory 浏览/撤销端点（治理线）——facts 分页浏览 +
+      facts/{key} revoke 幂等 + episodes 只读（HG-TASK-DRAFT / HG-AUDIT-R1 /
+      HG-GRAPH-MODULES approved 2026-11-16 · issue Cyning12/ops-desk-workspace#23
+      m03064/m03283/m03498 夜间授权 · 设计真源 workspace
+      14-p3-schedule-taskcard-design.md 终稿 R1-R23 §4.1 + 契约真源
+      15-p3-contracts.md §5 · 操作真源 lead 委派书）。本波承载：
+      app/ops/admin/memory.py 扩展三端点（GET /admin/memory/facts keyset
+      limit 默认 50 上限 200 · POST /admin/memory/facts/{key}/revoke 复用
+      service.py:168 revoke_by_key 语义幂等 200 affected=0 ·
+      GET /admin/memory/episodes 只读 · AdminSyncAuth 跨租户运维面 R7 ·
+      cursor 本地复刻 lg_rag/history 形态保 import-linter 零改动 ·
+      零 router.py 改动承既有注册面）+ tests/test_admin_memory_api.py 真 PG +
+      01_modules.md admin 行备注与签收行。禁承载：三开关放量（T7）·
+      web /admin/memory 页（T9）· purge 缺口收紧（SP3 登记不修）·
+      episodes 单条 revoke（N2）· propose→confirm · alembic/ · scripts/ ·
+      schedule/ · lg_rag/ 本体。
+    allowed_app_files:
+      - app/ops/admin/memory.py
+    allowed_tree_files:
+      - tests/test_admin_memory_api.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p3_t5_admin_memory_api.md
+      - docs/tasks/done/task_p3_t5_admin_memory_api.md
+      - docs/harness/reviews/task_p3_t5_admin_memory_api_audit_R1_20261116.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p3-t5-admin-memory-api/
+    banned_prefixes:
+      - alembic/
+      - scripts/
