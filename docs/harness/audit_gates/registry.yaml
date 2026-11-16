@@ -756,8 +756,9 @@ waves:
       - app/ops/lg_rag/
       - app/ops/skill_registry/
   - task_slug: p2b-t3-mcp-translator
-    status: active
+    status: closed
     base: "b3bc3d6f"
+    wave_tip: "94341df8"
     note: >-
       P2b-T3 MCP 翻译器——tools/list → manifest 原生条目直挂七层闸链
       （HG-TASK-DRAFT 2026-11-16 · issue Cyning12/ops-desk-workspace#23
