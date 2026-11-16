@@ -1,4 +1,4 @@
-"""Capability Gateway · P0 Registry/invoke + P1 schemas_for_llm + P2 probes + P3 skill stub。"""
+"""Capability Gateway · P0 Registry/invoke + P1 schemas_for_llm + P2 probes（P2b-T4 起 P3 skill stub 退役——skill 是 prompt 资产不是工具）。"""
 
 from __future__ import annotations
 
@@ -18,7 +18,6 @@ from app.ops.capability import (
     provide,
     register,
     register_p2_probes,
-    register_skill_stub,
     schemas_for_llm,
     unregister,
 )
@@ -30,10 +29,8 @@ from app.ops.capability.defaults import (
 from app.ops.capability.extras.langchain import as_structured_tools, as_tool_node
 from app.ops.capability.probes import (
     PROBE_CLI_ID,
-    PROBE_MCP_ID,
     PROBE_SANDBOX_ID,
 )
-from app.ops.capability.skill_stub import STUB_SKILL_ID, STUB_SKILL_REF
 
 _P1_ARGS_SCHEMA = {
     "type": "object",
@@ -354,13 +351,12 @@ def test_as_structured_tools_and_tool_node_smoke():
     unregister(cid)
 
 
-# --- P2：mcp / sandbox / cli mock 探针（默认不进 defaults）---
+# --- P2：sandbox / cli mock 探针（默认不进 defaults · P2b-T4 起 mcp mock 探针退役）---
 
 
 def test_p2_probes_not_in_defaults():
     """默认 Gateway 仅 local_fn mock；探针不暴露、无外网路径。"""
     ids = {s.capability_id for s in list_capabilities()}
-    assert PROBE_MCP_ID not in ids
     assert PROBE_SANDBOX_ID not in ids
     assert PROBE_CLI_ID not in ids
     kinds = {s.kind for s in list_capabilities()}
@@ -368,14 +364,8 @@ def test_p2_probes_not_in_defaults():
 
 
 def test_p2_probes_register_and_invoke_mock():
-    """三 kind 探针可 register + invoke（mock · 零网络）。"""
+    """两 kind 探针可 register + invoke（mock · 零网络）。"""
     register_p2_probes(enabled=True)
-    mcp = invoke(PROBE_MCP_ID, {"q": "mcp"})
-    assert mcp.ok is True
-    assert mcp.output["protocol"] == "mcp-mock"
-    assert mcp.output["kind"] == "mcp"
-    assert mcp.meta.get("kind") == "mcp"
-
     sandbox = invoke(
         PROBE_SANDBOX_ID,
         "echo",
@@ -397,99 +387,58 @@ def test_p2_probes_register_and_invoke_mock():
     assert cli.meta.get("kind") == "cli"
 
     # Filter 按 kind
-    mcp_only = list_capabilities(filter=CapabilityFilter(kinds=frozenset({"mcp"})))
-    assert {s.capability_id for s in mcp_only} == {PROBE_MCP_ID}
+    cli_only = list_capabilities(filter=CapabilityFilter(kinds=frozenset({"cli"})))
+    assert {s.capability_id for s in cli_only} == {PROBE_CLI_ID}
 
 
 def test_p2_probes_default_disabled_blocks_invoke():
     """register_p2_probes() 默认 enabled=False → invoke blocked；filter 下不可见。"""
     register_p2_probes()  # enabled=False
-    entry = get_registry().get(PROBE_MCP_ID)
+    entry = get_registry().get(PROBE_CLI_ID)
     assert entry is not None
     assert entry[0].enabled is False
 
     # 带 filter 时 disabled 被裁掉
-    visible = list_capabilities(filter=CapabilityFilter(kinds=frozenset({"mcp"})))
-    assert PROBE_MCP_ID not in {s.capability_id for s in visible}
+    visible = list_capabilities(filter=CapabilityFilter(kinds=frozenset({"cli"})))
+    assert PROBE_CLI_ID not in {s.capability_id for s in visible}
 
-    result = invoke(PROBE_MCP_ID, "x")
+    result = invoke(PROBE_CLI_ID, "x")
     assert result.ok is False
     assert result.meta.get("blocked") == "disabled"
 
 
 def test_p2_probe_adapter_exception_ok_false():
     """探针异常 → ok=False（failure_paths）。"""
-    from app.ops.capability.adapters.mcp import MockMcpAdapter
+    # kind=sandbox（cli 默认 policy_disabled 会先于 adapter 拦截 · 不覆盖异常映射面）
+    from app.ops.capability.adapters.sandbox import MockSandboxAdapter
 
-    class _BoomMcp(MockMcpAdapter):
+    class _BoomSandbox(MockSandboxAdapter):
         def invoke(self, args, *, ctx=None):
-            raise RuntimeError("mcp-probe-boom")
+            raise RuntimeError("sandbox-probe-boom")
 
-    cid = "probe_mcp_boom"
+    cid = "probe_sandbox_boom"
     register(
         CapabilitySpec(
             capability_id=cid,
-            kind="mcp",
+            kind="sandbox",
             description="异常探针",
             tags=("probe",),
             enabled=True,
         ),
-        _BoomMcp(),
+        _BoomSandbox(),
     )
-    result = invoke(cid, None)
+    # sandbox kind 须 host 键放行（policy 门先于 adapter · :105 闸序）
+    result = invoke(cid, None, ctx={"_host_policy": {"allow_sandbox": True}})
     assert result.ok is False
-    assert "mcp-probe-boom" in (result.error or "")
+    assert "sandbox-probe-boom" in (result.error or "")
     unregister(cid)
 
 
-# --- P3：kind=skill provide / invoke stub（非完整引擎）---
+# --- provide 负样本（P2b-T4：kind=skill stub 已退役——skill 是 prompt 资产不是工具）---
 
 
-def test_p3_skill_stub_not_in_defaults():
-    """默认 Gateway 无 skill；stub 须显式 register_skill_stub。"""
-    ids = {s.capability_id for s in list_capabilities()}
-    assert STUB_SKILL_ID not in ids
-    kinds = {s.kind for s in list_capabilities()}
-    assert "skill" not in kinds
-
-
-def test_p3_skill_provide_ok_invoke_not_implemented():
-    """provide → stub 上下文；invoke → NotImplementedError → ok=False。"""
-    register_skill_stub(enabled=True)
-    provided = provide(STUB_SKILL_ID, ctx={"node_role": "tool_exec"})
-    assert provided.ok is True
-    assert provided.output["mode"] == "provide"
-    assert provided.output["engine"] == "stub"
-    assert provided.output["skill_ref"] == STUB_SKILL_REF
-    assert "node_role" in provided.output["ctx_keys"]
-    assert provided.meta.get("kind") == "skill"
-    assert provided.meta.get("mode") == "provide"
-
-    invoked = invoke(STUB_SKILL_ID, {"step": 1})
-    assert invoked.ok is False
-    assert "NotImplementedError" in (invoked.error or "")
-    assert "完整 Skill 执行引擎未实现" in (invoked.error or "")
-    assert invoked.meta.get("kind") == "skill"
-    assert invoked.meta.get("mode") == "invoke"
-
-
-def test_p3_skill_stub_default_disabled_blocks():
-    """register_skill_stub() 默认 enabled=False → provide/invoke blocked。"""
-    register_skill_stub()  # enabled=False
-    entry = get_registry().get(STUB_SKILL_ID)
-    assert entry is not None
-    assert entry[0].enabled is False
-
-    visible = list_capabilities(filter=CapabilityFilter(kinds=frozenset({"skill"})))
-    assert STUB_SKILL_ID not in {s.capability_id for s in visible}
-
-    assert provide(STUB_SKILL_ID).ok is False
-    assert provide(STUB_SKILL_ID).meta.get("blocked") == "disabled"
-    assert invoke(STUB_SKILL_ID, None).meta.get("blocked") == "disabled"
-
-
-def test_p3_provide_on_local_fn_ok_false():
-    """非 skill / 无 provide 的 adapter → provide 返回 ok=False。"""
+def test_provide_on_local_fn_ok_false():
+    """无 provide 的 adapter → provide 返回 ok=False。"""
     result = provide("mock_get_issue_status")
     assert result.ok is False
     assert "无 provide()" in (result.error or "")

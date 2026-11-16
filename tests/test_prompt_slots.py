@@ -36,6 +36,7 @@ from app.ops.prompts.slots import (
 
 def test_registry_covers_seven_slots():
     # P1-T3 增 goal_objective（07 §2.3② · untrusted/message/当前目标 + 专用 guide）
+    # P2b-T4 增 skill_content（11 §6.2 · trusted/section/技能全文）→ 七槽扩八槽
     assert set(SLOT_REGISTRY) == {
         "user_query",
         "history_turn",
@@ -44,9 +45,12 @@ def test_registry_covers_seven_slots():
         "memory_fact",
         "goal_objective",
         "system_instruction",
+        "skill_content",
     }
-    # trusted 声明：仅指令资产可信，其余六面皆不可信
+    # trusted 声明：仅指令资产与技能全文可信，其余六面皆不可信
     assert SLOT_REGISTRY["system_instruction"].trusted is True
+    assert SLOT_REGISTRY["skill_content"].trusted is True
+    assert SLOT_REGISTRY["skill_content"].presentation == "section"
     for sid in (
         "user_query",
         "history_turn",
@@ -56,6 +60,14 @@ def test_registry_covers_seven_slots():
         "goal_objective",
     ):
         assert SLOT_REGISTRY[sid].trusted is False
+
+
+def test_skill_content_slot_wraps_verbatim():
+    """skill_content trusted 槽：wrap_slot 逐字节原样（无标记 · host 评审资产 · 11 §6.2）。"""
+    text = "# 技能全文\n含 <slot:user_query> 字样也原样（伪造标记拦截在加载期 · 拒载优于转义）"
+    block = wrap_slot("skill_content", text)
+    assert block == text  # SlotBlock 继承 str · 逐字节原样
+    assert SLOT_REGISTRY["skill_content"].trusted is True
 
 
 def test_wrap_slot_unknown_id_raises():

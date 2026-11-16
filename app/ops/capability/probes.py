@@ -1,4 +1,4 @@
-"""P2 探针注册辅助（MCP / sandbox / cli · mock）。
+"""P2 探针注册辅助（sandbox / cli · mock；P2b-T4 起 mcp mock 探针退役）。
 
 默认：**不**在 ``ensure_default_capabilities`` 中注册，避免 CI 误开外网路径。
 
@@ -20,30 +20,16 @@
 from __future__ import annotations
 
 from app.ops.capability.adapters.cli import MockCliAdapter
-from app.ops.capability.adapters.mcp import MockMcpAdapter
 from app.ops.capability.adapters.sandbox import MockSandboxAdapter
 from app.ops.capability.gateway import get_registry, register
 from app.ops.capability.registry import CapabilityAdapter
 from app.ops.capability.types import CapabilitySpec
 
 # 稳定 id（单测 / 文档引用）
-PROBE_MCP_ID = "probe_mcp_echo"
 PROBE_SANDBOX_ID = "probe_sandbox_echo"
 PROBE_CLI_ID = "probe_cli_echo"
 
 _PROBE_SPECS: list[tuple[str, CapabilitySpec, CapabilityAdapter]] = [
-    (
-        PROBE_MCP_ID,
-        CapabilitySpec(
-            capability_id=PROBE_MCP_ID,
-            kind="mcp",
-            description="P2 探针：MCP mock（罐头，无外网）",
-            tags=("probe", "mcp", "p2"),
-            risk_level="low",
-            enabled=False,
-        ),
-        MockMcpAdapter(),
-    ),
     (
         PROBE_SANDBOX_ID,
         CapabilitySpec(

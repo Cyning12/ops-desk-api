@@ -7,7 +7,7 @@ from app.ops.lg_rag.schemas.critic import CriticVerdict
 from app.ops.lg_rag.schemas.extract import ExtractResult
 from app.ops.lg_rag.schemas.intent import IntentV1
 from app.ops.lg_rag.schemas.route import RouteDecision
-from app.ops.lg_rag.schemas.subtasks import SubtaskItem, SubtasksPlan
+from app.ops.lg_rag.schemas.subtasks import SubtaskItem, SubtaskItemSkillRef, SubtasksPlan
 
 __all__ = [
     "CriticVerdict",
@@ -15,5 +15,6 @@ __all__ = [
     "IntentV1",
     "RouteDecision",
     "SubtaskItem",
+    "SubtaskItemSkillRef",
     "SubtasksPlan",
 ]

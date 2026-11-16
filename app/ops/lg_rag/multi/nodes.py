@@ -61,7 +61,12 @@ from app.ops.lg_rag.nodes import (
     _last_user_text,
 )
 from app.ops.lg_rag.progress_stream import emit_subtask_running, emit_subtask_step
-from app.ops.lg_rag.schemas import ExtractResult, SubtaskItem, SubtasksPlan
+from app.ops.lg_rag.schemas import (
+    ExtractResult,
+    SubtaskItem,
+    SubtaskItemSkillRef,
+    SubtasksPlan,
+)
 from app.ops.lg_rag.state import (
     LgRagState,
     SubtaskResultBatch,
@@ -76,6 +81,9 @@ from app.ops.prompts.slots import (
     security_input_isolation_enabled,
     wrap_slot,
 )
+
+# P2b-T4：skill_registry 已在 lg-rag-outbound source_modules（.importlinter 零改动）
+from app.ops.skill_registry import format_skill_catalog, get_skill, skill_loader_enabled
 from app.ops.strategy.builder import effective_scope_from_requested
 from app.ops.structured_output import parse_only
 from app.ops.tenant_context import current_tenant_or_default
@@ -126,6 +134,18 @@ def _format_capability_catalog(specs: list[CapabilitySpec]) -> str:
             parts.append(f"args_schema={json.dumps(schema, ensure_ascii=False)}")
         lines.append(f"- {s.capability_id}：{s.description}（{'；'.join(parts)}）")
     return "\n".join(lines)
+
+def _append_skill_catalog(catalog_block: str) -> str:
+    """catalog_block 尾部追加「## 可用技能（摘要）」节（P2b-T4 · 11 §6.3）。
+
+    catalog = 纯文本节（不动模板资产 · 非 $skills_block）；无可用 skill /
+    全拒载 → 空串零追加。**调用方须先过 skill_loader_enabled() 闸**——off 态
+    loader 零调用、supervisor system 逐字节一致（§6.5 验收 a）。
+    """
+    block = format_skill_catalog()
+    if not block:
+        return catalog_block
+    return f"{catalog_block}\n\n{block}" if catalog_block else block
 
 
 def _build_supervisor_system(catalog_block: str) -> str:
@@ -205,10 +225,14 @@ def _parse_subtasks(raw: str) -> list[dict] | None:
     if not outcome.ok or outcome.data is None:
         return None
     items = outcome.data.subtasks
+    # P2b-T4（R9b）：skill_ref 字段随 OPS_SKILL_LOADER_ENABLED 条件化——off 态
+    # 用 SubtaskItem（extra="ignore" 丢弃该键 · JSON schema 逐字节不变）；on 态
+    # 才实例化 SubtaskItemSkillRef 收取声明。env 直读无缓存（承 goals/inject.py 体例）。
+    item_cls = SubtaskItemSkillRef if skill_loader_enabled() else SubtaskItem
     subtasks: list[dict] = []
     for i, raw_item in enumerate(items[:MAX_SUBTASKS]):
         try:
-            item = SubtaskItem.model_validate(raw_item)
+            item = item_cls.model_validate(raw_item)
         except ValidationError:
             return None
         text = (item.input or "").strip()
@@ -235,6 +259,10 @@ def _parse_subtasks(raw: str) -> list[dict] | None:
         consumes = sc.normalize_consumes(item.consumes)
         if consumes:
             subtask["consumes"] = consumes
+        # P2b-T4：off 态 SubtaskItem 无 skill_ref 属性 → getattr None → 零键零 diff
+        skill_ref = getattr(item, "skill_ref", None)
+        if skill_ref:
+            subtask["skill_ref"] = str(skill_ref).strip()
         subtasks.append(subtask)
     return subtasks or None
 
@@ -831,6 +859,9 @@ def _issue_plan(
             stamped["tool"] = str(item["tool"])
         if item.get("args") is not None:
             stamped["args"] = dict(item["args"])
+        # P2b-T4：skill_ref 随签发透传（_worker_state 装配面消费 · off 态解析层不产此键）
+        if item.get("skill_ref"):
+            stamped["skill_ref"] = str(item["skill_ref"])
         produces = sc.normalize_produces(item.get("produces"))
         if produces:
             stamped["produces"] = produces
@@ -1462,6 +1493,20 @@ def _worker_state(state: LgRagState, subtask: dict) -> dict:
     # 被整块预算挤掉的字段必须说出来——静默少给等于给了一份看起来完整的数据
     if dropped:
         task["bound_dropped_fields"] = dropped
+    # P2b-T4（11 §6.4）：skill_ref 全文装配——loader 取全文 → skill_content
+    # trusted 槽注入本子任务 prompt（追加 input 尾部 · 槽语义=逐字节原样）。
+    # 未知 skill_ref → span warn（skill_ref_unknown）+ 零注入，fail-open 不炸 plan；
+    # off 态/无 skill_ref → loader 零调用零注入。
+    skill_ref = str(task.get("skill_ref") or "").strip()
+    if skill_ref and skill_loader_enabled():
+        skill_doc = get_skill(skill_ref)
+        if skill_doc is None:
+            logger.warning("skill_ref 未知（fail-open 零注入 · §6.4）: %s", skill_ref)
+            _record_span_metadata({"skill_ref_unknown": skill_ref})
+        else:
+            skill_block = wrap_slot("skill_content", skill_doc.content)
+            # SlotBlock 是 str 子类（slot_id/trusted 随行），f-string 拼接取 str 值
+            task["input"] = f"{task['input']}\n\n{skill_block}"
     payload: dict = {
         "messages": list(state.get("messages") or []),
         "assigned_subtask": task,
@@ -1558,6 +1603,10 @@ async def supervisor_node(state: LgRagState) -> dict:
         stamped = _stamp_host_plan(state, items, locked=locked, preserved=preserved)
         return {**bump, **stamped}
     catalog_block = _format_capability_catalog(caps)
+    # P2b-T4（11 §6.3）：skill 摘要节追加（suffix/base 两路共用 catalog_block）·
+    # off 态 loader 零调用、逐字节零 diff（验收 a 钉死）
+    if skill_loader_enabled():
+        catalog_block = _append_skill_catalog(catalog_block)
     if locked or preserved:
         # approved-replan-quality：前缀带终态结果摘要 + 注入保号行名单（去盲）
         # hitl-n1-locked-branch-inject（方案 A）：locked 空 + preserved 非空
