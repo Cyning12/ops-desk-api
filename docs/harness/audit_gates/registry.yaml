@@ -807,8 +807,9 @@ waves:
       - scripts/
       - app/ops/skill_registry/
   - task_slug: p2b-t5b-mcp-smoke-wrapup
-    status: active
+    status: closed
     base: "bfbb855c"
+    wave_tip: "6613dbcc"
     note: >-
       P2b-T5b 真社区 MCP server 冒烟 + 文档回写（HG-TASK-DRAFT
       2026-11-16 · issue Cyning12/ops-desk-workspace#23 m03064/m03216

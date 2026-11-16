@@ -4,7 +4,7 @@ title: task · chore · P2b-T5b 真社区 MCP server 冒烟 + 文档回写（纯
 
 # task · chore · P2b-T5b 真社区 MCP server 冒烟 + 文档回写
 
-> **状态**：`active`（2026-11-16 落卡 · 夜间自动执行波）
+> **状态**：`closed`（2026-11-16 落卡 · 2026-11-16 50 关账）
 > **来源**：issue Cyning12/ops-desk-workspace#23（m03064/m03216 夜间授权 · 设计真源 workspace 11-p2b-mcp-skill-design.md 终稿 §8 T5b 行 + §9.1 三层验收 + §9.3 三级裁定）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · chore · P2b-T5b 真社区 MCP server 冒烟 + 文档回写（纯
 | **task_slug** | p2b-t5b-mcp-smoke-wrapup |
 | base | bfbb855c |
 | 关联 issue | Cyning12/ops-desk-workspace#23 |
-| 关联 PR | （本波 feat PR · 待回填） |
+| 关联 PR | #416（feat 波 MERGED · wave_tip 6613dbcc）· #417（CLOSE 关账波） |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack；本波为纯文档冒烟+回写 |
 | graph_change_layer | G-L1（01_modules.md HG-GRAPH-MODULES 签收行 · 模块行零改动） |
