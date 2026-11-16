@@ -20,7 +20,7 @@
 
 ## 现状一句话
 
-`tool_exec_node` 已走 `capability.invoke`；默认能力在 `defaults`；P2 mock 探针默认关闭；P3 skill stub；**真 MCP · 默认关 · CI 不外网**（`McpClientAdapter` + `OPS_CAPABILITY_MCP_ENABLED`）。可迁移内核（Mode A）已落地。  
+`tool_exec_node` 已走 `capability.invoke`；默认能力在 `defaults`；P2 mock 探针默认关闭；P3 skill stub；MCP 面 P2b 配置化重建中（旧 U3 client 已退役；`mcp_servers.yaml` 纯解析 loader 已落地，连接注册见后续波次；总闸 `OPS_CAPABILITY_MCP_ENABLED` 默认关 · CI 不外网）。可迁移内核（Mode A）已落地。  
 **Policy ≠ Strategy Builder**：Policy 为 invoke 硬闸；本轮可见集裁剪见 [`../strategy/`](../strategy/)（draft）。  
 目录配置化（YAML manifest）规划于策略轨 **S3**，与 `defaults` 迁移对齐。
 

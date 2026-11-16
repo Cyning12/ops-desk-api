@@ -46,10 +46,12 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
-    # Capability · 真 MCP client（U3；默认关，禁止 CI 外网）
+    # Capability · MCP 面总闸（P2b；默认关，禁止 CI 外网）
+    # 启用 MCP 面：开启后 lifespan 启动期按 mcp_servers.yaml 白名单连接远端 server
+    # 并注册工具（连接/注册实现见 P2b 后续波次；schema 见 app/ops/capability/mcp_config.py）
     ops_capability_mcp_enabled: bool = False
-    ops_capability_mcp_endpoint: str | None = None
-    ops_capability_mcp_default_tool: str | None = None
+    # mcp_servers.yaml 显式路径（禁目录扫描）；未配置且总闸开 → 启动 warn + MCP 面降级为空
+    ops_capability_mcp_servers_config: str | None = None
 
     # LLM
     ops_llm_provider: str = Field(default="siliconflow")

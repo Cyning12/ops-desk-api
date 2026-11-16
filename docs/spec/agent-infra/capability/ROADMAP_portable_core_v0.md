@@ -49,7 +49,9 @@
 | 与 mock | P2 mock 探针可保留 CI；真 client 默认关闭、env 开关 |
 | 验收 | mock 单测 + 可选集成标记；**禁止**默认 CI 打外网 |
 
-**落地（2026-08-26）**：`McpClientAdapter` + 可注入 `FakeTransport` / 可选 `HttpJsonRpcTransport`；`OPS_CAPABILITY_MCP_ENABLED` 默认关；**真 MCP · 默认关 · CI 不外网**。
+**落地（2026-08-26）**：旧 U3 单枚代理形态（urllib 同步 transport + endpoint/default_tool 两键）。
+
+**退役（2026-11-16 · P2b-T1）**：旧 U3 client 全删（endpoint/default_tool 两 env 键同退役；总闸 `OPS_CAPABILITY_MCP_ENABLED` 保留，语义转为「启用 MCP 面」）；MCP 面由 P2b 重建——`mcp_servers.yaml` 白名单配置面（纯解析 loader 已落地）+ lifespan 启动期注册翻译（后续波次），默认关 · CI 不外网约定不变。
 
 ---
 

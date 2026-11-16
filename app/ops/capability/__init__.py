@@ -6,33 +6,31 @@ SPEC：``docs/spec/agent-infra/capability/SPEC-capability-gateway_v0.md``
 **默认导出零 LG 运行时依赖**；ToolNode 桥见 ``app.ops.capability.extras.langchain``。
 P2 探针：``MockMcpAdapter`` / ``MockSandboxAdapter`` / ``MockCliAdapter``；
 默认**不**进 ``ensure_default_capabilities``；启用见 ``probes.register_p2_probes``。
-U3 真 MCP：``McpClientAdapter``（``OPS_CAPABILITY_MCP_ENABLED`` 默认关；CI 不外网）。
+MCP 面：P2b 配置化重建（``mcp_config`` 纯解析 loader；连接注册见后续波次，
+``OPS_CAPABILITY_MCP_ENABLED`` 为总闸，默认关；CI 不外网）。
 P3 skill：``SkillStubAdapter`` + ``register_skill_stub``；**非**完整引擎；
 边界见 ``docs/guides/GUIDE_capability-gateway-p3-skill-boundary_v0.md``。
 Mode A / filter 契约：``docs/guides/GUIDE_capability-portable-core-mode-a_v0.md``。
 
 H4：``kind=http``（``GenericHttpAdapter``）+ 稳定错误码词表（``errors``）+
 写操作闸（``side_effect``）。额外清单按 env 显式加载（``OPS_CAPABILITY_EXTRA_MANIFESTS``，
-默认空 → 不动存量），与 U3 MCP 同一约定。
+默认空 → 不动存量）。
 """
 
 from app.ops.capability.adapters import (
     EnvCredentialVault,
     FakeHttpTransport,
-    FakeTransport,
     GenericHttpAdapter,
     HttpCapabilityError,
     HttpResponse,
     HttpTransport,
     LocalFnAdapter,
-    McpClientAdapter,
     MockCliAdapter,
     MockMcpAdapter,
     MockSandboxAdapter,
     SkillStubAdapter,
     StaticCredentialVault,
     UrllibHttpTransport,
-    register_mcp_client_if_enabled,
 )
 from app.ops.capability.baseline import (
     DEFAULT_KINDS,
@@ -104,8 +102,6 @@ from app.ops.capability.visibility import (
 )
 
 ensure_default_capabilities()
-# U3：仅当 OPS_CAPABILITY_MCP_ENABLED=true 且配置了 endpoint 才注册真 client
-register_mcp_client_if_enabled()
 # H4：仅当 OPS_CAPABILITY_EXTRA_MANIFESTS 显式列出清单文件才加载（默认空）
 load_extra_manifests_from_env()
 # W6：仅当 OPS_CAPABILITY_PERSISTENCE=db|memory 才启用防重与回执落库（默认不启用）
@@ -128,7 +124,6 @@ __all__ = [
     "DbReceiptSink",
     "EnvCredentialVault",
     "FakeHttpTransport",
-    "FakeTransport",
     "GenericHttpAdapter",
     "HttpCapabilityError",
     "HttpResponse",
@@ -138,7 +133,6 @@ __all__ = [
     "InMemoryIdempotencyStore",
     "InMemoryReceiptSink",
     "LocalFnAdapter",
-    "McpClientAdapter",
     "MockCliAdapter",
     "MockMcpAdapter",
     "MockSandboxAdapter",
@@ -170,7 +164,6 @@ __all__ = [
     "principal_from_ctx",
     "provide",
     "register",
-    "register_mcp_client_if_enabled",
     "register_p2_probes",
     "register_skill_stub",
     "reset_idempotency_store",
