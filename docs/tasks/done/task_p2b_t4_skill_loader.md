@@ -4,7 +4,7 @@ title: task · feat · P2b-T4 skill 加载器（registry 真化 + 槽位注入 +
 
 # task · feat · P2b-T4 skill 加载器（registry 真化 + 槽位注入 + plan-JSON skill_ref 装配）
 
-> **状态**：`active`（2026-11-16 落卡 · 夜间自动执行波）
+> **状态**：`closed`（2026-11-16 落卡 · 夜间自动执行波 · 2026-11-16 关账 · feat PR #410 squash merge `e7609269` · 台账见 invoke_20261116_50_close.md）
 > **来源**：issue Cyning12/ops-desk-workspace#23（m03064 夜间授权 · 设计真源 workspace 11-p2b-mcp-skill-design.md 终稿 §8 T4 行 + §6 全量 + §9.2 判据 · §0.1 R1-R10 修订为硬约束）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · feat · P2b-T4 skill 加载器（registry 真化 + 槽位注入 +
 | **task_slug** | p2b-t4-skill-loader |
 | base | bf1c23f2 |
 | 关联 issue | Cyning12/ops-desk-workspace#23 |
-| 关联 PR | （落 PR 后回填） |
+| 关联 PR | #410（feat · squash merge `e7609269`）· CLOSE 见 invoke_50 台账 |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack；本波为 skill_registry 真化（loader/slots 扩槽/catalog 注入/skill_ref 装配）+ 三 stub 退役 |
 
