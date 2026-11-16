@@ -4,7 +4,7 @@ title: task · fix · #434 worker-fired run 面板可见性（thread 行 upsert�
 
 # task · fix · #434 worker-fired run 面板可见性（thread 行 upsert）
 
-> **状态**：`active`（2026-11-17 落卡 · 夜间自动执行波）
+> **状态**：`done`（2026-11-17 落卡 · 2026-11-17 收口 · 夜间自动执行波 · feat #436 squash 9520e63e）
 > **来源**：issue Cyning12/ops-desk-api#434（第一项 · 第二项「离线交付触达面」属 APNs 下波不做）· 授权 issue Cyning12/ops-desk-workspace#23（m03064/m03283/m03694 夜间授权 · 契约真源 15-p3-contracts.md §1「thread 不存在 fire 时自建」）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · fix · #434 worker-fired run 面板可见性（thread 行 upsert�
 | **task_slug** | fix-434-worker-thread-upsert |
 | base | 396f7fed |
 | 关联 issue | Cyning12/ops-desk-api#434（仅第一项） |
-| 关联 PR | （待补 · feat PR squash merge 后回填） |
+| 关联 PR | feat #436（squash 9520e63e · CI 四绿）· close 波本 PR |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack；本波为 worker fire 路径小修 + 图谱登记 |
 | graph_change_layer | G-L1（01_modules.md schedule 行 fix-434 备注 + HG-GRAPH-MODULES 签收行） |
@@ -139,3 +139,4 @@ pytest tests（CI 终裁 · 真 PG postgresql+asyncpg://ops:ops_password@localho
 | 日期 | 修订 |
 |------|------|
 | 2026-11-17 | 落卡（夜间自动执行波 · 授权 issue Cyning12/ops-desk-workspace#23 m03064/m03283/m03694 · 来源 issue Cyning12/ops-desk-api#434 第一项） |
+| 2026-11-17 | 收口（feat #436 squash 9520e63e · CI 四绿 · rebase origin/master 解 registry 与 fix-432 追加位冲突保双方 entry） |
