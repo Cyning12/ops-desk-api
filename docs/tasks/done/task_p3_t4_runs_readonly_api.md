@@ -4,7 +4,7 @@ title: task · feat · P3-T4 runs 只读端点——threads/{id}/runs 列表 + r
 
 # task · feat · P3-T4 runs 只读端点——threads/{id}/runs 列表 + runs/{id}/events 白名单帧流
 
-> **状态**：`active`（2026-11-16 落卡 · 夜间自动执行波）
+> **状态**：`done`（2026-11-16 落卡 → 同日 feat PR #418 squash merge d9700b87 · CLOSE 关账）
 > **来源**：issue Cyning12/ops-desk-workspace#23（m03064/m03283 夜间授权 · 契约真源 workspace 15-p3-contracts.md v1 终稿 §3/§4/§0 冻结词表 · commit 62af6ea；操作真源 lead 委派书 m00002）
 
 ## Harness 元信息
@@ -81,7 +81,7 @@ P3（Scheduler + runs 只读 API）第 4 单。T2（scheduler 本体）并行在
 - [x] query_summary 截 80 断言；schedule 归因路径（临时表）断言 {schedule_id,name,fire_id}
 - [x] `pytest tests` 真 PG 全绿（五键 blank 前缀）；`ruff check app tests` 绿；import-linter 绿
 - [x] registry entry active base=f1d0dd28；`npx --yes spec-wave@3.5.0 task lint --file` PASS
-- [ ] CI 四绿（pytest/check/import-linter/lint-wiki-delta）→ squash merge → CLOSE 波钉 wave_tip
+- [x] CI 四绿（pytest/check/import-linter/lint-wiki-delta）→ squash merge → CLOSE 波钉 wave_tip
 
 ### 自检结论
 
@@ -184,3 +184,4 @@ task 档照 task_p2b_t3_mcp_translator.md 模板；registry entry 字段全（ba
 |------|------|
 | 2026-11-16 | 落卡（夜间自动执行波 · 授权 issue #23 m03064/m03283） |
 | 2026-11-16 | 30 实现 + 图谱回写 + 自检回填（13 用例真 PG 绿 · ruff/import-linter 绿） |
+| 2026-11-16 | 40 验收 + feat PR #418 CI 四绿 → squash merge d9700b87 · 50 CLOSE 关账（迁 done · registry closed 钉 wave_tip） |
