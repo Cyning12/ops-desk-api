@@ -65,11 +65,19 @@ _ENV_EXTRA_MANIFESTS = "OPS_CAPABILITY_EXTRA_MANIFESTS"
 ALLOWED_KINDS: frozenset[str] = frozenset({"local_fn", "http", "mcp"})
 ADAPTER_PREFIX_DEFAULTS = "local_fn:app.ops.capability.defaults:"
 ADAPTER_PREFIX_LOOKUPS = "local_fn:app.ops.capability.lookups:"
-ADAPTER_PREFIXES = (ADAPTER_PREFIX_DEFAULTS, ADAPTER_PREFIX_LOOKUPS)
+# P3-T2b：schedule adapter 宿主模块（ops.schedule.create 执行体挂
+# app.ops.schedule.service · 白名单第三前缀 · 同样只收公开可调用属性）。
+ADAPTER_PREFIX_SCHEDULE_SERVICE = "local_fn:app.ops.schedule.service:"
+ADAPTER_PREFIXES = (
+    ADAPTER_PREFIX_DEFAULTS,
+    ADAPTER_PREFIX_LOOKUPS,
+    ADAPTER_PREFIX_SCHEDULE_SERVICE,
+)
 ADAPTER_PREFIX = ADAPTER_PREFIX_DEFAULTS  # 兼容旧名：defaults 前缀
 _PREFIX_TO_MODULE = {
     ADAPTER_PREFIX_DEFAULTS: "app.ops.capability.defaults",
     ADAPTER_PREFIX_LOOKUPS: "app.ops.capability.lookups",
+    ADAPTER_PREFIX_SCHEDULE_SERVICE: "app.ops.schedule.service",
 }
 
 # 能力 id 命名规范：小写字母开头 + 小写字母/数字/下划线，可用点分域（域.对象.动作）。

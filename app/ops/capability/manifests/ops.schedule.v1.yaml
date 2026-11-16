@@ -1,0 +1,96 @@
+# 定时任务创建 capability 清单（P3-T2b · issue Cyning12/ops-desk-workspace#23 · 2026-11-16）
+#
+# 用途：对话化创建定时任务 ops.schedule.create——supervisor 在用户说
+# 「每天/每小时/定时/稍后自动执行」时选中本能力，经 W1 HITL 确认卡
+# （「创建定时任务 = 承诺未来 LLM 花费」）批准后，执行体直调 T2 schedule
+# store（与 REST 同一套归属校验 + 双上限 20/200 + 词表校验，不复制逻辑）。
+#
+# 纪律（钉死 · 契约真源 15-p3-contracts.md §2 · 承 ops.write.v1.yaml 先例）：
+# - **不进默认加载面**：仅经 OPS_CAPABILITY_EXTRA_MANIFESTS 显式加载
+#   （显式文件列表纪律 · 默认空=off 零 diff · §2.2-1）；
+# - **deny_write 放行**：OPS_CAPABILITY_ALLOW_WRITE_TAGS=schedule（逗号分隔
+#   tag 词表 · 只豁免 deny_write 一层 · §2.2-2）；
+# - **deny_high_risk 永不豁免**：本条 risk_level=medium 不触发该层，不得为其
+#   开启 OPS_CAPABILITY_ALLOW_HIGH_RISK（§2.2-3）；
+# - 既有闸链全保留：registry → policy（baseline 词表）→ 参数 schema 校验 →
+#   V1 幂等键 → HITL → 执行（§2.2-4）；
+# - tenant_scoped: true（loader V13 强制 · mock 特例清单不扩容）；
+# - 幂等：顶层 idempotency_key 声明位（{{request_id}} · V1）+ 运行期消费——
+#   adapter 以 request_id（缺省回退 ctx run_id:subtask_id · 偏差 D3）为
+#   租户内幂等键经 IdempotencyStore 防重，同键重放返回首执对账载荷（§2.4-2）；
+# - 审批串链：执行体把 ctx.approval_id 串链输出（A4 审计 · 与 span 同源）；
+# - 422 透传：配额/校验失败抛 §1.8 同款 422 文案，Agent 原文转述不改写（§2.4-3）；
+# - 偏差登记（task_p3_t2b_create_schedule_capability R3）：
+#   D1 adapter 契约嵌套 map → 冒号串白名单形态（loader 只收字符串前缀）；
+#   D2 output_schema 契约 JSON-schema 风 → JSONPath required 词表（V10 词表）；
+#   D3 契约 required 四键逐字不动，request_id 为可选 property（adapter 回退键）。
+version: 1
+capabilities:
+  - id: ops.schedule.create
+    kind: local_fn
+    description: 创建定时任务（schedule），到点自动在指定对话窗发起一轮 ops run
+    when_to_use: 用户要求"每天/每小时/定时/稍后自动执行"某运维查询或操作时
+    when_not_to_use: 一次性立即执行的请求（直接用既有 ops.* 工具）；用户未明确同意未来自动执行
+    tags: [schedule, write]
+    risk_level: medium
+    side_effect: write
+    enabled: true
+    tenant_scoped: true
+    hitl:
+      required: true
+      snapshot_fields: [thread_id, name, instruction, schedule_kind, run_at, interval_seconds, time_of_day, timezone, max_fires]
+    idempotency_key: "{{request_id}}"
+    args_schema:
+      type: object
+      properties:
+        thread_id:
+          type: string
+          maxLength: 255
+          description: 目标对话窗 id（到点在此 thread 发起一轮 ops run）
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: 任务名（1..120 字符）
+        instruction:
+          type: string
+          minLength: 1
+          description: 到点执行的运维查询/操作指令（写入前单行化）
+        schedule_kind:
+          type: string
+          enum: [once_at, interval, daily_at]
+          description: 排期类型（一次 / 间隔 / 每天定点）
+        run_at:
+          type: string
+          format: date-time
+          description: once_at 专用（ISO 8601 · 须未来时刻）
+        interval_seconds:
+          type: integer
+          minimum: 300
+          description: interval 专用（≥300 秒）
+        time_of_day:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          description: daily_at 专用（HH:MM 24h）
+        timezone:
+          type: string
+          maxLength: 64
+          default: "Asia/Shanghai"
+          description: 时区（IANA 名 · 默认 Asia/Shanghai · v1 不随 DST 校准）
+        max_fires:
+          type: integer
+          minimum: 1
+          description: 点火次数上限（空 = 不限 · once_at 语义等价 1）
+        request_id:
+          type: string
+          description: 幂等键源（可选 · 缺省回退宿主注入 run_id:subtask_id · 重放不双写）
+      required: [thread_id, name, instruction, schedule_kind]
+      additionalProperties: false
+    output_fields: [schedule_id, next_fire_at, status, humanized_display]
+    output_schema:
+      required: ["$.schedule_id", "$.next_fire_at", "$.status"]
+    reversible: true
+    execution_type: instant
+    max_reversal_latency: 0
+    requires_stop_support: false
+    adapter: local_fn:app.ops.schedule.service:create_schedule_from_capability

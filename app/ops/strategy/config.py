@@ -33,6 +33,8 @@ CAPABILITY_ALLOWLIST_BY_KEY: dict[str, list[str]] = {
         "query_pull_requests",
         "get_overview",
         "graph_snapshot",
+        # P3-T2b：对话化创建定时任务（W1 写类 · 仍须过下游 deny 判序/Policy 写闸/HITL）
+        "ops.schedule.create",
     ],
     "default": list(MINIMAL_READONLY_CAPABILITY_IDS),
 }
