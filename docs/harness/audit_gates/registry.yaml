@@ -1080,9 +1080,9 @@ waves:
       - alembic/
       - scripts/
   - task_slug: p3-t7-session-summaries-rollout
-    status: active
+    status: closed
     base: "87fd1ddf"
-    wave_tip: ""
+    wave_tip: "8569fa0e"
     note: >-
       P3-T7 ops_session_summaries 折叠摘要放量对拍（HG-TASK-DRAFT /
       HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-16 · issue

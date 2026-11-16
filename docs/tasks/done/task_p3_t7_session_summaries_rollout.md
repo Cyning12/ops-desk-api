@@ -4,7 +4,7 @@ title: task · feat · P3-T7 ops_session_summaries 折叠摘要放量对拍
 
 # task · feat · P3-T7 ops_session_summaries 折叠摘要放量对拍
 
-> **状态**：`active`（2026-11-16 落卡 · 夜间自动执行波）
+> **状态**：`done`（2026-11-16 落卡 · 2026-11-16 收口 · 夜间自动执行波）
 > **来源**：issue Cyning12/ops-desk-workspace#23（m03064/m03283/m03498/m03551 夜间授权 · 设计真源 workspace 14-p3-schedule-taskcard-design.md 终稿 R1-R23 §5/§10 · 契约真源 15-p3-contracts.md · 操作真源 lead 委派书）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · feat · P3-T7 ops_session_summaries 折叠摘要放量对拍
 | **task_slug** | p3-t7-session-summaries-rollout |
 | base | 87fd1ddf |
 | 关联 issue | Cyning12/ops-desk-workspace#23 |
-| 关联 PR | 待定（feat PR · 本波） |
+| 关联 PR | #430（squash merge 8569fa0e · CI 四绿）+ close wave PR（本 commit） |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack；本波为纯 env 放量 + 文档/对拍，零代码改动 |
 | graph_change_layer | G-L1（01_modules.md chat 行 P3-T7 放量备注 + HG-GRAPH-MODULES 签收行） |
@@ -67,19 +67,19 @@ P3（Schedule/TaskCard 面）治理线第 3 单。14 §5 裁定：session_summar
 
 ## 验收标准
 
-- [ ] 对拍数据表落 invoke_40：同 thread ≥30 turn 三态（原文基线/off 占位/on 真摘要）装配 messages 条数 + 总字符数 + token 估算；on 态 vs 原文基线字符降 ≥50%
-- [ ] 缓存命中实证：on 态二次装配 span 录制 session_summary_cache_hits=12 · session_summary_generated=0 · provider 零调用 · ops_session_summaries 行数不变；库存 chunk_hash 与重算 sha256 逐条一致
-- [ ] 3 条 on 态摘要条人工抽检记录落 invoke_40（关键实体保留 · 三标记 `[历史摘要 · v1 · N 轮 · 模型:... · 有损压缩...]` 齐 · 无信息断裂）
-- [ ] thread_id 缺失降级实证：on 态 thread_id=None → 输出与 off 逐字节一致 + warning 日志（continuity.py:387）
-- [ ] RUNBOOK_session_summary_rollout_v1_zh.md 落盘：三步放量（off→pilot→全开）+ env 开法 + 回退命令 + 观测指标四面（span 三键/usage 账/缓存行增速/降级率）
-- [ ] .env.example 两键注记 + GUIDE_env_inventory SESSION_SUMMARY_ENABLED/OPS_LLM_TIER_SUMMARY_MODEL 备注回填
-- [ ] 01_modules.md chat 行 P3-T7 放量备注 + HG-GRAPH-MODULES 签收行
-- [ ] `pytest tests/test_session_summary.py tests/test_lg_rag_session_continuity.py tests/eval/test_session_summary_fidelity.py` 目标测试绿；全量回归环境性红与 base 基线逐签对照登记
-- [ ] `ruff check app tests` 绿（零代码改动仍跑）
+- [x] 对拍数据表落 invoke_40：同 thread ≥30 turn 三态（原文基线/off 占位/on 真摘要）装配 messages 条数 + 总字符数 + token 估算；on 态 vs 原文基线字符降 ≥50%
+- [x] 缓存命中实证：on 态二次装配 span 录制 session_summary_cache_hits=12 · session_summary_generated=0 · provider 零调用 · ops_session_summaries 行数不变；库存 chunk_hash 与重算 sha256 逐条一致
+- [x] 3 条 on 态摘要条人工抽检记录落 invoke_40（关键实体保留 · 三标记 `[历史摘要 · v1 · N 轮 · 模型:... · 有损压缩...]` 齐 · 无信息断裂）
+- [x] thread_id 缺失降级实证：on 态 thread_id=None → 输出与 off 逐字节一致 + warning 日志（continuity.py:387）
+- [x] RUNBOOK_session_summary_rollout_v1_zh.md 落盘：三步放量（off→pilot→全开）+ env 开法 + 回退命令 + 观测指标四面（span 三键/usage 账/缓存行增速/降级率）
+- [x] .env.example 两键注记 + GUIDE_env_inventory SESSION_SUMMARY_ENABLED/OPS_LLM_TIER_SUMMARY_MODEL 备注回填
+- [x] 01_modules.md chat 行 P3-T7 放量备注 + HG-GRAPH-MODULES 签收行
+- [x] `pytest tests/test_session_summary.py tests/test_lg_rag_session_continuity.py tests/eval/test_session_summary_fidelity.py` 目标测试绿；全量回归环境性红与 base 基线逐签对照登记
+- [x] `ruff check app tests` 绿（零代码改动仍跑）
 
 ### 自检结论
 
-（30 交付时回填）
+**PASS（2026-11-16 · 40 收口）**：九条验收全过——真源对拍（dev 库 40 轮拟真 thread · 真模型 DeepSeek-V4-Flash）on vs 原文基线 chars −51.1% / est_tokens −51.3%（≥50% ✅ · L2 漂移已登记）；缓存二跑 16/17 命中零 LLM 逐字节一致（1 chunk 连续两次 >60s 超时维持占位 · 降级语义正确 · run1 12/12 全等 hash 对账证函数级一致）；3 条抽检实体全保留；thread_id 缺失与 off 逐字节一致 + warning；RUNBOOK/.env.example/GUIDE/01_modules 四面齐；目标测试 17+全量 2436 绿；ruff 绿。偏差 D1（Langfuse 403 录制替代 · span 键名以 summary.py:346-352 为准）· D2（chars 主判据）· D3（base 说明）终态登记。数据详表见 invoke_20261116_40_verify.md · 收口见 invoke_20261116_50_close.md。
 
 ## 必读列表
 
@@ -152,3 +152,4 @@ pytest tests（CI 终裁 · 真 PG postgresql+asyncpg://ops:ops_password@localho
 | 日期 | 修订 |
 |------|------|
 | 2026-11-16 | 落卡（夜间自动执行波 · 授权 issue #23 m03064/m03283/m03498/m03551） |
+| 2026-11-16 | 收口：验收 9/9 过 · PR #430 squash merge 8569fa0e（CI 四绿）· 转 done · registry closed |
