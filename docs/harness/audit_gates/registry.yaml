@@ -806,3 +806,29 @@ waves:
       - alembic/
       - scripts/
       - app/ops/skill_registry/
+  - task_slug: p2b-t5b-mcp-smoke-wrapup
+    status: active
+    base: "bfbb855c"
+    note: >-
+      P2b-T5b 真社区 MCP server 冒烟 + 文档回写（HG-TASK-DRAFT
+      2026-11-16 · issue Cyning12/ops-desk-workspace#23 m03064/m03216
+      夜间授权 · 设计真源 workspace 11-p2b-mcp-skill-design.md 终稿
+      §8 T5b 行 + §9.1 三层验收 + §9.3 三级裁定）。纯文档波：
+      真 server 冒烟证据（@modelcontextprotocol/server-everything
+      v2.3.0 · npx stdio · 3 命中+4 不命中+identity_mismatch 负例）
+      + 01_modules HG-GRAPH-MODULES 签收行。禁承载：app/ 任何代码
+      改动 · 测试改动 · 配置面改动 · skill 面 · alembic/ · scripts/。
+    allowed_app_files: []
+    allowed_tree_files:
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p2b_t5b_mcp_smoke_wrapup.md
+      - docs/tasks/done/task_p2b_t5b_mcp_smoke_wrapup.md
+      - docs/harness/reviews/task_p2b_t5b_mcp_smoke_wrapup_audit_R1_20261116.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p2b-t5b-mcp-smoke-wrapup/
+    banned_prefixes:
+      - app/
+      - tests/
+      - alembic/
+      - scripts/
