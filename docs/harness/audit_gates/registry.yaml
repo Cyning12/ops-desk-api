@@ -834,8 +834,9 @@ waves:
       - alembic/
       - scripts/
   - task_slug: p3-t4-runs-readonly-api
-    status: active
+    status: closed
     base: "f1d0dd28"
+    wave_tip: "d9700b87"
     note: >-
       P3-T4 runs 只读端点——threads/{id}/runs 列表 + runs/{id}/events
       白名单帧流（HG-TASK-DRAFT 2026-11-16 · issue Cyning12/ops-desk-workspace#23
