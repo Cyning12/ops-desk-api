@@ -78,6 +78,8 @@ from app.ops.hitl import auto_resume  # noqa: E402
 from app.ops.router import router as ops_router  # noqa: E402
 from app.ops.tracing import log_tracing_startup  # noqa: E402
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -88,11 +90,50 @@ async def lifespan(app: FastAPI):
     scan_started = auto_resume.auto_resume_mode() == auto_resume.MODE_AUTO
     if scan_started:
         auto_resume.start_compensation_scanner()
+    # P2b-T2 · MCP 会话面：总闸 off（默认）**零创建**（承 auto_resume 先例 ·
+    # 既有测试面零 diff）；on 且配置缺失/解析失败 → warn + MCP 面降级为空
+    # （11 终稿 §10 · lifespan 不炸）；on 正常 → 建 manager 挂 app.state。
+    mcp_manager = None
+    if settings.ops_capability_mcp_enabled:
+        mcp_manager = await _start_mcp_sessions(app)
     try:
         yield
     finally:
+        if mcp_manager is not None:
+            await mcp_manager.aclose()
         if scan_started:
             await auto_resume.stop_compensation_scanner()
+
+
+async def _start_mcp_sessions(app: FastAPI):
+    """lifespan 启动段：读 mcp_servers.yaml → 建 McpSessionManager → 并发建连。
+
+    返回 None 表示 MCP 面降级为空（配置缺失/解析失败 · warn 已发）。
+    局部 import：import 期零副作用纪律（连接只发生在 lifespan 运行期）。
+    """
+    from app.ops.capability.mcp import McpSessionManager
+    from app.ops.capability.mcp_config import (
+        McpServersConfigError,
+        load_mcp_servers_config,
+    )
+
+    config_path = settings.ops_capability_mcp_servers_config
+    if not config_path:
+        logger.warning(
+            "MCP 总闸已开但未配置 OPS_CAPABILITY_MCP_SERVERS_CONFIG，MCP 面降级为空"
+        )
+        return None
+    try:
+        mcp_configs = load_mcp_servers_config(config_path)
+    except McpServersConfigError as exc:
+        logger.warning("mcp_servers.yaml 加载失败，MCP 面降级为空: %s", exc)
+        return None
+    # R5c/T3 挂点：unregister_hook 本单为 None；T3 落地后注入
+    # 「遍历 capability registry 摘除 mcp.{server_key}.* 条目」实现（§5.1 R5）。
+    manager = McpSessionManager(mcp_configs, unregister_hook=None)
+    app.state.mcp_sessions = manager
+    await manager.start()
+    return manager
 
 
 app = FastAPI(
