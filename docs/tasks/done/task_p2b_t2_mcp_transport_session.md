@@ -4,7 +4,7 @@ title: task · feat · P2b-T2 MCP 薄 transport 层 + McpSessionManager
 
 # task · feat · P2b-T2 MCP 薄 transport 层 + McpSessionManager
 
-> **状态**：`active`（2026-11-16 落卡过闸）
+> **状态**：`closed`（2026-11-16 落卡 · 夜间自动执行波 · 2026-11-16 关账 · feat PR #412 squash merge `8e65f8e1` · 台账见 invoke_20261116_50_close.md）
 > **来源**：issue Cyning12/ops-desk-workspace#23（m03064/m03216 夜间授权 · 设计真源 workspace 11-p2b-mcp-skill-design.md 终稿 §8 T2 行 + §5 连接生命周期 + §10 失败路径；操作真源 lead 委派书 m00002）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · feat · P2b-T2 MCP 薄 transport 层 + McpSessionManager
 | **task_slug** | p2b-t2-mcp-transport-session |
 | base | 575ab69b |
 | 关联 issue | Cyning12/ops-desk-workspace#23 |
-| 关联 PR | （落 PR 后回填） |
+| 关联 PR | #412（feat · squash merge `8e65f8e1`）· CLOSE 见 invoke_50 台账 |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack；本波为 capability MCP transport/session 运行时 |
 | graph_change_layer | G-L1（01_modules.md capability 行备注 + HG-GRAPH-MODULES 签收行） |

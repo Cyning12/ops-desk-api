@@ -698,8 +698,9 @@ waves:
       - app/ops/capability/manifests/
 
   - task_slug: p2b-t2-mcp-transport-session
-    status: active
+    status: closed
     base: "575ab69b"
+    wave_tip: "8e65f8e1"
     note: >-
       P2b-T2 MCP 薄 transport 层 + McpSessionManager（HG-TASK-DRAFT
       2026-11-16 · issue Cyning12/ops-desk-workspace#23 m03064 夜间授权
