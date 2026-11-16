@@ -776,5 +776,10 @@ class OpsScheduleFire(Base):
     #: claimed AND run_id IS NULL AND created_at ≤ now - CLAIM_STALE_SECONDS
     #: 才算孤儿（用 planned_fire_at 会把补跑抢占误判为超时 · 14 §1.5）
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=_now_utc_aware
+        DateTime(timezone=True),
+        nullable=False,
+        default=_now_utc_aware,
+        # create_all 口径须与迁移 20261116_ops_fires_created_at 的 DEFAULT now() 对齐
+        # （CI 新库不跑迁移 · 裸 INSERT 不带 created_at 的既有用例靠 server_default）
+        server_default=text("now()"),
     )
