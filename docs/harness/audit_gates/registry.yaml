@@ -1120,3 +1120,30 @@ waves:
     banned_prefixes:
       - alembic/
       - scripts/
+  - task_slug: fix-432-replay-owner-race
+    status: active
+    base: "396f7fed"
+    note: >-
+      issue Cyning12/ops-desk-api#432（维护者派单 · 夜间自动执行预授权 issue
+      Cyning12/ops-desk-workspace#23 m03064/m03283/m03694）：master 偶发红
+      test_tc_b1_replay_after_disconnect_includes_tail 抛
+      LgRagRunNotFoundError——TC-B4 同 family 归属闸竞态（bus.publish 先于
+      事件行提交对其它会话可见 → assert_run_owned→run_owner 反查抢跑）。
+      修法承 #384 波先例（b61c1227）：测试侧有界等待（40×50ms 轮询至
+      run_owner 可见 · 零断言弱化）。范围=tests/test_lg_rag_sse_run_worker.py
+      覆盖缺口两件（TC-B1 replay :165 · TC-B5-active :532 同形抢跑点）。
+      禁承载：app/（含归属闸生产侧改动 · R1 论证取舍后裁定测试侧）、
+      alembic/、scripts/、CI workflow、任何断言弱化。
+    allowed_app_files: []
+    allowed_tree_files:
+      - tests/test_lg_rag_sse_run_worker.py
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/reviews/task_fix_432_replay_owner_race_audit_R1_20261117.md
+      - docs/tasks/active/task_fix_432_replay_owner_race.md
+      - docs/tasks/done/task_fix_432_replay_owner_race.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/fix-432-replay-owner-race/
+    banned_prefixes:
+      - app/
+      - alembic/
+      - scripts/
