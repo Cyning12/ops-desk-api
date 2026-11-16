@@ -867,3 +867,49 @@ waves:
     banned_prefixes:
       - alembic/
       - scripts/
+  - task_slug: p3-t2-schedule-ddl-rest
+    status: active
+    base: "f1d0dd28"
+    wave_tip: null
+    note: >-
+      P3-T2 Schedule 双表 DDL + REST 四端点（HG-TASK-DRAFT /
+      HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-16 · issue
+      Cyning12/ops-desk-workspace#23 m03064/m03283 夜间授权 ·
+      设计真源 workspace 14-p3-schedule-taskcard-design.md 终稿
+      R1-R23 + 契约真源 15-p3-contracts.md §1/§4）。本波承载：
+      alembic 迁移 20261116_ops_schedules（ops_schedules +
+      ops_schedule_fires 双表 · 全含 tenant_id ·
+      uq_ops_schedule_fires_planned 幂等键 ·
+      idx_ops_schedules_next_fire + fires.run_id 索引）+
+      models.py OpsSchedule/OpsScheduleFire + schedule 包
+      （store 层 zoneinfo 排期算术否 croniter + router 四端点 ·
+      双上限 20/200 · 422 文案词表逐字 · R6 归属校验 · N5 重算守卫）+
+      ops/router.py 注册。禁承载：worker/点火循环/补链/
+      OPS_SCHEDULE_ENABLED 闸（T3）· capability manifest 面
+      （T2b）· runs/events 端点（T4）· scripts/ · skill_registry/。
+      2026-11-16 汇合冲突和解：p3-t4 已合 master 的
+      tests/test_lg_rag_runs_readonly_api.py 归因测试对契约钉名双表
+      DROP/CREATE 临时表（base 上表不存在的 R-P3-T4-1 容错 hack），
+      双波汇合后 DROP 真表炸本波 19 用例；和解为插真行+删行，
+      该文件追加入本波 allowed_tree_files（跨波契约钉名表和解，
+      不改 p3-t4 端点逻辑）。
+    allowed_app_files:
+      - app/db/models.py
+      - app/ops/router.py
+      - app/ops/schedule/__init__.py
+      - app/ops/schedule/router.py
+      - app/ops/schedule/store.py
+    allowed_tree_files:
+      - alembic/versions/20261116_ops_schedules.py
+      - tests/test_ops_schedule_ddl.py
+      - tests/test_schedule_rest.py
+      - tests/test_schedule_store.py
+      - tests/test_lg_rag_runs_readonly_api.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p3_t2_schedule_ddl_rest.md
+      - docs/tasks/done/task_p3_t2_schedule_ddl_rest.md
+      - docs/harness/reviews/task_p3_t2_schedule_ddl_rest_audit_R1_20261116.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p3-t2-schedule-ddl-rest/
+    banned_prefixes: []

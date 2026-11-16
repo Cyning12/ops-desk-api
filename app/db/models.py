@@ -1,12 +1,13 @@
 """SQLAlchemy ORM models for Ops Desk."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
     CheckConstraint,
+    DateTime,
     ForeignKey,
     Index,
     Integer,
@@ -687,3 +688,87 @@ class OpsLlmUsage(Base):
     #: 传输重试后的实际尝试次数（含首次）；>1 说明发生过退避重试
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
+
+
+def _now_utc_aware() -> datetime:
+    """timestamptz 列的 aware UTC 默认（asyncpg 要求 tz-aware）。"""
+    return datetime.now(UTC)
+
+
+class OpsSchedule(Base):
+    """定时任务 SoT（P3-T2 · issue #23 · 契约真源 15 §1.2）。
+
+    schedule_kind 词表 once_at / interval / daily_at；status 词表
+    active / paused / cancelled（cancelled 终态不可逆 · 状态机由
+    app/ops/schedule/store.py 规则式执行，LLM 不自判）。catchup_policy
+    v1 仅 fire_once。tenant_id 必填（freeze F1-F6 · R7）；thread_id 无 FK
+    （fire 时不存在则 worker 自建 · 15 §1.2）。timezone 默认 Asia/Shanghai
+    （v1 不随 DST 校准 · 15 §1.2 钉明）。worker 点火循环在 T3，本波仅
+    数据面 + REST 管理面。
+    """
+
+    __tablename__ = "ops_schedules"
+
+    # __table_args__ 对齐既有 DB 索引（迁移 20261116_ops_schedules.py 原生 SQL
+    # 建），消 autogenerate 漂移（承 OpsGoal 先例）。
+    __table_args__ = (Index("idx_ops_schedules_next_fire", "status", "next_fire_at"),)
+
+    schedule_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ops_users.id", ondelete="CASCADE"), nullable=False
+    )
+    thread_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    #: 写入前单行化（折叠换行为空格 · store.sanitize_instruction）
+    instruction: Mapped[str] = mapped_column(Text, nullable=False)
+    schedule_kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    #: once_at 专用（须未来时刻 · 创建/PATCH 时校验）
+    run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    #: interval 专用（≥300 秒 · 15 §1.8）
+    interval_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    #: daily_at 专用（"HH:MM" 24h）
+    time_of_day: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="Asia/Shanghai")
+    next_fire_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    catchup_policy: Mapped[str] = mapped_column(String(16), nullable=False, default="fire_once")
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="active")
+    fire_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    #: 上限；空 = 不限；once_at 语义等价 max_fires=1（15 §1.2 · 不落库）
+    max_fires: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_fired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now_utc_aware
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now_utc_aware, onupdate=_now_utc_aware
+    )
+
+
+class OpsScheduleFire(Base):
+    """点火台账（P3-T2 建表 · T3 worker 写入 · 契约真源 15 §4.1）。
+
+    schedule_id 无 FK（schedule 删除不级联 · 台账保留）。幂等键 =
+    uq_ops_schedule_fires_planned(schedule_id, planned_fire_at)（T3 写入
+    纪律 INSERT ... ON CONFLICT DO NOTHING）。run_id 写回才算 fired
+    （§4.2）；idx_ops_schedule_fires_run_id 供 run_ids IN 批量反查
+    （§3.1 归因 · 防 N+1）。status 词表 claimed / fired / skipped / failed。
+    """
+
+    __tablename__ = "ops_schedule_fires"
+    __table_args__ = (
+        Index("uq_ops_schedule_fires_planned", "schedule_id", "planned_fire_at", unique=True),
+        Index("idx_ops_schedule_fires_run_id", "run_id"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
+    schedule_id: Mapped[str] = mapped_column(UUID(as_uuid=True), nullable=False)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    planned_fire_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    run_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="claimed")
+    fired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
