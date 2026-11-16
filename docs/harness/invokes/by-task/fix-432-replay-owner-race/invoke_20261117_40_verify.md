@@ -11,8 +11,8 @@
 - 全量 pytest tests：2441 passed / 3 skipped / 1 failed（73.01s）——唯一红=tests/test_wave_gate_registry.py 脏树期结构性红（closed entry p1-t5a-goal-docs banned tests/ 在途咬 · 提交后在途面清空即绿 · 仓内常态已登记于派单）。
 - ruff check app tests：All checks passed。
 - wave_gate_registry 提交后复跑：2 passed（在途面清空实证）。
-- CI（无 .env）终裁：（PR 跑完回填）。
+- CI（无 .env）终裁：PR #435 四绿——check 15s · import-linter 10s · lint-wiki-delta 12s · pytest 2m43s pass（真 PG service · 目标用例含跑）。
 
 ## 偏差记录
 
-（回填）
+无。

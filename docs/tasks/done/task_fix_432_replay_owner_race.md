@@ -4,7 +4,7 @@ title: task · fix · replay 归属闸竞态——bus 发布先于事件行可�
 
 # task · fix · replay 归属闸竞态——bus 发布先于事件行可见（issue #432）
 
-> **状态**：`active`
+> **状态**：`closed`（2026-11-17 关账 · wave_tip 2be501d4）
 > **来源**：issue Cyning12/ops-desk-api#432（维护者派单 · 夜间自动执行预授权 issue Cyning12/ops-desk-workspace#23 m03064/m03283/m03694）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · fix · replay 归属闸竞态——bus 发布先于事件行可�
 | **task_slug** | fix-432-replay-owner-race |
 | base | 396f7fed |
 | 关联 issue | Cyning12/ops-desk-api#432 |
-| 关联 PR | （回填） |
+| 关联 PR | #435（CI 四绿 · squash 2be501d4） |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack |
 
@@ -67,7 +67,11 @@ title: task · fix · replay 归属闸竞态——bus 发布先于事件行可�
 
 ### 自检结论
 
-（30/40 轨实证后回填）
+- 验收 1 ✓：目标用例真 PG 连续 10 轮 10/10 passed 零红（0.13-0.14s/轮 · 真跑非 skip）。
+- 验收 2 ✓：全文件 7 passed in 0.41s。
+- 验收 3 ✓：全量 pytest 2441 passed / 3 skipped（唯一红=脏树期 wave_gate_registry 结构性常态 · 提交后复跑 2 passed 自证）；CI（无 .env 终裁）pytest 2m43s pass。
+- 验收 4 ✓：ruff check app tests All checks passed。
+- 验收 5 ✓：diff 自证 +19/-8 单文件（tests/test_lg_rag_sse_run_worker.py）· 零 app/ 改动 · 零断言弱化。
 
 ## 思考轮控制
 
@@ -112,3 +116,4 @@ docs/harness/reviews/task_fix_432_replay_owner_race_audit_R1_20261117.md（GO）
 ## 修订记录
 
 - 2026-11-17：落卡过闸。
+- 2026-11-17：30 实施（helper 统一三处调用面）→ 40 验证（10 连跑零红 · 全量绿 · ruff 绿）→ PR #435 CI 四绿 → squash 2be501d4 → 关账。
