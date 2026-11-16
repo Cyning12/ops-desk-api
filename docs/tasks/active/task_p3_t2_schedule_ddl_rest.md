@@ -146,7 +146,12 @@ T3 切面=不建 worker/tick/补链/OPS_SCHEDULE_ENABLED；T2b 切面=不建 man
 
 ### 偏差登记
 
-（30 交付时回填）
+- **D1（跨波和解 · 2026-11-16）**：p3-t4（已合 master）的
+  tests/test_lg_rag_runs_readonly_api.py::test_runs_list_schedule_attribution
+  在 base f1d0dd28 上对契约钉名双表 DROP/CREATE 临时表（R-P3-T4-1 容错 hack）；
+  双波汇合后 DROP 掉本波真表致 CI 19 红。和解：改写该用例为插真行（全 NOT NULL 列）+
+  finally DELETE，不再 DROP/CREATE；该文件追加入本波 registry
+  allowed_tree_files。不改 p3-t4 端点逻辑。
 
 ### 限制登记
 

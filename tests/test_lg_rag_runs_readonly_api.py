@@ -294,7 +294,8 @@ async def test_runs_list_limit_and_cursor_422(
 async def test_runs_list_schedule_attribution(
     client: AsyncClient, override_auth_maintainer: None, seed: tuple
 ) -> None:
-    """归因路径：raw SQL 临时建契约钉名表（R-P3-T4-1），断言三元组后 drop。"""
+    """归因路径：P3-T2 真表已落地——插真行断言三元组后删行（原 R-P3-T4-1
+    DROP/CREATE 临时表面在双波汇合后作废：DROP 会删掉 T2 真表炸后续测试）。"""
     prefix, add = seed
     tid = f"{prefix}-th"
     rid_hit, rid_miss = f"{prefix}-rh", f"{prefix}-rm"
@@ -306,30 +307,30 @@ async def test_runs_list_schedule_attribution(
         _run(rid_miss, MAINTAINER_ID, tid, "done", _BASE_TS + timedelta(minutes=1)),
     )
     async with AsyncSessionLocal() as db:
-        await db.execute(text("DROP TABLE IF EXISTS ops_schedule_fires"))
-        await db.execute(text("DROP TABLE IF EXISTS ops_schedules"))
-        await db.execute(
-            text("CREATE TABLE ops_schedules (schedule_id uuid PRIMARY KEY, name text NOT NULL)")
-        )
         await db.execute(
             text(
-                "CREATE TABLE ops_schedule_fires ("
-                "id uuid PRIMARY KEY, schedule_id uuid NOT NULL, "
-                "tenant_id varchar(64) NOT NULL DEFAULT '', "
-                "planned_fire_at timestamptz, run_id varchar(64), "
-                "status varchar(32) NOT NULL DEFAULT 'fired', fired_at timestamptz)"
-            )
-        )
-        await db.execute(
-            text("INSERT INTO ops_schedules (schedule_id, name) VALUES (:sid, :name)"),
-            {"sid": schedule_id, "name": "晨报巡检"},
+                "INSERT INTO ops_schedules (schedule_id, tenant_id, user_id, thread_id, "
+                "name, instruction, schedule_kind, next_fire_at, timezone, "
+                "catchup_policy, status, fire_count, created_at, updated_at) "
+                "VALUES (:sid, :tenant, :uid, :tid, :name, :instr, 'interval', now(), "
+                "'Asia/Shanghai', 'fire_once', 'active', 0, now(), now())"
+            ),
+            {
+                "sid": schedule_id,
+                "tenant": "ops-desk-pilot",
+                "uid": MAINTAINER_ID,
+                "tid": tid,
+                "name": "晨报巡检",
+                "instr": "巡检",
+            },
         )
         await db.execute(
             text(
                 "INSERT INTO ops_schedule_fires "
-                "(id, schedule_id, run_id, fired_at) VALUES (:fid, :sid, :rid, now())"
+                "(id, schedule_id, tenant_id, planned_fire_at, run_id, status, fired_at) "
+                "VALUES (:fid, :sid, :tenant, now(), :rid, 'fired', now())"
             ),
-            {"fid": fire_id, "sid": schedule_id, "rid": rid_hit},
+            {"fid": fire_id, "sid": schedule_id, "tenant": "ops-desk-pilot", "rid": rid_hit},
         )
         await db.commit()
     try:
@@ -344,8 +345,13 @@ async def test_runs_list_schedule_attribution(
         assert runs[rid_miss]["schedule_attribution"] is None
     finally:
         async with AsyncSessionLocal() as db:
-            await db.execute(text("DROP TABLE IF EXISTS ops_schedule_fires"))
-            await db.execute(text("DROP TABLE IF EXISTS ops_schedules"))
+            await db.execute(
+                text("DELETE FROM ops_schedule_fires WHERE id = :fid"), {"fid": fire_id}
+            )
+            await db.execute(
+                text("DELETE FROM ops_schedules WHERE schedule_id = :sid"),
+                {"sid": schedule_id},
+            )
             await db.commit()
 
 

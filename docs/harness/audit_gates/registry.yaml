@@ -887,6 +887,12 @@ waves:
       ops/router.py 注册。禁承载：worker/点火循环/补链/
       OPS_SCHEDULE_ENABLED 闸（T3）· capability manifest 面
       （T2b）· runs/events 端点（T4）· scripts/ · skill_registry/。
+      2026-11-16 汇合冲突和解：p3-t4 已合 master 的
+      tests/test_lg_rag_runs_readonly_api.py 归因测试对契约钉名双表
+      DROP/CREATE 临时表（base 上表不存在的 R-P3-T4-1 容错 hack），
+      双波汇合后 DROP 真表炸本波 19 用例；和解为插真行+删行，
+      该文件追加入本波 allowed_tree_files（跨波契约钉名表和解，
+      不改 p3-t4 端点逻辑）。
     allowed_app_files:
       - app/db/models.py
       - app/ops/router.py
@@ -898,6 +904,7 @@ waves:
       - tests/test_ops_schedule_ddl.py
       - tests/test_schedule_rest.py
       - tests/test_schedule_store.py
+      - tests/test_lg_rag_runs_readonly_api.py
       - docs/_tech_graph/l1/01_modules.md
       - docs/harness/audit_gates/registry.yaml
       - docs/tasks/active/task_p3_t2_schedule_ddl_rest.md
