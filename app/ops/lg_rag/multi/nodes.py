@@ -1829,6 +1829,9 @@ def route_next_subtask(state: LgRagState) -> str | list[Send]:
             # Send 载荷即工人所见的全部 state：主体绑定的 run_id 必须随载荷
             # 下发，否则验签侧 ctx.run_id 为空 ⇒ R-f 误拒（非篡改）。
             payload["run_id"] = _run_id_of(state)
+            # user_id 同理（P3-T11）：签发侧读全量 state（checkpoint_writes 恢复
+            # 有值），验签侧只看得见 Send 载荷 ⇒ 缺载必出 subject_mismatch。
+            payload["user_id"] = str(state.get("user_id") or "")
             token_payload = _issue_delegation_token(state, subtask)
             if token_payload is not None:
                 payload["delegation_token"] = token_payload

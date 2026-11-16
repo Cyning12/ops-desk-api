@@ -173,6 +173,8 @@ async def _ainvoke_with_tracing(
     payload: dict[str, Any] = {"messages": messages}
     if run_id:
         payload["run_id"] = run_id
+    if user_id:
+        payload["user_id"] = user_id
     with span_cm, attr_cm:
         # 官方推荐的 trace 级属性传播：trace_name/session/tags 写到当前 span
         # 并随上下文传播给所有子 span。内层 LCEL 的 CallbackHandler 在其根
@@ -206,6 +208,8 @@ async def _astream_with_tracing(
     payload: dict[str, Any] = {"messages": messages}
     if run_id:
         payload["run_id"] = run_id
+    if user_id:
+        payload["user_id"] = user_id
     with span_cm, attr_cm:
         async for update in graph.astream(
             payload,
