@@ -868,9 +868,9 @@ waves:
       - alembic/
       - scripts/
   - task_slug: p3-t2-schedule-ddl-rest
-    status: active
+    status: closed
     base: "f1d0dd28"
-    wave_tip: null
+    wave_tip: "8bdc5c37"
     note: >-
       P3-T2 Schedule 双表 DDL + REST 四端点（HG-TASK-DRAFT /
       HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-16 · issue
