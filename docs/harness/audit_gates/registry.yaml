@@ -696,3 +696,61 @@ waves:
       - alembic/
       - scripts/
       - app/ops/capability/manifests/
+
+  - task_slug: p2b-t2-mcp-transport-session
+    status: active
+    base: "575ab69b"
+    note: >-
+      P2b-T2 MCP 薄 transport 层 + McpSessionManager（HG-TASK-DRAFT
+      2026-11-16 · issue Cyning12/ops-desk-workspace#23 m03064 夜间授权
+      · 设计真源 workspace 11-p2b-mcp-skill-design.md 终稿 §8 T2 行
+      + §5 连接生命周期 + §10 失败路径 · 操作真源 lead 委派书
+      m00002）：新增 app/ops/capability/mcp/ 子包六模块
+      （errors/jsonrpc/transport/session/manager/__init__）——
+      McpTransport Protocol async 形态 + StdioTransport
+      （create_subprocess_exec · env 白名单不继承 os.environ ·
+      newline JSON-RPC 行帧）+ HttpTransport（httpx 既有依赖 ·
+      application/json POST · StreamableHTTP 最小子集）+ 协议子集五件
+      （initialize/initialized/tools/list/tools/call/ping）+
+      server→client 非 ping 请求 1s 内回 -32601 + 通知/list_changed
+      安全忽略 + McpSession 握手降级链
+      2025-06-18→2025-03-26→2024-11-05 + expected_server
+      serverInfo.name 精确相等校验（不匹配断开+span
+      reason=identity_mismatch）+ 双超时 clamp（floor 1000ms cap
+      120000ms · 默认 connect 10s/call 30s 钉死）+ 熔断按 server
+      （mcp.{key} 轻量 spec 过 circuit.guard）+ McpSessionManager
+      （并发建连 per-server 隔离 warn 跳过 · 并发去重 · 迟关闭 ·
+      取消感知 · aclose 逆序 + unregister_hook 接口面注释 T3 挂点）
+      + main.py lifespan 挂接（总闸 off 零创建 · on+坏配置 warn
+      降级为空）+ 测试四文件 + stdio stub server e2e 冒烟 + 负例
+      三枚 + 01_modules capability 行备注+签收行。禁承载：
+      manifest.py kind 词表与翻译器（T3）· skill 面 · config.py
+      MCP 键面与 .env.example（T1）· 真社区 server（T5b）·
+      listResources/listPrompts（P2c）· alembic/ · scripts/ ·
+      lg_rag/ · skill_registry/。
+    allowed_app_files:
+      - app/main.py
+      - app/ops/capability/mcp/__init__.py
+      - app/ops/capability/mcp/errors.py
+      - app/ops/capability/mcp/jsonrpc.py
+      - app/ops/capability/mcp/transport.py
+      - app/ops/capability/mcp/session.py
+      - app/ops/capability/mcp/manager.py
+    allowed_tree_files:
+      - tests/test_capability_mcp_transport.py
+      - tests/test_capability_mcp_session.py
+      - tests/test_capability_mcp_manager.py
+      - tests/test_capability_mcp_e2e.py
+      - tests/fixtures/mcp_stdio_stub.py
+      - docs/harness/reviews/task_p2b_t2_mcp_transport_session_audit_R1_20261116.md
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p2b_t2_mcp_transport_session.md
+      - docs/tasks/done/task_p2b_t2_mcp_transport_session.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p2b-t2-mcp-transport-session/
+    banned_prefixes:
+      - alembic/
+      - scripts/
+      - app/ops/lg_rag/
+      - app/ops/skill_registry/
