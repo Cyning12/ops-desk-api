@@ -949,9 +949,9 @@ waves:
       - alembic/
       - scripts/
   - task_slug: p3-t3-schedule-worker
-    status: active
+    status: closed
     base: "17337d35"
-    wave_tip: ""
+    wave_tip: "34b1609c"
     note: >-
       P3-T3 Schedule worker 点火执行器（HG-TASK-DRAFT /
       HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-16 · issue

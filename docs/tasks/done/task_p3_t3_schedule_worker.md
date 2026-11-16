@@ -93,7 +93,7 @@ P3（Schedule/TaskCard 面）第 3 单。T2 已交付 schedule 数据面与 REST
 
 ### 自检结论
 
-PASS（2026-11-16 · 30 交付）。worker.py（双闸 env · claim_due_schedules SKIP LOCKED 抢占 · _execute_fire 状态机 · run_schedule_tick · relink_stale_claimed_fires · start/stop 五件套）+ main.py 三处挂接 + models.py fires.created_at + 迁移 20261116_ops_fires_created_at + 31 用例真 PG 全绿 + 图谱/env 文档登记完成。偏差 D1-D5 如实登记。全套件 2396 passed / 3 failed（test_lg_rag_write_replay_guard::test_tc8_diff_whitelist · test_strategy_scenario::test_diff_whitelist_scenario_stage_rewire · test_wave_gate_registry）为脏树期结构性红（diff whitelist/wave_gate 咬未登记在途面常态 · 委派书已预警 · commit + registry 落盘后复跑 · CI 终裁）。
+PASS（2026-11-16 close）。PR Cyning12/ops-desk-api#424 CI 四 job 全绿（check/import-linter/lint-wiki-delta/pytest）· squash merge 34b1609c。worker.py（双闸 env · claim_due_schedules SKIP LOCKED 抢占 · _execute_fire 状态机 · run_schedule_tick · relink_stale_claimed_fires · start/stop 五件套）+ main.py 三处挂接 + models.py fires.created_at（含 server_default=now() · 首轮 CI 红修复：CI 新库走 create_all 不跑迁移，T2/T4 裸 INSERT 用例靠 server_default · 修复后 create_all 口径 scratch 库全套件 2422 passed / 1 skipped 全绿）+ 迁移 20261116_ops_fires_created_at + 31 用例真 PG 全绿 + 图谱/env 文档登记完成。偏差 D1-D5 如实登记。并行波次 CONFLICTING 一次（P3-T5 #422/#423 先合）→ rebase origin/master 解 registry.yaml 保留双方 entry 强推 · 35 passed 复跑 · PR MERGEABLE。
 
 ## 必读列表
 
