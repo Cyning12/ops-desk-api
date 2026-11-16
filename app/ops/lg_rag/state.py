@@ -255,6 +255,10 @@ class LgRagState(MessagesState):
         必须真的在 schema 里——不在的话 StateGraph 会把它们丢掉，
         审批申请里的 thread_id 永远是空，人批完之后无从定位要恢复哪条 run。
 
+    user_id：调用者身份（HTTP 入口 / schedule worker 显式传入）。capability
+        执行链（tool_exec → adapter ctx）只信 state 里的调用者谓词，禁取模型产出；
+        老 checkpoint 无此键：.get 返回 None → 写类能力 fail-closed（现状语义）。
+
     ⚠️ 不能叫 ``checkpoint_id``：那是 LangGraph 的**保留 channel 名**，
        写进 StateGraph 会直接抛 ``Channel names checkpoint_id are reserved``。
     """
@@ -280,6 +284,7 @@ class LgRagState(MessagesState):
     delegation_token: dict
     thread_id: str
     hitl_checkpoint_id: str
+    user_id: str
     allowed_capability_ids: list[str]
     allowed_skill_ids: list[str]
     intent: dict
