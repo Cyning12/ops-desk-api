@@ -4,7 +4,7 @@ title: task · feat · P2b-T3 MCP 翻译器——tools/list → manifest 原生�
 
 # task · feat · P2b-T3 MCP 翻译器——tools/list → manifest 原生条目直挂七层闸链
 
-> **状态**：`in-progress`（2026-11-16 落卡 · 夜间自动执行波）
+> **状态**：`closed`（2026-11-16 落卡 · 夜间自动执行波 · 2026-11-16 关账 · feat PR #414 squash merge `94341df8` · 台账见 invoke_20261116_50_close.md）
 > **来源**：issue Cyning12/ops-desk-workspace#23（m03064/m03216 夜间授权 · 设计真源 workspace 11-p2b-mcp-skill-design.md 终稿 §0.1 R1-R10 硬约束 + §3 字段映射全表 + §4 安全防线 + §8 T3 行；操作真源 lead 委派书 m00002）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · feat · P2b-T3 MCP 翻译器——tools/list → manifest 原生�
 | **task_slug** | p2b-t3-mcp-translator |
 | base | b3bc3d6f |
 | 关联 issue | Cyning12/ops-desk-workspace#23 |
-| 关联 PR | （落 PR 后回填） |
+| 关联 PR | ops-desk-api#414（feat · squash merge 94341df8）· 关账波 PR（本波） |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack；本波为 capability MCP 翻译器 |
 | graph_change_layer | G-L1（01_modules.md capability/lg_rag 行备注 + HG-GRAPH-MODULES 签收行） |
