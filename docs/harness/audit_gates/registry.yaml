@@ -992,3 +992,45 @@ waves:
     allowed_tree_prefixes:
       - docs/harness/invokes/by-task/p3-t3-schedule-worker/
     banned_prefixes: []
+  - task_slug: p3-t2b-create-schedule-capability
+    status: active
+    base: "17337d35"
+    note: >-
+      P3-T2b create_schedule 写类 capability（HG-TASK-DRAFT /
+      HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-16 · issue
+      Cyning12/ops-desk-workspace#23 m03064/m03283/m03498 夜间授权 ·
+      设计真源 workspace 14-p3-schedule-taskcard-design.md 终稿
+      R1-R23 + 契约真源 15-p3-contracts.md §2）。本波承载：
+      manifests/ops.schedule.v1.yaml（ops.schedule.create ·
+      write/medium/tenant_scoped · hitl.required + snapshot_fields
+      九键 · idempotency_key {{request_id}} · args_schema required
+      四键逐字 · output_fields 四键）+ manifest.py
+      _PREFIX_TO_MODULE 第三前缀（local_fn:app.ops.schedule.service:
+      · 偏差 D1 冒号串形态）+ schedule/service.py adapter
+      create_schedule_from_capability（直调 T2 store 同校验路径 ·
+      claim/acomplete/release 幂等链 · 偏差 D3 request_id 可选 +
+      回退键 run_id:subtask_id · tenant/user 只取 ctx fail-closed）
+      + strategy/config.py supervisor allowlist 9→10（既有钉演进：
+      test_strategy_env_extra_candidates / test_capability_supervisor
+      _smoke_assertions 同步承 P2a 先例）+ W1 HITL
+      （既有闸链零新码 · 卡题「创建定时任务 = 承诺未来 LLM 花费」）+
+      图谱 01_modules.md 登记。禁承载：worker/点火循环/补链/
+      OPS_SCHEDULE_ENABLED（T3）· REST 面 · web · runs/events（T4）·
+      scripts/ · skill_registry/ · lg_rag/ 编排层本体。
+    allowed_app_files:
+      - app/ops/capability/manifest.py
+      - app/ops/capability/manifests/ops.schedule.v1.yaml
+      - app/ops/schedule/service.py
+      - app/ops/strategy/config.py
+    allowed_tree_files:
+      - tests/test_p3_t2b_create_schedule_capability.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p3_t2b_create_schedule_capability.md
+      - docs/tasks/done/task_p3_t2b_create_schedule_capability.md
+      - docs/harness/reviews/task_p3_t2b_create_schedule_capability_audit_R1_20261116.md
+      - tests/test_strategy_env_extra_candidates.py
+      - tests/test_capability_supervisor_smoke_assertions.py
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p3-t2b-create-schedule-capability/
+    banned_prefixes: []

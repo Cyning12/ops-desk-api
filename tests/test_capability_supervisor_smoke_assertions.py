@@ -1,7 +1,7 @@
 """P2a-T4 · supervisor plan-JSON 结构断言（mock LLM · 不连真外网）。
 
 设计真源：workspace 08-p2a-tools-design.md §6（CI 结构断言 + 四样例人工冒烟双件制）。
-本文件为 CI 半件：钉死 supervisor 面九枚 capability 的 plan-JSON 可选中性（表达力覆盖）
+本文件为 CI 半件：钉死 supervisor 读面九枚 capability 的 plan-JSON 可选中性（表达力覆盖）
 与四设计样例 query → 预期 capability id 对照（预期集 ∩ mock_* = ∅）。真 LLM 选择质量
 由四样例冒烟人工判定（invoke 40），不在本文件。
 
@@ -38,6 +38,11 @@ EXPECTED_NINE = frozenset(
         "graph_snapshot",
     }
 )
+
+# P3-T2b：写面 +1（ops.schedule.create · 15 契约 §2）——入 supervisor 候选上限，
+# 但默认不进模型视野（EXTRA_MANIFESTS 显式加载 + OPS_CAPABILITY_ALLOW_WRITE_TAGS=schedule
+# + W1 HITL 批准三层显式打开；deny_write 裁剪恒生效 · 本文件钉死默认面不可见）。
+EXPECTED_WRITE_GATED = frozenset({"ops.schedule.create"})
 
 MOCK_IDS = frozenset({"mock_get_issue_status", "mock_get_deploy_info"})
 
@@ -78,12 +83,14 @@ def _tool_plan(capability_id: str, query: str) -> str:
     )
 
 
-def test_supervisor_allowlist_exactly_nine() -> None:
-    """T4-a：supervisor allowlist 恰好九枚 · 逐名钉死 · 且全部在 manifest 可见集内。"""
+def test_supervisor_allowlist_exactly_ten() -> None:
+    """T4-a：supervisor allowlist 恰好十枚（读面九枚 + P3-T2b 写闸控一枚）· 逐名钉死；
+    读面九枚全部在 manifest 可见集内 · 写面默认 deny_write 裁剪不进模型视野。"""
     allowlist = CAPABILITY_ALLOWLIST_BY_KEY["supervisor"]
-    assert frozenset(allowlist) == EXPECTED_NINE
+    assert frozenset(allowlist) == EXPECTED_NINE | EXPECTED_WRITE_GATED
     visible = {s.capability_id for s in list_capabilities(filter=_SUPERVISOR_CAP_FILTER)}
     assert visible >= EXPECTED_NINE
+    assert not (visible & EXPECTED_WRITE_GATED)
 
 
 def test_design_samples_table_pins_non_mock_expected() -> None:
