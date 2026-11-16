@@ -336,6 +336,56 @@ def test_summarize_subtasks_and_collect_hitl() -> None:
     assert history.collect_hitl_requests(run) == [{"id": "ap1", "action": "rm"}]
 
 
+def test_summarize_subtasks_read_truncates_full_payload() -> None:
+    """fix-planframe-truncation：落库全文后读时截断保 history 响应尺寸契约。"""
+    big_result = {"id": "t1", "output": "很" * 900}
+    run = {
+        "run_id": "r1",
+        "events": [
+            _row(
+                "r1",
+                1,
+                "subtask.progress",
+                {
+                    "status": "done",
+                    "subtask_result": big_result,
+                    "answer_preview": "预" * 300,
+                },
+                _BASE_TS,
+                role="rag_subtask",
+            ),
+        ],
+    }
+    subs = history.summarize_subtasks(run)
+    sr = subs[0]["subtask_result"]
+    assert isinstance(sr, str)
+    assert len(sr) <= history.SUBTASK_RESULT_MAX_CHARS
+    assert sr.endswith("…")
+    ap = subs[0]["answer_preview"]
+    assert len(ap) <= history.ANSWER_PREVIEW_MAX_CHARS
+    assert ap.endswith("…")
+
+
+def test_summarize_subtasks_small_payload_passthrough() -> None:
+    """对照：小 payload（≤800）结构化透传不截断（承旧口径）。"""
+    run = {
+        "run_id": "r1",
+        "events": [
+            _row(
+                "r1",
+                1,
+                "subtask.progress",
+                {"status": "done", "subtask_result": {"id": "t1"}, "answer_preview": "短"},
+                _BASE_TS,
+                role="rag_subtask",
+            ),
+        ],
+    }
+    subs = history.summarize_subtasks(run)
+    assert subs[0]["subtask_result"] == {"id": "t1"}
+    assert subs[0]["answer_preview"] == "短"
+
+
 def test_cursor_roundtrip_and_invalid() -> None:
     cursor = history.make_threads_cursor(_BASE_TS, "th-1")
     assert history.threads_cursor_after(cursor) == (_BASE_TS, "th-1")

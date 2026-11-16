@@ -122,6 +122,23 @@ async def test_re_interrupt_marks_the_tail_as_waiting(persisted):
 
 async def test_normal_tail_is_not_marked_waiting_control(persisted):
     """反向对照：没再挂起就不许标 waiting_approval —— 否则"一律等待"也绿。"""
+
+# ---------------------------------------------------------------------------
+# fix-planframe-truncation · 恢复段落库全文
+# ---------------------------------------------------------------------------
+
+
+async def test_resume_persists_full_plan_payload(persisted):
+    """>800 字符 plan 帧恢复段落库不再截断（观测性缺口修复 · 无 SSE 推送面）。"""
+    big = "排查" + "很" * 900
+    subtasks = [{"id": "t1", "type": "rag", "input": big}]
+    sink = ResumeEventSink(run_id="r1", user_id="u1", thread_id="t1")
+    await sink({"supervisor": {"subtasks": subtasks}})
+    row = persisted[0]
+    assert row["event_type"] == "node.progress"
+    assert row["agent_role"] == "supervisor"
+    assert row["payload"]["subtasks"] == subtasks
+
     sink = ResumeEventSink(run_id="r1", user_id="u1", thread_id="t1")
     await sink.open(approved=[_T1])
     await sink(_plain_update())

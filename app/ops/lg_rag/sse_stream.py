@@ -67,6 +67,9 @@ _ROLE_ALIAS = {
 }
 _PAYLOAD_MAX = 800
 _ANSWER_MAX = 32_000
+# fix-planframe-truncation：落库面上限（落库全文 · SSE 帧面截断保持）；
+# 非无限大——对齐 _ANSWER_MAX 先例，兜病理尺寸保险丝
+_PERSIST_PAYLOAD_MAX = 32_000
 # 终答节点（T5）：updates 帧映射为 answer 终帧（content + final）
 _ANSWER_NODES = frozenset({"aggregator", "direct_answer"})
 _STREAM_END: Any = object()  # astream 耗尽哨兵（区别于合法 update）
@@ -87,10 +90,15 @@ def _sse_frame(event: dict[str, Any]) -> str:
     return f"event: {event['event_type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
 
 
-def _summarize_payload(node_output: Any) -> dict[str, Any]:
-    """节点输出摘要：避免把整段 state dump 进 SSE。"""
+def _summarize_payload(node_output: Any, max_len: int = _PAYLOAD_MAX) -> dict[str, Any]:
+    """节点输出摘要：避免把整段 state dump 进 SSE。
+
+    fix-planframe-truncation：max_len 参数化——SSE 推送面用默认
+    _PAYLOAD_MAX（800 截断保持），落库面经 persist_node_payload 传
+    _PERSIST_PAYLOAD_MAX（全文落库）；两面上限不同但键集/结构同一真源。
+    """
     if not isinstance(node_output, dict):
-        return {"summary": _truncate(repr(node_output), _PAYLOAD_MAX)}
+        return {"summary": _truncate(repr(node_output), max_len)}
     out: dict[str, Any] = {}
     for key in (
         "intent",
@@ -107,7 +115,7 @@ def _summarize_payload(node_output: Any) -> dict[str, Any]:
                 s = json.dumps(raw, ensure_ascii=False, default=str)
             except TypeError:
                 s = repr(raw)
-            out[key] = json.loads(s) if len(s) <= _PAYLOAD_MAX else _truncate(s, _PAYLOAD_MAX)
+            out[key] = json.loads(s) if len(s) <= max_len else _truncate(s, max_len)
     if "subtask_results" in node_output:
         results = node_output.get("subtask_results") or []
         # updates 模式通常追加一条
@@ -117,12 +125,12 @@ def _summarize_payload(node_output: Any) -> dict[str, Any]:
         except TypeError:
             s = repr(last)
         out["subtask_result"] = (
-            json.loads(s) if len(s) <= _PAYLOAD_MAX else _truncate(s, _PAYLOAD_MAX)
+            json.loads(s) if len(s) <= max_len else _truncate(s, max_len)
         )
     if "messages" in node_output:
         answer = extract_ai_text(node_output["messages"])
         if answer:
-            out["answer_preview"] = _truncate(answer, min(200, _PAYLOAD_MAX))
+            out["answer_preview"] = _truncate(answer, min(200, max_len))
     if not out:
         out["keys"] = sorted(node_output.keys())[:20]
     return out
@@ -206,6 +214,34 @@ def map_node_update(node_name: str, node_output: Any) -> tuple[str, str, dict[st
     return "node.progress", role, _summarize_payload(node_output)
 
 
+def persist_node_payload(node_name: str, node_output: Any) -> dict[str, Any]:
+    """落库面 payload（fix-planframe-truncation）。
+
+    与 map_node_update 的 SSE 面同构（同键集 · 含 subtask done 帧
+    status/message），但摘要上限 _PERSIST_PAYLOAD_MAX——持久化层不丢
+    信息（观测性缺口修复），SSE 推送面保留既有 _PAYLOAD_MAX 截断。
+    """
+    if node_name in _SUBTASK_NODES:
+        payload = _summarize_payload(node_output, max_len=_PERSIST_PAYLOAD_MAX)
+        payload["status"] = "done"
+        try:  # message 为纯同步模板（自带 _clip/_truncate 上限）；失败降级仍落
+            payload["message"] = build_subtask_done_message(
+                subtask_result=payload.get("subtask_result"),
+                answer_preview=str(payload.get("answer_preview") or ""),
+            )
+        except Exception as exc:
+            logger.warning(
+                "lg_rag persist done message 生成失败 node=%s err=%r", node_name, exc
+            )
+        return payload
+    if node_name in _ANSWER_NODES:
+        answer = ""
+        if isinstance(node_output, dict):
+            answer = extract_ai_text(node_output.get("messages"))
+        return {"content": _truncate(answer, _ANSWER_MAX), "final": True}
+    return _summarize_payload(node_output, max_len=_PERSIST_PAYLOAD_MAX)
+
+
 async def _anext_or_end(agen: AsyncIterator[dict[str, Any]]) -> Any:
     """``__anext__`` 包装：耗尽返回 ``_STREAM_END``；其余异常照常上抛。"""
     try:
@@ -276,7 +312,13 @@ async def _iter_lg_rag_sse_core(
     # 禁止 await persist 串在入队/yield 前（否则每 chunk 被 DB commit 卡节奏）。
     persist_tasks: set[asyncio.Task[None]] = set()
 
-    async def emit(event_type: str, agent_role: str, payload: dict[str, Any]) -> str:
+    async def emit(
+        event_type: str,
+        agent_role: str,
+        payload: dict[str, Any],
+        *,
+        persist_payload: dict[str, Any] | None = None,
+    ) -> str:
         nonlocal seq
         seq += 1
         event = format_sse_event(
@@ -302,7 +344,9 @@ async def _iter_lg_rag_sse_core(
             p_ts_ms = int(event.get("ts_ms") or 0)
             p_agent_role = agent_role
             p_event_type = event_type
-            p_payload = payload
+            # fix-planframe-truncation：节点帧落库全文（persist_payload），
+            # 其余帧型 None → 落 payload 本体（零 diff）
+            p_payload = persist_payload if persist_payload is not None else payload
 
             async def _persist_one() -> None:
                 try:
@@ -471,7 +515,13 @@ async def _iter_lg_rag_sse_core(
                     content = payload.get("content")
                     if isinstance(content, str) and content:
                         last_answer = content
-                yield await emit(event_type, role, payload)
+                # fix-planframe-truncation：SSE 帧面截断保持 · 落库全文
+                yield await emit(
+                    event_type,
+                    role,
+                    payload,
+                    persist_payload=persist_node_payload(node_name, node_output),
+                )
         if waiting_approval:
             yield await emit(
                 "done",

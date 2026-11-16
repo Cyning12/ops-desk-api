@@ -1184,4 +1184,42 @@ waves:
     banned_prefixes:
       - alembic/
       - scripts/
+  - task_slug: fix-planframe-truncation
+    status: active
+    base: "6cbb947e"
+    note: >-
+      fix-planframe-truncation plan 帧 >800 字符截断落库观测性缺口（P2b-T5a
+      附带发现 · workspace 13-p2b-skill-verification.md §7.1 H1b/H2b/H3c
+      实测恰 800 截断 · HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES
+      approved 2026-11-17 · 授权 issue Cyning12/ops-desk-workspace#23
+      m03064/m03283/m03694 夜间授权）。修法裁定「落库全文 · SSE 帧面截断
+      保持」：sse_stream.py 拆两常量（_PAYLOAD_MAX=800 SSE 面不动 ·
+      _PERSIST_PAYLOAD_MAX=32_000 落库面保险丝对齐 _ANSWER_MAX 先例）·
+      _summarize_payload 参数化单一真源 · 新 persist_node_payload 落库全文
+      · emit 增 kw-only persist_payload（None 时落本体 · 其余帧型零 diff）；
+      hitl/resume.py _ResumeEmitter 恢复段同修；history.py
+      summarize_subtasks 读时截断保展示面尺寸契约。回放端点
+      GET /runs/{id}/events payload 透传零改动（落库全文即回放全文）。
+      禁承载：SSE 帧面 800 口径数值 · runs_router/event_store/
+      map_node_update 签名 · 存量截断行回填 · alembic/ · scripts/ ·
+      skill_registry/ · graph/nodes 执行逻辑 · 新迁移 · freeze 词表
+      （帧类型不变 · 05 spec 未钉 node.progress 800 口径）。
+    allowed_app_files:
+      - app/ops/lg_rag/sse_stream.py
+      - app/ops/hitl/resume.py
+      - app/ops/lg_rag/history.py
+    allowed_tree_files:
+      - tests/test_lg_rag_sse_stream.py
+      - tests/test_hitl_resume_events.py
+      - tests/test_chat_history_api.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_fix_planframe_truncation.md
+      - docs/tasks/done/task_fix_planframe_truncation.md
+      - docs/harness/reviews/task_fix_planframe_truncation_audit_R1_20261117.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/fix-planframe-truncation/
+    banned_prefixes:
+      - alembic/
+      - scripts/
 

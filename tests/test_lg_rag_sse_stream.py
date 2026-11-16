@@ -421,3 +421,88 @@ async def test_supervisor_plan_failure_env_single_rag_done_degraded(monkeypatch)
     assert events[-1][0] == "done"
     done_payload = json.loads(events[-1][1])["payload"]
     assert done_payload["degraded"] is True
+
+async def test_plan_frame_sse_truncated_but_persisted_full() -> None:
+    """fix-planframe-truncation：>800 字符 plan 帧——SSE 面截断保持，落库全文。
+
+    P2b-T5a 附带发现（workspace 13 文 §7.1）：supervisor plan 帧
+    payload.subtasks >800 字符被截断落库（观测性缺口）。裁定：持久化层
+    不丢信息（_PERSIST_PAYLOAD_MAX 保险丝），SSE 推送面保留既有 800 截断。
+    """
+    from unittest.mock import AsyncMock
+
+    from app.ops.lg_rag.sse_stream import iter_lg_rag_sse
+
+    big_input = "排查" + "很" * 900  # json.dumps 后 >800 字符（旧口径必截）
+    subtasks = [{"id": f"t{i}", "type": "rag", "input": big_input} for i in range(3)]
+
+    async def _astream(
+        query: str, *, thread_id: str = "t", **_kwargs: Any
+    ) -> AsyncIterator[dict[str, Any]]:
+        yield {"supervisor": {"subtasks": subtasks}}
+        yield {"aggregator": {"messages": [AIMessage(content="答")]}}
+
+    frames: list[str] = []
+    with patch(
+        "app.ops.lg_rag.event_store.persist_run_event",
+        new_callable=AsyncMock,
+    ) as persist_mock:
+        async for frame in iter_lg_rag_sse(
+            query="复合问",
+            mode="supervisor",
+            thread_id="th-plan-full",
+            user_id="u-plan-full",
+            astream_fn=_astream,
+        ):
+            frames.append(frame)
+
+    # SSE 面：node.progress supervisor 的 subtasks 仍为截断字符串（≤800 + "…"）
+    sse_events = [
+        json.loads(f.split("data: ", 1)[1]) for f in frames if f.startswith("event:")
+    ]
+    plan_sse = next(
+        e
+        for e in sse_events
+        if e["event_type"] == "node.progress" and e["agent_role"] == "supervisor"
+    )
+    sse_subtasks = plan_sse["payload"]["subtasks"]
+    assert isinstance(sse_subtasks, str)
+    assert len(sse_subtasks) <= 800
+    assert sse_subtasks.endswith("…")
+
+    # 落库面：persist_run_event 收到的同帧 payload.subtasks 为全文（不再截断）
+    plan_persist = next(
+        c.kwargs
+        for c in persist_mock.call_args_list
+        if c.kwargs["event_type"] == "node.progress"
+        and c.kwargs["agent_role"] == "supervisor"
+    )
+    assert plan_persist["payload"]["subtasks"] == subtasks
+    assert plan_persist["seq"] == plan_sse["seq"]
+
+    # 其余帧型零 diff：answer 帧落库与 SSE 同 payload（persist_payload=None 路径）
+    answer_sse = next(e for e in sse_events if e["event_type"] == "answer")
+    answer_persist = next(
+        c.kwargs for c in persist_mock.call_args_list if c.kwargs["event_type"] == "answer"
+    )
+    assert answer_persist["payload"] == answer_sse["payload"]
+
+
+async def test_persist_node_payload_subtask_done_shape() -> None:
+    """落库面 subtask done 帧同构：status/message 键齐 · subtask_result 全文。"""
+    from app.ops.lg_rag.sse_stream import map_node_update, persist_node_payload
+
+    output = "很" * 900  # SSE 面 subtask_result 必截
+    node_output = {"subtask_results": [{"id": "t1", "type": "rag", "output": output}]}
+
+    et, _, sse_payload = map_node_update("rag_subtask", node_output)
+    assert et == "subtask.progress"
+    assert isinstance(sse_payload["subtask_result"], str)  # SSE 面截断为字符串
+    assert sse_payload["subtask_result"].endswith("…")
+
+    persist_payload = persist_node_payload("rag_subtask", node_output)
+    assert persist_payload["status"] == "done"
+    assert persist_payload["subtask_result"] == {"id": "t1", "type": "rag", "output": output}
+    assert isinstance(persist_payload["message"], str)  # 全文 dict 走模板键
+    assert persist_payload["message"].startswith("子任务完成")
+

@@ -137,7 +137,11 @@ class ResumeEventSink:
         )
 
     async def __call__(self, update: dict[str, Any]) -> None:
-        from app.ops.lg_rag.sse_stream import extract_interrupt, map_node_update
+        from app.ops.lg_rag.sse_stream import (
+            extract_interrupt,
+            map_node_update,
+            persist_node_payload,
+        )
 
         # 恢复段又挂起 ⇒ 说清楚，别让 replay 出来的流静默结束
         waiting = extract_interrupt(update)
@@ -153,7 +157,11 @@ class ResumeEventSink:
             if str(node_name).startswith("__"):
                 continue
             event_type, role, payload = map_node_update(str(node_name), node_output)
-            await self._emit(event_type, role, payload)
+            # fix-planframe-truncation：恢复段无 SSE 推送面（replay 通道透传），
+            # 落库直接全文（persist_node_payload · _PERSIST_PAYLOAD_MAX 保险丝）
+            await self._emit(
+                event_type, role, persist_node_payload(str(node_name), node_output)
+            )
 
     @property
     def cursor(self) -> str:
