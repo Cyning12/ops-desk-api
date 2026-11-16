@@ -1185,8 +1185,9 @@ waves:
       - alembic/
       - scripts/
   - task_slug: fix-planframe-truncation
-    status: active
+    status: closed
     base: "6cbb947e"
+    wave_tip: "979cf3d6"
     note: >-
       fix-planframe-truncation plan 帧 >800 字符截断落库观测性缺口（P2b-T5a
       附带发现 · workspace 13-p2b-skill-verification.md §7.1 H1b/H2b/H3c

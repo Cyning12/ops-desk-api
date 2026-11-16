@@ -4,7 +4,7 @@ title: task · fix · plan 帧 >800 字符截断落库（观测性缺口）
 
 # task · fix · plan 帧 >800 字符截断落库（观测性缺口）
 
-> **状态**：`active`（2026-11-17 落卡 · 夜间自动执行波）
+> **状态**：`done`（2026-11-17 落卡 · 2026-11-17 收口 · 夜间自动执行波）
 > **来源**：P2b-T5a 冒烟附带发现（workspace docs/01-scope/03-general-agent/13-p2b-skill-verification.md §7.1 · H1b/H2b/H3c 实测恰 800 字符截断）· 授权 issue Cyning12/ops-desk-workspace#23（m03064/m03283/m03694 夜间授权 · 委派书 fix-planframe-truncation）
 
 ## Harness 元信息
@@ -14,7 +14,7 @@ title: task · fix · plan 帧 >800 字符截断落库（观测性缺口）
 | **task_slug** | fix-planframe-truncation |
 | base | 6cbb947e |
 | 关联 issue | issue Cyning12/ops-desk-workspace#23（授权真源）· workspace 13 文 §7.1（发现真源） |
-| 关联 PR | （30 后回填） |
+| 关联 PR | feat #439（squash 979cf3d6 · CI 四绿）· close 本 chore PR |
 | **wiki_delta** | `n/a` |
 | **wiki_delta_note** | 本仓未启用 WikiTrack；本波为 lg_rag 持久化面小修 + 图谱登记 |
 | graph_change_layer | G-L1（01_modules.md lg_rag 行 fix-planframe 备注 + HG-GRAPH-MODULES 签收行） |
@@ -76,7 +76,7 @@ P2b-T5a 冒烟（workspace 13 文 §7.1）发现：supervisor plan 帧（`node.p
 
 ### 自检结论
 
-（40 收口时回填）
+验收 8 条全过（2026-11-17）：全文落库断言三绿（SSE 主流 plan 帧 · subtask done 帧形态 · HITL 恢复段 · 真 PG）· history 读时截断两绿（800/200 + 小 payload 透传对照）· 目标七件 109 passed · ruff 绿 · 图谱两件落盘（lg_rag 行 :35 备注 + HG-GRAPH-MODULES 签收行）· 过闸四件齐（registry entry · invokes 10/30/40/50 · R1 审查文 GO · lint PASS）。全量 pytest 2445 passed / 6 failed 逐签：test_tc8_diff_whitelist 与 test_wave_gate_registry 为脏树期结构性红（在途改动未提交时归档波守卫咬合 · 提交后闭窗复绿 · CI 终裁绿）；test_hitl_decide_owner_fallback / test_hitl_pending_decide / test_chat_history_api ×2 共四件在 base 6cbb947e 同路径同红（环境性基线红 · stash 对照实证 · 与本波无关）· CI pytest 2m47s 绿终裁。
 
 ## 必读列表
 
@@ -146,3 +146,4 @@ pytest tests（CI 终裁 · 真 PG postgresql+asyncpg://ops:ops_password@localho
 | 日期 | 修订 |
 |------|------|
 | 2026-11-17 | 落卡（夜间自动执行波 · 授权 issue Cyning12/ops-desk-workspace#23 m03064/m03283/m03694 · 来源 workspace 13 文 §7.1 P2b-T5a 附带发现） |
+| 2026-11-17 | 收口（feat #439 squash 979cf3d6 · CI 四绿：check 14s / import-linter 19s / pytest 2m47s / lint-wiki-delta 5m36s · close 波 registry 钉 wave_tip + task 迁 done + invoke_50） |
