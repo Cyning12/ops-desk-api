@@ -948,3 +948,47 @@ waves:
     banned_prefixes:
       - alembic/
       - scripts/
+  - task_slug: p3-t3-schedule-worker
+    status: active
+    base: "17337d35"
+    wave_tip: ""
+    note: >-
+      P3-T3 Schedule worker 点火执行器（HG-TASK-DRAFT /
+      HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-16 · issue
+      Cyning12/ops-desk-workspace#23 m03064/m03283 夜间授权 ·
+      设计真源 workspace 14-p3-schedule-taskcard-design.md 终稿
+      §1.1-§1.8 · 契约真源 15-p3-contracts.md §4/§7）。本波承载：
+      app/ops/schedule/worker.py（lifespan 五件套承 auto_resume ·
+      DB 抢占 SELECT FOR UPDATE SKIP LOCKED + 同事务 SAVEPOINT
+      INSERT fires(claimed) · batch=50 · fires 状态机三出路 ·
+      内部通路 create_run+start_run_worker 函数直调不经 HTTP ·
+      query 前缀 [定时任务 · {name}] 仅展示 · 显式 creator 预算
+      归因 R4 · 归属复核 R6 · 悬空 user→paused R11 · 补跑
+      fire_once + 启动补链 R10 只信台账）+ main.py 挂接 +
+      双闸 OPS_SCHEDULE_ENABLED 默认 off 不闸 REST /
+      OPS_SCHEDULE_TICK_SECONDS 默认 30 + models.py fires.created_at
+      列（偏差 D5 · R10 超时判据载体）+ alembic 迁移
+      20261116_ops_fires_created_at + 31 用例 + 图谱/env 文档登记。
+      禁承载：REST 四端点/store 读写面（T2 已交付零改动）·
+      capability manifest 面（T2b）· runs/events 端点（T4）·
+      lg_rag 本体 · scripts/ · skill_registry/ · 新 SSE 事件类型。
+      偏差 D1-D5 见 task 档 R3（D1 抢占 SQL 拆为锁定 SELECT+
+      同事务逐行推进 · D2 CLAIM_STALE_SECONDS=120 · D3 max_fires
+      达限 skipped+推进 · D4 once_at 不推进 · D5 fires 加
+      created_at 列新迁移）。
+    allowed_app_files:
+      - app/db/models.py
+      - app/main.py
+      - app/ops/schedule/worker.py
+    allowed_tree_files:
+      - alembic/versions/20261116_ops_fires_created_at.py
+      - tests/test_schedule_worker.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/guides/GUIDE_env_inventory_v1.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p3_t3_schedule_worker.md
+      - docs/tasks/done/task_p3_t3_schedule_worker.md
+      - docs/harness/reviews/task_p3_t3_schedule_worker_audit_R1_20261116.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p3-t3-schedule-worker/
+    banned_prefixes: []
