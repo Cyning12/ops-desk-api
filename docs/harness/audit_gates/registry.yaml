@@ -633,8 +633,9 @@ waves:
       - app/ops/lg_rag/
 
   - task_slug: p2b-t4-skill-loader
-    status: active
+    status: closed
     base: "bf1c23f2"
+    wave_tip: "e7609269"
     note: >-
       P2b-T4 skill 加载器（HG-TASK-DRAFT 2026-11-16 · issue
       Cyning12/ops-desk-workspace#23 m03064 夜间授权 · 设计真源 workspace
