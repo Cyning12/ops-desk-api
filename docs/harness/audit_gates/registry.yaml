@@ -1147,3 +1147,40 @@ waves:
       - app/
       - alembic/
       - scripts/
+  - task_slug: fix-434-worker-thread-upsert
+    status: active
+    base: "396f7fed"
+    note: >-
+      fix-434 worker-fired run 面板可见性（issue Cyning12/ops-desk-api#434
+      第一项 · 第二项离线交付触达面留 APNs 下波 · HG-TASK-DRAFT /
+      HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-17 · 授权 issue
+      Cyning12/ops-desk-workspace#23 m03064/m03283/m03694 夜间授权 ·
+      契约真源 15-p3-contracts.md §1「thread 不存在 fire 时自建」）。
+      本波承载：app/ops/schedule/worker.py::_execute_fire R6 复核后
+      create_run 前补 thread 行 upsert（thread 不存在则 add
+      OpsLgRagThread(id, user_id=creator) 同事务 · 已存在不动 ·
+      外来 thread R6 failed 语义零改 · 承 thread_store.py:35/:95
+      先例）+ 测试（无 turns schedule fire 后 thread 行存在 ·
+      二火 created_at 不变 · 端到端 runs 卡片端点 200 含 run_id）
+      + 图谱 01_modules.md schedule 行备注+HG-GRAPH-MODULES 签收行。
+      禁承载：issue 第二项离线交付触达面（APNs 波）· R6/R11 语义 ·
+      runs_router/runs 端点（T4 零改）· thread_store（persist 兜底
+      保留 · 双路径幂等）· alembic/ · scripts/ · skill_registry/ ·
+      lg_rag 本体 · SSE/契约面 · 新迁移。偏差 D1：最小字段按模型
+      裁剪（OpsLgRagThread 无 tenant_id 列 · models.py:226-238 ·
+      实落 id+user_id）。
+    allowed_app_files:
+      - app/ops/schedule/worker.py
+    allowed_tree_files:
+      - tests/test_schedule_worker.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_fix_434_worker_thread_upsert.md
+      - docs/tasks/done/task_fix_434_worker_thread_upsert.md
+      - docs/harness/reviews/task_fix_434_worker_thread_upsert_audit_R1_20261117.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/fix-434-worker-thread-upsert/
+    banned_prefixes:
+      - alembic/
+      - scripts/
+

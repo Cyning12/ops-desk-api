@@ -27,6 +27,9 @@ lifespan 周期任务（逐字承 auto_resume.py:273-309 五件套先例：env �
   create_run + start_run_worker（不经 HTTP · 承 router.py:454-487 不 await 先例）；
   user turn 不单独落盘——带前缀 query 经既有管线 done 时 persist_thread_turns 落盘
   （避免重复 turn）；goal 懒创建不调（定时指令不该建 goal）。
+- fix-434（issue #434 第一项 · 契约 15 §1.2「thread 不存在 fire 时自建」）：
+  fire 前 R6 复核后，thread 行缺失则 _execute_fire 同事务补最小行（已存在不动），
+  保证 runs 卡片端点（thread_owner 归聚）在 run done 前及非 done 终态下不 404。
 - 预算归因（14 §1.8 · R4）：start_run_worker 显式传 creator 身份
   （user_id/tenant_id 取自 schedule 行）；归因链 usage.run_id → ops_lg_rag_runs.user_id
   （ops_llm_usage 无 user_id 列）锚定 creator。
@@ -238,6 +241,16 @@ async def _execute_fire(*, fire_id: str, source: str) -> str:
                     schedule.thread_id,
                 )
                 return "failed"
+            if thread is None:
+                # fix-434（issue #434 第一项 · 契约 15 §1「thread 不存在 fire 时
+                # 自建」）：自建语义前移到点火同事务——补最小行（承
+                # thread_store.py:35/:95 先例形态 · 已存在不动）。否则 run 行落库到
+                # done persist 之间的窗口、及 waiting_approval/error 等不走 persist
+                # 的终态下 thread 行缺失，runs 卡片端点 thread_owner 归聚 404。
+                # flush 先行：建行失败（并发 PK 冲突等）在 create_run 前暴露，
+                # 走既有 except → rollback + failed（不留半建 run 行）。
+                db.add(OpsLgRagThread(id=schedule.thread_id, user_id=schedule.user_id))
+                await db.flush()
             run_id = _uuid.uuid4().hex
             fire.run_id = run_id
             created = await create_run(
