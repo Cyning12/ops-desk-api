@@ -243,7 +243,7 @@ class FakeHttpTransport:
 
 
 class UrllibHttpTransport:
-    """真传输：stdlib ``urllib``（不引入 httpx，与 mcp_client 约定一致）。
+    """真传输：stdlib ``urllib``（不引入 httpx）。
 
     **默认不走环境代理**（``HTTP_PROXY`` / ``http_proxy`` 等）。理由：能力的
     ``base_url`` 是运维选定的**内网**端点，把内网调用经环境里的出口代理转发

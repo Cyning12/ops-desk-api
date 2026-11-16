@@ -584,4 +584,50 @@ waves:
       - alembic/
       - scripts/
       - app/
+  - task_slug: p2b-t1-mcp-legacy-config
+    status: active
+    base: "bf1c23f2"
+    note: >-
+      P2b-T1 旧 MCP 遗产清除 + mcp_servers.yaml 配置面（HG-TASK-DRAFT /
+      HG-AUDIT-R1 / HG-GRAPH-MODULES 2026-11-16 · issue
+      Cyning12/ops-desk-workspace#23 m03064/m03216 夜间授权 · 设计真源
+      workspace 11-p2b-mcp-skill-design.md 终稿 §0.1 R1-R10/§2/§7-②/§8 T1 行）：
+      删 adapters/mcp_client.py 全文件 + capability 包两处 __init__ 旧符号
+      import/__all__/调用 + config.py endpoint/default_tool 两键（总闸
+      ops_capability_mcp_enabled 保留，语义转「启用 MCP 面」）+ R8 四处
+      残留（.env.example · capability README · ROADMAP · 01_modules:34）；
+      新增 app/ops/capability/mcp_config.py 纯解析 loader（零连接 ·
+      fail-closed · protocol_version 钉版 2025-06-18）+
+      tests/test_capability_mcp_config.py 解析单测；
+      tests/test_capability_gateway.py U3 段（:498-637）只删不建（T2 重建）。
+      偏差 D1：adapters/mcp.py:5 一行 docstring 改写（整文件删除属 T4）。
+      禁承载：manifest.py kind 词表（T3）· skill_registry/slots/nodes 与
+      adapters/skill.py、skill_stub.py、adapters/mcp.py 整删（T4）·
+      连接/握手/注册/翻译（T2）· alembic/ · scripts/ · app/ops/lg_rag/。
+    allowed_app_files:
+      - app/config.py
+      - app/ops/capability/__init__.py
+      - app/ops/capability/adapters/__init__.py
+      - app/ops/capability/adapters/mcp_client.py
+      - app/ops/capability/adapters/mcp.py
+      - app/ops/capability/adapters/http_generic.py
+      - app/ops/capability/probes.py
+      - app/ops/capability/mcp_config.py
+    allowed_tree_files:
+      - tests/test_capability_gateway.py
+      - tests/test_capability_mcp_config.py
+      - .env.example
+      - docs/spec/agent-infra/capability/README.md
+      - docs/spec/agent-infra/capability/ROADMAP_portable_core_v0.md
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/harness/reviews/task_p2b_t1_mcp_legacy_config_audit_R1_20261116.md
+      - docs/tasks/active/task_p2b_t1_mcp_legacy_config.md
+      - docs/tasks/done/task_p2b_t1_mcp_legacy_config.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p2b-t1-mcp-legacy-config/
+    banned_prefixes:
+      - alembic/
+      - scripts/
+      - app/ops/lg_rag/
 
