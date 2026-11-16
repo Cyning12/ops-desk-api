@@ -12,7 +12,7 @@
 | `LG_RAG_DELEGATION_TOKEN_MODE` | capability | `—（代码/动态）` | V1-A~C |
 | `LG_RAG_DELEGATION_TOKEN_SECRET` | capability | `—（代码/动态）` | V1-A~C |
 | `LG_RAG_DELEGATION_TOKEN_TTL_SECONDS` | capability | `—（代码/动态）` | V1-A~C |
-| `OPS_CAPABILITY_PERSISTENCE` | capability | `—（代码/动态）` |  |
+| `OPS_CAPABILITY_PERSISTENCE` | capability | `—（代码/动态）` | P3-T6 起未设默认 `db`（跨实例防重+回执落库）；显式 `null` 回退旧默认（不落库 · 不可上生产） |
 | `OPS_CAPABILITY_REVERSIBILITY_MODE` | capability | `—（代码/动态）` | V1-A~C |
 | `OPS_CHAT_WS_ENABLED` | chat | `true` |  |
 | `OPS_HITL_CALLBACK_SECRET` | hitl | `—（代码/动态）` |  |

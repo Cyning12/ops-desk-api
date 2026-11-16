@@ -309,11 +309,64 @@ async def test_db_receipt_row_is_written_by_async_gateway(
 # ---------------- 装配 ----------------
 
 
-def test_configure_persistence_defaults_to_null(monkeypatch: pytest.MonkeyPatch):
-    """未配置 = 显式不防重（并告警）——**装配是部署动作，不是代码默认值**。"""
+def test_configure_persistence_defaults_to_db(monkeypatch: pytest.MonkeyPatch):
+    """P3-T6：未设（含空串）= 新默认 db（跨实例防重 + 回执落库）。
+
+    翻转后「没写时走哪边」= db；装配仍是部署动作——显式 ``db`` 是生产推荐写法，
+    显式 ``null`` 才回退翻转前旧默认。
+    """
     monkeypatch.delenv("OPS_CAPABILITY_PERSISTENCE", raising=False)
-    assert configure_persistence_from_env() == "null"
+    assert configure_persistence_from_env() == "db"
+    assert isinstance(get_idempotency_store(), DbIdempotencyStore)
+    assert isinstance(get_receipt_sink(), DbReceiptSink)
+
+
+@pytest.mark.parametrize(
+    ("env_value", "expect_mode", "store_cls", "sink_cls"),
+    [
+        ("db", "db", DbIdempotencyStore, DbReceiptSink),
+        ("memory", "memory", "InMemoryIdempotencyStore", InMemoryReceiptSink),
+        ("null", "null", NullIdempotencyStore, "NullReceiptSink"),
+        (None, "db", DbIdempotencyStore, DbReceiptSink),  # 未设 = P3-T6 新默认
+    ],
+)
+def test_configure_persistence_env_matrix(
+    monkeypatch: pytest.MonkeyPatch,
+    env_value: str | None,
+    expect_mode: str,
+    store_cls: object,
+    sink_cls: object,
+):
+    """env 四分回归矩阵（R9②）：显式 db / memory / null / 未设（新默认 db）。"""
+    if env_value is None:
+        monkeypatch.delenv("OPS_CAPABILITY_PERSISTENCE", raising=False)
+    else:
+        monkeypatch.setenv("OPS_CAPABILITY_PERSISTENCE", env_value)
+    assert configure_persistence_from_env() == expect_mode
+    store = get_idempotency_store()
+    sink = get_receipt_sink()
+    if isinstance(store_cls, str):
+        assert store.__class__.__name__ == store_cls
+    else:
+        assert isinstance(store, store_cls)
+    if isinstance(sink_cls, str):
+        assert sink.__class__.__name__ == sink_cls
+    else:
+        assert isinstance(sink, sink_cls)
+
+
+def test_configure_persistence_explicit_null_fallback(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    """显式 null 回退回归（R9③）：显式 null → mode null + Null 装配 + WARNING。"""
+    monkeypatch.setenv("OPS_CAPABILITY_PERSISTENCE", "null")
+    with caplog.at_level("WARNING", logger="app.ops.capability.persistence"):
+        assert configure_persistence_from_env() == "null"
     assert isinstance(get_idempotency_store(), NullIdempotencyStore)
+    assert any(
+        "能力层持久化：null（" in record.message and "不可上生产" in record.message
+        for record in caplog.records
+    )
 
 
 def test_configure_persistence_memory_mode(monkeypatch: pytest.MonkeyPatch):
@@ -341,3 +394,69 @@ async def asyncio_sleep(seconds: float) -> None:
     import asyncio
 
     await asyncio.sleep(seconds)
+
+
+# ---------------- P3-T6 默认面：fail-closed 与防重双调实证 ----------------
+
+
+class _BrokenSessionFactory:
+    """模拟 DB 连接故障的 session 工厂——进入事务即抛（fail-closed 探针）。"""
+
+    def __call__(self) -> _BrokenSessionFactory:
+        return self
+
+    async def __aenter__(self) -> None:
+        raise ConnectionError("模拟 DB 连接故障（P3-T6 fail-closed 探针）")
+
+    async def __aexit__(self, *exc: object) -> bool:
+        return False
+
+
+async def test_default_db_store_failure_fails_closed(monkeypatch: pytest.MonkeyPatch):
+    """fail-closed 回归（R9③ + R-P3-10）：默认 db 且 DB 故障 → ainvoke ok=False、下游零调用。
+
+    绝不静默放行重复执行——claim 异常经 adapter → gateway `_aerr_result` 落 ok=False。
+    """
+    monkeypatch.setenv("OA_BASE", "http://oa.test.local")
+    monkeypatch.delenv("OPS_CAPABILITY_PERSISTENCE", raising=False)
+    assert configure_persistence_from_env() == "db"
+    store = get_idempotency_store()
+    assert isinstance(store, DbIdempotencyStore)
+    monkeypatch.setattr(store, "_session_factory", _BrokenSessionFactory())
+
+    spec = _write_spec()
+    tx = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-FC"}})
+    _register_write(spec, tx)
+    ctx = {"tenant_id": _TENANT, "user_id": "u-1", "_host_policy": {"allow_write": True}}
+
+    result = await ainvoke("oa.ticket.create", {"subject": "打印机故障"}, ctx=ctx)
+    unregister("oa.ticket.create")
+
+    assert result.ok is False  # fail-closed：显式失败，不静默放行
+    assert len(tx.calls) == 0  # 下游传输零调用（没发出去，就不存在"重复发出"）
+
+
+async def test_default_surface_double_invoke_dedup(monkeypatch: pytest.MonkeyPatch):
+    """默认面防重双调实证（验收首键）：未设 env → 新默认 db → 第二调 duplicated、
+    传输仅一次、回执单行。"""
+    monkeypatch.setenv("OA_BASE", "http://oa.test.local")
+    monkeypatch.delenv("OPS_CAPABILITY_PERSISTENCE", raising=False)
+    assert configure_persistence_from_env() == "db"
+    store = get_idempotency_store()
+
+    spec = _write_spec(http={"idempotency_key": "t:default-{{subject}}"})
+    tx = FakeHttpTransport(payload={"code": 0, "data": {"ticketId": "T-DF"}})
+    _register_write(spec, tx)
+    ctx = {"tenant_id": _TENANT, "user_id": "u-1", "_host_policy": {"allow_write": True}}
+
+    first = await ainvoke("oa.ticket.create", {"subject": "默认面双调"}, ctx=ctx)
+    second = await ainvoke("oa.ticket.create", {"subject": "默认面双调"}, ctx=ctx)
+    rows = await store.asnapshot(tenant_id=_TENANT)
+    unregister("oa.ticket.create")
+
+    assert first.ok is True
+    assert second.ok is True and second.meta.get("duplicated") is True
+    assert len(tx.calls) == 1
+    assert len(rows) == 1
+    assert rows[0]["status"] == "done"
+    assert rows[0]["receipt_id"] == first.meta["receipt_id"]
