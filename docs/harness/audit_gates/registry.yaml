@@ -1121,8 +1121,9 @@ waves:
       - alembic/
       - scripts/
   - task_slug: fix-432-replay-owner-race
-    status: active
+    status: closed
     base: "396f7fed"
+    wave_tip: "2be501d4"
     note: >-
       issue Cyning12/ops-desk-api#432（维护者派单 · 夜间自动执行预授权 issue
       Cyning12/ops-desk-workspace#23 m03064/m03283/m03694）：master 偶发红
