@@ -12,7 +12,10 @@ from langchain_core.messages import HumanMessage
 from app.ops.capability import invoke, list_capabilities
 from app.ops.lg_rag.multi.nodes import (
     _SUPERVISOR_CAP_FILTER,
+    _TOOL_AWARENESS_GUIDANCE,
     SupervisorPlanError,
+    _build_catalog_block,
+    _format_capability_catalog,
     _subtasks_have_valid_tool_ids,
     supervisor_node,
 )
@@ -259,3 +262,105 @@ async def test_supervisor_valid_tool_plan_kept():
         out = await supervisor_node(_full_allowlist_state([HumanMessage(content="几点了")]))
     assert out["subtasks"][0]["type"] == "tool"
     assert out["subtasks"][0]["tool"] == "utc_now_iso"
+
+
+# ---------------------------------------------------------------- P2c-T1 · 工具感知硬化
+
+#: 引导语锚定词（与 nodes._TOOL_AWARENESS_GUIDANCE 文本一一对应 · 改动需双签）
+_GUIDANCE_MARK = "工具选择原则"
+_FEWSHOT_MARK = "现在几点了"
+_RAG_FALLBACK_MARK = "仅当目录中没有工具能覆盖该问题时才纯 rag"
+
+
+def test_build_catalog_block_empty_no_guidance() -> None:
+    """P2c-T1：空目录零追加——占位文本原样返回、不含引导语（catalog 空时不含）。"""
+    block = _build_catalog_block([])
+    assert block == "（当前无可用 local_fn 工具）"
+    assert _GUIDANCE_MARK not in block
+
+
+def test_build_catalog_block_injects_guidance_preserves_lines() -> None:
+    """P2c-T1：非空目录块首注入引导语 + few-shot + rag 兜底从句，行渲染零 diff。"""
+    caps = list_capabilities(filter=_SUPERVISOR_CAP_FILTER)
+    raw = _format_capability_catalog(caps)
+    block = _build_catalog_block(caps)
+    assert block.startswith(_TOOL_AWARENESS_GUIDANCE)
+    # 行渲染本体零改：注入后目录行逐字节保持（块以原渲染输出结尾）
+    assert block.endswith(raw)
+    assert _FEWSHOT_MARK in block
+    assert _RAG_FALLBACK_MARK in block
+
+
+def test_tool_awareness_guidance_no_capability_id_leak() -> None:
+    """P2c-T1：引导语静态恒定、不含任何 registry capability id（窄 allowlist 零泄漏）。"""
+    ids = [s.capability_id for s in list_capabilities()]
+    assert ids  # 防空调用空转
+    leaked = [i for i in ids if i in _TOOL_AWARENESS_GUIDANCE]
+    assert not leaked, f"引导语泄漏 capability id: {leaked}"
+
+
+def test_tool_awareness_catalog_budget_anchor() -> None:
+    """P2c-T1：注入引导语后默认可见目录 ≤6000 字符（§6.5 合并预算 capability 侧锚）。"""
+    caps = list_capabilities(filter=_SUPERVISOR_CAP_FILTER)
+    assert len(_build_catalog_block(caps)) <= 6000
+
+
+@pytest.mark.asyncio
+async def test_supervisor_prompt_contains_tool_awareness_guidance():
+    """P2c-T1：catalog 含工具时 mock LLM 捕获的 system 含引导语 + few-shot + rag 兜底从句。"""
+    captured: list[list] = []
+    plan = json.dumps(
+        {"subtasks": [{"id": "t1", "type": "rag", "input": "查部署"}]},
+        ensure_ascii=False,
+    )
+
+    async def _capture_complete(messages, *, model):
+        captured.append(messages)
+        return plan
+
+    provider = SimpleNamespace(complete=_capture_complete)
+    with (
+        patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider),
+        patch("app.ops.lg_rag.multi.nodes._record_span_metadata"),
+        patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+    ):
+        await supervisor_node(_full_allowlist_state([HumanMessage(content="现在几点了")]))
+    system = captured[0][0].content
+    assert _GUIDANCE_MARK in system
+    assert _FEWSHOT_MARK in system
+    assert _RAG_FALLBACK_MARK in system
+    # few-shot 结构锚：type=tool + tool 占位指示从目录取 id
+    assert '"type": "tool"' in system
+    assert "capability_id" in system
+
+
+@pytest.mark.asyncio
+async def test_supervisor_restricted_allowlist_guidance_no_leak():
+    """P2c-T1：窄 allowlist 下 system 含引导语且不含被隐藏工具 id（引导语零泄漏）。"""
+    captured: list[list] = []
+    plan = json.dumps(
+        {"subtasks": [{"id": "t1", "type": "rag", "input": "查部署"}]},
+        ensure_ascii=False,
+    )
+
+    async def _capture_complete(messages, *, model):
+        captured.append(messages)
+        return plan
+
+    provider = SimpleNamespace(complete=_capture_complete)
+    with (
+        patch("app.ops.lg_rag.multi.nodes.get_llm_provider", return_value=provider),
+        patch("app.ops.lg_rag.multi.nodes._record_span_metadata"),
+        patch("app.ops.lg_rag.multi.nodes.trace_span", return_value=_span_cm()),
+    ):
+        await supervisor_node(
+            {
+                "messages": [HumanMessage(content="复合问题")],
+                "allowed_capability_ids": ["utc_now_iso"],
+                "run_id": "catrun",
+            }
+        )
+    system = captured[0][0].content
+    assert _GUIDANCE_MARK in system
+    assert "utc_now_iso" in system
+    assert "mock_get_issue_status" not in system

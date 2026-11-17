@@ -29,8 +29,8 @@ from app.ops.capability import delegation as dl
 from app.ops.lg_rag.multi import step_contract as sc
 from app.ops.lg_rag.multi.nodes import (
     MAX_SUBTASKS,
+    _build_catalog_block,
     _build_supervisor_suffix_system,
-    _format_capability_catalog,
     _format_prefix_block,
     _join_subtasks,
     supervisor_node,
@@ -249,8 +249,10 @@ async def test_tc4_replan_prompt_zero_diff_without_failed_steps(cap_env):  # noq
         await supervisor_node(state)
 
     system_prompt = str(complete.await_args.args[0][0].content)
+    # P2c-T1：预期构造与实现共用同一装配点（_build_catalog_block · 引导语
+    # 注入为 P2c-T1 标的 · intentional behavior change · 行渲染零 diff 口径不动）
     expected = _build_supervisor_suffix_system(
-        _format_capability_catalog(_fake_caps()),
+        _build_catalog_block(_fake_caps()),
         _format_prefix_block([dict(row_s1)], {s1: _s1_success_terminal(s1)}),  # master 二参形态
         MAX_SUBTASKS - 1,
         preserved_block="",

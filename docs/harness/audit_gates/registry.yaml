@@ -1224,3 +1224,38 @@ waves:
       - alembic/
       - scripts/
 
+  - task_slug: p2c-t1-planner-tool-awareness
+    status: active
+    base: "b8d11262"
+    note: >-
+      p2c-t1-planner-tool-awareness planner 工具感知硬化 + 选定率回归基线
+      （P2b 验证轮登记缺口 · workspace 12-p2b-verification.md §5-1 泛化
+      中文问法退化 rag 直答 · §5-2 tool shadowing 残余 ·
+      13-p2b-skill-verification.md §7-2 域外 fail-closed · HG-TASK-DRAFT /
+      HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-17 · 授权 issue
+      Cyning12/ops-desk-workspace#23 m03064/m03734 夜间授权）。修法裁定：
+      nodes.py 新增 _build_catalog_block 唯一装配点 + _TOOL_AWARENESS_GUIDANCE
+      静态常量（选择原则 + 泛化问法 JSON few-shot + rag 兜底从句 · 零
+      capability id），catalog 非空节首注入、空目录零追加；
+      _format_capability_catalog 行渲染本体零改（精确相等断言零 diff 口径
+      不动）；模板资产 v3 零 bump；FP 两测试预期构造迁移同一装配点
+      （intentional behavior change）。禁承载：真 LLM 冒烟（T2）·
+      translator M1-M3 fail-closed 词表 · description 首句蒸馏（裁定不
+      做 · server 向 G12 立项承接）· 模板资产 bump · fail-closed 解析面 ·
+      新依赖 · alembic/ · scripts/ · skill_registry/。
+    allowed_app_files:
+      - app/ops/lg_rag/multi/nodes.py
+    allowed_tree_files:
+      - tests/test_lg_rag_supervisor_capability_catalog.py
+      - tests/test_hitl_approved_replan_quality.py
+      - tests/test_supervisor_replan_error_feedback.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p2c_t1_planner_tool_awareness.md
+      - docs/tasks/done/task_p2c_t1_planner_tool_awareness.md
+      - docs/harness/reviews/task_p2c_t1_planner_tool_awareness_audit_R1_20261117.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p2c-t1-planner-tool-awareness/
+    banned_prefixes:
+      - alembic/
+      - scripts/
