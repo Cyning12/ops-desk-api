@@ -1225,8 +1225,9 @@ waves:
       - scripts/
 
   - task_slug: p2c-t1-planner-tool-awareness
-    status: active
+    status: closed
     base: "b8d11262"
+    wave_tip: "fa3b4449"
     note: >-
       p2c-t1-planner-tool-awareness planner 工具感知硬化 + 选定率回归基线
       （P2b 验证轮登记缺口 · workspace 12-p2b-verification.md §5-1 泛化
