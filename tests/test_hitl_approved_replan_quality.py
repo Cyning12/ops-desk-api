@@ -46,8 +46,8 @@ import pytest
 
 from app.ops.capability import delegation as dl
 from app.ops.lg_rag.multi.nodes import (
+    _build_catalog_block,
     _build_supervisor_system,
-    _format_capability_catalog,
     _format_preserved_block,
     _guard_write_key,
     _join_subtasks,
@@ -206,7 +206,10 @@ async def test_tc2_locked_empty_preserved_empty_prompt_zero_diff(cap_env):  # no
         await supervisor_node(state)
 
     system_prompt = str(complete.await_args.args[0][0].content)
-    expected = _build_supervisor_system(_format_capability_catalog(_fake_caps()))
+    # P2c-T1：预期构造与实现共用同一装配点（_build_catalog_block）——
+    # catalog 节首引导语注入为 P2c-T1 标的（intentional behavior change），
+    # 行渲染零 diff 口径由 _format_capability_catalog 侧断言保持。
+    expected = _build_supervisor_system(_build_catalog_block(_fake_caps()))
     assert system_prompt == expected, "preserved 空主路径须对基础模板逐字节零 diff"
     assert "切勿为同一目的再规划新步骤或孪生步骤" not in system_prompt
 
