@@ -135,6 +135,8 @@ T2 prompt 模板域机制（已合 6b2c7934 · 部署级单域与本波 manifest
 
 1. **base 修正 370a137a → 297363bd**（R0 裁定）：委派书钉 master 尖 370a137a（T2 已合），fetch 核实 T6 feat PR #444（142723ee）+ CLOSE PR #446（297363bd）已先合——委派书本钉「git fetch 核实实际尖 · T6 并行波可能先合——rebase 纪律」，按实修正。T6 已合文件与本波零 app 面重叠（T6 触 models.py/run_store.py/runs_router.py/alembic · 本波触 capability/manifest.py 单件）；仅 registry.yaml 与 01_modules.md 同区追加位顺延。
 
+2. **T4 先合 rebase**（40 波后 · PR #448 CONFLICTING 裁定）：feat PR 开出后 T4 feat PR #447 先合 master（e29f6a34）→ 本分支 rebase origin/master；01_modules.md 两冲突块按 task 档失败路径预案手动解——capability/lg_rag 行各保留双方叙事段 · HG-GRAPH-MODULES 签收表 T4/T3 两行并存；registry.yaml 自动合入双方 entry 零冲突。rebase 后复闸全绿（git 守卫 22 · 目标 45 · capability 电池 673 passed/5 failed 同基线同 5 · ruff/graph-compile/spec-wave verify）。CI 因 CONFLICTING 未触发，rebase 重推后触发（失败路径预案原文）。
+
 ### 限制登记
 
 1. oa 域资产包落地归 P4-T5（委派书钉明 · 本波仅 loader 机制面 · oa manifest 内容零变更）。
