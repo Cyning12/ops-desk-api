@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import copy
+import importlib
 import json
 import logging
 import os
@@ -74,6 +75,7 @@ from app.ops.lg_rag.state import (
     unresolved_suffix_ids,
 )
 from app.ops.prompts import render
+from app.ops.prompts.domain_context import current_domain
 from app.ops.prompts.slots import (
     SlotIsolationError,
     assert_slots_declared,
@@ -1943,6 +1945,31 @@ async def rag_subtask_node(state: LgRagState) -> dict:
         type=subtask_type,
         input_preview=result["input"],
     )
+
+    # P4-T4 域闸（19 契约 §4.1 fail-closed · LB3/R-P4-7 防跨域向量泄漏）：
+    # 非 ops 域未配置 QDRANT_COLLECTION_<DOMAIN> ⇒ 报「本域未配置检索」直接终态，
+    # 不触 astream_router_agent（后端调用零发生）、不回落 ops_knowledge。
+    # ops 域恒放行（既有行为零 diff）。qdrant_collection 经 importlib 运行期解析
+    # 守 lg-rag-outbound 静态边界（承 continuity.py→session.summary 先例 ·
+    # .importlinter 零改动）；解析失败对非 ops 域 fail-closed。
+    domain = current_domain()
+    if domain != "ops":
+        collection: str | None
+        try:
+            rag_backend = importlib.import_module("app.ops.rag.backend")
+            collection = rag_backend.qdrant_collection(domain)
+        except Exception:
+            logger.exception("rag_subtask 域闸解析失败 domain=%s（fail-closed）", domain)
+            collection = None
+        if collection is None:
+            result["output"] = "本域未配置检索"
+            logger.warning(
+                "rag_subtask 域闸 fail-closed：domain=%s 缺 QDRANT_COLLECTION_%s"
+                "（本域未配置检索 · 不回落 ops_knowledge）",
+                domain,
+                domain.upper(),
+            )
+            return _finish_worker(state, bump, result)
 
     async def _chain_hook(step: str, detail: dict | None) -> None:
         await emit_subtask_step(

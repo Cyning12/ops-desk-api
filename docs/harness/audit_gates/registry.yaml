@@ -1345,4 +1345,39 @@ waves:
     allowed_tree_prefixes:
       - docs/harness/invokes/by-task/p4-t6-run-tree-ddl/
     banned_prefixes:
+  - task_slug: p4-t4-rag-domain-config
+    status: active
+    base: "370a137a"
+    note: >-
+      p4-t4-rag-domain-config RAG 域配置面（fail-closed 域隔离 ·
+      18 设计文 §2.3 RAG 域化/§10 P4-T4 任务行/§13 失败路径 +
+      19 契约 §4 commit e453a36 钉死口径 ·
+      HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-18 ·
+      授权 issue Cyning12/ops-desk-workspace#23 m03064/m03796 夜间授权）。
+      修法裁定：backend.py qdrant_collection(domain) 三级回退 fail-closed
+      （ops 链 QDRANT_COLLECTION_OPS→QDRANT_COLLECTION→ops_knowledge 零 diff ·
+      非 ops 单级 QDRANT_COLLECTION_<DOMAIN_UPPER> 缺省 None=本地 RAG 显式禁用）·
+      glossary.py 按域文件回退（glossary.<domain>.yaml 存在则读否则 glossary.yaml ·
+      按域缓存 _TABLES）· lg_rag/multi/nodes.py rag 子任务域闸
+      （output=「本域未配置检索」不触 astream_router_agent · 后端调用零发生）·
+      shadow_write collection None-skip+warning 不进 DLQ ·
+      rag→prompts / lg_rag→rag.backend 走 importlib 运行期解析守静态边界
+      （承 lg_rag/continuity.py→session.summary 先例 · .importlinter 零改动）·
+      ingest/source_type 词表 issue|pr|doc 不泛化（19 §4.3 钉死 · ingest.py 零 diff）。
+    allowed_app_files:
+      - app/ops/rag/backend.py
+      - app/ops/rag/glossary.py
+      - app/ops/rag/shadow_write.py
+      - app/ops/lg_rag/multi/nodes.py
+    allowed_tree_files:
+      - tests/test_rag_domain_config.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p4_t4_rag_domain_config.md
+      - docs/tasks/done/task_p4_t4_rag_domain_config.md
+      - docs/harness/reviews/task_p4_t4_rag_domain_config_audit_R1_20261118.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p4-t4-rag-domain-config/
+    banned_prefixes:
+      - alembic/
       - scripts/

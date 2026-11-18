@@ -15,29 +15,44 @@ from pathlib import Path
 
 import yaml
 
+from app.ops.rag.backend import _current_domain
+
 _GLOSSARY_PATH = Path(__file__).with_name("glossary.yaml")
 
-_ZH_TO_EN: dict[str, list[str]] | None = None
+_TABLES: dict[str, dict[str, list[str]]] = {}
 
 
-def _load() -> dict[str, list[str]]:
-    """懒加载词表（模块导入不读盘）。"""
-    global _ZH_TO_EN
-    if _ZH_TO_EN is None:
-        data = yaml.safe_load(_GLOSSARY_PATH.read_text(encoding="utf-8"))
-        _ZH_TO_EN = {str(k): [str(w) for w in v] for k, v in (data or {}).items()}
-    return _ZH_TO_EN
+def _glossary_path(domain: str) -> Path:
+    """按域解析词表文件：glossary.<domain>.yaml 存在则读，否则回退 glossary.yaml。
+
+    回退判定=文件存在（承 T2 目录回退同口径 · 19 契约 §4.2）；域件存在但坏
+    yaml 由 safe_load 显式炸，不静默回退掩盖资产错误。
+    """
+    candidate = Path(__file__).with_name(f"glossary.{domain}.yaml")
+    return candidate if candidate.is_file() else _GLOSSARY_PATH
+
+
+def _load(domain: str) -> dict[str, list[str]]:
+    """懒加载词表（按域缓存 · 模块导入不读盘）。"""
+    table = _TABLES.get(domain)
+    if table is None:
+        data = yaml.safe_load(_glossary_path(domain).read_text(encoding="utf-8"))
+        table = {str(k): [str(w) for w in v] for k, v in (data or {}).items()}
+        _TABLES[domain] = table
+    return table
 
 
 _EN_WORD_RE = re.compile(r"[A-Za-z][A-Za-z0-9_.\-/#]+")
 
 
-def expand_query_for_fts(query: str) -> str | None:
+def expand_query_for_fts(query: str, domain: str | None = None) -> str | None:
     """把混合 query 展开为 to_tsquery 表达式；无可用词项时返回 None。
 
     组内 OR（中文 | 英文同义词）、组间 AND。词表未命中的中文段丢弃（语义路兜底）。
+    domain=None 解析当前部署域（19 契约 §4.2 按域词表 · 无域件回退默认件）。
     """
-    table = _load()
+    resolved = (domain or "").strip() or _current_domain()
+    table = _load(resolved)
     groups: list[str] = []
     consumed: set[str] = set()
     # 词表命中：长词优先（避免短词先吃掉长词组合）

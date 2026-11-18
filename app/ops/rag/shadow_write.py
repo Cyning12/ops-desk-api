@@ -109,13 +109,19 @@ def enqueue_shadow_delete(point_ids: list[int]) -> None:
 
 
 def _shadow_upsert_safe(points: list[ShadowPoint]) -> None:
+    collection = qdrant_collection()
+    if collection is None:
+        # fail-closed（19 契约 §4.1）：本域未配置 collection=禁用域预期态（非故障），
+        # skip 不进 DLQ 噪声、不跨域写（LB3/R-P4-7）。ops 域恒非 None（零 diff）。
+        logger.warning("shadow upsert skipped: 本域未配置检索 collection（n=%s）", len(points))
+        return
     try:
         from qdrant_client import QdrantClient
         from qdrant_client.http import models as qm
 
         client = QdrantClient(url=qdrant_url(), api_key=qdrant_api_key())
         client.upsert(
-            collection_name=qdrant_collection(),
+            collection_name=collection,
             points=[
                 qm.PointStruct(
                     id=p.point_id,
@@ -132,13 +138,20 @@ def _shadow_upsert_safe(points: list[ShadowPoint]) -> None:
 
 
 def _shadow_delete_safe(point_ids: list[int]) -> None:
+    collection = qdrant_collection()
+    if collection is None:
+        # fail-closed（19 契约 §4.1）：同 _shadow_upsert_safe——skip 不进 DLQ、不跨域写。
+        logger.warning(
+            "shadow delete skipped: 本域未配置检索 collection（n=%s）", len(point_ids)
+        )
+        return
     try:
         from qdrant_client import QdrantClient
         from qdrant_client.http import models as qm
 
         client = QdrantClient(url=qdrant_url(), api_key=qdrant_api_key())
         client.delete(
-            collection_name=qdrant_collection(),
+            collection_name=collection,
             points_selector=qm.PointIdsList(points=point_ids),
             wait=True,
         )
