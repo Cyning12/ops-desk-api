@@ -39,7 +39,7 @@ domain-pack-v1 为 ops-desk 引入「部署级领域」概念：同一后端按�
 3. **domain_context 注入面**（19 §3.3）：新增 `app/ops/prompts/domain_context.py`（仿 tenant_context.py · stdlib only）——`DEFAULT_DOMAIN="ops"` · `_DOMAIN_RE` · `resolve_domain(raw)`（缺省/空白/非法 → ops + logger.warning 一次一值 @cache · 值返回型纯函数）· `resolve_domain_from_env()`（读 OPS_DOMAIN）· `current_domain()`（contextvar 已注入用注入值 · 未注入回落 env 解析=R-P4-2 漏设无害化强化裁定）· `set_current_domain(domain)`（词表校验 · 非法 ValueError 编程错误面）· `reset_current_domain(token)`。
 4. **render 域路由**（19 §3.3 调用点零 churn）：`app/ops/prompts/render.py`——`get_template(template_id)` 内部读 `current_domain()`：域=ops 走 TEMPLATES（现状同路径零 diff）· 非 ops 走 `get_template_for_domain`（未知 id KeyError → PromptTemplateNotFoundError 保持）；`render()` 本体零改。
 5. **worker 注入位**：`app/ops/lg_rag/run_worker.py`——`_main()` 内 `domain_token = set_current_domain(resolve_domain_from_env())`（与 set_current_tenant 同位 · finally reset_current_domain）。
-6. **测试**（新增 `tests/test_prompt_domain_assets.py` · tmp_assets 形态承 test_prompt_assets.py:146-151 先例）：域文件命中 / 缺失回退（按模板独立）/ 坏域件显式炸点名路径 / 非法 domain 词表拒入（含 ../ 路径穿越负例）/ resolve_domain 缺省·空白·非法回退 ops + warning / OPS_DOMAIN on/off 全量 11 模板 body 逐字节对拍一致（19 §3.4 验收）/ 白名单越界 KeyError / get_template 域路由（ops=TEMPLATES 同对象 · 非 ops 走域件）/ worker 注入后 contextvar 可见性。真 PG 绿（postgresql+asyncpg://ops:ops_password@localhost:5432/opsdesk_test · 五键 blank 前缀）· 目标回归（test_prompt_assets / test_prompt_render / test_prompt_packs / run_worker 相关）零红 · 全量 pytest 绿（环境性红与 base cfe76b23 同路径基线逐签对照 · CI 终裁）· `ruff check app tests` 绿。
+6. **测试**（新增 `tests/test_prompt_domain_assets.py` · tmp_assets 形态承 test_prompt_assets.py:146-151 先例）：域文件命中 / 缺失回退（按模板独立）/ 坏域件显式炸点名路径 / 非法 domain 词表拒入（含 ../ 路径穿越负例）/ resolve_domain 缺省·空白·非法回退 ops + warning / OPS_DOMAIN on/off 全量 11 模板 body 逐字节对拍一致（19 §3.4 验收）/ 白名单越界 KeyError / get_template 域路由（ops=TEMPLATES 同对象 · 非 ops 走域件）/ worker 注入后 contextvar 可见性。真 PG 绿（postgresql+asyncpg://ops:ops_password@localhost:5432/opsdesk_test · 五键 blank 前缀）· 目标回归（test_prompt_assets / test_prompt_assembly / test_prompt_packs / test_prompt_slots / run_worker 相关）零红 · 全量 pytest 绿（环境性红与 base cfe76b23 同路径基线逐签对照 · CI 终裁）· `ruff check app tests` 绿。
 7. **图谱**：`docs/_tech_graph/l1/01_modules.md` lg_rag 行（:35）补 p4-t2 备注 + HG-GRAPH-MODULES 签收行（承 P2c-T1 先例）。
 8. **落盘**：registry entry（status=active → close 波 closed 钉 wave_tip）· invokes by-task/p4-t2-prompt-domain-loader/{10,30,40,50} · R1 审查文 · task 档 active→done。
 
@@ -64,28 +64,34 @@ domain-pack-v1 为 ops-desk 引入「部署级领域」概念：同一后端按�
 
 ## 验收标准
 
-- [ ] 域文件命中：assets/<domain>/<id>.md 存在时 load_asset(template_id, domain) 返回域件 (version, body)（新断言）
-- [ ] 缺失回退：域件不存在回退根目录件；同 domain 下不同模板各自独立命中/回退（否半份合并 · 新断言）
-- [ ] 坏件显式炸：域文件存在但形态非法 → PromptAssetError 点名域件路径（新断言）
-- [ ] 非法 domain 拒入：词表外值（含 ../ 路径穿越 · 带点号）loader 抛 PromptAssetError（新断言）；resolve_domain 缺省/空白/非法 → ops + logger.warning（新断言）
-- [ ] ops 零 diff 对拍：OPS_DOMAIN on/off 双跑全量 11 模板 body 逐字节一致（19 §3.4 · 新断言）
-- [ ] 白名单不动：get_template_for_domain 白名单外 id → KeyError；TEMPLATES import 期 ops 默认面零 diff（既有 test_prompt_assets 全绿）
-- [ ] get_template 域路由：ops 域返回 TEMPLATES 同对象；非 ops 域走域件；未知 id PromptTemplateNotFoundError 保持（新断言）
-- [ ] worker 注入：start_run_worker _main 内 set_current_domain(resolve_domain_from_env()) 与 set_current_tenant 同位 + finally reset（新断言）
-- [ ] 目标回归零红；全量 pytest 绿（环境性红逐签对照 base cfe76b23 · CI 终裁）；`ruff check app tests` 绿
-- [ ] 01_modules.md lg_rag 行 p4-t2 备注 + HG-GRAPH-MODULES 签收行
-- [ ] registry entry active · invokes 四件 · R1 审查文 · spec-wave task lint PASS
+- [x] 域文件命中：assets/<domain>/<id>.md 存在时 load_asset(template_id, domain) 返回域件 (version, body)（tests/test_prompt_domain_assets.py 域命中断言绿）
+- [x] 缺失回退：域件不存在回退根目录件；同 domain 下不同模板各自独立命中/回退（否半份合并 · 回退+按模板独立断言绿）
+- [x] 坏件显式炸：域文件存在但形态非法 → PromptAssetError 点名域件路径（坏件负例断言绿 · 点名 oa 路径）
+- [x] 非法 domain 拒入：词表外值（含 ../ 路径穿越 · 带点号）loader 抛 PromptAssetError（五值+「..」负例绿）；resolve_domain 缺省/空白/非法 → ops + logger.warning（caplog 断言绿）
+- [x] ops 零 diff 对拍：OPS_DOMAIN on/off 双跑全量 11 模板 body 逐字节一致（19 §3.4 · off vs OPS_DOMAIN=ops vs 不存在域目录三态逐字节等 · 绿）
+- [x] 白名单不动：get_template_for_domain 白名单外 id → KeyError（断言绿）；TEMPLATES import 期 ops 默认面零 diff（既有 tests/test_prompt_assets.py 全绿 · EXPECTED_IDS 集合等式+版本钉版零 diff）
+- [x] get_template 域路由：ops 域返回 TEMPLATES 同对象；非 ops 域走域件（命中+回退）；未知 id PromptTemplateNotFoundError 保持（新断言绿）
+- [x] worker 注入：start_run_worker _main 内 set_current_domain(resolve_domain_from_env()) 与 set_current_tenant 同位 + finally reset（mock astream 捕获 current_domain()=="oa" · 断言绿）
+- [x] 目标回归零红（六文件 144 passed · 真 PG 五键 blank）；全量 pytest 绿以 CI 终裁（本地目标面全绿 · 无环境性红差异项）；`ruff check app tests` 绿（0.15.21 CI 钉版）
+- [x] 01_modules.md lg_rag 行 p4-t2 备注 + HG-GRAPH-MODULES 签收行（已落盘 · graph-compile 绿）
+- [x] registry entry active · invokes 四件（10/30/40 已落 · 50 待 CLOSE 波）· R1 审查文 GO · spec-wave task lint PASS
 
 ### 自检结论
 
-（40 收口时回填 · 验收 11 条逐条锚定）
+验收 11 条全绿（2026-11-18 40 波收口）：
+
+1. 机制面九条新断言全部落于 tests/test_prompt_domain_assets.py（18 用例全绿）——域命中 / 缺失回退（按模板独立 · 否半份合并）/ 坏域件显式炸点名 oa 路径 / 非法 domain 六负例（含「..」路径穿越与带点号）/ resolve_domain 缺省·空白·非法回退 ops+warning（caplog）/ current_domain env 回落 / set-reset 生命周期 / set 非法 ValueError / 白名单 KeyError。
+2. 19 §3.4 零 diff 对拍：真实资产面 get_template 全 11 id 三态（OPS_DOMAIN off / =ops / =不存在域目录）body 逐字节相等。
+3. 域路由：ops=TEMPLATES 同对象（import 期零 diff）· 非 ops 命中域件与回退根件 · 未知 id PromptTemplateNotFoundError 语义保持。
+4. worker 注入位：run_worker._main 开头 set_current_domain(resolve_domain_from_env())（tenant_token 之前）· finally reset_current_domain（恒 reset）· mock astream 捕获 current_domain()=="oa" 实证注入可见。
+5. 回归面：六文件 144 passed（test_prompt_domain_assets / test_prompt_assets / test_prompt_assembly / test_prompt_packs / test_prompt_slots / test_lg_rag_sse_run_worker · 真 PG opsdesk_test · 五键 blank 前缀）；ruff 0.15.21（CI 钉版）All checks passed；mypy 五件 Success；import-linter 12 contracts kept 0 broken；graph-compile.sh done OK；spec-wave verify PASS。全量 pytest 以 CI 终裁（本仓纪律）。
 
 ## 必读列表
 
 - 需求真源：`../ops-desk-workspace/docs/01-scope/03-general-agent/18-domain-pack-v1.md` §2/:94-97（OPS_DOMAIN env 解析 · 词表拒穿越 · 不挂 tenant）+ §10 P4-T2 任务行 · `19-p4-contracts.md` §3（commit e453a36 钉死口径 · §3.1-§3.4）+ §1.2 R5/R11 + §5.1
 - 代码锚：`app/ops/prompts/loader.py:20`（_ID_RE 允许点号）· `:51-80`（load_asset 读取校验主体 → _load_from_path）· `app/ops/prompts/templates.py:11-30`（_TEMPLATE_IDS 白名单 + TEMPLATES 构建）· `app/ops/prompts/render.py:25-54`（get_template/render）· `app/ops/tenant_context.py`（contextvar 先例）· `app/ops/lg_rag/run_worker.py:116-166`（_main token 模式 · 注入同位）
 - 图谱/契约锚：`.importlinter` lg-rag-outbound（prompts 属 lg_rag 同族 · 零新边）· `docs/_tech_graph/l1/01_modules.md:35`（lg_rag 行 · prompts 归此 C2 裁定）
-- 测试先例：`tests/test_prompt_assets.py:146-151`（tmp_assets fixture · monkeypatch _ASSETS_DIR + clear_asset_cache）· `tests/test_prompt_render.py`
+- 测试先例：`tests/test_prompt_assets.py:146-151`（tmp_assets fixture · monkeypatch _ASSETS_DIR + clear_asset_cache）· `tests/test_prompt_assembly.py`（落卡误写 test_prompt_render.py · 40 波修正见偏差登记 2）
 - 体例先例：`docs/tasks/done/task_p2c_t1_planner_tool_awareness.md` · registry `docs/harness/audit_gates/registry.yaml`
 
 ## 思考轮
@@ -134,7 +140,8 @@ T3 消费 manifest domain 键（prompt 选择面与本波「部署级单域」�
 
 ### 偏差登记
 
-（30 交付时回填）
+1. **current_domain() 未注入回落 resolve_domain_from_env()**（R3 裁定 · R1 审查文已确认为唯一偏差 · GO 不阻塞）：19 §3.3 字面「默认 ops」；实现为未注入时回落 env 解析——OPS_DOMAIN 缺省/非法时与契约字面完全一致（归 ops），OPS_DOMAIN=oa 时非 run 通路亦读到部署域（R-P4-2 强化）；ops 部署零行为差（§3.4 对拍不受影响）。
+2. **任务档「目标回归」清单文件名修正**：落卡时误写 tests/test_prompt_render.py（该文件不存在）；真名为 tests/test_prompt_assembly.py。40 波按实修正（范围/必读列表/测试策略三处），回归已按真名跑绿。此为文档落笔误差修正，不涉及范围变化。
 
 ### 限制登记
 
@@ -144,10 +151,11 @@ T3 消费 manifest domain 键（prompt 选择面与本波「部署级单域」�
 
 ## 测试策略
 
-pytest tests（CI 终裁 · 真 PG postgresql+asyncpg://ops:ops_password@localhost:5432/opsdesk_test · 五键 blank 前缀 OPS_HITL_PERSISTENCE= OPS_CAPABILITY_ALLOW_WRITE= OPS_CAPABILITY_ALLOW_WRITE_TAGS= OPS_CAPABILITY_PERSISTENCE= OPS_CAPABILITY_EXTRA_MANIFESTS=）；新增 tests/test_prompt_domain_assets.py 全绿；目标回归 tests/test_prompt_assets.py / tests/test_prompt_render.py / tests/test_prompt_packs.py / run_worker 相关全绿；全量回归环境性红与 base cfe76b23 同路径基线逐签对照；ruff check app tests 绿；allowed_app_files 五件机判。
+pytest tests（CI 终裁 · 真 PG postgresql+asyncpg://ops:ops_password@localhost:5432/opsdesk_test · 五键 blank 前缀 OPS_HITL_PERSISTENCE= OPS_CAPABILITY_ALLOW_WRITE= OPS_CAPABILITY_ALLOW_WRITE_TAGS= OPS_CAPABILITY_PERSISTENCE= OPS_CAPABILITY_EXTRA_MANIFESTS=）；新增 tests/test_prompt_domain_assets.py 全绿；目标回归 tests/test_prompt_assets.py / tests/test_prompt_assembly.py / tests/test_prompt_packs.py / tests/test_prompt_slots.py / tests/test_lg_rag_sse_run_worker.py 全绿（144 passed）；全量回归环境性红与 base cfe76b23 同路径基线逐签对照；ruff check app tests 绿；allowed_app_files 五件机判。
 
 ## 修订记录
 
 | 日期 | 修订 |
 |------|------|
 | 2026-11-18 | 落卡（夜间自动执行波 · 授权 issue Cyning12/ops-desk-workspace#23 m03064/m03796 · 来源 18 设计文 §10 P4-T2 行 + 19 契约 §3） |
+| 2026-11-18 | 40 波收口：验收 11 条全 [x] + 自检结论回填 + 偏差登记两项（current_domain env 回落裁定 · 目标回归文件名修正） |
