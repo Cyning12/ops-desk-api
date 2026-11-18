@@ -65,20 +65,20 @@ domain-pack-v1 的 RAG 面现状是 ops 单域写死：`qdrant_collection()`（a
 
 ## 验收标准
 
-- [ ] collection 矩阵全格：ops 三级（QDRANT_COLLECTION_OPS > QDRANT_COLLECTION > ops_knowledge）· 非 ops 单级（QDRANT_COLLECTION_<DOMAIN> 否则 None）· 空白串视同未配置（tests/test_rag_domain_config.py 参数化全格绿）
-- [ ] domain=None 解析当前部署域：contextvar 注入 `set_current_domain("oa")` 与 OPS_DOMAIN env 两通路断言绿（importlib 运行期解析 current_domain · 单一真源）
-- [ ] ops 零 diff 对拍：QDRANT_COLLECTION_OPS 未设时全矩阵取值与 base `qdrant_collection()` 逐值一致（含空白串边角 · 断言绿）
-- [ ] rag 子任务域闸：domain=oa 无 QDRANT_COLLECTION_OA ⇒ output=「本域未配置检索」且 `astream_router_agent` 零调用（patch 计数断言绿）；ops 域闸放行（mock astream 正常产出 output · 既有行为零 diff）
-- [ ] glossary 按域回退：glossary.oa.yaml 不存在 ⇒ oa 与 ops 展开逐字节等；monkeypatch 域件路径 ⇒ 读域件生效；按域缓存隔离（清缓存后互不影响 · 断言绿）
-- [ ] 影子写 fail-closed：collection None ⇒ upsert/delete skip + warning · 零 DLQ 写入 · 零异常（断言绿）；ops 域影子写路径零 diff
-- [ ] ingest/source_type 未动：ingest.py 相对 base 零 diff（git diff 为空 · 19 §4.3 钉死）
-- [ ] 目标回归零红（test_rag_qdrant_backend / test_rag_fts_config / test_lg_rag_multi / test_supervisor_parallel_join · 真 PG 五键 blank）；全量 pytest 绿以 CI 终裁；`ruff check app tests` 绿；import-linter 12 contracts kept 0 broken
-- [ ] 01_modules.md rag/lg_rag 行 p4-t4 备注 + HG-GRAPH-MODULES 签收行（graph-compile 绿）
-- [ ] registry entry active · invokes 四件 · R1 审查文 GO · spec-wave task lint PASS
+- [x] collection 矩阵全格：ops 三级（QDRANT_COLLECTION_OPS > QDRANT_COLLECTION > ops_knowledge）· 非 ops 单级（QDRANT_COLLECTION_<DOMAIN> 否则 None）· 空白串视同未配置（tests/test_rag_domain_config.py 参数化全格绿）
+- [x] domain=None 解析当前部署域：contextvar 注入 `set_current_domain("oa")` 与 OPS_DOMAIN env 两通路断言绿（importlib 运行期解析 current_domain · 单一真源）
+- [x] ops 零 diff 对拍：QDRANT_COLLECTION_OPS 未设时全矩阵取值与 base `qdrant_collection()` 逐值一致（含空白串边角 · 断言绿）
+- [x] rag 子任务域闸：domain=oa 无 QDRANT_COLLECTION_OA ⇒ output=「本域未配置检索」且 `astream_router_agent` 零调用（patch 计数断言绿）；ops 域闸放行（mock astream 正常产出 output · 既有行为零 diff）
+- [x] glossary 按域回退：glossary.oa.yaml 不存在 ⇒ oa 与 ops 展开逐字节等；monkeypatch 域件路径 ⇒ 读域件生效；按域缓存隔离（清缓存后互不影响 · 断言绿）
+- [x] 影子写 fail-closed：collection None ⇒ upsert/delete skip + warning · 零 DLQ 写入 · 零异常（断言绿）；ops 域影子写路径零 diff
+- [x] ingest/source_type 未动：ingest.py 相对 base 零 diff（git diff 为空 · 19 §4.3 钉死）
+- [x] 目标回归零红（test_rag_qdrant_backend / test_rag_fts_config / test_lg_rag_multi / test_supervisor_parallel_join · 真 PG 五键 blank）；全量 pytest 绿以 CI 终裁；`ruff check app tests` 绿；import-linter 12 contracts kept 0 broken
+- [x] 01_modules.md rag/lg_rag 行 p4-t4 备注 + HG-GRAPH-MODULES 签收行（graph-compile 绿）
+- [x] registry entry active · invokes 四件 · R1 审查文 GO · spec-wave task lint PASS
 
 ### 自检结论
 
-（40 波收口回填 · 承 task_p4_t2_prompt_domain_loader 体例：验收逐条绿证 + 回归面台账 + 全量 pytest 以 CI 终裁）
+验收十条全绿：①-⑥ tests/test_rag_domain_config.py 32 用例全格 passed（回退矩阵/domain 两通路/零 diff 对拍/域闸零调用/glossary 回退与缓存隔离/影子写 skip 零 DLQ · 真 PG 五键 blank）；⑦ ingest.py 对 base 370a137a git diff 0 行机判；⑧ 目标回归四件 40 passed · ruff All checks passed · import-linter 12 contracts kept 0 broken · 全量 pytest 以 CI 终裁（feat PR #447 pytest 2m49s ✓ · 脏树期本地全量 27 failed 逐签与 base 基线对照=环境性红/flake/结构性红 · 登记 invoke_30）；⑨ 01_modules.md 双行备注+签收行已落 · graph-compile done OK；⑩ registry closed+wave_tip 钉版 · invokes 10/30/40/50 四件 · R1 审查文 GO · task lint PASS。feat PR #447 squash e29f6a34 已合入 master（CI 四绿）。
 
 ## 必读列表
 
