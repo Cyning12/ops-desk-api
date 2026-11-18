@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from string import Template
 from typing import Any
 
-from app.ops.prompts.templates import TEMPLATES
+from app.ops.prompts.domain_context import DEFAULT_DOMAIN, current_domain
+from app.ops.prompts.templates import TEMPLATES, get_template_for_domain
 
 
 @dataclass(frozen=True)
@@ -23,7 +24,18 @@ class PromptTemplateNotFoundError(KeyError):
 
 
 def get_template(template_id: str) -> PromptTemplate:
-    raw = TEMPLATES.get(template_id)
+    # P4-T2 域路由（19 §3.3 · 调用点零 churn）：域=ops 走 TEMPLATES 默认面
+    # （现状同路径零 diff · §3.4 不建 assets/ops/）；非 ops 走域化薄封装
+    # （域件命中用域件 · 缺失回退根目录 · §3.1）。
+    domain = current_domain()
+    raw: dict[str, str] | None
+    if domain != DEFAULT_DOMAIN:
+        try:
+            raw = get_template_for_domain(template_id, domain)
+        except KeyError:
+            raise PromptTemplateNotFoundError(template_id) from None
+    else:
+        raw = TEMPLATES.get(template_id)
     if raw is None:
         raise PromptTemplateNotFoundError(template_id)
     return PromptTemplate(

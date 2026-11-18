@@ -1260,3 +1260,45 @@ waves:
     banned_prefixes:
       - alembic/
       - scripts/
+
+  - task_slug: p4-t2-prompt-domain-loader
+    status: active
+    base: "cfe76b23"
+    note: >-
+      p4-t2-prompt-domain-loader prompt 模板域机制（domain-pack-v1 ·
+      18 设计文 §10 P4-T2 任务行 + 19 契约 §3 commit e453a36 钉死口径 ·
+      HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-18 ·
+      授权 issue Cyning12/ops-desk-workspace#23 m03064/m03796 夜间授权）。
+      修法裁定：loader.py load_asset(template_id, domain=None) 目录回退
+      （assets/<domain>/<id>.md 命中用域件 · 缺失回退根目录 · 坏域件
+      PromptAssetError 显式炸点名路径 · 缓存键=(template_id, domain) ·
+      domain 词表 [a-z0-9_]+ 拒路径穿越）；templates.py 白名单 11 id 不动
+      + TEMPLATES import 期 ops 默认面零 diff + get_template_for_domain
+      薄封装 + docstring 10→11 陈旧注释修正；新增 domain_context.py
+      （contextvar 默认 ops · resolve_domain env 解析非法回退 ops+warning
+      · current_domain 未注入回落 env 解析=R-P4-2 漏设无害化强化）；
+      render.get_template 内部读 current_domain 域路由（调用点零 churn）；
+      run_worker._main set_current_domain(resolve_domain_from_env()) 与
+      set_current_tenant 同位 + finally reset。禁承载：manifest domain 键
+      消费（T3）· RAG 域隔离（T4）· oa 域资产（T5）· skill/goal 域回退
+      （R11）· memory domain 列（R4）· 挂 tenant · assets/ops/ 目录 ·
+      11 份既有模板资产变更 · 调用点 churn · 新依赖 · alembic/ ·
+      scripts/ · .importlinter。
+    allowed_app_files:
+      - app/ops/prompts/loader.py
+      - app/ops/prompts/templates.py
+      - app/ops/prompts/render.py
+      - app/ops/prompts/domain_context.py
+      - app/ops/lg_rag/run_worker.py
+    allowed_tree_files:
+      - tests/test_prompt_domain_assets.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p4_t2_prompt_domain_loader.md
+      - docs/tasks/done/task_p4_t2_prompt_domain_loader.md
+      - docs/harness/reviews/task_p4_t2_prompt_domain_loader_audit_R1_20261118.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p4-t2-prompt-domain-loader/
+    banned_prefixes:
+      - alembic/
+      - scripts/
