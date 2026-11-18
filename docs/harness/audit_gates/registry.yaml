@@ -1303,3 +1303,45 @@ waves:
     banned_prefixes:
       - alembic/
       - scripts/
+  - task_slug: p4-t6-run-tree-ddl
+    status: active
+    base: "cfe76b23"
+    note: >-
+      p4-t6-run-tree-ddl P4 Run 树 DDL + 委派 claim + REST 投影
+      （workspace 18-p4-generalization-design.md §3/§7/§8.2 +
+      19-p4-contracts.md §7/§11 · commit e453a36 · HG-TASK-DRAFT /
+      HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-18 · 授权 issue
+      Cyning12/ops-desk-workspace#23 m03796 夜间预授权）。修法裁定：
+      ops_lg_rag_runs 加 parent_run_id/subtask_id/depth 三列（19 §7.2
+      SQL 逐字 · 无 FK 无 DB CHECK）+ uq_ops_lg_rag_runs_parent_subtask
+      部分唯一索引 WHERE parent_run_id IS NOT NULL（委派 claim =
+      建行即认领）+ idx_ops_lg_rag_runs_parent 反查索引；models.py
+      __table_args__ 同步消 autogenerate 漂移；create_run 扩三可选
+      kw 缺省零 diff；run_store 新增 claim_child_run（INSERT ...
+      ON CONFLICT DO NOTHING 新写路径 · 撞 uq SELECT 取回复用 ·
+      归属从父行取值 · 父 depth=0 断言拒建 logger.exception ·
+      返回 (run_id, created)）；runs 列表投影加性 parent_run_id/depth
+      （19 §11.5 加性变更豁免零 diff）。禁承载：OPS_RUN_TREE_ENABLED
+      三件套/route_next_subtask 提升/start_delegate_run_worker/join
+      （T7）· web（T8）· SSE 帧面/行为面/cursor · children 端点 ·
+      树形合并流/跨 run cursor · root_run_id 冗余列 · 深度参数化 ·
+      运行时环检测 · delegations 台账表 · DB 层 CHECK · scripts/ ·
+      新依赖 · .importlinter。
+    allowed_app_files:
+      - app/db/models.py
+      - app/ops/lg_rag/run_store.py
+      - app/ops/lg_rag/runs_router.py
+    allowed_tree_files:
+      - alembic/versions/20261118_lg_rag_run_tree.py
+      - tests/test_lg_rag_run_tree_ddl.py
+      - tests/test_lg_rag_run_tree_projection.py
+      - tests/test_lg_rag_runs_readonly_api.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p4_t6_run_tree_ddl.md
+      - docs/tasks/done/task_p4_t6_run_tree_ddl.md
+      - docs/harness/reviews/task_p4_t6_run_tree_ddl_audit_R1_20261118.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p4-t6-run-tree-ddl/
+    banned_prefixes:
+      - scripts/
