@@ -1346,8 +1346,9 @@ waves:
       - docs/harness/invokes/by-task/p4-t6-run-tree-ddl/
     banned_prefixes:
   - task_slug: p4-t4-rag-domain-config
-    status: active
+    status: closed
     base: "370a137a"
+    wave_tip: "e29f6a34"
     note: >-
       p4-t4-rag-domain-config RAG 域配置面（fail-closed 域隔离 ·
       18 设计文 §2.3 RAG 域化/§10 P4-T4 任务行/§13 失败路径 +
