@@ -15,6 +15,11 @@ from typing import Any
 
 from app.llm.usage import reset_run_context, set_run_context
 from app.ops.lg_rag.checkpointer import apostgres_saver, use_postgres_checkpointer
+from app.ops.prompts.domain_context import (
+    reset_current_domain,
+    resolve_domain_from_env,
+    set_current_domain,
+)
 from app.ops.tenant_context import reset_current_tenant, set_current_tenant
 
 logger = logging.getLogger(__name__)
@@ -116,6 +121,9 @@ def start_run_worker(
     async def _main() -> None:
         tenant_token = None
         llm_token = None
+        # P4-T2（19 §3.3）：部署级域注入（OPS_DOMAIN env · 与 set_current_tenant
+        # 同位 · finally reset）——run 内 prompt render 经 current_domain() 取域
+        domain_token = set_current_domain(resolve_domain_from_env())
         if tenant_id is not None:
             tenant_token = set_current_tenant(tenant_id)
         llm_token = set_run_context(run_id=run_id, surface="lg_rag")
@@ -164,6 +172,7 @@ def start_run_worker(
                 reset_run_context(llm_token)
             if tenant_token is not None:
                 reset_current_tenant(tenant_token)
+            reset_current_domain(domain_token)
 
     task = asyncio.create_task(_main(), name=f"lg-rag-run-worker-{run_id}")
     _workers[run_id] = _WorkerEntry(task=task, bus=bus)
