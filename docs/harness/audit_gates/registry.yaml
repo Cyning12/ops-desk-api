@@ -1346,3 +1346,61 @@ waves:
       - docs/harness/invokes/by-task/p4-t6-run-tree-ddl/
     banned_prefixes:
       - scripts/
+  - task_slug: p4-t7-delegate-child-run
+    status: active
+    base: "297363bd"
+    note: >-
+      p4-t7-delegate-child-run P4 委派子 run 执行（Run 树线核心 ·
+      workspace 18-p4-generalization-design.md §3/§7 +
+      19-p4-contracts.md §8-§13 · commit e453a36 · HG-TASK-DRAFT /
+      HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-18 · 授权 issue
+      Cyning12/ops-desk-workspace#23 m03796 夜间预授权）。修法裁定：
+      总闸 OPS_RUN_TREE_ENABLED（off 默认/on · 非法回退 off+warning ·
+      off 态 route_next_subtask 既有 Send(tool_exec) 逐字节零 diff）+
+      OPS_RUN_TREE_MAX_CHILDREN 默认 8 域 [1,64]（claim 前
+      COUNT(parent_run_id) 校验 · 超限 error「委派子 run 总数超限」
+      进既有收口）；route_next_subtask 闸开 type=tool →
+      Send(delegate_exec)（rag/extract 留图内 · plan-JSON 零新 type）；
+      tool_exec 执行体提取 _run_tool_capability（闸链单真源 ·
+      budget_run_id 配额键=父根 run_id §9）；新 delegate_exec 节点
+      （claim_child_run→start_delegate_run_worker→轮询 1s 至
+      TERMINAL→fetch_delegate_outcome 收口）；run_worker
+      start_delegate_run_worker（共享 RunEventBus/_workers/单飞/孤儿
+      补偿 · 不 create_run 不起 checkpointer）+
+      settle_delegate_run_rejected；sse_stream
+      _iter_delegate_sse_core（帧序 run.start{mode:delegate,
+      parent_run_id,delegate_spec}/(hitl.waiting+done{waiting_
+      approval})/answer/done · 帧型零新增 §11 · resumed seq 续
+      last_seq）；HITL 三段恢复（hitl/router _execute_decided_resume/
+      _preflight_decided_resume 按 run 行 depth==1 分流 · approve→
+      重启 delegate worker 重跑 _approval_consumed 命中放行
+      fail-closed · rejected→settle done{status:error,reason:审批
+      驳回}）；委派 HITL 单据 run_id=子 run_id（pending 去重 ·
+      自解锁）；令牌映射 §9 五行表（子侧每次尝试自发签发 TTL 自
+      尝试起算 · 父令牌仅授权凭证不复用）。禁承载：DDL/claim 本体
+      （T6 已合）· web（T8）· 验收冒烟（T9）· SSE 帧型词表/cursor ·
+      RunWorker DB 租约/多深度/root_run_id/合并流/children 端点
+      （§14）· 签发审批面（父侧 dispatch 前既有通路零改）·
+      GUIDE_env_inventory（承 p4-t2 先例）· scripts/ · alembic/ ·
+      新依赖 · .importlinter。
+    allowed_app_files:
+      - app/ops/hitl/router.py
+      - app/ops/lg_rag/event_store.py
+      - app/ops/lg_rag/multi/graph.py
+      - app/ops/lg_rag/multi/nodes.py
+      - app/ops/lg_rag/run_store.py
+      - app/ops/lg_rag/run_worker.py
+      - app/ops/lg_rag/sse_stream.py
+    allowed_tree_files:
+      - tests/test_lg_rag_delegate_run_tree.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p4_t7_delegate_child_run.md
+      - docs/tasks/done/task_p4_t7_delegate_child_run.md
+      - docs/harness/reviews/task_p4_t7_delegate_child_run_audit_R1_20261118.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p4-t7-delegate-child-run/
+    banned_prefixes:
+      - alembic/
+      - scripts/
+

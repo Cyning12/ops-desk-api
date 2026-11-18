@@ -37,6 +37,7 @@ from app.ops.lg_rag.graph import _ainvoke_with_tracing, _astream_with_tracing, _
 from app.ops.lg_rag.multi.nodes import (
     _join_subtasks,
     aggregator_node,
+    delegate_exec_node,
     info_extract_node,
     observe_node,
     rag_subtask_node,
@@ -54,6 +55,8 @@ _DISPATCH_MAP = {
     "rag_subtask": "rag_subtask",
     "info_extract": "info_extract",
     "tool_exec": "tool_exec",
+    # P4-T7 · 19 §8.1：闸开时 type=tool 子任务由 route_next_subtask 提升为 delegate_exec
+    "delegate_exec": "delegate_exec",
     # ★ 不再直连 aggregator：没有待发步骤 ≠ 这轮满足了问题，
     #   先让 observe 判断"再来一轮还是收工"
     "observe": "observe",
@@ -73,7 +76,7 @@ _CRITIC_MAP = {
     "end": END,
 }
 
-_AGENT_NODES = ("rag_subtask", "info_extract", "tool_exec")
+_AGENT_NODES = ("rag_subtask", "info_extract", "tool_exec", "delegate_exec")
 
 
 def build_supervisor_agent(*, checkpointer: Any | None = None):
@@ -89,6 +92,7 @@ def build_supervisor_agent(*, checkpointer: Any | None = None):
     builder.add_node("rag_subtask", rag_subtask_node)
     builder.add_node("info_extract", info_extract_node)
     builder.add_node("tool_exec", tool_exec_node)
+    builder.add_node("delegate_exec", delegate_exec_node)
     builder.add_node("aggregator", aggregator_node)
     builder.add_node("critic_node", critic_node)
     builder.add_node("subtask_join", _join_subtasks)

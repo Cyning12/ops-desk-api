@@ -379,6 +379,46 @@ def _write_replay_guard_enabled() -> bool:
     return True
 
 
+
+
+# ---------------------------------------------------------------------------
+# P4-T7 · Run 树总闸（19 §12 三件套 · 逐字承 14 §1.7 OPS_SCHEDULE_ENABLED 先例）
+# ---------------------------------------------------------------------------
+
+ENV_RUN_TREE_ENABLED = "OPS_RUN_TREE_ENABLED"
+ENV_RUN_TREE_MAX_CHILDREN = "OPS_RUN_TREE_MAX_CHILDREN"
+DEFAULT_RUN_TREE_MAX_CHILDREN = 8
+# §8.3：父轮询子 run 终态间隔（SELECT status 单列）；常量不入 env（设计只命名两旋钮）
+_RUN_TREE_POLL_SECONDS = 1.0
+
+
+def run_tree_enabled() -> bool:
+    """Run 树总闸（off 默认 · 非法值回退 off + warning）。
+
+    off 态 = SSE 帧面+行为面零 diff（19 §11.5）：route_next_subtask 走既有
+    Send 路径逐字节不变；REST 投影加性字段属契约豁免不在本闸面。
+    """
+    raw = (os.getenv(ENV_RUN_TREE_ENABLED) or "off").strip().lower()
+    if raw == "on":
+        return True
+    if raw and raw != "off":
+        logger.warning("invalid %s=%r; fallback to off", ENV_RUN_TREE_ENABLED, raw)
+    return False
+
+
+def run_tree_max_children() -> int:
+    """每父 run 子 run 总数上限（19 §8.4 第二层 · 默认 8 · 非法/越界 [1,64] 回退默认）。
+
+    承 ``_approval_consumption_ttl_seconds`` env_int 先例同形态。
+    """
+    raw = os.environ.get(ENV_RUN_TREE_MAX_CHILDREN, "")
+    try:
+        value = int(str(raw).strip())
+    except (TypeError, ValueError):
+        return DEFAULT_RUN_TREE_MAX_CHILDREN
+    return value if 1 <= value <= 64 else DEFAULT_RUN_TREE_MAX_CHILDREN
+
+
 # ---------------------------------------------------------------------------
 # Host V1-A · 签发审批消费门（D1：批准 → 可消费的授权）
 # ---------------------------------------------------------------------------
@@ -1845,6 +1885,7 @@ def route_next_subtask(state: LgRagState) -> str | list[Send]:
         return "observe"
     by_id = {str(row["subtask_id"]): row for row in _plan_rows(state)}
     delegation_on = _delegation_active()
+    run_tree_on = run_tree_enabled()
     sends: list[Send] = []
     for sid in state.get("inflight_subtask_ids") or []:
         subtask = by_id.get(str(sid))
@@ -1854,7 +1895,19 @@ def route_next_subtask(state: LgRagState) -> str | list[Send]:
         payload = _worker_state(state, subtask)
         # Host V1-A：分发路径逐子任务签发（off = 不签发零 diff）；
         # 重发 / replan 走到这里一律重签发新例（旧 nonce 作废 · 禁续期）。
-        if delegation_on and node == "tool_exec":
+        if run_tree_on and node == "tool_exec":
+            # P4-T7 · 19 §8.1：闸开时 type=tool inflight 子任务提升为子 run
+            # （plan-JSON 零新 type · 提升面由「type=tool + 闸开」机械决定）；
+            # 委派令牌改由子 run 执行体每次尝试自发签发（19 §3.9 · 父签发
+            # 令牌仅授权凭证不复用），父侧不注入 delegation_token。
+            node = "delegate_exec"
+            payload["user_id"] = str(state.get("user_id") or "")
+            payload["allowed_capability_ids"] = [
+                str(c) for c in (state.get("allowed_capability_ids") or [])
+            ]
+            if state.get("delegation_scope") is not None:
+                payload["delegation_scope"] = list(state.get("delegation_scope") or [])
+        elif delegation_on and node == "tool_exec":
             # Send 载荷即工人所见的全部 state：主体绑定的 run_id 必须随载荷
             # 下发，否则验签侧 ctx.run_id 为空 ⇒ R-f 误拒（非篡改）。
             payload["run_id"] = _run_id_of(state)
@@ -2051,30 +2104,28 @@ async def info_extract_node(state: LgRagState) -> dict:
     return _finish_worker(state, bump, result)
 
 
-async def tool_exec_node(state: LgRagState) -> dict:
-    """工具子任务：经 Capability Gateway ainvoke；未知 id → 错误结果不中断。
+async def _run_tool_capability(
+    state: LgRagState,
+    *,
+    subtask: dict,
+    result: dict,
+    call_args: object,
+    budget_run_id: str = "",
+    emit_running: bool = True,
+) -> dict:
+    """工具子任务委派执行体（P4-T7 提取 · **闸链单一真源，禁复制**）。
 
-    观测：复用 ``trace_span("tool_exec")``；Gateway 向当前 span 写
-    capability_id / kind / ok / error / args 摘要 / policy / subtask_id。
+    提取自原 tool_exec_node 函数体（闸链逐字不动）：W0 写执行审批闸 →
+    running 起步帧 → 委派令牌注入 → capability_ainvoke → 回执隔离/降级标记。
+    图内 Send（tool_exec_node）与子 run 委派（execute_delegate_subtask）共用；
+    返回 ``result``——W0 拦截时返回带 ``hitl_required`` 的 blocked terminal。
 
-    入参：优先 ``subtask.args``；否则兼容 legacy ``input`` 字符串。
-    租户：优先请求 ContextVar（F1=C），否则试点 A。
+    - ``budget_run_id``：cap_ctx 配额记桶键；缺省 = ``_run_id_of(state)``
+      （图内 Send 语义逐值一致）；子 run 委派显式传父（根）run_id（19 §9.2）。
+    - ``emit_running``：图内路径发 subtask.progress running 起步帧；子 run
+      路径 False（子 run 帧面零 subtask.progress——父图发自家的 · 19 §11.2）。
     """
-    bump = bump_supervisor_step(state)
-    subtask = _current_subtask(state)
-    if subtask is None:
-        return {
-            **bump,
-            "subtask_results": [{"type": "tool", "error": "no pending subtask"}],
-        }
-    result = _base_result(subtask)
     tool_name = str(subtask.get("tool") or "")
-    # B：args 优先；兼容 input（写审批闸的意图摘要需要 → 提到 running 帧之前）
-    raw_args = subtask.get("args")
-    if isinstance(raw_args, dict):
-        call_args: object = raw_args
-    else:
-        call_args = result["input"]
     # ------------------------------------------------------------------
     # 阶段 W · W0 写执行审批闸（fail-closed · 在 running 帧之前：一步未跑）。
     # write 类 capability 无新鲜 approved 单据 → 挂起 HITL（复用既有 HITL
@@ -2124,14 +2175,18 @@ async def tool_exec_node(state: LgRagState) -> dict:
                     "capability_id": tool_name,
                 }
             )
-            return {"subtask_results": [blocked]}
-    # §10.7：重活前发 running 起步帧（无 sink 时为空操作）
-    await emit_subtask_running(
-        agent_role="tool_exec",
-        subtask_id=result["id"],
-        type=result["type"] or "tool",
-        input_preview=result["input"],
-    )
+            # 提取为执行体后返回 blocked 本体（hitl_required 戳在 result 上）；
+            # 图内 tool_exec_node 负责包 {"subtask_results": [blocked]}（无 bump）。
+            return blocked
+    # §10.7：重活前发 running 起步帧（无 sink 时为空操作）；
+    # P4-T7：子 run 委派路径 emit_running=False（子 run 帧面零 subtask.progress）。
+    if emit_running:
+        await emit_subtask_running(
+            agent_role="tool_exec",
+            subtask_id=result["id"],
+            type=result["type"] or "tool",
+            input_preview=result["input"],
+        )
     pilot_tenant = current_tenant_or_default()
     cap_ctx: dict = {
         "tenant_id": pilot_tenant,
@@ -2139,7 +2194,10 @@ async def tool_exec_node(state: LgRagState) -> dict:
         # 会话维度：配额按 **run** 记，不是按子任务。
         # 只给 subtask_id 的话，budget 只能退回去剥 run_id:seq ——剥得出来是运气，
         # 剥不出来就退化成"一个子任务一个桶"，配额永远打不满（假门）。
-        "run_id": _run_id_of(state),
+        # P4-T7（19 §9.2 身份映射行 3）：子 run 委派显式传父（根）run_id——
+        # 子 run 配额计入父 run 预算桶（防闸开后配额放大约 9× 分裂）；
+        # 缺省 = 图内 Send 语义（_run_id_of(state)）逐值不变。
+        "run_id": budget_run_id or _run_id_of(state),
     }
     # Host V1-A：委派链路注入令牌 + 强制标记（仅模式非 off；off 零 diff）。
     # 无令牌（空集未签发）也标记 required —— enforce 下由验签门按 R-a 拒。
@@ -2202,6 +2260,282 @@ async def tool_exec_node(state: LgRagState) -> dict:
                     cap.meta.get("degraded_action"),
                     cap.meta.get("degraded_reason"),
                 )
+    return result
+
+
+async def tool_exec_node(state: LgRagState) -> dict:
+    """工具子任务：经 Capability Gateway ainvoke；未知 id → 错误结果不中断。
+
+    观测：复用 ``trace_span("tool_exec")``；Gateway 向当前 span 写
+    capability_id / kind / ok / error / args 摘要 / policy / subtask_id。
+
+    入参：优先 ``subtask.args``；否则兼容 legacy ``input`` 字符串。
+    租户：优先请求 ContextVar（F1=C），否则试点 A。
+    执行体：``_run_tool_capability``（P4-T7 提取 · 闸链单一真源）。
+    """
+    bump = bump_supervisor_step(state)
+    subtask = _current_subtask(state)
+    if subtask is None:
+        return {
+            **bump,
+            "subtask_results": [{"type": "tool", "error": "no pending subtask"}],
+        }
+    result = _base_result(subtask)
+    # B：args 优先；兼容 input（写审批闸的意图摘要需要 → 提到 running 帧之前）
+    raw_args = subtask.get("args")
+    if isinstance(raw_args, dict):
+        call_args: object = raw_args
+    else:
+        call_args = result["input"]
+    result = await _run_tool_capability(
+        state, subtask=subtask, result=result, call_args=call_args,
+    )
+    if result.get("hitl_required"):
+        # W0 写闸拦截 → blocked terminal 走 extras 通路（与提取前逐字节同语义：
+        # 不带 bump、不发 running 帧、不 bump step）
+        return {"subtask_results": [result]}
+    return _finish_worker(state, bump, result)
+
+
+async def execute_delegate_subtask(
+    *,
+    subtask: dict,
+    child_run_id: str,
+    parent_run_id: str,
+    user_id: str,
+    allowed_capability_ids: list[str] | None = None,
+    delegation_scope: list[str] | None = None,
+) -> dict:
+    """子 run 委派执行体（19 §8.2/§9.2）：tool_exec 同一执行体 · 无 supervisor 图。
+
+    返回 ``{"kind": "hitl"|"error"|"ok", "result": ..., "capability_id": ...}``。
+    kind=hitl：写闸拦截（result=blocked terminal 带 write_intent）；caller 建单据。
+    kind=error：子 run 内任何失败均为结构化 error（不抛异常 · 幂等前提）。
+
+    - 事件/令牌/HITL 单据 run_id=子 run_id（§9.2 行 1/2/4）；
+    - cap_ctx 配额记桶键=父（根）run_id（§9.2 行 3 · 防 9× 配额分裂）；
+    - 委派令牌**子侧每次尝试自发签发**（§3.9 · TTL 自尝试起算）；父令牌不复用；
+    - 委派签发审批闸在父图派发准备段已完成（nodes.py:1488-1502 pre-dispatch），
+      子侧不重复跑签发闸；消费键=(_approval_consumed)(子 run_id, subtask_id,
+      capability_id)（§9.2 行 5）。
+    """
+    exec_state: LgRagState = {
+        "run_id": child_run_id,
+        "user_id": user_id,
+        "allowed_capability_ids": list(allowed_capability_ids or []),
+    }
+    if delegation_scope is not None:
+        exec_state["delegation_scope"] = list(delegation_scope)
+    tool_name = str(subtask.get("tool") or "")
+    # 19 §9.2 行 2 + §3.9：子 run 每次尝试自发签发（同 subtask_id 重签发 supersede
+    # 旧 nonce 作废 · TTL 自本尝试起算）；_issue_delegation_token 内部 run_id 绑定
+    # 到 exec_state（=子 run_id）。delegation off 时零签发（无密钥返回 None）。
+    if _delegation_active():
+        delegation_token = _issue_delegation_token(exec_state, subtask)
+        if delegation_token:
+            exec_state["delegation_token"] = delegation_token
+    raw_args = subtask.get("args")
+    if isinstance(raw_args, dict):
+        call_args: object = raw_args
+    else:
+        call_args = str(subtask.get("input") or "")
+    result = _base_result(subtask)
+    result = await _run_tool_capability(
+        exec_state,
+        subtask=subtask,
+        result=result,
+        call_args=call_args,
+        budget_run_id=parent_run_id,
+        emit_running=False,
+    )
+    if result.get("hitl_required"):
+        return {"kind": "hitl", "result": result, "capability_id": tool_name}
+    if result.get("error") and not result.get("output"):
+        return {"kind": "error", "result": result, "capability_id": tool_name}
+    return {"kind": "ok", "result": result, "capability_id": tool_name}
+
+
+async def acreate_delegate_hitl_request(
+    *,
+    run_id: str,
+    thread_id: str,
+    tenant_id: str,
+    subtask_id: str,
+    capability_id: str,
+    write_intent: dict | None,
+    reason: str,
+) -> dict:
+    """子 run 委派 HITL 建单（19 §10 段 ① · 单据 run_id=子 run_id · §9.2 行 4）。
+
+    - blocked_by=capability_write_hitl_required；unlock_subtask_id=子任务 id（自解锁）；
+    - 去重：同 (run_id, subtask_id) 已有 pending 单据 → 复用不重建（重复执行尝试
+      不刷单据 · 19 §13 表）；
+    - 建单失败（persisted=False）→ logger.error 后原样返回（不 raise；worker 侧仍
+      落 hitl.waiting 帧但 payload.unpersisted 由调用方判定）。
+    """
+    from app.ops.hitl import get_hitl_store, new_request_id  # noqa: PLC0415
+
+    store = get_hitl_store()
+    pending = await store.alist(status="pending", limit=500)
+    for row in pending:
+        if (
+            str(row.get("run_id") or "") == run_id
+            and str(row.get("subtask_id") or "") == subtask_id
+        ):
+            return row
+    payload: dict = {}
+    if capability_id:
+        payload["capability_id"] = capability_id
+    if isinstance(write_intent, dict):
+        payload["write_intent"] = dict(write_intent)
+    request = {
+        "id": new_request_id(),
+        "run_id": run_id,
+        "thread_id": thread_id,
+        "checkpoint_id": None,
+        "tenant_id": tenant_id,
+        "subtask_id": subtask_id,
+        "blocked_by": _BLOCKED_BY_CAPABILITY_WRITE,
+        "unlock_subtask_id": subtask_id,
+        "reason": reason,
+        "detail": "",
+        "payload": payload,
+        "status": "pending",
+        "created_at": time.time(),
+    }
+    persisted = await store.acreate(request)
+    if not persisted:
+        logger.error(
+            "lg_rag 委派子 run 建审批单失败 run_id=%s subtask_id=%s capability=%s",
+            run_id,
+            subtask_id,
+            capability_id,
+        )
+    return request
+
+
+async def delegate_exec_node(state: LgRagState) -> dict:
+    """委派子任务节点（19 §8.1 · 闸开时 type=tool 的图内替身）：
+    claim/复用子 run → spawn 子 worker → 轮询子终态 → 接回 subtask_join 通路。
+
+    关键设计（19 §7/§8/§13）：
+    - 并发安全靠 uq 部分唯一索引 + claim ON CONFLICT DO NOTHING；竞态输掉方
+      取回已有子 run 零重复建行；父 depth!=0 → 拒建（fail-closed）；
+    - claim 前 COUNT(parent_run_id) 校验 OPS_RUN_TREE_MAX_CHILDREN（默认 8）·
+      超限=本子任务按失败进 observe（不创建子 run）+ logger.warning 审计；
+    - 子 run 建行即认领（含 tenant/user/thread 继承 · T6 run_store.claim_child_run）；
+    - 轮询 SELECT status（19 §8.3 · 1s 间隔 · 复用 supervisor 预算闸收口）；
+    - 子终态（19 §13）：error→本子任务失败进 observe；disconnected 等→error；
+      done/resumed 且 delegate_result 有 output→接回既有 subtask_join。
+    """
+    import asyncio  # noqa: PLC0415
+    import uuid  # noqa: PLC0415
+
+    from app.ops.lg_rag import event_store as es  # noqa: PLC0415
+    from app.ops.lg_rag import run_store as rs  # noqa: PLC0415
+
+    bump = bump_supervisor_step(state)
+    subtask = _current_subtask(state)
+    if subtask is None:
+        return {
+            **bump,
+            "subtask_results": [{"type": "tool", "error": "no pending subtask"}],
+        }
+    result = _base_result(subtask)
+    parent_run_id = _run_id_of(state)
+    if not parent_run_id:
+        # 父 run 无 run_id（旧调用路径）→ 无法建行；fail-closed 按子任务失败收口
+        result["error"] = "委派子 run 需要父 run_id"
+        return _finish_worker(state, bump, result)
+    sid = result["id"]
+
+    # 19 §8.4 第二层预算：claim 前 COUNT(parent_run_id) 校验
+    if await rs.count_child_runs(parent_run_id) >= run_tree_max_children():
+        logger.warning(
+            "lg_rag 委派子 run 总数超限 parent_run_id=%s subtask_id=%s limit=%d",
+            parent_run_id,
+            sid,
+            run_tree_max_children(),
+        )
+        result["error"] = "委派子 run 总数超限"
+        return _finish_worker(state, bump, result)
+
+    child_run_id = uuid.uuid4().hex
+    claim = await rs.claim_child_run(
+        parent_run_id=parent_run_id,
+        subtask_id=sid,
+        child_run_id=child_run_id,
+    )
+    if claim is None:
+        # 父 run 缺失或父 depth!=0 → fail-closed（T6 已 logger.exception）
+        result["error"] = "委派子 run 认领失败"
+        return _finish_worker(state, bump, result)
+    child_run_id, _created = claim
+    child_row = await rs.fetch_run_row(child_run_id)
+    if child_row is None:
+        result["error"] = "委派子 run 行缺失"
+        return _finish_worker(state, bump, result)
+    child_thread_id = str(child_row.get("thread_id") or "")
+    child_user_id = str(child_row.get("user_id") or "")
+    child_tenant_id = str(child_row.get("tenant_id") or "")
+
+    await emit_subtask_running(
+        agent_role="delegate_exec",
+        subtask_id=sid,
+        type="tool",
+        input_preview=str(result.get("input") or ""),
+    )
+
+    from app.ops.lg_rag.run_worker import (  # noqa: PLC0415
+        start_delegate_run_worker,
+    )
+    start_delegate_run_worker(
+        child_run_id=child_run_id,
+        parent_run_id=parent_run_id,
+        thread_id=child_thread_id,
+        user_id=child_user_id,
+        tenant_id=child_tenant_id,
+        subtask=subtask,
+        allowed_capability_ids=list(state.get("allowed_capability_ids") or []),
+        delegation_scope=(
+            list(state.get("delegation_scope"))
+            if state.get("delegation_scope") is not None
+            else None
+        ),
+    )
+
+    # 19 §8.3：父轮询子终态（SELECT status 间隔 1s · 预算闸复用既有子任务预算）
+    while True:
+        if is_supervisor_budget_exhausted(state):
+            result["error"] = "委派轮询期间 supervisor 预算耗尽"
+            return _finish_worker(state, bump, result)
+        child_row = await rs.fetch_run_row(child_run_id)
+        child_status = str((child_row or {}).get("status") or "")
+        if child_status in rs.TERMINAL_STATUSES:
+            break
+        await asyncio.sleep(_RUN_TREE_POLL_SECONDS)
+
+    outcome = await es.fetch_delegate_outcome(child_run_id)
+    payload = (outcome or {}).get("payload") or {}
+    delegate_result = payload.get("delegate_result") or {}
+    if (outcome or {}).get("terminal") == "error":
+        result["error"] = str(
+            delegate_result.get("error")
+            or payload.get("message")
+            or payload.get("reason")
+            or "子 run 失败"
+        )
+        return _finish_worker(state, bump, result)
+    if child_status in ("done", "resumed") and delegate_result.get("output") is not None:
+        result["output"] = delegate_result["output"]
+        if delegate_result.get("degraded") is not None:
+            result["degraded"] = delegate_result["degraded"]
+    else:
+        result["error"] = str(
+            delegate_result.get("error")
+            or payload.get("reason")  # 审批驳回等 settle 终态帧的 reason 透传（19 §13）
+            or ("子 run 未产出结果" if child_status in ("done", "resumed") else f"子 run 终态 {child_status}")
+        )
     return _finish_worker(state, bump, result)
 
 

@@ -490,6 +490,102 @@ def _resume_row_tenant(row: dict[str, Any]) -> str:
     return tenant
 
 
+async def _is_delegate_child_run(row: dict[str, Any]) -> dict[str, Any] | None:
+    """P4-T7：单据 run_id 指向委派子 run（runs.depth==1）→ 返回子 run 行，否则 None。
+
+    best-effort：查询失败按非委派处理（父图恢复链逐字节不变 · 19 §11.5 off 零 diff）。
+    """
+    run_id = str(row.get("run_id") or "").strip()
+    if not run_id:
+        return None
+    try:
+        from app.ops.lg_rag.run_store import fetch_run_row
+
+        run_row = await fetch_run_row(run_id)
+    except Exception:
+        logger.exception("HITL 恢复：子 run 深度查询失败 run=%s（按父图链处理）", run_id)
+        return None
+    if run_row is not None and int(run_row.get("depth") or 0) == 1:
+        return run_row
+    return None
+
+
+async def _execute_delegate_child_resume(
+    row: dict[str, Any],
+    delegate_row: dict[str, Any],
+    *,
+    req_status: str,
+    thread_id: str,
+    approved: list[str],
+    row_tenant: str,
+) -> dict[str, Any]:
+    """P4-T7（19 §10 段②）：委派子 run 恢复——approved 重启子 worker 重跑
+    该子任务执行体（重跑至同一能力调用点 _approval_consumed 命中放行）；
+    rejected → settle_delegate_run_rejected 落终态帧收口。
+
+    spec 自事件表首帧 delegate_spec 取回（缺 → delegate_spec_missing）。
+    子 run 无图无 checkpoint：不走 resume_hitl_run；重复 resume 由
+    start_delegate_run_worker 单飞 + resume_request 在飞登记拦住。
+    """
+    from app.ops.lg_rag.run_worker import (
+        settle_delegate_run_rejected,
+        start_delegate_run_worker,
+    )
+
+    child_run_id = str(delegate_row["run_id"])
+    decided_by = str(row.get("decision_by") or "")
+    child_thread_id = str(delegate_row.get("thread_id") or thread_id)
+    child_user_id = str(delegate_row.get("user_id") or "")
+    child_tenant = str(delegate_row.get("tenant_id") or row_tenant)
+    if approved:
+        from app.ops.lg_rag.event_store import fetch_delegate_spec
+
+        spec = await fetch_delegate_spec(child_run_id)
+        if spec is None:
+            raise ResumeError(
+                "delegate_spec_missing",
+                "委派子 run 缺 delegate_spec 首帧（无法重跑执行体）",
+            )
+        start_delegate_run_worker(
+            child_run_id=child_run_id,
+            parent_run_id=str(delegate_row.get("parent_run_id") or ""),
+            thread_id=child_thread_id,
+            user_id=child_user_id,
+            tenant_id=child_tenant,
+            subtask=dict(spec.get("subtask") or {}),
+            allowed_capability_ids=list(spec.get("allowed_capability_ids") or []),
+            delegation_scope=(
+                list(spec["delegation_scope"])
+                if spec.get("delegation_scope") is not None
+                else None
+            ),
+            resumed=True,
+            approved=approved,
+            decided_by=decided_by,
+        )
+        outcome: dict[str, Any] = {"delegate_restarted": True, "run_id": child_run_id}
+    else:
+        await settle_delegate_run_rejected(
+            run_id=child_run_id,
+            thread_id=child_thread_id,
+            user_id=child_user_id,
+            decided_by=decided_by,
+        )
+        outcome = {"delegate_rejected_settled": True, "run_id": child_run_id}
+    logger.info(
+        "HITL 恢复：委派子 run 分流 request=%s run=%s outcome=%s",
+        row.get("id"),
+        child_run_id,
+        outcome,
+    )
+    return {
+        "req_status": req_status,
+        "thread_id": thread_id,
+        "sink": None,
+        "outcome": outcome,
+    }
+
+
 async def _execute_decided_resume(row: dict[str, Any]) -> dict[str, Any]:
     """**恢复执行体：手动 resume 端点与自动触发同源**（T2 F3 · 无状态恢复纪律）。
 
@@ -508,6 +604,18 @@ async def _execute_decided_resume(row: dict[str, Any]) -> dict[str, Any]:
     row_tenant = _resume_row_tenant(row)  # fail-closed：空 tenant 提前抛
     approved, rejected = await _collect_decisions_or_raise(row)
     thread_id = str(row.get("thread_id") or "").strip()
+    delegate_row = await _is_delegate_child_run(row)
+    if delegate_row is not None:
+        # P4-T7（19 §10 段②）：depth==1 委派子 run → 重启子 worker 重跑执行体，
+        # 不走 resume_hitl_run（子 run 无图无 checkpoint）
+        return await _execute_delegate_child_resume(
+            row,
+            delegate_row,
+            req_status=req_status,
+            thread_id=thread_id,
+            approved=approved,
+            row_tenant=row_tenant,
+        )
     sink = await _open_event_sink(row, thread_id)
     if sink is not None:
         await sink.open(approved=approved, decided_by=str(row.get("decision_by") or ""))
@@ -557,6 +665,21 @@ async def _preflight_decided_resume(row: dict[str, Any]) -> tuple[str, list[str]
     """
     approved, rejected = await _collect_decisions_or_raise(row)
     thread_id = str(row.get("thread_id") or "").strip()
+    delegate_row = await _is_delegate_child_run(row)
+    if delegate_row is not None:
+        # P4-T7：子 run 无图可探针——以 runs.status==waiting_approval 为挂起守卫
+        # （与父图 aget_state 探针同义）；approved 时校验 delegate_spec 可取回
+        if str(delegate_row.get("status") or "") != "waiting_approval":
+            raise ResumeError("not_interrupted", "委派子 run 不在等待审批状态")
+        if approved:
+            from app.ops.lg_rag.event_store import fetch_delegate_spec
+
+            if await fetch_delegate_spec(str(delegate_row["run_id"])) is None:
+                raise ResumeError(
+                    "delegate_spec_missing",
+                    "委派子 run 缺 delegate_spec 首帧（无法重跑执行体）",
+                )
+        return thread_id, approved, rejected
     await resume_hitl_run(
         thread_id=thread_id,
         approved=approved,

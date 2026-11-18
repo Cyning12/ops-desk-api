@@ -266,3 +266,140 @@ async def scan_orphan_runs_for_compensation(
         compensated += 1
         logger.info("lg-rag orphan compensated run_id=%s seq=%s", run_id, next_seq)
     return compensated
+
+
+# ---------------------------------------------------------------------------
+# P4-T7 · 委派子 run worker（19 §3.4：与 start_run_worker 同级 ·
+# 共享 RunEventBus/_workers/单飞/孤儿补偿）
+# ---------------------------------------------------------------------------
+
+
+def start_delegate_run_worker(
+    *,
+    child_run_id: str,
+    parent_run_id: str,
+    thread_id: str,
+    user_id: str,
+    tenant_id: str,
+    subtask: dict[str, Any],
+    allowed_capability_ids: list[str] | None = None,
+    delegation_scope: list[str] | None = None,
+    resumed: bool = False,
+    approved: list[str] | None = None,
+    decided_by: str = "",
+) -> RunEventBus:
+    """启动（或复用）委派子 run 单飞 worker；返回 fanout bus。
+
+    与 start_run_worker 同纪律：同 run_id 已有未完成 task → 复用 bus（单飞）；
+    **不 create_run**——子 run 行已由 run_store.claim_child_run 建行即认领
+    （19 §7.4）；无图无 checkpointer（执行体=同一 tool_exec 提取函数）。
+    resumed=True（19 §10 段②）→ 首帧 hitl.resumed 而非 run.start。
+    """
+    existing = _workers.get(child_run_id)
+    if existing is not None and not existing.task.done():
+        logger.info("lg-rag delegate_worker single-flight reuse run_id=%s", child_run_id)
+        return existing.bus
+
+    bus = RunEventBus()
+
+    async def _main() -> None:
+        tenant_token = None
+        llm_token = None
+        domain_token = set_current_domain(resolve_domain_from_env())
+        if tenant_id:
+            tenant_token = set_current_tenant(tenant_id)
+        llm_token = set_run_context(run_id=child_run_id, surface="lg_rag")
+        try:
+            from app.ops.lg_rag.sse_stream import _iter_delegate_sse_core
+
+            async for frame in _iter_delegate_sse_core(
+                child_run_id=child_run_id,
+                parent_run_id=parent_run_id,
+                thread_id=thread_id,
+                user_id=user_id,
+                tenant_id=tenant_id,
+                subtask=subtask,
+                allowed_capability_ids=allowed_capability_ids,
+                delegation_scope=delegation_scope,
+                resumed=resumed,
+                approved=approved,
+                decided_by=decided_by,
+            ):
+                bus.publish(frame)
+        except asyncio.CancelledError:
+            logger.info("lg-rag delegate_worker cancelled run_id=%s", child_run_id)
+            raise
+        except Exception:
+            logger.exception("lg-rag delegate_worker failed run_id=%s", child_run_id)
+        finally:
+            bus.close()
+            if llm_token is not None:
+                reset_run_context(llm_token)
+            if tenant_token is not None:
+                reset_current_tenant(tenant_token)
+            reset_current_domain(domain_token)
+
+    task = asyncio.create_task(_main(), name=f"lg-rag-delegate-worker-{child_run_id}")
+    _workers[child_run_id] = _WorkerEntry(task=task, bus=bus)
+
+    def _on_done(t: asyncio.Task[None]) -> None:
+        del t
+
+    task.add_done_callback(_on_done)
+    logger.info("lg-rag delegate_worker started run_id=%s", child_run_id)
+    return bus
+
+
+async def settle_delegate_run_rejected(
+    *,
+    run_id: str,
+    thread_id: str,
+    user_id: str,
+    decided_by: str,
+) -> None:
+    """委派子 run 审批驳回收口（19 §10 段② rejected 分支 · 全既有帧型）。
+
+    落 hitl.resumed{approved:[],decided_by} + done{status:"error",reason} 两帧
+    （seq 自事件表 last_seq 续）——子 run 终态=error，父轮询按「子 error」收口。
+    """
+    import time
+
+    from app.ops.lg_rag.event_store import last_seq, persist_run_event
+
+    seq = int(await last_seq(run_id) or 0)
+    ts_ms = int(time.time()) % 2_000_000_000
+    await persist_run_event(
+        run_id=run_id,
+        seq=seq + 1,
+        user_id=user_id,
+        thread_id=thread_id,
+        ts_ms=ts_ms,
+        agent_role="system",
+        event_type="hitl.resumed",
+        payload={
+            "run_id": run_id,
+            "thread_id": thread_id,
+            "approved": [],
+            "decided_by": decided_by,
+        },
+    )
+    await persist_run_event(
+        run_id=run_id,
+        seq=seq + 2,
+        user_id=user_id,
+        thread_id=thread_id,
+        ts_ms=ts_ms,
+        agent_role="system",
+        event_type="done",
+        payload={
+            "run_id": run_id,
+            "thread_id": thread_id,
+            "status": "error",
+            "reason": "审批驳回",
+        },
+    )
+    logger.info(
+        "lg-rag delegate run rejected-settled run_id=%s decided_by=%s",
+        run_id,
+        decided_by,
+    )

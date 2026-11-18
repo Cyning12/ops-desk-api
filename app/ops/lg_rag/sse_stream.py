@@ -60,7 +60,7 @@ from app.ops.tracing import flush_traces, tracing_enabled
 
 logger = logging.getLogger(__name__)
 
-_SUBTASK_NODES = frozenset({"rag_subtask", "info_extract", "tool_exec"})
+_SUBTASK_NODES = frozenset({"rag_subtask", "info_extract", "tool_exec", "delegate_exec"})
 _ROLE_ALIAS = {
     "intent_node": "intent",
     "critic_node": "critic",
@@ -616,3 +616,290 @@ async def _iter_lg_rag_sse_core(
         await _drain_persist()
         if tracing_enabled():
             flush_traces()
+
+
+async def _iter_delegate_sse_core(
+    *,
+    child_run_id: str,
+    parent_run_id: str,
+    thread_id: str,
+    user_id: str,
+    tenant_id: str,
+    subtask: dict[str, Any],
+    allowed_capability_ids: list[str] | None = None,
+    delegation_scope: list[str] | None = None,
+    resumed: bool = False,
+    approved: list[str] | None = None,
+    decided_by: str = "",
+) -> AsyncIterator[str]:
+    """P4-T7 委派子 run Worker 内核（19 §8.2/§9.2/§10 · 帧序全既有帧型零新增）。
+
+    帧序：
+    - 首次：run.start{...,mode:"delegate",parent_run_id,delegate_spec}（§11.2 加性
+      parent_run_id；delegate_spec 为审批后重跑的单据真源——spec 自事件表取回）；
+    - 审批后重跑：hitl.resumed{run_id,thread_id,approved,decided_by}（不发 run.start）；
+    - 写闸拦截：hitl.waiting + done{status:"waiting_approval"}（19 §10 段①退出 worker）；
+    - 成功：answer{content,final:true} + done{status:"done"|"resumed",delegate_result}；
+    - 失败/异常：error{stage:"lg_rag.delegate_failed"}（不发 done——终态=error 帧）。
+
+    落盘纪律逐字复刻 _iter_lg_rag_sse_core：seq 单调、format_sse_event+cursor、
+    persist 后台调度不阻塞 yield、finally drain。user_id 必给（N4：首帧 user_id
+    是 run_owner 反查前提）。
+    """
+    from app.ops.lg_rag.event_store import last_seq, persist_run_event
+    from app.ops.lg_rag.multi.nodes import (
+        acreate_delegate_hitl_request,
+        execute_delegate_subtask,
+    )
+
+    rid = child_run_id
+    started = time.perf_counter()
+    # 审批后重跑续写：seq 自事件表 last_seq 续（承 ResumeEventSink start_seq 纪律），
+    # 否则与首次尝试的 run.start/hitl.waiting 帧撞 uq_ops_lg_rag_run_events_run_seq
+    try:
+        seq = await last_seq(rid)
+    except Exception:
+        logger.exception("lg-rag delegate 取 last_seq 失败 run_id=%s（从 0 起）", rid)
+        seq = 0
+    persist_tasks: set[asyncio.Task[None]] = set()
+
+    async def emit(
+        event_type: str,
+        agent_role: str,
+        payload: dict[str, Any],
+    ) -> str:
+        nonlocal seq
+        seq += 1
+        event = format_sse_event(
+            {
+                "run_id": rid,
+                "seq": seq,
+                "ts_ms": int((time.perf_counter() - started) * 1000),
+                "agent_role": agent_role,
+                "event_type": event_type,
+                "payload": payload,
+            }
+        )
+        if not event.get("cursor"):
+            event["cursor"] = make_cursor(rid, seq)
+        frame = _sse_frame(event)
+        # 闭包钉死本帧字段，避免后续 seq 递增污染后台任务
+        p_run_id = rid
+        p_seq = seq
+        p_user_id = user_id
+        p_thread_id = thread_id
+        p_ts_ms = int(event.get("ts_ms") or 0)
+        p_agent_role = agent_role
+        p_event_type = event_type
+        p_payload = payload
+
+        async def _persist_one() -> None:
+            try:
+                await persist_run_event(
+                    run_id=p_run_id,
+                    seq=p_seq,
+                    user_id=p_user_id,
+                    thread_id=p_thread_id,
+                    ts_ms=p_ts_ms,
+                    agent_role=p_agent_role,
+                    event_type=p_event_type,
+                    payload=p_payload,
+                )
+            except Exception:
+                logger.exception(
+                    "lg-rag delegate event persist failed run_id=%s seq=%s",
+                    p_run_id,
+                    p_seq,
+                )
+
+        task = asyncio.create_task(_persist_one())
+        persist_tasks.add(task)
+        task.add_done_callback(persist_tasks.discard)
+        return frame
+
+    async def _drain_persist() -> None:
+        if persist_tasks:
+            await asyncio.gather(*tuple(persist_tasks), return_exceptions=True)
+
+    stream_settled = False
+    try:
+        if not resumed:
+            yield await emit(
+                "run.start",
+                "system",
+                {
+                    "run_id": rid,
+                    "thread_id": thread_id,
+                    "mode": "delegate",
+                    "query": str(
+                        subtask.get("query")
+                        or subtask.get("description")
+                        or subtask.get("input")
+                        or ""
+                    ),
+                    "parent_run_id": parent_run_id,
+                    # 审批后重跑的 spec 真源（19 §10 段② · 落事件表首帧）
+                    "delegate_spec": {
+                        "subtask": dict(subtask),
+                        "user_id": user_id,
+                        "allowed_capability_ids": list(allowed_capability_ids or []),
+                        "delegation_scope": (
+                            list(delegation_scope) if delegation_scope is not None else None
+                        ),
+                    },
+                },
+            )
+        else:
+            yield await emit(
+                "hitl.resumed",
+                "system",
+                {
+                    "run_id": rid,
+                    "thread_id": thread_id,
+                    "approved": list(approved or []),
+                    "decided_by": decided_by,
+                },
+            )
+
+        outcome = await execute_delegate_subtask(
+            subtask=subtask,
+            child_run_id=rid,
+            parent_run_id=parent_run_id,
+            user_id=user_id,
+            allowed_capability_ids=allowed_capability_ids,
+            delegation_scope=delegation_scope,
+        )
+        kind = str(outcome.get("kind") or "error")
+        result = outcome.get("result") or {}
+        capability_id = str(outcome.get("capability_id") or "")
+
+        if kind == "hitl":
+            # 19 §10 段①：建单 → hitl.waiting 帧 → done{waiting_approval} → 退出 worker
+            # （不占 _workers 槽：本生成器随 worker 结束而结束）
+            request = await acreate_delegate_hitl_request(
+                run_id=rid,
+                thread_id=thread_id,
+                tenant_id=tenant_id,
+                subtask_id=str(result.get("id") or subtask.get("id") or ""),
+                capability_id=capability_id,
+                write_intent=(
+                    result.get("write_intent")
+                    if isinstance(result.get("write_intent"), dict)
+                    else None
+                ),
+                reason=str(result.get("error") or ""),
+            )
+            req_subtask_id = str(request.get("subtask_id") or "")
+            yield await emit(
+                "hitl.waiting",
+                "system",
+                {
+                    "reason": "hitl_waiting",
+                    "run_id": rid,
+                    "thread_id": thread_id,
+                    "unpersisted": False,
+                    "requests": [
+                        {
+                            "id": request.get("id"),
+                            "subtask_id": req_subtask_id,
+                            "unlock_subtask_id": request.get("unlock_subtask_id"),
+                            "blocked_by": request.get("blocked_by"),
+                            "reason": request.get("reason"),
+                        }
+                    ],
+                },
+            )
+            yield await emit(
+                "done",
+                "system",
+                {
+                    "run_id": rid,
+                    "thread_id": thread_id,
+                    "latency_ms": int((time.perf_counter() - started) * 1000),
+                    "status": "waiting_approval",
+                },
+            )
+            stream_settled = True
+            await _drain_persist()
+            return
+
+        if kind == "ok":
+            output = result.get("output")
+            content = (
+                output
+                if isinstance(output, str)
+                else json.dumps(output, ensure_ascii=False, default=str)
+            )
+            yield await emit(
+                "answer",
+                "tool_exec",
+                {"content": content, "final": True},
+            )
+            delegate_result: dict[str, Any] = {"output": output}
+            if result.get("degraded") is not None:
+                delegate_result["degraded"] = result["degraded"]
+            yield await emit(
+                "done",
+                "system",
+                {
+                    "run_id": rid,
+                    "thread_id": thread_id,
+                    "latency_ms": int((time.perf_counter() - started) * 1000),
+                    "status": "resumed" if resumed else "done",
+                    "delegate_result": delegate_result,
+                },
+            )
+            stream_settled = True
+            await _drain_persist()
+            return
+
+        # kind == "error"：子 run 内任何失败均为结构化 error（19 §3.4/§13）
+        yield await emit(
+            "error",
+            "system",
+            {
+                "stage": "lg_rag.delegate_failed",
+                "message": str(result.get("error") or "委派子 run 执行失败"),
+                "retryable": False,
+                "delegate_result": {"error": str(result.get("error") or "")},
+            },
+        )
+        stream_settled = True
+        await _drain_persist()
+    except GeneratorExit:
+        raise
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:
+        logger.exception("lg-rag delegate stream failed run_id=%s", rid)
+        yield await emit(
+            "error",
+            "system",
+            {
+                "stage": "lg_rag.delegate_failed",
+                "message": "委派子 run 旁路执行失败",
+                "retryable": False,
+                "detail": _truncate(repr(exc), 200),
+            },
+        )
+        stream_settled = True
+        await _drain_persist()
+    finally:
+        if not stream_settled:
+            # worker 被 cancel / 无终帧 → 尽力补偿（与主 core 同纪律）
+            try:
+                await emit(
+                    "done",
+                    "system",
+                    {
+                        "run_id": rid,
+                        "thread_id": thread_id,
+                        "latency_ms": int((time.perf_counter() - started) * 1000),
+                        "status": "disconnected",
+                    },
+                )
+            except Exception:
+                logger.exception(
+                    "lg-rag delegate settle-disconnected failed run_id=%s", rid
+                )
+        await _drain_persist()

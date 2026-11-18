@@ -162,6 +162,49 @@ async def claim_child_run(
         return existing_run_id, False
 
 
+async def fetch_run_row(run_id: str) -> dict[str, Any] | None:
+    """按 run_id 取 runs 行投影（P4-T7 · 父轮询子终态 / HITL resume 深度分流用）。
+
+    返回 {run_id, status, depth, parent_run_id, subtask_id, user_id, thread_id,
+    tenant_id}；无行 → None。只读面，不触碰状态机。
+    """
+    if not run_id:
+        return None
+    async with AsyncSessionLocal() as db:
+        row = await db.get(OpsLgRagRun, run_id)
+        if row is None:
+            return None
+        return {
+            "run_id": row.run_id,
+            "status": row.status,
+            "depth": int(row.depth or 0),
+            "parent_run_id": row.parent_run_id,
+            "subtask_id": row.subtask_id,
+            "user_id": row.user_id,
+            "thread_id": row.thread_id,
+            "tenant_id": row.tenant_id,
+        }
+
+
+async def count_child_runs(parent_run_id: str) -> int:
+    """父 run 已 claim 的子 run 总数（P4-T7 · 19 §8.4 MAX_CHILDREN claim 前校验）。
+
+    COUNT(parent_run_id) 覆盖 replan 多轮累计（含终态子 run——配额记的是
+    「委派过多少次」，不是「在飞多少个」）。
+    """
+    if not parent_run_id:
+        return 0
+    async with AsyncSessionLocal() as db:
+        return int(
+            await db.scalar(
+                select(func.count())
+                .select_from(OpsLgRagRun)
+                .where(OpsLgRagRun.parent_run_id == parent_run_id)
+            )
+            or 0
+        )
+
+
 async def apply_run_event_status(
     *, run_id: str, event_type: str, payload: dict[str, Any] | None
 ) -> None:

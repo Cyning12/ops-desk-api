@@ -188,6 +188,62 @@ async def run_stream_closed(run_id: str) -> bool:
     return row is not None
 
 
+async def fetch_delegate_spec(run_id: str) -> dict[str, Any] | None:
+    """读子 run 首帧 run.start payload 的 ``delegate_spec``（P4-T7 · 19 §10）。
+
+    HITL decide 后重跑执行体的参数真源（claim 撞 uq 复用 child_run_id 时
+    子任务 args 只在这一处持久化）；无帧/无键 → None（fail-closed）。
+    进程内读面，无归属校验（校验在 decide/resume 端点已完成）。
+    """
+    if not run_id:
+        return None
+    async with AsyncSessionLocal() as db:
+        row = (
+            await db.execute(
+                select(OpsLgRagRunEvent.payload)
+                .where(
+                    OpsLgRagRunEvent.run_id == run_id,
+                    OpsLgRagRunEvent.event_type == "run.start",
+                )
+                .order_by(OpsLgRagRunEvent.seq.asc())
+                .limit(1)
+            )
+        ).first()
+    if row is None or not isinstance(row[0], dict):
+        return None
+    spec = row[0].get("delegate_spec")
+    return dict(spec) if isinstance(spec, dict) else None
+
+
+async def fetch_delegate_outcome(run_id: str) -> dict[str, Any] | None:
+    """父 join 读子 run 终态产物（P4-T7 · 19 §8.3：子终态后从事件表读结果）。
+
+    取末条 done/error 帧：{"terminal": event_type, "payload": payload}；
+    无终帧 → None（调用方继续轮询）。done payload 的 delegate_result
+    可选键携带 {output|error} 全保真结果（jsonb 往返不损结构）。
+    """
+    if not run_id:
+        return None
+    async with AsyncSessionLocal() as db:
+        row = (
+            await db.execute(
+                select(OpsLgRagRunEvent.event_type, OpsLgRagRunEvent.payload)
+                .where(
+                    OpsLgRagRunEvent.run_id == run_id,
+                    OpsLgRagRunEvent.event_type.in_(("done", "error")),
+                )
+                .order_by(OpsLgRagRunEvent.seq.desc())
+                .limit(1)
+            )
+        ).first()
+    if row is None:
+        return None
+    return {
+        "terminal": str(row[0]),
+        "payload": dict(row[1]) if isinstance(row[1], dict) else {},
+    }
+
+
 def _utc_age_seconds(last_created_at: datetime) -> float:
     """距末帧秒数（tz 归一 · B-1 钉案 · 40 验收退回修复）。
 
