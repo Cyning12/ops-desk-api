@@ -92,6 +92,9 @@ async def _load_runs_page(
             "finished_at": _iso(row["finished_at"]),
             "query_summary": _query_summary(queries.get(row["run_id"])),
             "schedule_attribution": attributions.get(row["run_id"]),
+            # P4-T6 Run 树投影加性（19 §11.4 · 加性变更豁免零 diff）
+            "parent_run_id": row["parent_run_id"],
+            "depth": row["depth"],
         }
         for row in page
     ]

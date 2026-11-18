@@ -179,7 +179,12 @@ async def test_runs_list_happy_projection(
         "finished_at",
         "query_summary",
         "schedule_attribution",
+        # P4-T6 Run 树投影加性（19 §11.4 · 加性变更豁免零 diff）
+        "parent_run_id",
+        "depth",
     }
+    # P4-T6：既有 run 投影默认 null/0（19 §11.4 加性字段缺省语义）
+    assert all(r["parent_run_id"] is None and r["depth"] == 0 for r in runs)
     # status 六词表原值直出
     assert [r["status"] for r in runs] == ["done", "waiting_approval", "running"]
     # query_summary：正常透传 / 截 80（[:79]+"…"）/ 缺 run.start → None

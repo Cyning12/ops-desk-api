@@ -292,9 +292,19 @@ class OpsLgRagRun(Base):
 
     # __table_args__ 对齐既有 DB 索引（迁移 20261114_lg_rag_runs.py:37-44 原生 SQL 建），
     # 消 autogenerate 漂移（P1-T1 补声明 · 零新迁移）。
+    # __table_args__ 对齐既有 DB 索引（P4-T6 迁移 20261118_lg_rag_run_tree 新增
+    # uq/idx 两枚 · uq 部分唯一承 uq_ops_goals_active_thread 先例），消 autogenerate 漂移。
     __table_args__ = (
         Index("idx_ops_lg_rag_runs_status_created", "status", "created_at"),
         Index("idx_ops_lg_rag_runs_thread", "thread_id"),
+        Index(
+            "uq_ops_lg_rag_runs_parent_subtask",
+            "parent_run_id",
+            "subtask_id",
+            unique=True,
+            postgresql_where=text("parent_run_id IS NOT NULL"),
+        ),
+        Index("idx_ops_lg_rag_runs_parent", "parent_run_id"),
     )
 
     run_id: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -306,6 +316,12 @@ class OpsLgRagRun(Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="running")
     created_at: Mapped[datetime] = mapped_column(default=now_utc)
     finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    # P4-T6 Run 树三列（19 §7.1）：parent_run_id **不加 FK**（承 run_events 顺序容错
+    # 先例 · 上文类注释）；subtask_id 为委派 claim 业务键一半；depth 0=根 1=子
+    # （深度硬上限 1 由 run_store.claim_child_run 断言承载 · 契约 SQL 无 DB CHECK）。
+    parent_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    subtask_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    depth: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
 class OpsGoal(Base):

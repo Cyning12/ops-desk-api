@@ -50,11 +50,19 @@ def _as_utc_naive(dt: datetime) -> datetime:
 
 
 async def create_run(
-    *, run_id: str, thread_id: str, user_id: str | None, tenant_id: str | None
+    *,
+    run_id: str,
+    thread_id: str,
+    user_id: str | None,
+    tenant_id: str | None,
+    parent_run_id: str | None = None,
+    subtask_id: str | None = None,
+    depth: int = 0,
 ) -> bool:
     """建行（幂等）：已存在（单飞复用/补行后）→ False；user_id 缺失 → False。
 
     best-effort：调用方自行 try/except；本函数只在显式不可建行时静默返回 False。
+    P4-T6（19 §7.2）扩 parent_run_id/subtask_id/depth 三个可选 kw——缺省调用零 diff。
     """
     if not run_id or not user_id:
         return False
@@ -69,10 +77,89 @@ async def create_run(
                 user_id=user_id,
                 thread_id=thread_id or "",
                 status="running",
+                parent_run_id=parent_run_id,
+                subtask_id=subtask_id,
+                depth=depth,
             )
         )
         await db.commit()
     return True
+
+
+# ---------------------------------------------------------------------------
+# P4-T6 · 委派 claim（19-p4-contracts.md §7.3/§7.4 · 建行即认领）
+# ---------------------------------------------------------------------------
+
+# §7.4 SQL 逐字：ON CONFLICT 新写路径（create_run check-then-insert 不复用——
+# PG 同事务撞 uq abort 教训 14 R10）；部分唯一索引谓词逐字对齐迁移。
+_CLAIM_CHILD_INSERT_SQL = text(
+    "INSERT INTO ops_lg_rag_runs "
+    "(run_id, tenant_id, user_id, thread_id, status, "
+    "parent_run_id, subtask_id, depth, created_at) "
+    "VALUES (:child_run_id, :tenant_id, :user_id, :thread_id, 'running', "
+    ":parent_run_id, :subtask_id, 1, now()) "
+    "ON CONFLICT (parent_run_id, subtask_id) WHERE parent_run_id IS NOT NULL "
+    "DO NOTHING"
+)
+_CLAIM_CHILD_LOOKUP_SQL = text(
+    "SELECT run_id FROM ops_lg_rag_runs "
+    "WHERE parent_run_id = :parent_run_id AND subtask_id = :subtask_id"
+)
+
+
+async def claim_child_run(
+    *, parent_run_id: str, subtask_id: str, child_run_id: str
+) -> tuple[str, bool] | None:
+    """委派 claim（建行即认领）：返回 (child_run_id, created)；拒建 -> None。
+
+    - 归属继承（19 §8.2）：tenant_id/user_id/thread_id 从父行取值，不从请求
+      上下文取（承 14 §1.8「请求上下文外创建须显式传身份」纪律）。
+    - 深度断言（19 §7.3）：父行缺失或父 depth != 0 -> 拒建 + logger.exception
+      （防御性断言，正常路径不可达——子 run 跑非委派管线，结构性无环）。
+    - 撞 uq =「该子任务已委派过」-> SELECT 取回已有 child run_id 复用
+      （created=False），零重复建行（防 replan/resume/checkpoint 重放重复建行）；
+      并发双 INSERT 正确（败者阻塞至胜者提交后 SELECT 取回 · R9/N6）。
+    """
+    async with AsyncSessionLocal() as db:
+        parent = await db.get(OpsLgRagRun, parent_run_id)
+        if parent is None:
+            logger.exception(
+                "claim_child_run 拒建：父 run 不存在 parent_run_id=%s subtask_id=%s",
+                parent_run_id,
+                subtask_id,
+            )
+            return None
+        if parent.depth != 0:
+            logger.exception(
+                "claim_child_run 拒建：父 depth=%s != 0（深度硬上限 1）"
+                " parent_run_id=%s subtask_id=%s",
+                parent.depth,
+                parent_run_id,
+                subtask_id,
+            )
+            return None
+        result = await db.execute(
+            _CLAIM_CHILD_INSERT_SQL,
+            {
+                "child_run_id": child_run_id,
+                "tenant_id": parent.tenant_id,
+                "user_id": parent.user_id,
+                "thread_id": parent.thread_id,
+                "parent_run_id": parent_run_id,
+                "subtask_id": subtask_id,
+            },
+        )
+        if result.rowcount == 1:
+            await db.commit()
+            return child_run_id, True
+        existing_run_id = (
+            await db.execute(
+                _CLAIM_CHILD_LOOKUP_SQL,
+                {"parent_run_id": parent_run_id, "subtask_id": subtask_id},
+            )
+        ).scalar_one()
+        await db.commit()
+        return existing_run_id, False
 
 
 async def apply_run_event_status(
@@ -218,8 +305,9 @@ async def list_thread_runs_page(
     """thread 属主 runs 一页（§3.1 keyset：created_at desc, run_id desc）。
 
     返回 ``limit + 1`` 条以内（调用方据超出判定 next_cursor）；每项
-    ``{run_id, thread_id, status, created_at, finished_at}``——status 为
-    六词表原值直出，不做修补。
+    ``{run_id, thread_id, status, created_at, finished_at, parent_run_id, depth}``——
+    status 为六词表原值直出，不做修补；parent_run_id/depth 为 P4-T6 Run 树
+    投影加性字段（19 §11.4 · 加性变更豁免零 diff）。
     """
     stmt = select(OpsLgRagRun).where(
         OpsLgRagRun.user_id == user_id,
@@ -248,6 +336,8 @@ async def list_thread_runs_page(
             "status": r.status,
             "created_at": r.created_at,
             "finished_at": r.finished_at,
+            "parent_run_id": r.parent_run_id,
+            "depth": r.depth,
         }
         for r in rows
     ]
