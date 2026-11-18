@@ -1381,3 +1381,40 @@ waves:
     banned_prefixes:
       - alembic/
       - scripts/
+
+  - task_slug: p4-t3-manifest-domain-tags
+    status: active
+    base: "297363bd"
+    note: >-
+      p4-t3-manifest-domain-tags capability manifest domain 键消费（19 契约
+      §1/§2 commit e453a36 钉死口径 · 18 设计文 §2.1 R6/R10 ·
+      HG-TASK-DRAFT / HG-AUDIT-R1 / HG-GRAPH-MODULES approved 2026-11-18 ·
+      授权 issue Cyning12/ops-desk-workspace#23 m03064/m03796 夜间预授权）。
+      修法裁定：manifest.py _parse_and_validate 读顶层 domain 键
+      （_parse_domain · 词表 [a-z0-9_]+ fullmatch 非法拒载 · 与
+      capability id 点分词表独立禁互拼 R5）→ 注入该 manifest 全部
+      capability tags（手写 ∪ {domain} 并集去重 · 手写在前 domain 兜底
+      追加 · 键缺失不注入零 diff）；保留字校验 _domain_reserved_words()
+      = (DOMAIN_ALLOW_TAGS-{"oa"}) ∪ {"mcp"} ∪ env
+      OPS_CAPABILITY_ALLOW_WRITE_TAGS 值（仅 domain 键存在时校验 ·
+      oa 不溯及 · domain=mcp 拒载 R6）；oa 手写 tags 三面保留不动
+      （注入恒 no-op · 逐值一致断言作漂移哨兵 R10/N7）；MCP 翻译层
+      零改动（§2.3 · 远端 tools/list 不可信）。禁承载：prompt 域机制
+      （T2 已合）· RAG 域隔离（T4）· oa 资产包（T5）· translator.py
+      域逻辑 · baseline 词表变更 · types/registry 判序变更 · 五份存量
+      manifest 内容变更 · 新依赖 · alembic/ · scripts/ · .importlinter。
+    allowed_app_files:
+      - app/ops/capability/manifest.py
+    allowed_tree_files:
+      - tests/test_capability_manifest_domain.py
+      - docs/_tech_graph/l1/01_modules.md
+      - docs/harness/audit_gates/registry.yaml
+      - docs/tasks/active/task_p4_t3_manifest_domain_tags.md
+      - docs/tasks/done/task_p4_t3_manifest_domain_tags.md
+      - docs/harness/reviews/task_p4_t3_manifest_domain_tags_audit_R1_20261118.md
+    allowed_tree_prefixes:
+      - docs/harness/invokes/by-task/p4-t3-manifest-domain-tags/
+    banned_prefixes:
+      - alembic/
+      - scripts/
+
