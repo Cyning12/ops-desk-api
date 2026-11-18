@@ -1304,8 +1304,9 @@ waves:
       - alembic/
       - scripts/
   - task_slug: p4-t6-run-tree-ddl
-    status: active
+    status: closed
     base: "cfe76b23"
+    wave_tip: "142723ee"
     note: >-
       p4-t6-run-tree-ddl P4 Run 树 DDL + 委派 claim + REST 投影
       （workspace 18-p4-generalization-design.md §3/§7/§8.2 +
