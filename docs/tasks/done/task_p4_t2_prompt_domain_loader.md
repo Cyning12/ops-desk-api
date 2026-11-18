@@ -4,7 +4,7 @@ title: task · P4-T2 · prompt 模板域机制（domain-pack-v1 · 目录回退 
 
 # task · P4-T2 · prompt 模板域机制（domain-pack-v1 · 目录回退 + 白名单薄封装 + contextvar 注入）
 
-> **状态**：`active`（2026-11-18 落卡 · 夜间自动执行波）
+> **状态**：`done`（2026-11-18 落卡 → 同日 40 收口 · feat PR #443 squash merge 6b2c7934 · CI 四绿）
 > **来源**：domain-pack-v1 设计 18 文 §10 P4-T2 任务行 + 19 契约 §3（钉死口径真源 · commit e453a36）· 授权 issue Cyning12/ops-desk-workspace#23（m03064/m03796 夜间授权 · 委派书 p4-t2-prompt-domain-loader）
 
 ## Harness 元信息
@@ -159,3 +159,4 @@ pytest tests（CI 终裁 · 真 PG postgresql+asyncpg://ops:ops_password@localho
 |------|------|
 | 2026-11-18 | 落卡（夜间自动执行波 · 授权 issue Cyning12/ops-desk-workspace#23 m03064/m03796 · 来源 18 设计文 §10 P4-T2 行 + 19 契约 §3） |
 | 2026-11-18 | 40 波收口：验收 11 条全 [x] + 自检结论回填 + 偏差登记两项（current_domain env 回落裁定 · 目标回归文件名修正） |
+| 2026-11-18 | CLOSE：feat PR #443 squash merge 6b2c7934（CI 四绿：check/import-linter/lint-wiki-delta/pytest）· registry 钉 wave_tip + task 迁 done + invoke_50 |

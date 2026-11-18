@@ -1262,8 +1262,9 @@ waves:
       - scripts/
 
   - task_slug: p4-t2-prompt-domain-loader
-    status: active
+    status: closed
     base: "cfe76b23"
+    wave_tip: "6b2c7934"
     note: >-
       p4-t2-prompt-domain-loader prompt 模板域机制（domain-pack-v1 ·
       18 设计文 §10 P4-T2 任务行 + 19 契约 §3 commit e453a36 钉死口径 ·
