@@ -76,7 +76,7 @@ domain-pack-v1 / P4 泛化为 capability catalog 引入「部署级业务域」�
 
 ### 自检结论
 
-机制面九条断言全部落 tests/test_capability_manifest_domain.py（14 用例 14 passed · 0.58s）：①注入（四 kind local_fn/http/mcp/无 tags 键）②并集去重保序（手写 [alpha,beta] + domain charlie → ("alpha","beta","charlie") · 已含不重复）③domain=mcp 拒载且不半套注册 ④词表五负例（大写 Foo_pack/连字符 foo-pack/点号 foo.pack/空串/非 str 5）⑤env 保留字双态（hr 拒 · finance 放 · monkeypatch 加载期读取）⑥oa 不溯及（R6 · domain=oa 合法）⑦oa 逐值一致哨兵（R10/N7 · 三能力 tags tuple 逐值钉死手写面）⑧ops.write 无 domain 键零注入（tags == ("ops","run_note","write")）⑨baseline 可见性双向（oa http 不缩水 · 新域 hr http 不白捡）。回归面：目标三文件 45 passed（真 PG opsdesk_test · 五键 blank）· capability 电池 673 passed/5 failed 与干净 master 同路径同 5（顺序依赖既有 · 单跑均过）· 全量 solo 对照 36 vs 32 差 5 实证孤儿 pytest(pid 3801) dualproc 交叉污染（杀后双侧 9 passed）· 31 共有失败=本地环境性既有（CI pgvector:pg16 service 终裁）。lint 面：ruff check All checks passed（CI 钉版 0.15.21）· mypy 2 errors 与 master 同 2 零新增（yaml stubs + :954/:1023 untyped def 既有）· lint-imports 12 kept 0 broken · graph-compile done OK。图谱两件已随 30 落盘（capability 行叙事 + HG-GRAPH-MODULES 签收行）。全量 pytest 绿以 CI 终裁。
+验收十条全绿：①-⑦机制断言落 tests/test_capability_manifest_domain.py 14 用例全 passed（注入四 kind · 并集去重保序手写在前 domain 兜底 · domain=mcp 拒载不半套注册 · 词表五负例 · env 保留字双态 · oa 不溯及 R6 · oa 逐值哨兵 R10/N7）⑧oa/ops.write 两实仓件逐值钉死（oa 三能力手写面逐字一致 · ops.write tags==("ops","run_note","write") 零注入）⑨目标三文件 45 passed（真 PG opsdesk_test · 五键 blank）· capability 电池 673 passed/5 failed 与干净 master 同 5（顺序依赖既有 · 单跑均过）· 全量 solo 对照 36 vs 32 差 5 实证孤儿 pytest(pid 3801) dualproc 交叉污染（杀后双侧 9 passed · 31 共有=本地环境性既有）⑩ registry closed+wave_tip 钉版 · invokes 10/30/40/50 四件 · R1 审查文 GO · task lint PASS · graph-compile done OK · lint-imports 12 kept 0 broken · ruff All checks passed（0.15.21）· mypy 2 errors 与 master 同 2 零新增。feat PR #448 squash a87503d4 已合入 master（CI 四绿：check 18s ✓ · import-linter 10s ✓ · lint-wiki-delta 14s ✓ · pytest 2m20s ✓）。
 
 ## 必读列表
 
@@ -154,3 +154,4 @@ pytest tests（CI 终裁 · 真 PG postgresql+asyncpg://ops:ops_password@localho
 |------|------|
 | 2026-11-18 | 落卡（夜间自动执行波 · 授权 issue Cyning12/ops-desk-workspace#23 m03064/m03796 · 来源 18 设计文 §2.1 + 19 契约 §1/§2 commit e453a36 · 委派书 p4-t3-manifest-domain-tags） |
 | 2026-11-18 | 40 验证收口（验收 10 条全 [x] 逐条锚定 · 自检结论回填 · 目标 45 passed/电池 673+5 同基线/lint 四面绿/图谱 done OK · invoke_40 登记） |
+| 2026-11-18 | CLOSE（feat PR #448 squash a87503d4 已合入 · CI 四绿 · registry 钉 wave_tip a87503d4+closed · task 迁 done · invoke_50 登记） |
