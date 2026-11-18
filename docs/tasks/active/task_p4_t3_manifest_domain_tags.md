@@ -63,20 +63,20 @@ domain-pack-v1 / P4 泛化为 capability catalog 引入「部署级业务域」�
 
 ## 验收标准
 
-- [ ] domain→tags 注入：声明 domain 的 manifest 其全部 capability `spec.tags` 含 domain 值；capability 无 tags 键 → `tags == (domain,)`（新测试断言绿）
-- [ ] 并集去重：手写 tags 已含 domain → 不重复追加（tags tuple 逐值等）；手写在前 domain 兜底追加序（手写 [a,b] + domain c → `("a","b","c")`）（断言绿）
-- [ ] domain=mcp 拒载：`ManifestError`（R6 · 19 §1.3/§2 钉死）（断言绿）
-- [ ] 非法 domain 词表拒载：大写 / 连字符 / 点号 / 空串 / 非 str 五负例 → `ManifestError`（断言绿）
-- [ ] 保留字 env 面：`OPS_CAPABILITY_ALLOW_WRITE_TAGS=hr` 时 domain=hr → `ManifestError`；env 空时 domain=hr 合法注入（monkeypatch 双态断言绿）
-- [ ] oa 逐值一致（R10/N7）：真实 oa.readonly.v1.yaml 加载后三能力 tags tuple == (oa,doc,readonly) / (oa,org,readonly) / (oa,todo,readonly,personal)——注入恒 no-op 实证零 diff（断言绿）
-- [ ] 消费面回归：oa manifest 经 `baseline_filter(node_role="t")` 可见 ids ⊇ {oa.doc.search, oa.org.whois, oa.todo.mine} 不缩水；domain=hr 临时 manifest 默认 baseline 下不可见（不被意外命中 · 断言绿）
-- [ ] 既有 manifest 电池回归零红：tests/test_capability_manifest.py 全量 + tests/test_capability_domain_allowlist.py + capability 相关面（真 PG postgresql+asyncpg://ops:ops_password@localhost:5432/opsdesk_test · 五键 blank 前缀）；`ruff check app tests` 绿（CI 钉版）；mypy manifest.py 绿；lint-imports 0 broken；graph-compile.sh done OK；全量 pytest 绿以 CI 终裁（环境性红与 base 297363bd 同路径基线逐签对照）
-- [ ] 图谱：01_modules.md capability 行 p4-t3 备注 + HG-GRAPH-MODULES 签收行（已落盘 · graph-compile 绿）
-- [ ] 过闸四件：registry entry active · invokes {10,30,40}（50 待 CLOSE 波）· R1 审查文 GO · spec-wave task lint PASS
+- [x] domain→tags 注入：声明 domain 的 manifest 其全部 capability `spec.tags` 含 domain 值；capability 无 tags 键 → `tags == (domain,)`（tests/test_capability_manifest_domain.py::test_domain_injected_into_all_kinds 四 kind 断言绿）
+- [x] 并集去重：手写 tags 已含 domain → 不重复追加（tags tuple 逐值等）；手写在前 domain 兜底追加序（手写 [a,b] + domain c → `("a","b","c")`）（test_domain_union_dedupe 断言绿）
+- [x] domain=mcp 拒载：`ManifestError`（R6 · 19 §1.3/§2 钉死）（test_domain_reserved_mcp 断言绿 · 含不半套注册断言）
+- [x] 非法 domain 词表拒载：大写 / 连字符 / 点号 / 空串（test_domain_invalid_vocabulary 参数化 4）+ 非 str（test_domain_non_string）五负例 → `ManifestError`（断言绿）
+- [x] 保留字 env 面：`OPS_CAPABILITY_ALLOW_WRITE_TAGS=hr` 时 domain=hr → `ManifestError`；env 空时 domain=hr 合法注入（test_domain_reserved_from_env monkeypatch 双态断言绿）
+- [x] oa 逐值一致（R10/N7）：真实 oa.readonly.v1.yaml 加载后三能力 tags tuple == (oa,doc,readonly) / (oa,org,readonly) / (oa,todo,readonly,personal)——注入恒 no-op 实证零 diff（test_oa_manifest_handwritten_tags_preserved 断言绿 · domain=oa 不拒载 test_domain_oa_existing_allowed 绿）
+- [x] 消费面回归：oa manifest 经 `baseline_filter(node_role="t")` 可见 ids ⊇ {oa.doc.search, oa.org.whois, oa.todo.mine} 不缩水；domain=hr 临时 manifest 默认 baseline 下不可见（test_baseline_visibility_not_widened 断言绿）
+- [x] 既有 manifest 电池回归零红：目标三文件 45 passed（真 PG opsdesk_test · 五键 blank）· capability 电池 673 passed/5 failed 与 master 同路径基线同 5 零新增；`ruff check app tests` All checks passed（0.15.21）；mypy manifest.py 2 errors 与 master 同 2（行号位移 · 零新增）；lint-imports 12 kept 0 broken；graph-compile.sh done OK；全量 pytest 以 CI 终裁（本地 solo 对照 36 vs 32 · 差 5 实证孤儿进程污染 dualproc 双侧重跑均 9 passed · 31 共有失败环境性既有）
+- [x] 图谱：01_modules.md capability 行 p4-t3 备注 + HG-GRAPH-MODULES 签收行（已落盘 · graph-compile done OK）
+- [x] 过闸四件：registry entry active · invokes {10,30,40}（50 待 CLOSE 波）· R1 审查文 GO · spec-wave task lint PASS
 
 ### 自检结论
 
-（40 波回填）
+机制面九条断言全部落 tests/test_capability_manifest_domain.py（14 用例 14 passed · 0.58s）：①注入（四 kind local_fn/http/mcp/无 tags 键）②并集去重保序（手写 [alpha,beta] + domain charlie → ("alpha","beta","charlie") · 已含不重复）③domain=mcp 拒载且不半套注册 ④词表五负例（大写 Foo_pack/连字符 foo-pack/点号 foo.pack/空串/非 str 5）⑤env 保留字双态（hr 拒 · finance 放 · monkeypatch 加载期读取）⑥oa 不溯及（R6 · domain=oa 合法）⑦oa 逐值一致哨兵（R10/N7 · 三能力 tags tuple 逐值钉死手写面）⑧ops.write 无 domain 键零注入（tags == ("ops","run_note","write")）⑨baseline 可见性双向（oa http 不缩水 · 新域 hr http 不白捡）。回归面：目标三文件 45 passed（真 PG opsdesk_test · 五键 blank）· capability 电池 673 passed/5 failed 与干净 master 同路径同 5（顺序依赖既有 · 单跑均过）· 全量 solo 对照 36 vs 32 差 5 实证孤儿 pytest(pid 3801) dualproc 交叉污染（杀后双侧 9 passed）· 31 共有失败=本地环境性既有（CI pgvector:pg16 service 终裁）。lint 面：ruff check All checks passed（CI 钉版 0.15.21）· mypy 2 errors 与 master 同 2 零新增（yaml stubs + :954/:1023 untyped def 既有）· lint-imports 12 kept 0 broken · graph-compile done OK。图谱两件已随 30 落盘（capability 行叙事 + HG-GRAPH-MODULES 签收行）。全量 pytest 绿以 CI 终裁。
 
 ## 必读列表
 
@@ -151,3 +151,4 @@ pytest tests（CI 终裁 · 真 PG postgresql+asyncpg://ops:ops_password@localho
 | 日期 | 修订 |
 |------|------|
 | 2026-11-18 | 落卡（夜间自动执行波 · 授权 issue Cyning12/ops-desk-workspace#23 m03064/m03796 · 来源 18 设计文 §2.1 + 19 契约 §1/§2 commit e453a36 · 委派书 p4-t3-manifest-domain-tags） |
+| 2026-11-18 | 40 验证收口（验收 10 条全 [x] 逐条锚定 · 自检结论回填 · 目标 45 passed/电池 673+5 同基线/lint 四面绿/图谱 done OK · invoke_40 登记） |
