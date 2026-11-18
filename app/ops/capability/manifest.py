@@ -14,6 +14,12 @@ review 边界、失败域都不同，因此按域拆文件。但 schema、注册
 - **多文件互相隔离**：``load_capability_manifests`` 逐文件 try——坏一份
   不带崩别的（这是拆文件的首要理由）。
 
+域键消费（domain-pack-v1 P4-T3 · 19 契约 §1/§2）：manifest 顶层可声明
+``domain``（词表 ``[a-z0-9_]+`` · 撞保留字拒载），加载期注入该清单全部
+capability 的 tags（手写 ∪ {domain} 并集去重 · 手写在前 domain 兜底追加）；
+键缺失 = 不注入（存量零 diff）。MCP 翻译条目的 domain 真源在 server 配置侧
+（§2.3 · 远端 tools/list 不可信），不经本 loader。
+
 禁止每请求 / HTTP 钩子；显式 ``reload_capability_manifest`` 供测试/运维。
 **能力清单变更后必须重启或显式 reload，不允许自动热加载**——
 热加载意味着「改配置即改权限」，review 就白做了。
@@ -36,6 +42,7 @@ from app.ops.capability.adapters.http_generic import (
     GenericHttpAdapter,
 )
 from app.ops.capability.adapters.local_fn import LocalFnAdapter
+from app.ops.capability.baseline import DOMAIN_ALLOW_TAGS, ENV_ALLOW_WRITE_TAGS
 from app.ops.capability.errors import STABLE_ERROR_CODES
 from app.ops.capability.gateway import get_registry, register, unregister
 from app.ops.capability.types import (
@@ -83,6 +90,11 @@ _PREFIX_TO_MODULE = {
 # 能力 id 命名规范：小写字母开头 + 小写字母/数字/下划线，可用点分域（域.对象.动作）。
 # 同一份正则同时接受历史扁平 id（如 ``reload_cap``），不强制点分。
 _CAPABILITY_ID_RE = re.compile(r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$")
+
+# 域 id 命名规范（domain-pack-v1 · 19 契约 §1.2）：小写字母/数字/下划线，
+# **无点号**——与 capability id 词表（允许点分域）各自独立、禁止互拼（R5）；
+# domain 只作 tags 注入值，不进 capability id 拼接面。
+_DOMAIN_ID_RE = re.compile(r"^[a-z0-9_]+$")
 
 # V13 mock 特例清单（SPEC v0.1 Q4 · **不扩容**）：写能力 tenant_scoped 豁免的
 # 唯一出口；以 testing/mock tag 为谓词——只冒充 id 不带 mock tag 也不豁免。
@@ -447,6 +459,58 @@ def _validate_fallback(block: dict[str, Any], *, loc: str) -> None:
         )
 
 
+def _domain_reserved_words() -> frozenset[str]:
+    """domain 保留字（19 契约 §1.3 R6）：撞 allow_tags_any / allow_write_tags_any
+    现存值或字面量 ``mcp`` → 拒载。
+
+    - ``oa`` 是既有合法域（R6 不溯及），显式排除；
+    - env ``OPS_CAPABILITY_ALLOW_WRITE_TAGS`` 在**加载期**读取（与
+      ``baseline.baseline_filter()`` 调用时读取同族纪律），防 domain 与写放行
+      值同值白捡 ``deny_write`` 豁免；
+    - 仅在 manifest 声明了 domain 键时才会调用本函数——存量清单零 diff。
+    """
+    raw = os.environ.get(ENV_ALLOW_WRITE_TAGS, "")
+    env_tags = frozenset(t.strip() for t in raw.split(",") if t.strip())
+    return (DOMAIN_ALLOW_TAGS - {"oa"}) | {"mcp"} | env_tags
+
+
+def _parse_domain(data: dict[str, Any], *, path: Path) -> str | None:
+    """读顶层 ``domain`` 键（19 契约 §1.2/§1.3）；键缺失 → ``None``（不注入）。
+
+    非法形态（非 str · 词表 ``[a-z0-9_]+`` 外）与保留字（§1.3 R6）整文件
+    拒载——承「加载期强校验，不半套注册」先例。
+    """
+    if "domain" not in data:
+        return None
+    raw = data["domain"]
+    if not isinstance(raw, str) or not _DOMAIN_ID_RE.fullmatch(raw):
+        raise ManifestError(
+            f"manifest.domain 非法（词表 [a-z0-9_]+ · 与 capability id 词表独立禁互拼）: {path}: {raw!r}"
+        )
+    if raw in _domain_reserved_words():
+        raise ManifestError(
+            f"manifest.domain 撞保留字（allow_tags_any/allow_write_tags_any 现存值或 mcp · 19 契约 §1.3 R6）: {path}: {raw!r}"
+        )
+    return raw
+
+
+def _inject_domain_tag(raw: dict[str, Any], *, domain: str) -> dict[str, Any]:
+    """domain → tags 注入（19 契约 §2.1）：手写 tags ∪ {domain}（并集去重）。
+
+    手写在前、domain 兜底追加；手写已含 domain → 原样返回（oa 防双写漂移
+    R10/N7：注入恒 no-op）。``tags`` 非 list 的非法形态不在这里拦——留给
+    ``_entry_from_raw`` 报型错，避免掩盖既有错误面。
+    """
+    tags_raw = raw.get("tags")
+    if tags_raw is None:
+        return {**raw, "tags": [domain]}
+    if not isinstance(tags_raw, list):
+        return raw
+    if domain in {str(t) for t in tags_raw}:
+        return raw
+    return {**raw, "tags": [*tags_raw, domain]}
+
+
 def _parse_and_validate(
     path: Path,
 ) -> tuple[int | str | None, list[_PendingEntry]]:
@@ -458,6 +522,7 @@ def _parse_and_validate(
     if not isinstance(data, dict):
         raise ManifestError(f"manifest 根必须是 mapping: {path}")
     _reject_secret_keys(data, where="root")
+    domain = _parse_domain(data, path=path)
 
     raw_caps = data.get("capabilities")
     if not isinstance(raw_caps, list):
@@ -470,6 +535,10 @@ def _parse_and_validate(
         if not isinstance(raw, dict):
             raise ManifestError(f"{loc} 必须是 mapping: {path}")
         _reject_secret_keys(raw, where=loc)
+        if domain is not None:
+            # domain → tags 注入（19 §2.1）：在 spec/adapter 构造之前改写，
+            # GenericHttpAdapter/McpAdapter 持 spec 引用——同源见最终 tags。
+            raw = _inject_domain_tag(raw, domain=domain)
         entry = _entry_from_raw(raw, loc=loc)
         cid = entry.spec.capability_id
         if cid in seen:
